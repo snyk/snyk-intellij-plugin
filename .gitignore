@@ -1,0 +1,9 @@
+*.DS_Store
+/.gradle/
+/.idea/
+/build/
+/gradle/
+/out/
+/snyk-intellij-plugin.iml
+/snyk-intellij-plugin.ipr
+/snyk-intellij-plugin.iws

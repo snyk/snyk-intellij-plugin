@@ -1,0 +1,28 @@
+<idea-plugin>
+    <id>io.snyk.snyk-intellij-plugin</id>
+    <name>Plugin display name here</name>
+    <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+
+    <description><![CDATA[
+    Enter short description for your plugin here.<br>
+    <em>most HTML tags may be used</em>
+    ]]></description>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.SnykToolWindow"/>
+    </extensions>
+
+    <actions>
+        <!--<group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">-->
+            <!--<add-to-group group-id="MainMenu" anchor="last"  />-->
+            <!--<action id="io.snyk.plugin.Textboxes" class="io.snyk.plugin.TextBoxes" text="Text _Boxes" description="A test menu item" />-->
+        <!--</group>-->
+    </actions>
+
+    <depends>org.jetbrains.idea.maven</depends>
+</idea-plugin>
