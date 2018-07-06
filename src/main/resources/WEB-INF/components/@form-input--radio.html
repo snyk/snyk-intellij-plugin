@@ -1,0 +1,34 @@
+{{#> @list--ul
+    ul-list-modifier="list-form list--form" }}
+
+  {{#each options}}
+    {{#> @list
+      list-modifier="list__item"
+      list-test-hook=testHook
+      id=(concat ../name '-' value)}}
+      <label for="{{id}}" class="radio {{#if label-hidden}}hidden{{/if}} {{#if required}}required{{/if}}">
+        {{label}}
+        <input type="radio" name="{{../../name}}" value="{{value}}" id="{{id}}" class="radio__input {{modifier}}"
+        {{~#if error}} aria-describedby="error-{{id}}" {{/if}}
+        {{~#if required}} required {{/if}}
+        {{~#if_eq ../../selected value}} checked {{/if_eq}} />
+        <span class="radio__toggle"></span>
+      </label>
+      {{#if error}}
+      {{#> @alert modifiers="warning" id=(concat id "-error")  }}
+      {{error}}
+      {{/ @alert}}
+      {{/if}}
+      {{#if caption}}
+      {{#> @caption}}
+      {{#if @partial-block}}
+        {{> @partial-block }}
+      {{else}}
+        {{{caption}}}
+      {{/if}}
+      {{/ @caption}}
+      {{/if}}
+    {{/ @list}}
+  {{/each}}
+
+{{/ @list--ul}}

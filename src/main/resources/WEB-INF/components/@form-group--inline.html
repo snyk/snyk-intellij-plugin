@@ -1,0 +1,19 @@
+<div class="form__group form__group--inline">
+  {{#if error}}
+    {{#> @alert modifiers="warning" id=(concat id "-error") }}
+      {{error}}
+    {{/ @alert}}
+  {{/if}}
+
+  {{#if_eq input-type "url"}}
+    {{> @form-input--url}}
+  {{else}}
+    {{> @form-input--text}}
+  {{/if_eq}}
+
+  {{#if button}}
+    {{> @button}}
+  {{/if}}
+
+  {{> @caption}}
+</div>

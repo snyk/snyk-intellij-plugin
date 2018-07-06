@@ -1,0 +1,16 @@
+<a
+  href="{{ link-href }}"
+  class="jira-link"
+  role="button"
+  {{#if link-test-hook}}{{test-hook (concat link-test-hook)}}{{/if}}
+  {{#if :click }}v-on:click="{{:click}}"{{/if}}
+  {{#if title }}title="{{title}}"{{/if}}>
+  <div class="jira-link__icon {{#if jiraConnectionFailed}} jira-link__icon--warning {{/if}}">
+    {{#if jiraConnectionFailed}}
+      {{svg (concat "icon/warning" ) height="20" width="20"}}
+    {{else}}
+      {{svg (concat "icon/jira" ) height="20" width="20"}}
+    {{/if}}
+  </div>
+  {{ link-text }}
+</a>

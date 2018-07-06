@@ -1,0 +1,51 @@
+<div v-on-clickaway="releaseFocus">
+  <div class="search-filter">
+    {{> @search
+      search-filter="input"
+      search-input-modifier="input--xs"
+      v-model="searchQuery"
+      v-on:focus="setFocus"
+      :search-placeholder="searchPlaceholder"
+    }}
+    <div class="search-filter__dropdown" v-if="hasFocus">
+      <div class="dropdown__options" style="overflow-x: hidden;">
+        <div class="l-repel l-push-btm--xs t--xs">
+          <h3>\{{label}} (\{{selectedItems.length}}/\{{ items.length }})</h3>
+          <span v-if="selectedItems.length < 3">
+            {{> @button
+              button="Select All"
+              button-class="link--quiet"
+              modifiers="link"
+              :click="selectAll"
+            }}
+          </span>
+          <span v-else>
+            {{> @button
+              button="Deselect All"
+              button-class="link--quiet"
+              modifiers="link"
+              :click="deselectAll"
+            }}
+          </span>
+        </div>
+
+        <ul v-if="matchingQuery.length">
+          <li v-for="item in matchingQuery">
+            {{> @form-checkbox
+              checkbox-label="{{item.title}}"
+              checkbox-modifier="checkbox--sm"
+              v-model="selectedItems"
+              :value="item.value"
+              :name="name"
+              :id="item.title"
+            }}
+          </li>
+        </ul>
+        <div v-else>
+          No results found.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,17 @@
+<table class="meta-table {{#if modifiers}}{{#each (splitList modifiers) }} meta-table--{{this}}{{/each}}{{/if}}" {{test-hook "meta table"}}>
+  <tbody class="meta-table__body">
+    {{#each table}}
+    <tr class="meta-table__item">
+      <th class="meta-table__label" {{test-hook "meta table label"}}>
+        {{label}}
+      </th>
+      <td class="meta-table__data" {{test-hook (concat "meta table data " label)}}>
+        {{~#if icon}}{{svg (concat "icon/" icon) width="20" height="20" }} {{/if}}
+        {{~#if url}}<a href="{{url}}" class="meta-table__link" {{test-hook (concat "meta table url " label)}}>{{/if}}
+          {{data}}{{~#if note}} <span class="meta-table__note" {{test-hook (concat "meta table note " label)}}>{{note}}</span>{{/if}}
+        {{~#if url}}</a>{{/if}}
+      </td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>

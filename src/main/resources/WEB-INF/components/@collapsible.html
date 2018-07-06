@@ -1,0 +1,21 @@
+<details class="collapsible{{#if modifiers}}{{#each (splitList modifiers) }} collapsible--{{this}}{{/each}}{{/if}}"
+{{~#if id}} id="{{id}}"{{/if~}}
+{{~#if test-hook}} {{test-hook (concat test-hook)}}{{/if~}}
+role="group">
+
+  <summary role="button" class="collapsible__summary">
+    <h{{~#if headingLevel}}{{headingLevel}}{{else}}2{{/if}}
+      class="collapsible__heading">
+      {{heading}}
+    </h{{#if headingLevel}}{{headingLevel}}{{else}}2{{/if}}>
+  </summary>
+
+  <div class="collapsible__details">
+    {{~#if @partial-block}}
+{{> @partial-block}}{{!-- Unindented for pre tags --}}
+    {{~else~}}
+{{description}}
+    {{~/if}}
+  </div>
+
+</details>

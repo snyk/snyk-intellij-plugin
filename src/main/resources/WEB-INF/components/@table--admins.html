@@ -1,0 +1,108 @@
+<table class="table table--members">
+
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th></th>
+      <th>Role</th>
+      {{#if (isAdmin org.OrgMembership.role)}}
+      <th><span class="hidden">Actions</span></th>
+      {{/if}}
+    </tr>
+  </thead>
+
+  <tbody>
+
+  {{#each administrators}}
+
+    <tr>
+
+      <td data-th="Name">
+        {{> @avatar}} <strong>{{username}}</strong>
+      </td>
+
+      <td data-th="Status">
+      </td>
+
+      <td data-th="Role">
+        <div class="select select--short select--sm {{#if (or (eq OrgMembership.role 'DEFAULT')
+              (or (eq (count ../administrators) 1)
+              (or (not ../subscription.entitlements.allowCollaborators)
+              (not (isAdmin ../org.OrgMembership.role)))))}}select--disabled{{/if}}">
+          <select {{#if (or (eq OrgMembership.role 'DEFAULT')
+                    (or (eq (count ../administrators) 1)
+                    (or (not ../subscription.entitlements.allowCollaborators)
+                    (not (isAdmin ../org.OrgMembership.role)))))}}disabled{{/if}}>
+            <option value="member_role__administrator">Administrator</option>
+            <option value="member_role__collaborator" data-action="updateUserRole('{{publicId}}', false)">Collaborator</option>
+          </select>
+        </div>
+      </td>
+
+      {{#if (isAdmin ../org.OrgMembership.role)}}
+      <td data-th="Actions">
+        {{#unless (and (or  (eq OrgMembership.role 'DEFAULT') (eq (count ../administrators) 1)))}}
+          {{> @button
+            modifiers="link"
+            modifier="link--negative t--sm"
+            type="button"
+            button="Delete"
+            button-test-hook="Delete admin button"
+
+            onClick="deleteInvitation('{{publicId}}')"
+            button-click="action-delete-invitation"
+
+          }}
+        {{/unless}}
+      </td>
+      {{/if}}
+
+    </tr>
+
+    {{#if (isAdmin org.OrgMembership.role)}}
+
+      {{#each adminInvitations}}
+      <tr class="t--faded">
+
+        <td data-th="Name">
+          {{email}}
+        </td>
+
+        <td data-th="Status">
+          Pending
+        </td>
+
+        <td data-th="Role">
+          <div class="select select--short select--sm {{#unless ../subscription.entitlements.allowCollaborators}}select--disabled{{/unless}}">
+            <select {{#unless ../subscription.entitlements.allowCollaborators}}disabled{{/unless}}>
+              <option value="member_role__administrator">Administrator</option>
+              <option value="member_role__collaborator" data-action="updateUserRole('{{publicId}}', false)">Collaborator</option>
+            </select>
+          </div>
+        </td>
+
+        <td data-th="Actions">
+          {{#unless (and (or  (eq OrgMembership.role 'DEFAULT') (eq (count ../administrators) 1)))}}
+            {{> @button
+              modifier="btn--link link--negative t--sm"
+              type="button"
+              button="Delete"
+              button-test-hook="Delete pending admin button"
+
+              onClick="deleteInvitation('{{publicId}}')"
+              button-click="action-delete-user"
+
+            }}
+          {{/unless}}
+        </td>
+
+      </tr>
+      {{/each}}
+
+    {{/if}}
+
+  {{/each}}
+
+  </tbody>
+
+</table>

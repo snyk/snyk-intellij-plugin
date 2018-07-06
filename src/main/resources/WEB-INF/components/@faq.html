@@ -1,0 +1,8 @@
+<div class="faq">
+  <h{{#if faq-heading-level}}{{faq-heading-level}}{{else}}3{{/if}} class="faq__question">{{faq-question}}</h3>
+  <div class="faq__answer">
+  {{#if @partial-block}}
+{{> @partial-block }}{{!-- Unindented for pre tags --}}
+  {{/if}}
+  </div>
+</div>

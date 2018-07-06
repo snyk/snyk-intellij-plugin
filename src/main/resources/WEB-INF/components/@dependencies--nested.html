@@ -1,0 +1,16 @@
+{{~#with this}}
+  <details class="tree__branch" {{test-hook (concat "dependency " name " " version) }} data-snyk-dep data-snyk-dep-vulns="all {{~#if vulnerable}} vulnerable{{/if}}" data-snyk-dep-type="dep">
+    <summary class="tree__branch-text" {{test-hook "dependency tree item"}}>
+      {{~#if vulnerable}}
+        {{~#if issueCountsBySeverity}}
+          {{> @severity-list--compact
+              severity-list-test-hook="dependency severity"}}
+        {{/if}}
+      {{/if}}
+      {{snykTestModuleLink (concat name '@' version) type}}
+    </summary>
+    {{~#each dependencies}}
+      {{> @dependencies--nested type=../type}}
+    {{/each}}
+  </details><!-- .tree__branch -->
+{{/with}}

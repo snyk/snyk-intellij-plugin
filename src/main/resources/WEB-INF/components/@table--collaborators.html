@@ -1,0 +1,86 @@
+<table class="table table--members">
+
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th></th>
+      <th>Role</th>
+      {{#if (isAdmin org.OrgMembership.role)}}
+      <th><span class="hidden">Actions</span></th>
+      {{/if}}
+    </tr>
+  </thead>
+
+  <tbody>
+
+    {{#each collaborators}}
+
+      <tr>
+
+        <td data-th="Name">
+          {{> @avatar}} <strong>{{username}}</strong>
+        </td>
+
+        <td data-th="Status">
+        </td>
+
+        <td data-th="Role">
+          <div class="select select--short select--sm {{#if (not (isAdmin ../org.OrgMembership.role))}}select--disabled{{/if}}">
+            <select {{#if (not (isAdmin ../org.OrgMembership.role))}}disabled{{/if}}>
+              <option value="member_role__collaborator">Collaborator</option>
+              <option value="member_role__administrator" data-action="updateUserRole('{{publicId}}', true)">Administrator</option>
+            </select>
+          </div>
+        </td>
+
+        {{#if (isAdmin ../org.OrgMembership.role)}}
+        <td data-th="Actions">
+          {{> @button
+            modifier="btn--link link--negative t--sm"
+            type="button"
+            button="Delete"
+            button-test-hook="Delete collaborator button"
+
+            onClick="deleteUser('{{publicId}}')"
+            button-click="action-delete-user"
+
+          }}
+        </td>
+        {{/if}}
+      </tr>
+
+    {{/each}}
+
+    {{#if (isAdmin org.OrgMembership.role)}}
+      {{#each collaboratorInvitations}}
+        <tr class="t--faded">
+          <td data-th="Name">
+            {{ email }}
+          </td>
+          <td data-th="Status">Pending</td>
+          <td data-th="Role">
+            <div class="select select--short select--sm">
+              <select>
+                <option value="member_role__collaborator">Collaborator</option>
+                <option value="member_role__administrator" data-action="updateInvitationRole('{{publicId}}', true)">Administrator</option>
+              </select>
+            </div>
+          </td>
+          <td class="table-responsive__data" data-th="Actions">
+            {{> @button
+              modifier="btn--link link--negative t--sm"
+              type="button"
+              button="Delete"
+              button-test-hook="Delete pending collaborator button"
+
+              onClick="deleteInvitation('{{publicId}}')"
+              button-click="action-delete-invitation"
+            }}
+          </td>
+        </tr>
+      {{/each}}
+    {{/if}}
+
+    </tbody>
+
+  </table>

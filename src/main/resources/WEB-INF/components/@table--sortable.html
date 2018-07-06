@@ -1,0 +1,69 @@
+<table
+  aria-role="grid"
+  aria-labelledby="{{slugify caption}}"
+  class="table {{~#if modifiers}}{{#each (splitList modifiers) }} table--{{this}}{{/each}}{{/if}}"
+  data-snyk-table="sortable"
+  id="sortable">
+
+  <caption
+    class="hidden hidden--pr"
+    id="{{slugify caption}}">
+    {{caption}}
+  </caption>
+
+  <thead>
+    <tr>
+      {{~#each columns~}}
+        <th
+          data-th="{{title}}"
+          scope="col"
+          {{#if url}}{{#if order}}
+            aria-sort="{{#if_eq order 'asc'}}ascending{{/if_eq}}{{#if_eq order 'desc'}}descending{{/if_eq}}"
+          {{else}}
+            aria-sort="none"
+          {{/if}}{{/if}}
+          {{#if width}} width="{{width}}"{{/if}}>
+
+          {{~#if url~}}
+          <a
+            aria-label="activate to sort column{{#if_eq order 'asc'}} descending{{/if_eq}}{{#if_eq order 'desc'}} ascending{{/if_eq}}"
+            class="table__order{{#if_eq order 'asc'}} table__order--asc{{/if_eq}}{{#if_eq order 'desc'}} table__order--desc{{/if_eq}}"
+            href="{{url}}"{{#if sidepanel}} data-snyk-sidepanel-trigger="{{sidepanel}}"{{/if}}>
+          {{~/if~}}
+
+          {{~#if hidden~}}
+            <span class="hidden">
+          {{~/if~}}
+            {{title}}
+          {{~#if hidden~}}
+            </span>
+          {{~/if~}}
+
+          {{~#if url~}}
+          </a>
+          {{~/if~}}
+
+        </th>
+      {{~/each~}}
+    </tr>
+  </thead>
+
+  <tbody>
+
+    {{~#each rows}}
+    <tr>
+      {{#each cells}}
+      <td>
+        {{#if partial}}
+          {{> (concat '@' partial.name) partial.data }}
+        {{else}}
+          {{data}}
+        {{/if}}
+      </td>
+      {{/each}}
+    </tr>
+    {{/each}}
+
+  </tbody>
+
+</table>

@@ -1,0 +1,4 @@
+<span class="identifiers{{#if modifiers}}{{#each (splitList modifiers) }} identifiers--{{this}}{{/each}}{{/if}}" {{test-hook "identifiers"}}>
+{{#each CVE}}<span class="identifiers__identifier"><a href="{{cvelink @this}}">{{@this}}</a></span> {{/each}}
+{{#each CWE}}<span class="identifiers__identifier"><a href="{{cwelink @this}}">{{@this}}</a></span> {{/each}}
+</span>

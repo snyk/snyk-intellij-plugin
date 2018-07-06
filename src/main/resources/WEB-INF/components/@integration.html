@@ -1,0 +1,31 @@
+<section class="integration" {{test-hook "integration"}}>
+  {{#if url}}<a class="integration__url" href="{{url}}">{{/if}}
+    <header class="integration__header">
+    {{#> header-block}}
+      <h2 class="integration__title" {{test-hook "integration title"}}>{{ name }}{{#if beta}} {{> @badge label="Beta" modifiers="premium"}}{{/if}}</h2>
+      {{svg (concat "logo/" type)}}
+    {{/header-block}}
+    </header>
+
+    {{#if desc}}
+    <div class="integration__main" {{test-hook "integration description"}}>
+    {{#> main-block}}
+      {{{ desc }}}
+    {{/main-block}}
+    </div>
+    {{/if}}
+
+    {{#unless url}}
+    <div class="integration__footer" {{test-hook "integration action"}}>
+    {{#> footer-block}}
+      {{> @button
+        button="Coming soon!"
+        button-disabled=true
+        modifiers="disabled, xs, stretch"
+      }}
+    {{/footer-block}}
+    </div>
+    {{/unless}}
+
+  {{#if url}}</a>{{/if}}
+</section>

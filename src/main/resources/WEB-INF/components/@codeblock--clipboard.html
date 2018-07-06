@@ -1,0 +1,10 @@
+<div class="codeblock{{#if modifiers}}{{#each (splitList modifiers) }} codeblock--{{this}}{{/each}}{{/if}}"{{~#if test-hook}} {{test-hook (concat test-hook)}}{{else}} {{test-hook "codeblock"}}{{/if}}>
+<pre class="codeblock__code"><code{{#if modifiers}}{{#if_any modifiers "clipboard"}} id="js-clipboard--{{id}}"{{/if_any}}{{/if}}>{{~#if @partial-block~}}{{> @partial-block }}{{~else~}}Code snippet not available{{~/if~}}</code></pre>
+  {{#if modifiers}}{{!-- For some reason, this is not inferred by the following if_any --}}
+    {{#if_any modifiers "clipboard"}}
+    <div class="codeblock__copy hidden--pr">
+      {{> @button button-data="data-snyk-clipboard" clipboard-target=(concat "#js-clipboard--" id) button="Copy"}}
+    </div>
+    {{/if_any}}
+  {{/if}}
+</div>

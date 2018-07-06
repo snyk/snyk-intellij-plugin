@@ -1,0 +1,9 @@
+<div role="search" class="{{#if form-group}} form__group{{/if}}{{#if form-group-stretch}} form__group--stretch{{/if}}">
+  <label for="{{id}}" class="{{#if label-hidden}}hidden{{/if}} {{#if required}}required{{/if}}">{{label}}</label>
+  <input type="search" name="{{name}}" {{#if id}}id="{{id}}"{{/if}} {{#if modifier}}class="{{modifier}}"{{/if}} {{#if placeholder}}placeholder="{{placeholder}}"{{/if}} {{#if error}}aria-describedby="error-{{id}}"{{/if}} />
+  {{#if button-hidden}}
+    {{> @button button="Search" modifiers="hidden"}}
+  {{else}}
+    {{> @button button="Search"}}
+  {{/if}}
+</div>

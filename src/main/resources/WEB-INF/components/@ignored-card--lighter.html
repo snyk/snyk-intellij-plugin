@@ -1,0 +1,54 @@
+<div class="ignored-card {{#if modifiers}}{{#each (splitList modifiers) }} ignored-card--{{this}}{{/each}}{{/if}}" {{test-hook "issue ignored notice"}}>
+  <ul class="ignored-card__section">
+    <li class="ignored-card__meta">
+      <h3 class="ignored-card__heading">Ignored path</h3>
+      <p {{test-hook "issue ignored path"}}>
+      {{~#each path~}}
+        {{~#if url~}}
+        <a href="{{url}}">
+        {{~/if~}}
+          {{module}}
+        {{~#if url~}}
+        </a>
+        {{~/if~}}
+        {{~#unless @last}} › {{/unless~}}
+      {{~/each~}}
+      </p>
+    </li>
+    {{#if ignoredBy}}
+    <li class="ignored-card__meta">
+      <strong {{test-hook "issue ignored date"}}>Ignored {{relativeMoment created}} by</strong> {{> @avatar url=ignoredBy.avatar label=ignoredBy.name test-hook="issue ignored author"}}
+    </li>
+    {{/if}}
+    <li class="ignored-card__meta">
+      <h3 class="ignored-card__heading">Expires</h3>
+      <span title="{{datetime expires}}" {{test-hook "issue ignored expires"}}>
+        {{#if disregardIfFixable}}On fix{{#if expires}}, or {{relativeMoment expires}}{{/if}}{{else}}{{#if expires}}{{relativeMoment expires}}{{else}}never{{/if}}{{/if}}
+      </span>
+    </li>
+    {{#if @root.allowAddIgnores}}
+      {{#if canModify}}
+      <li class="ignored-card__meta ignored-card__meta--action l-align-ver">
+        <a href="#{{ encode editIgnore }}" data-snyk-ignore-edit class="link--unstyled" title="Edit Ignore">
+          {{svg "icon/settings" width="20" height="20"}}
+        </a>
+      </li>
+      {{/if}}
+    {{/if}}
+  </ul>
+  {{#if_any reasonType reason}}
+  <div class="ignored-card__section">
+    <div class="ignored-card__reason">
+      <h3 class="ignored-card__heading l-inline">Reason</h3>:
+      {{#if reason}} <span {{test-hook "issue ignored reason"}}>{{reason}}</span>{{else}}None given{{/if}}
+    </div>
+  </div>
+  {{/if_any}}
+  {{#unless canModify}}
+  <div class="ignored-card__section">
+    <div class="ignored-card__message" {{test-hook "issue ignored message"}}>
+      <p>This issue was ignored via the project's .snyk policy file. To unignore it, update the policy file.</p>
+    </div>
+  </div>
+  {{/unless}}
+</div>

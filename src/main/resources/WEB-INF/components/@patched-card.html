@@ -1,0 +1,8 @@
+<div class="patched-card" {{test-hook "issue patched notice"}}>
+  <p>
+    <strong>Vulnerability patched for:</strong>
+    {{#each path}}
+      {{#if url}}<a href="{{url}}" {{test-hook "issue patched module url"}}>{{/if}}<span {{test-hook "issue patched module"}}>{{module}}</span> {{#if url}}</a>{{/if}}
+    {{/each}}
+  </p>
+</div>

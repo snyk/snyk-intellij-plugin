@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html class="fractal-preview" lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <link href="{{ path '/assets/styles/app.css' }}" rel="stylesheet" media="all">
+  <title>{{_target.title}} – Preview Layout</title>
+</head>
+<body style="padding: 1em;">
+
+  <script>
+    SnykUIFixture = {{{json _target.context}}};
+  </script>
+  <script src="{{ path (concat '/assets/scripts/' _target.component.name '.wrapper.js') }}"></script>
+</body>
+</html>

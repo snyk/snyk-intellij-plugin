@@ -1,0 +1,8 @@
+<form id="{{id}}" action="{{action}}" method="{{method}}" {{#if form-test-hook}}{{test-hook (concat form-test-hook)}}{{/if}} {{#if track-form}} data-snyk-track-form="{{track-form}}"{{/if}} {{#if form-modifier}}class="{{form-modifier}}"{{/if}}{{#if data}}{{data}}{{/if}}>
+  {{#if redirectUri}}<input type="hidden" name="redirectUri" value="{{redirectUri}}" />{{/if}}
+  <input type="hidden" name="_csrf" value="{{@root/csrfToken}}" />
+  {{#if envKey}}<input type="hidden" name="envKey" value="{{this}}" />{{/if}}
+  {{#if @partial-block}}
+{{> @partial-block }}
+  {{/if}}
+</form>

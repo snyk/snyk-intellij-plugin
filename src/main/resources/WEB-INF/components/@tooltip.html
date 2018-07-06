@@ -1,0 +1,20 @@
+<div class="tooltip{{#if modifiers}}{{#each (splitList modifiers) }} tooltip--{{this}}{{/each}}{{/if}}" data-snyk-tooltip{{~#if test-hook}} {{test-hook (concat test-hook)}}{{else}} {{test-hook "tooltip"}}{{/if}}>
+  <a href="#{{id}}" class="tooltip__label" aria-describedby="{{id}}" aria-controls="{{id}}">
+    {{~#unless_eq icon "none"}}
+      {{#if icon}}
+        {{svg (concat "icon/" icon) width="18" height="18"}}
+      {{else}}
+        {{svg "icon/help" width="18" height="18"}}
+      {{/if}}
+    {{/unless_eq}}
+    {{~#if label}}
+      {{label}}
+    {{/if}}
+    {{#if @partial-block}}
+      {{> @partial-block }}
+    {{/if}}
+  </a>
+  <div class="tooltip__description" id="{{id}}" aria-hidden="true" role="tooltip" {{test-hook "tooltip description"}}>
+    {{description}}
+  </div>
+</div>

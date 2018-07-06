@@ -1,6 +1,7 @@
 package io.snyk.plugin.urlproto.snykplugin
 
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.dependencyTreeRoot
 import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
@@ -17,12 +18,18 @@ class Handler(private val project: Project, private val classLoader: ClassLoader
 
     private val templateResolver = ClassLoaderTemplateResolver(classLoader)
     private val templateEngine = TemplateEngine()
+    private val depTreeRoot = project.dependencyTreeRoot()
 
-    object ctx: IContext {
-        override fun containsVariable(name: String?): Boolean = false
+    val props: Map<String, Any> = mapOf(
+        "project" to project,
+        "depTreeRoot" to depTreeRoot
+    )
+
+    val ctx: IContext = object: IContext {
+        override fun containsVariable(name: String?): Boolean = props.containsKey(name)
         override fun getLocale(): Locale = Locale.getDefault()
-        override fun getVariable(name: String?): Any? = null
-        override fun getVariableNames(): MutableSet<String> = mutableSetOf()
+        override fun getVariable(name: String?): Any? = props[name]
+        override fun getVariableNames(): MutableSet<String> = props.keys.toMutableSet()
     }
 
     init {
@@ -34,7 +41,9 @@ class Handler(private val project: Project, private val classLoader: ClassLoader
 
     @Throws(IOException::class)
     override fun openConnection(url: URL): URLConnection {
-        val path = url.host + if(url.path.isNullOrEmpty()) "" else url.path
+        //val path = url.host + if(url.path.isNullOrEmpty()) "" else url.path
+        //server name is ignored
+        val path = url.path
         println("handler got path: $path")
         //            return null
         if(path.endsWith(".templ")) {

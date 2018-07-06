@@ -1,0 +1,15 @@
+<table class="table table--invoices">
+  <tbody>
+    {{#each invoices}}
+    <tr>
+      <td data-th="Date">{{invertedDate date}}</td>
+      {{#if downloadLink}}
+      <td data-th="Invoice ID"><a href="{{downloadLink}}" title="Download {{plan}} as PDF" download class="link--external">{{plan}}</a></td>
+      {{else}}
+      <td data-th="Invoice ID">{{plan}}</td>
+      {{/if}}
+      <td class="l-align-right" data-th="Price">${{math amount "/" 100}}</td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>

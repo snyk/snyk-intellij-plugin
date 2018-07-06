@@ -1,0 +1,51 @@
+{{#unless_all dismissable (includes dismissAlerts dismissable)}}
+<div role="alert" class="alert{{#if modifiers}}{{#each (splitList modifiers) }} alert--{{this}}{{/each}}{{/if}}"
+{{~#if id}} id="{{id}}"{{/if}}
+{{~#if test-hook}} {{test-hook (concat test-hook)}}{{/if}}
+{{~#if alert-search-filter}} data-snyk-search-filter="{{alert-search-filter}}"{{/if}}>
+
+  <div class="alert__content">
+
+    {{~#if icon}}
+    <span class="alert__icon">
+      {{svg (concat "icon/" icon) height="21" width="21"}}
+    </span>
+    {{/if}}
+
+    {{~#if @partial-block}}
+      <p class="alert__message">{{> @partial-block }}</p>
+    {{~else~}}
+      <p class="alert__message">{{message}}</p>
+    {{~/if}}
+
+    {{#if cta}}
+    <span class="alert__action">
+      {{> '@button' modifiers="sm"}}
+    </span>
+    {{~/if}}
+
+    {{#if href}}
+    <span class="alert__action" data-snyk-loading-spinner>
+      {{> @link
+        modifier=""
+        label=label
+        href=href
+      }}
+      <span class="alert__spinner hidden--sr">
+        {{> @loading-spinner
+          modifiers="inline, xs"
+        }}
+      </span>
+    </span>
+    {{~/if}}
+
+    {{#if dismissable}}
+    <span class="alert__dismiss">
+      <a href="#" class="alert__dismiss__trigger" data-snyk-dismiss="{{dismissable}}" {{#if track}}data-snyk-track-on-click="{{track}}"{{/if}}>Close</a>
+    </span>
+    {{~/if}}
+
+  </div>
+
+</div>
+{{/unless_all}}

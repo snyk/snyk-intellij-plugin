@@ -1,0 +1,28 @@
+<div class="avatar{{#if modifiers}}{{#each (splitList modifiers) }} avatar--{{this}}{{/each}}{{/if}}"{{~#if test-hook}} {{test-hook (concat test-hook)}}{{else}} {{test-hook "avatar"}}{{/if}}>
+{{#if url}}
+  <img class="avatar__image" src="{{url}}" alt="{{#if label}}{{label}}'s {{/if}}avatar"{{#if title}} title="{{title}}"{{/if}} {{test-hook "avatar image"}} width="{{#if size}}{{size}}{{else}}24{{/if}}" height="{{#if size}}{{size}}{{else}}24{{/if}}" />
+{{else}}
+  {{#if initials}}
+    <div class="avatar__initials" style="width:{{#if size}}{{size}}{{else}}70{{/if}}px; height:{{#if size}}{{size}}{{else}}70{{/if}}px; font-size: calc({{#if size}}{{size}}{{else}}70{{/if}}px / 2.5);" {{test-hook "avatar initials"}}>
+      {{initials}}
+    </div>
+  {{else}}
+    <svg class="avatar__image" width="{{#if size}}{{size}}{{else}}24{{/if}}" height="{{#if size}}{{size}}{{else}}24{{/if}}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"{{#if title}} title="{{title}}"{{/if}} {{test-hook "avatar image"}}>
+      <title>{{#if label}}{{label}}'s {{/if}}avatar</title>
+      <path fill="{{color}}" d="M0 0h120v120H0z"/>
+      <path fill="#FFF" fill-opacity=".25" d="M91.747 79.227V22.472c-1.934-.596-4.12-1.164-6.652-1.696-7.29-1.535-15.837-2.46-25.563-2.46-9.726 0-18.273.925-25.564 2.46-2.53.532-4.717 1.1-6.552 1.665-.022.01-.055 18.94-.1 56.79l32.216 23.01 32.215-23.01z"/>
+      <path fill="#FFF" d="M21 82.477V18.073l1.985-.794c1.745-.7 4.998-1.7 9.682-2.69C40.377 12.97 49.36 12 59.532 12c10.172 0 19.154.97 26.865 2.594 4.684.987 7.937 1.988 9.68 2.685l1.987.79v64.403L59.532 110 21 82.477zm70.747-3.25V22.472c-1.934-.596-4.12-1.164-6.652-1.696-7.29-1.535-15.837-2.46-25.563-2.46-9.726 0-18.273.925-25.564 2.46-2.53.532-4.717 1.1-6.552 1.665-.022.01-.055 18.94-.1 56.79l32.216 23.01 32.215-23.01z"/>
+    </svg>
+  {{/if}}
+{{/if}}
+{{#unless initials}}
+  {{#if label}}
+    <span class="avatar__label{{#if label-hidden}} hidden{{/if}}">
+      <strong class="avatar__username" {{test-hook "avatar username"}}>{{label}}</strong>
+      {{#if note}}
+      <span class="avatar__note" {{test-hook "avatar note"}}>{{note}}</span>
+      {{/if}}
+    </span>
+  {{/if}}
+{{/unless}}
+</div>

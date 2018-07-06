@@ -1,0 +1,10 @@
+<time class="date{{#if modifiers}}{{#each (splitList modifiers) }} date--{{this}}{{/each}}{{/if}}" {{#if test-hook}}{{test-hook (concat test-hook)}}{{else}}{{test-hook "date"}}{{/if}} datetime="{{date}}">
+{{~#if format}}
+  {{~#if_eq format "full"}}{{fullDate date}}{{/if_eq}}
+  {{~#if_eq format "inverted"}}{{invertedDate date}}{{/if_eq}}
+  {{~#if_eq format "short"}}{{shortDate date}}{{/if_eq}}
+  {{~#if_eq format "datetime"}}{{datetime date}}{{/if_eq}}
+{{else}}
+  {{date}}
+{{/if}}
+</time>

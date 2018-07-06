@@ -1,0 +1,24 @@
+<div class="form__group form__group--checkbox" data-snyk-dependents>
+  {{#if error}}
+    {{#> @alert
+      id=(concat "error-" id )
+      modifiers="warning"
+      message=error }}
+    {{/ @alert}}
+  {{/if}}
+
+  {{#each options}}
+    {{> @form-checkbox
+      checkbox-id=(concat name @index)
+      checkbox-label=label
+      checkbox-name=name
+      checkbox-value=value
+      checkbox-modifers=modifiers
+      checkbox-disabled=disabled
+     }}
+  {{/each}}
+
+  {{#if caption}}
+    {{> @caption}}
+  {{/if}}
+</div>

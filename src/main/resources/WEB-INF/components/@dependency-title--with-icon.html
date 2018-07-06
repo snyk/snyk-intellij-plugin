@@ -1,0 +1,22 @@
+<span class="dependency-title
+{{~#if modifiers}}
+  {{#each (splitList modifiers) }} dependency-title--{{this}}{{/each}}
+{{/if}}"
+{{~#if test-hook}}
+  {{test-hook (concat test-hook)}}
+{{else}}
+  {{test-hook "dependency title"}}
+{{/if}}>
+{{#if severity}}
+  {{> @severity compact=true}}
+{{/if}}
+{{~#if icon}}
+  {{svg (concat "icon/" icon) width=22 height=22}}
+{{/if}}
+{{~#if url}}<a href="{{url}}" class="dependency-title__url">{{/if}}
+  <span class="dependency-title__text">{{title}}</span>
+{{~#if url}}</a>{{/if}}
+{{~#if semver}}
+  {{> @semver label=semver}}
+{{/if}}
+</span>

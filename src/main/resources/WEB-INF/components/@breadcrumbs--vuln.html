@@ -1,0 +1,19 @@
+<nav class="breadcrumbs">
+  <ol class="breadcrumbs__list">
+    <li class="breadcrumbs__list-item">
+      <a class="breadcrumbs__list-item__link" href="/vuln/">Vulnerability DB</a>
+    </li>
+    <li class="breadcrumbs__list-item">
+      {{#if_eq vuln.packageManager 'maven'}}
+        {{svg (concat "icon/" @root.vuln.packageManager) height="16" width="16"}}{{capitalizePackageManager @root.vuln.packageManager}}
+      {{else}}
+        <a class="breadcrumbs__list-item__link" href="/vuln/?type={{vuln.packageManager}}" {{test-hook "type"}}>{{svg (concat "icon/" @root.vuln.packageManager) height="16" width="16"}}{{capitalizePackageManager @root.vuln.packageManager}}</a>
+      {{/if_eq}}
+    </li>
+    {{#if filter}}
+    <li class="breadcrumbs__list-item" {{test-hook "vulndb breadcrumb filter"}}>
+      {{filter}}
+    </li>
+    {{/if}}
+  </ol><!-- .breadcrumbs__list -->
+</nav><!-- .breadcrumbs -->

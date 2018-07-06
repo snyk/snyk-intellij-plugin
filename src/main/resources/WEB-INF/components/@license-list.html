@@ -1,0 +1,8 @@
+<ul class="license-list{{#if modifiers}}{{#each (splitList modifiers) }} header--{{this}}{{/each}}{{/if}}{{~#if nav}} header--nav{{/if}}" {{test-hook "license list"}}>
+  {{#each licenses}}
+  <li class="license-list__item" {{test-hook "license list item"}}>
+    {{> @license-title test-hook="license list item title" icon=true title=title}}
+    {{~#if semver}}{{> @semver label=semver test-hook="license list item semver"}}{{/if}}
+  </li>
+  {{/each}}
+</ul>

@@ -7,6 +7,23 @@
 <body>
 Blah, blah, blah
 
+
+<span th:text="${project.name}">Project name goes here</span>.
+
+<table>
+    <tr>
+        <th>Group</th>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Classifier</th>
+        <th>Version</th>
+        <th>Scope</th>
+    </tr>
+    <tr th:each="dep : ${depTreeRoot.deps}">
+        <td th:text="${dep.artifactId}">Onions</td>
+    </tr>
+</table>
+
 <div th:insert="~{fragments/footer.html.templ :: copy}"></div>
 
 </body>

@@ -1,0 +1,13 @@
+<div class="async-submit" data-snyk-waiting="{{ waiting }}" data-snyk-loading-button>
+    <div class="async-submit--cta">
+        {{> @button
+            button=button
+            modifier=modifier
+            modifiers=modifiers
+            button-data="data-snyk-loading-button-trigger"
+            type=type }}
+        {{> @loading-spinner modifiers="xs" }}
+    </div>
+    <span data-snyk-loading-button-status class="async-submit--status hidden"></span>
+</div>
+

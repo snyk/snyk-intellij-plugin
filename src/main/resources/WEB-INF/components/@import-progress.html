@@ -1,0 +1,6 @@
+<div class="import-progress" id="{{ id }}">
+  {{#if_eq state 'pending'}}
+    {{> @progress value=complete max=total }}
+  {{/if_eq}}
+  <p class="import-progress__label">{{{ label }}}</p>
+</div>

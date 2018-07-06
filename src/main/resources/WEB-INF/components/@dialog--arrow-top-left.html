@@ -1,0 +1,47 @@
+<div
+{{#if id}}id="{{encode id}}"{{/if}}
+class="dialog{{#if modifiers}}{{#each (splitList modifiers) }} dialog--{{this}}{{/each}}{{/if}}"
+{{~#if anchor}} data-snyk-anchor="{{{anchor}}}"{{/if}}
+{{~#if test-hook}} {{test-hook (concat test-hook)}}{{else}} {{test-hook "dialog"}}{{/if}}
+role="dialog"
+{{#if heading}}
+  {{var "labelId" (uuid "id") }}
+  aria-labelledby="{{ labelId }}"
+{{/if}}
+data-synk-dialog
+{{#if dialogTrigger }}data-snyk-dialog-trigger="{{ dialogTrigger }}"{{/if}}
+{{#if dialogPositioning }}data-snyk-dialog-positioning="{{ dialogPositioning}}"{{/if}}
+{{#if dialogOffset }}data-snyk-dialog-offset="{{ dialogOffset }}"{{/if}}
+>
+  {{#if dismissable}}
+    <a href="#" class="dialog__dismiss" data-snyk-dismiss {{test-hook "dialog dismiss"}}>
+      <span class="dialog__dismiss__text">Close</span>
+      <span class="dialog__dismiss__symbol"></span>
+    </a>
+  {{~/if}}
+
+  {{#if heading}}
+    <div class="dialog__heading">
+      {{> @heading
+        id=(concat labelId)
+        heading-level=2
+        modifiers="prose"
+      }}
+    </div>
+  {{/if}}
+
+  {{#if @partial-block}}
+    <div class="dialog__content">
+      {{> @partial-block }}
+    </div>
+  {{/if}}
+
+  {{#if dialogNav}}
+    <div class="dialog__nav">
+      {{> @nav
+        sections=dialogNav
+      }}
+    </div>
+  {{/if}}
+
+</div>

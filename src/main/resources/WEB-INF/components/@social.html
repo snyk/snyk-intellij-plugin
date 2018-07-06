@@ -1,0 +1,27 @@
+<ul class="social {{#if_eq source 'vulnerabilitydb'}}u--push-right{{/if_eq}}">
+  <li class="social__item">
+    <a href="https://twitter.com/intent/tweet/?text=Snyk%20%7C%20{{#if_eq source 'vuln'}}Vulnerability%20%7C%20{{module}}:%20{{/if_eq}}{{#if_eq source 'blog'}}Blog%20%7C%20{{/if_eq}}{{title}}&amp;url=https://snyk.io{{slug}}?utm_source={{source}}" target="_blank" rel="noopener noreferrer">
+      {{svg "icon/twitter"}}
+    </a>
+  </li>
+  <li class="social__item">
+    <a href="https://facebook.com/sharer/sharer.php?u=https://snyk.io{{slug}}?utm_source={{source}}" target="_blank" rel="noopener noreferrer">
+      {{svg "icon/facebook"}}
+    </a>
+  </li>
+  <li class="social__item">
+    <a href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://snyk.io{{slug}}?utm_source={{source}}&amp;title=Snyk%20%7C%20{{#if_eq source 'vuln'}}Vulnerability%20%7C%20{{module}}:%20{{/if_eq}}{{#if_eq source 'blog'}}Blog%20%7C%20{{/if_eq}}{{title}}&amp;source=https://snyk.io" target="_blank" rel="noopener noreferrer">
+      {{svg "icon/linkedin"}}
+    </a>
+  </li>
+  <li class="social__item">
+    <a href="https://plus.google.com/share?url=https://snyk.io{{slug}}?utm_source={{source}}" target="_blank" rel="noopener noreferrer">
+      {{svg "icon/google-plus"}}
+    </a>
+  </li>
+  <li class="social__item">
+    <a href="mailto:?subject=Snyk&amp;body=Snyk%20%7C%20{{#if_eq source 'vuln'}}Vulnerability%20%7C%20{{module}}:%20{{/if_eq}}{{#if_eq source 'blog'}}Blog%20%7C%20{{/if_eq}}{{title}}%20https://snyk.io{{slug}}?utm_source={{source}}" target="_blank" rel="noopener noreferrer">
+      {{svg "icon/email"}}
+    </a>
+  </li>
+</ul>

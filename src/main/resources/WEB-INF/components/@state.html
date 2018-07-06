@@ -1,0 +1,15 @@
+<div class="state{{#if modifiers}}{{#each (splitList modifiers) }} state--{{this}}{{/each}}{{/if}}">
+
+<div class="state__loading-spinner">
+  {{> @loading-spinner modifiers="lg,inverse" text="Loading"}}
+</div>
+
+{{#if @partial-block}}
+{{> @partial-block }}{{!-- Unindented for pre tags --}}
+{{else}}
+  <div class="l-container">
+    {{#> @card}}Content{{/ @card}}
+  </div>
+{{/if}}
+
+</div>

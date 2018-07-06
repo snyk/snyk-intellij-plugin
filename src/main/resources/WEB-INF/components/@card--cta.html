@@ -1,0 +1,18 @@
+<div class="card{{#if modifiers}}{{#each (splitList modifiers) }} card--{{this}}{{/each}}{{/if}}"{{#if test-hook}} {{test-hook (concat test-hook)}}{{/if}}>
+
+  {{#if heading}}
+  <div class="card__heading">
+    {{> @heading
+      modifiers="prose"
+      test-hook="card heading"
+    }}
+  </div>
+  {{/if}}
+
+  <div class="card__content">
+    {{#if @partial-block}}
+{{> @partial-block }}{{!-- Unindented for pre tags --}}
+    {{/if}}
+  </div>
+
+</div>

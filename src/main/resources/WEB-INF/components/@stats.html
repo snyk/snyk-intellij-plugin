@@ -1,0 +1,17 @@
+<ul class="stats" {{test-hook "stats"}}>
+  {{~#each stats}}
+  <li class="stat" {{~#if test}} {{test-hook (concat test)}}{{else}} {{test-hook "stat"}}{{/if}}>
+    {{~#if note}}
+    <span class="stat__note" data-snyk-metric-note {{test-hook "stat note"}}>
+      {{~note~}}
+    </span>
+    {{/if}}
+    <span class="stat__number" {{test-hook "stat number"}}>
+      {{~number~}}
+    </span>
+    <span class="stat__label" {{test-hook "stat label"}}>
+      {{~label~}}
+    </span>
+  </li>
+  {{~/each}}
+</ul>

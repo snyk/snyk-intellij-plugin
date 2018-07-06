@@ -1,0 +1,49 @@
+<div class="header{{#if modifiers}}{{#each (splitList modifiers) }} header--{{this}}{{/each}}{{/if}}{{~#if nav}} header--nav{{/if}}">
+  <div class="header__content">
+    {{#if breadcrumbs}}
+      {{> @breadcrumbs}}
+    {{/if}}
+  </div>
+
+  <div class="header__content">
+
+    <div class="header__text">
+      {{#if url}}
+        <a href="{{url}}">
+      {{/if}}
+        <h1 class="header__title" {{~#if test-hook}} {{test-hook (concat test-hook)}}{{else}} {{test-hook "header title"}}{{/if}}>{{#if title-icon}}<span class="header__icon" {{test-hook (concat "header icon " title-icon)}}>{{svg (concat "icon/" title-icon) height=36 width=36}}</span> {{/if}}{{title}}</h1>
+      {{#if url}}
+        </a>
+      {{/if}}
+      {{~#if lede}}
+        <div class="header__lede" {{test-hook "header lede"}}>{{lede}}</div>
+      {{/if}}
+    </div>
+
+    {{~#if nav}}
+      {{>@nav modifiers="horizontal"}}
+    {{/if}}
+
+    {{#if_any authors date}}
+      <div class="l-repel">
+      {{#if authors}}
+      <div class="l-align-ver">
+      {{#each authors}}
+        {{#if_any modifiers "sm"}}
+        {{> @avatar url=(concat "https://res.cloudinary.com/snyk/image/upload/c_scale,h_80,w_80/" slug ".jpg") size="28" label=name}}{{joining}}
+        {{else}}
+        {{> @avatar url=(concat "https://res.cloudinary.com/snyk/image/upload/c_scale,h_80,w_80/" slug ".jpg") size="40" label=name}}{{joining}}
+        {{/if_any}}
+      {{/each}}
+      </div>
+      {{/if}}
+      {{#if date}}
+      <div class="l-align-ver">
+        {{> @date date=date format="full"}}
+      </div>
+      {{/if}}
+    </div>
+    {{/if_any}}
+
+  </div>
+</div>

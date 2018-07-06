@@ -1,6 +1,7 @@
 package io.snyk.plugin.urlproto.snykplugin
 
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.dependencyTreeRoot
 import org.thymeleaf.TemplateEngine
 import org.thymeleaf.context.IContext
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
@@ -10,7 +11,7 @@ import java.net.URLConnection
 import java.nio.charset.Charset
 import java.util.*
 
-class TemplateURLConnection(project: Project, url: URL) : URLConnection(url) {
+class TemplateURLConnection(val project: Project, url: URL) : URLConnection(url) {
 
 //    data class Headers(
 //        val lastModified: Long = 0L,
@@ -43,15 +44,21 @@ class TemplateURLConnection(project: Project, url: URL) : URLConnection(url) {
 
         if (!this.connected) {
             try {
-                val ctx = object : IContext {
-                    override fun containsVariable(name: String?): Boolean = false
+                val depTreeRoot = project.dependencyTreeRoot()
+
+                val props: Map<String, Any> = mapOf(
+                    "project" to project,
+                    "depTreeRoot" to depTreeRoot
+                )
+
+                val ctx: IContext = object: IContext {
+                    override fun containsVariable(name: String?): Boolean = props.containsKey(name)
                     override fun getLocale(): Locale = Locale.getDefault()
-                    override fun getVariable(name: String?): Any? = null
-                    override fun getVariableNames(): MutableSet<String> = mutableSetOf()
+                    override fun getVariable(name: String?): Any? = props[name]
+                    override fun getVariableNames(): MutableSet<String> = props.keys.toMutableSet()
                 }
 
-                val path = url.host + if(url.path.isNullOrEmpty()) "" else url.path
-                val body = templateEngine.process(path, ctx)
+                val body = templateEngine.process(url.path, ctx)
                 bodyBytes = body.toByteArray(Charset.forName("UTF-8"))
 
             } catch (ex: IOException) { throw ex }

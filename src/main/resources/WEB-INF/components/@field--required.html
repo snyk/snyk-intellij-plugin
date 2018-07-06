@@ -1,0 +1,75 @@
+<div
+  class="field{{~#if modifiers}}{{#each (splitList modifiers)}} field--{{this}}{{/each}}{{/if~}}
+  {{~#if styles}}{{#each (splitList styles)}} {{this}}{{/each}}{{/if~}}
+  {{~#if required}} field--required{{/if~}}
+  {{~#if size}} field--{{size}}{{/if~}}
+  {{#if error}} field--error{{/if~}}"
+  {{~#if test-hook}} {{test-hook test-hook}}{{else}}{{#if id}} {{test-hook (concat 'field-' id)}}{{/if}}{{/if~}}>
+
+  <label
+    for="{{id}}"
+    class="field__label{{#if hideLabel}} hidden{{/if}}">
+    {{~label~}}
+  </label>
+
+  {{#if description}}
+    <p class="field__description">{{description}}</p>
+  {{/if}}
+
+  {{#switch type}}
+    {{#case "textarea"}}
+      <textarea
+      {{#if name}}name="{{name}}"{{/if}}
+      id="{{id}}"
+      rows="{{rows}}"
+      class="field__input field__input--textarea{{#if error}} field__input--error{{/if}}"
+      {{#if placeholder}} placeholder="{{placeholder}}"{{/if}}
+      {{#if error}} aria-describedby="error-{{id}}"{{/if}}
+      {{#if required}} required{{/if}}
+      {{#if disabled}} readonly="readonly"{{/if}}
+      {{#if data}} {{data}}{{/if}}
+      {{#if maxlength}} maxlength="{{maxlength}}"{{/if}}
+      >{{value}}</textarea>
+    {{/case}}
+
+    {{#case "select"}}
+        <select
+        {{#if name}}name="{{name}}"{{/if}}
+        id="{{id}}"
+        rows="{{rows}}"
+        class="field__input field__input--select{{#if error}} field__input--error{{/if}}"
+        {{#if placeholder}} placeholder="{{placeholder}}"{{/if}}
+        {{#if error}} aria-describedby="error-{{id}}"{{/if}}
+        {{#if required}} required{{/if}}
+        {{#if disabled}} readonly="readonly"{{/if}}
+        {{#if data}} {{data}}{{/if}}
+        {{#if maxlength}} maxlength="{{maxlength}}"{{/if}}
+        >
+        {{#each options}}
+          <option {{#if label }}label="{{label}}"{{/if}} value="{{value}}" {{#if disabled}}disabled{{/if}} {{#if_eq value ../selected}} selected{{/if_eq}}>{{title}}</option>
+        {{/each}}
+      </select>
+    {{/case}}
+
+    {{#default}}
+    <input
+      type="{{#if_eq type 'card'}}text{{else}}{{#if type}}{{type}}{{else}}text{{/if}}{{/if_eq}}"
+      {{#if name}}name="{{name}}"{{/if}}
+      id="{{id}}"
+      class="field__input{{#if error}} field__input--error{{/if}}{{#if_eq type 'card'}} field__input--card{{#if card}} field__input--{{slugify card}}{{else}} field__input--unknown{{/if}}{{/if_eq}}"
+      {{#if placeholder}} placeholder="{{placeholder}}"{{/if}}
+      {{#if error}} aria-describedby="error-{{id}}"{{/if}}
+      {{#if required}} required{{/if}}
+      {{#if value}} value="{{value}}"{{/if}}
+      {{#if disabled}} readonly="readonly"{{/if}}
+      {{#if data}} {{data}}{{/if}}
+      {{#if maxlength}} maxlength="{{maxlength}}"{{/if}}
+    />
+    {{/default}}
+  {{/switch}}
+
+  {{#if error}}
+    {{> @alert modifiers="inline, error" message=error id=(concat "error-" id)}}
+  {{/if}}
+
+</div>

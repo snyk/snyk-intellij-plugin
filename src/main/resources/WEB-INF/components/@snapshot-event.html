@@ -1,0 +1,8 @@
+<div class="snapshot-event">
+  <ul class="snapshot-event__data">
+    <li class="snapshot-event__deps"><strong {{test-hook "snapshot event dependency count"}}>{{depCount}}</strong> dependencies</li>
+    <li class="snapshot-event__issues"><strong {{test-hook "snapshot event issue count"}}>{{issueCount}}</strong> known issues</li>
+    <li class="snapshot-event__paths">via <span {{test-hook "snapshot event path count"}}>{{pathCount}}</span> paths</li>
+  </ul>
+  {{> @severity-list}}
+</div>

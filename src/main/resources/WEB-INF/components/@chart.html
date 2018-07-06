@@ -1,0 +1,11 @@
+<div class="chart">
+
+  {{> @heading heading=title}}
+
+  <div class="chart__area" data-snyk-chart="{{type}}">
+    <div class="chart__loading" style="height: 100%;">
+      {{> @loading-spinner modifiers="xl" text="Loading"}}
+    </div>
+  </div>
+
+</div>

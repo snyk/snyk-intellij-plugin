@@ -1,0 +1,38 @@
+<ul class="severity{{#if modifiers}}{{#each (splitList modifiers) }} severity--{{this}}{{/each}}{{/if}}" {{test-hook "severities"}}>
+  {{#if compact}}
+    {{#if severity.high}}
+      <li class="severity__item severity__item--high" {{test-hook "severity high"}}>
+        <abbr class="severity__item-text" title="High severity issue">H</abbr>
+      </li>
+    {{/if}}
+  {{else}}
+    <li class="severity__item severity__item--{{#if severity.high}}high{{else}}none{{/if}}" {{test-hook "severity high"}}>
+      <span class="severity__item-count" {{test-hook "severity high count"}}>{{#if severity.high}}{{severity.high}}{{else}}0{{/if}}</span>
+      <abbr class="severity__item-text" title="High severity {{pluralize severity.high 'issues'}}">H</abbr>
+    </li>
+  {{/if}}
+  {{#if compact}}
+    {{#if severity.medium}}
+      <li class="severity__item severity__item--medium" {{test-hook "severity medium"}}>
+        <abbr class="severity__item-text" title="Medium severity issue">M</abbr>
+      </li>
+    {{/if}}
+  {{else}}
+    <li class="severity__item severity__item--{{#if severity.medium}}medium{{else}}none{{/if}}" {{test-hook "severity medium"}}>
+      <span class="severity__item-count" {{test-hook "severity medium count"}}>{{#if severity.medium}}{{severity.medium}}{{else}}0{{/if}}</span>
+      <abbr class="severity__item-text" title="Medium severity {{pluralize severity.medium 'issues'}}">M</abbr>
+    </li>
+  {{/if}}
+  {{#if compact}}
+    {{#if severity.low}}
+      <li class="severity__item severity__item--low" {{test-hook "severity low"}}>
+        <abbr class="severity__item-text" title="Low severity issue">L</abbr>
+      </li>
+    {{/if}}
+  {{else}}
+    <li class="severity__item severity__item--{{#if severity.low}}low{{else}}none{{/if}}" {{test-hook "severity low"}}>
+      <span class="severity__item-count" {{test-hook "severity low count"}}>{{#if severity.low}}{{severity.low}}{{else}}0{{/if}}</span>
+      <abbr class="severity__item-text" title="Low severity {{pluralize severity.low 'issues'}}">L</abbr>
+    </li>
+  {{/if}}
+</ul>

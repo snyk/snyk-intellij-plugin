@@ -11,10 +11,6 @@ import com.sun.javafx.application.PlatformImpl
 import io.snyk.plugin.urlproto.snykplugin.HandlerFactory
 import javafx.scene.paint.Color
 import org.jetbrains.idea.maven.model.MavenArtifact
-import org.jetbrains.idea.maven.project.MavenProjectsManager
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.CompletableFuture
 
@@ -58,8 +54,9 @@ class SnykToolWindow : ToolWindowFactory {
             val webEngine = browser.engine
 
             val builder = StringBuilder("")
-            builder.append("<a href='snykplugin://html/sample.html'>internal test link</a></br>")
-            builder.append("<a href='snykplugin://html/sample.html.templ'>template test link</a></br>")
+            builder.append("<a href='snykplugin://_/html/sample.html'>internal test link</a></br>")
+            builder.append("<a href='snykplugin://_/html/sample.html.templ'>template test link</a></br>")
+            builder.append("<a href='snykplugin://_/html/deps-test.html'>deps-test</a></br>")
             builder.append("<a href='http://snyk.io'>Snyk</a> plugin, these are your libraries:")
             builder.append("<table>")
 
@@ -78,23 +75,16 @@ class SnykToolWindow : ToolWindowFactory {
             builder.append("<th>Scope</th>")
             builder.append("</tr>")
 
-            MavenProjectsManager.getInstance(project).projects.forEach{
-                it.dependencyTree.forEach {
-                    appendArtefactAsTableRow(builder, it.artifact)
-               }
-            }
+            val depRoot = project.dependencyTreeRoot()
             builder.append("</table>")
             webEngine.loadContent(builder.toString())
         }
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-
-
         jfxPanel = JFXPanel()
         browser = initBrowser(jfxPanel!!).join()
         loadContent(browser!!, project)
         toolWindow.component.parent.add(jfxPanel)
-
     }
 }

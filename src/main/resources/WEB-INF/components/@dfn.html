@@ -1,0 +1,4 @@
+<dt>{{dt}}</dt>
+<dd {{#if test-hook}}{{test-hook (concat test-hook)}}{{/if}}>
+{{#if @partial-block}}{{> @partial-block }}{{/if}}{{!-- Unindented for pre tags --}}
+</dd>

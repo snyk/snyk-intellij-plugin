@@ -1,0 +1,40 @@
+<div role="search" {{test-hook "search"}} class="search{{#if modifiers}}{{#each (splitList modifiers) }} search--{{this}}{{/each}}{{/if}}">
+
+  {{#if search-label}}
+  <label for="{{search-name}}"
+  class="{{#if search-label-hidden}}hidden{{/if}}
+  {{#if search-required}}required{{/if}}"
+  {{test-hook "search label"}}>{{search-label}}</label>
+  {{/if}}
+
+  <input type="search"
+  {{#if search-name}}name="{{search-name}}"{{/if}}
+  {{#if search-placeholder}}placeholder="{{search-placeholder}}"{{/if}}
+  {{#if :search-placeholder}}:placeholder="{{:search-placeholder}}"{{/if}}
+  {{#if search-error}}aria-describedby="error-{{search-name}}"{{/if}}
+  {{#if search-filter}}data-snyk-search-filter="{{search-filter}}"{{/if}}
+  {{#if search-input-modifier}}class="{{search-input-modifier}}"{{/if}}
+  {{#if search-required}}required{{/if}} {{test-hook "search input"}}
+  {{#if v-model}}v-model="{{v-model}}"{{/if}}
+  {{#if v-on:focus}}@focus="{{v-on:focus}}"{{/if}}
+  />
+
+  {{#if search-button}}
+    {{#if search-button-hidden}}
+      {{> @button button="Search" modifiers="hidden"}}
+    {{else}}
+      {{> @button button="Search"}}
+    {{/if}}
+  {{/if}}
+
+</div>
+
+{{#if search-error}}
+{{#> @alert modifiers="warning" id=(concat id "-error")  }}
+{{search-error}}
+{{/ @alert}}
+{{/if}}
+
+{{#if search-caption}}
+{{> @caption}}
+{{/if}}

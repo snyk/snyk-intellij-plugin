@@ -1,0 +1,19 @@
+<div class="pagination">
+  {{#if previous}}
+    <a class="pagination__previous" href="{{previous.url}}">Previous</a>
+  {{/if}}
+  <ol class="pagination__pages">
+  {{#each pages}}
+    <li class="pagination__page {{#if current}}pagination__page--current{{/if}}">
+      {{#if ellipsis}}
+        <span class="pagination__ellipsis">&hellip;</span>
+      {{else}}
+        <a href="{{url}}" class="pagination__link">{{page}}</a>
+      {{/if}}
+    </li>
+  {{/each}}
+  </ol>
+  {{#if next}}
+    <a class="pagination__next" href="{{next.url}}">Next</a>
+  {{/if}}
+</div>

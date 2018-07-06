@@ -1,0 +1,22 @@
+<div class="project-title{{#if modifiers}}{{#each (splitList modifiers) }} project-title--{{this}}{{/each}}{{/if}}" {{test-hook "project title"}}>
+  <span class="project-title__name" {{test-hook "project title name"}}>
+    {{~#if type}}
+      {{svg (concat "icon/" type) width=22 height=22}}
+    {{/if}}
+    {{~#if url}}
+      <a href="{{url}}" class="project-title__link" {{test-hook "project title link"}}>
+    {{/if}}
+    {{title}}
+    {{~#if url}}
+      </a>
+    {{/if}}
+    {{~#if target}}
+      <span class="project-title__target" {{test-hook "project title target"}}>:{{target}}</span>
+    {{/if}}
+  </span>
+  {{~#if origin}}
+    <span class="project-title__origin" {{test-hook "project title origin"}}>
+      {{svg (concat "icon/" icon) width=14 height=14}} {{origin}}
+    </span>
+  {{/if}}
+</div>

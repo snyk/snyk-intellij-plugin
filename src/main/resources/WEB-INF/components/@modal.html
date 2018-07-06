@@ -1,0 +1,46 @@
+<transition name="modal-fade">
+  <div class="modal-backdrop" role="dialog" v-on:click.self="close">
+    <!-- since modal can be narrow, close event has to happen on modal-wrap as well -->
+    <div class="modal-wrap" v-on:click.self="close">
+
+      <div class="modal-header">
+        <div class="modal-header__container">
+
+          <div class="u--d__if" style="align-items: center">
+            <slot name="icon"></slot>
+            <h2 class="heading__title">
+              \{{title}}
+            </h2>
+          </div>
+
+          <div>
+            <span style="display:inline-block" class="l-pad-right--md" v-if="cancelbutton">
+              {{> @button
+                :click="close"
+                modifiers="outlined"
+                button="{{cancelbutton}}"
+              }}
+            </span>
+            {{> @button
+              :click="submit"
+              button="{{proceedbutton}}"
+            }}
+          </div>
+        </div>
+      </div>
+      <div
+      class="modal"
+      ref="modal"
+      v-bind:class="{'modal--sm': isNarrow}">
+        <section class="modal-body">
+          <slot name="body">
+            {{> @loading-spinner
+              modifiers="xl"
+              text=false
+            }}
+          </slot>
+        </section>
+      </div>
+    </div>
+  </div><!-- .modal-backdrop -->
+</transition>

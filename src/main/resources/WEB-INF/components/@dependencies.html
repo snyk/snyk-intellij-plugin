@@ -1,0 +1,13 @@
+<details class="tree{{#if modifiers}}{{#each (splitList modifiers) }} tree--{{this}}{{/each}}{{/if}}" open="open" {{test-hook "dependency tree"}} data-snyk-dep data-snyk-dep-vulns="all {{~#if vulnerable}} vulnerable{{/if}}" data-snyk-dep-type="dep" open>
+  <summary class="tree__trunk">
+    {{~#if vulnerable}}
+      {{~#if issueCountsBySeverity}}
+        {{> @severity-list--compact}}
+      {{/if}}
+    {{/if}}
+    <span {{test-hook "dependency tree top level"}}>{{label}}</span>
+  </summary>
+  {{~#each directDependencies}}
+    {{> @dependencies--nested type=../type}}
+  {{/each}}
+</details><!-- .tree -->

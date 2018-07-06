@@ -1,0 +1,19 @@
+<ul class="logos{{#if modifiers}}{{#each (splitList modifiers) }} logos--{{this}}{{/each}}{{/if}}" {{test-hook "logos"}}>
+  {{~#each logos}}
+
+  <li class="logo" {{~#if test}} {{test-hook (concat test)}}{{else}} {{test-hook (concat title " logo")}}{{/if}}>
+    {{#if icon}}
+      {{#> @tooltip
+        modifiers="sm"
+        icon="none"
+        description=title
+      }}
+      {{svg (concat "icon/" ../icon) width=size height=size }}
+    {{/ @tooltip}}
+    {{else}}
+      <img src="{{image}}" alt="{{title}}"{{#if size}} width="{{size}}"{{/if}} />
+    {{/if}}
+  </li>
+
+  {{~/each}}
+</ul>

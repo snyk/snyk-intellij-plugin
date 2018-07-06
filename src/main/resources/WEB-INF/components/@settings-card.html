@@ -1,0 +1,17 @@
+<div class="settings-card" {{test-hook "integration settings card"}}>
+  <ul class="settings-card__section">
+    {{#each settings}}
+    <li class="settings-card__meta">
+      <h3 class="settings-card__heading">{{label}}</h3>
+      <p {{test-hook concat "settings card" label}}>
+        {{value}}
+      </p>
+    </li>
+    {{/each}}
+  </ul>
+  <div class="settings-card__section">
+    <div class="settings-card__message" {{test-hook "settings card link"}}>
+      <p><a href="{{editLink}}">edit</a></p>
+    </div>
+  </div>
+</div>

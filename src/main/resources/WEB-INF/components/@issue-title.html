@@ -1,0 +1,8 @@
+<div class="issue-title{{#if modifiers}}{{#each (splitList modifiers) }} issue-title--{{this}}{{/each}}{{/if}}" {{test-hook "issue title"}}>
+  <span class="issue-title__name" {{test-hook "issue title name"}}>
+    {{svg (concat "icon/" type) width=22 height=22}} <a href="{{url}}" class="issue-title__link" {{test-hook "issue title link"}}>{{title}}</a>
+  </span>
+  <span class="issue-title__package" {{test-hook "issue title package"}}>
+    {{svg (concat "icon/" icon) width=14 height=14}} <strong class="issue-title__package-name" {{test-hook "issue title package name"}}>{{package}}</strong> <span class="issue-title__package-version" {{test-hook "issue title package version"}}>{{version}}</span>
+  </span>
+</div>

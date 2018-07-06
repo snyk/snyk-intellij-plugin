@@ -1,0 +1,27 @@
+{{~#each items}}
+  <li class="filter__group__item{{#if selected}} filter__group__item--current{{/if}}{{#if disabled}} filter--disabled{{/if}}" data-snyk-filter-group-item="{{value}}" {{test-hook 'filter item'}}>
+    {{~#if url}}
+    <a href="{{url}}" class="filter__link">
+    {{/if}}
+    {{~> @form-checkbox
+      checkbox-label=label
+      checkbox-name=../name
+      checkbox-value=id
+      checkbox-test-hook=(concat "filter checkbox " ../name " " id)
+      checkbox-label-test-hook="filter label"
+      checkbox-id=id
+      checkbox-checked=checked
+      checkbox-disabled=disabled
+    }}
+    {{~#if length includeZero=true}}
+      {{#if severity}}
+        {{> @pill label=length modifiers=(concat "severity-" severity)}}
+      {{else}}
+        {{> @pill label=length}}
+      {{/if}}
+    {{/if}}
+    {{~#if url}}
+    </a>
+    {{/if}}
+  </li>
+{{/each}}

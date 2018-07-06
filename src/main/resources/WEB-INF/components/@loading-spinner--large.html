@@ -1,0 +1,23 @@
+<div {{#if id}}id="{{id}}"{{/if}} class="loading-spinner{{#if modifiers}}{{#each (splitList modifiers) }} loading-spinner--{{this}}{{/each}}{{/if}}"
+  {{#if style}}style="{{style}}"{{/if}}>
+  <div class="loading-spinner__image">
+    {{#if_includes modifiers "xs"}}
+      {{svg "icon/spinner" width="20" height="20"}}
+    {{/if_includes}}
+    {{#if_includes modifiers "sm"}}
+      {{svg "icon/spinner" width="24" height="24"}}
+    {{/if_includes}}
+    {{#if_includes modifiers "md"}}
+      {{svg "icon/spinner" width="33" height="33"}}
+    {{/if_includes}}
+    {{#if_includes modifiers "lg"}}
+      {{svg "icon/spinner" width="40" height="40"}}
+    {{/if_includes}}
+    {{#if_includes modifiers "xl"}}
+      {{svg "icon/spinner" width="48" height="48"}}
+    {{/if_includes}}
+  </div>
+  {{#if text}}
+    <div class="loading-spinner__text">{{text}}</div>
+  {{/if}}
+</div>

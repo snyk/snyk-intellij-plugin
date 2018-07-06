@@ -1,0 +1,61 @@
+<label
+{{#if :id}}:for="{{:id}}"{{else}} for="{{checkbox-id}}"{{/if}}
+class="checkbox
+{{~#if checkbox-label-hidden}} hidden{{/if}}
+{{~#if checkbox-required}} required{{/if}}
+{{~#if checkbox-modifier}} {{checkbox-modifier}}{{/if}}
+{{~#if checkbox-disabled}} checkbox--disabled{{/if}}"
+{{#if v-bind:class}}v-bind:class="{{v-bind:class}}"{{/if}}
+{{#if checkbox-label-test-hook}}{{test-hook (concat checkbox-label-test-hook)}}{{/if}}
+{{#if checkbox-label-search-filter}}data-snyk-search-filter="{{checkbox-label-search-filter}}"{{/if}}
+>{{#if checkbox-label-icon}}{{svg (concat "icon/" checkbox-label-icon) height="20" width="20"}}{{/if}} {{checkbox-label}}{{#if checkbox-label-extra}}<span class="label--extra">{{checkbox-label-extra}}</span>{{/if}}
+
+  <input
+  type="checkbox"
+  name="{{checkbox-name}}"
+  {{#if :id }}:id="{{:id}}"{{else}} id="{{checkbox-id}}"{{/if}}
+  class="checkbox__input"
+  {{#if checkbox-error}} aria-describedby="error-{{id}}"{{/if}}
+  {{#if checkbox-required}} required{{/if}}
+  {{#if checkbox-value}} value="{{checkbox-value}}"{{/if}}
+  {{#if checkbox-disabled}} disabled{{/if}}
+  {{#if checkbox-checked}} checked{{/if}}
+  {{#if checkbox-test-hook}}{{test-hook (concat checkbox-test-hook)}}{{/if}}
+  {{#if checkbox-dependent-on}}data-snyk-enable-dependent-on="{{checkbox-dependent-on}}"{{/if}}
+  {{#if checkbox-search-filter}}data-snyk-search-filter="{{checkbox-search-filter}}"{{/if}}
+  {{#if checkbox-select-all}}data-snyk-select-all="{{checkbox-select-all}}"{{/if}}
+  {{#if checkbox-select-all-item}}data-snyk-select-all-item="{{checkbox-select-all-item}}"{{/if}}
+  {{#if checkbox-count}}data-snyk-count="{{checkbox-count}}"{{/if}}
+  {{#if checkbox-mark-change}}data-snyk-mark-change{{/if}}
+  {{#if checkbox-mark-change-child}}data-snyk-mark-change-child{{/if}}
+  {{#if checkbox-mark-change-parent}}data-snyk-mark-change-parent{{/if}}
+  {{#if v-bind:disabled}}v-bind:disabled="{{v-bind:disabled}}"{{/if}}
+  {{#if v-model}}v-model="{{v-model}}"{{/if}}
+  {{#if v-on:click}}v-on:click="{{{v-on:click}}}"{{/if}}
+  {{#if :value}}:value="{{:value}}"{{/if}}
+  {{#if :name}}:name="{{:name}}"{{/if}}
+  />
+
+  {{#if checkbox-locked}}{{svg "icon/key" height="20" width="20"}}{{/if}}
+  {{#if checkbox-icon}}{{svg (concat "icon/" checkbox-icon) height="20" width="20"}}{{/if}}
+
+  <span class="checkbox__toggle"></span>
+
+  {{#if checkbox-icon-caption}}<span class="t--sm" style="font-weight: normal;">{{checkbox-icon-caption}}</span>{{/if}}
+  {{#if checkbox-text}}{{checkbox-text}}{{/if}}
+</label>
+
+{{#if error}}
+{{#> @alert modifiers="warning" id=(concat id "-error")  }}
+{{error}}
+{{/ @alert}}
+{{/if}}
+{{#if caption}}
+{{#> @caption}}
+{{#if @partial-block}}
+  {{> @partial-block }}
+{{else}}
+  {{{caption}}}
+{{/if}}
+{{/ @caption}}
+{{/if}}

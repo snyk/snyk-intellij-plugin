@@ -1,0 +1,13 @@
+<p class="price{{#if modifiers}}{{#each (splitList modifiers) }} price--{{this}}{{/each}}{{/if}}" {{#if test-hook}}{{test-hook (concat test-hook)}}{{else}}{{test-hook "price"}}{{/if}}>
+  <strong class="price__amount">
+    <span class="price__amount__total" {{test-hook "price amount"}}>
+      {{amount}}
+    </span>
+    {{#if frequency}}
+      <span class="price__amount__frequency" {{test-hook "price frequency"}}>/{{frequency}}</span>
+    {{/if}}
+  </strong>
+  {{#if note}}
+    <small class="price__note" {{test-hook "price note"}}>{{note}}</small>
+  {{/if}}
+</p>

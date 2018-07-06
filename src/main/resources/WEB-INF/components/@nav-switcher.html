@@ -1,0 +1,39 @@
+<div class="nav-switcher" data-snyk-dropdown-filter {{#if test-hook}}{{test-hook (concat test-hook)}}{{else}}{{test-hook "nav switcher"}}{{/if}}>
+
+  <button class="nav-switcher__toggle" data-snyk-dropdown-filter="toggle"{{#if disabled}} disabled{{/if}}>
+    {{#if image}}
+      <img class="nav-switcher__image" src="{{image}}" alt="" {{test-hook "nav switcher image"}}/>
+    {{/if}}
+    <span class="nav-switcher__label" {{test-hook "nav switcher label"}}>{{label}}</span>
+    {{#if groupContext}}
+      {{> @badge
+        modifiers="premium"
+        label="Group Overview"
+        badge-style="float:right"
+      }}
+    {{/if}}
+    <span class="nav-switcher__icon">{{svg "icon/down-arrow" width="20" height="20"}}</span>
+  </button>
+
+  <div class="nav-switcher__container" data-snyk-dropdown-filter="content" style="display: none;">
+
+    <div class="nav-switcher__body">
+
+      {{#> header}}
+      {{/header}}
+
+      {{#> nav-body}}
+      {{/nav-body}}
+
+    </div><!-- .nav-switcher__body -->
+
+    <div class="nav-switcher__sidebar">
+
+      {{#> sidebar}}
+      {{/sidebar}}
+
+    </div><!-- .nav-switcher__sidebar -->
+
+  </div><!-- .nav-switcher__container -->
+
+</div><!-- .nav-switcher -->

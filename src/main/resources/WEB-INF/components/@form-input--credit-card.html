@@ -1,0 +1,2 @@
+<label for="{{id}}" class="{{#if label-hidden}}hidden{{/if}} {{#if required}}required{{/if}}">{{label}}</label>
+<input type="text" name="{{id}}" id="{{id}}" class="{{modifier}} input--card card-type--{{#if billingInfo.paymentDetails.brand}}{{slugify billingInfo.paymentDetails.brand}}{{else}}unknown{{/if}}" {{#if placeholder}}placeholder="{{placeholder}}"{{/if}} aria-describedby="error-{{id}}" {{#if required}}required{{/if}} value="•••• •••• •••• {{billingInfo.paymentDetails.last4}}" />
