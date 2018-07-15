@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+
+
+<details th:fragment="frag (node)" class="tree__branch" data-snyk-test="dependency ${node.artifactId} ${node.version}" data-snyk-dep
+         data-snyk-dep-vulns="all vulnerable" data-snyk-dep-type="dep">
+    <summary class="tree__branch-text" data-snyk-test="dependency tree item">
+        <ul class="severity-list severity-list--compact" data-snyk-test="dependency severity">
+            <li class="severity-list__item severity-list__item--high" data-snyk-test="severity list item high">
+                <span class="severity-list__item-text">H</span>
+            </li>
+            <li class="severity-list__item severity-list__item--medium"
+                data-snyk-test="severity list item medium">
+                <span class="severity-list__item-text">M</span>
+            </li>
+        </ul>
+        <span th:text="${node.groupId} + ':' + ${node.artifactId} + ':' + ${node.version}" />
+    </summary>
+
+
+    <div th:each="node : ${node.deps}" th:remove="tag">
+        <details th:replace="~{:: frag (${node})}" />
+    </div>
+</details>
+
+
+</body>
+
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html class="fractal-preview" lang="en-GB">
+<head>
+    <meta charset="utf-8">
+    <link href="../../assets/styles/app.css" rel="stylesheet" media="all">
+</head>
+<body>
+    <main style="padding: 1em">
+        <details class="tree" open="open" data-snyk-test="dependency tree" data-snyk-dep data-snyk-dep-vulns="all"
+                 data-snyk-dep-type="dep">
+            <summary class="tree__trunk"><span data-snyk-test="dependency tree top level" th:text="${project.name}">[[PROJ NAME]]</span>
+            </summary>
+
+            <divth:remove="tag">
+                <details th:replace="~{fragments/depnode.html_templ :: frag (${depTreeRoot})}" />
+            </div>
+        </details>
+
+        <div th:insert="~{fragments/footer.html_templ :: copy}"></div>
+    </main>
+
+    <script>
+        // Adds class of js to the html tag if JS is enabled
+        document.getElementsByTagName('html')[0].className += ' js';
+    </script>
+
+    <script src="../../assets/scripts/vendor/jquery.min.js"></script>
+
+    <script src="../../assets/scripts/app.js"></script>
+</body>
+</html>
