@@ -8,7 +8,7 @@ import fi.iki.elonen.NanoHTTPD.IHTTPSession
 import org.thymeleaf.TemplateEngine
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
 import com.intellij.openapi.project.Project
-import RichProject.Adaptor
+import EnrichedMethods.RichProject
 import org.thymeleaf.context.IContext
 
 import scala.collection.JavaConverters._
@@ -37,7 +37,7 @@ object MiniServer {
     case "html" => "text/html"
     case "xml"  => "application/xml"
     case "js"   => "application/x-javascript"
-    case "json" => "application/x-javascript"
+    case "json" => "application/json"
     case "png"  => "image/png"
     case "jpg"  => "image/jpeg"
     case "jpeg" => "image/jpeg"
@@ -99,7 +99,7 @@ class MiniServer(project: Project) extends NanoHTTPD(0) {
 
     val depTreeRoot = project.toDepNode
 
-    println(depTreeRoot.toJsonString())
+    ApiClient.postDepTree(depTreeRoot)
 
     val props = Map(
       "localhost" -> s"http://localhost:$port",

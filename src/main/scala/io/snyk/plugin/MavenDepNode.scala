@@ -5,15 +5,17 @@ import org.jetbrains.idea.maven.model.MavenArtifactNode
 import org.jetbrains.idea.maven.project.MavenProject
 
 import scala.collection.JavaConverters._
-import io.circe.generic.auto._
 import io.circe.syntax._
 
 import scala.beans.BeanProperty
 import java.{util => ju}
 
+import io.circe.{Decoder, Encoder}
+import io.circe.derivation.{deriveDecoder, deriveEncoder}
+
 object MavenDepNode {
   def fromMavenArtifactNode(n: MavenArtifactNode): MavenDepNode = {
-    println("dep tree for node: ${n.dependencies}")
+    println(s"dep tree for node: ${n.getDependencies}")
 
     MavenDepNode(
       n.getArtifact.getGroupId,
@@ -28,7 +30,7 @@ object MavenDepNode {
   }
 
   def fromMavenProject(proj: MavenProject): MavenDepNode = {
-    println("dep tree for project: ${proj.dependencyTree}")
+    println(s"dep tree for project: ${proj.getDependencyTree}")
     MavenDepNode(
       proj.getMavenId.getGroupId,
       proj.getMavenId.getArtifactId,
@@ -46,7 +48,8 @@ object MavenDepNode {
     packaging: String,
     version: String,
     name: String,
-    deps: Seq[JsonForm]
+    dependencies: Map[String, JsonForm],
+    scope: Option[String]
   )
 
   object JsonForm {
@@ -56,7 +59,32 @@ object MavenDepNode {
       mdn.packaging,
       mdn.version,
       mdn.name,
-      mdn.deps.map(apply)
+      mdn.depsMap.mapValues(apply),
+      mdn.scope
+
+    )
+  }
+
+  case class RootJsonForm(
+    groupId: String,
+    artifactId: String,
+    packaging: String,
+    version: String,
+    name: String,
+    dependencies: Map[String, JsonForm],
+    packageFormatVersion: String = "mvn:0.0.1",
+    meta: Map[String, String] = Map("node" -> "v8.11.3"),
+    `type`: String = "maven"
+  )
+
+  object RootJsonForm {
+    def apply(mdn: MavenDepNode): RootJsonForm = RootJsonForm(
+      mdn.groupId,
+      mdn.artifactId,
+      mdn.packaging,
+      mdn.version + "-BUST1",
+      mdn.name,
+      mdn.depsMap.mapValues(JsonForm.apply)
     )
   }
 
@@ -84,6 +112,11 @@ object MavenDepNode {
     )
   }
 
+  implicit val decoderJsonForm: Decoder[JsonForm] = deriveDecoder
+  implicit val decoderRootJsonForm: Decoder[RootJsonForm] = deriveDecoder
+  implicit val encoderJsonForm: Encoder[JsonForm] = deriveEncoder
+  implicit val encoderRootJsonForm: Encoder[RootJsonForm] = deriveEncoder
+
 }
 
 case class MavenDepNode(
@@ -97,13 +130,19 @@ case class MavenDepNode(
 ) {
   import MavenDepNode._
 
-  val name = "$groupId:$artifactId"
+  val name = s"$groupId:$artifactId"
   val depsMap = deps.map(x => x.name -> x).toMap
 
   def javaForm = JavaForm(this)
 
-  def toJsonString(): String = {
+  def toJsonString: String = {
     println("We're doing this thing!")
     JsonForm(this).asJson.spaces2
   }
+
+  def toRootJsonString: String = {
+    println("We're doing this thing!")
+    RootJsonForm(this).asJson.spaces2
+  }
+
 }

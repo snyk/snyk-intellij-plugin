@@ -47,7 +47,7 @@ Just as I'd found for Kotlin, there's also a whole section in the SDK Documentat
 
 So two learning curves to deal with, but no reason to believe that either of them would be especially steep.
 
-##Scouting Further Afield
+## Scouting Further Afield
 
 And so, eager with anticipation, feeling righteously armed with the blessing of the official documentation,
 I drew up a list of other considerations:
@@ -78,7 +78,7 @@ I drew up a list of other considerations:
 - Similarly, our API provides rich vulnerability descriptions formatted in markdown; which again lends
   itself to being rendered via HTML
 
-##Heading Forth
+## Heading Forth
 
 I set out my battle-plan!
 
