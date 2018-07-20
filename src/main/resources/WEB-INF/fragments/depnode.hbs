@@ -17,13 +17,14 @@
                 <span class="severity-list__item-text">M</span>
             </li>
         </ul>
-        <span th:text="${node.groupId} + ':' + ${node.artifactId} + ':' + ${node.version}" />
+        <span>{{node.groupId}}:{{node.artifactId}}:{{node.version}}</span>
     </summary>
 
 
-    <div th:each="node : ${node.deps}" th:remove="tag">
-        <details th:replace="~{:: frag (${node})}" />
-    </div>
+    {{#each node.deps}}
+        {{> fragments/depnode node=this}}
+    {{/each}}
+
 </details>
 
 

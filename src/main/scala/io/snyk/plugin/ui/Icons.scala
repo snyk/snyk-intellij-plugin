@@ -1,4 +1,4 @@
-package io.snyk.plugin
+package io.snyk.plugin.ui
 
 import javax.swing.ImageIcon
 

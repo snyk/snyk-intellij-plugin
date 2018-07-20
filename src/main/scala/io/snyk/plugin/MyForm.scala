@@ -3,10 +3,11 @@ package io.snyk.plugin
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm._
 import com.intellij.ui.content._
-
 import javax.swing._
 import java.awt.event._
 import java.util.Calendar
+
+import io.snyk.plugin.ui.Icons
 
 class MyForm extends ToolWindowFactory {
     private var refreshToolWindowButton: JButton = null

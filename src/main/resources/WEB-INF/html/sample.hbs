@@ -8,15 +8,13 @@
     <main style="padding: 1em">
         <details class="tree" open="open" data-snyk-test="dependency tree" data-snyk-dep data-snyk-dep-vulns="all"
                  data-snyk-dep-type="dep">
-            <summary class="tree__trunk"><span data-snyk-test="dependency tree top level" th:text="${project.name}">[[PROJ NAME]]</span>
+            <summary class="tree__trunk"><span data-snyk-test="dependency tree top level">{{project.name}}</span>
             </summary>
 
-            <divth:remove="tag">
-                <details th:replace="~{fragments/depnode.html_templ :: frag (${depTreeRoot})}" />
-            </div>
+            {{> fragments/depnode node=depTreeRoot}}
         </details>
 
-        <div th:insert="~{fragments/footer.html_templ :: copy}"></div>
+        {{> fragments/footer}}
     </main>
 
     <script>

@@ -1,15 +1,16 @@
-package io.snyk.plugin
+package io.snyk.plugin.ui
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.StringUtil
 import com.sun.javafx.application.PlatformImpl
+import io.snyk.plugin.embeddedserver.MiniServer
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.paint.Color
 import javafx.scene.web.WebView
 import org.jetbrains.idea.maven.model.MavenArtifact
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 class SnykHtmlPanel(project: Project) extends JFXPanel { self =>
@@ -42,10 +43,8 @@ class SnykHtmlPanel(project: Project) extends JFXPanel { self =>
         val webEngine = browser.getEngine
 
         val builder = new StringBuilder("")
-        builder.append(s"<a href='http://localhost:${ms.port}/html/sample.html'>internal test link</a></br>")
-        builder.append(s"<a href='http://localhost:${ms.port}/html/sample.html_templ'>template test link</a></br>")
-        builder.append(s"<a href='http://localhost:${ms.port}/html/deps-test.html'>deps-test</a></br>")
-        builder.append(s"<a href='http://localhost:${ms.port}'>MiniHTTP</a></br>")
+        builder.append(s"<a href='http://localhost:${ms.port}/html/sample.hbs'>Dependency Tree</a></br>")
+//        builder.append(s"<a href='http://localhost:${ms.port}/html/deps-test.html'>deps-test</a></br>")
         builder.append("<a href='http://snyk.io'>Snyk</a> plugin, these are your libraries:")
         builder.append("<table>")
 

@@ -23,24 +23,27 @@ repositories {
 }
 
 dependencies {
-    compile("org.scala-lang:scala-library:$scala_bin_version")
-    compile("org.nanohttpd:nanohttpd:2.3.1")
-    compile("org.thymeleaf:thymeleaf:3.0.9.RELEASE") {
+    compile "org.scala-lang:scala-library:$scala_bin_version"
+    compile "org.nanohttpd:nanohttpd:2.3.1"
+    compile("com.github.jknack:handlebars:4.1.0") {
         exclude group: 'org.slf4j', module: 'slf4j-api'
     }
-    compile("com.softwaremill.sttp:core_$scala_version:1.2.3")
-//    compile(group: 'org.scalatra.scalate', name: "scalate-core_$scala_version", version: '1.8.0')
-    compile("io.circe:circe-core_$scala_version:0.9.3")
-    compile("io.circe:circe-parser_$scala_version:0.9.3")
-    compile("io.circe:circe-java8_$scala_version:0.9.3")
-    compile("io.circe:circe-derivation_$scala_version:0.9.0-M5")
-    testCompile("com.lihaoyi:pprint_$scala_version:0.5.3")
-    testCompile("com.github.nikita-volkov:sext:0.2.4")
-    testCompile("junit:junit:4.12")
+    compile "com.softwaremill.sttp:core_$scala_version:1.2.3"
+    compile "io.circe:circe-core_$scala_version:0.9.3"
+    compile "io.circe:circe-parser_$scala_version:0.9.3"
+    compile "io.circe:circe-java8_$scala_version:0.9.3"
+    compile "io.circe:circe-derivation_$scala_version:0.9.0-M5"
+//    compile "io.circe:circe-magnolia-derivation_$scala_version:0.1.1"
+
+    testCompile "com.lihaoyi:pprint_$scala_version:0.5.3"
+    testCompile "com.github.nikita-volkov:sext:0.2.4"
+    testCompile "junit:junit:4.12"
 }
 
 intellij {
-    version '2018.1.5'
+//    version '2018.1.5'
+    //see https://www.jetbrains.com/intellij-repository/releases for versions
+    version '182.3684.40' // 2018-07-17 release of 2018.2 EAP
     plugins 'maven'
 }
 

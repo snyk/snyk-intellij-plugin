@@ -14,7 +14,7 @@
     <depends>com.intellij.modules.lang</depends>
     -->
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.SnykToolWindowFactory"/>
+        <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
     </extensions>
 
     <actions>

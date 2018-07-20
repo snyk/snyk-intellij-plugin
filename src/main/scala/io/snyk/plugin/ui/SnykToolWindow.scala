@@ -1,16 +1,14 @@
-package io.snyk.plugin
+package io.snyk.plugin.ui
 
 import com.intellij.execution.dashboard.actions.RunAction
-import com.intellij.ide.CommonActionsManager
-import com.intellij.ide.actions.{CollapseAllAction, ExpandAllAction}
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.{ActionManager, ActionPlaces, DataProvider, DefaultActionGroup}
 import com.intellij.openapi.project.{DumbAware, Project}
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
-import com.intellij.util.xml.ui.DomCollectionControl.{AddAction, RemoveAction}
 import com.intellij.util.ui.JBUI
+import com.intellij.util.xml.ui.DomCollectionControl.RemoveAction
 
 class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 

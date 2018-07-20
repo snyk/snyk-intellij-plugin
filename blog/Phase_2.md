@@ -27,7 +27,7 @@ First, we need to declare that we'll be exposing a window in `plugin.xml`
 
 ```xml
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.SnykToolWindow"/>
+        <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindow"/>
     </extensions>
 ```
 
