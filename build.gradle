@@ -28,6 +28,7 @@ dependencies {
     compile("com.github.jknack:handlebars:4.1.0") {
         exclude group: 'org.slf4j', module: 'slf4j-api'
     }
+    compile "io.monix:monix_$scala_version:3.0.0-RC1"
     compile "com.softwaremill.sttp:core_$scala_version:1.2.3"
     compile "io.circe:circe-core_$scala_version:0.9.3"
     compile "io.circe:circe-parser_$scala_version:0.9.3"

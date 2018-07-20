@@ -9,6 +9,10 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
 import com.intellij.util.ui.JBUI
 import com.intellij.util.xml.ui.DomCollectionControl.RemoveAction
+import io.snyk.plugin.model.{SnykPluginState, SnykVulnResponse}
+import monix.execution.atomic.Atomic
+
+import scala.concurrent.Future
 
 class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 
@@ -26,8 +30,10 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
 
   import javax.swing.JPanel
 
+  var pluginState: Atomic[SnykPluginState] = Atomic(new SnykPluginState)
+
   setToolbar(createToolbarPanel)
-  setContent(new SnykHtmlPanel(project))
+  setContent(new SnykHtmlPanel(project, pluginState))
 
   private def createToolbarPanel: JPanel = {
     val group = new DefaultActionGroup()

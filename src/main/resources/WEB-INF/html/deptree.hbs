@@ -11,10 +11,8 @@
             <summary class="tree__trunk"><span data-snyk-test="dependency tree top level">{{project.name}}</span>
             </summary>
 
-            {{> fragments/depnode node=depTreeRoot}}
+            {{> fragments/depnode node=rootNode}}
         </details>
-
-        {{> fragments/footer}}
     </main>
 
     <script>

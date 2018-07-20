@@ -23,7 +23,6 @@ object SnykMavenArtifact {
   }
 
   def fromMavenProject(proj: MavenProject): SnykMavenArtifact = {
-//    println(s"dep tree for project: ${proj.getDependencyTree}")
     SnykMavenArtifact(
       proj.getMavenId.getGroupId,
       proj.getMavenId.getArtifactId,
@@ -36,7 +35,6 @@ object SnykMavenArtifact {
   }
 }
 
-
 case class SnykMavenArtifact(
   groupId: String,
   artifactId: String,
@@ -48,4 +46,5 @@ case class SnykMavenArtifact(
 ) {
   val name: String = s"$groupId:$artifactId"
   val depsMap: Map[String, SnykMavenArtifact] = deps.map(x => x.name -> x).toMap
+  def toDisplayNode: DisplayNode = DisplayNode(name, deps.map(_.toDisplayNode))
 }

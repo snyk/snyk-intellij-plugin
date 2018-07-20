@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .imgbox {
+            display: grid;
+            height: 100%;
+        }
+        .center-fit {
+            max-width: 100%;
+            max-height: 100vh;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="imgbox">
+        <img class="center-fit" src='/assets/images/Snyk-Logo.png'>
+    </div>
+    <a href="/html/deptree.hbs">Dependency Tree</a><br/>
+    <a href="/html/deptree.hbs?randomise=true">Randomised</a><br/>
+    <a href="/html/deptree.hbs?runscan=true">Vulnerabilities</a><br/>
+    {{! /html/running-scan.hbs ?triggerScan=true &redirect= /html/deptree.hbs?showLatestScan=true}}
+    <a href="/html/running-scan.hbs?triggerScan=true&redirect=%2Fhtml%2Fdeptree.hbs%3FshowLatestScan%3Dtrue">Async Scan</a><br/>
+</body>
+</html>

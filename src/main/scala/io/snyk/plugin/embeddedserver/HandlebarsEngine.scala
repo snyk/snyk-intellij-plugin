@@ -13,51 +13,40 @@ import scala.collection.JavaConverters._
 
 class HandlebarsEngine {
 
-  val loader = new ClassPathTemplateLoader
-  loader.setPrefix("/WEB-INF/")
-  loader.setSuffix(".hbs")
-  val handlebars = new Handlebars(loader)
+  private[this] val rootMirror: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
 
-  val rootMirror = ru.runtimeMirror(getClass.getClassLoader)
+  private[this] val loader = new ClassPathTemplateLoader("/WEB-INF/", ".hbs")
+  private[this] val handlebars = new Handlebars(loader)
+  handlebars.registerHelper("each", ScalaEachHelper)
+  handlebars.infiniteLoops(true)
 
   def methodMirrorFor(context: AnyRef, name: String): Option[ru.MethodMirror] = {
     val meta = rootMirror.reflect(context)
-    val optAccessor = meta.symbol.info.decls find { m =>
-      //      println(s"testing $m as mirror for $name")
-      m.isMethod && m.isPublic && m.name.toString == name
-    }
-    optAccessor.map(a => meta.reflectMethod(a.asMethod))
+    meta.symbol.info.decls
+      .find(mem => mem.isMethod && mem.isPublic && mem.name.toString == name)
+      .map(mem => meta.reflectMethod(mem.asMethod))
   }
 
-  object ScalaMemberResolver extends ValueResolver {
+  object ScalaResolver extends ValueResolver {
     override def resolve(context: AnyRef, name: String): AnyRef = context match {
-      case m: collection.Map[_,_] =>
-        MapValueResolver.INSTANCE.resolve(m.asJava, name)
-      case _ =>
-        println(s"ScalaMemberResolver.resolve [$name] from [${context.getClass.getName}]")
-        val optMM = methodMirrorFor(context, name)
-        val ret = optMM.fold(ValueResolver.UNRESOLVED)(m => resolve(m.apply())): AnyRef
-        println(s"...returning ${ret.toString}")
-        ret
+      case m: collection.Map[_,_] => MapValueResolver.INSTANCE.resolve(m.asJava, name)
+      case _ => methodMirrorFor(context, name) match {
+        case None => ValueResolver.UNRESOLVED
+        case Some(mm) => resolve(mm.apply())
+      }
     }
 
     override def resolve(context: scala.Any): AnyRef = context match {
-      case m: collection.Map[_,_] =>
-        MapValueResolver.INSTANCE.resolve(m.asJava)
-      case _ =>
-        println(s"ScalaMemberResolver.resolve context: [${context.getClass.getName}]")
-        (context match {
-          case Some(x) => x
-          case None => null
-          case x => x
-        }).asInstanceOf[AnyRef]
+      case m: collection.Map[_,_] => MapValueResolver.INSTANCE.resolve(m.asJava)
+      case Some(x: AnyRef) => x
+      case None => null
+      case x: AnyRef => x
     }
 
     override def propertySet(context: scala.Any): ju.Set[ju.Map.Entry[String, AnyRef]] = context match {
       case m: collection.Map[_,_] =>
         MapValueResolver.INSTANCE.propertySet(m.asJava)
       case _ =>
-        println(s"ScalaMemberResolver.propertySet in context: [${context.getClass.getName}]")
         val meta = rootMirror.reflect(context)
         val accessors = meta.symbol.info.decls.filter(m => m.isMethod && m.isPublic).toSeq
         val results = for {
@@ -75,13 +64,10 @@ class HandlebarsEngine {
     }
   }
 
-  handlebars.registerHelper("each", ScalaEachHelper)
-  handlebars.infiniteLoops(true)
-
   def mkContext(props: Map[String, AnyRef]) = Context
     .newBuilder(props)
     .resolver(
-      ScalaMemberResolver,
+      ScalaResolver,
       MapValueResolver.INSTANCE,
       MethodValueResolver.INSTANCE,
       JavaBeanValueResolver.INSTANCE,

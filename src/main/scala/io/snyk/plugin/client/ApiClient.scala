@@ -1,9 +1,11 @@
 package io.snyk.plugin.client
 
-import io.snyk.plugin.model.SnykMavenArtifact
+import io.snyk.plugin.model.{SnykMavenArtifact, SnykVulnResponse}
+import io.circe.parser.decode
+import io.snyk.plugin.model.SnykVulnResponse.Decoders._
 
 object ApiClient {
-  def postDepTree(treeRoot: SnykMavenArtifact): String = {
+  def runRaw(treeRoot: SnykMavenArtifact): String = {
     //TODO: Get token and endpoint from ~/.config/configstore/snyk.json
 
     import com.softwaremill.sttp._
@@ -38,5 +40,10 @@ object ApiClient {
     println(ret)
 
     ret
+  }
+
+  def runOn(treeRoot: SnykMavenArtifact): Either[io.circe.Error, SnykVulnResponse] = {
+    val rawResult = ApiClient.runRaw(treeRoot)
+    decode[SnykVulnResponse](rawResult)
   }
 }

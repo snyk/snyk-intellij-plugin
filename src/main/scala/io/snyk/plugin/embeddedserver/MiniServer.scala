@@ -1,6 +1,6 @@
 package io.snyk.plugin.embeddedserver
 
-import java.net.URI
+import java.net.{URI, URL}
 
 import com.intellij.openapi.project.Project
 import fi.iki.elonen.NanoHTTPD
@@ -8,9 +8,13 @@ import fi.iki.elonen.NanoHTTPD
 import scala.util.Try
 import io.snyk.plugin.EnrichedMethods.RichProject
 import io.snyk.plugin.client.ApiClient
+import io.snyk.plugin.model.SnykPluginState
+import monix.execution.atomic.Atomic
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class MiniServer(project: Project) extends NanoHTTPD(0) { // 0 == first available port
+class MiniServer(project: Project, pluginState: Atomic[SnykPluginState]) extends NanoHTTPD(0) { // 0 == first available port
 
   import ServerUtils._
   import NanoHTTPD._
@@ -19,18 +23,15 @@ class MiniServer(project: Project) extends NanoHTTPD(0) { // 0 == first availabl
   start(SOCKET_READ_TIMEOUT, false)
   val port: Int = this.getListeningPort
 
-  println(s"Mini-server on http://localhost:$port/ \n")
+  val rootUrl = new URL(s"http://localhost:$port")
+  println(s"Mini-server on $rootUrl \n")
 
   val handlebarsEngine = new HandlebarsEngine
 
   override def serve(session: IHTTPSession): Response = {
-    //import scala.collection.JavaConverters._
-    //val parms = session.getParameters.asScala
-
     val uri = URI.create(session.getUri).normalize()
     val path = uri.getPath
 
-    //TODO: Migrate from thymeleaf to https://github.com/jknack/handlebars.java as used elsewhere by Snyk
     if(path.endsWith(".hbs")) serveHandlebars(uri, session)
     else serveStatic(uri, session)
   }
@@ -54,19 +55,58 @@ class MiniServer(project: Project) extends NanoHTTPD(0) { // 0 == first availabl
   def serveHandlebars(uri: URI, session: IHTTPSession): Response = {
     val path = uri.getPath
     val mime = mimeOf(uri.extension)
+    val params = ParamSet.from(session)
 
     println(s"miniserver serving handlebars template http://localhost:$port$path as $mime")
 
     val depTreeRoot = project.toDepNode
+    val nakedDisplayRoot = depTreeRoot.toDisplayNode
 
-    ApiClient.postDepTree(depTreeRoot)
+    println(params)
+
+    val displayTreeRoot = if(params.isTrue("runscan")) {
+      ApiClient.runOn(depTreeRoot) match {
+        case Left(x) =>
+          x.printStackTrace()
+          nakedDisplayRoot
+        case Right(result) =>
+          pluginState.transform (_ withLatestScanResult result)
+          nakedDisplayRoot.performVulnAssociation(result.miniVulns)
+      }
+    } else if(params.isTrue("triggerScan") && params.first("redirect").isDefined) {
+      Future {
+        println("triggered async scan")
+        ApiClient.runOn(depTreeRoot) match {
+          case Left(x) =>
+            x.printStackTrace()
+          case Right(result) =>
+            pluginState.transform(_ withLatestScanResult result)
+            println(s"panel is ${pluginState.get.htmlPanel}")
+            for {
+              panel <- pluginState.get.htmlPanel
+              redirect <- params.first("redirect")
+            } {
+              println(s"async scan completed, redirecting to $redirect")
+              panel.navigateTo(redirect)
+            }
+        }
+      }
+      nakedDisplayRoot
+    } else if(params.isTrue("showLatestScan")) {
+      nakedDisplayRoot.performVulnAssociation(pluginState.get.latestScanResult.miniVulns)
+    } else if(params.isTrue("randomise")) {
+      nakedDisplayRoot.randomiseStatus
+    } else {
+      nakedDisplayRoot
+    }
 
     val body = try {
       handlebarsEngine.render(
         path,
         "localhost" -> s"http://localhost:$port",
         "project" -> project,
-        "depTreeRoot" -> depTreeRoot
+        "pluginState" -> pluginState.get,
+        "rootNode" -> displayTreeRoot
       )
     } catch {
       case ex: Exception =>
