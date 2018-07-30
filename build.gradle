@@ -12,7 +12,7 @@ plugins {
 
 group 'io.snyk'
 description = 'Snyk security scanning for IntelliJ IDEA'
-version '0.0.1'
+version '0.0.3'
 
 apply plugin: 'idea'
 apply plugin: 'scala'
@@ -71,7 +71,9 @@ idea {
 
 patchPluginXml {
     changeNotes """
-      <b>0.0.1</b> - This is the initial release"""
+      <b>0.0.1</b> - This is the initial release<br/>
+      <b>0.0.2</b> - Improved performance<br/>
+      <b>0.0.3</b> - New version to test automated release"""
 }
 
 task previewHtmlUi(type:JavaExec) {

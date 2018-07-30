@@ -1,6 +1,7 @@
 package io.snyk.plugin
 
 import com.intellij.openapi.project.Project
+import io.circe.{Json, JsonObject}
 import io.snyk.plugin.model.SnykMavenArtifact
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.concurrent.Worker
@@ -9,6 +10,8 @@ import org.jetbrains.idea.maven.project.MavenProjectsManager
 import scala.concurrent.{Future, Promise, duration}
 import scala.concurrent.duration.Duration
 import javafx.util.{Duration => JfxDuration}
+
+import scala.util.{Failure, Success, Try}
 object Implicits {
 
   implicit class RichProject(val p: Project) extends AnyVal {
@@ -41,6 +44,22 @@ object Implicits {
   implicit class RichJfxWorker(val w: Worker[_]) extends AnyVal {
     def onNextSucceeded(callback: => Unit): Unit =
       w.stateProperty.oneShot(_ == Worker.State.SUCCEEDED)(_ => callback)
+  }
+
+  implicit class RichOption[T](val opt: Option[T]) extends AnyVal {
+    def toTryOr(errMsg: String): Try[T] = opt match {
+      case Some(o) => Success.apply(o)
+      case None => Failure(new RuntimeException(errMsg))
+    }
+  }
+
+  implicit class RichJson(val j: Json) extends AnyVal {
+    def tryAsObject: Try[JsonObject] = j.asObject.toTryOr(s"config json is not an object: ${j.toString}")
+    def tryToString: Try[String] = j.asString.toTryOr(s"json value is not a string: ${j.toString}")
+  }
+
+  implicit class RichJsonObject(val j: JsonObject) extends AnyVal {
+    def tryGet(key: String): Try[Json] = j(key).toTryOr(s"key [$key] not present in JSON object: ${j.toString}")
   }
 
   object DurationConverters {

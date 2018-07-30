@@ -18,16 +18,16 @@ sealed trait ApiClient {
   def isAvailable: Boolean
 }
 
-private final class StandardApiClient (credentials: SnykCredentials) extends ApiClient {
-  val isAvailable: Boolean = credentials.apiToken.isSuccess
+private final class StandardApiClient (credentials: Try[SnykCredentials]) extends ApiClient {
+  val isAvailable: Boolean = credentials.isSuccess
 
-  def runRaw(treeRoot: SnykMavenArtifact): String = {
+  def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials map { creds =>
     val jsonReq = SnykClientSerialisation.encodeRoot(treeRoot).noSpaces
     println("ApiClient: Built JSON Request")
     println(jsonReq)
 
-    val apiEndpoint = credentials.endpoint
-    val apiToken = credentials.apiToken.get
+    val apiEndpoint = creds.endpointOrDefault
+    val apiToken = creds.api
 
     val request = sttp.post(uri"$apiEndpoint/v1/vuln/maven")
       .header("Authorization", s"token $apiToken")
@@ -50,10 +50,10 @@ private final class StandardApiClient (credentials: SnykCredentials) extends Api
 
   }
 
-  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = {
-    val rawResult = runRaw(treeRoot)
-    decode[SnykVulnResponse](rawResult).toTry
-  }
+  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {
+    jsonStr <- runRaw(treeRoot)
+    json <- decode[SnykVulnResponse](jsonStr).toTry
+  } yield json
 }
 
 private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[String]) extends ApiClient {
@@ -70,7 +70,7 @@ object ApiClient {
   /**
     * Build a "standard" `ApiClient` that connects via the supplied credentials.
     */
-  def standard(credentials: SnykCredentials): ApiClient =
+  def standard(credentials: Try[SnykCredentials]): ApiClient =
     new StandardApiClient(credentials)
 
   /**
