@@ -9,14 +9,25 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
 import com.intellij.util.ui.JBUI
 import com.intellij.util.xml.ui.DomCollectionControl.RemoveAction
-import io.snyk.plugin.model.{SnykPluginState, SnykVulnResponse}
-import monix.execution.atomic.Atomic
+import io.snyk.plugin.embeddedserver.ParamSet
+import io.snyk.plugin.model.SnykPluginState
+import javax.swing.JPanel
+import java.awt.CardLayout
 
-import scala.concurrent.Future
+import com.intellij.openapi.application.ApplicationManager
+import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
+import org.jetbrains.idea.maven.project.MavenProjectsManager
 
+import scala.concurrent.{Future, Promise}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConverters._
+import scala.util.Try
+
+/**
+  * Top-level entry point to the plugin, as specified in `plugin.xml`.
+  * Initialises the `SnykToolWindow` panel and registers it as content.
+  */
 class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
-
-
   override def createToolWindowContent(project: Project, toolWindow: ToolWindow): Unit = {
     val panel = new SnykToolWindow(project)
     val contentManager = toolWindow.getContentManager
@@ -27,13 +38,60 @@ class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 }
 
 class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true) with DataProvider with Disposable {
+  val pluginState: SnykPluginState = SnykPluginState.forIntelliJ(this)
 
-  import javax.swing.JPanel
+  val htmlPanel = new SnykHtmlPanel(project, pluginState)
+  val videoPanel = new SnykVideoPanel()
 
-  var pluginState: Atomic[SnykPluginState] = Atomic(new SnykPluginState)
+  val cardLayout = new CardLayout
+  val cardPanel = new JPanel(cardLayout)
+  cardPanel.add(htmlPanel, "html")
+  cardPanel.add(videoPanel, "video")
+  cardLayout.show(cardPanel, "html")
 
   setToolbar(createToolbarPanel)
-  setContent(new SnykHtmlPanel(project, pluginState))
+  setContent(cardPanel)
+
+  /**
+    * Use MavenProjectsManager to open the editor and highlight where the specified artifact
+    * is imported.
+    */
+  def navToArtifact(group: String, name: String): Future[Unit] = {
+    val p = Promise[Unit]
+    ApplicationManager.getApplication.invokeLater { () =>
+      p complete Try {
+        val mp = MavenProjectsManager.getInstance(project).getProjects.get(0)
+        val file = mp.getFile
+        val artifact = mp.findDependencies(group, name).asScala.head
+        val nav = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
+        nav.navigate(true)
+      }
+    }
+    p.future
+  }
+
+  /**
+    * Open the supplied path as a URL in the HTML panel.  Wait for navigation to be complete
+    * then stop any video that may be playing and make the panel visible.
+    */
+  def navigateTo(path: String, params: ParamSet): Future[String] = {
+    htmlPanel.navigateTo(path, params) map { resolvedUrl =>
+      videoPanel.stop()
+      cardLayout.show(cardPanel, "html")
+      resolvedUrl
+    }
+  }
+
+  /**
+    * Open and start playing the requested video, makes the video panel visible
+    * (hiding the HTML panel)
+    * This is an unfortunate hack, and only necessary because the WebView in JavaFX 8
+    * is unable to show either h.264 video or animated GIFs!
+    */
+  def showVideo(url: String): Unit = {
+    videoPanel.setSource(url)
+    cardLayout.show(cardPanel, "video")
+  }
 
   private def createToolbarPanel: JPanel = {
     val group = new DefaultActionGroup()

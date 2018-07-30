@@ -2,21 +2,31 @@ package io.snyk.plugin.model
 
 import scala.util.Random
 
+/**
+  * A cut-down version of a node from the dep tree, enriched with vulnerability information.
+  * Provides an abstraction over differences in Maven/Gradle/SBT and optimised for display
+  * via handlebars templates.
+  */
 case class DisplayNode(
   name        : String,
-  nested      : Seq[DisplayNode],
-  hasHighVuln : Boolean = false,
-  hasMedVuln  : Boolean = false,
-  hasLowVuln  : Boolean = false,
-  vulns       : Set[MiniVuln] = Set.empty
+  version     : String,
+  nested      : Seq[DisplayNode] = Seq.empty,
+  highVulns   : Int              = 0,
+  medVulns    : Int              = 0,
+  lowVulns    : Int              = 0,
+  vulns       : Set[MiniVuln]    = Set.empty
 ) {
+  def hasHighVulns: Boolean = highVulns > 0
+  def hasMedVulns: Boolean = medVulns > 0
+  def hasLowVulns: Boolean = lowVulns > 0
+
   def performVulnAssociation(allVulns: Seq[MiniVuln]): DisplayNode = {
     val relevant = allVulns.filter(_.moduleName == this.name)
     this.copy(
       nested = nested.map(_.performVulnAssociation(allVulns)),
-      hasHighVuln = relevant.exists(_.severity == "high"),
-      hasMedVuln  = relevant.exists(_.severity == "medium"),
-      hasLowVuln  = relevant.exists(_.severity == "low"),
+      highVulns = highVulns + relevant.count(_.severity.toLowerCase=="high"),
+      medVulns  = medVulns  + relevant.count(_.severity.toLowerCase.startsWith("med")),
+      lowVulns  = lowVulns  + relevant.count(_.severity.toLowerCase=="low"),
       vulns = relevant.toSet
     )
   }
@@ -24,20 +34,14 @@ case class DisplayNode(
   def randomiseStatus: DisplayNode = {
     this.copy(
       nested = nested.map(_.randomiseStatus),
-      hasHighVuln = Random.nextBoolean(),
-      hasMedVuln  = Random.nextBoolean(),
-      hasLowVuln  = Random.nextBoolean()
+      highVulns = Random.nextInt(9),
+      medVulns  = Random.nextInt(9),
+      lowVulns  = Random.nextInt(9)
     )
   }
 }
 
-case class MiniVuln(
-  title        : String,
-  id           : String,
-  severity     : String,
-  moduleName   : String,
-  versions     : Seq[String],
-  isUpgradable : Boolean,
-  isPatchable  : Boolean,
-  isIgnored    : Boolean,
-)
+object DisplayNode {
+  val Empty = DisplayNode(name = "<Empty Node>", version = "<Empty Node>")
+}
+

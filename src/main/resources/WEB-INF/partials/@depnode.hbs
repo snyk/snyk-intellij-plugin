@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+
+{{#*inline "severityIcon"}}
+    <li class="severity-list__item severity-list__item--{{severity}}" data-snyk-test="severity list item {{severity}}">
+        <span class="severity-list__item-text">{{char}}</span>
+    </li>
+{{/inline}}
+
+{{#with node}}
+    <details th:fragment="frag (node)" class="tree__branch" data-snyk-test="dependency ${node.artifactId} ${node.version}" data-snyk-dep
+             data-snyk-dep-vulns="all vulnerable" data-snyk-dep-type="dep">
+        <summary class="tree__branch-text" data-snyk-test="dependency tree item">
+            <ul class="severity-list severity-list--compact" data-snyk-test="dependency severity">
+                {{#if hasHighVulns}} {{> severityIcon severity="high"   char="H" count=highVulns}} {{/if}}
+                {{#if hasMedVulns}}  {{> severityIcon severity="medium" char="M" count=medVulns}} {{/if}}
+                {{#if hasLowVulns}}  {{> severityIcon severity="low"    char="L" count=lowVulns}} {{/if}}
+            </ul>
+            <span>{{name}}:{{version}}</span>
+        </summary>
+
+
+        {{#each nested}}
+            {{> @depnode node=this}}
+        {{/each}}
+
+    </details>
+{{/with}}
+
+
+</body>
+
+</html>

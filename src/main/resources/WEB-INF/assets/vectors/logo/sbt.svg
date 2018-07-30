@@ -1,0 +1,14 @@
+<svg width="80" height="80" viewBox="0 0 80 80" role="img">
+  <defs>
+    <circle id="a" cx="32" cy="32.21" r="32"/>
+  </defs>
+  <g fill="none" fill-rule="evenodd" transform="translate(8 8)">
+    <circle cx="32" cy="32.21" r="32" fill="#0E3A51" fill-rule="nonzero"/>
+    <mask id="b" fill="#fff">
+      <use href="#a"/>
+    </mask>
+    <path fill="#15A9CE" fill-rule="nonzero" d="M28.03 35.3H90.4c2.06 0 3.72-1.68 3.72-3.73 0-2.04-1.66-3.7-3.7-3.7H28c-2.04 0-3.7 1.66-3.7 3.7 0 2.05 1.66 3.72 3.7 3.72z" mask="url(#b)"/>
+    <path fill="#92D13D" fill-rule="nonzero" d="M35.7 23.17h62.4c2.04 0 3.7-1.67 3.7-3.7 0-2.06-1.66-3.73-3.7-3.73H35.7c-2.04 0-3.7 1.67-3.7 3.72 0 2.1 1.66 3.7 3.7 3.7z" mask="url(#b)"/>
+    <path fill="#DE3423" fill-rule="nonzero" d="M20.35 47.36h62.38c2.05 0 3.7-1.66 3.7-3.7 0-2.06-1.65-3.72-3.7-3.72H20.35c-2.05 0-3.7 1.66-3.7 3.7 0 2.06 1.65 3.72 3.7 3.72z" mask="url(#b)"/>
+  </g>
+</svg>

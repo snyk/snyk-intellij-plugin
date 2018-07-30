@@ -1,0 +1,89 @@
+<style>
+    a {
+        color: {{linkColor}};
+    }
+    body {
+        background-color: {{panelBgColor}};
+        font-family: {{#if fontFamily}}{{fontFamily}}{{else}}"Prenton", "Gill Sans", "Calibri", sans-serif{{/if}};
+        color: {{labelFgColor}};
+    }
+
+    body::-webkit-scrollbar {
+        width: 0.5em;
+        color: {{panelBgColor}};
+        background-color: {{panelBgColor}};
+    }
+
+    body::-webkit-scrollbar-track {
+        color: {{panelBgColor}};
+        background-color: {{panelBgColor}};
+    }
+
+    body::-webkit-scrollbar-thumb {
+        background-color: {{inactiveTextColor}};
+    }
+
+    .issue-title__name {
+        margin-bottom: .5em;
+    }
+
+    .issue-card {
+        border-bottom-color: {{separatorFgColor}};
+        border-bottom-style: solid;
+        border-bottom-width: 1px;
+        padding-bottom: .75em;
+        padding-top: .75em;
+    }
+
+    .remediation {
+        padding-top: .5em;
+    }
+    .issue-card:hover {
+        background-color: {{separatorFgColor}};
+    }
+    .issue-body {
+        border-left-width: 2px;
+        border-left-style: solid;
+        border-left-color: black;
+        padding-left: .5em;
+        margin-left: .5em;
+    }
+
+    .issue-body-high {
+        border-left-color: #b31a6b;
+    }
+
+    .issue-body-medium {
+        border-left-color: #c27100;
+    }
+
+    .issue-body-low {
+        border-left-color: #595775;
+    }
+
+    .issue-subhead {
+        font-weight: bold;
+    }
+
+    .indent-block {
+        padding-top: .25em;
+        padding-left: 1em;
+    }
+    main {
+        padding: 1em;
+    }
+
+    .sampler {
+        border: 1px solid white;
+    }
+
+    .homelink {
+        padding-bottom: 1em;
+        float: right;
+    }
+
+    .vulnerable-dep {
+        text-decoration-line: underline;
+        text-decoration-color: green;
+    }
+</style>

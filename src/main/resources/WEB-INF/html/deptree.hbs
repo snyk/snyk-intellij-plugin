@@ -6,12 +6,13 @@
 </head>
 <body>
     <main style="padding: 1em">
+        <a href="start.hbs">Back to start</a>
         <details class="tree" open="open" data-snyk-test="dependency tree" data-snyk-dep data-snyk-dep-vulns="all"
                  data-snyk-dep-type="dep">
             <summary class="tree__trunk"><span data-snyk-test="dependency tree top level">{{project.name}}</span>
             </summary>
 
-            {{> fragments/depnode node=rootNode}}
+            {{> @depnode node=rootNode}}
         </details>
     </main>
 

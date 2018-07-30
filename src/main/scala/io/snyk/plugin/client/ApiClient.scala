@@ -4,24 +4,30 @@ import io.snyk.plugin.model.{SnykMavenArtifact, SnykVulnResponse}
 import io.circe.parser.decode
 import io.snyk.plugin.model.SnykVulnResponse.Decoders._
 
-object ApiClient {
+import scala.io.{Codec, Source}
+import scala.util.Try
+import com.softwaremill.sttp._
+
+/**
+  * Represents the connection to the Snyk servers for the security scan.
+  */
+sealed trait ApiClient {
+  /** Run a scan on the supplied artifact tree */
+  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse]
+  /** For the "standard" client, returns false if we don't have the necessary credentials */
+  def isAvailable: Boolean
+}
+
+private final class StandardApiClient (credentials: SnykCredentials) extends ApiClient {
+  val isAvailable: Boolean = credentials.apiToken.isSuccess
+
   def runRaw(treeRoot: SnykMavenArtifact): String = {
-    //TODO: Get token and endpoint from ~/.config/configstore/snyk.json
-
-    import com.softwaremill.sttp._
-
     val jsonReq = SnykClientSerialisation.encodeRoot(treeRoot).noSpaces
-    println("Built JSON Request")
+    println("ApiClient: Built JSON Request")
     println(jsonReq)
 
-//    val apiEndpoint = "http://snyk.io/api"
-//    val apiToken = "2979c2e5-019d-48fd-9f0b-895ec6e6a4d5"
-
-    val apiEndpoint = "http://dev.snyk.io/api"
-    val apiToken = "71e3aa89-03bc-4005-a050-727e68d762eb"
-
-//    val apiEndpoint = "http://localhost:8000/api"
-//    val apiToken = "e97cd45b-e011-4ac8-a898-dad07e47d736"
+    val apiEndpoint = credentials.endpoint
+    val apiToken = credentials.apiToken.get
 
     val request = sttp.post(uri"$apiEndpoint/v1/vuln/maven")
       .header("Authorization", s"token $apiToken")
@@ -30,20 +36,54 @@ object ApiClient {
       .header("user-agent", "Needle/2.1.1 (Node.js v8.11.3; linux x64)")
       .body(jsonReq)
 
-    implicit val backend = HttpURLConnectionBackend()
+    implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
     println("Sending...")
     val response = request.send()
     println("...Sent")
 
     val ret = response.unsafeBody
+
     println("Got Response")
     println(ret)
 
     ret
+
   }
 
-  def runOn(treeRoot: SnykMavenArtifact): Either[io.circe.Error, SnykVulnResponse] = {
-    val rawResult = ApiClient.runRaw(treeRoot)
-    decode[SnykVulnResponse](rawResult)
+  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = {
+    val rawResult = runRaw(treeRoot)
+    decode[SnykVulnResponse](rawResult).toTry
   }
+}
+
+private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[String]) extends ApiClient {
+  val isAvailable: Boolean = true
+  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] =
+    mockResponder(treeRoot) flatMap { str => decode[SnykVulnResponse](str).toTry }
+}
+
+/**
+  * Provides the connection to the Snyk servers for the security scan.
+  */
+object ApiClient {
+
+  /**
+    * Build a "standard" `ApiClient` that connects via the supplied credentials.
+    */
+  def standard(credentials: SnykCredentials): ApiClient =
+    new StandardApiClient(credentials)
+
+  /**
+    * Default response as used by `mock`, always returns `sampleResponse.json` from the classpath
+    */
+  private[this] def defaultMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+    Source.fromResource("sampleResponse.json", getClass.getClassLoader)(Codec.UTF8).mkString
+  }
+
+  /**
+    * Build a mock client, using the supplied function to provide the mocked response.
+    * A default implementation is supplied.
+    */
+  def mock(mockResponder: SnykMavenArtifact => Try[String] = defaultMockResponder): ApiClient =
+    new MockApiClient(mockResponder)
 }

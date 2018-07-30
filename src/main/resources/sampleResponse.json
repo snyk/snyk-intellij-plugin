@@ -1,0 +1,1701 @@
+{
+  "ok": false,
+  "vulnerabilities": [
+    {
+      "title": "Denial of Service (DoS)",
+      "credit": [
+        "Unknown"
+      ],
+      "description": "## Overview\n[`commons-fileupload:commons-fileupload`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22commons-fileupload%22) provides a simple yet flexible means of adding support for multipart file upload functionality to servlets and web applications.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) attacks. An attacker can upload a file with a long boundry string in the HTTP header, causing high CPU consumption. The `MultipartStream` class contains a flaw that allows remote attackers to cause a Denial of service (CPU consumption) attacks. This happens by setting the length of the multipart boundary to be just below the size of the buffer (4096 bytes) used to read the uploaded file. Typically, the boundary is tens of bytes long, which caused this case to take much longer than usual.\n\n## Remediation\nUpgrade `commons-fileupload:commons-fileupload` to version 1.3.2 or higher.\n\n## References\n- [Github ChangeLog](https://github.com/apache/commons-fileupload/blob/master/src/changes/changes.xml#L81)\n- [Redhat Bugzilla](https://bugzilla.redhat.com/show_bug.cgi?id=1349475)\n- [Apache Mailing Archives](http://mail-archives.us.apache.org/mod_mbox/www-announce/201606.mbox/%3C6223ece6-2b41-ef4f-22f9-d3481e492832@apache.org%3E)\n- [Apache-SVN](http://svn.apache.org/viewvc/commons/proper/fileupload/trunk/RELEASE-NOTES.txt?r1=1745717&r2=1749637&diff_format=h)\n- [CVE](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-3092)\n",
+      "moduleName": "commons-fileupload:commons-fileupload",
+      "language": "java",
+      "packageManager": "maven",
+      "semver": {
+        "vulnerable": "[1.3,1.3.1], [1.2,1.2.2]",
+        "unaffected": "[1.3.2,1.4)"
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-3092"
+        ]
+      },
+      "CVSSv2": "CVSS:2.0/AV:N/AC:L/AU:N/C:N/I:N/A:C",
+      "severity": "high",
+      "creationTime": "2016-12-25T16:51:56.000Z",
+      "modificationTime": "2016-12-25T16:51:56.000Z",
+      "publicationTime": "2016-06-22T16:51:56.000Z",
+      "disclosureTime": "2016-06-22T16:51:56.000Z",
+      "id": "SNYK-JAVA-COMMONSFILEUPLOAD-30082",
+      "mavenModuleName": {
+        "groupId": "commons-fileupload",
+        "artifactId": "commons-fileupload"
+      },
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "packageName": "commons-fileupload:commons-fileupload",
+      "cvssScore": 7.5,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "commons-fileupload:commons-fileupload@1.3.1"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.30",
+        "commons-fileupload:commons-fileupload@1.3.2"
+      ],
+      "version": "1.3.1",
+      "name": "commons-fileupload:commons-fileupload",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Code Execution",
+      "credit": [
+        "Unknown"
+      ],
+      "packageManager": "maven",
+      "language": "java",
+      "moduleName": "commons-fileupload:commons-fileupload",
+      "packageName": "commons-fileupload:commons-fileupload",
+      "id": "SNYK-JAVA-COMMONSFILEUPLOAD-30401",
+      "mavenModuleName": {
+        "groupId": "commons-fileupload",
+        "artifactId": "commons-fileupload"
+      },
+      "description": "## Overview\n[`commons-fileupload:commons-fileupload`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22commons-fileupload%22)\nThe Apache Commons FileUpload library contains a Java Object that, upon deserialization, can be manipulated to write or copy files in arbitrary locations. If integrated with [`ysoserial`](https://github.com/frohoff/ysoserial), it is possible to upload and execute binaries in a single deserialization call.\n\n# Details\nSerialization is a process of converting an object into a sequence of bytes which can be persisted to a disk or database or can be sent through streams. The reverse process of creating object from sequence of bytes is called deserialization. Serialization is commonly used for communication (sharing objects between multiple hosts) and persistence (store the object state in a file or a database). It is an integral part of popular protocols like _Remote Method Invocation (RMI)_, _Java Management Extension (JMX)_, _Java Messaging System (JMS)_, _Action Message Format (AMF)_, _Java Server Faces (JSF) ViewState_, etc.\n\n_Deserialization of untrusted data_ ([CWE-502](https://cwe.mitre.org/data/definitions/502.html)), is when the application deserializes untrusted data without sufficiently verifying that the resulting data will be valid, letting the attacker to control the state or the flow of the execution.\n\nJava deserialization issues have been known for years. However, interest in the issue intensified greatly in 2015, when classes that could be abused to achieve remote code execution were found in a [popular library (Apache Commons Collection)](https://snyk.io/vuln/SNYK-JAVA-COMMONSCOLLECTIONS-30078). These classes were used in zero-days affecting IBM WebSphere, Oracle WebLogic and many other products.\n\nAn attacker just needs to identify a piece of software that has both a vulnerable class on its path, and performs deserialization on untrusted data. Then all they need to do is send the payload into the deserializer, getting the command executed.\n\n> Developers put too much trust in Java Object Serialization. Some even de-serialize objects pre-authentication. When deserializing an Object in Java you typically cast it to an expected type, and therefore Java's strict type system will ensure you only get valid object trees. Unfortunately, by the time the type checking happens, platform code has already created and executed significant logic. So, before the final type is checked a lot of code is executed from the readObject() methods of various objects, all of which is out of the developer's control. By combining the readObject() methods of various classes which are available on the classpath of the vulnerable application an attacker can execute functions (including calling Runtime.exec() to execute local OS commands).\n- Apache Blog\n\n## Remediation\nUpgrade `commons-fileupload` to version 1.3.3 or higher.\n\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-1000031)\n- [Tenable Security](http://www.tenable.com/security/research/tra-2016-12)\n- [Github ChangeLog](https://github.com/apache/commons-fileupload/blob/master/src/changes/changes.xml#L65)\n- [Github Commit](https://github.com/apache/commons-fileupload/commit/388e824518697c2c8f9f83fd964621d9c2f8fc4c)\n",
+      "semver": {
+        "vulnerable": "[1.1,1.3.3)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-284"
+        ],
+        "CVE": [
+          "CVE-2016-1000031"
+        ]
+      },
+      "cvssScore": 9.8,
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "creationTime": "2017-02-22T07:28:18.753Z",
+      "modificationTime": "2017-02-22T07:28:18.753Z",
+      "publicationTime": "2016-10-26T03:04:11.895Z",
+      "disclosureTime": "2016-10-26T03:04:11.895Z",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "commons-fileupload:commons-fileupload@1.3.1"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.5.12",
+        "commons-fileupload:commons-fileupload@1.3.3"
+      ],
+      "version": "1.3.1",
+      "name": "commons-fileupload:commons-fileupload",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Information Disclosure",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "commons-fileupload:commons-fileupload",
+      "packageName": "commons-fileupload:commons-fileupload",
+      "mavenModuleName": {
+        "groupId": "commons-fileupload",
+        "artifactId": "commons-fileupload"
+      },
+      "language": "java",
+      "packageManager": "maven",
+      "description": "## Overview\n[`commons-fileupload:commons-fileupload`](https://commons.apache.org/proper/commons-fileupload/) provides a simple yet flexible means of adding support for multipart file upload functionality to servlets and web applications.\n\nAffected versions of the package are vulnerable to Information Disclosure because the `InputStream` is not closed on exception.\n\n## Remediation\nUpgrade `commons-fileupload` to version 1.3.2 or higher.\n\n## References\n- [Github ChangeLog](https://github.com/apache/commons-fileupload/blob/master/src/changes/changes.xml#L56)\n- [Github Commit](https://github.com/apache/commons-fileupload/commit/5b4881d7f75f439326f54fa554a9ca7de6d60814)\n",
+      "identifiers": {
+        "CWE": [
+          "CWE-200"
+        ],
+        "CVE": []
+      },
+      "semver": {
+        "unaffected": "",
+        "vulnerable": "[,1.3.2)"
+      },
+      "patches": [],
+      "cvssScore": 6.5,
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N",
+      "disclosureTime": "2014-02-17T22:00:00.000Z",
+      "publicationTime": "2017-02-17T08:05:48.497Z",
+      "modificationTime": "2017-10-01T08:05:48.497Z",
+      "creationTime": "2017-10-01T08:05:48.497Z",
+      "id": "SNYK-JAVA-COMMONSFILEUPLOAD-31540",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "commons-fileupload:commons-fileupload@1.3.1"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.30",
+        "commons-fileupload:commons-fileupload@1.3.2"
+      ],
+      "version": "1.3.1",
+      "name": "commons-fileupload:commons-fileupload",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Denial of Service (DoS)",
+      "credit": [
+        "Tao Wang"
+      ],
+      "moduleName": "ognl:ognl",
+      "packageName": "ognl:ognl",
+      "mavenModuleName": {
+        "groupId": "ognl",
+        "artifactId": "ognl"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-OGNL-30474",
+      "description": "## Overview\n[`ognl:ognl`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22ognl%22) is a simple Expression Language (EL) for Java.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) attacks.\nApache Struts 2.0.0 through 2.3.24.1 does not properly cache method references when used with OGNL before 3.0.12, which allows remote attackers to cause a denial of service (block access to a web site) via unspecified vectors.\n\n## Remediation\nUpgrade `ognl:ognl` to version 3.0.12 or higher.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-3093)\n- [GitHub Commit](https://github.com/jkuhnert/ognl/commit/ae43073fbf38db8371ff4f8bf2a966ee3b5f7e92)\n",
+      "semver": {
+        "vulnerable": "[,3.0.12)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-3093"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "creationTime": "2017-02-22T07:28:19.659Z",
+      "modificationTime": "2017-02-22T07:28:19.659Z",
+      "publicationTime": "2016-06-02T02:16:48.918Z",
+      "disclosureTime": "2016-06-02T02:16:48.918Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "ognl:ognl@3.0.6"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.28",
+        "ognl:ognl@3.0.13"
+      ],
+      "version": "3.0.6",
+      "name": "ognl:ognl",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Insecure Defaults",
+      "credit": [
+        "Jasper Rosenberg"
+      ],
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nThe default exclude patterns (excludeParams) in Apache Struts 2.3.20 allow remote attackers to \"compromise internal state of an application\" via unspecified vectors.\n\n## References\n\n- [Vulnerability Summary](http://struts.apache.org/docs/s2-024.html)\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2015-1831)\n",
+      "moduleName": "org.apache.struts:struts2-core",
+      "language": "java",
+      "packageManager": "maven",
+      "semver": {
+        "vulnerable": "[2.3.20]",
+        "unaffected": "[2.3.20.1,)"
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-453"
+        ],
+        "CVE": [
+          "CVE-2015-1831"
+        ]
+      },
+      "CVSSv2": "CVSS:2.0/AV:N/AC:L/AU:N/C:P/I:P/A:P",
+      "severity": "high",
+      "creationTime": "2016-12-25T16:51:55.000Z",
+      "modificationTime": "2016-12-25T16:51:55.000Z",
+      "publicationTime": "2015-05-11T16:51:55.000Z",
+      "disclosureTime": "2015-05-11T16:51:55.000Z",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30058",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "packageName": "org.apache.struts:struts2-core",
+      "cvssScore": 7.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.20.1"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Manipulation of Struts' internals",
+      "credit": [
+        "Unknown"
+      ],
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nValueStack defines special top object which represents root of execution context. It can be used to manipulate Struts' internals or can be used to affect container's settings.\n\n## References\n\n- [Vulnerability Summary](http://struts.apache.org/docs/s2-026.html)\n",
+      "moduleName": "org.apache.struts:struts2-core",
+      "language": "java",
+      "packageManager": "maven",
+      "semver": {
+        "vulnerable": "(,2.3.24]",
+        "unaffected": "[2.3.24.1,)"
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-284"
+        ],
+        "CVE": [
+          "CVE-2015-5209"
+        ]
+      },
+      "severity": "low",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "creationTime": "2016-12-25T16:51:56.000Z",
+      "modificationTime": "2016-12-25T16:51:56.000Z",
+      "publicationTime": "2015-07-01T16:51:56.000Z",
+      "disclosureTime": "2015-07-01T16:51:56.000Z",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30060",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageName": "org.apache.struts:struts2-core",
+      "cvssScore": 9.1,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.24.1"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Code Execution",
+      "credit": [
+        "Nike Zheng"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "language": "java",
+      "packageManager": "maven",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](https://cwiki.apache.org/confluence/display/WW/Home) is an elegant, extensible framework for building enterprise-ready Java web applications.\n\nAffected versions of the package are vulnerable to Arbitrary Command Execution while uploading files with the Jakarta Multipart parser. This particular vulnerability can be exploited by an attacker by sending a crafted request to upload a file to the vulnerable server that uses a Jakarta-based plugin to process the upload request.\n\nThe attacker can then send malicious code in the `Content-Type`, `Content-Disposition` or `Content-Length` HTTP headers, which will then be executed by the vulnerable server. [A proof of concept](https://github.com/tengzhangchao/Struts2_045-Poc) that demonstrates the attack scenario is publicly available and the vulnerability is being [actively exploited in the wild](https://www.theregister.co.uk/2017/03/09/apache_under_attack_patch_for_zero_day_available/).\n\nAlthough maintainers of the open source project immediately patched the vulnerability, Struts servers that have yet to install the update remain under attack by hackers who exploit it to inject commands of their choice.\n\nThis attack can be achieved without authentication. To make matters worse, web applications don't necessarily need to successfully upload a malicious file to exploit this vulnerability, as just the presence of the vulnerable Struts library within an application is enough to exploit the vulnerability.\n\n## Remediation\nUpgrade `org.apache.struts:struts2-core` to version 2.3.32, 2.5.10.1 or higher.\n\n## References\n- [Metasploit GitHub PR](https://github.com/rapid7/metasploit-framework/pull/8072)\n- [Metasploit GitHub Issue](https://github.com/rapid7/metasploit-framework/issues/8064)\n- [Metasploit GitHub Commit](https://github.com/rapid7/metasploit-framework/pull/8072/commits/fc0f63e77471baa40057effaaa8be0f205adc6b7)\n- [PoC](https://github.com/tengzhangchao/Struts2_045-Poc)\n- [CVE](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-5638)\n- [Exploit DB](https://www.exploit-db.com/exploits/41570/)\n- [Struts Wiki](https://cwiki.apache.org/confluence/display/WW/S2-045)\n- [Talos Intelligence Blog](http://blog.talosintelligence.com/2017/03/apache-0-day-exploited.html)\n",
+      "identifiers": {
+        "CWE": [
+          "CWE-94"
+        ],
+        "CVE": [
+          "CVE-2017-5638"
+        ]
+      },
+      "semver": {
+        "unaffected": "[2.3.32,2.5), [2.5.10.1,)",
+        "vulnerable": "[2.3.5,2.3.32), [2.5,2.5.10.1)"
+      },
+      "patches": [],
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "disclosureTime": "2017-03-05T22:00:00.000Z",
+      "publicationTime": "2017-03-21T15:30:44.863Z",
+      "modificationTime": "2017-06-13T10:28:21.873Z",
+      "creationTime": "2017-03-19T10:28:21.873Z",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30207",
+      "cvssScore": 9.8,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.32"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Command Injection",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30770",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nApache Struts 2.x before 2.3.20.2, 2.3.24.x before 2.3.24.2, and 2.3.28.x before 2.3.28.1, when Dynamic Method Invocation is enabled, allow remote attackers to execute arbitrary code via method: prefix, related to chained expressions.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-3081)",
+      "semver": {
+        "vulnerable": "[2,2.3.20.2), [2.3.24,2.3.24.2), [2.3.28,2.3.28.1)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-77"
+        ],
+        "CVE": [
+          "CVE-2016-3081"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "creationTime": "2017-02-22T07:28:23.315Z",
+      "modificationTime": "2017-02-22T07:28:23.315Z",
+      "publicationTime": "2016-04-22T04:32:51.243Z",
+      "disclosureTime": "2016-04-22T04:32:51.243Z",
+      "cvssScore": 8.8,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.20.3"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Code Execution",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30771",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22) is a free open-source solution for creating Java web applications.\n\nAffected versions of this package are vulnerable to Arbitrary Code Execution. It allows remote attackers to execute arbitrary code via the stylesheet location parameter.\n\n## Remediation\nUpgrade `org.apache.struts:struts2-core` to version 2.3.20.2, 2.3.24.2, 2.3.28.1 or higher.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-3082)",
+      "semver": {
+        "vulnerable": "[2,2.3.20.2), [2.3.24,2.3.24.2), [2.3.28,2.3.28.1)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-3082"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "creationTime": "2017-02-22T07:28:23.327Z",
+      "modificationTime": "2017-02-22T07:28:23.327Z",
+      "publicationTime": "2016-04-22T02:36:52.273Z",
+      "disclosureTime": "2016-04-22T02:36:52.273Z",
+      "cvssScore": 9.8,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.20.3"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Command Execution",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30772",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nApache Struts 2.3.20.x before 2.3.20.3, 2.3.24.x before 2.3.24.3, and 2.3.28.x before 2.3.28.1, when Dynamic Method Invocation is enabled, allow remote attackers to execute arbitrary code via vectors related to an ! (exclamation mark) operator to the REST Plugin.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-3087)",
+      "semver": {
+        "vulnerable": "[2,2.3.20.2), [2.3.24,2.3.24.3), [2.3.28,2.3.28.1)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-3087"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-02-22T07:28:23.339Z",
+      "modificationTime": "2017-02-22T07:28:23.339Z",
+      "publicationTime": "2016-06-02T00:40:36.101Z",
+      "disclosureTime": "2016-06-02T00:40:36.101Z",
+      "cvssScore": 7.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.20.3"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Cross-site Scripting (XSS)",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30773",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nCross-site Scripting (XSS) vulnerability in the URLDecoder function in JRE before 1.8, as used in Apache Struts 2.x before 2.3.28, when using a single byte page encoding, allows remote attackers to inject arbitrary web script or HTML via multi-byte characters in a url-encoded parameter.\n\n## Details\nCross-Site Scripting (XSS) attacks occur when an attacker tricks a user’s browser to execute malicious JavaScript code in the context of a victim’s domain. Such scripts can steal the user’s session cookies for the domain, scrape or modify its content, and perform or modify actions on the user’s behalf, actions typically blocked by the browser’s Same Origin Policy.\n\nThese attacks are possible by escaping the context of the web application and injecting malicious scripts in an otherwise trusted website. These scripts can introduce additional attributes (say, a \"new\" option in a dropdown list or a new link to a malicious site) and can potentially execute code on the clients side, unbeknown to the victim. This occurs when characters like \\< \\> \\\" \\' are not escaped properly.\n\nThere are a few types of XSS:\n- **Persistent XSS** is an attack in which the malicious code persists into the web app’s database.\n- **Reflected XSS** is an which the website echoes back a portion of the request. The attacker needs to trick the user into clicking a malicious link (for instance through a phishing email or malicious JS on another page), which triggers the XSS attack.\n- **DOM-based XSS** is an that occurs purely in the browser when client-side JavaScript echoes back a portion of the URL onto the page. DOM-Based XSS is notoriously hard to detect, as the server never gets a chance to see the attack taking place.\n\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-4003)",
+      "semver": {
+        "vulnerable": "[,2.3.28)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-79"
+        ],
+        "CVE": [
+          "CVE-2016-4003"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N",
+      "creationTime": "2017-02-22T07:28:23.353Z",
+      "modificationTime": "2017-02-22T07:28:23.353Z",
+      "publicationTime": "2016-03-16T06:52:13.014Z",
+      "disclosureTime": "2016-03-16T06:52:13.014Z",
+      "cvssScore": 4.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.28"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Cross-site Request Forgery (CSRF)",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30774",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nApache Struts 2 2.3.20 through 2.3.28.1 mishandles token validation, which allows remote attackers to conduct cross-site request forgery (CSRF) attacks via unspecified vectors.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-4430)",
+      "semver": {
+        "vulnerable": "[2.3.20,2.3.28.1]",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-352"
+        ],
+        "CVE": [
+          "CVE-2016-4430"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-02-22T07:28:23.364Z",
+      "modificationTime": "2017-02-22T07:28:23.364Z",
+      "publicationTime": "2016-06-20T07:00:37.929Z",
+      "disclosureTime": "2016-06-20T07:00:37.929Z",
+      "cvssScore": 6.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.29"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Access Restriction Bypass",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30775",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nApache Struts 2 2.3.20 through 2.3.28.1 allows remote attackers to bypass intended access restrictions and conduct redirection attacks by leveraging a default method.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-4431)",
+      "semver": {
+        "vulnerable": "[2.3.20,2.3.28.1]",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-4431"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+      "creationTime": "2017-02-22T07:28:23.377Z",
+      "modificationTime": "2017-02-22T07:28:23.377Z",
+      "publicationTime": "2016-06-21T04:49:27.674Z",
+      "disclosureTime": "2016-06-21T04:49:27.674Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.29"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Access Restriction Bypass",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30776",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nApache Struts 2 2.3.20 through 2.3.28.1 allows remote attackers to bypass intended access restrictions and conduct redirection attacks via a crafted request.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-4433)",
+      "semver": {
+        "vulnerable": "[2.3.20,2.3.28.1]",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-4433"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+      "creationTime": "2017-02-22T07:28:23.390Z",
+      "modificationTime": "2017-02-22T07:28:23.390Z",
+      "publicationTime": "2016-06-21T01:33:07.474Z",
+      "disclosureTime": "2016-06-21T01:33:07.474Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.29"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Denial of Service (DoS)",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30777",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nThe URLValidator class in Apache Struts 2 2.3.20 through 2.3.28.1 and 2.5.x before 2.5.1 allows remote attackers to cause a denial of service via a null value for a URL field.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-4465)",
+      "semver": {
+        "vulnerable": "[2.5,2.5.1), [2.3.20, 2.3.28.1]",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-4465"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "creationTime": "2017-02-22T07:28:23.404Z",
+      "modificationTime": "2017-02-22T07:28:23.404Z",
+      "publicationTime": "2016-06-20T07:45:43.528Z",
+      "disclosureTime": "2016-06-20T07:45:43.528Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.29"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Directory Traversal",
+      "credit": [
+        "Takeshi Terada"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-30778",
+      "description": "## Overview\n[`org.apache.struts:struts2-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22struts2-core%22)\nAffected versions of the package are vulnerable to Directory Traversal.\n\n## Details\nA Directory traversal attack (also known as path traversal) aims to access files and directories that are stored outside the intended folder. By manipulating variables that reference files with “dot-dot-slash (../)” sequences and its variations or by using absolute file paths, it may be possible to access arbitrary files and directories stored on file system including application source code, configuration and other critical system files.\n\nDirectory traversal vulnerabilities can be generally divided into two types:\n\n- **Information Disclosure**: Allows the attacker to gain information about the folder structure or read the contents of sensitive files on the system. \n\n`st` is a module for serving static files on web pages, and contains a [vulnerability of this type](https://snyk.io/vuln/npm:st:20140206). In our example, we will serve files from the `public` route.\n\nIf an attacker requests the following URL from our server, it will in turn, leak the sensitive private key of the root user.\n\n```\ncurl http://localhost:8080/public/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/root/.ssh/id_rsa\n```\n**Note** `%2e` is the URL encoded version of `.` (dot).\n\n- **Writing arbitrary files**: Allows the attacker to create or replace existing files.\n\nThis can be achieved using a specially crafted zip archive, that holds path traversal filenames. So when the filename gets concatenated to the target extraction folder, the final path ends up outside of the target folder. If an executable or a configuration file is overwritten with a file containing malicious code, the problem can turn into an arbitrary code execution issue quite easily.\n\nThe following is an example of a zip archive with one benign file and one malicious file. Extracting the malicous file will result in traversing out of the target folder, ending up in `/root/.ssh/` overwriting the `authorized_keys` file:\n\n```\n2018-04-15 22:04:29 .....           19           19  good.txt\n2018-04-15 22:04:42 .....           20           20  ../../../../../../root/.ssh/authorized_keys\n```\n\n\n## References\n- [Apache Security Advisory](http://struts.apache.org/docs/s2-042.html)\n",
+      "semver": {
+        "vulnerable": "[2.3.20,2.3.31)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-94"
+        ],
+        "CVE": [
+          "CVE-2016-6795"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-02-22T07:28:23.415Z",
+      "modificationTime": "2017-02-22T07:28:23.415Z",
+      "publicationTime": "2016-10-19T01:09:09.263Z",
+      "disclosureTime": "2016-10-19T01:09:09.263Z",
+      "cvssScore": 7.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.31"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Command Execution",
+      "credit": [
+        "LGTM Security Team"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "description": "## Overview\n[Apache Struts2](http://struts.apache.org/) is a popular open-source framework for developing web applications in the Java programming language.\n\nThe REST Plugin in affected versions use a `XStreamHandler` with an instance of XStream for deserialization without any type filtering. By design, there are few limits to the type of objects XStream can handle. This flexibility comes at a price. The XML generated or consumed by XStream includes all information required to build Java objects of almost any type. The provided XML data is used by XStream to unmarshal Java objects. An attacker could use this flaw to execute arbitrary code or conduct further attacks.\n\n[A working exploit](https://github.com/rapid7/metasploit-framework/commit/5ea83fee5ee8c23ad95608b7e2022db5b48340ef) is publicly available and [is actively](https://www.imperva.com/blog/2017/09/cve-2017-9805-analysis-of-apache-struts-rce-vulnerability-in-rest-plugin/) exploited in the wild.\n\nYou can read more about this vulnerability [on our blog](https://snyk.io/blog/equifax-breach-vulnerable-open-source-libraries/).\n\n# Details\nSerialization is a process of converting an object into a sequence of bytes which can be persisted to a disk or database or can be sent through streams. The reverse process of creating object from sequence of bytes is called deserialization. Serialization is commonly used for communication (sharing objects between multiple hosts) and persistence (store the object state in a file or a database). It is an integral part of popular protocols like _Remote Method Invocation (RMI)_, _Java Management Extension (JMX)_, _Java Messaging System (JMS)_, _Action Message Format (AMF)_, _Java Server Faces (JSF) ViewState_, etc.\n\n_Deserialization of untrusted data_ ([CWE-502](https://cwe.mitre.org/data/definitions/502.html)), is when the application deserializes untrusted data without sufficiently verifying that the resulting data will be valid, letting the attacker control the state or the flow of the execution. \n\nJava deserialization issues have been known for years. However, interest in the issue intensified greatly in 2015, when classes that could be abused to achieve remote code execution were found in a [popular library (Apache Commons Collection)](https://snyk.io/vuln/SNYK-JAVA-COMMONSCOLLECTIONS-30078). These classes were used in zero-days affecting IBM WebSphere, Oracle WebLogic and many other products.\n\nAn attacker just needs to identify a piece of software that has both a vulnerable class on its path, and performs deserialization on untrusted data. Then all they need to do is send the payload into the deserializer, getting the command executed.\n\n> Developers put too much trust in Java Object Serialization. Some even de-serialize objects pre-authentication. When deserializing an Object in Java you typically cast it to an expected type, and therefore Java's strict type system will ensure you only get valid object trees. Unfortunately, by the time the type checking happens, platform code has already created and executed significant logic. So, before the final type is checked a lot of code is executed from the readObject() methods of various objects, all of which is out of the developer's control. By combining the readObject() methods of various classes which are available on the classpath of the vulnerable application an attacker can execute functions (including calling Runtime.exec() to execute local OS commands).\n- Apache Blog\n\n\n## Remediation\nDevelopers are strongly advised to upgrade their _Apache Struts_ components to version `2.3.34`, `2.5.13` or higher.\n\nIt is possible that some REST actions stop working because of applied default restrictions on available classes. In this case please investigate the new interfaces that were introduced to allow class restrictions per action, those interfaces are:\n* org.apache.struts2.rest.handler.AllowedClasses\n* org.apache.struts2.rest.handler.AllowedClassNames\n* org.apache.struts2.rest.handler.XStreamPermissionProvider\n\nIf for some reason upgrading is not an option, consider the following workarounds:\n1. Disable handling XML pages and requests to such pages\n```xml\n<constant name=\"struts.action.extension\" value=\"xhtml,,json\" />\n```\n\n2. Override getContentType in XStreamHandler\n```java\n public class MyXStreamHandler extends XStreamHandler { \n   public String getContentType() {\n     return \"not-existing-content-type-@;/&%$#@\";\n   }\n }\n```\n\n3. Register the handler by overriding the one provided by the framework in your struts.xml\n```xml\n<bean type=\"org.apache.struts2.rest.handler.ContentTypeHandler\" name=\"myXStreamHandmer\" class=\"com.company.MyXStreamHandler\"/>\n<constant name=\"struts.rest.handlerOverride.xml\" value=\"myXStreamHandler\"/>\n```\n\n## References\n- [LGTM Advisory](https://lgtm.com/blog/apache_struts_CVE-2017-9805_announcement)\n- [LGTM Vulnerability Details](https://lgtm.com/blog/apache_struts_CVE-2017-9805)\n- [Apache Struts Statement on Equifax Security Breach](https://blogs.apache.org/foundation/entry/apache-struts-statement-on-equifax)\n- [Apache Security Bulletin](https://cwiki.apache.org/confluence/display/WW/S2-052)\n",
+      "semver": {
+        "vulnerable": "[,2.3.34), [2.4,2.5.13)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20",
+          "CWE-502"
+        ],
+        "CVE": [
+          "CVE-2017-9805"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "creationTime": "2017-09-06T17:28:23.339Z",
+      "modificationTime": "2017-09-06T17:28:23.339Z",
+      "publicationTime": "2017-09-06T17:28:23.339Z",
+      "disclosureTime": "2017-09-05T17:28:23.339Z",
+      "cvssScore": 8.1,
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-31495",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.34"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Denial of Service (DoS)",
+      "credit": [
+        "Yasser Zamani"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "language": "java",
+      "packageManager": "maven",
+      "description": "## Overview\n[Apache Struts2](http://struts.apache.org/) is a popular open-source framework for developing web applications in the Java programming language.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) attacks.\nWhen using a Spring AOP functionality to secure Struts actions it is possible to perform a DoS attack.\n\n\n## Remediation\nUpgrade `org.apache.struts:struts2-core` to version 2.3.33, 2.5.12 or higher.\n\n## References\n- [Struts Security Bulletin](http://struts.apache.org/docs/s2-049.html)\n- [Struts Announcements Mailing List](https://lists.apache.org/thread.html/3795c4dd46d9ec75f4a6eb9eca11c11edd3e796c6c1fd7b17b5dc50d@%3Cannouncements.struts.apache.org%3E)\n",
+      "identifiers": {
+        "CWE": [
+          "CWE-400"
+        ],
+        "CVE": [
+          "CVE-2017-9787"
+        ]
+      },
+      "semver": {
+        "unaffected": "",
+        "vulnerable": "[2.3.7,2.3.33), [2.5,2.5.12)"
+      },
+      "patches": [],
+      "cvssScore": 7.5,
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "disclosureTime": "2017-08-23T21:00:00.000Z",
+      "publicationTime": "2017-09-12T12:47:32.905Z",
+      "modificationTime": "2017-09-12T12:47:32.905Z",
+      "creationTime": "2017-09-12T12:47:32.905Z",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-31500",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.33"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Denial of Service (DoS)",
+      "credit": [
+        "Adam Cazzolla",
+        "Jonathan Bullock"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "language": "java",
+      "packageManager": "maven",
+      "description": "## Overview\n[Apache Struts2](http://struts.apache.org/) is a popular open-source framework for developing web applications in the Java programming language.\n\nAffected versions of this package are vulnerable to Regular Expression Denial of Service (ReDoS) attacks. This is due to an incomplete fix for [CVE-2017-7672](https://snyk.io/vuln/SNYK-JAVA-ORGAPACHESTRUTS-31499). If an application allows enter an URL in a form field and built-in URLValidator is used, it is possible to prepare a special URL which will be used to overload server process when performing validation of the URL.\n\n## Remediation\nUpgrade `org.apache.struts:struts2-core` to version 2.3.34, 2.5.13 or higher.\n\n## References\n- [Struts Security Bulletin](http://struts.apache.org/docs/s2-050.html)\n",
+      "identifiers": {
+        "CWE": [
+          "CWE-400"
+        ],
+        "CVE": [
+          "CVE-2017-9804"
+        ]
+      },
+      "semver": {
+        "unaffected": "",
+        "vulnerable": "[2.3.7,2.3.34), [2.5,2.5.13)"
+      },
+      "patches": [],
+      "cvssScore": 5.9,
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "disclosureTime": "2017-08-23T21:00:00.000Z",
+      "publicationTime": "2017-09-12T12:47:32.905Z",
+      "modificationTime": "2017-09-12T12:47:32.905Z",
+      "creationTime": "2017-09-12T12:47:32.905Z",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-31501",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.34"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Denial of Service (DoS)",
+      "credit": [
+        "Huijun Chen",
+        "Xiaolong Zhu"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "language": "java",
+      "packageManager": "maven",
+      "description": "## Overview\n[Apache Struts2](http://struts.apache.org/) is a popular open-source framework for developing web applications in the Java programming language.\n\nAffected versions of this package are vulnerable to Denial of Service (ReDoS) attacks. The REST Plugin is using outdated XStream library which is vulnerable and allow perform a DoS attack using malicious request with specially crafted XML payload.\n\n## Remediation\nUpgrade `org.apache.struts:struts2-core` to version 2.3.34, 2.5.13 or higher.\n\n## References\n- [Struts Security Bulletin](http://struts.apache.org/docs/s2-051.html)\n",
+      "identifiers": {
+        "CWE": [
+          "CWE-400"
+        ],
+        "CVE": [
+          "CVE-2017-9793"
+        ]
+      },
+      "semver": {
+        "unaffected": "",
+        "vulnerable": "[2.3.7,2.3.34), [2.5,2.5.13)"
+      },
+      "patches": [],
+      "cvssScore": 5.9,
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "disclosureTime": "2017-08-23T21:00:00.000Z",
+      "publicationTime": "2017-09-12T12:47:32.905Z",
+      "modificationTime": "2017-09-12T12:47:32.905Z",
+      "creationTime": "2017-09-12T12:47:32.905Z",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-31502",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.34"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Code Execution",
+      "credit": [
+        "Lupin",
+        "David Greene",
+        "Roland McIntosh"
+      ],
+      "moduleName": "org.apache.struts:struts2-core",
+      "packageName": "org.apache.struts:struts2-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts",
+        "artifactId": "struts2-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "description": "## Overview\n[Apache Struts2](http://struts.apache.org/) is a popular open-source framework for developing web applications in the Java programming language.\n\nAffected versions of this package are vulnerable to Arbitrary Code Execution. An unauthenticated attack may be able to exploit this \nWhen using expression literals or forcing expression in Freemarker tags (see example below) and using request values can lead to RCE attack.\n\n```xml\n<@s.hidden name=\"redirectUri\" value=redirectUri />\n<@s.hidden name=\"redirectUri\" value=\"${redirectUri}\" />\n<@s.hidden name=\"${redirectUri}\"/>\n```\n\nIn both cases a writable property is used in the value attribute and in both cases this is threatened as an expression by Freemarker. Please be aware that using Struts expression evaluation style is safe:\n\n```\n<@s.hidden name=\"redirectUri\" value=\"%{redirectUri}\" />\n<@s.hidden name=\"%{redirectUri}\"/>\n```\n\n## Remediation\nDevelopers are strongly advised to upgrade their _Apache Struts_ components to version `2.3.34`, `2.5.12` or higher.\n\n## References\n- [Apache Security Bulletin](https://cwiki.apache.org/confluence/display/WW/S2-053)\n",
+      "semver": {
+        "vulnerable": "[,2.3.34), [2.4,2.5.12)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20",
+          "CWE-502"
+        ],
+        "CVE": [
+          "CVE-2017-12611"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-09-06T17:28:23.339Z",
+      "modificationTime": "2017-09-06T17:28:23.339Z",
+      "publicationTime": "2017-09-06T17:28:23.339Z",
+      "disclosureTime": "2017-09-05T17:28:23.339Z",
+      "cvssScore": 5.6,
+      "id": "SNYK-JAVA-ORGAPACHESTRUTS-31503",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.34"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts:struts2-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Code Execution",
+      "credit": [
+        "Jasper Rosenberg"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30797",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nThe default exclude patterns (excludeParams) in Apache Struts 2.3.20 allow remote attackers to \"compromise internal state of an application\" via unspecified vectors.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2015-1831)\n- [Struts Security Advisory](https://struts.apache.org/docs/s2-024.html)\n",
+      "semver": {
+        "vulnerable": "[2.3.20]",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-94"
+        ],
+        "CVE": [
+          "CVE-2015-1831"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-02-22T07:28:23.661Z",
+      "modificationTime": "2017-02-22T07:28:23.661Z",
+      "publicationTime": "2015-07-17T17:44:54.000Z",
+      "disclosureTime": "2015-07-17T17:44:54.000Z",
+      "cvssScore": 7.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.20.1",
+        "org.apache.struts.xwork:xwork-core@2.3.20.1"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Parameter Alteration",
+      "credit": [
+        "rskvp93"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30798",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nAffected versions of the package are vulnerable to Parameter Alteration. ValueStack defines special top object which represents root of execution context. It can be used to manipulate Struts' internals or can be used to affect container's settings\n\n\n## References\n- [Apache Security Advisory](https://struts.apache.org/docs/s2-026.html)\n",
+      "semver": {
+        "vulnerable": "[2,2.3.24.1)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          ""
+        ],
+        "CVE": [
+          "CVE-2015-5209"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-02-22T07:28:23.673Z",
+      "modificationTime": "2017-02-22T07:28:23.673Z",
+      "publicationTime": "2015-09-28T16:59:30.000Z",
+      "disclosureTime": "2015-09-28T16:59:30.000Z",
+      "cvssScore": 7.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.24.1",
+        "org.apache.struts.xwork:xwork-core@2.3.24.1"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Improper Input Validation",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30799",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nApache Struts 2.x before 2.3.28 allows remote attackers to execute arbitrary code via a \"%{}\" sequence in a tag attribute, aka forced double OGNL evaluation.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-0785)",
+      "semver": {
+        "vulnerable": "[2,2.3.28)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-0785"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "creationTime": "2017-02-22T07:28:23.686Z",
+      "modificationTime": "2017-02-22T07:28:23.686Z",
+      "publicationTime": "2016-03-16T05:58:06.341Z",
+      "disclosureTime": "2016-03-16T05:58:06.341Z",
+      "cvssScore": 9.8,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.28",
+        "org.apache.struts.xwork:xwork-core@2.3.28"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Cross-site Scripting (XSS)",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30800",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nApache Struts 2.x before 2.3.25 does not sanitize text in the Locale object constructed by I18NInterceptor, which might allow remote attackers to conduct cross-site scripting (XSS) attacks via unspecified vectors involving language display.\n\n## Details\nCross-Site Scripting (XSS) attacks occur when an attacker tricks a user’s browser to execute malicious JavaScript code in the context of a victim’s domain. Such scripts can steal the user’s session cookies for the domain, scrape or modify its content, and perform or modify actions on the user’s behalf, actions typically blocked by the browser’s Same Origin Policy.\n\nThese attacks are possible by escaping the context of the web application and injecting malicious scripts in an otherwise trusted website. These scripts can introduce additional attributes (say, a \"new\" option in a dropdown list or a new link to a malicious site) and can potentially execute code on the clients side, unbeknown to the victim. This occurs when characters like \\< \\> \\\" \\' are not escaped properly.\n\nThere are a few types of XSS:\n- **Persistent XSS** is an attack in which the malicious code persists into the web app’s database.\n- **Reflected XSS** is an which the website echoes back a portion of the request. The attacker needs to trick the user into clicking a malicious link (for instance through a phishing email or malicious JS on another page), which triggers the XSS attack.\n- **DOM-based XSS** is an that occurs purely in the browser when client-side JavaScript echoes back a portion of the URL onto the page. DOM-Based XSS is notoriously hard to detect, as the server never gets a chance to see the attack taking place.\n\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-2162)",
+      "semver": {
+        "vulnerable": "[2,2.3.25)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-79"
+        ],
+        "CVE": [
+          "CVE-2016-2162"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N",
+      "creationTime": "2017-02-22T07:28:23.701Z",
+      "modificationTime": "2017-02-22T07:28:23.701Z",
+      "publicationTime": "2016-03-16T07:51:26.242Z",
+      "disclosureTime": "2016-03-16T07:51:26.242Z",
+      "cvssScore": 4.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.28",
+        "org.apache.struts.xwork:xwork-core@2.3.28"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Improper Input Validation",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30801",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nApache Struts 2.0.0 through 2.3.24.1 does not properly cache method references when used with OGNL before 3.0.12, which allows remote attackers to cause a denial of service (block access to a web site) via unspecified vectors.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-3093)",
+      "semver": {
+        "vulnerable": "[2,2.3.24.1]",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-3093"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "creationTime": "2017-02-22T07:28:23.713Z",
+      "modificationTime": "2017-02-22T07:28:23.713Z",
+      "publicationTime": "2016-06-02T02:16:48.918Z",
+      "disclosureTime": "2016-06-02T02:16:48.918Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.24.3",
+        "org.apache.struts.xwork:xwork-core@2.3.24.3"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Improper Input Validation",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30802",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nApache Struts 2 2.3.20 through 2.3.28.1 allows remote attackers to bypass intended access restrictions and conduct redirection attacks via a crafted request.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-4433)",
+      "semver": {
+        "vulnerable": "[2.3.20,2.3.28.1]",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-4433"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+      "creationTime": "2017-02-22T07:28:23.724Z",
+      "modificationTime": "2017-02-22T07:28:23.724Z",
+      "publicationTime": "2016-06-21T01:33:07.474Z",
+      "disclosureTime": "2016-06-21T01:33:07.474Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.29",
+        "org.apache.struts.xwork:xwork-core@2.3.29"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Arbitrary Code Execution",
+      "credit": [
+        "Alvaro Munoz"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30803",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nAffected versions of the package are vulnerable to Remote code Execution. The Apache Struts frameworks when forced, performs double evaluation of attributes' values assigned to certain tags so it is possible to pass in a value that will be evaluated again when a tag's attributes will be rendered.\n\n## References\n- [Apache Security Advisory](https://struts.apache.org/docs/s2-036.html)\n",
+      "semver": {
+        "vulnerable": "[2.2.1,2.3.28.1]",
+        "unaffected": "[2.3.29]"
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-264"
+        ],
+        "CVE": [
+          "CVE-2016-4461"
+        ]
+      },
+      "severity": "high",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-02-22T07:28:23.738Z",
+      "modificationTime": "2017-02-22T07:28:23.738Z",
+      "publicationTime": "2016-11-14T07:48:03.440Z",
+      "disclosureTime": "2016-11-14T07:48:03.440Z",
+      "cvssScore": 7.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.29",
+        "org.apache.struts.xwork:xwork-core@2.3.29"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Improper Input Validation",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.apache.struts.xwork:xwork-core",
+      "packageName": "org.apache.struts.xwork:xwork-core",
+      "mavenModuleName": {
+        "groupId": "org.apache.struts.xwork",
+        "artifactId": "xwork-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGAPACHESTRUTSXWORK-30804",
+      "description": "## Overview\n[`org.apache.struts.xwork:xwork-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22xwork-core%22)\nThe URLValidator class in Apache Struts 2 2.3.20 through 2.3.28.1 and 2.5.x before 2.5.1 allows remote attackers to cause a denial of service via a null value for a URL field.\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-4465)",
+      "semver": {
+        "vulnerable": "[2.3.20,2.3.28.1], [2.5,2.5.1)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-20"
+        ],
+        "CVE": [
+          "CVE-2016-4465"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "creationTime": "2017-02-22T07:28:23.751Z",
+      "modificationTime": "2017-02-22T07:28:23.751Z",
+      "publicationTime": "2016-06-20T07:45:43.528Z",
+      "disclosureTime": "2016-06-20T07:45:43.528Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.apache.struts:struts2-core@2.3.20",
+        "org.apache.struts.xwork:xwork-core@2.3.20"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.struts:struts2-core@2.3.29",
+        "org.apache.struts.xwork:xwork-core@2.3.29"
+      ],
+      "version": "2.3.20",
+      "name": "org.apache.struts.xwork:xwork-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "XML External Entity (XXE) Injection",
+      "credit": [
+        "Unknown"
+      ],
+      "description": "## Overview\n[`org.springframework:spring-web`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22spring-web%22)\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection attacks due to not disabling  the resolution of URI references by default in a DTD declaration. This occurs only when processing user provided XML documents.\n\n## Remediation\nUpgrade `org.springframework:spring-web` to versions 3.2.8, 4.0.4 or higher.\n\n## References\n- [Pivotal Security](http://www.gopivotal.com/security/cve-2014-0225)\n- [Redhat Bugzilla](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2014-0225)\n",
+      "moduleName": "org.springframework:spring-web",
+      "language": "java",
+      "packageManager": "maven",
+      "semver": {
+        "vulnerable": "[3,3.2.8.RELEASE], [4,4.0.4.RELEASE]",
+        "unaffected": "[3.2.9.RELEASE,4), [4.0.5.RELEASE,5)"
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-611"
+        ],
+        "CVE": [
+          "CVE-2014-0225"
+        ]
+      },
+      "CVSSv2": "CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:N/A:N",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+      "severity": "low",
+      "creationTime": "2016-12-25T16:51:52.000Z",
+      "modificationTime": "2016-12-25T16:51:52.000Z",
+      "publicationTime": "2016-12-25T16:51:52.000Z",
+      "disclosureTime": "2016-12-25T16:51:52.000Z",
+      "id": "SNYK-JAVA-ORGSPRINGFRAMEWORK-30163",
+      "mavenModuleName": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-web"
+      },
+      "packageName": "org.springframework:spring-web",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.springframework:spring-web@3.2.6.RELEASE"
+      ],
+      "upgradePath": [
+        false,
+        "org.springframework:spring-web@3.2.9.RELEASE"
+      ],
+      "version": "3.2.6.RELEASE",
+      "name": "org.springframework:spring-web",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Denial of Service (DoS)",
+      "credit": [
+        "Toshiaki Maki"
+      ],
+      "description": "## Overview\n[`org.springframework:spring-web`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22spring-web%22) provides a comprehensive programming and configuration model for modern Java-based enterprise applications - on any kind of deployment platform.\n\nAffected versions of this package are vulnerable to Denial of Sevice attacks. It does not properly process inline DTD declarations when DTD is not entirely disabled, which allows remote attackers to cause a denial of service (memory consumption and out-of-memory errors) via a crafted XML file.\n\n## Remediation\nUpgrade `org.springframework:spring-web` to version 3.2.14, 4.1.7 or higher.\n\n## References\n- [Pivotal Security](http://pivotal.io/security/cve-2015-3192)\n",
+      "moduleName": "org.springframework:spring-web",
+      "language": "java",
+      "packageManager": "maven",
+      "semver": {
+        "vulnerable": "[3.2,3.2.13.RELEASE], [4,4.1.6.RELEASE]",
+        "unaffected": "[3.2.14.RELEASE,3.3), [4.1.7.RELEASE,5)"
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-119"
+        ],
+        "CVE": [
+          "CVE-2015-3192"
+        ]
+      },
+      "CVSSv2": "CVSS:2.0/AV:N/AC:L/AU:N/C:N/I:N/A:P",
+      "severity": "medium",
+      "creationTime": "2016-12-25T16:51:55.000Z",
+      "modificationTime": "2016-12-25T16:51:55.000Z",
+      "publicationTime": "2016-12-25T16:51:55.000Z",
+      "disclosureTime": "2016-12-25T16:51:55.000Z",
+      "id": "SNYK-JAVA-ORGSPRINGFRAMEWORK-30164",
+      "mavenModuleName": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-web"
+      },
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:L",
+      "packageName": "org.springframework:spring-web",
+      "cvssScore": 4.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.springframework:spring-web@3.2.6.RELEASE"
+      ],
+      "upgradePath": [
+        false,
+        "org.springframework:spring-web@3.2.14.RELEASE"
+      ],
+      "version": "3.2.6.RELEASE",
+      "name": "org.springframework:spring-web",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Reflected File Download",
+      "credit": [
+        "Alvaro Muñoz"
+      ],
+      "description": "## Overview\n[`org.springframework:spring-web`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22spring-web%22) provides everything you need beyond the Java language to create enterprise applications in a wide range of scenarios and architectures.\n\nAffected versions of this package are vulnerable to Reflected File Download (RFD) attacks via a crafted URL with a batch script extension, resulting in the response being downloaded rather than rendered.\n\n## Remediation\nUpgrade `org.springframework:spring-web` to version 4.2.1.RELEASE, 4.1.7.RELEASE, 4.0.9.RELEASE, 3.2.14.RELEASE or higher.\n\n## References\n- [Pivotal Security](http://pivotal.io/security/cve-2015-5211)\n- [Redhat Bugzilla](https://access.redhat.com/security/cve/cve-2015-5211)\n- [Oren Hafif Blog](https://www.trustwave.com/Resources/SpiderLabs-Blog/Reflected-File-Download---A-New-Web-Attack-Vector/)\n",
+      "moduleName": "org.springframework:spring-web",
+      "language": "java",
+      "packageManager": "maven",
+      "semver": {
+        "vulnerable": "[4.2,4.2.1.RELEASE], [4.1,4.1.7.RELEASE], [4.0,4.0.9.RELEASE], [3.2,3.2.14.RELEASE]",
+        "unaffected": "[4.2.2.RELEASE,4.3), [4.1.8.RELEASE,4.2), [3.2.15.RELEASE,3.3)"
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-494"
+        ],
+        "CVE": [
+          "CVE-2015-5211"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv2": "CVSS:2.0/AV:N/AC:M/Au:N/C:P/I:P/A:P",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L",
+      "creationTime": "2016-12-25T16:51:56.000Z",
+      "modificationTime": "2016-12-25T16:51:56.000Z",
+      "publicationTime": "2016-12-25T16:51:56.000Z",
+      "disclosureTime": "2016-12-25T16:51:56.000Z",
+      "id": "SNYK-JAVA-ORGSPRINGFRAMEWORK-30165",
+      "mavenModuleName": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-web"
+      },
+      "packageName": "org.springframework:spring-web",
+      "cvssScore": 5.6,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.springframework:spring-web@3.2.6.RELEASE"
+      ],
+      "upgradePath": [
+        false,
+        "org.springframework:spring-web@3.2.15.RELEASE"
+      ],
+      "version": "3.2.6.RELEASE",
+      "name": "org.springframework:spring-web",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Directory Traversal",
+      "credit": [
+        "Takeshi Terada"
+      ],
+      "moduleName": "org.springframework:spring-core",
+      "packageName": "org.springframework:spring-core",
+      "mavenModuleName": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-core"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGSPRINGFRAMEWORK-31325",
+      "description": "## Overview\n[`org.springframework:spring-core`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22spring-core%22) provides everything you need beyond the Java language to create enterprise applications in a wide range of scenarios and architectures.\n\nAffected versions of this package are vulnerable to Directory traversal attack. It allows remote attackers to read arbitrary files via a crafted URL.\n\n## Details\nA Directory traversal attack (also known as path traversal) aims to access files and directories that are stored outside the intended folder. By manipulating variables that reference files with “dot-dot-slash (../)” sequences and its variations or by using absolute file paths, it may be possible to access arbitrary files and directories stored on file system including application source code, configuration and other critical system files.\n\nDirectory traversal vulnerabilities can be generally divided into two types:\n\n- **Information Disclosure**: Allows the attacker to gain information about the folder structure or read the contents of sensitive files on the system. \n\n`st` is a module for serving static files on web pages, and contains a [vulnerability of this type](https://snyk.io/vuln/npm:st:20140206). In our example, we will serve files from the `public` route.\n\nIf an attacker requests the following URL from our server, it will in turn, leak the sensitive private key of the root user.\n\n```\ncurl http://localhost:8080/public/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/root/.ssh/id_rsa\n```\n**Note** `%2e` is the URL encoded version of `.` (dot).\n\n- **Writing arbitrary files**: Allows the attacker to create or replace existing files.\n\nThis can be achieved using a specially crafted zip archive, that holds path traversal filenames. So when the filename gets concatenated to the target extraction folder, the final path ends up outside of the target folder. If an executable or a configuration file is overwritten with a file containing malicious code, the problem can turn into an arbitrary code execution issue quite easily.\n\nThe following is an example of a zip archive with one benign file and one malicious file. Extracting the malicous file will result in traversing out of the target folder, ending up in `/root/.ssh/` overwriting the `authorized_keys` file:\n\n```\n2018-04-15 22:04:29 .....           19           19  good.txt\n2018-04-15 22:04:42 .....           20           20  ../../../../../../root/.ssh/authorized_keys\n```\n\n\n## Remediation\nUpgrade `org.springframework:spring-core` to version 3.2.9, 4.0.5 or higher.\n\n## References\n- [GitHub Commit](https://github.com/spring-projects/spring-framework/commit/e3e71ba92a8b82dadf474eda76cd2741f65a77a8)\n- [Pivotal Security](https://pivotal.io/security/cve-2014-3578)\n- [Jira Issue](https://jira.spring.io/browse/SPR-12354)\n- [JVNDB](http://jvndb.jvn.jp/en/contents/2014/JVNDB-2014-000054.html)\n- [Redhat Bugzilla](https://bugzilla.redhat.com/show_bug.cgi?id=1131882)\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-3578)\n",
+      "semver": {
+        "vulnerable": "[3,3.2.9), [4,4.0.5)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-22"
+        ],
+        "CVE": [
+          "CVE-2014-3578"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+      "creationTime": "2017-02-22T07:28:31.465Z",
+      "modificationTime": "2017-05-24T07:28:31.465Z",
+      "publicationTime": "2014-09-05T17:16:58.000Z",
+      "disclosureTime": "2014-09-05T17:16:58.000Z",
+      "cvssScore": 5.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.springframework:spring-web@3.2.6.RELEASE",
+        "org.springframework:spring-core@3.2.6.RELEASE"
+      ],
+      "upgradePath": [
+        false,
+        "org.springframework:spring-web@3.2.9.RELEASE",
+        "org.springframework:spring-core@3.2.9.RELEASE"
+      ],
+      "version": "3.2.6.RELEASE",
+      "name": "org.springframework:spring-core",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Cross-site Request Forgery (CSRF)",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.springframework:spring-web",
+      "packageName": "org.springframework:spring-web",
+      "mavenModuleName": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-web"
+      },
+      "packageManager": "maven",
+      "language": "java",
+      "id": "SNYK-JAVA-ORGSPRINGFRAMEWORK-31331",
+      "description": "## Overview\n[`org.springframework:spring-web`](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22spring-web%22)\nAffected versions of this package do not disable external entity resolution, which allows remote attackers to read arbitrary files, cause a denial of service and conduct CSRF attacks via crafted XML, aka an XML External Entity (XXE) issue.  \n\n**NOTE:** this vulnerability exists because of an incomplete fix for [CVE-2013-4152](https://snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-31330), [CVE-2013-7315](https://snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-30162), and [CVE-2013-6429](https://snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORK-30160).\n\n## References\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-0054)\n",
+      "semver": {
+        "vulnerable": "[,3.2.8), [4,4.0.2)",
+        "unaffected": ""
+      },
+      "identifiers": {
+        "CWE": [
+          "CWE-352"
+        ],
+        "CVE": [
+          "CVE-2014-0054"
+        ]
+      },
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:L",
+      "creationTime": "2017-02-22T07:28:31.538Z",
+      "modificationTime": "2017-02-22T07:28:31.538Z",
+      "publicationTime": "2014-06-06T21:43:43.000Z",
+      "disclosureTime": "2014-06-06T21:43:43.000Z",
+      "cvssScore": 6.3,
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.springframework:spring-web@3.2.6.RELEASE"
+      ],
+      "upgradePath": [
+        false,
+        "org.springframework:spring-web@3.2.8.RELEASE"
+      ],
+      "version": "3.2.6.RELEASE",
+      "name": "org.springframework:spring-web",
+      "isUpgradable": true,
+      "isPatchable": false
+    },
+    {
+      "title": "Authentication Bypass",
+      "credit": [
+        "Unknown"
+      ],
+      "moduleName": "org.springframework:spring-web",
+      "packageName": "org.springframework:spring-web",
+      "mavenModuleName": {
+        "groupId": "org.springframework",
+        "artifactId": "spring-web"
+      },
+      "language": "java",
+      "packageManager": "maven",
+      "description": "## Overview\n[`org.springframework:spring-web`](https://springframework.org) provides security services for the Spring IO Platform.\n\nAffected versions of the package are vulnerable to Authentication Bypass.\n\n## Remediation\nThere is no fix version for `org.springframework:spring-web`.\n\n## References\n- [GitHub Issue](https://github.com/spring-projects/spring-security/issues/3392)\n",
+      "identifiers": {
+        "CWE": [
+          "CWE-592"
+        ],
+        "CVE": []
+      },
+      "semver": {
+        "vulnerable": "[0,]",
+        "unaffected": "[,0.0.0]"
+      },
+      "patches": [],
+      "cvssScore": 5.3,
+      "severity": "medium",
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
+      "disclosureTime": "2016-01-02T22:00:00.000Z",
+      "publicationTime": "2018-03-06T11:16:29.445Z",
+      "modificationTime": "2018-03-05T13:22:59.343Z",
+      "creationTime": "2018-03-05T13:22:59.343Z",
+      "id": "SNYK-JAVA-ORGSPRINGFRAMEWORK-31644",
+      "from": [
+        "io.github.snyk:todolist-web-struts@0.0.1",
+        "org.springframework:spring-web@3.2.6.RELEASE"
+      ],
+      "upgradePath": [],
+      "version": "3.2.6.RELEASE",
+      "name": "org.springframework:spring-web",
+      "isUpgradable": false,
+      "isPatchable": false
+    }
+  ],
+  "dependencyCount": 20,
+  "org": "kevinwright",
+  "licensesPolicy": null,
+  "isPrivate": true,
+  "packageManager": "maven",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.12.0\nignore: {}\npatch: {}\n",
+  "ignoreSettings": null,
+  "summary": "35 vulnerable dependency paths",
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 35,
+  "path": "/Users/kevin/projects/snyk/maven-with-vulns"
+}

@@ -33,6 +33,16 @@ object SnykMavenArtifact {
       proj.getDependencyTree.asScala.map { SnykMavenArtifact.fromMavenArtifactNode }
     )
   }
+
+  val empty: SnykMavenArtifact = SnykMavenArtifact(
+    "<none>",
+    "<none>",
+    "<none>",
+    "<none>",
+    None,
+    None,
+    Nil
+  )
 }
 
 case class SnykMavenArtifact(
@@ -46,5 +56,5 @@ case class SnykMavenArtifact(
 ) {
   val name: String = s"$groupId:$artifactId"
   val depsMap: Map[String, SnykMavenArtifact] = deps.map(x => x.name -> x).toMap
-  def toDisplayNode: DisplayNode = DisplayNode(name, deps.map(_.toDisplayNode))
+  def toDisplayNode: DisplayNode = DisplayNode(name, version, deps.map(_.toDisplayNode))
 }

@@ -1,0 +1,35 @@
+
+{{#*inline "nested"}}
+    {{#if seq.nonEmpty}}
+        <div class="indent-block">»
+            {{#if makelink}}
+                <a href="http://idenav/artifact/{{seq.head}}" target="_blank">{{seq.head}}</a>
+            {{else if seq.tail.isEmpty}}
+                <span class="vulnerable-dep">{{seq.head}}</span>
+            {{else}}
+                {{seq.head}}
+            {{/if}}
+
+            {{> nested seq=seq.tail makelink=false}}
+        </div>
+
+    {{/if}}
+{{/inline}}
+
+<div class="issue-card">
+    <div class="issue-title__name">
+      {{svg (concat "icon/" type) width=22 height=22}}
+      <a href="{{url}}" class="issue-title__link" target="_blank">{{title}}</a>
+        {{!svg "icon/extern" width=18 height=18}}
+    </div>
+    <div class="issue-body issue-body-{{severity}}">
+        {{#if from.tail.nonEmpty}}
+            <div class="issue-subhead">Introduced Through:</div>
+
+            {{> nested seq=from.tail makelink=true}}
+        {{/if}}
+        {{#if isUpgradable}}
+            <div class="remediation"><span class="issue-subhead">Remediation:</span> Upgrade to {{upgradePath.head}}</div>
+        {{/if}}
+    </div>
+</div>

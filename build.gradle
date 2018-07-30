@@ -1,17 +1,19 @@
 buildscript {
     ext.scala_bin_version = '2.12.6'
     ext.scala_version = '2.12'
+    ext.JETBRAINS_PASSWORD = System.getenv('JETBRAINS_PASSWORD')
     repositories {
         mavenCentral()
     }
 }
 
 plugins {
-    id 'org.jetbrains.intellij' version '0.3.4'
+    id 'org.jetbrains.intellij' version '0.3.5'
 }
 
 group 'io.snyk'
-version '1.0-SNAPSHOT'
+description = 'Snyk security scanning for IntelliJ IDEA'
+version '0.0.1'
 
 apply plugin: 'idea'
 apply plugin: 'scala'
@@ -24,17 +26,19 @@ repositories {
 
 dependencies {
     compile "org.scala-lang:scala-library:$scala_bin_version"
+    compile "org.scala-lang:scala-reflect:$scala_bin_version"
     compile "org.nanohttpd:nanohttpd:2.3.1"
     compile("com.github.jknack:handlebars:4.1.0") {
         exclude group: 'org.slf4j', module: 'slf4j-api'
     }
     compile "io.monix:monix_$scala_version:3.0.0-RC1"
     compile "com.softwaremill.sttp:core_$scala_version:1.2.3"
+    compile "com.beachape:enumeratum_$scala_version:1.5.13"
+//    compile "org.scalafx:scalafx_$scala_version:8.0.144-R12"
     compile "io.circe:circe-core_$scala_version:0.9.3"
     compile "io.circe:circe-parser_$scala_version:0.9.3"
     compile "io.circe:circe-java8_$scala_version:0.9.3"
     compile "io.circe:circe-derivation_$scala_version:0.9.0-M5"
-//    compile "io.circe:circe-magnolia-derivation_$scala_version:0.1.1"
 
     testCompile "com.lihaoyi:pprint_$scala_version:0.5.3"
     testCompile "com.github.nikita-volkov:sext:0.2.4"
@@ -42,10 +46,21 @@ dependencies {
 }
 
 intellij {
-//    version '2018.1.5'
+    type 'IC'
+    version '2017.3'
     //see https://www.jetbrains.com/intellij-repository/releases for versions
-    version '182.3684.40' // 2018-07-17 release of 2018.2 EAP
-    plugins 'maven'
+    //version '2018.1'
+    //version '182.3684.40' // 2018-07-17 release of 2018.2 EAP
+    pluginName 'snyk-intellij-plugin'
+    plugins = ['maven']  //, 'ant' , 'gradle'
+    downloadSources = true
+    intellij.updateSinceUntilBuild false
+
+    publishPlugin {
+        username intellijPublishUsername
+        password intellijPublishPassword
+        channels 'alpha'
+    }
 }
 
 idea {
@@ -57,6 +72,10 @@ idea {
 
 patchPluginXml {
     changeNotes """
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>"""
+      <b>0.0.1</b> - This is the initial release"""
+}
+
+task previewHtmlUi(type:JavaExec) {
+    main = "PreviewHtmlUi"
+    classpath = sourceSets.test.runtimeClasspath
 }

@@ -1,28 +1,40 @@
-<idea-plugin>
+<idea-plugin url="snyk.io">
     <id>io.snyk.snyk-intellij-plugin</id>
-    <name>Plugin display name here</name>
-    <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+    <name>Snyk Vulnerability Scanning</name>
+    <vendor url="http://snyk.io">Snyk.io</vendor>
+    <version>${project.version}</version>
 
     <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
+    <html>
+        <p>
+            This is an IDE extension that helps you detect and fix security issues in your project.
+        </p>
+        <p>
+            By scanning against the vast Snyk database, we can identify and advise
+            you how to fix security problems in your open source dependencies.
+        </p>
+    </html>
     ]]></description>
+
+    <!--see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html-->
+    <idea-version since-build="173"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
-    <!-- uncomment to enable plugin in all products
     <depends>com.intellij.modules.lang</depends>
-    -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
     </extensions>
 
-    <actions>
+    <!--actions>
         <group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
             <add-to-group group-id="MainMenu" anchor="last"  />
             <action id="io.snyk.plugin.Textboxes" class="io.snyk.plugin.TextBoxes" text="Text _Boxes" description="A test menu item" />
         </group>
-    </actions>
+    </actions-->
 
     <depends>org.jetbrains.idea.maven</depends>
 </idea-plugin>

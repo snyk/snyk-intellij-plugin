@@ -1,0 +1,138 @@
+<svg width="80" height="80" viewBox="0 0 80 80" role="img">
+  <defs>
+    <linearGradient id="svg-ruby-a" x1="84.75%" x2="58.25%" y1="111.4%" y2="64.58%">
+      <stop stop-color="#FB7655" offset="0%"/>
+      <stop stop-color="#FB7655" offset="0%"/>
+      <stop stop-color="#E42B1E" offset="41%"/>
+      <stop stop-color="#900" offset="99%"/>
+      <stop stop-color="#900" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-b" x1="116.65%" x2="1.75%" y1="60.89%" y2="19.29%">
+      <stop stop-color="#871101" offset="0%"/>
+      <stop stop-color="#871101" offset="0%"/>
+      <stop stop-color="#911209" offset="99%"/>
+      <stop stop-color="#911209" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-c" x1="75.77%" x2="38.98%" y1="219.33%" y2="7.83%">
+      <stop stop-color="#871101" offset="0%"/>
+      <stop stop-color="#871101" offset="0%"/>
+      <stop stop-color="#911209" offset="99%"/>
+      <stop stop-color="#911209" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-d" x1="50.01%" x2="66.48%" y1="7.23%" y2="79.14%">
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#E57252" offset="23%"/>
+      <stop stop-color="#DE3B20" offset="46%"/>
+      <stop stop-color="#A60003" offset="99%"/>
+      <stop stop-color="#A60003" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-e" x1="46.17%" x2="49.93%" y1="16.35%" y2="83.05%">
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#E4714E" offset="23%"/>
+      <stop stop-color="#BE1A0D" offset="56%"/>
+      <stop stop-color="#A80D00" offset="99%"/>
+      <stop stop-color="#A80D00" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-f" x1="36.97%" x2="49.53%" y1="15.59%" y2="92.48%">
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#E46342" offset="18%"/>
+      <stop stop-color="#C82410" offset="40%"/>
+      <stop stop-color="#A80D00" offset="99%"/>
+      <stop stop-color="#A80D00" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-g" x1="13.61%" x2="85.76%" y1="58.35%" y2="-46.72%">
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#C81F11" offset="54%"/>
+      <stop stop-color="#BF0905" offset="99%"/>
+      <stop stop-color="#BF0905" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-h" x1="27.62%" x2="50.74%" y1="21.13%" y2="79.06%">
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#FFF" offset="0%"/>
+      <stop stop-color="#DE4024" offset="31%"/>
+      <stop stop-color="#BF190B" offset="99%"/>
+      <stop stop-color="#BF190B" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-i" x1="-20.67%" x2="104.24%" y1="122.28%" y2="-6.34%">
+      <stop stop-color="#BD0012" offset="0%"/>
+      <stop stop-color="#BD0012" offset="0%"/>
+      <stop stop-color="#FFF" offset="7%"/>
+      <stop stop-color="#FFF" offset="17%"/>
+      <stop stop-color="#C82F1C" offset="27%"/>
+      <stop stop-color="#820C01" offset="33%"/>
+      <stop stop-color="#A31601" offset="46%"/>
+      <stop stop-color="#B31301" offset="72%"/>
+      <stop stop-color="#E82609" offset="99%"/>
+      <stop stop-color="#E82609" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-j" x1="58.79%" x2="11.96%" y1="65.2%" y2="50.13%">
+      <stop stop-color="#8C0C01" offset="0%"/>
+      <stop stop-color="#8C0C01" offset="0%"/>
+      <stop stop-color="#990C00" offset="54%"/>
+      <stop stop-color="#A80D0E" offset="99%"/>
+      <stop stop-color="#A80D0E" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-k" x1="79.32%" x2="23.09%" y1="62.75%" y2="17.89%">
+      <stop stop-color="#7E110B" offset="0%"/>
+      <stop stop-color="#7E110B" offset="0%"/>
+      <stop stop-color="#9E0C00" offset="99%"/>
+      <stop stop-color="#9E0C00" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-l" x1="92.88%" x2="59.84%" y1="74.12%" y2="39.7%">
+      <stop stop-color="#79130D" offset="0%"/>
+      <stop stop-color="#79130D" offset="0%"/>
+      <stop stop-color="#9E120B" offset="99%"/>
+      <stop stop-color="#9E120B" offset="100%"/>
+    </linearGradient>
+    <radialGradient id="svg-ruby-m" cx="32%" cy="40.21%" r="69.57%" fx="32%" fy="40.21%" gradientTransform="matrix(.52254 0 0 1 .153 0)">
+      <stop stop-color="#A80D00" offset="0%"/>
+      <stop stop-color="#A80D00" offset="0%"/>
+      <stop stop-color="#7E0E08" offset="99%"/>
+      <stop stop-color="#7E0E08" offset="100%"/>
+    </radialGradient>
+    <radialGradient id="svg-ruby-n" cx="13.55%" cy="40.86%" r="88.39%" fx="13.55%" fy="40.86%" gradientTransform="matrix(.77845 0 0 1 .03 0)">
+      <stop stop-color="#A30C00" offset="0%"/>
+      <stop stop-color="#A30C00" offset="0%"/>
+      <stop stop-color="#800E08" offset="99%"/>
+      <stop stop-color="#800E08" offset="100%"/>
+    </radialGradient>
+    <linearGradient id="svg-ruby-o" x1="56.57%" x2="3.1%" y1="101.72%" y2="11.99%">
+      <stop stop-color="#8B2114" offset="0%"/>
+      <stop stop-color="#8B2114" offset="0%"/>
+      <stop stop-color="#9E100A" offset="43%"/>
+      <stop stop-color="#B3100C" offset="99%"/>
+      <stop stop-color="#B3100C" offset="100%"/>
+    </linearGradient>
+    <linearGradient id="svg-ruby-p" x1="30.87%" x2="92.47%" y1="35.6%" y2="100.69%">
+      <stop stop-color="#B31000" offset="0%"/>
+      <stop stop-color="#B31000" offset="0%"/>
+      <stop stop-color="#910F08" offset="44%"/>
+      <stop stop-color="#791C12" offset="99%"/>
+      <stop stop-color="#791C12" offset="100%"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" fill-rule="evenodd">
+    <path fill="url(#svg-ruby-a)" d="M49.34 41.92l-36.36 21.6 47.08-3.2 3.63-47.48" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-b)" d="M60.14 60.3L56.1 32.34 45.06 46.9" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-c)" d="M60.2 60.3l-29.65-2.34-17.4 5.5" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-d)" d="M13.18 63.46l7.4-24.26-16.3 3.48" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-e)" d="M45.07 47l-6.82-26.7-19.5 18.28" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-f)" d="M62.14 20.67L43.7 5.62l-5.13 16.6" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-g)" d="M53.52.25l-10.84 6-6.84-6.1" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-h)" d="M0 50.82l4.54-8.28-3.67-9.87" transform="translate(7.044 8)"/>
+    <path fill="#FFF" d="M7.67 40.35l3.7 10.5 16.06-3.6L45.77 30.2l5.17-16.46L42.8 8l-13.86 5.2C24.57 17.24 16.1 25.27 15.8 25.42c-.3.15-5.6 10.15-8.13 14.92z"/>
+    <path fill="url(#svg-ruby-i)" d="M13.6 13.52C23.06 4.14 35.26-1.4 39.94 3.32c4.68 4.72-.28 16.2-9.74 25.57C20.74 38.2 8.7 44.1 4.02 39.4c-4.7-4.76.12-16.5 9.58-25.9z" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-j)" d="M13.18 63.45l7.35-24.34 24.4 7.9C36.1 55.28 26.3 62.28 13.18 63.5z" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-k)" d="M38.75 22.15l6.27 24.8c7.37-7.74 14-16.07 17.23-26.38l-23.5 1.58z" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-l)" d="M62.18 20.7c2.5-7.57 3.1-18.42-8.73-20.44l-9.7 5.36L62.17 20.7z" transform="translate(7.044 8)"/>
+    <path fill="#9E1209" d="M7.04 58.7c.35 12.5 9.36 12.68 13.2 12.8l-8.87-20.7-4.33 7.9z"/>
+    <path fill="url(#svg-ruby-m)" d="M38.8 22.18c5.65 3.5 17.07 10.48 17.3 10.6.36.2 4.92-7.7 5.96-12.15L38.8 22.18z" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-n)" d="M20.52 39.1l9.82 18.96c5.8-3.15 10.36-7 14.53-11.1L20.52 39.1z" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-o)" d="M4.3 42.8L2.9 59.4c2.63 3.58 6.24 3.9 10.03 3.6C10.2 56.2 4.7 42.55 4.3 42.8z" transform="translate(7.044 8)"/>
+    <path fill="url(#svg-ruby-p)" d="M43.7 5.66L63.2 8.4C62.16 4 58.96 1.14 53.5.25l-9.8 5.4z" transform="translate(7.044 8)"/>
+  </g>
+</svg>

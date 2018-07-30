@@ -8,3 +8,4 @@
 /snyk-intellij-plugin.ipr
 /snyk-intellij-plugin.iws
 /target/
+*.properties
