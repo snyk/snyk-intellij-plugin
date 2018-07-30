@@ -2,10 +2,7 @@ package io.snyk.plugin.embeddedserver
 
 import com.github.jknack.handlebars.context.{JavaBeanValueResolver, MapValueResolver, MethodValueResolver}
 import com.github.jknack.handlebars._
-import com.github.jknack.handlebars.helper.EachHelper
 import com.github.jknack.handlebars.io.{ClassPathTemplateLoader, CompositeTemplateLoader, FileTemplateLoader, URLTemplateLoader}
-
-import scala.collection.JavaConverters._
 
 /**
   * Wrapper for an instance of the Handlebars template engine.  Injects our helpers,
