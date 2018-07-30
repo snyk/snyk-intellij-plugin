@@ -5,9 +5,11 @@ import java.net.{URI, URL}
 import fi.iki.elonen.NanoHTTPD
 
 import scala.util.{Failure, Success, Try}
-import io.snyk.plugin.client.ApiClient
+import io.snyk.plugin.client.{ApiClient, SnykCredentials}
 import io.snyk.plugin.model.{DepTreeProvider, SnykPluginState}
 import ColorProvider.RichColor
+import com.intellij.ide.BrowserUtil
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -45,7 +47,11 @@ class MiniServer(
 
     val interstitial = params.first("interstitial") getOrElse "/assets/images/scanning.mp4"
 
-    if(params.requires(Requirement.NewScan)) {
+    if(params.requires(Requirement.Auth)) {
+      //explicitly triggered
+      asyncAuthAndRedirectTo(path, path, params without Requirement.Auth)
+      route(interstitial, ParamSet.Empty)
+    } else if(params.requires(Requirement.NewScan)) {
       //explicitly triggered
       asyncScanAndRedirectTo(path, params without Requirement.NewScan)
       route(interstitial, ParamSet.Empty)
@@ -71,6 +77,30 @@ class MiniServer(
           pluginState setLatestScanResult result
           println(s"async scan completed, redirecting to $redirectPath with params $params")
           navigateTo(redirectPath, params)
+      }
+    }
+  }
+
+  /**
+    * Initiate an asynchronous authorisation... once complete, navigate to the supplied URL
+    */
+  def asyncAuthAndRedirectTo(
+    successPath: String,
+    failurePath: String,
+    params: ParamSet
+  ): Future[SnykCredentials] = {
+    if(pluginState.credentials.get.isSuccess) {
+      Future fromTry pluginState.credentials.get
+    } else {
+      SnykCredentials.auth(openBrowser = BrowserUtil.browse) andThen {
+        case Failure(x) =>
+          println(s"auth failed with $x")
+          navigateTo(failurePath, params)
+        case Success(creds) =>
+          println(s"auth completed with $creds, redirecting to $successPath with params $params")
+          pluginState.credentials := Success(creds)
+          creds.writeToFile()
+          navigateTo(successPath, params)
       }
     }
   }

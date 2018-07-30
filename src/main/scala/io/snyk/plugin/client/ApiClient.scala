@@ -18,8 +18,13 @@ sealed trait ApiClient {
   def isAvailable: Boolean
 }
 
-private final class StandardApiClient (credentials: Try[SnykCredentials]) extends ApiClient {
-  val isAvailable: Boolean = credentials.isSuccess
+/**
+  * An implementation of `ApiClient` that makes a call to the live Snyk API via the supplied credentials
+  * Note: `credentials` is by-name, and will be freshly evaluated on each access -
+  *       any property depending on it MUST NOT be cached as a `val`
+  */
+private final class StandardApiClient (credentials: => Try[SnykCredentials]) extends ApiClient {
+  def isAvailable: Boolean = credentials.isSuccess
 
   def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials map { creds =>
     val jsonReq = SnykClientSerialisation.encodeRoot(treeRoot).noSpaces
@@ -69,8 +74,9 @@ object ApiClient {
 
   /**
     * Build a "standard" `ApiClient` that connects via the supplied credentials.
+    * Note: `credentials` is by-name, and will be re-evaluated on every usage
     */
-  def standard(credentials: Try[SnykCredentials]): ApiClient =
+  def standard(credentials: => Try[SnykCredentials]): ApiClient =
     new StandardApiClient(credentials)
 
   /**

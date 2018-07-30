@@ -72,7 +72,7 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
 
   /**
     * Open the supplied path as a URL in the HTML panel.  Wait for navigation to be complete
-    * then stop any video that may be playing and make the panel visible.
+    * and *only then* stop any video that may be playing and make the panel visible.
     */
   def navigateTo(path: String, params: ParamSet): Future[String] = {
     htmlPanel.navigateTo(path, params) map { resolvedUrl =>

@@ -1,10 +1,12 @@
 package io.snyk.plugin.model
 
+import io.snyk.plugin.client.SnykCredentials
 import io.snyk.plugin.embeddedserver.ParamSet
 import io.snyk.plugin.ui.SnykToolWindow
 import monix.execution.atomic.Atomic
 
 import scala.concurrent.Future
+import scala.util.Try
 
 /**
   * Central abstraction to the plugin, exposes `Atomic` instances of the relevant bits of
@@ -16,6 +18,7 @@ import scala.concurrent.Future
 trait SnykPluginState {
   val depTree: Atomic[DisplayNode] = Atomic(DisplayNode.Empty)
   val latestScanResult: Atomic[SnykVulnResponse] = Atomic(SnykVulnResponse.empty)
+  val credentials: Atomic[Try[SnykCredentials]] = Atomic(SnykCredentials.default)
 
   def navigateTo(path: String, params: ParamSet): Future[String]
   def showVideo(url: String): Unit

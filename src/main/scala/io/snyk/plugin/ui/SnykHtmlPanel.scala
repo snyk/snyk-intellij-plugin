@@ -2,7 +2,7 @@ package io.snyk.plugin.ui
 
 import com.intellij.openapi.project.Project
 import com.sun.javafx.application.PlatformImpl
-import io.snyk.plugin.client.{ApiClient, SnykCredentials}
+import io.snyk.plugin.client.ApiClient
 import io.snyk.plugin.embeddedserver.{ColorProvider, MiniServer, ParamSet}
 import io.snyk.plugin.model.{DepTreeProvider, SnykPluginState}
 import javafx.embed.swing.JFXPanel
@@ -23,7 +23,7 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
     pluginState,
     DepTreeProvider.forProject(project),
     ColorProvider.intellij,
-    ApiClient.standard(SnykCredentials.default)
+    ApiClient.standard(pluginState.credentials.get)
   )
   val browser: Future[WebView] = initBrowser()
   val externalPopupHandler = new ExternalPopupHandler(pluginState)
@@ -33,7 +33,7 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
   )
 
   /**
-    * Navigate to the specified path.  In normal use this will *not* typically be called directly.
+    * Navigate to the specified path.  In normal use this will *not* be called directly.
     * Instead, `pluginState.navigateTo` will be called, allowing for interception of "special" URLs
     * - such as videos - which can then be shown via an alternate mechanism.
     * @param path
@@ -64,7 +64,6 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
         val engine = browser.getEngine
         engine.setCreatePopupHandler(externalPopupHandler)
         UIManager.addPropertyChangeListener { evt =>
-          println("LnF changed")
           PlatformImpl.runLater { () => engine.reload() }
         }
         val scene = new Scene(browser, Color.ALICEBLUE)

@@ -8,6 +8,7 @@ sealed trait Requirement extends EnumEntry
 object Requirement extends Enum[Requirement] {
   val values = findValues
 
+  case object Auth                   extends Requirement
   case object NewScan                extends Requirement
   case object DepTree                extends Requirement
   case object DepTreeAnnotated       extends Requirement
