@@ -1,7 +1,6 @@
 buildscript {
     ext.scala_bin_version = '2.12.6'
     ext.scala_version = '2.12'
-    ext.JETBRAINS_PASSWORD = System.getenv('JETBRAINS_PASSWORD')
     repositories {
         mavenCentral()
     }
@@ -57,9 +56,9 @@ intellij {
     intellij.updateSinceUntilBuild false
 
     publishPlugin {
-        username intellijPublishUsername
-        password intellijPublishPassword
-        channels 'alpha'
+        username project.properties['intellijPublishUsername'] ?: "snyksec"
+        password project.properties['intellijPublishPassword'] ?: "<not public>"
+        channels 'develop'
     }
 }
 
