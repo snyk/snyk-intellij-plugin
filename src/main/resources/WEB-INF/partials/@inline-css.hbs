@@ -4,8 +4,9 @@
     }
     body {
         background-color: {{panelBgColor}};
-        font-family: {{#if fontFamily}}{{fontFamily}}{{else}}"Prenton", "Gill Sans", "Calibri", sans-serif{{/if}};
+        font-family: {{#if fontFamily}}{{fontFamily}}, {{/if}}"Prenton", "Gill Sans", "Calibri", sans-serif;
         color: {{labelFgColor}};
+        margin: 0;
     }
 
     body::-webkit-scrollbar {
@@ -69,8 +70,169 @@
         padding-top: .25em;
         padding-left: 1em;
     }
+    .tree-level {
+        padding-top: .25em;
+        display: list-item;
+        margin-left: 1em;
+        list-style-type: circle;
+    }
+
+
+    /* ————————————————————–
+    Tree core styles
+    */
+    .tree {
+        padding: 0;
+        margin-left: 1em;
+        margin-top: .5em;
+
+    }
+
+    .tree input {
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .tree input ~ ul {
+        padding: 0;
+        display: none;
+    }
+
+    .tree input:checked ~ ul { display: block; }
+
+    /* ————————————————————–
+      Tree rows
+    */
+    .tree li {
+        line-height: 1.2;
+        position: relative;
+        padding: 0 0 1em 1em;
+        list-style-type: none;
+    }
+
+    .tree ul li {
+        padding: .25em 0 0 1em;
+    }
+
+    .tree > li:last-child { padding-bottom: 0; }
+
+    /* ————————————————————–
+      Tree labels
+    */
+    .tree_label {
+        position: relative;
+        display: inline-block;
+    }
+
+    label.tree_label {
+        cursor: pointer;
+    }
+
+    /*label.tree_label:hover { color: #666; }*/
+
+    /* ————————————————————–
+      Tree expanded icon
+    */
+    label.tree_label:before {
+        background: {{labelFgColor}};
+        color: {{panelBgColor}};
+        position: relative;
+        z-index: 1;
+        float: left;
+        margin: 0 1em 0 -2em;
+        width: 1em;
+        height: 1em;
+        border-radius: 1em;
+        content: '+';
+        text-align: center;
+        line-height: .9em;
+    }
+
+    :checked ~ label.tree_label:before { content: '–'; }
+
+    /* ————————————————————–
+      Tree branches
+    */
+    .tree li:before {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -.5em;
+        display: block;
+        width: 0;
+        border-left: 1px solid #777;
+        content: "";
+    }
+
+    .tree_label:after {
+        position: absolute;
+        top: 0;
+        left: -1.5em;
+        display: block;
+        height: 0.5em;
+        width: 1em;
+        border-bottom: 1px solid #777;
+        border-left: 1px solid #777;
+        border-radius: 0 0 0 .3em;
+        content: '';
+    }
+
+    label.tree_label:after { border-bottom: 0; }
+
+    :checked ~ label.tree_label:after {
+        border-radius: 0 .3em 0 0;
+        border-top: 1px solid #777;
+        border-right: 1px solid #777;
+        border-bottom: 0;
+        border-left: 0;
+        bottom: 0;
+        top: 0.5em;
+        height: auto;
+    }
+
+    .tree li:last-child:before {
+        height: .25em;
+        bottom: auto;
+    }
+
+    .tree > li:last-child:before { display: none; }
+
+    .tree_custom {
+        display: block;
+        background: #eee;
+        padding: 1em;
+        border-radius: 0.3em;
+    }
+
+
+    /*************************/
+
     main {
         padding: 1em;
+        display: block;
+        flex: 1 0 auto;
+    }
+
+    p,
+    pre,
+    blockquote,
+    ul,
+    ol,
+    dl,
+    figure {
+        margin: 0;
+    }
+
+    ol, ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    svg:not(:root) {
+        display: inline-block;
+        fill: currentColor;
+        overflow: hidden;
+        vertical-align: middle;
     }
 
     .sampler {

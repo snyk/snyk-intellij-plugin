@@ -26,9 +26,28 @@ class HandlebarsEngine {
   )
 
   handlebars.infiniteLoops(true)
+//  handlebars.prettyPrint(true)
   HandlebarsHelpers.registerAllOn(handlebars)
 
-  val handlebarsScalaResolver = new HandlebarsScalaResolver
+  def compile(fullPath: String): Template = {
+    val path = fullPath.dropRight(4)
+    println(s"HandlebarsEngine compiling $path")
+    handlebars.compile(path)
+  }
+
+//  def render(fullPath: String, props: Map[String, Any]): String = {
+//    val path = fullPath.dropRight(4)
+//    println(s"HandlebarsEngine rendering $path")
+//    val template = handlebars.compile(path)
+//    template.collectReferenceParameters()
+//    template(mkContext(props))
+//  }
+
+//  def render(path: String, props: (String, Any)*): String = render(path, props.toMap)
+}
+
+object HandlebarsEngine {
+  private[this] val handlebarsScalaResolver = new HandlebarsScalaResolver
 
   private[this] def mkContext(props: Map[String, Any]): Context = Context
     .newBuilder(props)
@@ -39,12 +58,9 @@ class HandlebarsEngine {
       JavaBeanValueResolver.INSTANCE,
     ).build()
 
-  def render(fullPath: String, props: Map[String, Any]): String = {
-    val path = fullPath.dropRight(4)
-    println(s"HandlebarsEngine rendering $path")
-    val template = handlebars.compile(path)
-    template(mkContext(props))
+  implicit class RichTemplate(val template: Template) extends AnyVal {
+    def render(props: Map[String, Any]): String = {
+      template(mkContext(props))
+    }
   }
-
-  def render(path: String, props: (String, Any)*): String = render(path, props.toMap)
 }

@@ -5,13 +5,16 @@ import java.net.{URI, URL}
 import fi.iki.elonen.NanoHTTPD
 
 import scala.util.{Failure, Success, Try}
-import io.snyk.plugin.client.{ApiClient, SnykCredentials}
-import io.snyk.plugin.model.{DepTreeProvider, SnykPluginState}
+import io.snyk.plugin.client.SnykCredentials
+import io.snyk.plugin.model.{SnykPluginState, SnykVulnResponse}
 import ColorProvider.RichColor
 import com.intellij.ide.BrowserUtil
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import HandlebarsEngine.RichTemplate
+
+import scala.collection.JavaConverters._
 
 /**
   * A low-impact embedded HTTP server, built on top of the NanoHTTPD engine.
@@ -22,13 +25,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
   */
 class MiniServer(
   pluginState: SnykPluginState,
-  depTreeProvider: DepTreeProvider,
   colorProvider: ColorProvider,
-  apiClient: ApiClient,
   port0: Int = 0
 ) extends NanoHTTPD(port0) { // 0 == first available port
 
   import NanoHTTPD._
+  import pluginState.apiClient
 
   start(SOCKET_READ_TIMEOUT, false)
   val port: Int = this.getListeningPort
@@ -40,46 +42,165 @@ class MiniServer(
 
   private def navigateTo(path: String, params: ParamSet): Unit = pluginState.navigateTo(path, params)
 
+//  val defaultScanning = "/anim/scanning/scanning.hbs"
+  /** The default URL to show when async scanning if an explicit `interstitial` page hasn't been requested **/
+  val defaultScanning = "/assets/images/scanning.mp4"
+
+  /**
+    * Core NanoHTTPD serving method; Parse params for our own needs, extract the URI, and delegate to our own `serve`
+    */
   override def serve(session: IHTTPSession): Response = {
-    val uri = URI.create(session.getUri).normalize()
+    println(s"miniserver serving $session")
+    route(
+      uri = URI.create(session.getUri).normalize(),
+      params = ParamSet.from(session)
+    )
+  }
+
+  /**
+    * Pass the request on to the appropriate handler for video, handlebars template, or static file
+    */
+  def route(uri: URI, params: ParamSet): Response = {
     val path = uri.getPath
-    val params = ParamSet.from(session)
 
-    val interstitial = params.first("interstitial") getOrElse "/assets/images/scanning.mp4"
+    println(s"miniserver routing $path")
 
-    if(params.requires(Requirement.Auth)) {
-      //explicitly triggered
-      asyncAuthAndRedirectTo(path, path, params without Requirement.Auth)
-      route(interstitial, ParamSet.Empty)
-    } else if(params.requires(Requirement.NewScan)) {
-      //explicitly triggered
-      asyncScanAndRedirectTo(path, params without Requirement.NewScan)
-      route(interstitial, ParamSet.Empty)
-    } else if(params.needsScanResult && pluginState.latestScanResult.get.isEmpty) {
-      //needed scan results, don't yet have any
-      asyncScanAndRedirectTo(path, params)
-      route(interstitial, ParamSet.Empty)
-    } else {
-      route(path, params)
+    // First, capture any params that should immediately be saved as state
+    params.first("selectedProjectId").filterNot(_.isEmpty) foreach { id =>
+      println(s"setting selected project: $id")
+      pluginState.selectedProjectId := id
+    }
+
+    val rootIds = pluginState.rootProjectIds
+
+    if(pluginState.selectedProjectId.get.isEmpty && rootIds.size <= 1) {
+      val id = rootIds.headOption.getOrElse("")
+      println(s"auto-setting selected project: [$id]")
+      pluginState.selectedProjectId := id
+    }
+
+    if (path.endsWith(".hbs")) serveHandlebars(path, params)
+    else if (path.endsWith(".mp4")) serveVideo(path)
+    else serveStatic(path, params)
+  }
+
+  def serveVideo(path: String): Response = {
+    println(s"miniserver 'serving' video at $path")
+    pluginState.showVideo(path)
+    newFixedLengthResponse(Response.Status.ACCEPTED, "text/plain", s"serving video at $path")
+  }
+
+  def serveStatic(path: String, params: ParamSet): Response = {
+    val mime = MimeType of path
+    println(s"miniserver serving static http://localhost:$port$path as $mime")
+    Try {
+      val conn = WebInf.instance.openConnection(path)
+      newFixedLengthResponse(Response.Status.OK, mime, conn.getInputStream, conn.getContentLengthLong)
+    }.fold(
+      ex => newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", ex.toString),
+      identity
+    )
+  }
+
+  private[this] def paramsNeedingProjectId = Set("nakedRoot", "annotatedRoot", "miniVulns", "vulnerabilities")
+  private[this] def paramsNeedingScan = Set("annotatedRoot", "miniVulns", "vulnerabilities")
+
+  def redirectTo(url: String): Response = {
+    val r = newFixedLengthResponse(Response.Status.REDIRECT, MIME_HTML, "")
+    r.addHeader("Location", url)
+    r
+  }
+
+  def serveHandlebars(path: String, params: ParamSet): Response = {
+    val mime = MimeType of path
+
+    println(s"miniserver serving handlebars template http://localhost:$port$path as $mime")
+
+    def depTreeRoot = pluginState.depTree()
+    def nakedDisplayRoot = depTreeRoot.toDisplayNode
+
+
+    println(s"params = $params")
+
+    try {
+      val template = handlebarsEngine.compile(path)
+      val refParams = template.collectReferenceParameters().asScala
+
+      val interstitial = params.first("interstitial") getOrElse defaultScanning
+
+      val projId = pluginState.selectedProjectId.get
+      def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
+
+      if(pluginState.credentials.get.isFailure && refParams.exists(paramsNeedingScan.contains)) {
+        asyncAuthAndRedirectTo(
+          successPath = path,
+          failurePath = path,
+          params = params
+        )
+        redirectTo(interstitial)
+      } else if(projId.isEmpty && refParams.exists(paramsNeedingProjectId.contains)) {
+        redirectTo("/html/select-project.hbs" + params.plus("redirectUrl" -> path).queryString )
+      } else if(latestScanResult.isEmpty && refParams.exists(paramsNeedingScan.contains)) {
+        asyncScanAndRedirectTo(
+          successPath = path,
+          failurePath = path,
+          params = params
+        )
+        redirectTo(interstitial)
+      } else {
+
+        val ctx = Map.newBuilder[String, Any]
+
+        ctx ++= params.contextMap
+        ctx ++= colorProvider.toMap.mapValues(_.hexRepr)
+
+        //TODO: figure a nicer syntax here
+        refParams foreach {
+          case id@"nakedRoot" => ctx += id -> nakedDisplayRoot
+          case id@"annotatedRoot" => ctx += id -> nakedDisplayRoot.performVulnAssociation(latestScanResult.miniVulns)
+          case id@"projectIds" => ctx += id -> pluginState.rootProjectIds
+          case id@"miniVulns" => ctx += id -> latestScanResult.miniVulns.sortBy(_.spec)
+          case id@"vulnerabilities" => ctx += id -> latestScanResult.vulnerabilities
+          case p => println(s"Ref Param: $p")
+        }
+
+        //TODO: should these just be added to state?
+        val paramFlags = params.all("flags").map(_.toLowerCase -> true).toMap
+        ctx += "flags" -> (paramFlags ++ pluginState.flagStrMap)
+
+        ctx += "localhost" -> s"http://localhost:$port"
+        ctx += "apiAvailable" -> apiClient.isAvailable
+
+        val body = template render ctx.result()
+        newFixedLengthResponse(Response.Status.OK, mime, body)
+      }
+
+    } catch { case ex: Exception =>
+      ex.printStackTrace()
+      newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", ex.toString)
     }
   }
 
   /**
     * Initiate an asynchronous security scan... once complete, navigate to the supplied URL
     */
-  def asyncScanAndRedirectTo(redirectPath: String, params: ParamSet): Future[Unit] = {
-    Future {
-      println(s"triggered async scan, will redirect to $redirectPath with params $params")
-      apiClient.runOn(depTreeProvider.getDepTree()) match {
-        case Failure(x) =>
-          x.printStackTrace()
-        case Success(result) =>
-          pluginState setLatestScanResult result
-          println(s"async scan completed, redirecting to $redirectPath with params $params")
-          navigateTo(redirectPath, params)
-      }
+  def asyncScanAndRedirectTo(
+    successPath: String,
+    failurePath: String,
+    params: ParamSet
+  ): Future[SnykVulnResponse] = {
+    println(s"triggered async scan, will redirect to $successPath with params $params")
+    pluginState.performScan() andThen {
+      case Success(result) =>
+        println(s"async scan success, redirecting to $successPath with params $params")
+        navigateTo(successPath, params)
+      case Failure(x) =>
+        x.printStackTrace()
+        println(s"async scan failed, redirecting to $failurePath with params $params")
+        navigateTo(failurePath, params)
     }
   }
+
 
   /**
     * Initiate an asynchronous authorisation... once complete, navigate to the supplied URL
@@ -103,73 +224,5 @@ class MiniServer(
           navigateTo(successPath, params)
       }
     }
-  }
-
-  /**
-    * Pass the request on to the appropriate handler for video, handlebars template, or static file
-    */
-  def route(path: String, params: ParamSet): Response =
-    if(path.endsWith(".hbs")) serveHandlebars(path, params)
-    else if(path.endsWith(".mp4")) serveVideo(path)
-    else serveStatic(path, params)
-
-  def serveVideo(path: String): Response = {
-    pluginState.showVideo(path)
-    println(s"miniserver 'serving' video at $path")
-    newFixedLengthResponse(Response.Status.OK, "text/plain", s"serving video at $path")
-  }
-
-  def serveStatic(path: String, params: ParamSet): Response = {
-    val mime = MimeType of path
-    println(s"miniserver serving static http://localhost:$port$path as $mime")
-    Try {
-      val conn = WebInf.instance.openConnection(path)
-      newFixedLengthResponse(Response.Status.OK, mime, conn.getInputStream, conn.getContentLengthLong)
-    }.fold(
-      ex => newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", ex.toString),
-      identity
-    )
-  }
-
-  def serveHandlebars(path: String, params: ParamSet): Response = {
-    val mime = MimeType of path
-
-    println(s"miniserver serving handlebars template http://localhost:$port$path as $mime")
-
-    def depTreeRoot = depTreeProvider.getDepTree()
-    def nakedDisplayRoot = depTreeRoot.toDisplayNode
-    def latestScanResult = pluginState.latestScanResult.get
-
-    println(s"params = $params")
-
-    val ctxExtra: Option[(String, AnyRef)] =
-      if(params.requires(Requirement.DepTree))
-        Some("rootNode" -> nakedDisplayRoot)
-      else if(params.requires(Requirement.DepTreeRandomAnnotated))
-        Some("rootNode" -> nakedDisplayRoot.randomiseStatus)
-      else if(params.requires(Requirement.DepTreeAnnotated))
-        Some("rootNode" -> nakedDisplayRoot.performVulnAssociation(latestScanResult.miniVulns))
-      else if(params.requires(Requirement.MiniVulns))
-        Some("miniVulns" -> latestScanResult.miniVulns.sortBy(v => (v.severityRank, v.moduleName, v.id)))
-      else if(params.requires(Requirement.FullVulns))
-        Some("vulnerabilities" -> latestScanResult.vulnerabilities)
-      else None
-
-
-    val baseCtx = Map(
-      "localhost" -> s"http://localhost:$port",
-      "apiAvailable"  -> apiClient.isAvailable
-    ) ++ colorProvider.toMap.mapValues(_.hexRepr)
-
-    val ctx = baseCtx ++ ctxExtra
-
-
-    val body = try { handlebarsEngine.render(path, ctx) } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        ex.toString
-    }
-
-    newFixedLengthResponse(Response.Status.OK, mime, body)
   }
 }

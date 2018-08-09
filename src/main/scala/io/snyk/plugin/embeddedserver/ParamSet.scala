@@ -1,66 +1,47 @@
 package io.snyk.plugin.embeddedserver
 
+import java.net.URLEncoder
+
 import fi.iki.elonen.NanoHTTPD.IHTTPSession
-import enumeratum._
 
-sealed trait Requirement extends EnumEntry
-
-object Requirement extends Enum[Requirement] {
-  val values = findValues
-
-  case object Auth                   extends Requirement
-  case object NewScan                extends Requirement
-  case object DepTree                extends Requirement
-  case object DepTreeAnnotated       extends Requirement
-  case object DepTreeRandomAnnotated extends Requirement
-  case object MiniVulns              extends Requirement
-  case object FullVulns              extends Requirement
-}
 
 /**
   * Represents known parameters against an internal http request.
   * Most notably, parses the `requires` parameter into a strongly-typed Set of
   * `Requirement` instances.
+  *
+  * This is an *essential* feature and drives much of the core logic of the plugin
   */
-class ParamSet private (map: Map[String, Seq[String]], val requires: Set[Requirement]) {
+class ParamSet private (map: Map[String, Seq[String]]) {
+
+  def contextMap: Map[String, Any] = map collect {
+    case (k, v) if v.size == 1 => k -> v.head
+    case (k, v) if v.nonEmpty => k -> v
+  }
+
   def containsKey(key: String): Boolean = map.contains(key)
   def first(key: String): Option[String] = map.get(key).flatMap(_.headOption)
-  def all(key: String): Seq[String] = map.get(key).toSeq.flatten
+  def all(key: String): Seq[String] = map.get(key).toSeq.flatten.flatMap(_.split(','))
   def isTrue(key: String): Boolean = all(key).exists(_.toLowerCase == "true")
 
-  def without(req: Requirement): ParamSet = new ParamSet(map, requires - req)
+  def plus(x: (String, String)): ParamSet = {
+    val newSeq = map.getOrElse(x._1, Seq.empty) :+ x._2
+    new ParamSet(map + (x._1 -> newSeq))
+  }
 
-  def needsScanResult: Boolean =
-    requires(Requirement.NewScan) ||
-    requires(Requirement.DepTreeAnnotated) ||
-    requires(Requirement.MiniVulns) ||
-    requires(Requirement.FullVulns)
+  def +(x: (String, String)): ParamSet = plus(x)
 
-  override def toString: String = map.mkString + ",requires=" + requires.mkString(",")
-
-  private[this] def reqsQueryPart: String =
-    if(requires.isEmpty) ""
-    else "&requires=" + requires.map(_.entryName).mkString(",")
+  override def toString: String = map.mkString
 
   def queryString: String =
-    map.flatMap{case (k, vs) => vs.map(v => s"$k=$v")}.mkString("?","&","") + reqsQueryPart
+    map.flatMap{case (k, vs) => vs.map(v => s"$k=${URLEncoder.encode(v, "UTF-8")}")}.mkString("?","&","")
 }
 
 object ParamSet {
-  def from(session: IHTTPSession): ParamSet = {
-    import scala.collection.JavaConverters._
-    val map = session.getParameters.asScala.toMap.mapValues(_.asScala.toSeq)
+  import scala.collection.JavaConverters._
 
-    def requires: Set[Requirement] = {
-      map.getOrElse("requires", Seq.empty)
-        .flatMap(_.split(','))
-        .map(_.trim)
-        .flatMap(Requirement.withNameInsensitiveOption)
-        .toSet
-    }
+  def from(session: IHTTPSession): ParamSet =
+    new ParamSet(session.getParameters.asScala.toMap.mapValues(_.asScala.toSeq))
 
-    new ParamSet(map - "requires", requires)
-  }
-
-  val Empty = new ParamSet(Map.empty, Set.empty)
+  val Empty = new ParamSet(Map.empty)
 }

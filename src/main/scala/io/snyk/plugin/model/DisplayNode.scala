@@ -21,12 +21,12 @@ case class DisplayNode(
   def hasLowVulns: Boolean = lowVulns > 0
 
   def performVulnAssociation(allVulns: Seq[MiniVuln]): DisplayNode = {
-    val relevant = allVulns.filter(_.moduleName == this.name)
+    val relevant = allVulns.filter(_.spec.module.toString == this.name)
     this.copy(
       nested = nested.map(_.performVulnAssociation(allVulns)),
-      highVulns = highVulns + relevant.count(_.severity.toLowerCase=="high"),
-      medVulns  = medVulns  + relevant.count(_.severity.toLowerCase.startsWith("med")),
-      lowVulns  = lowVulns  + relevant.count(_.severity.toLowerCase=="low"),
+      highVulns = highVulns + relevant.count(_.spec.severity.toLowerCase=="high"),
+      medVulns  = medVulns  + relevant.count(_.spec.severity.toLowerCase.startsWith("med")),
+      lowVulns  = lowVulns  + relevant.count(_.spec.severity.toLowerCase=="low"),
       vulns = relevant.toSet
     )
   }

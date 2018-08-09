@@ -81,14 +81,20 @@ class SnykVideoPanel extends JFXPanel { self =>
 
   loadSource("/assets/images/scanning.mp4")
 
+  private[this] val root: Group = new Group
+  root.getChildren.add(mediaView)
+
+  self.setScene(new Scene(root, Color.web("#53537A")))
+
+  //must do binding AFTER adding to parent.  Yes, we have a `parentProperty`,
+  //and yes, some sort of `flatMap` approach to chaining properties of properties
+  //for calculating bindings calculated ON DEMAND would make PERFECT sense.
+
+  //unfortunately... the async/laziness budget was blown on loading videos from the filesystem.
+
   private[this] val mvw: DoubleProperty = mediaView.fitWidthProperty
   private[this] val mvh: DoubleProperty = mediaView.fitHeightProperty
   mvw.bind(Bindings.selectDouble(mediaView.sceneProperty, "width"))
   mvh.bind(Bindings.selectDouble(mediaView.sceneProperty, "height"))
   mediaView.setPreserveRatio(true)
-
-  private[this] val root: Group = new Group
-  root.getChildren.add(mediaView)
-
-  self.setScene(new Scene(root, Color.web("#53537A")))
 }

@@ -12,11 +12,18 @@ import scala.concurrent.duration.Duration
 import javafx.util.{Duration => JfxDuration}
 
 import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConverters._
+
 object Implicits {
 
   implicit class RichProject(val p: Project) extends AnyVal {
     def toDepNode: SnykMavenArtifact = {
-      val mp = MavenProjectsManager.getInstance(p).getProjects.get(0)
+      val allMavenProjects = MavenProjectsManager.getInstance(p).getProjects.asScala
+      val mp = allMavenProjects.head
+      allMavenProjects.foreach { p =>
+        println(s"Enumerating maven project $p")
+      }
+
       SnykMavenArtifact.fromMavenProject(mp)
     }
   }

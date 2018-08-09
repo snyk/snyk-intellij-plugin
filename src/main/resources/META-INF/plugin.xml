@@ -29,12 +29,12 @@
         <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
     </extensions>
 
-    <!--actions>
-        <group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
+    <actions>
+        <!--group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
             <add-to-group group-id="MainMenu" anchor="last"  />
             <action id="io.snyk.plugin.Textboxes" class="io.snyk.plugin.TextBoxes" text="Text _Boxes" description="A test menu item" />
-        </group>
-    </actions-->
+        </group-->
+    </actions>
 
     <depends>org.jetbrains.idea.maven</depends>
 </idea-plugin>

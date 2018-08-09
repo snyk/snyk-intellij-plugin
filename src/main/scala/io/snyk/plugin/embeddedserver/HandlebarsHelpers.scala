@@ -1,10 +1,10 @@
 package io.snyk.plugin.embeddedserver
 
-import java.net.URLEncoder
+import java.net.{URI, URLEncoder}
 import java.time.ZonedDateTime
 import java.util.UUID
 
-import com.github.jknack.handlebars.{Handlebars, Helper, Options}
+import com.github.jknack.handlebars.{Handlebars, Helper, Options, Template}
 import com.github.jknack.handlebars.helper.EachHelper
 
 import scala.collection.JavaConverters._
@@ -28,12 +28,14 @@ object HandlebarsHelpers {
     def param(idx: Int): Option[Any] = params.lift(idx)
     def paramStr(idx: Int): String = param(idx).map(_.toString).getOrElse("")
 
-    def all: Seq[Any] = Option(valueStr) ++: params.map(_.toString)
+    lazy val all: Seq[Any] = Option(valueStr) ++: params.map(_.toString)
+    def apply(idx: Int): Option[Any] = all.lift(idx)
 
     def hash: Map[String, Any] = opts.hash.asScala.toMap
     def hashStrings: Map[String, String] = hash.mapValues(_.toString)
 
-    def fn(): CharSequence = opts.fn()
+    def template: Template = opts.fn
+    def fn(): CharSequence = opts.fn() // yes, these are different...
     def inverse(): CharSequence = opts.inverse()
     def render(bool: Boolean): CharSequence = if(bool) fn() else inverse()
 
@@ -94,8 +96,7 @@ object HandlebarsHelpers {
     "splitList" -> string { in =>
       if(in.isFalsy) "" else in.valueStr.split(',').map(_.trim)
     },
-
-    "concat" -> string { in =>
+    "concat" -> any { in =>
       in.all.mkString("")
     },
     "svg" -> string { in =>
@@ -105,6 +106,25 @@ object HandlebarsHelpers {
         case (acc,(k,v)) => acc.replaceFirst(s"""$k="[0-9]+"""", s"""$k="$v"""")
       }
       safeString(updatedSvgXml)
+    },
+    "include" -> string { in =>
+      val templateFullFilename = in.template.filename
+      val templateRelativeFilename = "WEB-INF/" + templateFullFilename.split("/WEB-INF/").last
+
+      val webInfUri = getClass.getClassLoader.getResource("WEB-INF").toURI
+
+      val templateUri = webInfUri.resolve(templateRelativeFilename)
+      val soughtRelative = in.valueStr
+      val soughtUri = templateUri.resolve(soughtRelative)
+
+      println(s"templateFullFilename: $templateFullFilename")
+      println(s"templateRelativeFilename: $templateRelativeFilename")
+      println(s"webInfUri: $webInfUri")
+      println(s"templateUri: $templateUri")
+      println(s"soughtRelative: $soughtRelative")
+      println(s"soughtUri: $soughtUri")
+      val srcText = Source.fromFile(soughtUri).mkString
+      safeString(srcText)
     },
     "slugify" -> string { in =>
       if (in.isFalsy) ""
@@ -131,15 +151,28 @@ object HandlebarsHelpers {
         in.log()
         in.render(false)
     },
+    "add_encoded_param" -> string { in =>
+
+      val url = in(0).map(_.toString) getOrElse ""
+      val newUrl = for {
+        name <- in(1).map(_.toString)
+        value <- in(2).map(_.toString)
+        escValue = URLEncoder.encode(value, "UTF-8")
+      } yield {
+        if(url contains '?') s"$url&$name=$escValue" else s"$url?$name=$escValue"
+      }
+      newUrl getOrElse url
+    },
     "encode" -> string { in => URLEncoder.encode(in.value, "UTF-8") },
     "upgradeAvailable" -> any { in => in.inverse() }, //TODO: determine properly from the upgrade path
     "firstNonFalse" -> any { in => in.all.find(truthy).get },
     "uuid" -> any { in => in.valueStr + UUID.randomUUID() },
-    "var" -> any { in => in.opts.context.combine(in.valueStr, in.paramStr(0)) },
+    "var" -> any { in => in.opts.context.combine(in.valueStr, in.paramStr(0)); "" },
     "markdown" -> string { in => "markdown goes here" }, //TODO: Implement
     "relativeMoment" -> any { in => "relativeMoment"}, //TODO: Implement
     "datetime" -> any { in => "datetime"}, //TODO: Implement
     "nowstr" -> any { in => ZonedDateTime.now().toString },
+    "trim" -> string { in => in.valueStr.trim }
   )
 
   def registerAllOn(hb: Handlebars): Unit = all.foreach{ case (k,v) => hb.registerHelper(k, v) }

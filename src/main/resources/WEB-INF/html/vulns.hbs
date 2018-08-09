@@ -2,18 +2,14 @@
 <html class="fractal-preview" lang="en-GB">
 <head>
     <meta charset="utf-8">
-    <link href="../../assets/styles/app.css" rel="stylesheet" media="all">
+    {{!<link href="../../assets/styles/app.css" rel="stylesheet" media="all">}}
     {{> @inline-css }}
 </head>
 <body>
     <main>
-        <div class="homelink">
-            <a href="start.hbs">Back to start</a>
-        </div>
-
         <ul>
             {{#each miniVulns}}
-                {{> @ide-issue-card}}
+                {{> @ide-issue-card card_id=@index}}
             {{/each}}
         </ul>
 

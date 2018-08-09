@@ -1,25 +1,23 @@
 package io.snyk.plugin.ui
 
-import com.intellij.execution.dashboard.actions.RunAction
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.{ActionManager, ActionPlaces, DataProvider, DefaultActionGroup}
+import com.intellij.openapi.actionSystem.{ActionManager, DataProvider, DefaultActionGroup}
 import com.intellij.openapi.project.{DumbAware, Project}
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
-import com.intellij.util.ui.JBUI
-import com.intellij.util.xml.ui.DomCollectionControl.RemoveAction
+import com.intellij.openapi.application.ApplicationManager
+import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
+import org.jetbrains.idea.maven.project.{MavenProject, MavenProjectsManager}
 import io.snyk.plugin.embeddedserver.ParamSet
 import io.snyk.plugin.model.SnykPluginState
 import javax.swing.JPanel
 import java.awt.CardLayout
 
-import com.intellij.openapi.application.ApplicationManager
-import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
-import org.jetbrains.idea.maven.project.MavenProjectsManager
+import monix.execution.Ack.Continue
+import monix.execution.Scheduler.Implicits.global
 
 import scala.concurrent.{Future, Promise}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
 import scala.util.Try
 
@@ -38,7 +36,7 @@ class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 }
 
 class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true) with DataProvider with Disposable {
-  val pluginState: SnykPluginState = SnykPluginState.forIntelliJ(this)
+  val pluginState: SnykPluginState = SnykPluginState.forIntelliJ(project, this)
 
   val htmlPanel = new SnykHtmlPanel(project, pluginState)
   val videoPanel = new SnykVideoPanel()
@@ -49,18 +47,42 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
   cardPanel.add(videoPanel, "video")
   cardLayout.show(cardPanel, "html")
 
-  setToolbar(createToolbarPanel)
+  initialiseToolbar()
   setContent(cardPanel)
 
+  pluginState.mavenProjectsObservable subscribe { list =>
+    println(s"updated projects: $list")
+    Continue
+  }
+
+  private[this] def initialiseToolbar(): Unit = {
+    import io.snyk.plugin.ui.actions._
+
+    val actionManager = ActionManager.getInstance()
+    val resynkAction = new SnykRescanAction(pluginState)
+    actionManager.registerAction("Snyk.Rescan", resynkAction)
+
+    val toggleGroupDisplayAction = new SnykToggleGroupDisplayAction(pluginState)
+    actionManager.registerAction("Snyk.ToggleGroupDisplay", toggleGroupDisplayAction)
+
+    val selectProjectAction = new SnykSelectProjectAction(pluginState)
+    actionManager.registerAction("Snyk.SelectProject", selectProjectAction)
+
+    val actionGroup = new DefaultActionGroup(resynkAction, toggleGroupDisplayAction, selectProjectAction)
+    actionManager.registerAction("Snyk.ActionsToolbar", actionGroup)
+
+    val actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, true)
+
+    setToolbar(actionToolbar.getComponent)
+  }
   /**
     * Use MavenProjectsManager to open the editor and highlight where the specified artifact
     * is imported.
     */
-  def navToArtifact(group: String, name: String): Future[Unit] = {
+  def navToArtifact(group: String, name: String, mp: MavenProject): Future[Unit] = {
     val p = Promise[Unit]
     ApplicationManager.getApplication.invokeLater { () =>
       p complete Try {
-        val mp = MavenProjectsManager.getInstance(project).getProjects.get(0)
         val file = mp.getFile
         val artifact = mp.findDependencies(group, name).asScala.head
         val nav = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
@@ -75,9 +97,15 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
     * and *only then* stop any video that may be playing and make the panel visible.
     */
   def navigateTo(path: String, params: ParamSet): Future[String] = {
+    println(s"toolWindow navigateTo: $path $params")
     htmlPanel.navigateTo(path, params) map { resolvedUrl =>
-      videoPanel.stop()
-      cardLayout.show(cardPanel, "html")
+      println(s"toolWindow navigateTo: $path completed")
+      // Don't flip the card when scanning.
+      // If needed, the asynk scan will take care of that when complete
+      if(!pluginState.scanInProgress.get) {
+        videoPanel.stop()
+        cardLayout.show(cardPanel, "html")
+      }
       resolvedUrl
     }
   }
@@ -89,32 +117,18 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
     * is unable to show either h.264 video or animated GIFs!
     */
   def showVideo(url: String): Unit = {
+    println(s"toolWindow showVideo: $url")
     videoPanel.setSource(url)
     cardLayout.show(cardPanel, "video")
   }
 
-  private def createToolbarPanel: JPanel = {
-    val group = new DefaultActionGroup()
-
-    group.add(new RemoveAction())
-    group.add(new RunAction())
-
-//    var action = CommonActionsManager.getInstance.createExpandAllAction(myTreeExpander, this)
-//    action.getTemplatePresentation.setDescription(AntBundle.message("ant.explorer.expand.all.nodes.action.description"))
-//    group.add(action)
-//
-//    action = CommonActionsManager.getInstance.createCollapseAllAction(myTreeExpander, this)
-//    action.getTemplatePresentation.setDescription(AntBundle.message("ant.explorer.collapse.all.nodes.action.description"))
-//    group.add(action)
-//
-//    group.add(myAntBuildFilePropertiesAction)
-
-    val actionToolBar = ActionManager.getInstance.createActionToolbar(ActionPlaces.ANT_EXPLORER_TOOLBAR, group, true)
-
-    JBUI.Panels.simplePanel(actionToolBar.getComponent)
-  }
   override def dispose(): Unit = {
+    val actionManager = ActionManager.getInstance()
+    actionManager.unregisterAction("Snyk.Rescan")
+    actionManager.unregisterAction("Snyk.ToggleGroupDisplay")
+    actionManager.unregisterAction("Snyk.SelectProject")
 
+    actionManager.unregisterAction("Snyk.ActionsToolbar")
   }
 }
 

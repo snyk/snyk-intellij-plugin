@@ -1,35 +1,65 @@
 
-{{#*inline "nested"}}
-    {{#if seq.nonEmpty}}
-        <div class="indent-block">»
-            {{#if makelink}}
-                <a href="http://idenav/artifact/{{seq.head}}" target="_blank">{{seq.head}}</a>
-            {{else if seq.tail.isEmpty}}
-                <span class="vulnerable-dep">{{seq.head}}</span>
-            {{else}}
-                {{seq.head}}
-            {{/if}}
+{{#*inline "mavenCoords"}}
+    {{#if flags.hidemavengroups}}
+        {{node.content.shortName}}
+    {{else}}
+        {{node.content}}
+    {{/if}}
+{{/inline}}
 
-            {{> nested seq=seq.tail makelink=false}}
-        </div>
+{{#*inline "renderNode"}}
+    {{#if node.nested.isEmpty}}
+        <span class="tree_label">
+            {{> @partial-block }}
+        </span>
+    {{else}}
+        <input type="checkbox" checked="checked" id="{{nodeId}}" />
+        <label class="tree_label" for="{{nodeId}}">
+            {{> @partial-block }}
+        </label>
 
     {{/if}}
+
+{{/inline}}
+
+{{#*inline "nested"}}
+    {{#each seq as |node|}}
+        {{var "nodeId" (concat idprefix "_" @index)}}
+        <li>
+            {{#if toplevel}}
+                {{#> renderNode}}
+                    <a onclick='event.stopPropagation();' href="http://idenav/artifact/{{node.content}}" target="_blank">{{>mavenCoords}}</a>
+                {{/renderNode}}
+            {{else}}
+                {{#> renderNode}}
+                    {{>mavenCoords}}
+                {{/renderNode}}
+            {{/if}}
+
+            {{#if node.nested.nonEmpty}}
+                <ul>
+                    {{> nested seq=node.nested toplevel=false idprefix=nodeId}}
+                </ul>
+            {{/if}}
+        </li>
+    {{/each}}
 {{/inline}}
 
 <div class="issue-card">
     <div class="issue-title__name">
-      {{svg (concat "icon/" type) width=22 height=22}}
-      <a href="{{url}}" class="issue-title__link" target="_blank">{{title}}</a>
+      {{svg (concat "icon/" spec.type) width=22 height=22}}
+      <a href="{{url}}" class="issue-title__link" target="_blank">{{spec.title}}</a>
         {{!svg "icon/extern" width=18 height=18}}
     </div>
-    <div class="issue-body issue-body-{{severity}}">
-        {{#if from.tail.nonEmpty}}
+    <div class="issue-body issue-body-{{spec.severity}}">
+        {{#if from.nested.nonEmpty}}
             <div class="issue-subhead">Introduced Through:</div>
-
-            {{> nested seq=from.tail makelink=true}}
+            <ul class="tree">
+                {{> nested seq=from.nested toplevel=true idprefix=(concat spec.id "_" card_id)}}
+            </ul>
         {{/if}}
-        {{#if isUpgradable}}
-            <div class="remediation"><span class="issue-subhead">Remediation:</span> Upgrade to {{upgradePath.head}}</div>
+        {{#if spec.isUpgradable}}
+            <div class="remediation"><span class="issue-subhead">Remediation:</span> Upgrade to {{>mavenCoords node=upgradePath}}</div>
         {{/if}}
     </div>
 </div>

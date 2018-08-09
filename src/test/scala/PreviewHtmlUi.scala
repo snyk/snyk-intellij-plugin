@@ -1,22 +1,22 @@
 import io.snyk.plugin.embeddedserver.{ColorProvider, HandlebarsEngine, MiniServer}
 import io.snyk.plugin.model._
-import io.snyk.plugin.client.ApiClient
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object PreviewHtmlUi extends App {
   val handlebars = new HandlebarsEngine
 
   val pluginState = SnykPluginState.mock
-  val depTreeProvider = DepTreeProvider.mock
   val colorProvider = ColorProvider.mockDarkula
-  val apiClient = ApiClient.mock()
 
-  val initDepTree = depTreeProvider.getDepTree()
-  pluginState.setDepTree(initDepTree.toDisplayNode)
-  pluginState.latestScanResult set apiClient.runOn(initDepTree).get
+  val miniServer = new MiniServer(pluginState, colorProvider, 7695)
 
-  val miniServer = new MiniServer(pluginState, depTreeProvider, colorProvider, apiClient, 7695)
+  pluginState.selectedProjectId := "dummy root"
+  pluginState.performScan().onComplete { case _ =>
+    val root = miniServer.rootUrl.toURI
+    val testUrl = root.resolve("/html/vulns.hbs")
+    println(s"opening browser to $testUrl")
+    java.awt.Desktop.getDesktop.browse(testUrl)
+  }
 
-  val root = miniServer.rootUrl.toURI
-  val testUrl = root.resolve("/html/vulns.hbs?requires=miniVulns")
-  java.awt.Desktop.getDesktop.browse(testUrl)
+
 }

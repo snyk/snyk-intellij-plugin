@@ -41,19 +41,28 @@ object TestParseResponse extends App {
 //  println(output.valueTreeString)
 
   val vulns = output.right.toSeq.flatMap(_.vulnerabilities)
-  val tree = vulns map { v =>
-    Seq(
-      Seq(
-        s"${v.combinedId}",
-        s"${v.title} in ${v.moduleName}"
-      ),
-      columnise(
-        "via:"        -> descendingTree(v.from),
-        "vulnerable:" -> { if(v.isUpgradable) v.semver.splitVulnerable.mkString("\n") else "n/a" },
-        "upgrade:"    -> descendingTree(v.normalisedUpgradePath),
-        "patchable:"  -> v.isPatchable.toString
-      )
-    )
+
+  vulns foreach { v =>
+    val mv = v.toMiniVuln
+    println()
+    println(mv.spec)
+    println("  from:   " + mv.from.treeString.mkString(" ", "\n           ", ""))
+    println("  upgrade:" + mv.upgradePath.treeString.mkString(" ", "\n           ", ""))
   }
-  println(boxes(tree))
+
+//  val tree = vulns map { v =>
+//    Seq(
+//      Seq(
+//        s"${v.combinedId}",
+//        s"${v.title} in ${v.moduleName}"
+//      ),
+//      columnise(
+//        "via:"        -> descendingTree(v.from),
+//        "vulnerable:" -> { if(v.isUpgradable) v.semver.splitVulnerable.mkString("\n") else "n/a" },
+//        "upgrade:"    -> descendingTree(v.normalisedUpgradePath),
+//        "patchable:"  -> v.isPatchable.toString
+//      )
+//    )
+//  }
+//  println(boxes(tree))
 }
