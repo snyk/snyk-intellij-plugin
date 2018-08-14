@@ -16,6 +16,18 @@
     </html>
     ]]></description>
 
+    <change-notes><![CDATA[
+    <html>
+        <ul>
+            <li><b>0.0.1</b> - This is the initial release<br/></li>
+            <li><b>0.0.2</b> - Improved performance<br/></li>
+            <li><b>0.0.3</b> - New version to test automated release</li>
+            <li><b>0.0.4</b> - multi-module support, login workflow, improved behaviour on unscanned projects,
+                           cache invalidation on project changes, collapsible dep trees</li>
+        </ul>
+    </html>
+    ]]></change-notes>
+
     <!--see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html-->
     <idea-version since-build="173"/>
 
@@ -37,4 +49,5 @@
     </actions>
 
     <depends>org.jetbrains.idea.maven</depends>
+    <depends>org.jetbrains.plugins.gradle</depends>
 </idea-plugin>

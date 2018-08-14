@@ -1,7 +1,0 @@
-<div class="prose{{#if modifiers}}{{#each (splitList modifiers) }} prose--{{this}}{{/each}}{{/if}}">
-  {{#if prose-heading}}{{> @heading modifiers="prose" heading=prose-heading}}{{/if}}
-  {{#if prose-subheading}}<p class="prose__subheading">{{prose-subheading}}</p>{{/if}}
-  {{#if @partial-block}}
-  {{> @partial-block }}{{!-- Unindented for pre tags --}}
-  {{/if}}
-</div>

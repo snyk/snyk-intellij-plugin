@@ -6,13 +6,14 @@ import fi.iki.elonen.NanoHTTPD
 
 import scala.util.{Failure, Success, Try}
 import io.snyk.plugin.client.SnykCredentials
-import io.snyk.plugin.model.{SnykPluginState, SnykVulnResponse}
+import io.snyk.plugin.datamodel.SnykVulnResponse
 import ColorProvider.RichColor
 import com.intellij.ide.BrowserUtil
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import HandlebarsEngine.RichTemplate
+import io.snyk.plugin.ui.state.SnykPluginState
 
 import scala.collection.JavaConverters._
 
@@ -40,11 +41,11 @@ class MiniServer(
 
   val handlebarsEngine = new HandlebarsEngine
 
-  private def navigateTo(path: String, params: ParamSet): Unit = pluginState.navigateTo(path, params)
+  private def navigateTo(path: String, params: ParamSet): Unit = pluginState.navigator.navigateTo(path, params)
 
 //  val defaultScanning = "/anim/scanning/scanning.hbs"
   /** The default URL to show when async scanning if an explicit `interstitial` page hasn't been requested **/
-  val defaultScanning = "/assets/images/scanning.mp4"
+  val defaultScanning = "/assets/video/scanning.mp4"
 
   /**
     * Core NanoHTTPD serving method; Parse params for our own needs, extract the URI, and delegate to our own `serve`
@@ -86,7 +87,7 @@ class MiniServer(
 
   def serveVideo(path: String): Response = {
     println(s"miniserver 'serving' video at $path")
-    pluginState.showVideo(path)
+    pluginState.navigator.showVideo(path)
     newFixedLengthResponse(Response.Status.ACCEPTED, "text/plain", s"serving video at $path")
   }
 
@@ -117,7 +118,6 @@ class MiniServer(
     println(s"miniserver serving handlebars template http://localhost:$port$path as $mime")
 
     def depTreeRoot = pluginState.depTree()
-    def nakedDisplayRoot = depTreeRoot.toDisplayNode
 
 
     println(s"params = $params")
@@ -156,8 +156,6 @@ class MiniServer(
 
         //TODO: figure a nicer syntax here
         refParams foreach {
-          case id@"nakedRoot" => ctx += id -> nakedDisplayRoot
-          case id@"annotatedRoot" => ctx += id -> nakedDisplayRoot.performVulnAssociation(latestScanResult.miniVulns)
           case id@"projectIds" => ctx += id -> pluginState.rootProjectIds
           case id@"miniVulns" => ctx += id -> latestScanResult.miniVulns.sortBy(_.spec)
           case id@"vulnerabilities" => ctx += id -> latestScanResult.vulnerabilities
@@ -166,7 +164,7 @@ class MiniServer(
 
         //TODO: should these just be added to state?
         val paramFlags = params.all("flags").map(_.toLowerCase -> true).toMap
-        ctx += "flags" -> (paramFlags ++ pluginState.flagStrMap)
+        ctx += "flags" -> (paramFlags ++ pluginState.flags.asStringMap)
 
         ctx += "localhost" -> s"http://localhost:$port"
         ctx += "apiAvailable" -> apiClient.isAvailable

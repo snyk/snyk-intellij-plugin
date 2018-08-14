@@ -152,7 +152,6 @@ object HandlebarsHelpers {
         in.render(false)
     },
     "add_encoded_param" -> string { in =>
-
       val url = in(0).map(_.toString) getOrElse ""
       val newUrl = for {
         name <- in(1).map(_.toString)

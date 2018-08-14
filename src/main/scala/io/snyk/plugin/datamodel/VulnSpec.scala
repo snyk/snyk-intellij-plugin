@@ -1,0 +1,59 @@
+package io.snyk.plugin.datamodel
+
+import io.circe.{Decoder, Encoder}
+import io.circe.derivation.{deriveDecoder, deriveEncoder}
+
+case class VulnSpec(
+  title            : String,
+  id               : String,
+  severity         : String,
+  module           : MavenCoords,
+  affectedVersions : Seq[String],
+  isUpgradable     : Boolean,
+  isPatchable      : Boolean,
+  isIgnored        : Boolean,
+) {
+  /** for sorting **/
+  def severityRank: Int = severity match {
+    case "high" => 1
+    case "medium" => 2
+    case "low" => 3
+    case _ => 99
+  }
+  //this lot for the handlebars templates
+  def `type`: String = "vuln"
+  def url: String = s"https://snyk.io/vuln/$id"
+  def icon: String = "maven"
+  def affectedVersionsStr: String = affectedVersions.mkString(" & ")
+  def isPatched: Boolean = false
+  def isConfidential: Boolean = false
+  def issueType: String = "vuln"
+  def toMultiString: Seq[String] = Seq(
+    s"title              = $title           ",
+    s"  id               = $id              ",
+    s"  severity         = $severity        ",
+    s"  module           = $module          ",
+    s"  affectedVersions = $affectedVersions",
+    s"  isUpgradable     = $isUpgradable    ",
+    s"  isPatchable      = $isPatchable     ",
+    s"  isIgnored        = $isIgnored       ",
+  )
+}
+
+object VulnSpec {
+  implicit val ordering: Ordering[VulnSpec] = Ordering.by(x => (x.severityRank, x.module.name, x.id))
+
+  def from(vuln: Vulnerability): VulnSpec = VulnSpec(
+    title            = vuln.title,
+    id               = vuln.id,
+    module           = MavenCoords.from(vuln.moduleName, vuln.version),
+    severity         = vuln.severity,
+    affectedVersions = vuln.semver.splitVulnerable,
+    isUpgradable     = vuln.isUpgradable,
+    isPatchable      = vuln.isPatchable,
+    isIgnored        = vuln.filtered.isDefined
+  )
+
+  implicit val encoder: Encoder[VulnSpec] = deriveEncoder
+  implicit val decoder: Decoder[VulnSpec] = deriveDecoder
+}

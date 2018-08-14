@@ -1,3 +1,0 @@
-<label for="{{id}}" class="{{#if label-hidden}}hidden{{/if}} {{#if required}}required{{/if}}">{{label}}</label>
-{{#if label-description}}<p class="label-description">{{label-description}}</p>{{/if}}
-<input type="text" name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" id="{{id}}"{{#if style}} style="{{style}}"{{/if}} {{#if input-modifier}}class="{{input-modifier}}"{{/if}} {{#if placeholder}}placeholder="{{placeholder}}"{{/if}} {{#if error}}aria-describedby="error-{{id}}"{{/if}} {{#if required}}required{{/if}} {{#if value}}value="{{value}}"{{/if}} {{#if input-disabled}}readonly="readonly"{{/if}}{{#if input-test-hook}} {{test-hook (concat input-test-hook)}}{{/if}}{{#if input-data}} {{input-data}}{{/if}} {{#if maxlength}} maxlength="{{maxlength}}"{{/if}}/>

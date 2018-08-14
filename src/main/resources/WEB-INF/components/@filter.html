@@ -1,8 +1,0 @@
-<fieldset class="filter{{#if modifiers}}{{#each (splitList modifiers) }} filter--{{this}}{{/each}}{{/if}}"{{#if hidden}} hidden{{/if}} data-snyk-filter="{{target}}"{{#if test-hook}} {{test-hook (concat test-hook)}}{{else}} {{test-hook "filter"}}{{/if}}>
-  {{~#each filterGroups}}
-  <legend class="filter__label">{{label}}</legend>
-  <ul class="filter__group{{#if ../modifiers}}{{#each (splitList ../modifiers) }} filter__group--{{this}}{{/each}}{{/if}}" data-snyk-filter-group="{{name}}">
-    {{> (concat "@filter--" filterType)}}
-  </ul>
-  {{/each}}
-</fieldset>

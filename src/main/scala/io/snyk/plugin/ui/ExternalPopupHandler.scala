@@ -2,7 +2,7 @@ package io.snyk.plugin.ui
 import java.net.URL
 
 import com.intellij.ide.BrowserUtil
-import io.snyk.plugin.model.SnykPluginState
+import io.snyk.plugin.ui.state.SnykPluginState
 import javafx.application.Platform
 import javafx.scene.web.PopupFeatures
 import javafx.scene.web.WebEngine
@@ -51,7 +51,7 @@ class ExternalPopupHandler(pluginState: SnykPluginState) extends Callback[PopupF
       val parts = url.drop(navPrefix.length).split(":|@")
       val g = parts(0)
       val a = parts(1)
-      pluginState.navToArtifact(g, a)
+      pluginState.navigator.navToArtifact(g, a, pluginState.selectedProjectId.get)
     } else try { BrowserUtil.browse(new URL(url)) } catch { case NonFatal(e) => e.printStackTrace() }
   }
 

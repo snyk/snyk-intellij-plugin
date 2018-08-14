@@ -1,5 +1,5 @@
 import io.snyk.plugin.embeddedserver.{ColorProvider, HandlebarsEngine, MiniServer}
-import io.snyk.plugin.model._
+import io.snyk.plugin.ui.state._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object PreviewHtmlUi extends App {

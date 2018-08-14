@@ -1,3 +1,0 @@
-<label for="{{input-id}}" class="{{#if label-hidden}}hidden{{/if}} {{#if input-required}}required{{/if}}">{{label}}</label>
-{{#if label-description}}<p class="label-description">{{label-description}}</p>{{/if}}
-<input type="url" name="{{#if input-name}}{{input-name}}{{else}}{{id}}{{/if}}" id="{{input-id}}" class="{{input-modifier}}" {{#if input-placeholder}}placeholder="{{input-placeholder}}"{{/if}} {{#if input-error}}aria-describedby="input-error-{{input-id}}"{{/if}} {{#if input-required}}required{{/if}} {{#if input-value}}value="{{input-value}}"{{/if}} {{#if input-disabled}}readonly="readonly"{{/if}}{{#if input-test-hook}} {{test-hook (concat input-test-hook)}}{{/if}}/>

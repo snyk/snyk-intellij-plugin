@@ -8,7 +8,7 @@ import com.intellij.openapi.ui.popup._
 import com.intellij.ui.awt.RelativePoint
 import icons.MavenIcons
 import io.snyk.plugin.embeddedserver.ParamSet
-import io.snyk.plugin.model.SnykPluginState
+import io.snyk.plugin.ui.state.SnykPluginState
 import javax.swing.Icon
 
 import scala.collection.JavaConverters._
@@ -39,7 +39,7 @@ class SnykSelectProjectAction(pluginState: SnykPluginState)
     override def onChosen(selectedValue: String, finalChoice: Boolean): PopupStep[_] = {
       if (selectedValue != pluginState.selectedProjectId.get) {
         pluginState.selectedProjectId := selectedValue
-        pluginState.navigateTo("/html/vulns.hbs", ParamSet.Empty)
+        pluginState.navigator.navigateTo("/html/vulns.hbs", ParamSet.Empty)
       }
       PopupStep.FINAL_CHOICE
     }

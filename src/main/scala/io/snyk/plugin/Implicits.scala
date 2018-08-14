@@ -2,7 +2,7 @@ package io.snyk.plugin
 
 import com.intellij.openapi.project.Project
 import io.circe.{Json, JsonObject}
-import io.snyk.plugin.model.SnykMavenArtifact
+import io.snyk.plugin.datamodel.SnykMavenArtifact
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.concurrent.Worker
 import org.jetbrains.idea.maven.project.MavenProjectsManager

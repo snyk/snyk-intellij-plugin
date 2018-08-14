@@ -2,9 +2,8 @@ package io.snyk.plugin.ui
 
 import com.intellij.openapi.project.Project
 import com.sun.javafx.application.PlatformImpl
-import io.snyk.plugin.client.ApiClient
 import io.snyk.plugin.embeddedserver.{ColorProvider, MiniServer, ParamSet}
-import io.snyk.plugin.model.SnykPluginState
+import io.snyk.plugin.ui.state.SnykPluginState
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.paint.Color

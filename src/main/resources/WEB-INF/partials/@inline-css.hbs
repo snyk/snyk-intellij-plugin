@@ -248,4 +248,32 @@
         text-decoration-line: underline;
         text-decoration-color: green;
     }
+
+    .mvn-group {
+
+    }
+
+    .mvn-name {
+
+    }
+
+    a .mvn-version {
+        background-color: inherit;
+        color: inherit;
+        border: none;
+        padding: 0px;
+    }
+
+    a .mvn-version::before {
+        content: " @ ";
+    }
+    .mvn-version {
+        {{!-- background-color: {{labelFgColor}}; --}}
+        {{!-- color: {{panelBgColor}}; --}}
+        border: 1px dotted {{labelFgColor}};
+        border-radius: .25em;
+        padding-left: 1px;
+        padding-right: 1px;
+    }
+
 </style>

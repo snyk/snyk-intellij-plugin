@@ -3,8 +3,8 @@ import Predef.{any2stringadd => _, _}
 import io.circe.parser._
 
 import scala.io.Source
-import io.snyk.plugin.model.SnykVulnResponse
-import io.snyk.plugin.model.SnykVulnResponse.Decoders._
+import io.snyk.plugin.datamodel.SnykVulnResponse
+import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
 
 object TestParseResponse extends App {
 
@@ -46,9 +46,10 @@ object TestParseResponse extends App {
     val mv = v.toMiniVuln
     println()
     println(mv.spec)
-    println("  from:   " + mv.from.treeString.mkString(" ", "\n           ", ""))
-    println("  upgrade:" + mv.upgradePath.treeString.mkString(" ", "\n           ", ""))
+    println("  from:   " + mv.from.map(_.treeString.mkString(" ", "\n           ", "")).getOrElse("∅"))
+    println("  upgrade:" + mv.upgradePath.map(_.treeString.mkString(" ", "\n           ", "")).getOrElse("∅"))
   }
+
 
 //  val tree = vulns map { v =>
 //    Seq(

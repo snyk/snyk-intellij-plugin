@@ -1,9 +1,0 @@
-<div
-class="badge{{#if modifiers}}{{#each (splitList modifiers) }} badge--{{this}}{{/each}}{{/if}}"
-{{#if badge-style}}style="{{badge-style}}"{{/if}}
-
-{{~#if test-hook}} {{test-hook (concat test-hook)}}{{else}} {{test-hook "badge"}}{{/if}}>
-  {{#if url}}<a class="badge__link" href="{{url}}">{{/if}}
-    {{label}}{{#if url}}</a>
-  {{/if}}
-</div>

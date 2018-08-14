@@ -1,8 +1,0 @@
-<a {{#if href}}href="{{href}}"{{/if}}
-class="{{modifier}}{{#if modifiers}}{{#each (splitList modifiers) }} link--{{this}}{{/each}}{{/if}}" {{!-- Depricating modifier in favour of modifiers --}}
-{{#if :click}}:click="{{:click}}"{{/if}}
-{{#if link-id}}id="{{link-id}}"{{/if}}
-{{#if link-test-hook}}{{test-hook (concat link-test-hook)}}{{/if}}
-{{#if track-link}} data-snyk-track-link="{{track-link}}"{{/if}}
-{{#if sidepanel}}data-snyk-sidepanel-trigger="{{sidepanel}}"{{/if}}
-{{#if data}}{{data}}{{/if}}>{{~#if icon}}{{svg (concat "icon/" icon) height="21" width="21"}}{{/if~}}{{label}}</a>

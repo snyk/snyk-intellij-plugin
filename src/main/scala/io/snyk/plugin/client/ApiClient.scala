@@ -1,8 +1,8 @@
 package io.snyk.plugin.client
 
-import io.snyk.plugin.model.{SnykMavenArtifact, SnykVulnResponse}
+import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.circe.parser.decode
-import io.snyk.plugin.model.SnykVulnResponse.Decoders._
+import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
 
 import scala.io.{Codec, Source}
 import scala.util.Try
@@ -23,7 +23,7 @@ sealed trait ApiClient {
   * Note: `credentials` is by-name, and will be freshly evaluated on each access -
   *       any property depending on it MUST NOT be cached as a `val`
   */
-private final class StandardApiClient (credentials: => Try[SnykCredentials]) extends ApiClient {
+private final class StandardApiClient(credentials: => Try[SnykCredentials]) extends ApiClient {
   def isAvailable: Boolean = credentials.isSuccess
 
   def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials map { creds =>
@@ -52,7 +52,6 @@ private final class StandardApiClient (credentials: => Try[SnykCredentials]) ext
     println(ret)
 
     ret
-
   }
 
   def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {

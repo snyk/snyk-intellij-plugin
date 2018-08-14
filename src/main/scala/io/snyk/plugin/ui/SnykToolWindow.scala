@@ -8,12 +8,12 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
 import com.intellij.openapi.application.ApplicationManager
 import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
-import org.jetbrains.idea.maven.project.{MavenProject, MavenProjectsManager}
+import org.jetbrains.idea.maven.project.MavenProject
 import io.snyk.plugin.embeddedserver.ParamSet
-import io.snyk.plugin.model.SnykPluginState
 import javax.swing.JPanel
 import java.awt.CardLayout
 
+import io.snyk.plugin.ui.state.SnykPluginState
 import monix.execution.Ack.Continue
 import monix.execution.Scheduler.Implicits.global
 
@@ -75,22 +75,7 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
 
     setToolbar(actionToolbar.getComponent)
   }
-  /**
-    * Use MavenProjectsManager to open the editor and highlight where the specified artifact
-    * is imported.
-    */
-  def navToArtifact(group: String, name: String, mp: MavenProject): Future[Unit] = {
-    val p = Promise[Unit]
-    ApplicationManager.getApplication.invokeLater { () =>
-      p complete Try {
-        val file = mp.getFile
-        val artifact = mp.findDependencies(group, name).asScala.head
-        val nav = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
-        nav.navigate(true)
-      }
-    }
-    p.future
-  }
+
 
   /**
     * Open the supplied path as a URL in the HTML panel.  Wait for navigation to be complete
@@ -104,6 +89,7 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
       // If needed, the asynk scan will take care of that when complete
       if(!pluginState.scanInProgress.get) {
         videoPanel.stop()
+        println(s"flipping to html card for $path")
         cardLayout.show(cardPanel, "html")
       }
       resolvedUrl
@@ -120,6 +106,8 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
     println(s"toolWindow showVideo: $url")
     videoPanel.setSource(url)
     cardLayout.show(cardPanel, "video")
+    println(s"flipping to video card for $url")
+
   }
 
   override def dispose(): Unit = {

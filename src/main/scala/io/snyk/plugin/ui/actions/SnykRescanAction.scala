@@ -1,13 +1,12 @@
 package io.snyk.plugin.ui.actions
 
 
-
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent}
 import com.intellij.openapi.project.DumbAware
 import io.snyk.plugin.embeddedserver.ParamSet
-import io.snyk.plugin.model.SnykPluginState
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.snyk.plugin.ui.state.SnykPluginState
+import monix.execution.Scheduler.Implicits.global
 
 class SnykRescanAction(pluginState: SnykPluginState)
 extends AnAction("Re-Scan project with Snyk", null, AllIcons.Actions.Refresh)
@@ -20,9 +19,14 @@ with DumbAware {
   }
 
   override def actionPerformed(e: AnActionEvent): Unit = {
-    pluginState.performScan(force=true) andThen { case _ =>
-      pluginState.navigateTo("/html/vulns.hbs", ParamSet.Empty)
-    }
     println("Rescan button clicked")
+
+    println(s"*** SOURCE SETS ***")
+    pluginState.externProj.gradleSourceSets foreach { ss => println(ss.toMultiLineString) }
+
+
+    pluginState.performScan(force=true) andThen { case _ =>
+      pluginState.navigator.navigateTo("/html/vulns.hbs", ParamSet.Empty)
+    }
   }
 }

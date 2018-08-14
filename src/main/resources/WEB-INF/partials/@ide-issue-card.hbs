@@ -1,9 +1,12 @@
 
 {{#*inline "mavenCoords"}}
     {{#if flags.hidemavengroups}}
-        {{node.content.shortName}}
+        <span class="mvn-name">{{coords.name}}</span>
+        <span class="mvn-version">{{coords.version}}</span>
     {{else}}
-        {{node.content}}
+        <span class="mvn-group">{{coords.group}}</span>
+        : <span class="mvn-name">{{coords.name}}</span>
+        <span class="mvn-version">{{coords.version}}</span>
     {{/if}}
 {{/inline}}
 
@@ -19,7 +22,6 @@
         </label>
 
     {{/if}}
-
 {{/inline}}
 
 {{#*inline "nested"}}
@@ -28,11 +30,11 @@
         <li>
             {{#if toplevel}}
                 {{#> renderNode}}
-                    <a onclick='event.stopPropagation();' href="http://idenav/artifact/{{node.content}}" target="_blank">{{>mavenCoords}}</a>
+                    <a onclick='event.stopPropagation();' href="http://idenav/artifact/{{node.content}}" target="_blank">{{>mavenCoords coords=node.content}}</a>
                 {{/renderNode}}
             {{else}}
                 {{#> renderNode}}
-                    {{>mavenCoords}}
+                    {{>mavenCoords coords=node.content}}
                 {{/renderNode}}
             {{/if}}
 
@@ -59,7 +61,7 @@
             </ul>
         {{/if}}
         {{#if spec.isUpgradable}}
-            <div class="remediation"><span class="issue-subhead">Remediation:</span> Upgrade to {{>mavenCoords node=upgradePath}}</div>
+            <div class="remediation"><span class="issue-subhead">Remediation:</span> Upgrade to {{>mavenCoords coords=upgradePath.content}}</div>
         {{/if}}
     </div>
 </div>

@@ -3,7 +3,7 @@ package io.snyk.plugin.client
 import io.circe.derivation.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
 import io.circe._
-import io.snyk.plugin.model.SnykMavenArtifact
+import io.snyk.plugin.datamodel.SnykMavenArtifact
 
 object SnykClientSerialisation {
   case class JsonForm(

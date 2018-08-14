@@ -1,8 +1,0 @@
-<span class="license-title{{#if modifiers}}{{#each (splitList modifiers) }} license-title--{{this}}{{/each}}{{/if}}"
-{{~#if test-hook}}{{test-hook (concat test-hook)}}{{else}}{{test-hook "license title"}}{{/if}}>
-  {{#unless_eq icon false}}{{svg (concat "icon/" "license") height=22 width=22}} {{/unless_eq}}
-  {{#if type}}{{type}}: {{/if}}
-  {{#each licenses}}
-  <a href="{{url}}" class="license-name__url">{{title}}</a>{{#unless @last}},{{/unless}}
-  {{/each}}
-</span>

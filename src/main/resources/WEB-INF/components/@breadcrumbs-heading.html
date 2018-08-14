@@ -1,9 +1,0 @@
-<h2 class="breadcrumbs-heading{{#if modifiers}}{{#each (splitList modifiers) }} breadcrumbs-heading--{{this}}{{/each}}{{/if}}">
-  {{~#if parentTitle}}
-    {{~#if parentUrl}}<a href="{{parentUrl}}" class="breadcrumbs-heading__link">{{/if}}
-    {{parentTitle}}
-    {{~#if parentUrl}}</a>{{/if}}
-    <span class="breadcrumbs-heading__separator"> / </span>
-  {{/if}}
-  <span class="breadcrumbs-heading__title">{{title}}</span>
-</h2>
