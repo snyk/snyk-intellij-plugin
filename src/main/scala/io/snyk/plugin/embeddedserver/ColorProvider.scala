@@ -21,7 +21,8 @@ object ColorProvider {
   }
 
   def intellij: ColorProvider = IntelliJColorProvider
-  def mockDarkula: ColorProvider = MockDarkulaColorProvider
+  def mockIntellijDefault: ColorProvider = MockIJDefaultColorProvider
+  def mockIntellijDarkula: ColorProvider = MockDarkulaColorProvider
 }
 
 import ColorProvider._
@@ -29,83 +30,77 @@ import ColorProvider._
 
 trait ColorProvider {
   def linkColor: Color
-  def panelBgColor: Color
+  def bgColor: Color
+  def textColor: Color
+  def inactiveTextColor: Color
+  def separatorColor: Color
+
+  //unused, delete?
+  def boundsColor: Color
   def toolTipColor: Color
   def buttonSelectColor: Color
-  def separatorFgColor: Color
-  def separatorBgColor: Color
   def separatorShadowColor: Color
   def separatorHighlightColor: Color
-  def boundsColor: Color
-  def labelFgColor: Color
-  def tabbedPaneBgColor: Color
-  def activeTextColor: Color
-  def inactiveTextColor: Color
+
 
   //TODO: decent macro solution is needed - this is WAY too fragile
   def toMap: Map[String, Color] = Map(
     "linkColor"               -> linkColor,
-    "panelBgColor"            -> panelBgColor,
+    "bgColor"                 -> bgColor,
+    "textColor"               -> textColor,
+    "inactiveTextColor"       -> inactiveTextColor,
+    "separatorColor"          -> separatorColor,
+    "boundsColor"             -> boundsColor,
     "toolTipColor"            -> toolTipColor,
     "buttonSelectColor"       -> buttonSelectColor,
-    "separatorFgColor"        -> separatorFgColor,
-    "separatorBgColor"        -> separatorBgColor,
     "separatorShadowColor"    -> separatorShadowColor,
     "separatorHighlightColor" -> separatorHighlightColor,
-    "boundsColor"             -> boundsColor,
-    "labelFgColor"            -> labelFgColor,
-    "tabbedPaneBgColor"       -> tabbedPaneBgColor,
-    "activeTextColor"         -> activeTextColor,
-    "inactiveTextColor"       -> inactiveTextColor
   )
 }
 
 private object IntelliJColorProvider extends ColorProvider {
   def bgBrightness = UIUtil.getPanelBackground.brightness
   override def linkColor = if(bgBrightness > 0.5f) new Color(75, 69, 161) else new Color(88, 157, 246)
-  override def panelBgColor            : Color = UIUtil.getPanelBackground
+  override def bgColor                 : Color = UIUtil.getPanelBackground
+  override def textColor               : Color = UIUtil.getLabelForeground
+  override def inactiveTextColor       : Color = UIUtil.getInactiveTextColor
+  override def separatorColor          : Color = UIUtil.getSeparatorForeground
+
+  //unused, delete?
+  override def boundsColor             : Color = UIUtil.getBoundsColor
   override def toolTipColor            : Color = UIUtil.getToolTipForeground
   override def buttonSelectColor       : Color = UIUtil.getButtonSelectColor
-  override def separatorFgColor        : Color = UIUtil.getSeparatorForeground
-  override def separatorBgColor        : Color = UIUtil.getSeparatorBackground
   override def separatorShadowColor    : Color = UIUtil.getSeparatorShadow
   override def separatorHighlightColor : Color = UIUtil.getSeparatorHighlight
-  override def boundsColor             : Color = UIUtil.getBoundsColor
-  override def labelFgColor            : Color = UIUtil.getLabelForeground
-  override def tabbedPaneBgColor       : Color = UIUtil.getTabbedPaneBackground
-  override def activeTextColor         : Color = UIUtil.getActiveTextColor
-  override def inactiveTextColor       : Color = UIUtil.getInactiveTextColor
 }
 
 private object MockIJDefaultColorProvider extends ColorProvider {
   override def linkColor               : Color = Color.decode("#4b45a1")
-  override def panelBgColor            : Color = Color.decode("#ececec")
+  override def bgColor                 : Color = Color.decode("#ececec")
+  override def textColor               : Color = Color.decode("#1d1d1d")
+  override def inactiveTextColor       : Color = Color.decode("#999999")
+  override def separatorColor          : Color = Color.decode("#cdcdcd")
+
+  //unused, delete?
+  override def boundsColor             : Color = Color.decode("#c0c0c0")
   override def toolTipColor            : Color = Color.decode("#1d1d1d")
   override def buttonSelectColor       : Color = Color.decode("#ff6666")
-  override def separatorFgColor        : Color = Color.decode("#cdcdcd")
-  override def separatorBgColor        : Color = Color.decode("#FF0000")
   override def separatorShadowColor    : Color = Color.decode("#8e8e8e")
   override def separatorHighlightColor : Color = Color.decode("#ffffff")
-  override def boundsColor             : Color = Color.decode("#c0c0c0")
-  override def labelFgColor            : Color = Color.decode("#1d1d1d")
-  override def tabbedPaneBgColor       : Color = Color.decode("#ececec")
-  override def activeTextColor         : Color = Color.decode("#FF0000")
-  override def inactiveTextColor       : Color = Color.decode("#999999")
 }
 
 private object MockDarkulaColorProvider extends ColorProvider {
   override def linkColor               : Color = Color.decode("#589df6")
-  override def panelBgColor            : Color = Color.decode("#3c3f41")
+  override def bgColor                 : Color = Color.decode("#3c3f41")
+  override def textColor               : Color = Color.decode("#bbbbbb")
+  override def inactiveTextColor       : Color = Color.decode("#999999")
+  override def separatorColor          : Color = Color.decode("#515151")
+
+  //unused, delete?
+  override def boundsColor             : Color = Color.decode("#323232")
   override def toolTipColor            : Color = Color.decode("#bbbbbb")
   override def buttonSelectColor       : Color = Color.decode("#ff6666")
-  override def separatorFgColor        : Color = Color.decode("#515151")
-  override def separatorBgColor        : Color = Color.decode("#FF0000")
   override def separatorShadowColor    : Color = Color.decode("#8e8e8e")
   override def separatorHighlightColor : Color = Color.decode("#ffffff")
-  override def boundsColor             : Color = Color.decode("#323232")
-  override def labelFgColor            : Color = Color.decode("#bbbbbb")
-  override def tabbedPaneBgColor       : Color = Color.decode("#3c3f41")
-  override def activeTextColor         : Color = Color.decode("#FF0000")
-  override def inactiveTextColor       : Color = Color.decode("#999999")
 }
 

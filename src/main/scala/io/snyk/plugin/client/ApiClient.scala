@@ -7,6 +7,7 @@ import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
 import scala.io.{Codec, Source}
 import scala.util.Try
 import com.softwaremill.sttp._
+import io.circe.{Json, Printer}
 
 /**
   * Represents the connection to the Snyk servers for the security scan.
@@ -26,8 +27,11 @@ sealed trait ApiClient {
 private final class StandardApiClient(credentials: => Try[SnykCredentials]) extends ApiClient {
   def isAvailable: Boolean = credentials.isSuccess
 
+  private[this] val stringNoNulls: Json => String =
+    Printer.noSpaces.copy(dropNullValues = true).pretty
+
   def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials map { creds =>
-    val jsonReq = SnykClientSerialisation.encodeRoot(treeRoot).noSpaces
+    val jsonReq = stringNoNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
     println("ApiClient: Built JSON Request")
     println(jsonReq)
 
@@ -38,7 +42,6 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
       .header("Authorization", s"token $apiToken")
       .header("x-is-ci", "false")
       .header("content-type", "application/json")
-      .header("user-agent", "Needle/2.1.1 (Node.js v8.11.3; linux x64)")
       .body(jsonReq)
 
     implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
@@ -79,16 +82,9 @@ object ApiClient {
     new StandardApiClient(credentials)
 
   /**
-    * Default response as used by `mock`, always returns `sampleResponse.json` from the classpath
-    */
-  private[this] def defaultMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
-    Source.fromResource("sampleResponse.json", getClass.getClassLoader)(Codec.UTF8).mkString
-  }
-
-  /**
     * Build a mock client, using the supplied function to provide the mocked response.
     * A default implementation is supplied.
     */
-  def mock(mockResponder: SnykMavenArtifact => Try[String] = defaultMockResponder): ApiClient =
+  def mock(mockResponder: SnykMavenArtifact => Try[String]): ApiClient =
     new MockApiClient(mockResponder)
 }

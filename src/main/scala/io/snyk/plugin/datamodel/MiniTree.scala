@@ -5,10 +5,18 @@ import io.circe.derivation.{deriveDecoder, deriveEncoder}
 
 case class MiniTree[+T] (content: T, nested: Seq[MiniTree[T]]) {
   def linearise: Seq[Seq[T]] = MiniTree.toLinear(this)
+
   def depth: Int = 1 + ( if(nested.isEmpty) 0 else nested.map(_.depth).max )
+
   def treeString: Seq[String] =
     s"$content" +: nested.flatMap(_.treeString).map("| " + _)
 
+  def map[R](fn: T => R): MiniTree[R] = MiniTree(
+    fn(content),
+    nested.map(_.map(fn))
+  )
+
+  def exists(fn: T => Boolean): Boolean = fn(content) || nested.exists(_.exists(fn))
 }
 
 object MiniTree {

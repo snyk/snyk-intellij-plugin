@@ -24,7 +24,9 @@ object SnykCredentials {
   implicit val encoder: Encoder[SnykCredentials] = deriveEncoder[SnykCredentials]
 
   def defaultConfigFile: Path = Paths.get(System.getProperty("user.home"), ".config/configstore/snyk.json")
+
   def defaultEndpoint: String = "http://snyk.io/api"
+  def defaultTimeout: Long = 5.minutes.toSeconds
 
   def default: Try[SnykCredentials] = forPath(defaultConfigFile)
 
@@ -90,20 +92,23 @@ object SnykCredentials {
       }
     }
   }
-
 }
 
 import SnykCredentials._
 
 case class SnykCredentials(
   api: UUID,
-  endpoint: Option[String]
+  endpoint: Option[String],
+  timeout: Option[Long],
+  org: Option[String]
 ) {
   def endpointOrDefault: String = endpoint getOrElse defaultEndpoint
 
   private def normalised: SnykCredentials = SnykCredentials(
     this.api,
-    this.endpoint.filterNot(_ == defaultEndpoint)
+    this.endpoint.filterNot(_ == defaultEndpoint),
+    this.timeout.filterNot(_ == defaultTimeout),
+    this.org.filterNot(_.isEmpty),
   )
 
   def writeToFile(path: Path = defaultConfigFile): Unit = {

@@ -45,66 +45,98 @@ class MiniServer(
 
 //  val defaultScanning = "/anim/scanning/scanning.hbs"
   /** The default URL to show when async scanning if an explicit `interstitial` page hasn't been requested **/
-  val defaultScanning = "/assets/video/scanning.mp4"
+  val defaultScanning = "/html/scanning.hbs"
 
   /**
     * Core NanoHTTPD serving method; Parse params for our own needs, extract the URI, and delegate to our own `serve`
     */
   override def serve(session: IHTTPSession): Response = {
     println(s"miniserver serving $session")
-    route(
-      uri = URI.create(session.getUri).normalize(),
-      params = ParamSet.from(session)
-    )
+    val uri = URI.create(session.getUri).normalize()
+    val params = ParamSet.from(session)
+    val path = uri.getPath
+    println(s"miniserver routing $path")
+    try {
+      router.route(uri, params) getOrElse notFoundResponse(path)
+    } catch { case ex: Exception =>
+      ex.printStackTrace()
+      newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", ex.toString)
+    }
   }
+
+  private lazy val router = HttpRouter(
+    "/assets/*"              -> serveStatic,
+    "/partials/*"            -> serveHandlebars,
+    "/perform-login"         -> performLogin,
+    "/vulnerabilities"       -> serveVulns,
+    "/please-login"          -> simpleServeHandlebars,
+    "/project-not-available" -> simpleServeHandlebars,
+    "/scanning"              -> simpleServeHandlebars
+  )
 
   /**
-    * Pass the request on to the appropriate handler for video, handlebars template, or static file
+    * A tiny helper for handling /<path> from the template /html/<path>.hbs
     */
-  def route(uri: URI, params: ParamSet): Response = {
-    val path = uri.getPath
+  def simpleServeHandlebars(path: String)(params: ParamSet): Response = serveHandlebars(s"/html${path}.hbs")(params)
 
-    println(s"miniserver routing $path")
-
-    // First, capture any params that should immediately be saved as state
-    params.first("selectedProjectId").filterNot(_.isEmpty) foreach { id =>
-      println(s"setting selected project: $id")
-      pluginState.selectedProjectId := id
-    }
-
-    val rootIds = pluginState.rootProjectIds
-
-    if(pluginState.selectedProjectId.get.isEmpty && rootIds.size <= 1) {
-      val id = rootIds.headOption.getOrElse("")
-      println(s"auto-setting selected project: [$id]")
-      pluginState.selectedProjectId := id
-    }
-
-    if (path.endsWith(".hbs")) serveHandlebars(path, params)
-    else if (path.endsWith(".mp4")) serveVideo(path)
-    else serveStatic(path, params)
-  }
-
-  def serveVideo(path: String): Response = {
-    println(s"miniserver 'serving' video at $path")
-    pluginState.navigator.showVideo(path)
-    newFixedLengthResponse(Response.Status.ACCEPTED, "text/plain", s"serving video at $path")
-  }
-
-  def serveStatic(path: String, params: ParamSet): Response = {
+  def serveStatic(path: String)(params: ParamSet): Response = {
     val mime = MimeType of path
     println(s"miniserver serving static http://localhost:$port$path as $mime")
-    Try {
-      val conn = WebInf.instance.openConnection(path)
-      newFixedLengthResponse(Response.Status.OK, mime, conn.getInputStream, conn.getContentLengthLong)
-    }.fold(
-      ex => newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", ex.toString),
-      identity
-    )
+    val conn = WebInf.instance.openConnection(path)
+    newFixedLengthResponse(Response.Status.OK, mime, conn.getInputStream, conn.getContentLengthLong)
   }
 
-  private[this] def paramsNeedingProjectId = Set("nakedRoot", "annotatedRoot", "miniVulns", "vulnerabilities")
-  private[this] def paramsNeedingScan = Set("annotatedRoot", "miniVulns", "vulnerabilities")
+  def requireProjectId(proc: Processor): Processor = {
+    pluginState.safeProjectId match {
+      case Some(_) => proc
+      case None => _ => _ => redirectTo("/project-not-available")
+    }
+  }
+
+  def performLogin(path: String)(params: ParamSet): Response = {
+    asyncAuthAndRedirectTo("/vulnerabilities", "/vulnerabilities", params)
+    serveHandlebars("/html/logging-in.hbs")(params)
+  }
+
+  def requireAuth(proc: Processor): Processor = {
+    if(pluginState.credentials.get.isFailure) _ => _ => {
+      println("No cred - redirecting to auth")
+      redirectTo("/please-login")
+    }
+    else proc
+  }
+
+  def requireScan(proc: Processor): Processor = {
+    url => {
+      params => {
+        pluginState.latestScanForSelectedProject match {
+          case Some(_) =>
+            proc(url)(params)
+          case None =>
+            println("Triggered async scan")
+            asyncScanAndRedirectTo(
+              successPath = url,
+              failurePath = url,
+              params = params
+            )
+            redirectTo("/scanning")
+        }
+      }
+    }
+  }
+
+  def notFoundResponse(path: String): Response =
+    newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", s"Not Found: $path")
+
+
+  val serveVulns =
+    requireAuth {
+      requireProjectId {
+        requireScan {
+          url => serveHandlebars("/html/vulns.hbs")
+        }
+      }
+    }
 
   def redirectTo(url: String): Response = {
     val r = newFixedLengthResponse(Response.Status.REDIRECT, MIME_HTML, "")
@@ -112,71 +144,31 @@ class MiniServer(
     r
   }
 
-  def serveHandlebars(path: String, params: ParamSet): Response = {
-    val mime = MimeType of path
-
-    println(s"miniserver serving handlebars template http://localhost:$port$path as $mime")
-
-    def depTreeRoot = pluginState.depTree()
-
-
+  def serveHandlebars(path: String)(params: ParamSet): Response = {
+    println(s"miniserver serving handlebars template http://localhost:$port$path")
     println(s"params = $params")
 
-    try {
-      val template = handlebarsEngine.compile(path)
-      val refParams = template.collectReferenceParameters().asScala
+    val template = handlebarsEngine.compile(path)
+    val refParams = template.collectReferenceParameters().asScala
+    def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
 
-      val interstitial = params.first("interstitial") getOrElse defaultScanning
+    val ctx = Map.newBuilder[String, Any]
 
-      val projId = pluginState.selectedProjectId.get
-      def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
+    ctx ++= params.contextMap
+    ctx ++= colorProvider.toMap.mapValues(_.hexRepr)
 
-      if(pluginState.credentials.get.isFailure && refParams.exists(paramsNeedingScan.contains)) {
-        asyncAuthAndRedirectTo(
-          successPath = path,
-          failurePath = path,
-          params = params
-        )
-        redirectTo(interstitial)
-      } else if(projId.isEmpty && refParams.exists(paramsNeedingProjectId.contains)) {
-        redirectTo("/html/select-project.hbs" + params.plus("redirectUrl" -> path).queryString )
-      } else if(latestScanResult.isEmpty && refParams.exists(paramsNeedingScan.contains)) {
-        asyncScanAndRedirectTo(
-          successPath = path,
-          failurePath = path,
-          params = params
-        )
-        redirectTo(interstitial)
-      } else {
+    ctx += "projectIds" -> pluginState.rootProjectIds
+    ctx += "miniVulns" -> latestScanResult.miniVulns.sortBy(_.spec)
+    ctx += "vulnerabilities" -> latestScanResult.vulnerabilities
 
-        val ctx = Map.newBuilder[String, Any]
+    //TODO: should these just be added to state?
+    val paramFlags = params.all("flags").map(_.toLowerCase -> true).toMap
+    ctx += "flags" -> (paramFlags ++ pluginState.flags.asStringMap)
+    ctx += "localhost" -> s"http://localhost:$port"
+    ctx += "apiAvailable" -> apiClient.isAvailable
 
-        ctx ++= params.contextMap
-        ctx ++= colorProvider.toMap.mapValues(_.hexRepr)
-
-        //TODO: figure a nicer syntax here
-        refParams foreach {
-          case id@"projectIds" => ctx += id -> pluginState.rootProjectIds
-          case id@"miniVulns" => ctx += id -> latestScanResult.miniVulns.sortBy(_.spec)
-          case id@"vulnerabilities" => ctx += id -> latestScanResult.vulnerabilities
-          case p => println(s"Ref Param: $p")
-        }
-
-        //TODO: should these just be added to state?
-        val paramFlags = params.all("flags").map(_.toLowerCase -> true).toMap
-        ctx += "flags" -> (paramFlags ++ pluginState.flags.asStringMap)
-
-        ctx += "localhost" -> s"http://localhost:$port"
-        ctx += "apiAvailable" -> apiClient.isAvailable
-
-        val body = template render ctx.result()
-        newFixedLengthResponse(Response.Status.OK, mime, body)
-      }
-
-    } catch { case ex: Exception =>
-      ex.printStackTrace()
-      newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", ex.toString)
-    }
+    val body = template render ctx.result()
+    newFixedLengthResponse(Response.Status.OK, "text/html", body)
   }
 
   /**

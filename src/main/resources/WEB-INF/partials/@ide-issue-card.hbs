@@ -30,11 +30,17 @@
         <li>
             {{#if toplevel}}
                 {{#> renderNode}}
-                    <a onclick='event.stopPropagation();' href="http://idenav/artifact/{{node.content}}" target="_blank">{{>mavenCoords coords=node.content}}</a>
+                    <a onclick='event.stopPropagation();' href="http://idenav/artifact/{{node.content.module}}" target="_blank">{{>mavenCoords coords=node.content.module}}</a>
                 {{/renderNode}}
             {{else}}
                 {{#> renderNode}}
-                    {{>mavenCoords coords=node.content}}
+                    {{>mavenCoords coords=node.content.module}}
+                    {{#each node.content.remediations as |remed|}}
+                        <span style="background: #692023">
+                            upgrade: {{@key}}
+                        </span>
+                    {{else}}
+                    {{/each}}
                 {{/renderNode}}
             {{/if}}
 
@@ -50,18 +56,15 @@
 <div class="issue-card">
     <div class="issue-title__name">
       {{svg (concat "icon/" spec.type) width=22 height=22}}
-      <a href="{{url}}" class="issue-title__link" target="_blank">{{spec.title}}</a>
+      <a href="{{url}}" class="issue-title__link" target="_blank">{{spec.title}}</a> on {{>mavenCoords coords=spec.module}}
         {{!svg "icon/extern" width=18 height=18}}
     </div>
     <div class="issue-body issue-body-{{spec.severity}}">
-        {{#if from.nested.nonEmpty}}
+        {{#if derivations.nonEmpty}}
             <div class="issue-subhead">Introduced Through:</div>
             <ul class="tree">
-                {{> nested seq=from.nested toplevel=true idprefix=(concat spec.id "_" card_id)}}
+                {{> nested seq=derivations toplevel=true idprefix=(concat spec.id "_" card_id)}}
             </ul>
-        {{/if}}
-        {{#if spec.isUpgradable}}
-            <div class="remediation"><span class="issue-subhead">Remediation:</span> Upgrade to {{>mavenCoords coords=upgradePath.content}}</div>
         {{/if}}
     </div>
 </div>

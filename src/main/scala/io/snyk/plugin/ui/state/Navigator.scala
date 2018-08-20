@@ -10,10 +10,10 @@ import org.jetbrains.idea.maven.project.MavenProject
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
 import scala.collection.JavaConverters._
+import monix.execution.Scheduler.Implicits.global
 
 trait Navigator {
   def navigateTo(path: String, params: ParamSet): Future[String]
-  def showVideo(url: String): Unit
   def navToArtifact(group: String, name: String, projectId: String): Future[Unit]
 }
 
@@ -25,9 +25,10 @@ object Navigator {
     idToProject: String => Option[MavenProject]
   ) extends Navigator {
     override def navigateTo(path: String, params: ParamSet): Future[String] =
-      toolWindow.navigateTo(path, params)
-
-    override def showVideo(url: String): Unit = toolWindow.showVideo(url)
+      toolWindow.htmlPanel.navigateTo(path, params) map { resolvedUrl =>
+        println(s"toolWindow navigateTo: $path completed")
+        resolvedUrl
+      }
 
     /**
       * Use MavenProjectsManager to open the editor and highlight where the specified artifact
@@ -56,9 +57,6 @@ object Navigator {
       println(s"MockSnykPluginState.navigateTo($path, $params)")
       Future.successful(path)
     }
-
-    override def showVideo(url: String): Unit =
-      println(s"MockSnykPluginState.showVideo($url)")
 
     override def navToArtifact(group: String, name: String, projectId: String): Future[Unit] = {
       println(s"MockSnykPluginState.navToArtifact($group, $name)")

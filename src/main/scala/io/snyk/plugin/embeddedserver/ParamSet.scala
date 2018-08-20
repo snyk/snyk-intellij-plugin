@@ -29,6 +29,8 @@ class ParamSet private (map: Map[String, Seq[String]]) {
     new ParamSet(map + (x._1 -> newSeq))
   }
 
+  def pathWildcard: String = first("pathWildcard") getOrElse ""
+
   def +(x: (String, String)): ParamSet = plus(x)
 
   override def toString: String = map.mkString

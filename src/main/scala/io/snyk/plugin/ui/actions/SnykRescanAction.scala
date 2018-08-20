@@ -21,9 +21,8 @@ with DumbAware {
   override def actionPerformed(e: AnActionEvent): Unit = {
     println("Rescan button clicked")
 
-    println(s"*** SOURCE SETS ***")
-    pluginState.externProj.gradleSourceSets foreach { ss => println(ss.toMultiLineString) }
-
+//    println(s"*** SOURCE SETS ***")
+//    pluginState.externProj.gradleSourceSets foreach { ss => println(ss.toMultiLineString) }
 
     pluginState.performScan(force=true) andThen { case _ =>
       pluginState.navigator.navigateTo("/html/vulns.hbs", ParamSet.Empty)

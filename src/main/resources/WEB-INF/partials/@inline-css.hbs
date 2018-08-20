@@ -3,21 +3,21 @@
         color: {{linkColor}};
     }
     body {
-        background-color: {{panelBgColor}};
+        background-color: {{bgColor}};
         font-family: {{#if fontFamily}}{{fontFamily}}, {{/if}}"Prenton", "Gill Sans", "Calibri", sans-serif;
-        color: {{labelFgColor}};
+        color: {{textColor}};
         margin: 0;
     }
 
     body::-webkit-scrollbar {
         width: 0.5em;
-        color: {{panelBgColor}};
-        background-color: {{panelBgColor}};
+        color: {{bgColor}};
+        background-color: {{bgColor}};
     }
 
     body::-webkit-scrollbar-track {
-        color: {{panelBgColor}};
-        background-color: {{panelBgColor}};
+        color: {{bgColor}};
+        background-color: {{bgColor}};
     }
 
     body::-webkit-scrollbar-thumb {
@@ -134,8 +134,8 @@
       Tree expanded icon
     */
     label.tree_label:before {
-        background: {{labelFgColor}};
-        color: {{panelBgColor}};
+        background: {{textColor}};
+        color: {{bgColor}};
         position: relative;
         z-index: 1;
         float: left;
@@ -268,12 +268,82 @@
         content: " @ ";
     }
     .mvn-version {
-        {{!-- background-color: {{labelFgColor}}; --}}
-        {{!-- color: {{panelBgColor}}; --}}
-        border: 1px dotted {{labelFgColor}};
+        border: 1px dotted {{textColor}};
         border-radius: .25em;
         padding-left: 1px;
         padding-right: 1px;
+    }
+
+    .hourglass path {
+        fill: {{textColor}};
+    }
+
+    .hourglass path[stroke] {
+        stroke: {{textColor}};
+        fill: rgba(0,0,0,0);
+    }
+
+    .anilogo {
+        overflow: visible !important;
+        max-height: 50%;
+    }
+
+
+
+    .lds-ellipsis {
+        display: inline-block;
+        position: relative;
+        width: 64px;
+        height: 64px;
+    }
+    .lds-ellipsis div {
+        position: absolute;
+        top: 27px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #fff;
+        animation-timing-function: cubic-bezier(0, 1, 1, 0);
+    }
+    .lds-ellipsis div:nth-child(1) {
+        left: 6px;
+        animation: lds-ellipsis1 0.6s infinite;
+    }
+    .lds-ellipsis div:nth-child(2) {
+        left: 6px;
+        animation: lds-ellipsis2 0.6s infinite;
+    }
+    .lds-ellipsis div:nth-child(3) {
+        left: 26px;
+        animation: lds-ellipsis2 0.6s infinite;
+    }
+    .lds-ellipsis div:nth-child(4) {
+        left: 45px;
+        animation: lds-ellipsis3 0.6s infinite;
+    }
+    @keyframes lds-ellipsis1 {
+        0% {
+            transform: scale(0);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+    @keyframes lds-ellipsis3 {
+        0% {
+            transform: scale(1);
+        }
+        100% {
+            transform: scale(0);
+        }
+    }
+    @keyframes lds-ellipsis2 {
+        0% {
+            transform: translate(0, 0);
+        }
+        100% {
+            transform: translate(19px, 0);
+        }
     }
 
 </style>

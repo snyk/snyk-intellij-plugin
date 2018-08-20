@@ -14,6 +14,7 @@ import monix.execution.Scheduler.Implicits.global
 import org.jetbrains.idea.maven.project.MavenProject
 
 import scala.concurrent.Future
+import scala.io.{Codec, Source}
 import scala.util.Try
 
 
@@ -37,6 +38,21 @@ trait SnykPluginState {
 
   def latestScanForSelectedProject: Option[SnykVulnResponse] =
     projects.get.get(selectedProjectId.get).flatMap(_.scanResult)
+
+  /**
+    * Side Effecting: will set `selectedProjectId` if an auto-selection was made
+    * @return An optional id if already set, or we were able to pick the first root
+    */
+  def safeProjectId: Option[String] = {
+    Option(selectedProjectId.get).filterNot(_.isEmpty) orElse {
+      val optId = rootProjectIds.headOption
+      optId foreach { id =>
+        println(s"auto-setting selected project: [$id]")
+        selectedProjectId := id
+      }
+      optId
+    }
+  }
 
 
   //TODO: Push the whole bally lot into dep provider
@@ -90,7 +106,10 @@ object SnykPluginState {
   def forIntelliJ(project: Project, toolWindow: SnykToolWindow): SnykPluginState =
     new IntelliJSnykPluginState(project, toolWindow)
 
-  def mock: SnykPluginState = new MockSnykPluginState
+  def mock(
+    depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
+    mockResponder: SnykMavenArtifact => Try[String] //= defaultMockResponder
+  ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
 
   private[this] class IntelliJSnykPluginState(project: Project, toolWindow: SnykToolWindow) extends SnykPluginState {
@@ -112,10 +131,18 @@ object SnykPluginState {
     }
   }
 
+  /**
+    * Default response as used by `mock`, always returns `sampleResponse.json` from the classpath
+    */
+  private[this] def defaultMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+    Source.fromResource("sampleResponse.json", getClass.getClassLoader)(Codec.UTF8).mkString
+  }
+
   private[this] class MockSnykPluginState(
-    val depTreeProvider: DepTreeProvider = DepTreeProvider.mock()
+    val depTreeProvider: DepTreeProvider,
+    val mockResponder: SnykMavenArtifact => Try[String]
   ) extends SnykPluginState {
-    override val apiClient: ApiClient = ApiClient.mock()
+    override val apiClient: ApiClient = ApiClient.mock(mockResponder)
 
     override val navigator = new Navigator.MockNavigator
 

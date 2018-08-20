@@ -1,5 +1,5 @@
 import io.circe.parser.decode
-import io.snyk.plugin.datamodel.{MiniVuln2, SnykVulnResponse}
+import io.snyk.plugin.datamodel.{MiniVuln, SnykVulnResponse}
 import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
 
 import scala.io.Source
@@ -13,7 +13,7 @@ object TestMiniVuln2 extends App {
 
 
   val vulns = output.vulnerabilities
-  val miniVulns = vulns.map(MiniVuln2.from)
+  val miniVulns = vulns.map(MiniVuln.from)
 //  printout(miniVulns)
 
   println()
@@ -22,7 +22,7 @@ object TestMiniVuln2 extends App {
   println("**************************")
   println()
 
-  val merged = MiniVuln2.merge(miniVulns)
+  val merged = MiniVuln.merge(miniVulns)
 //  printout(merged)
 
   println(s"Full Size: ${miniVulns.size}")
@@ -31,7 +31,10 @@ object TestMiniVuln2 extends App {
   import io.circe.syntax._
   println(merged.asJson.spaces2)
 
-  def printout(mvs: Seq[MiniVuln2]): Unit = {
+  println("======================")
+  println(merged.map(_.derivations).asJson.spaces2)
+
+  def printout(mvs: Seq[MiniVuln]): Unit = {
     mvs foreach { mv =>
       mv.spec.toMultiString foreach println
       println()

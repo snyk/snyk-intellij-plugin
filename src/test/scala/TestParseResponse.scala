@@ -46,8 +46,8 @@ object TestParseResponse extends App {
     val mv = v.toMiniVuln
     println()
     println(mv.spec)
-    println("  from:   " + mv.from.map(_.treeString.mkString(" ", "\n           ", "")).getOrElse("∅"))
-    println("  upgrade:" + mv.upgradePath.map(_.treeString.mkString(" ", "\n           ", "")).getOrElse("∅"))
+//    println("  from:   " + mv.from.map(_.treeString.mkString(" ", "\n           ", "")).getOrElse("∅"))
+//    println("  upgrade:" + mv.upgradePath.map(_.treeString.mkString(" ", "\n           ", "")).getOrElse("∅"))
   }
 
 

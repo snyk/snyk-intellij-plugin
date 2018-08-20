@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html class="fractal-preview" lang="en-GB">
+<html lang="en-GB">
 <head>
     <meta charset="utf-8">
-    {{!<link href="../../assets/styles/app.css" rel="stylesheet" media="all">}}
     {{> @inline-css }}
 </head>
 <body>
     <main>
+        {{! <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div> }}
         <ul>
             {{#each miniVulns}}
                 {{> @ide-issue-card card_id=@index}}

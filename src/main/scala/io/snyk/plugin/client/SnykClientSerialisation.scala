@@ -6,6 +6,8 @@ import io.circe._
 import io.snyk.plugin.datamodel.SnykMavenArtifact
 
 object SnykClientSerialisation {
+  case class QueryString(org: String)
+
   case class JsonForm(
     groupId: String,
     artifactId: String,
@@ -23,6 +25,7 @@ object SnykClientSerialisation {
     version: String,
     name: String,
     dependencies: Map[String, JsonForm],
+    qs: Option[QueryString] = None,
     packageFormatVersion: String = "mvn:0.0.1",
   )
 
@@ -45,11 +48,17 @@ object SnykClientSerialisation {
     a.depsMap.mapValues(jsonForm)
   )
 
+  private implicit val decoderQueryString: Decoder[QueryString] = deriveDecoder
+  private implicit val encoderQueryString: Encoder[QueryString] = deriveEncoder
   private implicit val decoderJsonForm: Decoder[JsonForm] = deriveDecoder
   private implicit val decoderRootJsonForm: Decoder[RootJsonForm] = deriveDecoder
   private implicit val encoderJsonForm: Encoder[JsonForm] = deriveEncoder
   private implicit val encoderRootJsonForm: RootEncoder[RootJsonForm] = deriveEncoder
 
   def encode(a: SnykMavenArtifact): Json = jsonForm(a).asJson
-  def encodeRoot(a: SnykMavenArtifact): Json = rootJsonForm(a).asJson
+  def encodeRoot(a: SnykMavenArtifact, org: Option[String] = None): Json = org match {
+    case Some(str) => rootJsonForm(a).copy(qs = Some(QueryString(org = str))).asJson
+    case None => rootJsonForm(a).asJson
+  }
+
 }

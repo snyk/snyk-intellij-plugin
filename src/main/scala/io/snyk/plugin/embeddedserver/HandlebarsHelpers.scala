@@ -1,15 +1,19 @@
 package io.snyk.plugin.embeddedserver
 
-import java.net.{URI, URLEncoder}
+import java.net.URLEncoder
 import java.time.ZonedDateTime
 import java.util.UUID
 
-import com.github.jknack.handlebars.{Handlebars, Helper, Options, Template}
+import com.github.jknack.handlebars._
 import com.github.jknack.handlebars.helper.EachHelper
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.TreeMap
 import scala.io.{Codec, Source}
+import java.{util => ju}
+
+import scala.collection.GenMap
+import scala.collection.convert.Wrappers
 
 object HandlebarsHelpers {
 
@@ -86,12 +90,38 @@ object HandlebarsHelpers {
 
   val noop: Helper[Any] = (v, opts) => ""
 
+  def eachForMap(map: GenMap[_,_], opts: Options): String = {
+    val buffer = opts.buffer()
+    val parent = opts.context
+    if(map.isEmpty) {
+      buffer.append(opts.inverse())
+    } else {
+      for (((key, value), idx) <- map.iterator.zipWithIndex) {
+        val ctx = Context.newContext(parent, value)
+        ctx.combine("@key", key)
+          .combine("@value", value)
+          .combine("@index", idx)
+          .combine("@first", idx == 0)
+          //            .combine("@last", !loop.hasNext() ? "last" : "")
+          .combine("@odd", idx % 2 != 0)
+          .combine("@even", idx % 2 == 0)
+        val blockParams: ju.List[AnyRef] = List(value, idx).asJava.asInstanceOf[ju.List[AnyRef]]
+        buffer.append(
+          opts.apply(opts.fn, ctx, blockParams)
+        )
+      }
+    }
+    ""
+  }
+
   val all: Map[String, Helper[_]] = Map(
     "test-hook" -> noop,
     "snykTestModuleLink" -> noop,
     "each" -> any {
-      case Input(iter: Iterable[_], opts) => EachHelper.INSTANCE.apply(iter.asJava, opts)
-      case Input(v, opts) => EachHelper.INSTANCE.apply(v, opts)
+      case Input(map: Map[_,_], opts)                 => eachForMap(map, opts)
+      case Input(map: Wrappers.MapWrapper[_,_], opts) => eachForMap(map.asScala, opts)
+      case Input(iter: Iterable[_], opts)             => EachHelper.INSTANCE.apply(iter.asJava, opts)
+      case Input(v, opts)                             => EachHelper.INSTANCE.apply(v, opts)
     },
     "splitList" -> string { in =>
       if(in.isFalsy) "" else in.valueStr.split(',').map(_.trim)

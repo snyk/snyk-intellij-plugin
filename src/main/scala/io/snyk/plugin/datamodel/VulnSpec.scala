@@ -12,6 +12,7 @@ case class VulnSpec(
   isUpgradable     : Boolean,
   isPatchable      : Boolean,
   isIgnored        : Boolean,
+  filterInfo       : Option[VulnFilteredInfo]
 ) {
   /** for sorting **/
   def severityRank: Int = severity match {
@@ -51,7 +52,8 @@ object VulnSpec {
     affectedVersions = vuln.semver.splitVulnerable,
     isUpgradable     = vuln.isUpgradable,
     isPatchable      = vuln.isPatchable,
-    isIgnored        = vuln.filtered.isDefined
+    isIgnored        = vuln.filtered.isDefined,
+    filterInfo       = vuln.filtered
   )
 
   implicit val encoder: Encoder[VulnSpec] = deriveEncoder
