@@ -7,16 +7,18 @@
 <body>
     <main>
         {{! <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div> }}
+        <div class="project-title">Project: {{currentProject}}</div>
         <ul>
             {{#each miniVulns}}
                 {{> @ide-issue-card card_id=@index}}
             {{/each}}
         </ul>
 
+        {{!--
         <div style="display: none">
             {{> @color-sampler }}
         </div>
-        {{nowstr}}
+        --}}
     </main>
 </body>
 </html>

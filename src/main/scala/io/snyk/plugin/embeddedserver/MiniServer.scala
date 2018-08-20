@@ -157,6 +157,7 @@ class MiniServer(
     ctx ++= params.contextMap
     ctx ++= colorProvider.toMap.mapValues(_.hexRepr)
 
+    ctx += "currentProject" -> pluginState.selectedProjectId.get
     ctx += "projectIds" -> pluginState.rootProjectIds
     ctx += "miniVulns" -> latestScanResult.miniVulns.sortBy(_.spec)
     ctx += "vulnerabilities" -> latestScanResult.vulnerabilities
