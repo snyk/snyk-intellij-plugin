@@ -24,8 +24,10 @@ with DumbAware {
 //    println(s"*** SOURCE SETS ***")
 //    pluginState.externProj.gradleSourceSets foreach { ss => println(ss.toMultiLineString) }
 
+    pluginState.navigator.navigateTo("/scanning", ParamSet.Empty)
+
     pluginState.performScan(force=true) andThen { case _ =>
-      pluginState.navigator.navigateTo("/html/vulns.hbs", ParamSet.Empty)
+      pluginState.navigator.navigateTo("/vulnerabilities", ParamSet.Empty)
     }
   }
 }

@@ -244,11 +244,21 @@
         float: right;
     }
 
-    .vulnerable-dep {
-        text-decoration-line: underline;
-        text-decoration-color: green;
-        color: green;
+    .issue-body-high .vulnerable-dep .mvn-version::after {
+        color: #b31a6b;
+        content: "◀︎";
     }
+
+    .issue-body-medium .vulnerable-dep .mvn-version::after {
+        color: #c27100;
+        content: "◀︎";
+    }
+
+    .issue-body-low .vulnerable-dep .mvn-version::after {
+        color: #595775;
+        content: "◀︎";
+    }
+
 
     .mvn-group {
 
@@ -268,6 +278,7 @@
     a .mvn-version::before {
         content: " @ ";
     }
+
     .mvn-version {
         border: 1px dotted {{textColor}};
         border-radius: .25em;
@@ -354,4 +365,24 @@
         }
     }
 
+    {{!--
+    .upgrade-link {
+        padding-top: 0;
+        padding-left: .25em;
+        padding-right: .25em;
+        padding-bottom: 1px;
+        background: #692023;
+        border-radius: 1em;
+        color: {{textColor}};
+        cursor: pointer;
+    }
+    --}}
+
+    .upgrade-link {
+        color: #9f2512;
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-color: #9f2512;
+        text-decoration-style: dashed;
+    }
 </style>

@@ -24,7 +24,7 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
   val browser: Future[WebView] = initBrowser()
   val externalPopupHandler = new ExternalPopupHandler(pluginState)
 
-  navigateTo("/html/select-project.hbs", ParamSet.Empty.plus("redirectUrl" -> "/html/vulns.hbs")).foreach(url =>
+  navigateTo("/vulnerabilities", ParamSet.Empty).foreach(url =>
     println(s"done loading start page from $url")
   )
 
@@ -74,7 +74,7 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
         val browser = new WebView()
         val engine = browser.getEngine
 
-        engine.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36")
+//        engine.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36")
 //        dwss = Some(new DebugWebSocketServer(engine))
 
         engine.getLoadWorker.stateProperty addListener { (obs, oldVal, newVal) =>

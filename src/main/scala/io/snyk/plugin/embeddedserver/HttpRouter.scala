@@ -29,15 +29,22 @@ object HttpRouter {
       case s => LiteralPatternPart(s)
     }
 
+    /**
+      * Takes a path (split into a sequence) and parameters, returning an optional `ParamsSet`
+      * updated with the value of any binding (e.g. `:varname`) path parts if this pattern matches.
+      * wildcard `*` matches bind against the special name `pathWildcard`
+      */
     def bind(initialPathParts: Seq[String], initialParams: ParamSet): Option[ParamSet] = {
+//      val pathPartsStr = initialPathParts.map(x => s"[$x]").mkString("/")
+//      println(s"attempting to bind $pathPartsStr --> $this")
       def loop(
         params: ParamSet,
         pathParts: Seq[String],
         patternParts: Seq[PatternPart]
-      ): Option[ParamSet] = patternParts match {
-        case WildcardPatternPart +: t =>
+      ): Option[ParamSet] = patternParts.headOption match {
+        case Some(WildcardPatternPart) =>
           WildcardPatternPart.bind(pathParts, params)
-        case patternPart +: t =>
+        case Some(patternPart) =>
           patternPart.bind(pathParts, params) flatMap { loop(_, pathParts.tail, patternParts.tail)}
         case _ => params.some
       }
@@ -65,11 +72,9 @@ class HttpRouter(entries: Map[String, Processor]) {
   def route(uri: URI, params: ParamSet): Option[Response] = {
     val path = uri.getPath
     val pathParts = path.split('?').head.split('/').toSeq
-    val pathPartsStr = pathParts.map(x => s"[$x]").mkString("/")
 
     patternedEntries.foldLeft(None: Option[Response]){
       case (acc, (pattern, fn)) =>
-        println(s"testing route $pathPartsStr --> $pattern")
         acc orElse pattern.bind(pathParts, params).map(fn(path)(_))
     }
   }

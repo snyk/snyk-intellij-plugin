@@ -16,7 +16,12 @@
             {{> @partial-block }}
         </span>
     {{else}}
-        <input type="checkbox" checked="checked" id="{{nodeId}}" />
+        {{#if node.content.remediations.isEmpty}}
+            <input type="checkbox" checked="checked" id="{{nodeId}}" />
+        {{else}}
+            {{! don't auto-expand any level where we have have remediations }}
+            <input type="checkbox" id="{{nodeId}}" />
+        {{/if}}
         <label class="tree_label" for="{{nodeId}}">
             {{> @partial-block }}
         </label>
@@ -35,13 +40,11 @@
             {{else}}
                 {{#> renderNode}}
                     {{>mavenCoords coords=node.content.module}}
-                    {{#each node.content.remediations as |remed|}}
-                        <span style="background: #692023">
-                            upgrade: {{@key}}
-                        </span>
-                    {{else}}
-                    {{/each}}
                 {{/renderNode}}
+                {{#each node.content.remediations as |remed|}}
+                    <a class="upgrade-link" onclick='event.stopPropagation(); alert("wheee")'>upgrade: {{@key}}</a>
+                {{else}}
+                {{/each}}
             {{/if}}
 
             {{#if node.nested.nonEmpty}}
