@@ -1,23 +1,34 @@
 package io.snyk.plugin.embeddedserver
 
+import scala.util.{Failure, Success}
+
 trait ServerFilters { self: MiniServer =>
 
-  /**
-    * Exposes `redirectTo` in the form of a `Processor`,
-    * avoids needing to write `_ => _ => redirectTo(...)` in filter implementations
-    */
-  private def redirectToProcessor(url: String): Processor = _ => _ => redirectTo(url)
-
   def requireProjectId(proc: Processor): Processor = {
-    pluginState.safeProjectId match {
-      case Some(_) => proc
-      case None => redirectToProcessor("/project-not-available")
+    url => {
+      params => {
+        pluginState.safeProjectId match {
+          case Some(_) => proc(url)(params)
+          case None => redirectTo("/no-project-available")
+        }
+      }
     }
   }
 
-  def requireAuth(proc: Processor): Processor =
-    if(pluginState.credentials.get.isFailure) redirectToProcessor("/please-login")
-    else proc
+  def requireAuth(proc: Processor): Processor = {
+    url => {
+      params => {
+        println("Auth test")
+        pluginState.credentials.get match {
+          case Failure(ex) =>
+            println(s"Auth failed with $ex")
+            redirectTo("/login-required")
+          case Success(_) =>
+            proc(url)(params)
+        }
+      }
+    }
+  }
 
   def requireScan(proc: Processor): Processor = {
     url => {

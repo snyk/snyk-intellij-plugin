@@ -2,21 +2,25 @@ package io.snyk.plugin.ui
 package state
 
 
-import com.intellij.openapi.project.Project
+
+
 import io.snyk.plugin.client.{ApiClient, SnykCredentials}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.depsource.{DepTreeProvider, MavenProjectsObservable}
+
+import com.intellij.openapi.project.Project
+import org.jetbrains.idea.maven.project.MavenProject
+
+import monix.execution.Scheduler.Implicits.global
 import monix.execution.Ack.Continue
 import monix.execution.atomic.Atomic
 import monix.reactive.Observable
-import monix.execution.Scheduler.Implicits.global
-import org.jetbrains.idea.maven.project.MavenProject
+import monix.eval.Task
 
 import scala.concurrent.Future
 import scala.io.{Codec, Source}
 import scala.util.Try
-
 
 
 /**
@@ -34,17 +38,23 @@ trait SnykPluginState {
   val credentials: Atomic[Try[SnykCredentials]] = Atomic(SnykCredentials.default)
   val flags: Flags = new Flags
   val selectedProjectId: Atomic[String] = Atomic("")
-  val scanInProgress: Atomic[Boolean] = Atomic(false)
 
-  def latestScanForSelectedProject: Option[SnykVulnResponse] =
-    projects.get.get(selectedProjectId.get).flatMap(_.scanResult)
+  def latestScanForSelectedProject: Option[SnykVulnResponse] = for {
+    projId <- safeProjectId
+    projState <- projects().get(projId)
+    scanResult <- projState.scanResult
+  } yield scanResult
+
 
   /**
-    * Side Effecting: will set `selectedProjectId` if an auto-selection was made
-    * @return An optional id if already set, or we were able to pick the first root
+    * Ensure that we have a valid `selectedProjectId`.  If it's empty, or not in `rootProjectIds`
+    * (e.g. because source code has changed) then we auto-select the first valid project.
+    * Side Effecting: will UPDATE `selectedProjectId` if an auto-selection was made.
+    *
+    * @return An optional ID if one has been set or can be determined
     */
   def safeProjectId: Option[String] = {
-    Option(selectedProjectId.get).filterNot(_.isEmpty) orElse {
+    val retval = Option(selectedProjectId.get).filterNot(_.isEmpty).filter(rootProjectIds.contains) orElse {
       val optId = rootProjectIds.headOption
       optId foreach { id =>
         println(s"auto-setting selected project: [$id]")
@@ -52,6 +62,8 @@ trait SnykPluginState {
       }
       optId
     }
+    println(s"safeProjectId is $retval")
+    retval
   }
 
 
@@ -66,6 +78,7 @@ trait SnykPluginState {
   def rootProjectIds: Seq[String] = depTreeProvider.rootIds
   def mavenProjectsObservable: Observable[Seq[String]]
   def idToMavenProject(id: String): Option[MavenProject] = depTreeProvider.idToMavenProject(id)
+
   def depTree(
     projectId: String = selectedProjectId.get
   ): SnykMavenArtifact = {
@@ -73,7 +86,6 @@ trait SnykPluginState {
     val existingDeps = pps.flatMap(_.depTree).getOrElse(depTreeProvider.getDepTree(projectId))
     existingDeps
   }
-
 
   //CONTROLLER
 
@@ -88,14 +100,20 @@ trait SnykPluginState {
     if(force || existingScan.isEmpty) {
       //do new scan
       val deps = pps.flatMap(_.depTree).getOrElse(depTreeProvider.getDepTree(projectId))
-      Future{
-        scanInProgress := true
+
+      //Use a monix task instead of a vanilla future, *specifically* for access to the `timeout` functionality
+      val task = Task.eval{
         val result = apiClient runOn deps
         projects.transform{ _ + (projectId -> PerProjectState(Some(deps), result.toOption))}
-        scanInProgress := false
         println(s"async scan success")
         result
-      }.transform(_.flatten)
+      }
+
+      task
+        .timeout(credentials.get.get.timeoutOrDefault)
+        .runAsync
+        .transform(_.flatten)
+
     } else Future.successful(existingScan.get)
   }
 
@@ -124,9 +142,10 @@ object SnykPluginState {
 
     override lazy val externProj: ExternProj = new ExternProj(project)
 
-    mavenProjectsObservable subscribe { _ =>
-      //flush the cache
+    mavenProjectsObservable subscribe { list =>
+      println(s"updated projects: $list")
       projects := Map.empty
+      navigator.navToVulns()
       Continue
     }
   }
@@ -148,6 +167,8 @@ object SnykPluginState {
 
     override def mavenProjectsObservable: Observable[Seq[String]] =
       Observable.pure(Seq("dummy-root-project"))
+
+    projects := Map("dummy-root-project" -> PerProjectState(Some(depTreeProvider.getDepTree(""))))
 
     override def reloadWebView(): Unit = ()
 

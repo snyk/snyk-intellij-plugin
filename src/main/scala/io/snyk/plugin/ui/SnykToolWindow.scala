@@ -34,11 +34,6 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
   initialiseToolbar()
   setContent(htmlPanel)
 
-  pluginState.mavenProjectsObservable subscribe { list =>
-    println(s"updated projects: $list")
-    Continue
-  }
-
   private[this] def initialiseToolbar(): Unit = {
     import io.snyk.plugin.ui.actions._
 

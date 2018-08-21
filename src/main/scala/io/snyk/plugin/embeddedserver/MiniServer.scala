@@ -63,8 +63,9 @@ class MiniServer(
     "/partials/*"            -> serveHandlebars,
     "/perform-login"         -> performLogin,
     "/vulnerabilities"       -> serveVulns,
-    "/please-login"          -> simpleServeHandlebars,
-    "/project-not-available" -> simpleServeHandlebars,
+    "/login-required"        -> simpleServeHandlebars,
+    "/logging-in"            -> simpleServeHandlebars,
+    "/no-project-available"  -> simpleServeHandlebars,
     "/scanning"              -> simpleServeHandlebars
   )
 
@@ -81,8 +82,9 @@ class MiniServer(
   }
 
   def performLogin(path: String)(params: ParamSet): Response = {
-    asyncAuthAndRedirectTo("/vulnerabilities", "/vulnerabilities", params)
-    serveHandlebars("/html/logging-in.hbs")(params)
+    println("Performing login")
+    val redir = asyncAuthAndRedirectTo("/vulnerabilities", "/vulnerabilities", params)
+    redirectTo("/logging-in")
   }
 
   val serveVulns =
@@ -99,7 +101,6 @@ class MiniServer(
     println(s"params = $params")
 
     val template = handlebarsEngine.compile(path)
-//    val refParams = template.collectReferenceParameters().asScala
     def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
 
     val ctx = Map.newBuilder[String, Any]

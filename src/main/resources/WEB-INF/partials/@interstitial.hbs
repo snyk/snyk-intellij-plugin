@@ -46,14 +46,11 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <img class="image" src="/assets/images/snyk-logo.svg">
-        <h1 class="title">Please Login</h1>
-        <p class="text">
-            You need to authorise your account before you can run a scan, please click
-            <a href="login" target="_blank">here</a> to do so.
-        </p>
+<div class="container">
+    <img class="image" src="{{img}}">
+    <h1 class="title">{{title}}</h1>
+    <p class="text">{{> @partial-block }}</p>
 
-    </div>
+</div>
 </body>
 </html>

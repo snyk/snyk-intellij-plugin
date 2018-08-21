@@ -13,6 +13,7 @@ trait DepTreeProvider {
 }
 
 private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
+
   private[this] def allMavenProjects: Seq[MavenProject] =
     MavenProjectsManager.getInstance(project).getProjects.asScala
 

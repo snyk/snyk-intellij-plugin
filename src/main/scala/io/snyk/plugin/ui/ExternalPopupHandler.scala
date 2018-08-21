@@ -47,12 +47,15 @@ class ExternalPopupHandler(pluginState: SnykPluginState) extends Callback[PopupF
   }
 
   private[this] def processUrl(url: String) = {
-    if(url.startsWith(navPrefix)) {
-      val parts = url.drop(navPrefix.length).split(":|@")
-      val g = parts(0)
-      val a = parts(1)
-      pluginState.navigator.navToArtifact(g, a, pluginState.selectedProjectId.get)
-    } else try { BrowserUtil.browse(new URL(url)) } catch { case NonFatal(e) => e.printStackTrace() }
+    println(s"External Popup Handler tackling: $url")
+    try {
+      if(url.startsWith(navPrefix)) {
+        val parts = url.drop(navPrefix.length).split(":|@")
+        val g = parts(0)
+        val a = parts(1)
+        pluginState.navigator.navToArtifact(g, a, pluginState.selectedProjectId.get)
+      } else  BrowserUtil.browse(new URL(url))
+    } catch { case NonFatal(e) => e.printStackTrace() }
   }
 
   def call(popupFeatures: PopupFeatures): WebEngine = zombieEngine

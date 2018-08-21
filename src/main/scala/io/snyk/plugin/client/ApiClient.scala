@@ -1,5 +1,8 @@
 package io.snyk.plugin.client
 
+import com.intellij.ide.plugins.cl.PluginClassLoader
+import com.intellij.ide.plugins.{PluginManager, PluginManagerCore}
+import com.intellij.openapi.application.ApplicationInfo
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.circe.parser.decode
 import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
@@ -8,6 +11,9 @@ import scala.io.{Codec, Source}
 import scala.util.Try
 import com.softwaremill.sttp._
 import io.circe.{Json, Printer}
+
+import scala.collection.immutable.ListMap
+import scala.collection.mutable
 
 /**
   * Represents the connection to the Snyk servers for the security scan.
@@ -27,11 +33,37 @@ sealed trait ApiClient {
 private final class StandardApiClient(credentials: => Try[SnykCredentials]) extends ApiClient {
   def isAvailable: Boolean = credentials.isSuccess
 
+  //Not a Map, we want to preserve ordering
+  val sysProps: Seq[(String, String)] = Seq(
+    "os.name",
+    "os.version",
+    "os.arch",
+    "java.vm.name",
+    "java.vm.version",
+    "java.vm.vendor",
+    "java.runtime.version",
+    "user.language",
+  ).map(p => p -> System.getProperties.getProperty(p, ""))
+
+  val ideVersion = Try { ApplicationInfo.getInstance.getFullVersion }.toOption getOrElse "undefined"
+  val allProps = sysProps :+ ("ide.version" -> ideVersion)
+  val allPropsStr = allProps map { case (k,v) => s"$k=$v" } mkString "; "
+
+  val pluginVersion = getClass.getClassLoader match {
+    case pcl: PluginClassLoader => PluginManager.getPlugin(pcl.getPluginId).getVersion
+    case _ => "undefined"
+  }
+
+  val userAgent = s"SnykIdePlugin/$pluginVersion ($allPropsStr)"
+
+
+
   private[this] val stringNoNulls: Json => String =
     Printer.noSpaces.copy(dropNullValues = true).pretty
 
   def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials map { creds =>
     val jsonReq = stringNoNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
+    println(s"userAgent = $userAgent")
     println("ApiClient: Built JSON Request")
     println(jsonReq)
 
@@ -42,6 +74,7 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
       .header("Authorization", s"token $apiToken")
       .header("x-is-ci", "false")
       .header("content-type", "application/json")
+      .header("user-agent", userAgent)
       .body(jsonReq)
 
     implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()

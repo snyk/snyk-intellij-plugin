@@ -26,7 +26,7 @@ object SnykCredentials {
   def defaultConfigFile: Path = Paths.get(System.getProperty("user.home"), ".config/configstore/snyk.json")
 
   def defaultEndpoint: String = "http://snyk.io/api"
-  def defaultTimeout: Long = 5.minutes.toSeconds
+  def defaultTimeout: FiniteDuration = 5.minutes
 
   def default: Try[SnykCredentials] = forPath(defaultConfigFile)
 
@@ -39,16 +39,18 @@ object SnykCredentials {
     new URI(forPath(configFilePath).toOption.flatMap(_.endpoint) getOrElse defaultEndpoint)
 
   def auth(
-    openBrowser: URI => Unit,  // e.g. IntelliJ's  BrowserUtil.browse
+    openBrowserFn: URI => Unit,  // e.g. IntelliJ's  BrowserUtil.browse
     configFilePath: Path = defaultConfigFile
   ): Future[SnykCredentials] = {
     val endpointUri = endpointFor(configFilePath)
     val newToken = UUID.randomUUID()
     val loginUri = endpointUri.resolve(s"/login?token=$newToken")
 
+    println(s"Will auth at $loginUri")
+
     implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
 
-    openBrowser(loginUri)
+    openBrowserFn(loginUri)
 
     new AuthPoller(configFilePath, newToken).run()
   }
@@ -107,7 +109,7 @@ case class SnykCredentials(
   private def normalised: SnykCredentials = SnykCredentials(
     this.api,
     this.endpoint.filterNot(_ == defaultEndpoint),
-    this.timeout.filterNot(_ == defaultTimeout),
+    this.timeout.filterNot(_.seconds == defaultTimeout),
     this.org.filterNot(_.isEmpty),
   )
 
@@ -116,8 +118,9 @@ case class SnykCredentials(
     val printer = Printer.spaces4.copy(dropNullValues = true)
     pw.write(printer.pretty(normalised.asJson))
     pw.close()
-
   }
+
+  def timeoutOrDefault: FiniteDuration = timeout.map(_.seconds) getOrElse defaultTimeout
 }
 
 

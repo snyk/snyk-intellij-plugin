@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Please Login</title>
+    {{> @inline-css }}
+    <style>
+        *{
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            margin: 0;
+            padding: 1em;
+            display: grid;
+            text-align: center;
+            width: 100vw;
+            max-height: 100vw;
+
+            grid-row-gap: 1em;
+
+            grid-template-columns: 25vw auto 25vw;
+            grid-template-rows: auto auto auto;
+            grid-template-areas:
+                    ". image ."
+                    "title title title"
+                    "text text text";
+        }
+
+        .image {
+            grid-area: image;
+            max-height: 50vh;
+            justify-self: stretch;
+        }
+
+        .title {
+            grid-area: title;
+        }
+
+        .text {
+            font-size: 16pt;
+            grid-area: text;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img class="image" src="/assets/images/snyk-logo.svg">
+        <h1 class="title">Please Login</h1>
+        <p class="text">
+            You need to authorise your account before you can run a scan, please click
+            <a href="/perform-login">here</a> to do so.
+        </p>
+
+    </div>
+</body>
+</html>

@@ -8,7 +8,6 @@ import scala.util.Try
 
 object PreviewHtmlUi extends App {
   private[this] def myMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
-    println("WE ARE HERE")
     Source.fromResource("sample-response-2.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 

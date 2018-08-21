@@ -15,6 +15,7 @@ trait ServerResponses { self: MiniServer =>
     newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", s"Not Found: $path")
 
   def redirectTo(url: String): Response = {
+    println(s"Redirecting to $url")
     val r = newFixedLengthResponse(Response.Status.REDIRECT, MIME_HTML, "")
     r.addHeader("Location", url)
     r
@@ -52,7 +53,7 @@ trait ServerResponses { self: MiniServer =>
     if(pluginState.credentials.get.isSuccess) {
       Future fromTry pluginState.credentials.get
     } else {
-      SnykCredentials.auth(openBrowser = BrowserUtil.browse) andThen {
+      SnykCredentials.auth(openBrowserFn = BrowserUtil.browse) andThen {
         case Failure(x) =>
           println(s"auth failed with $x")
           navigateTo(failurePath, params.plus("errmsg" -> x.toString))
@@ -60,6 +61,7 @@ trait ServerResponses { self: MiniServer =>
           println(s"auth completed with $creds, redirecting to $successPath with params $params")
           pluginState.credentials := s
           creds.writeToFile()
+          println(s"navigating to $successPath with credentials updated")
           navigateTo(successPath, params)
       }
     }

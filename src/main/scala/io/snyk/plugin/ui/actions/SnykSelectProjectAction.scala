@@ -39,7 +39,7 @@ class SnykSelectProjectAction(pluginState: SnykPluginState)
     override def onChosen(selectedValue: String, finalChoice: Boolean): PopupStep[_] = {
       if (selectedValue != pluginState.selectedProjectId.get) {
         pluginState.selectedProjectId := selectedValue
-        pluginState.navigator.navigateTo("/vulnerabilities", ParamSet.Empty)
+        pluginState.navigator.navToVulns()
       }
       PopupStep.FINAL_CHOICE
     }

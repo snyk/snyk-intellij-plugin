@@ -11,6 +11,9 @@ import monix.execution.Scheduler.Implicits.global
 class SnykRescanAction(pluginState: SnykPluginState)
 extends AnAction("Re-Scan project with Snyk", null, AllIcons.Actions.Refresh)
 with DumbAware {
+
+  import pluginState.{performScan, navigator}
+
   override def update(e: AnActionEvent): Unit = {
     super.update(e)
     val p = e.getPresentation
@@ -24,10 +27,7 @@ with DumbAware {
 //    println(s"*** SOURCE SETS ***")
 //    pluginState.externProj.gradleSourceSets foreach { ss => println(ss.toMultiLineString) }
 
-    pluginState.navigator.navigateTo("/scanning", ParamSet.Empty)
-
-    pluginState.performScan(force=true) andThen { case _ =>
-      pluginState.navigator.navigateTo("/vulnerabilities", ParamSet.Empty)
-    }
+    navigator.navToScanning()
+    performScan(force=true) andThen { case _ => navigator.navToVulns() }
   }
 }
