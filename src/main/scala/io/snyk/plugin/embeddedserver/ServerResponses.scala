@@ -21,23 +21,25 @@ trait ServerResponses { self: MiniServer =>
     r
   }
 
+  def defaultFailureHandler(x: Throwable, params: ParamSet): Unit = {
+    x.printStackTrace()
+    println(s"async task failed, redirecting to error page")
+    navigateTo("/error", params.plus("errmsg" -> x.getMessage))
+  }
   /**
     * Initiate an asynchronous security scan... once complete, navigate to the supplied URL
     */
   def asyncScanAndRedirectTo(
     successPath: String,
-    failurePath: String,
-    params: ParamSet
+    params: ParamSet,
+    onError: (Throwable, ParamSet) => Unit = defaultFailureHandler
   ): Future[SnykVulnResponse] = {
     println(s"triggered async scan, will redirect to $successPath with params $params")
     pluginState.performScan() andThen {
       case Success(_) =>
         println(s"async scan success, redirecting to $successPath with params $params")
         navigateTo(successPath, params)
-      case Failure(x) =>
-        x.printStackTrace()
-        println(s"async scan failed, redirecting to $failurePath with params $params")
-        navigateTo(failurePath, params.plus("errmsg" -> x.toString))
+      case Failure(x) => onError(x, params)
     }
   }
 
@@ -47,16 +49,15 @@ trait ServerResponses { self: MiniServer =>
     */
   def asyncAuthAndRedirectTo(
     successPath: String,
-    failurePath: String,
-    params: ParamSet
+    params: ParamSet,
+    onError: (Throwable, ParamSet) => Unit = defaultFailureHandler
   ): Future[SnykCredentials] = {
     if(pluginState.credentials.get.isSuccess) {
       Future fromTry pluginState.credentials.get
     } else {
       SnykCredentials.auth(openBrowserFn = BrowserUtil.browse) andThen {
         case Failure(x) =>
-          println(s"auth failed with $x")
-          navigateTo(failurePath, params.plus("errmsg" -> x.toString))
+          onError(x, params)
         case s @ Success(creds) =>
           println(s"auth completed with $creds, redirecting to $successPath with params $params")
           pluginState.credentials := s

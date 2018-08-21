@@ -66,7 +66,8 @@ class MiniServer(
     "/login-required"        -> simpleServeHandlebars,
     "/logging-in"            -> simpleServeHandlebars,
     "/no-project-available"  -> simpleServeHandlebars,
-    "/scanning"              -> simpleServeHandlebars
+    "/scanning"              -> simpleServeHandlebars,
+    "/error"                 -> simpleServeHandlebars,
   )
 
   /**
@@ -83,7 +84,7 @@ class MiniServer(
 
   def performLogin(path: String)(params: ParamSet): Response = {
     println("Performing login")
-    val redir = asyncAuthAndRedirectTo("/vulnerabilities", "/vulnerabilities", params)
+    val redir = asyncAuthAndRedirectTo("/vulnerabilities", params)
     redirectTo("/logging-in")
   }
 

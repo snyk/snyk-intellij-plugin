@@ -37,11 +37,7 @@ trait ServerFilters { self: MiniServer =>
           case Some(_) =>
             proc(url)(params)
           case None =>
-            asyncScanAndRedirectTo(
-              successPath = url,
-              failurePath = url,
-              params = params
-            )
+            asyncScanAndRedirectTo(url, params)
             redirectTo("/scanning")
         }
       }

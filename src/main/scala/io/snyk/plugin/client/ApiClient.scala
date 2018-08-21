@@ -58,36 +58,38 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
 
 
 
-  private[this] val stringNoNulls: Json => String =
+  private[this] val stringifyWithoutNulls: Json => String =
     Printer.noSpaces.copy(dropNullValues = true).pretty
 
-  def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials map { creds =>
-    val jsonReq = stringNoNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
-    println(s"userAgent = $userAgent")
-    println("ApiClient: Built JSON Request")
-    println(jsonReq)
+  def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials flatMap { creds =>
+    Try {
+      val jsonReq = stringifyWithoutNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
 
-    val apiEndpoint = creds.endpointOrDefault
-    val apiToken = creds.api
+      println("ApiClient: Built JSON Request")
+      println(jsonReq)
 
-    val request = sttp.post(uri"$apiEndpoint/v1/vuln/maven")
-      .header("Authorization", s"token $apiToken")
-      .header("x-is-ci", "false")
-      .header("content-type", "application/json")
-      .header("user-agent", userAgent)
-      .body(jsonReq)
+      val apiEndpoint = creds.endpointOrDefault
+      val apiToken = creds.api
 
-    implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
-    println("Sending...")
-    val response = request.send()
-    println("...Sent")
+      val request = sttp.post(uri"$apiEndpoint/v1/vuln/maven")
+        .header("Authorization", s"token $apiToken")
+        .header("x-is-ci", "false")
+        .header("content-type", "application/json")
+        .header("user-agent", userAgent)
+        .body(jsonReq)
 
-    val ret = response.unsafeBody
+      implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
+      println(s"Sending... ( with userAgent = $userAgent)")
+      val response = request.send()
+      println("...Sent")
 
-    println("Got Response")
-    println(ret)
+      val ret = response.unsafeBody
 
-    ret
+      println("Got Response")
+      println(ret)
+
+      ret
+    }
   }
 
   def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {
