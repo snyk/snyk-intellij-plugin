@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="[%7r] %6p - %30.30c - %m \n"/>
+        </layout>
+    </appender>
+
+    <appender name="SOCKET" class="org.apache.log4j.net.SocketAppender">
+        <param name="RemoteHost" value="localhost"/>
+        <param name="Port" value="4454"/>
+        <param name="LocationInfo" value="true"/>
+        <param name="ReconnectionDelay" value="5000"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="
+      [slf5s.start]
+      %d{DATE}[slf5s.DATE]%n
+      %p[slf5s.PRIORITY]%n
+      ${server.name}[slf5s.NDC]%n
+      %c[slf5s.CATEGORY]%n
+      %l[slf5s.LOCATION]%n
+      %m[slf5s.MESSAGE]%n%n"
+            />
+        </layout>
+    </appender>
+
+    <root>
+        <priority value="TRACE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SOCKET"/>
+    </root>
+</log4j:configuration>

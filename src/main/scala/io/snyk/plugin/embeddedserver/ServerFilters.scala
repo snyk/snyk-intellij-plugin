@@ -18,10 +18,10 @@ trait ServerFilters { self: MiniServer =>
   def requireAuth(proc: Processor): Processor = {
     url => {
       params => {
-        println("Auth test")
+        log.debug("Auth test")
         pluginState.credentials.get match {
           case Failure(ex) =>
-            println(s"Auth failed with $ex")
+            log.debug(s"Auth failed with $ex")
             redirectTo("/login-required")
           case Success(_) =>
             proc(url)(params)

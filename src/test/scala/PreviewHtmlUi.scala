@@ -6,7 +6,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.io.{Codec, Source}
 import scala.util.Try
 
+
 object PreviewHtmlUi extends App {
+  org.apache.log4j.BasicConfigurator.configure()
+  Log4jLoggerFactory.install()
+
   private[this] def myMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
     Source.fromResource("sample-response-2.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }

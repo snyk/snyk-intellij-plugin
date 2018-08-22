@@ -1,6 +1,8 @@
-package io.snyk.plugin.ui
+package io.snyk.plugin
+package ui
 
 import com.intellij.openapi.project.Project
+import com.intellij.util.ui.UIUtil
 import com.sun.javafx.application.PlatformImpl
 import io.snyk.plugin.embeddedserver.{ColorProvider, MiniServer, ParamSet}
 import io.snyk.plugin.ui.state.SnykPluginState
@@ -18,14 +20,16 @@ import javafx.concurrent.Worker
   * Provides the HTML view that's central to this plugin, and initialises the underlying
   * embedded HTTP server that will feed it.
   */
-class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXPanel { self =>
+class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXPanel with IntellijLogging { self =>
+  this.setBackground(UIUtil.getPanelBackground)
+
   val ms = new MiniServer(pluginState, ColorProvider.intellij)
 
   val browser: Future[WebView] = initBrowser()
   val externalPopupHandler = new ExternalPopupHandler(pluginState)
 
   navigateTo("/vulnerabilities", ParamSet.Empty).foreach(url =>
-    println(s"done loading start page from $url")
+    log.info(s"done loading start page from $url")
   )
 
   /**
@@ -38,7 +42,7 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
     */
   private[ui] def navigateTo(path: String, params: ParamSet): Future[String] = {
     val url = ms.rootUrl.toURI.resolve(path).toString + params.queryString
-    println(s"navigating to $path [$url]")
+    log.debug(s"navigating to $path [$url]")
     browser flatMap { b =>
       val p = Promise[String]
       PlatformImpl.runLater { () =>
@@ -69,17 +73,16 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
       () => {
         import com.sun.javafx.webkit.WebConsoleListener
         WebConsoleListener setDefaultListener { (webView, message, lineNumber, sourceId) =>
-            println(s"$message [at $lineNumber]")
+            log.debug(s"$message [at $lineNumber]")
         }
         val browser = new WebView()
         val engine = browser.getEngine
 
-//        engine.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36")
 //        dwss = Some(new DebugWebSocketServer(engine))
 
         engine.getLoadWorker.stateProperty addListener { (obs, oldVal, newVal) =>
           if (newVal == Worker.State.SUCCEEDED) {
-            println("Page loaded")
+            log.debug("Page loaded")
           }
         }
         engine.setCreatePopupHandler(externalPopupHandler)

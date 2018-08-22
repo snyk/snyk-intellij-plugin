@@ -1,4 +1,5 @@
-package io.snyk.plugin.embeddedserver
+package io.snyk.plugin
+package embeddedserver
 
 import java.net.URLEncoder
 import java.time.ZonedDateTime
@@ -15,7 +16,7 @@ import java.{util => ju}
 import scala.collection.GenMap
 import scala.collection.convert.Wrappers
 
-object HandlebarsHelpers {
+object HandlebarsHelpers extends IntellijLogging {
 
   def safeString(s: String): Handlebars.SafeString = new Handlebars.SafeString(s)
 
@@ -43,7 +44,7 @@ object HandlebarsHelpers {
     def inverse(): CharSequence = opts.inverse()
     def render(bool: Boolean): CharSequence = if(bool) fn() else inverse()
 
-    def log(): Unit = {
+    def printToLog(): Unit = {
       val loc = opts.fn.filename() + " " + opts.fn.position().mkString("[",",","]")
 
       val parts = TreeMap(
@@ -65,7 +66,7 @@ object HandlebarsHelpers {
         case (k,v) => s"  $k = $v"
       }
 
-      println(s"${opts.helperName} helper\n" + parts.mkString("\n"))
+      log.debug(s"${opts.helperName} helper\n" + parts.mkString("\n"))
     }
 
 
@@ -78,7 +79,7 @@ object HandlebarsHelpers {
   def debugWrapper[T](fn: Input[T] => Any): Input[T] => Any = in => {
     //in.log()
     val out = fn(in)
-    //println(s"${in.opts.helperName} helper output [$out]")
+    //log.debug(s"${in.opts.helperName} helper output [$out]")
     out
   }
 
@@ -147,12 +148,12 @@ object HandlebarsHelpers {
       val soughtRelative = in.valueStr
       val soughtUri = templateUri.resolve(soughtRelative)
 
-      println(s"templateFullFilename: $templateFullFilename")
-      println(s"templateRelativeFilename: $templateRelativeFilename")
-      println(s"webInfUri: $webInfUri")
-      println(s"templateUri: $templateUri")
-      println(s"soughtRelative: $soughtRelative")
-      println(s"soughtUri: $soughtUri")
+      log.debug(s"templateFullFilename: $templateFullFilename")
+      log.debug(s"templateRelativeFilename: $templateRelativeFilename")
+      log.debug(s"webInfUri: $webInfUri")
+      log.debug(s"templateUri: $templateUri")
+      log.debug(s"soughtRelative: $soughtRelative")
+      log.debug(s"soughtUri: $soughtUri")
       val srcText = Source.fromFile(soughtUri).mkString
       safeString(srcText)
     },
@@ -178,7 +179,7 @@ object HandlebarsHelpers {
       case in @ VarArgInput(v1: Boolean, "&&", v2: Boolean) => in.render(v1 && v2)
       case in @ VarArgInput(v1: Boolean, "||", v2: Boolean) => in.render(v1 || v2)
       case in =>
-        in.log()
+        in.printToLog()
         in.render(false)
     },
     "add_encoded_param" -> string { in =>

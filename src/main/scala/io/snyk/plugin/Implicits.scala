@@ -13,15 +13,18 @@ import javafx.util.{Duration => JfxDuration}
 
 import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
+import com.intellij.openapi.diagnostic.Logger
 
 object Implicits {
+
+  val log = Logger.getInstance(this.getClass)
 
   implicit class RichProject(val p: Project) extends AnyVal {
     def toDepNode: SnykMavenArtifact = {
       val allMavenProjects = MavenProjectsManager.getInstance(p).getProjects.asScala
       val mp = allMavenProjects.head
       allMavenProjects.foreach { p =>
-        println(s"Enumerating maven project $p")
+        log.debug(s"Enumerating maven project $p")
       }
 
       SnykMavenArtifact.fromMavenProject(mp)

@@ -1,4 +1,5 @@
-package io.snyk.plugin.embeddedserver
+package io.snyk.plugin
+package embeddedserver
 
 import java.nio.file.Paths
 import java.net.{URL, URLConnection}
@@ -8,8 +9,8 @@ sealed trait WebInf {
   def openConnection(path: String): URLConnection
 }
 
-class FileBasedWebInf(root: String) extends WebInf {
-  println(s"Serving WEB-INF from files: $root")
+class FileBasedWebInf(root: String) extends WebInf with IntellijLogging {
+  log.info(s"Serving WEB-INF from files: $root")
   def resolvePath(path: String): String =
     if(path.startsWith("/")) s"$root$path" else s"$root/$path"
 
@@ -17,8 +18,8 @@ class FileBasedWebInf(root: String) extends WebInf {
     Paths.get(root, path).toUri.toURL.openConnection()
 }
 
-class JarBasedWebInf extends WebInf {
-  println(s"Serving WEB-INF from classpath")
+class JarBasedWebInf extends WebInf with IntellijLogging {
+  log.info(s"Serving WEB-INF from classpath")
   def openConnection(path: String): URLConnection =
     getClass.getClassLoader.getResource(s"WEB-INF/$path").openConnection()
 }

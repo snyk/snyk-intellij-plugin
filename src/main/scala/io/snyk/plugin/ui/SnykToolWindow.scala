@@ -6,10 +6,8 @@ import com.intellij.openapi.project.{DumbAware, Project}
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
-
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.ui.state.SnykPluginState
-import monix.execution.Ack.Continue
-import monix.execution.Scheduler.Implicits.global
 
 
 /**
@@ -27,6 +25,12 @@ class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 }
 
 class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true) with DataProvider with Disposable {
+  this.setBackground(UIUtil.getPanelBackground)
+
+  val ijLogger = com.intellij.openapi.diagnostic.Logger.getInstance(this.getClass)
+
+  org.apache.log4j.Logger.getLogger(this.getClass).warn("test native log4j")
+  org.slf4j.LoggerFactory.getLogger(this.getClass).warn("test native slf4j")
   val pluginState: SnykPluginState = SnykPluginState.forIntelliJ(project, this)
 
   val htmlPanel = new SnykHtmlPanel(project, pluginState)

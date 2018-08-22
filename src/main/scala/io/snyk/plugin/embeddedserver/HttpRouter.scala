@@ -36,7 +36,7 @@ object HttpRouter {
       */
     def bind(initialPathParts: Seq[String], initialParams: ParamSet): Option[ParamSet] = {
 //      val pathPartsStr = initialPathParts.map(x => s"[$x]").mkString("/")
-//      println(s"attempting to bind $pathPartsStr --> $this")
+//      log.trace(s"attempting to bind $pathPartsStr --> $this")
       def loop(
         params: ParamSet,
         pathParts: Seq[String],

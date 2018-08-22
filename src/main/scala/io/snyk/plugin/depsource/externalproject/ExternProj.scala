@@ -43,14 +43,14 @@ class ExternProj(project: Project) {
     }
 //    modules collect {
 //      case SDataNode(module: ModuleData, c1) =>
-//        println(s"module: $module")
+//        log.debug(s"module: $module")
 //        c1 collect {
 //          case SDataNode(sourceSet: GradleSourceSetData, c2) =>
-//            println(s"  sourceSet: $sourceSet")
+//            log.debug(s"  sourceSet: $sourceSet")
 //            c2 collect {
 //              case SDataNode(libDep: LibraryDependencyData, c3) =>
-//                println(s"    libDep: $libDep")
-//                c3 foreach { x => println(s"      $x") }
+//                log.debug(s"    libDep: $libDep")
+//                c3 foreach { x => log.debug(s"      $x") }
 //            }
 //
 //        }

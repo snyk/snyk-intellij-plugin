@@ -1,4 +1,5 @@
-package io.snyk.plugin.ui.actions
+package io.snyk.plugin
+package ui.actions
 
 
 import com.intellij.icons.AllIcons
@@ -10,7 +11,8 @@ import monix.execution.Scheduler.Implicits.global
 
 class SnykRescanAction(pluginState: SnykPluginState)
 extends AnAction("Re-Scan project with Snyk", null, AllIcons.Actions.Refresh)
-with DumbAware {
+with DumbAware
+with IntellijLogging {
 
   import pluginState.{performScan, navigator}
 
@@ -22,10 +24,10 @@ with DumbAware {
   }
 
   override def actionPerformed(e: AnActionEvent): Unit = {
-    println("Rescan button clicked")
+    log.debug("Rescan button clicked")
 
-//    println(s"*** SOURCE SETS ***")
-//    pluginState.externProj.gradleSourceSets foreach { ss => println(ss.toMultiLineString) }
+//    log.debug(s"*** SOURCE SETS ***")
+//    pluginState.externProj.gradleSourceSets foreach { ss => log.debug(ss.toMultiLineString) }
 
     navigator.navToScanning()
     performScan(force=true) andThen { case _ => navigator.navToVulns() }

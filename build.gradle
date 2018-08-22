@@ -52,7 +52,7 @@ intellij {
     type 'IC'
     //version '2017.3'
     //see https://www.jetbrains.com/intellij-repository/releases for versions
-    version '2018.2'
+    version '2018.2.2'
     //version '182.3684.40' // 2018-07-17 release of 2018.2 EAP
     pluginName 'snyk-intellij-plugin'
     plugins = ['maven', 'gradle']

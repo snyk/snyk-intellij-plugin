@@ -1,19 +1,17 @@
 package io.snyk.plugin.client
 
 import com.intellij.ide.plugins.cl.PluginClassLoader
-import com.intellij.ide.plugins.{PluginManager, PluginManagerCore}
+import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.ApplicationInfo
+import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
-import io.circe.parser.decode
 import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
-
-import scala.io.{Codec, Source}
-import scala.util.Try
 import com.softwaremill.sttp._
+import io.circe.parser.decode
 import io.circe.{Json, Printer}
 
-import scala.collection.immutable.ListMap
-import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
+
 
 /**
   * Represents the connection to the Snyk servers for the security scan.
@@ -31,6 +29,8 @@ sealed trait ApiClient {
   *       any property depending on it MUST NOT be cached as a `val`
   */
 private final class StandardApiClient(credentials: => Try[SnykCredentials]) extends ApiClient {
+  val log = Logger.getInstance(this.getClass)
+
   def isAvailable: Boolean = credentials.isSuccess
 
   //Not a Map, we want to preserve ordering
@@ -56,39 +56,53 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
 
   val userAgent = s"SnykIdePlugin/$pluginVersion ($allPropsStr)"
 
-
-
   private[this] val stringifyWithoutNulls: Json => String =
     Printer.noSpaces.copy(dropNullValues = true).pretty
 
+  def retry[T](times: Int)(fn: => Try[T]): Try[T] = {
+    fn match {
+      case Failure(_) if times > 1 => retry(times-1)(fn)
+      case f @ Failure(_) => f
+      case s @ Success(_) => s
+    }
+  }
+
   def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials flatMap { creds =>
-    Try {
-      val jsonReq = stringifyWithoutNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
+    val jsonReq = stringifyWithoutNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
 
-      println("ApiClient: Built JSON Request")
-      println(jsonReq)
+    log.debug("ApiClient: Built JSON Request")
+    //log.debug(jsonReq)
 
-      val apiEndpoint = creds.endpointOrDefault
-      val apiToken = creds.api
+    val apiEndpoint = creds.endpointOrDefault
+    val apiToken = creds.api
 
-      val request = sttp.post(uri"$apiEndpoint/v1/vuln/maven")
-        .header("Authorization", s"token $apiToken")
-        .header("x-is-ci", "false")
-        .header("content-type", "application/json")
-        .header("user-agent", userAgent)
-        .body(jsonReq)
+    val uri = uri"$apiEndpoint/v1/vuln/maven"
 
-      implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
-      println(s"Sending... ( with userAgent = $userAgent)")
+    val request = sttp.post(uri)
+      .header("Authorization", s"token $apiToken")
+      .header("x-is-ci", "false")
+      .header("content-type", "application/json")
+      .header("user-agent", userAgent)
+      .body(jsonReq)
+
+    implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
+
+    retry(3) {
+      log.debug(s"Sending... with userAgent = $userAgent")
       val response = request.send()
-      println("...Sent")
+      log.debug("...Sent")
 
-      val ret = response.unsafeBody
+      response.body match {
+        case Left(err) =>
+          log.warn(s"Got Error Response: $err")
+          log.warn(jsonReq)
 
-      println("Got Response")
-      println(ret)
-
-      ret
+          Failure(new RuntimeException(s"Status code ${response.code}, Error: $err"))
+        case Right(body) =>
+          log.debug("Got Good Response")
+          log.debug(body)
+          Success(body)
+      }
     }
   }
 

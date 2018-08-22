@@ -1,4 +1,5 @@
-package io.snyk.plugin.ui.state
+package io.snyk.plugin
+package ui.state
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
@@ -20,7 +21,7 @@ trait Navigator {
   def navToScanning(): Future[String] = navigateTo("/scanning", ParamSet.Empty)
 }
 
-object Navigator {
+object Navigator extends IntellijLogging {
 
   class IntellijNavigator(
     project: Project,
@@ -33,7 +34,7 @@ object Navigator {
       ApplicationManager.getApplication.invokeLater { () =>
         p completeWith {
           toolWindow.htmlPanel.navigateTo(path, params) map { resolvedUrl =>
-            println(s"navigateTo: $path completed")
+            log.info(s"navigateTo: $path completed")
             resolvedUrl
           }
         }
@@ -52,12 +53,12 @@ object Navigator {
     ): Future[Unit] = idToProject(projectId) map { mp =>
       val p = Promise[Unit]
       ApplicationManager.getApplication.invokeLater { () =>
-        println(s"Navigating to Artifact: $group : $name in $projectId")
+        log.info(s"Navigating to Artifact: $group : $name in $projectId")
         p complete Try {
           val file = mp.getFile
-          println(s"  file: $file")
+          log.debug(s"  file: $file")
           val artifact = mp.findDependencies(group, name).asScala.head
-          println(s"  artifact: $artifact")
+          log.debug(s"  artifact: $artifact")
           val nav = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
           nav.navigate(true)
         }
@@ -68,12 +69,12 @@ object Navigator {
 
   class MockNavigator extends Navigator {
     override def navigateTo(path: String, params: ParamSet): Future[String] = {
-      println(s"MockSnykPluginState.navigateTo($path, $params)")
+      log.info(s"MockSnykPluginState.navigateTo($path, $params)")
       Future.successful(path)
     }
 
     override def navToArtifact(group: String, name: String, projectId: String): Future[Unit] = {
-      println(s"MockSnykPluginState.navToArtifact($group, $name)")
+      log.info(s"MockSnykPluginState.navToArtifact($group, $name)")
       Future.successful(())
     }
   }

@@ -4,6 +4,8 @@ import io.circe.{Decoder, Encoder}
 import io.circe.derivation.{deriveDecoder, deriveEncoder}
 
 import scala.annotation.tailrec
+import io.snyk.plugin.IntellijLogging
+
 
 case class VulnDerivation(
   module       : MavenCoords,
@@ -35,7 +37,7 @@ case class MiniVuln(
   derivations : Seq[MiniTree[VulnDerivation]]
 )
 
-object MiniVuln {
+object MiniVuln extends IntellijLogging {
   def merge(occurrences: Seq[MiniVuln]): Seq[MiniVuln] = {
 
     /**
@@ -100,9 +102,9 @@ object MiniVuln {
 
       case (f, _) if f.isEmpty => acc
       case _ =>
-        println("FROM\n" + from.mkString("\n"))
-        println("UPGRADE\n" + upgradePath.mkString("\n"))
-        println("ACC\n" + acc.mkString("\n"))
+        log.debug("FROM\n" + from.mkString("\n"))
+        log.debug("UPGRADE\n" + upgradePath.mkString("\n"))
+        log.debug("ACC\n" + acc.mkString("\n"))
         ???
     }
   }

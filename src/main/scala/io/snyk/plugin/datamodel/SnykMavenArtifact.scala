@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 
 object SnykMavenArtifact {
   def fromMavenArtifactNode(n: MavenArtifactNode): SnykMavenArtifact = {
-//    println(s"dep tree for node: ${n.getDependencies}")
+//    log.debug(s"dep tree for node: ${n.getDependencies}")
 
     SnykMavenArtifact(
       n.getArtifact.getGroupId,

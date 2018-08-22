@@ -1,4 +1,6 @@
-package io.snyk.plugin.ui
+package io.snyk.plugin
+package ui
+
 import java.net.URL
 
 import com.intellij.ide.BrowserUtil
@@ -30,7 +32,8 @@ import scala.util.control.NonFatal
   *    (e.g. link to the source of a declaration of some dependency in a POM)
   *  - Use IntelliJ's `BrowserUtil.browse` to open the link in the user's browser
   */
-class ExternalPopupHandler(pluginState: SnykPluginState) extends Callback[PopupFeatures, WebEngine] {
+class ExternalPopupHandler(pluginState: SnykPluginState)
+extends Callback[PopupFeatures, WebEngine] with IntellijLogging {
 
   private[this] val navPrefix = "http://idenav/artifact/"
 
@@ -47,7 +50,7 @@ class ExternalPopupHandler(pluginState: SnykPluginState) extends Callback[PopupF
   }
 
   private[this] def processUrl(url: String) = {
-    println(s"External Popup Handler tackling: $url")
+    log.info(s"External Popup Handler tackling: $url")
     try {
       if(url.startsWith(navPrefix)) {
         val parts = url.drop(navPrefix.length).split(":|@")
@@ -55,7 +58,7 @@ class ExternalPopupHandler(pluginState: SnykPluginState) extends Callback[PopupF
         val a = parts(1)
         pluginState.navigator.navToArtifact(g, a, pluginState.selectedProjectId.get)
       } else  BrowserUtil.browse(new URL(url))
-    } catch { case NonFatal(e) => e.printStackTrace() }
+    } catch { case NonFatal(e) => log.warn(e) }
   }
 
   def call(popupFeatures: PopupFeatures): WebEngine = zombieEngine

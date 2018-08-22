@@ -8,10 +8,9 @@ import io.snyk.plugin.client.{ApiClient, SnykCredentials}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.depsource.{DepTreeProvider, MavenProjectsObservable}
-
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.IntellijLogging
 import org.jetbrains.idea.maven.project.MavenProject
-
 import monix.execution.Scheduler.Implicits.global
 import monix.execution.Ack.Continue
 import monix.execution.atomic.Atomic
@@ -30,7 +29,7 @@ import scala.util.Try
   * Exposes core navigation functionality to isolate callers from any dependency on IDE-specific
   * implementations, to support running outside of the IDE for test purposes.
   */
-trait SnykPluginState {
+trait SnykPluginState extends IntellijLogging {
   //MODEL
 
   def apiClient: ApiClient
@@ -57,12 +56,12 @@ trait SnykPluginState {
     val retval = Option(selectedProjectId.get).filterNot(_.isEmpty).filter(rootProjectIds.contains) orElse {
       val optId = rootProjectIds.headOption
       optId foreach { id =>
-        println(s"auto-setting selected project: [$id]")
+        log.debug(s"auto-setting selected project: [$id]")
         selectedProjectId := id
       }
       optId
     }
-    println(s"safeProjectId is $retval")
+    log.debug(s"safeProjectId is $retval")
     retval
   }
 
@@ -105,7 +104,7 @@ trait SnykPluginState {
       val task = Task.eval{
         val result = apiClient runOn deps
         projects.transform{ _ + (projectId -> PerProjectState(Some(deps), result.toOption))}
-        println(s"async scan success")
+        log.info(s"async scan success")
         result
       }
 
@@ -143,7 +142,7 @@ object SnykPluginState {
     override lazy val externProj: ExternProj = new ExternProj(project)
 
     mavenProjectsObservable subscribe { list =>
-      println(s"updated projects: $list")
+      log.info(s"updated projects: $list")
       projects := Map.empty
       navigator.navToVulns()
       Continue

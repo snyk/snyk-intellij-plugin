@@ -3,10 +3,10 @@ package io.snyk.plugin.embeddedserver
 import java.net.{URI, URL}
 
 import fi.iki.elonen.NanoHTTPD
-
 import io.snyk.plugin.datamodel.SnykVulnResponse
 import ColorProvider.RichColor
 import HandlebarsEngine.RichTemplate
+import io.snyk.plugin.IntellijLogging
 import io.snyk.plugin.ui.state.SnykPluginState
 
 /**
@@ -22,7 +22,9 @@ class MiniServer(
   port0: Int = 0
 ) extends NanoHTTPD(port0)
   with ServerFilters
-  with ServerResponses { // 0 == first available port
+  with ServerResponses
+  with IntellijLogging
+{ // 0 == first available port
 
   import NanoHTTPD._
   import pluginState.apiClient
@@ -31,7 +33,7 @@ class MiniServer(
   val port: Int = this.getListeningPort
 
   val rootUrl = new URL(s"http://localhost:$port")
-  println(s"Mini-server on $rootUrl \n")
+  log.info(s"Mini-server on $rootUrl \n")
 
   val handlebarsEngine = new HandlebarsEngine
 
@@ -45,15 +47,15 @@ class MiniServer(
     * Core NanoHTTPD serving method; Parse params for our own needs, extract the URI, and delegate to our own `serve`
     */
   override def serve(session: IHTTPSession): Response = {
-    println(s"miniserver serving $session")
+    log.debug(s"miniserver serving $session")
     val uri = URI.create(session.getUri).normalize()
     val params = ParamSet.from(session)
     val path = uri.getPath
-    println(s"miniserver routing $path")
+    log.debug(s"miniserver routing $path")
     try {
       router.route(uri, params) getOrElse notFoundResponse(path)
     } catch { case ex: Exception =>
-      ex.printStackTrace()
+      log.warn(ex)
       newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", ex.toString)
     }
   }
@@ -77,13 +79,13 @@ class MiniServer(
 
   def serveStatic(path: String)(params: ParamSet): Response = {
     val mime = MimeType of path
-    println(s"miniserver serving static http://localhost:$port$path as $mime")
+    log.debug(s"miniserver serving static http://localhost:$port$path as $mime")
     val conn = WebInf.instance.openConnection(path)
     newFixedLengthResponse(Response.Status.OK, mime, conn.getInputStream, conn.getContentLengthLong)
   }
 
   def performLogin(path: String)(params: ParamSet): Response = {
-    println("Performing login")
+    log.debug("Performing login")
     val redir = asyncAuthAndRedirectTo("/vulnerabilities", params)
     redirectTo("/logging-in")
   }
@@ -98,8 +100,8 @@ class MiniServer(
     }
 
   def serveHandlebars(path: String)(params: ParamSet): Response = {
-    println(s"miniserver serving handlebars template http://localhost:$port$path")
-    println(s"params = $params")
+    log.debug(s"miniserver serving handlebars template http://localhost:$port$path")
+    log.debug(s"params = $params")
 
     val template = handlebarsEngine.compile(path)
     def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty

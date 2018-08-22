@@ -17,9 +17,13 @@ import scala.io.Source
 import scala.util.Try
 import monix.execution.Scheduler.Implicits.{global => scheduler}
 
+import com.intellij.openapi.diagnostic.Logger
+
 import scala.concurrent.duration._
 
 object SnykCredentials {
+  val log = Logger.getInstance(this.getClass)
+
   implicit val decoder: Decoder[SnykCredentials] = deriveDecoder[SnykCredentials]
   implicit val encoder: Encoder[SnykCredentials] = deriveEncoder[SnykCredentials]
 
@@ -46,7 +50,7 @@ object SnykCredentials {
     val newToken = UUID.randomUUID()
     val loginUri = endpointUri.resolve(s"/login?token=$newToken")
 
-    println(s"Will auth at $loginUri")
+    log.debug(s"Will auth at $loginUri")
 
     implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
 
@@ -83,9 +87,9 @@ object SnykCredentials {
       if(remainingAttempts <= 0) {
         p.failure(new RuntimeException("Auth token expired"))
       } else {
-        println(s"Auth poll Sending to $pollUri... ${body.noSpaces}" )
+        log.debug(s"Auth poll Sending to $pollUri... ${body.noSpaces}" )
         val response = request.send()
-        println(s"auth response was: ${response.code} ${response.unsafeBody}")
+        log.debug(s"auth response was: ${response.code} ${response.unsafeBody}")
         if (response.is200) {
           p complete decode[SnykCredentials](response.unsafeBody).toTry
         } else {

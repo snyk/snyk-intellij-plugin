@@ -15,15 +15,15 @@ trait ServerResponses { self: MiniServer =>
     newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", s"Not Found: $path")
 
   def redirectTo(url: String): Response = {
-    println(s"Redirecting to $url")
+    log.debug(s"Redirecting to $url")
     val r = newFixedLengthResponse(Response.Status.REDIRECT, MIME_HTML, "")
     r.addHeader("Location", url)
     r
   }
 
   def defaultFailureHandler(x: Throwable, params: ParamSet): Unit = {
-    x.printStackTrace()
-    println(s"async task failed, redirecting to error page")
+    log.warn(x)
+    log.debug(s"async task failed, redirecting to error page")
     navigateTo("/error", params.plus("errmsg" -> x.getMessage))
   }
   /**
@@ -34,10 +34,10 @@ trait ServerResponses { self: MiniServer =>
     params: ParamSet,
     onError: (Throwable, ParamSet) => Unit = defaultFailureHandler
   ): Future[SnykVulnResponse] = {
-    println(s"triggered async scan, will redirect to $successPath with params $params")
+    log.debug(s"triggered async scan, will redirect to $successPath with params $params")
     pluginState.performScan() andThen {
       case Success(_) =>
-        println(s"async scan success, redirecting to $successPath with params $params")
+        log.debug(s"async scan success, redirecting to $successPath with params $params")
         navigateTo(successPath, params)
       case Failure(x) => onError(x, params)
     }
@@ -59,10 +59,10 @@ trait ServerResponses { self: MiniServer =>
         case Failure(x) =>
           onError(x, params)
         case s @ Success(creds) =>
-          println(s"auth completed with $creds, redirecting to $successPath with params $params")
+          log.debug(s"auth completed with $creds, redirecting to $successPath with params $params")
           pluginState.credentials := s
           creds.writeToFile()
-          println(s"navigating to $successPath with credentials updated")
+          log.debug(s"navigating to $successPath with credentials updated")
           navigateTo(successPath, params)
       }
     }

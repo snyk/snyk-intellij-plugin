@@ -1,7 +1,8 @@
-package io.snyk.plugin.embeddedserver
+package io.snyk.plugin
+package embeddedserver
 
 import com.github.jknack.handlebars.context.{JavaBeanValueResolver, MapValueResolver, MethodValueResolver}
-import com.github.jknack.handlebars._
+import com.github.jknack.handlebars.{Handlebars, Template, Context}
 import com.github.jknack.handlebars.io.{ClassPathTemplateLoader, CompositeTemplateLoader, FileTemplateLoader, URLTemplateLoader}
 
 /**
@@ -9,7 +10,7 @@ import com.github.jknack.handlebars.io.{ClassPathTemplateLoader, CompositeTempla
   * the necessary template loaders for our structure, and the HandlebarsScalaResolver
   * to allow scala-native resolution of properties.
   */
-class HandlebarsEngine {
+class HandlebarsEngine extends IntellijLogging {
   val webInfPath = getClass.getClassLoader.getResource("WEB-INF")
 
   def loader(prefix: String, suffix: String): URLTemplateLoader = WebInf.instance match {
@@ -31,13 +32,13 @@ class HandlebarsEngine {
 
   def compile(fullPath: String): Template = {
     val path = fullPath.dropRight(4)
-    println(s"HandlebarsEngine compiling $path")
+    log.debug(s"HandlebarsEngine compiling $path")
     handlebars.compile(path)
   }
 
 //  def render(fullPath: String, props: Map[String, Any]): String = {
 //    val path = fullPath.dropRight(4)
-//    println(s"HandlebarsEngine rendering $path")
+//    log.debug(s"HandlebarsEngine rendering $path")
 //    val template = handlebars.compile(path)
 //    template.collectReferenceParameters()
 //    template(mkContext(props))
