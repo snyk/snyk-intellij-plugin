@@ -100,7 +100,7 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
           Failure(new RuntimeException(s"Status code ${response.code}, Error: $err"))
         case Right(body) =>
           log.debug("Got Good Response")
-          log.debug(body)
+          log.trace(body)
           Success(body)
       }
     }
