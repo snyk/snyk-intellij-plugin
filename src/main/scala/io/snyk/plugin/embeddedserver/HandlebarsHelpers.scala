@@ -15,6 +15,7 @@ import java.{util => ju}
 
 import scala.collection.GenMap
 import scala.collection.convert.Wrappers
+import datamodel.{MiniTree, MiniVuln, VulnDerivation}
 
 object HandlebarsHelpers extends IntellijLogging {
 
@@ -88,6 +89,9 @@ object HandlebarsHelpers extends IntellijLogging {
 
   def string(fn: Input[String] => Any): Helper[String] =
     (v: String, opts: Options) => debugWrapper(fn)(Input(v, opts)).asInstanceOf[AnyRef]
+
+  def vulnTree(fn: Input[MiniTree[MiniVuln]] => Any): Helper[MiniTree[MiniVuln]] =
+    (v: MiniTree[MiniVuln], opts: Options) => debugWrapper(fn)(Input(v, opts)).asInstanceOf[AnyRef]
 
   val noop: Helper[Any] = (v, opts) => ""
 
@@ -202,7 +206,20 @@ object HandlebarsHelpers extends IntellijLogging {
     "relativeMoment" -> any { in => "relativeMoment"}, //TODO: Implement
     "datetime" -> any { in => "datetime"}, //TODO: Implement
     "nowstr" -> any { in => ZonedDateTime.now().toString },
-    "trim" -> string { in => in.valueStr.trim }
+    "trim" -> string { in => in.valueStr.trim },
+    "hasNestedRemediations" -> any { in =>
+      in.value match {
+        case untyped @ MiniTree(_: VulnDerivation,_) =>
+          val mt = untyped.asInstanceOf[MiniTree[VulnDerivation]]
+          val result = MiniVuln.derivHasNestedRemediations(mt)
+          log.info(s"testing ${mt.content.module} ... $result")
+          result
+        case _ =>
+          log.info(s"oops! ${in.value}")
+          false
+      }
+
+    }
   )
 
   def registerAllOn(hb: Handlebars): Unit = all.foreach{ case (k,v) => hb.registerHelper(k, v) }

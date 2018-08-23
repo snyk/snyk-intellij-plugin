@@ -38,6 +38,15 @@ case class MiniVuln(
 )
 
 object MiniVuln extends IntellijLogging {
+
+  def derivHasRemediations(tree: MiniTree[VulnDerivation]): Boolean =
+    tree.content.remediations.nonEmpty ||
+      tree.nested.exists(derivHasNestedRemediations)
+
+  def derivHasNestedRemediations(tree: MiniTree[VulnDerivation]): Boolean =
+      tree.nested.exists(derivHasRemediations)
+
+
   def merge(occurrences: Seq[MiniVuln]): Seq[MiniVuln] = {
 
     /**

@@ -138,8 +138,8 @@
       Tree expanded icon
     */
     label.tree_label:before {
-        background: {{textColor}};
-        color: {{bgColor}};
+        background: {{separatorColor}};
+        color: {{textColor}};
         position: relative;
         z-index: 1;
         float: left;
@@ -147,12 +147,12 @@
         width: 1em;
         height: 1em;
         border-radius: 1em;
-        content: '+';
+        content: '▶︎';
         text-align: center;
-        line-height: .9em;
+        /*line-height: .9em;*/
     }
 
-    :checked ~ label.tree_label:before { content: '–'; }
+    :checked ~ label.tree_label:before { content: '▼'; }
 
     /* ————————————————————–
       Tree branches

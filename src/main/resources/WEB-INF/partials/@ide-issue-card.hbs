@@ -19,16 +19,16 @@
             {{> @partial-block }}
         </span>
     {{else}}
-        {{#if node.content.remediations.isEmpty}}
+        {{! only auto-expand any level where we have have remediations further down the tree }}
+        {{#if (hasNestedRemediations node)}}
             <input type="checkbox" checked="checked" id="{{nodeId}}" />
         {{else}}
-            {{! don't auto-expand any level where we have have remediations }}
             <input type="checkbox" id="{{nodeId}}" />
         {{/if}}
+
         <label class="tree_label" for="{{nodeId}}">
             {{> @partial-block }}
         </label>
-
     {{/if}}
 {{/inline}}
 
@@ -50,15 +50,14 @@
                 {{#> renderNode}}
                     {{>mavenCoords coords=node.content.module}}
                 {{/renderNode}}
-                {{#each node.content.remediations as |remed|}}
-                    {{! wheeee, we can suggest a fix! }}
-                    <a class="upgrade-link" onclick='event.stopPropagation(); alert("wheee")'>
-                        suggested upgrade: {{@key}}
-                    </a>
-                {{else}}
-                {{/each}}
             {{/if}}
-
+            {{#each node.content.remediations as |remed|}}
+            {{! wheeee, we can suggest a fix! }}
+                <a class="upgrade-link" onclick='event.stopPropagation(); alert("wheee")'>
+                    suggested upgrade: {{@key}}
+                </a>
+            {{else}}
+            {{/each}}
             {{#if node.nested.nonEmpty}}
                 <ul>
                     {{> nested seq=node.nested toplevel=false idprefix=nodeId}}
