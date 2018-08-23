@@ -28,7 +28,6 @@ dependencies {
     compile "org.scala-lang:scala-reflect:$scala_bin_version"
     compile "org.nanohttpd:nanohttpd:2.3.1"
     compile "org.nanohttpd:nanohttpd-websocket:2.3.1"
-    compile "org.nanohttpd:nanohttpd-nanolets:2.3.1"
     compile("com.github.jknack:handlebars:4.1.0") {
         exclude group: 'org.slf4j', module: 'slf4j-api'
     }
@@ -40,8 +39,6 @@ dependencies {
     compile "io.circe:circe-parser_$scala_version:0.9.3"
     compile "io.circe:circe-java8_$scala_version:0.9.3"
     compile "io.circe:circe-derivation_$scala_version:0.9.0-M5"
-
-    compile 'com.vladsch.javafx-webview-debugger:javafx-webview-debugger:0.5.12'
 
     testCompile "com.lihaoyi:pprint_$scala_version:0.5.3"
     testCompile "com.github.nikita-volkov:sext:0.2.4"

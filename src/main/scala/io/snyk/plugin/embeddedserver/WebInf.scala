@@ -24,7 +24,7 @@ class JarBasedWebInf extends WebInf with IntellijLogging {
     getClass.getClassLoader.getResource(s"WEB-INF/$path").openConnection()
 }
 
-object WebInf {
+object WebInf extends IntellijLogging {
 
   /**
   ** For UI testing purposes, detect if we're running as expanded
@@ -38,14 +38,22 @@ object WebInf {
   ** by applications running in test/debug mode, which is especially important
   ** for rapid prototyping of UI changes without having to go through a full
   ** cycle of re-building and re-launching a new IntelliJ instance.
+  **
+  ** In addition, will detect the system property `snyk.plugin.webinf` and forcibly use
+  ** this as the file-based webinf path if defined.
   **/
-  lazy val instance: WebInf = {
-    val root: URL = getClass.getClassLoader.getResource("WEB-INF")
-    if (root.getProtocol == "file") {
-      new FileBasedWebInf(root.getFile
-        .replace("out/production", "src/main") //intelliJ
-        .replace("build/resources/main", "src/main/resources") //gradle
-      )
-    } else new JarBasedWebInf
-  }
+  lazy val instance: WebInf =
+    sys.env.get("snyk.plugin.webinf") match {
+      case Some(path) =>
+        log.warn(s"using a custom-overridden WEB-INF at $path")
+        new FileBasedWebInf(path)
+      case None =>
+        val root: URL = getClass.getClassLoader.getResource("WEB-INF")
+        if (root.getProtocol == "file") {
+          new FileBasedWebInf(root.getFile
+            .replace("out/production", "src/main") //intelliJ
+            .replace("build/resources/main", "src/main/resources") //gradle
+          )
+        } else new JarBasedWebInf
+    }
 }

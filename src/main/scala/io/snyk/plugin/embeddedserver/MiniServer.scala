@@ -65,6 +65,7 @@ class MiniServer(
     "/partials/*"            -> serveHandlebars,
     "/perform-login"         -> performLogin,
     "/vulnerabilities"       -> serveVulns,
+    "/debugForceNav"         -> debugForceNav,
     "/login-required"        -> simpleServeHandlebars,
     "/logging-in"            -> simpleServeHandlebars,
     "/no-project-available"  -> simpleServeHandlebars,
@@ -82,6 +83,14 @@ class MiniServer(
     log.debug(s"miniserver serving static http://localhost:$port$path as $mime")
     val conn = WebInf.instance.openConnection(path)
     newFixedLengthResponse(Response.Status.OK, mime, conn.getInputStream, conn.getContentLengthLong)
+  }
+
+  def debugForceNav(path: String, params: ParamSet): Response = params.first("path") match {
+    case Some(forcedPath) =>
+      navigateTo(forcedPath, params)
+      newFixedLengthResponse(Response.Status.OK, "text/plain", forcedPath)
+    case None =>
+      newFixedLengthResponse(Response.Status.OK, "text/plain", "debugForceNav: no path param supplied")
   }
 
   def performLogin(path: String, params: ParamSet): Response = {
