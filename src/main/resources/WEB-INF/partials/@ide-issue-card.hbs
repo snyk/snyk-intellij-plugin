@@ -68,17 +68,18 @@
     {{/each}}
 {{/inline}}
 
-<div class="issue-card">
+<div class="issue-card {{#if @last}}issue-card-last{{/if}}">
     <div class="issue-title__name">
         {{svg (concat "icon/" spec.type) width=22 height=22}}
-        <a href="{{spec.url}}" class="issue-title__link" target="_blank">{{spec.title}}</a>
+        <span class="spec-title">{{spec.title}}</span>
         <div class="vuln-origin">
             on {{>mavenCoords coords=spec.module}}
         </div>
+        <a href="{{spec.url}}" class="issue-title__link" target="_blank">details</a>
     </div>
     <div class="issue-body issue-body-{{spec.severity}}">
         {{#if derivations.nonEmpty}}
-            <div class="issue-subhead">Introduced Through:</div>
+            <div class="issue-subhead">Via:</div>
             <ul class="tree">
                 {{! skip the root, it's just the project }}
                 {{> nested seq=derivations.head.nested toplevel=true idprefix=(concat spec.id "_" card_id)}}
