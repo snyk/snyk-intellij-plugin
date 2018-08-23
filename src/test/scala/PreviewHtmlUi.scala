@@ -23,6 +23,7 @@ object PreviewHtmlUi extends App {
   val miniServer = new MiniServer(pluginState, colorProvider, 7695)
 
   pluginState.selectedProjectId := "dummy root"
+  pluginState.projects := Map("dummy root" -> PerProjectState())
   pluginState.performScan().onComplete { _ =>
     val root = miniServer.rootUrl.toURI
     val testUrl = root.resolve("/vulnerabilities")

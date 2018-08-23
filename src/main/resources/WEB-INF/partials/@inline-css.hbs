@@ -244,20 +244,23 @@
         float: right;
     }
 
-    .issue-body-high .vulnerable-dep .mvn-version::after {
-        color: #b31a6b;
-        content: "◀︎";
-    }
+    /*.after-mvn-coords::after {*/
+        /*text-decoration: none;*/
+    /*}*/
+    /*.issue-body-high .vulnerable-dep .after-mvn-coords::after {*/
+        /*color: rgb(179, 27, 108);*/
+        /*content: "◀︎";*/
+    /*}*/
 
-    .issue-body-medium .vulnerable-dep .mvn-version::after {
-        color: #c27100;
-        content: "◀︎";
-    }
+    /*.issue-body-medium .vulnerable-dep .after-mvn-coords::after {*/
+        /*color: rgb(194, 113, 0);*/
+        /*content: "◀︎";*/
+    /*}*/
 
-    .issue-body-low .vulnerable-dep .mvn-version::after {
-        color: #595775;
-        content: "◀︎";
-    }
+    /*.issue-body-low .vulnerable-dep .after-mvn-coords::after {*/
+        /*color: rgb(89, 87, 117);*/
+        /*content: "◀︎";*/
+    /*}*/
 
 
     .mvn-group {
@@ -268,22 +271,26 @@
 
     }
 
-    a .mvn-version {
-        background-color: inherit;
-        color: inherit;
-        border: none;
-        padding: 0px;
+    a .mvn-coords {
+        /*background-color: inherit;*/
+        /*color: green;*/
+        /*border: none;*/
+        /*padding: 0px;*/
     }
 
-    a .mvn-version::before {
-        content: " @ ";
+    .mvn-version::before {
+        content: "⟨";
+    }
+
+    .mvn-version::after {
+        content: "⟩";
     }
 
     .mvn-version {
-        border: 1px dotted {{textColor}};
-        border-radius: .25em;
-        padding-left: 1px;
-        padding-right: 1px;
+        /*border: 1px dotted {{textColor}};*/
+        /*border-radius: .25em;*/
+        /*padding-left: 1px;*/
+        /*padding-right: 1px;*/
     }
 
     .project-title {
@@ -366,24 +373,66 @@
         }
     }
 
-    {{!--
+
     .upgrade-link {
-        padding-top: 0;
+        display: inline-block;
+        padding-top: 1px;
         padding-left: .25em;
         padding-right: .25em;
         padding-bottom: 1px;
-        background: #692023;
+        margin-right: auto;
+        background: #2f6928;
+        border-color: black;
         border-radius: 1em;
-        color: {{textColor}};
+        color: white;
         cursor: pointer;
     }
-    --}}
 
+
+    {{!--
     .upgrade-link {
+        display: block;
         color: #9f2512;
         cursor: pointer;
         text-decoration: underline;
         text-decoration-color: #9f2512;
         text-decoration-style: dashed;
+    }
+    --}}
+
+    .vuln-origin {
+        display: inline-block;
+    }
+
+    .vuln-origin .mvn-coords {
+        padding-left: .25em;
+        padding-right: .25em;
+        border-radius: 1em;
+        background-color: {{separatorColor}};
+    }
+
+    {{!--
+    .issue-body-high .vulnerable-dep .mvn-coords {
+        border-color: rgb(179, 27, 108);
+        background-color: rgba(179, 27, 108, 0.2);
+    }
+
+    .issue-body-medium .vulnerable-dep .mvn-coords {
+        border-color: rgb(194, 113, 0);
+        background-color: rgba(194, 113, 0, 0.2);
+    }
+
+    .issue-body-low .vulnerable-dep .mvn-coords {
+        border-color: rgb(89, 87, 117);
+        background-color: rgba(89, 87, 117, 0.2);
+    }
+    --}}
+
+
+    .vulnerable-dep .mvn-coords {
+        padding-left: .25em;
+        padding-right: .25em;
+        border-radius: 1em;
+        background-color: {{separatorColor}};
     }
 </style>

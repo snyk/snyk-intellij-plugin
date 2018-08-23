@@ -75,7 +75,7 @@ class HttpRouter(entries: Map[String, Processor]) {
 
     patternedEntries.foldLeft(None: Option[Response]){
       case (acc, (pattern, fn)) =>
-        acc orElse pattern.bind(pathParts, params).map(fn(path)(_))
+        acc orElse pattern.bind(pathParts, params).map(fn(path, _))
     }
   }
 

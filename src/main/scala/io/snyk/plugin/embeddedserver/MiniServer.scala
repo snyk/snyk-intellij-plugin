@@ -75,31 +75,32 @@ class MiniServer(
   /**
     * A tiny helper for handling /<path> from the template /html/<path>.hbs
     */
-  def simpleServeHandlebars(path: String)(params: ParamSet): Response = serveHandlebars(s"/html${path}.hbs")(params)
+  def simpleServeHandlebars(path: String, params: ParamSet): Response = serveHandlebars(s"/html${path}.hbs", params)
 
-  def serveStatic(path: String)(params: ParamSet): Response = {
+  def serveStatic(path: String, params: ParamSet): Response = {
     val mime = MimeType of path
     log.debug(s"miniserver serving static http://localhost:$port$path as $mime")
     val conn = WebInf.instance.openConnection(path)
     newFixedLengthResponse(Response.Status.OK, mime, conn.getInputStream, conn.getContentLengthLong)
   }
 
-  def performLogin(path: String)(params: ParamSet): Response = {
+  def performLogin(path: String, params: ParamSet): Response = {
     log.debug("Performing login")
     val redir = asyncAuthAndRedirectTo("/vulnerabilities", params)
     redirectTo("/logging-in")
   }
 
-  val serveVulns =
+  def serveVulns(path: String, params: ParamSet): Response = {
     requireAuth {
       requireProjectId {
-        requireScan {
-          url => serveHandlebars("/html/vulns.hbs")
+        requireScan(path, params) {
+          serveHandlebars("/html/vulns.hbs", params)
         }
       }
     }
+  }
 
-  def serveHandlebars(path: String)(params: ParamSet): Response = {
+  def serveHandlebars(path: String, params: ParamSet): Response = {
     log.debug(s"miniserver serving handlebars template http://localhost:$port$path")
     log.debug(s"params = $params")
 
