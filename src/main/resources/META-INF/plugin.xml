@@ -23,7 +23,9 @@
             <li><b>0.0.2</b> - Improved performance<br/></li>
             <li><b>0.0.3</b> - New version to test automated release</li>
             <li><b>0.0.4</b> - multi-module support, login workflow, improved behaviour on unscanned projects,
-                           cache invalidation on project changes, collapsible dep trees</li>
+                               cache invalidation on project changes, collapsible dep trees</li>
+            <li><b>0.0.5</b> - Numerous visual improvements and bug fixes.  Improved the login workflow and
+                               error handling.</li>
         </ul>
     </html>
     ]]></change-notes>
