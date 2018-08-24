@@ -393,6 +393,10 @@
         cursor: pointer;
     }
 
+    .upgrade-link:link {
+        text-decoration: none;
+    }
+
 
     {{!--
     .upgrade-link {
@@ -444,4 +448,31 @@
     .spec-title {
         font-weight: bold;
     }
+
+    .remediations-container {
+        overflow: hidden;
+    }
+    .remediations {
+        border-style: solid;
+        border-width: 1px;
+        border-color: rgb(47, 105, 40);
+        border-radius: 1em;
+        background: rgba(47, 105, 40, 0.3);
+        margin-top: -100%;
+        /*opacity: 0;*/
+        transition: all .5s;
+    }
+
+    .remediations.revealed {
+        margin-top: 0;
+        /*opacity: 100%;*/
+    }
+
+    /*.remediations:target {*/
+        /*visibility: visible;*/
+    /*}*/
+
+    /*.tree input ~ ul.remediation {*/
+        /*display: block;*/
+    /*}*/
 </style>

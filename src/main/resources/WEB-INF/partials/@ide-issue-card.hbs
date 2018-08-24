@@ -32,6 +32,28 @@
     {{/if}}
 {{/inline}}
 
+
+{{#*inline "remediationNested"}}
+    {{#each seq as |node|}}
+        {{var "nodeId" (concat idprefix "_" @index)}}
+        <li>
+            {{#if node.nested.isEmpty}}
+                <span class="tree_label">
+                    {{>mavenCoords coords=node.content}}
+                </span>
+            {{else}}
+                <input type="checkbox" checked="checked" id="{{nodeId}}" />
+                <label class="tree_label" for="{{nodeId}}">
+                    {{>mavenCoords coords=node.content}}
+                </label>
+                <ul>
+                    {{>remediationNested seq=node.nested idprefix=nodeId}}
+                </ul>
+            {{/if}}
+        </li>
+    {{/each}}
+{{/inline}}
+
 {{#*inline "nested"}}
     {{#each seq as |node|}}
         {{! For each top-level path under the vulnerability... }}
@@ -51,12 +73,21 @@
                     {{>mavenCoords coords=node.content.module}}
                 {{/renderNode}}
             {{/if}}
-            {{#each node.content.remediations as |remed|}}
+
+            {{! remediations : Map[String, Seq[MiniTree[MavenCoords]]] }}
+            {{#each node.content.remediations as |remeds|}}
             {{! wheeee, we can suggest a fix! }}
-                <a class="upgrade-link" onclick='event.stopPropagation(); alert("wheee")'>
+                <a class="upgrade-link" onclick="$('#remediations-{{nodeId}}').toggleClass('revealed');">
                     suggested upgrade: {{@key}}
                 </a>
-            {{else}}
+                <div class="remediations-container">
+                    <div class="remediations" id="remediations-{{nodeId}}">
+                        Transitives after upgrade:
+                        <ul class="remediation tree">
+                          {{>remediationNested seq=remeds idprefix=(concat nodeId "_remed")}}
+                        </ul>
+                    </div>
+                </div>
             {{/each}}
             {{#if node.nested.nonEmpty}}
                 <ul>

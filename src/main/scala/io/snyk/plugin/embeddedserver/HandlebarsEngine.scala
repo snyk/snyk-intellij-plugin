@@ -2,8 +2,10 @@ package io.snyk.plugin
 package embeddedserver
 
 import com.github.jknack.handlebars.context.{JavaBeanValueResolver, MapValueResolver, MethodValueResolver}
-import com.github.jknack.handlebars.{Handlebars, Template, Context}
+import com.github.jknack.handlebars.{Context, Handlebars, Template}
 import com.github.jknack.handlebars.io.{ClassPathTemplateLoader, CompositeTemplateLoader, FileTemplateLoader, URLTemplateLoader}
+
+import scala.util.Try
 
 /**
   * Wrapper for an instance of the Handlebars template engine.  Injects our helpers,
@@ -30,7 +32,7 @@ class HandlebarsEngine extends IntellijLogging {
 //  handlebars.prettyPrint(true)
   HandlebarsHelpers.registerAllOn(handlebars)
 
-  def compile(fullPath: String): Template = {
+  def compile(fullPath: String): Try[Template] = Try {
     val path = fullPath.dropRight(4)
     log.debug(s"HandlebarsEngine compiling $path")
     handlebars.compile(path)

@@ -1,6 +1,7 @@
 package io.snyk.plugin.embeddedserver
 
-import java.net.{URI, URL}
+import java.io.IOException
+import java.net.{URI, URL, URLEncoder}
 
 import fi.iki.elonen.NanoHTTPD
 import io.snyk.plugin.datamodel.SnykVulnResponse
@@ -8,6 +9,8 @@ import ColorProvider.RichColor
 import HandlebarsEngine.RichTemplate
 import io.snyk.plugin.IntellijLogging
 import io.snyk.plugin.ui.state.SnykPluginState
+
+import scala.util.{Failure, Success}
 
 /**
   * A low-impact embedded HTTP server, built on top of the NanoHTTPD engine.
@@ -43,6 +46,8 @@ class MiniServer(
   /** The default URL to show when async scanning if an explicit `interstitial` page hasn't been requested **/
   val defaultScanning = "/html/scanning.hbs"
 
+  val webInf = WebInf.instance
+
   /**
     * Core NanoHTTPD serving method; Parse params for our own needs, extract the URI, and delegate to our own `serve`
     */
@@ -50,10 +55,15 @@ class MiniServer(
     log.debug(s"miniserver serving $session")
     val uri = URI.create(session.getUri).normalize()
     val params = ParamSet.from(session)
-    val path = uri.getPath
-    log.debug(s"miniserver routing $path")
+    val uriPath = uri.getPath
+    log.debug(s"miniserver routing $uriPath")
     try {
-      router.route(uri, params) getOrElse notFoundResponse(path)
+      router.route(uri, params) getOrElse {
+        //test hbs files in /html before simply 404-ing
+        val possiblePath = s"/html${uriPath}.hbs"
+        if(webInf.exists(possiblePath)) serveHandlebars(possiblePath, params)
+        else notFoundResponse(uriPath)
+      }
     } catch { case ex: Exception =>
       log.warn(ex)
       newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", ex.toString)
@@ -66,17 +76,9 @@ class MiniServer(
     "/perform-login"         -> performLogin,
     "/vulnerabilities"       -> serveVulns,
     "/debugForceNav"         -> debugForceNav,
-    "/login-required"        -> simpleServeHandlebars,
-    "/logging-in"            -> simpleServeHandlebars,
-    "/no-project-available"  -> simpleServeHandlebars,
-    "/scanning"              -> simpleServeHandlebars,
-    "/error"                 -> simpleServeHandlebars,
   )
+  //note: anything in /WEB-INF/html will typically be handled by the fallback in serve()
 
-  /**
-    * A tiny helper for handling /<path> from the template /html/<path>.hbs
-    */
-  def simpleServeHandlebars(path: String, params: ParamSet): Response = serveHandlebars(s"/html${path}.hbs", params)
 
   def serveStatic(path: String, params: ParamSet): Response = {
     val mime = MimeType of path
@@ -113,26 +115,31 @@ class MiniServer(
     log.debug(s"miniserver serving handlebars template http://localhost:$port$path")
     log.debug(s"params = $params")
 
-    val template = handlebarsEngine.compile(path)
-    def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
+    handlebarsEngine.compile(path) match {
+      case Success(template) =>
+        def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
 
-    val ctx = Map.newBuilder[String, Any]
+        val ctx = Map.newBuilder[String, Any]
 
-    ctx ++= params.contextMap
-    ctx ++= colorProvider.toMap.mapValues(_.hexRepr)
-    ctx += "currentProject" -> pluginState.selectedProjectId.get
-    ctx += "projectIds" -> pluginState.rootProjectIds
-    ctx += "miniVulns" -> latestScanResult.miniVulns.sortBy(_.spec)
-    ctx += "vulnerabilities" -> latestScanResult.vulnerabilities
+        ctx ++= params.contextMap
+        ctx ++= colorProvider.toMap.mapValues (_.hexRepr)
+        ctx += "currentProject" -> pluginState.selectedProjectId.get
+        ctx += "projectIds" -> pluginState.rootProjectIds
+        ctx += "miniVulns" -> latestScanResult.miniVulns.sortBy (_.spec)
+        ctx += "vulnerabilities" -> latestScanResult.vulnerabilities
 
-    //TODO: should these just be added to state?
-    val paramFlags = params.all("flags").map(_.toLowerCase -> true).toMap
-    ctx += "flags" -> (paramFlags ++ pluginState.flags.asStringMap)
-    ctx += "localhost" -> s"http://localhost:$port"
-    ctx += "apiAvailable" -> apiClient.isAvailable
+          //TODO: should these just be added to state?
+        val paramFlags = params.all ("flags").map (_.toLowerCase -> true).toMap
+        ctx += "flags" -> (paramFlags ++ pluginState.flags.asStringMap)
+        ctx += "localhost" -> s"http://localhost:$port"
+        ctx += "apiAvailable" -> apiClient.isAvailable
 
-    val body = template render ctx.result()
-    newFixedLengthResponse(Response.Status.OK, "text/html", body)
+        val body = template render ctx.result ()
+        newFixedLengthResponse (Response.Status.OK, "text/html", body)
+      case Failure(_: IOException) => notFoundResponse(path)
+      case Failure(x) =>
+        redirectTo("/error?errmsg=" + URLEncoder.encode(x.getMessage, "UTF-8"))
+    }
   }
 
 }

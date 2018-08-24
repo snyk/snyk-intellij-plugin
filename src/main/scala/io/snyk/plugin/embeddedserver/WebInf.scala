@@ -7,6 +7,7 @@ import java.net.{URL, URLConnection}
 
 sealed trait WebInf {
   def openConnection(path: String): URLConnection
+  def exists(path: String): Boolean
 }
 
 class FileBasedWebInf(root: String) extends WebInf with IntellijLogging {
@@ -16,12 +17,18 @@ class FileBasedWebInf(root: String) extends WebInf with IntellijLogging {
 
   def openConnection(path: String): URLConnection =
     Paths.get(root, path).toUri.toURL.openConnection()
+
+  def exists(path: String): Boolean =
+    Paths.get(root, path).toFile.exists()
 }
 
 class JarBasedWebInf extends WebInf with IntellijLogging {
   log.info(s"Serving WEB-INF from classpath")
   def openConnection(path: String): URLConnection =
     getClass.getClassLoader.getResource(s"WEB-INF/$path").openConnection()
+
+  def exists(path: String): Boolean =
+    getClass.getClassLoader.getResource(s"WEB-INF/$path") != null
 }
 
 object WebInf extends IntellijLogging {
