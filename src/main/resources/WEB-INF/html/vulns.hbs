@@ -25,6 +25,9 @@
         --}}
     </main>
     <script>
+        // Helper function:
+        // Determine the correct callback function to set to be notified when
+        // CSS animated transitions have completed.
         function whichTransitionEvent(){
             let el = document.createElement("fakeelement");
 
@@ -44,6 +47,9 @@
 
         let transitionEvent = whichTransitionEvent();
 
+        // Helper function:
+        // Check if testElem is entirely within the viewport.
+        // If not, scroll to place headerElemName at the top
         function ensureInViewport(testElem, headerElemName){
             if(!testElem.visible()) {
                 TweenLite.to(window, .5, {
@@ -52,12 +58,18 @@
                 });
             }
         }
+
         $(document).ready(function(){
+            // Ensure margin-top for remediation blocks positions them only JUST high enough
+            // to not be visible, so the reveal animation is smooth
             $(".remediations").each(function(index, element){
                 let el = $(element);
                 el.css('margin-top', -el.height() - 3);
             });
 
+            // Explicitly set margin-top on remediation blocks to animate into/out of visibility
+            // when the relevant link is clicked.  Also ensure that they're scrolled into view
+            // (if necessary) following the reveal animation.
             $(".upgrade-link").click(function(){
                 let nodeid = $(this).attr("data-nodeid");
                 let remedBlock = $('#remediations-' + nodeid);
@@ -74,6 +86,8 @@
                 }
             });
 
+            // Ensure that an dep subtree is scrolled into view (if necessary)
+            // when expanded.
             $('.list-checkbox').change(function() {
                 if(this.checked) {
                     let childBlock = $(this).next("ul");
