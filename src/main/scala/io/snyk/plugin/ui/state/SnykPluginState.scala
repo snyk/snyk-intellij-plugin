@@ -88,7 +88,7 @@ trait SnykPluginState extends IntellijLogging {
 
   //CONTROLLER
 
-  def navigator: Navigator
+  val navigator: Atomic[Navigator] = Atomic(Navigator.mock)
 
   def performScan(
     projectId: String = selectedProjectId.get,
@@ -115,13 +115,10 @@ trait SnykPluginState extends IntellijLogging {
 
     } else Future.successful(existingScan.get)
   }
-
-  def reloadWebView(): Unit
 }
 
 object SnykPluginState {
-  def forIntelliJ(project: Project, toolWindow: SnykToolWindow): SnykPluginState =
-    new IntelliJSnykPluginState(project, toolWindow)
+  def forIntelliJ(project: Project): SnykPluginState = new IntelliJSnykPluginState(project)
 
   def mock(
     depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
@@ -129,12 +126,11 @@ object SnykPluginState {
   ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
 
-  private[this] class IntelliJSnykPluginState(project: Project, toolWindow: SnykToolWindow) extends SnykPluginState {
+  private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
     override val apiClient = ApiClient.standard(credentials.get)
     override val depTreeProvider = DepTreeProvider.forProject(project)
 
-    override val navigator = new Navigator.IntellijNavigator(project, toolWindow, idToMavenProject)
-    override def reloadWebView(): Unit = toolWindow.htmlPanel.reload()
+    //override val navigator = new Navigator.IntellijNavigator(project, toolWindow, idToMavenProject)
 
     override def mavenProjectsObservable: Observable[Seq[String]] =
       MavenProjectsObservable.forProject(project).map(_.map(_.toString))
@@ -144,7 +140,7 @@ object SnykPluginState {
     mavenProjectsObservable subscribe { list =>
       log.info(s"updated projects: $list")
       projects := Map.empty
-      navigator.navToVulns()
+      navigator().navToVulns()
       Continue
     }
   }
@@ -162,14 +158,10 @@ object SnykPluginState {
   ) extends SnykPluginState {
     override val apiClient: ApiClient = ApiClient.mock(mockResponder)
 
-    override val navigator = new Navigator.MockNavigator
-
     override def mavenProjectsObservable: Observable[Seq[String]] =
       Observable.pure(Seq("dummy-root-project"))
 
     projects := Map("dummy-root-project" -> PerProjectState(Some(depTreeProvider.getDepTree(""))))
-
-    override def reloadWebView(): Unit = ()
 
     override def externProj: ExternProj = ???
   }

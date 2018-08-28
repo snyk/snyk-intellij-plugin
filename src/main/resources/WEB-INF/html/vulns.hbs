@@ -3,6 +3,9 @@
 <head>
     <meta charset="utf-8">
     <script src="/assets/scripts/jquery.min.js"></script>
+    <script src="/assets/scripts/jquery.visible.min.js"></script>
+    <script src="/assets/scripts/TweenMax.min.js"></script>
+    <script src="/assets/scripts/ScrollToPlugin.min.js"></script>
     {{> @inline-css }}
 </head>
 <body>
@@ -21,5 +24,55 @@
         </div>
         --}}
     </main>
+    <script>
+        function whichTransitionEvent(){
+            let el = document.createElement("fakeelement");
+
+            let transitions = {
+                "transition"      : "transitionend",
+                "OTransition"     : "oTransitionEnd",
+                "MozTransition"   : "transitionend",
+                "WebkitTransition": "webkitTransitionEnd"
+            };
+
+            for (t in transitions){
+                if (el.style[t] !== undefined){
+                    return transitions[t];
+                }
+            }
+        }
+
+        let transitionEvent = whichTransitionEvent();
+
+        $(document).ready(function(){
+            $(".remediations").each(function(index, element){
+                let el = $(element);
+                el.css('margin-top', -el.height() - 3);
+            });
+
+            $(".upgrade-link").click(function(){
+                let nodeid = $(this).attr("data-nodeid");
+                let remedBlock = $('#remediations-' + nodeid);
+
+                if(remedBlock.hasClass("revealed")) {
+                    remedBlock.removeClass("revealed");
+                    remedBlock.css('margin-top', -remedBlock.height() - 3);
+                } else {
+                    remedBlock.addClass("revealed");
+                    remedBlock.css('margin-top', 0);
+                    remedBlock.one(transitionEvent, function(event) {
+                        console.log("trans end");
+
+                        if(!remedBlock.visible()) {
+                            TweenLite.to(window, .5, {
+                                scrollTo: "#li-" + nodeid,
+                                ease: Power2.easeInOut
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

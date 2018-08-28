@@ -44,7 +44,7 @@ case class VulnSpec(
 object VulnSpec {
   implicit val ordering: Ordering[VulnSpec] = Ordering.by(x => (x.severityRank, x.module.name, x.id))
 
-  def from(vuln: Vulnerability): VulnSpec = VulnSpec(
+  def from(vuln: SecurityVuln): VulnSpec = VulnSpec(
     title            = vuln.title,
     id               = vuln.id,
     module           = MavenCoords.from(vuln.moduleName, vuln.version),

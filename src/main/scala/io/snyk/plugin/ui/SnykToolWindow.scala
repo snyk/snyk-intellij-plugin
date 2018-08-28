@@ -1,13 +1,15 @@
 package io.snyk.plugin.ui
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.{ActionManager, DataProvider, DefaultActionGroup}
-import com.intellij.openapi.project.{DumbAware, Project}
+import com.intellij.openapi.actionSystem.{ActionGroup, ActionManager, DataProvider, DefaultActionGroup}
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.{DumbAware, Project, ProjectManager}
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.ui.state.SnykPluginState
+import io.snyk.plugin.SnykPluginProjectComponent
+import io.snyk.plugin.ui.state.{Navigator, SnykPluginState}
 
 
 /**
@@ -27,11 +29,9 @@ class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true) with DataProvider with Disposable {
   this.setBackground(UIUtil.getPanelBackground)
 
-  val ijLogger = com.intellij.openapi.diagnostic.Logger.getInstance(this.getClass)
-
-  org.apache.log4j.Logger.getLogger(this.getClass).warn("test native log4j")
-  org.slf4j.LoggerFactory.getLogger(this.getClass).warn("test native slf4j")
-  val pluginState: SnykPluginState = SnykPluginState.forIntelliJ(project, this)
+  val projComp = project.getComponent(classOf[SnykPluginProjectComponent])
+  import projComp.pluginState
+  pluginState.navigator := Navigator.forIntelliJ(project, this, pluginState.idToMavenProject)
 
   val htmlPanel = new SnykHtmlPanel(project, pluginState)
 
@@ -39,33 +39,14 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
   setContent(htmlPanel)
 
   private[this] def initialiseToolbar(): Unit = {
-    import io.snyk.plugin.ui.actions._
-
     val actionManager = ActionManager.getInstance()
-    val resynkAction = new SnykRescanAction(pluginState)
-    actionManager.registerAction("Snyk.Rescan", resynkAction)
-
-    val toggleGroupDisplayAction = new SnykToggleGroupDisplayAction(pluginState)
-    actionManager.registerAction("Snyk.ToggleGroupDisplay", toggleGroupDisplayAction)
-
-    val selectProjectAction = new SnykSelectProjectAction(pluginState)
-    actionManager.registerAction("Snyk.SelectProject", selectProjectAction)
-
-    val actionGroup = new DefaultActionGroup(resynkAction, toggleGroupDisplayAction, selectProjectAction)
-    actionManager.registerAction("Snyk.ActionsToolbar", actionGroup)
-
+    val actionGroup = actionManager.getAction("io.snyk.plugin.ActionBar").asInstanceOf[ActionGroup]
     val actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, true)
 
     setToolbar(actionToolbar.getComponent)
   }
 
   override def dispose(): Unit = {
-    val actionManager = ActionManager.getInstance()
-    actionManager.unregisterAction("Snyk.Rescan")
-    actionManager.unregisterAction("Snyk.ToggleGroupDisplay")
-    actionManager.unregisterAction("Snyk.SelectProject")
-
-    actionManager.unregisterAction("Snyk.ActionsToolbar")
   }
 }
 

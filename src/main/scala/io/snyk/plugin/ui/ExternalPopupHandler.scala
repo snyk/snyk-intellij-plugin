@@ -56,7 +56,7 @@ extends Callback[PopupFeatures, WebEngine] with IntellijLogging {
         val parts = url.drop(navPrefix.length).split(":|@")
         val g = parts(0)
         val a = parts(1)
-        pluginState.navigator.navToArtifact(g, a, pluginState.selectedProjectId.get)
+        pluginState.navigator().navToArtifact(g, a, pluginState.selectedProjectId.get)
       } else  BrowserUtil.browse(new URL(url))
     } catch { case NonFatal(e) => log.warn(e) }
   }

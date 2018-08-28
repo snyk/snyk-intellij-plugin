@@ -85,6 +85,7 @@ object MiniVuln extends IntellijLogging {
       case (_, Left(true) +: _) => ???
 
       case (fHead +: fTail, Left(false) +: upTail) =>
+        println(s"delving: $fHead (${fTail.size} to go)")
         mkDerivationSeq(
           fTail,
           upTail,
@@ -92,6 +93,7 @@ object MiniVuln extends IntellijLogging {
         )
 
       case (fHead +: fTail, up) if up.isEmpty =>
+        println(s"orphaned: $fHead (${fTail.size} to go)")
         mkDerivationSeq(
           fTail,
           Nil,
@@ -101,15 +103,23 @@ object MiniVuln extends IntellijLogging {
       case (fHead +: fTail, Right(upHead) +: upTail) =>
         val newCoords = MavenCoords.from(upHead)
         val newVersion = newCoords.version
+        println(s"upgrade: $fHead -> $newVersion")
         val pivotSeq = upTail collect { case Right(ver) => MavenCoords.from(ver) }
-        val pivot = MiniTree.fromLinear(pivotSeq) map { t => Map(newVersion -> Seq(t)) } getOrElse Map.empty
+        val pivot = MiniTree.fromLinear(pivotSeq) match {
+          case Some(tree) => Map(newVersion -> Seq(tree))
+          case None => Map(newVersion -> Nil)
+        }
+
         mkDerivationSeq(
           fTail,
           Nil,
           acc :+ VulnDerivation(MavenCoords.from(fHead), pivot)
         )
 
-      case (f, _) if f.isEmpty => acc
+      case (f, _) if f.isEmpty =>
+        println(s"complete at ${acc.last}")
+        acc
+
       case _ =>
         log.debug("FROM\n" + from.mkString("\n"))
         log.debug("UPGRADE\n" + upgradePath.mkString("\n"))
@@ -118,13 +128,13 @@ object MiniVuln extends IntellijLogging {
     }
   }
 
-  def from(vuln: Vulnerability): MiniVuln = {
+  def from(vuln: SecurityVuln): MiniVuln = {
     val dseq = mkDerivationSeq(vuln.from, vuln.upgradePath)
     val dtree = MiniTree.fromLinear(dseq).toSeq
     MiniVuln(spec = VulnSpec.from(vuln), derivations = dtree)
   }
 
-  def mergedFrom(vulns: Seq[Vulnerability]): Seq[MiniVuln] =
+  def mergedFrom(vulns: Seq[SecurityVuln]): Seq[MiniVuln] =
     merge(vulns.map(MiniVuln.from))
 
   implicit val encoder: Encoder[MiniVuln] = deriveEncoder

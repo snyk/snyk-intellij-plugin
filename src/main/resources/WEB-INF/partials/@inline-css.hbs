@@ -458,21 +458,18 @@
         border-color: rgb(47, 105, 40);
         border-radius: 1em;
         background: rgba(47, 105, 40, 0.3);
-        margin-top: -100%;
-        /*opacity: 0;*/
         transition: all .5s;
+        margin-top: -300%; /* crazy high, just to ensure it's hidden */
+                           /* we calc the correct value in javascript */
     }
 
     .remediations.revealed {
-        margin-top: 0;
-        /*opacity: 100%;*/
     }
 
-    /*.remediations:target {*/
-        /*visibility: visible;*/
-    /*}*/
+    .remediation-header {
+        display: inline-block;
+        padding-top: .25em;
+        padding-left: .5em;
+    }
 
-    /*.tree input ~ ul.remediation {*/
-        /*display: block;*/
-    /*}*/
 </style>

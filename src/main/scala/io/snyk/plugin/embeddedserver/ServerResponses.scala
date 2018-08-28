@@ -2,6 +2,8 @@ package io.snyk.plugin.embeddedserver
 
 import com.intellij.ide.BrowserUtil
 import fi.iki.elonen.NanoHTTPD.{MIME_HTML, Response, newFixedLengthResponse}
+import io.circe.Encoder
+import io.circe.syntax._
 import io.snyk.plugin.client.SnykCredentials
 import io.snyk.plugin.datamodel.SnykVulnResponse
 
@@ -13,6 +15,9 @@ trait ServerResponses { self: MiniServer =>
 
   def notFoundResponse(path: String): Response =
     newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", s"Not Found: $path")
+
+  def jsonResponse[T : Encoder](body: T): Response =
+    newFixedLengthResponse(Response.Status.OK, "application/json", body.asJson.spaces4)
 
   def redirectTo(url: String): Response = {
     log.debug(s"Redirecting to $url")

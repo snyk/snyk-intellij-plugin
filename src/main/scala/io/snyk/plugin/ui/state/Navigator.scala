@@ -19,9 +19,19 @@ trait Navigator {
 
   def navToVulns(): Future[String] = navigateTo("/vulnerabilities", ParamSet.Empty)
   def navToScanning(): Future[String] = navigateTo("/scanning", ParamSet.Empty)
+
+  def reloadWebView(): Unit
 }
 
 object Navigator extends IntellijLogging {
+
+  def forIntelliJ(
+    project: Project,
+    toolWindow: SnykToolWindow,
+    idToProject: String => Option[MavenProject]
+  ): Navigator = new IntellijNavigator(project, toolWindow, idToProject)
+
+  def mock: Navigator = MockNavigator
 
   class IntellijNavigator(
     project: Project,
@@ -65,9 +75,11 @@ object Navigator extends IntellijLogging {
       }
       p.future
     } getOrElse Future.successful(())
+
+    override def reloadWebView(): Unit = toolWindow.htmlPanel.reload()
   }
 
-  class MockNavigator extends Navigator {
+  object MockNavigator extends Navigator {
     override def navigateTo(path: String, params: ParamSet): Future[String] = {
       log.info(s"MockSnykPluginState.navigateTo($path, $params)")
       Future.successful(path)
@@ -77,5 +89,7 @@ object Navigator extends IntellijLogging {
       log.info(s"MockSnykPluginState.navToArtifact($group, $name)")
       Future.successful(())
     }
+
+    override def reloadWebView(): Unit = ()
   }
 }

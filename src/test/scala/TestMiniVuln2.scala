@@ -12,7 +12,7 @@ object TestMiniVuln2 extends App {
   val output = tryOutput.right.get
 
 
-  val vulns = output.vulnerabilities
+  val vulns = output.securityVulns
   val miniVulns = vulns.map(MiniVuln.from)
 //  printout(miniVulns)
 

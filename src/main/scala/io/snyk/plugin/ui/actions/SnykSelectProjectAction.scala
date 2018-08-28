@@ -7,18 +7,16 @@ import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent}
 import com.intellij.openapi.ui.popup._
 import com.intellij.ui.awt.RelativePoint
 import icons.MavenIcons
-import io.snyk.plugin.embeddedserver.ParamSet
+import io.snyk.plugin.SnykPluginProjectComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 import javax.swing.Icon
 
 import scala.collection.JavaConverters._
 
-class SnykSelectProjectAction(pluginState: SnykPluginState)
-  extends AnAction("Re-Scan project with Snyk", null, MavenIcons.MavenProject) {
+class SnykSelectProjectAction()
+extends AnAction(MavenIcons.MavenProject) {
 
-  def currentSelection = pluginState.selectedProjectId
-
-  class MyPopupStep extends ListPopupStep[String] {
+  class MyPopupStep(pluginState: SnykPluginState) extends ListPopupStep[String] {
     val projIds = pluginState.rootProjectIds
     override def getValues: util.List[String] = projIds.asJava
     override def isSelectable(value: String): Boolean = true
@@ -39,20 +37,22 @@ class SnykSelectProjectAction(pluginState: SnykPluginState)
     override def onChosen(selectedValue: String, finalChoice: Boolean): PopupStep[_] = {
       if (selectedValue != pluginState.selectedProjectId.get) {
         pluginState.selectedProjectId := selectedValue
-        pluginState.navigator.navToVulns()
+        pluginState.navigator().navToVulns()
       }
       PopupStep.FINAL_CHOICE
     }
   }
 
-  private[this] def mkPopup(): ListPopup =
-    JBPopupFactory.getInstance.createListPopup(new MyPopupStep)
+  private[this] def mkPopup(pluginState: SnykPluginState): ListPopup =
+    JBPopupFactory.getInstance.createListPopup(new MyPopupStep(pluginState))
 
   override def actionPerformed(e: AnActionEvent): Unit = {
-//    JBPopupFactory.getInstance.createListPopup(new MyPopupStep).showInBestPositionFor(e.getDataContext)
+    val projComp = e.getProject.getComponent(classOf[SnykPluginProjectComponent])
+    def pluginState = projComp.pluginState
+
     e.getInputEvent match {
-      case evt: MouseEvent => mkPopup().show(new RelativePoint(evt))
-      case _               => mkPopup().show(e.getInputEvent.getComponent)
+      case evt: MouseEvent => mkPopup(pluginState).show(new RelativePoint(evt))
+      case _               => mkPopup(pluginState).show(e.getInputEvent.getComponent)
     }
   }
 

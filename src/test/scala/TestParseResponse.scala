@@ -40,7 +40,7 @@ object TestParseResponse extends App {
 //  import sext._
 //  println(output.valueTreeString)
 
-  val vulns = output.right.toSeq.flatMap(_.vulnerabilities)
+  val vulns = output.right.toSeq.flatMap(_.securityVulns)
 
   vulns foreach { v =>
     val mv = v.toMiniVuln

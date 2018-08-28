@@ -2,9 +2,10 @@ package io.snyk.plugin.ui.actions
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.{AnActionEvent, ToggleAction}
-import io.snyk.plugin.ui.state.{Flag, SnykPluginState}
+import io.snyk.plugin.SnykPluginProjectComponent
+import io.snyk.plugin.ui.state.Flag
 
-class SnykToggleGroupDisplayAction(pluginState: SnykPluginState)
+class SnykToggleGroupDisplayAction()
 extends ToggleAction("Toggle display of Maven Groups", null, AllIcons.General.HideDownPart) {
   override def update(e: AnActionEvent): Unit = {
     super.update(e)
@@ -13,10 +14,19 @@ extends ToggleAction("Toggle display of Maven Groups", null, AllIcons.General.Hi
     p.setVisible(true)
   }
 
-  override def isSelected(e: AnActionEvent): Boolean = pluginState.flags(Flag.HideMavenGroups)
+  override def isSelected(e: AnActionEvent): Boolean = {
+    val projComp = e.getProject.getComponent(classOf[SnykPluginProjectComponent])
+    def pluginState = projComp.pluginState
+
+    pluginState.flags(Flag.HideMavenGroups)
+  }
 
   override def setSelected(e: AnActionEvent, state: Boolean): Unit = {
+    val projComp = e.getProject.getComponent(classOf[SnykPluginProjectComponent])
+    def pluginState = projComp.pluginState
+    def navigator = pluginState.navigator()
+
     pluginState.flags(Flag.HideMavenGroups) = state
-    pluginState.reloadWebView()
+    navigator.reloadWebView()
   }
 }

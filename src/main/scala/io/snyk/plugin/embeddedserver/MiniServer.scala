@@ -40,7 +40,8 @@ class MiniServer(
 
   val handlebarsEngine = new HandlebarsEngine
 
-  protected def navigateTo(path: String, params: ParamSet): Unit = pluginState.navigator.navigateTo(path, params)
+  protected def navigateTo(path: String, params: ParamSet): Unit =
+    pluginState.navigator().navigateTo(path, params)
 
 //  val defaultScanning = "/anim/scanning/scanning.hbs"
   /** The default URL to show when async scanning if an explicit `interstitial` page hasn't been requested **/
@@ -75,6 +76,9 @@ class MiniServer(
     "/partials/*"            -> serveHandlebars,
     "/perform-login"         -> performLogin,
     "/vulnerabilities"       -> serveVulns,
+    "/flatVulns.json"        -> serveFlatJsonVulns,
+    "/vulns.json"            -> serveJsonVulns,
+    "/rawScanResults.json"   -> serveRawScanResults,
     "/debugForceNav"         -> debugForceNav,
   )
   //note: anything in /WEB-INF/html will typically be handled by the fallback in serve()
@@ -111,13 +115,46 @@ class MiniServer(
     }
   }
 
+  private[this] def safeScanResult: SnykVulnResponse =
+    pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
+
+  def serveFlatJsonVulns(path: String, params: ParamSet): Response = {
+    requireAuth {
+      requireProjectId {
+        requireScan(path, params) {
+          jsonResponse(safeScanResult.flatMiniVulns)
+        }
+      }
+    }
+  }
+  def serveJsonVulns(path: String, params: ParamSet): Response = {
+    requireAuth {
+      requireProjectId {
+        requireScan(path, params) {
+          jsonResponse(safeScanResult.mergedMiniVulns.sortBy(_.spec))
+        }
+      }
+    }
+  }
+
+  def serveRawScanResults(path: String, params: ParamSet): Response = {
+    requireAuth {
+      requireProjectId {
+        requireScan(path, params) {
+          import SnykVulnResponse.Decoders._
+          jsonResponse(safeScanResult)
+        }
+      }
+    }
+  }
+
   def serveHandlebars(path: String, params: ParamSet): Response = {
     log.debug(s"miniserver serving handlebars template http://localhost:$port$path")
     log.debug(s"params = $params")
 
     handlebarsEngine.compile(path) match {
       case Success(template) =>
-        def latestScanResult = pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
+        def latestScanResult = safeScanResult
 
         val ctx = Map.newBuilder[String, Any]
 
@@ -125,7 +162,7 @@ class MiniServer(
         ctx ++= colorProvider.toMap.mapValues (_.hexRepr)
         ctx += "currentProject" -> pluginState.selectedProjectId.get
         ctx += "projectIds" -> pluginState.rootProjectIds
-        ctx += "miniVulns" -> latestScanResult.miniVulns.sortBy (_.spec)
+        ctx += "miniVulns" -> latestScanResult.mergedMiniVulns.sortBy (_.spec)
         ctx += "vulnerabilities" -> latestScanResult.vulnerabilities
 
           //TODO: should these just be added to state?

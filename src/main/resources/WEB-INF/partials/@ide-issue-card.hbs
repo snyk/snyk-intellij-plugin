@@ -58,7 +58,7 @@
     {{#each seq as |node|}}
         {{! For each top-level path under the vulnerability... }}
         {{var "nodeId" (concat idprefix "_" @index)}}
-        <li>
+        <li id="li-{{nodeId}}">
             {{#if toplevel}}
                 {{! top level? create a link to the build file where it's defined }}
                 {{#> renderNode}}
@@ -77,15 +77,19 @@
             {{! remediations : Map[String, Seq[MiniTree[MavenCoords]]] }}
             {{#each node.content.remediations as |remeds|}}
             {{! wheeee, we can suggest a fix! }}
-                <a class="upgrade-link" onclick="$('#remediations-{{nodeId}}').toggleClass('revealed');">
+                <a class="upgrade-link" id="upgrade-link-{{nodeId}}" data-nodeid="{{nodeId}}" >
                     suggested upgrade: {{@key}}
                 </a>
                 <div class="remediations-container">
                     <div class="remediations" id="remediations-{{nodeId}}">
-                        Transitives after upgrade:
-                        <ul class="remediation tree">
-                          {{>remediationNested seq=remeds idprefix=(concat nodeId "_remed")}}
-                        </ul>
+                        <span class="remediation-header">Transitives after upgrade:</span>
+                        {{#if remeds.isEmpty}}
+                            <span class="remediation-header">— None —</span>
+                        {{else}}
+                            <ul class="remediation tree">
+                                {{>remediationNested seq=remeds idprefix=(concat nodeId "_remed")}}
+                            </ul>
+                        {{/if}}
                     </div>
                 </div>
             {{/each}}
@@ -101,11 +105,11 @@
 <div class="issue-card {{#if @last}}issue-card-last{{/if}}">
     <div class="issue-title__name">
         {{svg (concat "icon/" spec.type) width=22 height=22}}
-        <span class="spec-title">{{spec.title}}</span>
+        <span class="spec-title" title="{{spec.id}}">{{spec.title}}</span>
         <div class="vuln-origin">
             on {{>mavenCoords coords=spec.module}}
         </div>
-        <a href="{{spec.url}}" class="issue-title__link" target="_blank">details</a>
+        <a href="{{spec.url}}"  class="issue-title__link" target="_blank">details</a>
     </div>
     <div class="issue-body issue-body-{{spec.severity}}">
         {{#if derivations.nonEmpty}}
@@ -117,3 +121,5 @@
         {{/if}}
     </div>
 </div>
+
+

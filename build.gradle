@@ -39,6 +39,7 @@ dependencies {
     compile "io.circe:circe-parser_$scala_version:0.9.3"
     compile "io.circe:circe-java8_$scala_version:0.9.3"
     compile "io.circe:circe-derivation_$scala_version:0.9.0-M5"
+    compile 'com.segment.analytics.java:analytics:2.1.1'
 
     testCompile "com.lihaoyi:pprint_$scala_version:0.5.3"
     testCompile "com.github.nikita-volkov:sext:0.2.4"
