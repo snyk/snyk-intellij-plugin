@@ -4,7 +4,6 @@ package ui.actions
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent}
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import monix.execution.Scheduler.Implicits.global
 
@@ -23,7 +22,6 @@ with IntellijLogging {
 
   override def actionPerformed(e: AnActionEvent): Unit = {
     log.debug("Rescan button clicked")
-
     val projComp = e.getProject.getComponent(classOf[SnykPluginProjectComponent])
     def pluginState = projComp.pluginState
     def navigator = pluginState.navigator()

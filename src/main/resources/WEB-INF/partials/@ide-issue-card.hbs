@@ -21,9 +21,9 @@
     {{else}}
         {{! only auto-expand any level where we have have remediations further down the tree }}
         {{#if (hasNestedRemediations node)}}
-            <input type="checkbox" checked="checked" id="{{nodeId}}" />
+            <input type="checkbox" class="list-checkbox" checked="checked" id="{{nodeId}}" />
         {{else}}
-            <input type="checkbox" id="{{nodeId}}" />
+            <input type="checkbox" class="list-checkbox" id="{{nodeId}}" />
         {{/if}}
 
         <label class="tree_label" for="{{nodeId}}">
@@ -42,7 +42,7 @@
                     {{>mavenCoords coords=node.content}}
                 </span>
             {{else}}
-                <input type="checkbox" checked="checked" id="{{nodeId}}" />
+                <input type="checkbox" class="list-checkbox" checked="checked" id="{{nodeId}}" />
                 <label class="tree_label" for="{{nodeId}}">
                     {{>mavenCoords coords=node.content}}
                 </label>

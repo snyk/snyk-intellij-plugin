@@ -44,6 +44,14 @@
 
         let transitionEvent = whichTransitionEvent();
 
+        function ensureInViewport(testElem, headerElemName){
+            if(!testElem.visible()) {
+                TweenLite.to(window, .5, {
+                    scrollTo: headerElemName,
+                    ease: Power2.easeInOut
+                });
+            }
+        }
         $(document).ready(function(){
             $(".remediations").each(function(index, element){
                 let el = $(element);
@@ -61,15 +69,15 @@
                     remedBlock.addClass("revealed");
                     remedBlock.css('margin-top', 0);
                     remedBlock.one(transitionEvent, function(event) {
-                        console.log("trans end");
-
-                        if(!remedBlock.visible()) {
-                            TweenLite.to(window, .5, {
-                                scrollTo: "#li-" + nodeid,
-                                ease: Power2.easeInOut
-                            });
-                        }
+                        ensureInViewport(remedBlock, "#li-" + nodeid);
                     });
+                }
+            });
+
+            $('.list-checkbox').change(function() {
+                if(this.checked) {
+                    let childBlock = $(this).next("ul");
+                    ensureInViewport(childBlock, "#" + this.id);
                 }
             });
         });
