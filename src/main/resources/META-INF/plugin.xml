@@ -57,6 +57,7 @@
         </component>
     </project-components>
 
+
     <actions>
         <group id="io.snyk.plugin.ActionBar">
             <action id="io.snyk.plugin.RescanAction" class="io.snyk.plugin.ui.actions.SnykRescanAction" text="Re-Scan project with Snyk" />
