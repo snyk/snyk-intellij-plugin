@@ -1,4 +1,4 @@
-#The Crafting of an IntelliJ Plugin
+# The Crafting of an IntelliJ Plugin
 
 An exploration in Kotlin, Scala, JavaFX, HTTP Servers, Template Engines, and coding adrift without documentation.
 
