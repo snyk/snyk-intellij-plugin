@@ -15,6 +15,7 @@ import javax.swing.UIManager
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import javafx.concurrent.Worker
+import javafx.scene.input.KeyCode
 
 /**
   * Provides the HTML view that's central to this plugin, and initialises the underlying
@@ -79,6 +80,12 @@ class SnykHtmlPanel(project: Project, pluginState: SnykPluginState) extends JFXP
         val engine = browser.getEngine
 
 //        dwss = Some(new DebugWebSocketServer(engine))
+
+        browser setOnKeyPressed { event =>
+          if (event.getCode == KeyCode.SLASH) {
+            engine.executeScript("smoothScrollToBottom()")
+          }
+        }
 
         engine.getLoadWorker.stateProperty addListener { (obs, oldVal, newVal) =>
           if (newVal == Worker.State.SUCCEEDED) {

@@ -23,6 +23,7 @@
             {{> @color-sampler }}
         </div>
         --}}
+        <span id="page-bottom"> </span>
     </main>
     <script>
         // Helper function:
@@ -59,6 +60,13 @@
             }
         }
 
+        function smoothScrollToBottom(){
+            TweenLite.to(window, 2, {
+                scrollTo: "#page-bottom",
+                ease: Power3.easeInOut
+            });
+        }
+
         $(document).ready(function(){
             // Ensure margin-top for remediation blocks positions them only JUST high enough
             // to not be visible, so the reveal animation is smooth
@@ -93,6 +101,10 @@
                     let childBlock = $(this).next("ul");
                     ensureInViewport(childBlock, "#" + this.id);
                 }
+            });
+
+            $(document).keypress(function(event) {
+                if(event.key === "/") { smoothScrollToBottom(); }
             });
         });
     </script>

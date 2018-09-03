@@ -76,7 +76,7 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
     val apiEndpoint = creds.endpointOrDefault
     val apiToken = creds.api
 
-    val uri = uri"$apiEndpoint/v1/vuln/maven"
+    val uri = uri"$apiEndpoint/v1/vuln/maven?bust=1"
 
     val request = sttp.post(uri)
       .header("Authorization", s"token $apiToken")

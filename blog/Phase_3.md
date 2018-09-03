@@ -1,5 +1,7 @@
 # To Kotlin, or Not To Kotlin?
 
+**or... "The Emperor's New Code"**
+
 ## Starting Point
 
 When I first chose to implement this plugin using Kotlin, my reasoning seemed to be sound.
@@ -127,7 +129,7 @@ class Sub {
 
 So you can quite happily stick with the UAP convention, then explicitly opt-in to `get`/`set` methods only as and when you need them.  The interop story is a good one, it's available when you need it and is simple to do, without risk of naming conflict.
 
-## Kotlin Properties
+## [Kotlin Properties](#kotlin-properties)
 
 Kotlin opted for a different approach - the language will *always* generate properties as `get`/`set` methods... whether you want it to or not.
 
@@ -195,13 +197,23 @@ class Sub : SomeJavaObject {
 
 The _idea_ is an appealing one.  Make getters and setters _look like_ they're just a property.  It's a long established technique used in expression languages for spring, struts, templating engines, etc, etc.  But as a way to **define** properties the Kotlin implementation seems fraught with potential name clashes and poor integration with other platform features (like overloading).
 
-## JSON serialisation
+## The Icing on The Cake: JSON Serialisation
 
 A good litmus test of any language and the strength of its surrounding ecosystem is the quality of libraries available for both parsing JSON and serialising to the format.
 
 JSON has rapidly become the lingua franca format for moving structured data between systems and languages in an internet-connected world.  This means that using JSON is one of the first things you'll need to do when building an application (or plugin) that has any sort of connectivity... and you'll want it to be as easy as possible.
 
+I found a number of JSON libraries for Kotlin, perhaps the most promising of which was [Klaxon](https://github.com/cbeust/klaxon) - written by Cederic Beust, author of TestNG and a long-time aquaintance with whom I've had many heated discussions...
 
+It was good, but missed a number of features I was looking for:  An intermediate representation that I could output in different styles, type safety, operators for mapping over JSON trees, efficient handling of algebraic data types, compile-time checking of literal/interoplated JSON strings, etc.
+
+In all fairness to Cedric (and to authors of other JSON libs), many of these limitations are imposed by the language.  You can't do things that require Type Classes, interpolated string contexts, and macros if you don't have Type Classes, interpolated string contexts, and macros!  _Some_ of the libraries offered _some_ of the features I wanted (with varying levels of maturity) by using Kotlin reflection, but I found them all to be very limiting and I've never been comfortable with sacrificing compile-time safety to reflection if it can possibly be avoided
+
+This was the final nail in Kotlin's coffin.  By switching to Scala I'd be able to use [Circe](https://circe.github.io/circe/) (by far the best JSON library I've ever used, including JavaScript itself) and the `circe-literal` module to build JSON structures in a modular fashion with a clean intuitive syntax.
+
+##In Conclusion
+
+The project was still small enough at this stage, so I made the switch, and haven't regretted doing so for a second.
 
 
 

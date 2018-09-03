@@ -85,7 +85,6 @@ object MiniVuln extends IntellijLogging {
       case (_, Left(true) +: _) => ???
 
       case (fHead +: fTail, Left(false) +: upTail) =>
-        println(s"delving: $fHead (${fTail.size} to go)")
         mkDerivationSeq(
           fTail,
           upTail,
@@ -93,7 +92,6 @@ object MiniVuln extends IntellijLogging {
         )
 
       case (fHead +: fTail, up) if up.isEmpty =>
-        println(s"orphaned: $fHead (${fTail.size} to go)")
         mkDerivationSeq(
           fTail,
           Nil,
@@ -103,7 +101,6 @@ object MiniVuln extends IntellijLogging {
       case (fHead +: fTail, Right(upHead) +: upTail) =>
         val newCoords = MavenCoords.from(upHead)
         val newVersion = newCoords.version
-        println(s"upgrade: $fHead -> $newVersion")
         val pivotSeq = upTail collect { case Right(ver) => MavenCoords.from(ver) }
         val pivot = MiniTree.fromLinear(pivotSeq) match {
           case Some(tree) => Map(newVersion -> Seq(tree))
@@ -117,7 +114,6 @@ object MiniVuln extends IntellijLogging {
         )
 
       case (f, _) if f.isEmpty =>
-        println(s"complete at ${acc.last}")
         acc
 
       case _ =>

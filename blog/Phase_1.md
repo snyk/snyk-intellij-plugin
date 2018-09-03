@@ -1,4 +1,6 @@
-# Planning a Plugin
+# Little Design Up Front
+
+**or... "Planning a Plugin"**
 
 ## In The Beginning
 

@@ -1,4 +1,6 @@
-# Towards a Happy HTML Future
+# Can I Put a Web in it?
+
+**or... "Towards a Happy HTML Future"**
 
 ## Cutting to The Code
 

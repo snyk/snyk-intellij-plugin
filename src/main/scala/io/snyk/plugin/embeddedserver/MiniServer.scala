@@ -43,7 +43,6 @@ class MiniServer(
   protected def navigateTo(path: String, params: ParamSet): Unit =
     pluginState.navigator().navigateTo(path, params)
 
-//  val defaultScanning = "/anim/scanning/scanning.hbs"
   /** The default URL to show when async scanning if an explicit `interstitial` page hasn't been requested **/
   val defaultScanning = "/html/scanning.hbs"
 
