@@ -24,7 +24,7 @@ The standard convention for _any_ Java-based web server, when not rendering cont
 
 Why?  Because this allowed me to change my handlebars templates (later...) directly in the source, and see those changes with a simple page refresh.  No need to go though a full recompile cycle first!  It was especially helpful when testing content directly in Chrome - another significant benefit of implementing a web server instead of injecting content.  The inspector proved to be invaluable.
 
-## Thyme For Handlebars!
+## Thyme For Templates!
 
 One essential component of the grand design was being able to inject data from the application into the web view.  This meant generating HTML, and there was absolutely **no way** I was going to be builing that by hand; not even with the benefits of multi-line string interpolation.  On top of having to ensure that tags are correctly paired off, it's just way too fragile as regards things like escaping.
 
@@ -33,6 +33,8 @@ So templating was the way forward.  In addition to allowing me to see changes wi
 In the bad old Kotlin days, I began by using [Thymeleaf](https://www.thymeleaf.org/).  This is a mature and reasonably capable Java template engine, and did everything I needed (including recursive templates).  It's a little on the slow side, but at the heady volume of just one client that wasn't a concern.
 
 It didn't take long for me to question this decision though, in large part because Thymeleaf introduces a security vulnerability via its use of OGNL - and we eat our own dogfood at Snyk).
+
+## Plenty More Fish in The Sea
 
 Moving to Scala gave me the impetus I needed to make the change.  That same insecure OGNL parser that Tymeleaf uses internally assumes javabean conventions.  Scala, for [good reasons](Phase_3#kotlin-properties), uses a different convention.
 
@@ -47,6 +49,8 @@ Second, I looked at [scalate](https://github.com/scalate/scalate).  Another engi
 Unfortunately, mustache is something of a second-class citizen amongst the languages supported by Scalate.  From the documentation, I couldn't see a clear way to access some of the features I'd need if I were going to be able to re-use some of our existing assets.
 
 Further afield then... If I want handlebars (my reasoning went), then why should I settle for a subset instead of the full thing?  This led me to [Handlebars.java](http://jknack.github.io/handlebars.java/).
+
+## Handlebars Ahoy
 
 Handlebars is a Java (not Scala) engine - the clue's in the name!  This meant it had the same problem as OGNL, it assumed that all collection types would be Java collection types.  Unlike Thymeleaf and OGNL, however, it had a clean modern design; with the mechanism for extending it with this support being reasonably well documented, and fairly painless to implement.
 
