@@ -60,13 +60,16 @@ trait ServerResponses { self: MiniServer =>
     if(pluginState.credentials.get.isSuccess) {
       Future fromTry pluginState.credentials.get
     } else {
-      SnykCredentials.auth(openBrowserFn = BrowserUtil.browse) andThen {
+      SnykCredentials.auth(openBrowserFn = BrowserUtil.browse) transform { tryCreds =>
+        tryCreds flatMap { creds =>
+          log.debug(s"auth completed with $creds, redirecting to $successPath with params $params")
+          pluginState.credentials := tryCreds
+          creds.writeToFile().map(_ => creds)
+        }
+      } andThen {
         case Failure(x) =>
           onError(x, params)
         case s @ Success(creds) =>
-          log.debug(s"auth completed with $creds, redirecting to $successPath with params $params")
-          pluginState.credentials := s
-          creds.writeToFile()
           log.debug(s"navigating to $successPath with credentials updated")
           navigateTo(successPath, params)
       }

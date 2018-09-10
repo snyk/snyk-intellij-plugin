@@ -29,6 +29,7 @@
             <li><b>0.0.6</b> - More visual improvements.</li>
             <li><b>0.0.7</b> - Much-improved algorithm for initially collapsing vulnerability trees.</li>
             <li><b>0.0.8</b> - Minor bugfixes, improved user experience.</li>
+            <li><b>0.0.9</b> - Minor bugfix around the login workflow.</li>
         </ul>
     </html>
     ]]></change-notes>
