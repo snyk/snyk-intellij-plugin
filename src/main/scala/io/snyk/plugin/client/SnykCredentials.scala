@@ -125,7 +125,6 @@ object SnykCredentials {
           val safeBody = response.body
 
           safeBody.left foreach { err =>
-            println(err)
             log.warn(err)
           }
 

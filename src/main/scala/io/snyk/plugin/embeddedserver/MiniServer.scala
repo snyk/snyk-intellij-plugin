@@ -75,9 +75,9 @@ class MiniServer(
     "/partials/*"            -> serveHandlebars,
     "/perform-login"         -> performLogin,
     "/vulnerabilities"       -> serveVulns,
+    "/rawScanResults.json"   -> serveRawScanResults,
     "/flatVulns.json"        -> serveFlatJsonVulns,
     "/vulns.json"            -> serveJsonVulns,
-    "/rawScanResults.json"   -> serveRawScanResults,
     "/debugForceNav"         -> debugForceNav,
   )
   //note: anything in /WEB-INF/html will typically be handled by the fallback in serve()
@@ -117,6 +117,17 @@ class MiniServer(
   private[this] def safeScanResult: SnykVulnResponse =
     pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
 
+  def serveRawScanResults(path: String, params: ParamSet): Response = {
+    requireAuth {
+      requireProjectId {
+        requireScan(path, params) {
+          import SnykVulnResponse.Decoders._
+          jsonResponse(safeScanResult)
+        }
+      }
+    }
+  }
+
   def serveFlatJsonVulns(path: String, params: ParamSet): Response = {
     requireAuth {
       requireProjectId {
@@ -131,17 +142,6 @@ class MiniServer(
       requireProjectId {
         requireScan(path, params) {
           jsonResponse(safeScanResult.mergedMiniVulns.sortBy(_.spec))
-        }
-      }
-    }
-  }
-
-  def serveRawScanResults(path: String, params: ParamSet): Response = {
-    requireAuth {
-      requireProjectId {
-        requireScan(path, params) {
-          import SnykVulnResponse.Decoders._
-          jsonResponse(safeScanResult)
         }
       }
     }

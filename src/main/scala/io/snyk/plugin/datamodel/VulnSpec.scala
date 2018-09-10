@@ -49,7 +49,7 @@ object VulnSpec {
     id               = vuln.id,
     module           = MavenCoords.from(vuln.moduleName, vuln.version),
     severity         = vuln.severity,
-    affectedVersions = vuln.semver.splitVulnerable,
+    affectedVersions = vuln.semver.vulnerable,
     isUpgradable     = vuln.isUpgradable,
     isPatchable      = vuln.isPatchable,
     isIgnored        = vuln.filtered.isDefined,
