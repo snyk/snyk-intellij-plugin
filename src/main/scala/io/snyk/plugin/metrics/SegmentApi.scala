@@ -53,10 +53,20 @@ object MockSegmentApi extends SegmentApi {
 class LiveSegmentApi(apiClient: ApiClient) extends SegmentApi {
   import SegmentApi._
 
-  val segment: Analytics = Analytics.builder("pRQuOq7SrSoNjrbbCHUCGpc61OqsPluA").build
+  val DefaultWriteKey = "rrZlYpGGcdrLvloIXwGTqX8ZAQNsB9A0"
 
-  private def withUserInfo[T](fn: SnykUserInfo => T): Try[T] =
-    apiClient.userInfo() map { user => fn(user) }
+  val writeKey = System.getenv.asScala.getOrElse(
+    "SEGMENT_WRITE_KEY",
+    System.getProperty(
+      "SegmentWriteKey",
+      DefaultWriteKey
+    )
+  )
+
+
+  val segment: Analytics = Analytics.builder(writeKey).build
+
+  private def withUserInfo[T](fn: SnykUserInfo => T): Try[T] = apiClient.userInfo() map fn
 
   override def identify(): Try[Unit] = withUserInfo { user =>
     segment.enqueue(Messages.identify(user))
