@@ -1,7 +1,7 @@
 package io.snyk.plugin.ui
 package state
 
-import io.snyk.plugin.client.{ApiClient, SnykCredentials}
+import io.snyk.plugin.client.{ApiClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.depsource.{DepTreeProvider, MavenProjectsObservable}
@@ -33,7 +33,7 @@ trait SnykPluginState extends IntellijLogging {
   def apiClient: ApiClient
   def segmentApi: SegmentApi
   val projects: Atomic[Map[String,PerProjectState]] = Atomic(Map.empty[String,PerProjectState])
-  val credentials: Atomic[Try[SnykCredentials]] = Atomic(SnykCredentials.default)
+  val config: Atomic[Try[SnykConfig]] = Atomic(SnykConfig.default)
   val flags: Flags = new Flags
   val selectedProjectId: Atomic[String] = Atomic("")
 
@@ -118,7 +118,7 @@ trait SnykPluginState extends IntellijLogging {
       }
 
       task
-        .timeout(credentials.get.get.timeoutOrDefault)
+        .timeout(config.get.get.timeoutOrDefault)
         .runAsync
         .transform(_.flatten)
 
@@ -135,9 +135,13 @@ object SnykPluginState {
   ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
   private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
-    override val apiClient = ApiClient.standard(credentials.get)
+    override val apiClient = ApiClient.standard(config())
     override val depTreeProvider = DepTreeProvider.forProject(project)
-    override val segmentApi: SegmentApi = SegmentApi(apiClient)
+    override val segmentApi: SegmentApi =
+      config().toOption.map(_.disableAnalytics) match {
+        case Some(true) => MockSegmentApi
+        case _ => SegmentApi(apiClient)
+      }
 
     override def mavenProjectsObservable: Observable[Seq[String]] =
       MavenProjectsObservable.forProject(project).map(_.map(_.toString))

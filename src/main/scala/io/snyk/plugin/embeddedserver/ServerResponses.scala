@@ -4,7 +4,7 @@ import com.intellij.ide.BrowserUtil
 import fi.iki.elonen.NanoHTTPD.{MIME_HTML, Response, newFixedLengthResponse}
 import io.circe.Encoder
 import io.circe.syntax._
-import io.snyk.plugin.client.SnykCredentials
+import io.snyk.plugin.client.SnykConfig
 import io.snyk.plugin.datamodel.SnykVulnResponse
 
 import scala.concurrent.Future
@@ -56,24 +56,24 @@ trait ServerResponses { self: MiniServer =>
     successPath: String,
     params: ParamSet,
     onError: (Throwable, ParamSet) => Unit = defaultFailureHandler
-  ): Future[SnykCredentials] = {
-    if(pluginState.credentials.get.isSuccess) {
-      Future fromTry pluginState.credentials.get
+  ): Future[SnykConfig] = {
+    if(pluginState.config.get.isSuccess) {
+      Future fromTry pluginState.config.get
     } else {
-      SnykCredentials.auth(openBrowserFn = BrowserUtil.browse) transform { tryCreds =>
-        tryCreds flatMap { creds =>
+      SnykConfig.auth(openBrowserFn = BrowserUtil.browse) transform { tryConfig =>
+        tryConfig flatMap { config =>
           import self.pluginState.segmentApi
-          log.debug(s"auth completed with $creds, redirecting to $successPath with params $params")
-          pluginState.credentials := tryCreds
+          log.debug(s"auth completed with $config, redirecting to $successPath with params $params")
+          pluginState.config := tryConfig
           segmentApi.identify()
           segmentApi.track("login via IntelliJ")
-          creds.writeToFile().map(_ => creds)
+          config.writeToFile().map(_ => config)
         }
       } andThen {
         case Failure(x) =>
           onError(x, params)
-        case s @ Success(creds) =>
-          log.debug(s"navigating to $successPath with credentials updated")
+        case s @ Success(config) =>
+          log.debug(s"navigating to $successPath with config updated")
           navigateTo(successPath, params)
       }
     }

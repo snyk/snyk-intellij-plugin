@@ -29,14 +29,14 @@ sealed trait ApiClient {
 }
 
 /**
-  * An implementation of `ApiClient` that makes a call to the live Snyk API via the supplied credentials
-  * Note: `credentials` is by-name, and will be freshly evaluated on each access -
+  * An implementation of `ApiClient` that makes a call to the live Snyk API using the supplied config
+  * Note: `config` is by-name, and will be freshly evaluated on each access -
   *       any property depending on it MUST NOT be cached as a `val`
   */
-private final class StandardApiClient(credentials: => Try[SnykCredentials]) extends ApiClient {
+private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends ApiClient {
   val log = Logger.getInstance(this.getClass)
 
-  def isAvailable: Boolean = credentials.isSuccess
+  def isAvailable: Boolean = tryConfig.isSuccess
 
   //Not a Map, we want to preserve ordering
   val sysProps: Seq[(String, String)] = Seq(
@@ -72,14 +72,14 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
     }
   }
 
-  private def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials flatMap { creds =>
-    val jsonReq = stringifyWithoutNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
+  private def runRaw(treeRoot: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
+    val jsonReq = stringifyWithoutNulls(SnykClientSerialisation.encodeRoot(treeRoot, config.org))
 
     log.debug("ApiClient: Built JSON Request")
     log.debug(jsonReq)
 
-    val apiEndpoint = creds.endpointOrDefault
-    val apiToken = creds.api
+    val apiEndpoint = config.endpointOrDefault
+    val apiToken = config.api
 
     val uri = uri"$apiEndpoint/v1/vuln/maven"
 
@@ -111,9 +111,9 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
     }
   }
 
-  private def userInfoRaw(): Try[String] = credentials flatMap { creds =>
-    val apiEndpoint = creds.endpointOrDefault
-    val apiToken = creds.api
+  private def userInfoRaw(): Try[String] = tryConfig flatMap { config =>
+    val apiEndpoint = config.endpointOrDefault
+    val apiToken = config.api
 
     val uri = uri"$apiEndpoint/v1/user"
 
@@ -169,11 +169,11 @@ private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[Strin
 object ApiClient {
 
   /**
-    * Build a "standard" `ApiClient` that connects via the supplied credentials.
-    * Note: `credentials` is by-name, and will be re-evaluated on every usage
+    * Build a "standard" `ApiClient` that connects via the supplied config.
+    * Note: `config` is by-name, and will be re-evaluated on every usage
     */
-  def standard(credentials: => Try[SnykCredentials]): ApiClient =
-    new StandardApiClient(credentials)
+  def standard(config: => Try[SnykConfig]): ApiClient =
+    new StandardApiClient(config)
 
   /**
     * Build a mock client, using the supplied function to provide the mocked response.

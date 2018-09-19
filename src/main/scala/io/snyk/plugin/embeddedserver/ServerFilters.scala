@@ -20,7 +20,7 @@ trait ServerFilters { self: MiniServer =>
   }
 
   def requireAuth(fn: => Response): Response = {
-        pluginState.credentials.get match {
+        pluginState.config.get match {
       case Failure(ex) =>
         log.debug(s"Auth failed with $ex")
         redirectTo("/login-required")
