@@ -22,7 +22,7 @@ import com.intellij.openapi.diagnostic.Logger
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-object SnykCredentials {
+object SnykConfig {
   def withResource[T <: AutoCloseable, V](r: => T)(f: T => V): V = {
     val resource: T = r
     require(resource != null, "resource is null")
@@ -49,19 +49,19 @@ object SnykCredentials {
 
   val log = Logger.getInstance(this.getClass)
 
-  implicit val decoder: Decoder[SnykCredentials] = deriveDecoder[SnykCredentials]
-  implicit val encoder: Encoder[SnykCredentials] = deriveEncoder[SnykCredentials]
+  implicit val decoder: Decoder[SnykConfig] = deriveDecoder[SnykConfig]
+  implicit val encoder: Encoder[SnykConfig] = deriveEncoder[SnykConfig]
 
   def defaultConfigFile: Path = Paths.get(System.getProperty("user.home"), ".config/configstore/snyk.json")
 
   def defaultEndpoint: String = "http://snyk.io/api"
   def defaultTimeout: FiniteDuration = 5.minutes
 
-  def default: Try[SnykCredentials] = forPath(defaultConfigFile)
+  def default: Try[SnykConfig] = forPath(defaultConfigFile)
 
-  def forPath(configFilePath: Path): Try[SnykCredentials] =
+  def forPath(configFilePath: Path): Try[SnykConfig] =
     Try { Source.fromFile(configFilePath.toFile).mkString } flatMap {
-      str => decode[SnykCredentials](str).toTry
+      str => decode[SnykConfig](str).toTry
     }
 
   private[this] def endpointFor(configFilePath: Path): URI =
@@ -70,7 +70,7 @@ object SnykCredentials {
   def auth(
     openBrowserFn: URI => Unit,  // e.g. IntelliJ's  BrowserUtil.browse
     configFilePath: Path = defaultConfigFile
-  ): Future[SnykCredentials] = {
+  ): Future[SnykConfig] = {
     val endpointUri = endpointFor(configFilePath)
     val newToken = UUID.randomUUID()
     val loginUri = endpointUri.resolve(s"/login?token=$newToken")
@@ -101,18 +101,18 @@ object SnykCredentials {
 
     implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
 
-    def run(): Future[SnykCredentials] = {
-      val p = Promise[SnykCredentials]
+    def run(): Future[SnykConfig] = {
+      val p = Promise[SnykConfig]
       queueNext(30, p)
       p.future
     }
 
-    private def queueNext(remainingAttempts: Int, p: Promise[SnykCredentials]): Unit = {
+    private def queueNext(remainingAttempts: Int, p: Promise[SnykConfig]): Unit = {
       log.debug(s"queuing auth poll, remaining attempts: $remainingAttempts")
       scheduler.scheduleOnce(1.second) { poll(remainingAttempts, p) }
     }
 
-    private def poll(remainingAttempts: Int, p: Promise[SnykCredentials]): Unit = {
+    private def poll(remainingAttempts: Int, p: Promise[SnykConfig]): Unit = {
       if(remainingAttempts <= 0) {
         p.failure(new RuntimeException("Auth token expired"))
       } else {
@@ -154,7 +154,7 @@ object SnykCredentials {
         optAuthToken match {
           case Some(t) =>
             p complete Success(
-              SnykCredentials(UUID.fromString(t), Some(endpointUri.toString), None, None)
+              SnykConfig(UUID.fromString(t), Some(endpointUri.toString), None, None, None)
             )
           case None => queueNext(remainingAttempts - 1, p)
         }
@@ -163,23 +163,28 @@ object SnykCredentials {
   }
 }
 
-import SnykCredentials._
+import SnykConfig._
 
-case class SnykCredentials(
+case class SnykConfig(
   api: UUID,
   endpoint: Option[String],
   timeout: Option[Long],
-  org: Option[String]
+  org: Option[String],
+  `disable-analytics`: Option[String]
 ) {
   val log = Logger.getInstance(this.getClass)
 
   def endpointOrDefault: String = endpoint getOrElse defaultEndpoint
 
-  private def normalised: SnykCredentials = SnykCredentials(
+  def disableAnalytics: Boolean =
+    `disable-analytics`.flatMap(str => Try(str.toBoolean).toOption) getOrElse false
+
+  private def normalised: SnykConfig = SnykConfig(
     this.api,
     this.endpoint.filterNot(_ == defaultEndpoint),
     this.timeout.filterNot(_.seconds == defaultTimeout),
     this.org.filterNot(_.isEmpty),
+    this.`disable-analytics`
   )
 
   private val jsonPrinter = Printer.spaces4.copy(dropNullValues = true)

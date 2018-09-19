@@ -1,6 +1,6 @@
 import io.circe.parser.decode
 import io.snyk.plugin.datamodel.{MiniVuln, SnykVulnResponse}
-import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
+import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 
 import scala.io.Source
 
