@@ -62,8 +62,11 @@ trait ServerResponses { self: MiniServer =>
     } else {
       SnykCredentials.auth(openBrowserFn = BrowserUtil.browse) transform { tryCreds =>
         tryCreds flatMap { creds =>
+          import self.pluginState.segmentApi
           log.debug(s"auth completed with $creds, redirecting to $successPath with params $params")
           pluginState.credentials := tryCreds
+          segmentApi.identify()
+          segmentApi.track("login via IntelliJ")
           creds.writeToFile().map(_ => creds)
         }
       } andThen {

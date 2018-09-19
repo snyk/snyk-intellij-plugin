@@ -30,6 +30,8 @@
             <li><b>0.0.7</b> - Much-improved algorithm for initially collapsing vulnerability trees.</li>
             <li><b>0.0.8</b> - Minor bugfixes, improved user experience.</li>
             <li><b>0.0.9</b> - Minor bugfix around the login workflow.</li>
+            <li><b>0.1.0</b> - Further login enhancements, and updated with latest API JSON format.</li>
+            <li><b>0.1.1</b> - Fixes an exception thrown if the plugin loads before Intellij has loaded a maven project.</li>
         </ul>
     </html>
     ]]></change-notes>

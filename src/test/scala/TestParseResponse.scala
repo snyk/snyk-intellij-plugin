@@ -4,7 +4,7 @@ import io.circe.parser._
 
 import scala.io.Source
 import io.snyk.plugin.datamodel.SnykVulnResponse
-import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
+import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 
 object TestParseResponse extends App {
 

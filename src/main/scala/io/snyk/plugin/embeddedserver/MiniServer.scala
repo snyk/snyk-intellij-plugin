@@ -121,7 +121,7 @@ class MiniServer(
     requireAuth {
       requireProjectId {
         requireScan(path, params) {
-          import SnykVulnResponse.Decoders._
+          import SnykVulnResponse.JsonCodecs._
           jsonResponse(safeScanResult)
         }
       }

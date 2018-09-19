@@ -1,11 +1,15 @@
 package io.snyk.plugin.client
 
+import java.net.URI
+import java.time.OffsetDateTime
+import java.util.UUID
+
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
-import io.snyk.plugin.datamodel.SnykVulnResponse.Decoders._
+import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 import com.softwaremill.sttp._
 import io.circe.parser.decode
 import io.circe.{Json, Printer}
@@ -18,7 +22,8 @@ import scala.util.{Failure, Success, Try}
   */
 sealed trait ApiClient {
   /** Run a scan on the supplied artifact tree */
-  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse]
+  def runScan(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse]
+  def userInfo(): Try[SnykUserInfo]
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
 }
@@ -67,16 +72,16 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
     }
   }
 
-  def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials flatMap { creds =>
+  private def runRaw(treeRoot: SnykMavenArtifact): Try[String] = credentials flatMap { creds =>
     val jsonReq = stringifyWithoutNulls(SnykClientSerialisation.encodeRoot(treeRoot, creds.org))
 
     log.debug("ApiClient: Built JSON Request")
-    //log.debug(jsonReq)
+    log.debug(jsonReq)
 
     val apiEndpoint = creds.endpointOrDefault
     val apiToken = creds.api
 
-    val uri = uri"$apiEndpoint/v1/vuln/maven?bust=1"
+    val uri = uri"$apiEndpoint/v1/vuln/maven"
 
     val request = sttp.post(uri)
       .header("Authorization", s"token $apiToken")
@@ -106,16 +111,56 @@ private final class StandardApiClient(credentials: => Try[SnykCredentials]) exte
     }
   }
 
-  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {
+  private def userInfoRaw(): Try[String] = credentials flatMap { creds =>
+    val apiEndpoint = creds.endpointOrDefault
+    val apiToken = creds.api
+
+    val uri = uri"$apiEndpoint/v1/user"
+
+    val request = sttp.get(uri)
+      .header("Authorization", s"token $apiToken")
+      .header("Accept", "application/json")
+      .header("user-agent", userAgent)
+
+    implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
+
+    retry(3) {
+       log.debug(s"Getting user info...")
+       val response = request.send()
+       log.debug("...Sent")
+
+       response.body match {
+         case Left(err) =>
+           log.warn(s"Got Error Response from user info: $err")
+           Failure(new RuntimeException(s"Status code ${response.code}, Error: $err"))
+         case Right(body) =>
+           log.debug("Got Good Response from user info")
+           Success(body)
+       }
+     }
+
+  }
+
+  def runScan(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {
     jsonStr <- runRaw(treeRoot)
     json <- decode[SnykVulnResponse](jsonStr).toTry
   } yield json
+
+  def userInfo(): Try[SnykUserInfo] = for {
+    jsonStr <- userInfoRaw()
+    json <- decode[SnykUserResponse](jsonStr).toTry
+  } yield json.user
+
 }
 
 private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[String]) extends ApiClient {
   val isAvailable: Boolean = true
-  def runOn(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] =
+  def runScan(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] =
     mockResponder(treeRoot) flatMap { str => decode[SnykVulnResponse](str).toTry }
+  def userInfo(): Try[SnykUserInfo] = Success {
+    val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")
+    SnykUserInfo("mockuser", "mock user", "mock@user", OffsetDateTime.now(), uri, UUID.randomUUID())
+  }
 }
 
 /**

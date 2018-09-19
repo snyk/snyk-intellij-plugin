@@ -1,25 +1,23 @@
 package io.snyk.plugin.ui
 package state
 
-
-
-
 import io.snyk.plugin.client.{ApiClient, SnykCredentials}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.depsource.{DepTreeProvider, MavenProjectsObservable}
-import com.intellij.openapi.project.Project
 import io.snyk.plugin.IntellijLogging
-import org.jetbrains.idea.maven.project.MavenProject
 import monix.execution.Scheduler.Implicits.global
 import monix.execution.Ack.Continue
 import monix.execution.atomic.Atomic
 import monix.reactive.Observable
 import monix.eval.Task
+import com.intellij.openapi.project.Project
+import io.snyk.plugin.metrics.{MockSegmentApi, SegmentApi}
+import org.jetbrains.idea.maven.project.MavenProject
 
 import scala.concurrent.Future
 import scala.io.{Codec, Source}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 /**
@@ -33,6 +31,7 @@ trait SnykPluginState extends IntellijLogging {
   //MODEL
 
   def apiClient: ApiClient
+  def segmentApi: SegmentApi
   val projects: Atomic[Map[String,PerProjectState]] = Atomic(Map.empty[String,PerProjectState])
   val credentials: Atomic[Try[SnykCredentials]] = Atomic(SnykCredentials.default)
   val flags: Flags = new Flags
@@ -80,9 +79,9 @@ trait SnykPluginState extends IntellijLogging {
 
   def depTree(
     projectId: String = selectedProjectId.get
-  ): SnykMavenArtifact = {
+  ): Option[SnykMavenArtifact] = {
     val pps: Option[PerProjectState] = projects.get.get(projectId)
-    val existingDeps = pps.flatMap(_.depTree).getOrElse(depTreeProvider.getDepTree(projectId))
+    val existingDeps = pps.flatMap(_.depTree).orElse(depTreeProvider.getDepTree(projectId))
     existingDeps
   }
 
@@ -91,19 +90,29 @@ trait SnykPluginState extends IntellijLogging {
   val navigator: Atomic[Navigator] = Atomic(Navigator.mock)
 
   def performScan(
-    projectId: String = selectedProjectId.get,
+    projectId: String = selectedProjectId(),
     force: Boolean = false
   ): Future[SnykVulnResponse] = {
     val pps: Option[PerProjectState] = projects.get.get(projectId)
     val existingScan: Option[SnykVulnResponse] = pps.flatMap(_.scanResult).filterNot(_.isEmpty)
     if(force || existingScan.isEmpty) {
       //do new scan
-      val deps = pps.flatMap(_.depTree).getOrElse(depTreeProvider.getDepTree(projectId))
+      val deps = pps.flatMap(_.depTree).orElse(depTreeProvider.getDepTree(projectId)) match {
+        case Some(x) => Success(x)
+        case None => Failure(
+          new RuntimeException(
+            "No project available, please ensure the IDE has finished parsing any build files."
+          )
+        )
+      }
 
       //Use a monix task instead of a vanilla future, *specifically* for access to the `timeout` functionality
       val task = Task.eval{
-        val result = apiClient runOn deps
-        projects.transform{ _ + (projectId -> PerProjectState(Some(deps), result.toOption))}
+
+        val result = deps flatMap (apiClient.runScan(_))
+        val statePair = projectId -> PerProjectState(deps.toOption, result.toOption)
+        projects.transform{ _ + statePair}
+        segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))
         log.info(s"async scan success")
         result
       }
@@ -125,12 +134,10 @@ object SnykPluginState {
     mockResponder: SnykMavenArtifact => Try[String] //= defaultMockResponder
   ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
-
   private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
     override val apiClient = ApiClient.standard(credentials.get)
     override val depTreeProvider = DepTreeProvider.forProject(project)
-
-    //override val navigator = new Navigator.IntellijNavigator(project, toolWindow, idToMavenProject)
+    override val segmentApi: SegmentApi = SegmentApi(apiClient)
 
     override def mavenProjectsObservable: Observable[Seq[String]] =
       MavenProjectsObservable.forProject(project).map(_.map(_.toString))
@@ -157,11 +164,11 @@ object SnykPluginState {
     val mockResponder: SnykMavenArtifact => Try[String]
   ) extends SnykPluginState {
     override val apiClient: ApiClient = ApiClient.mock(mockResponder)
+    override val segmentApi: SegmentApi = MockSegmentApi
 
-    override def mavenProjectsObservable: Observable[Seq[String]] =
-      Observable.pure(Seq("dummy-root-project"))
+    override def mavenProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
 
-    projects := Map("dummy-root-project" -> PerProjectState(Some(depTreeProvider.getDepTree(""))))
+    projects := Map("dummy-root-project" -> PerProjectState(depTreeProvider.getDepTree("")))
 
     override def externProj: ExternProj = ???
   }

@@ -1,6 +1,6 @@
 package io.snyk.plugin.datamodel
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.circe.derivation.{deriveDecoder, deriveEncoder}
 
 case class VulnSpec(
@@ -56,6 +56,6 @@ object VulnSpec {
     filterInfo       = vuln.filtered
   )
 
-  implicit val encoder: Encoder[VulnSpec] = deriveEncoder
+  implicit val encoder: ObjectEncoder[VulnSpec] = deriveEncoder
   implicit val decoder: Decoder[VulnSpec] = deriveDecoder
 }
