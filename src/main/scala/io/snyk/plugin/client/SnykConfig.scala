@@ -73,7 +73,7 @@ object SnykConfig {
   ): Future[SnykConfig] = {
     val endpointUri = endpointFor(configFilePath)
     val newToken = UUID.randomUUID()
-    val loginUri = endpointUri.resolve(s"/login?token=$newToken")
+    val loginUri = endpointUri.resolve(s"/login?token=$newToken&from=intellijPlugin")
 
     log.debug(s"Will auth at $loginUri")
 
