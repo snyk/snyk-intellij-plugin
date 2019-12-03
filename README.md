@@ -19,7 +19,7 @@ Install via IntelliJ's built-in plugin browser.
 
 ## Supported IntelliJ versions
 
-The plugin requires IntelliJ 2017.3 or above, until 193.* version.
+The plugin requires IntelliJ 2017.3 or above, until 2019.3 (193.*) version.
 
 Other Jetbrains IDEs, such as PyCharm or WebStorm are not _currently_ supported.
 
