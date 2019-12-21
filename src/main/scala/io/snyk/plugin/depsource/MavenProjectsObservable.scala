@@ -7,21 +7,22 @@ import org.jetbrains.idea.maven.project.{MavenProject, MavenProjectChanges, Mave
 
 import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
-import java.{util=>ju}
-
-import com.intellij.openapi.util.{Pair => IJPair}
-
 
 object MavenProjectsObservable {
-  val os = OverflowStrategy.DropOld(10)
-  def forProject(project: Project): Observable[Seq[MavenProject]] = Observable.create(os){ downstream =>
+  val overflowStrategy = OverflowStrategy.DropOld(10)
+
+  def forProject(project: Project): Observable[Seq[MavenProject]] = Observable.create(overflowStrategy){ downstream =>
     try {
-      val projMgr = MavenProjectsManager.getInstance(project)
-      projMgr.addProjectsTreeListener(new MavenProjectsTree.Listener {
-        override def projectsUpdated(
-          updated: ju.List[IJPair[MavenProject, MavenProjectChanges]],
-          deleted: ju.List[MavenProject]
-        ): Unit = downstream.onNext(updated.asScala.map(_.first))
+      val mavenProjectsManager = MavenProjectsManager.getInstance(project)
+
+      mavenProjectsManager.addManagerListener(new MavenProjectsManager.Listener {
+        override def importAndResolveScheduled(): Unit = {
+          if (!mavenProjectsManager.hasScheduledProjects) {
+            val mavenProjects: Seq[MavenProject]  = mavenProjectsManager.getProjects.asScala
+
+            downstream.onNext(mavenProjects)
+          }
+        }
       })
       Cancelable.empty
     } catch { case NonFatal(ex) =>
@@ -29,5 +30,4 @@ object MavenProjectsObservable {
       Cancelable.empty
     }
   }
-
 }
