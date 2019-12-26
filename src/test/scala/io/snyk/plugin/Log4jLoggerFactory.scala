@@ -1,3 +1,5 @@
+package io.snyk.plugin
+
 import com.intellij.openapi.diagnostic.{Log4jBasedLogger, Logger}
 
 object Log4jLoggerFactory {

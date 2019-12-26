@@ -175,6 +175,9 @@ object SnykPluginState {
     projects := Map("dummy-root-project" -> PerProjectState(depTreeProvider.getDepTree("")))
 
     override def externProj: ExternProj = ???
+
+    override def performScan(projectId: String, force: Boolean): Future[SnykVulnResponse] =
+      Future[SnykVulnResponse](SnykVulnResponse.empty)
   }
 
 }
