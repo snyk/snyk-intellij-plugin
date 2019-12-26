@@ -44,6 +44,7 @@ dependencies {
     testCompile "com.lihaoyi:pprint_$scala_version:0.5.3"
     testCompile "com.github.nikita-volkov:sext:0.2.4"
     testCompile "junit:junit:4.12"
+    testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.+'
 }
 
 intellij {
@@ -75,3 +76,4 @@ task previewHtmlUi(type:JavaExec) {
     main = "PreviewHtmlUi"
     classpath = sourceSets.test.runtimeClasspath
 }
+verifyPlugin.dependsOn test
