@@ -23,5 +23,6 @@ class SnykPluginProjectComponent(project: Project) extends ProjectComponent {
   }
 
   override def projectClosed(): Unit = {
+    SnykPluginState.removeForProject(project)
   }
 }
