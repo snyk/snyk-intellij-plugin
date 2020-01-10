@@ -359,4 +359,8 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
 
   protected def getModule(name: String) =
     ReadAction.compute(() => ModuleManager.getInstance(myProject).findModuleByName(name))
+
+  protected def waitBackgroundTasks(): Unit = waitBackgroundTasks(6)
+
+  protected def waitBackgroundTasks(timeoutSeconds: Long): Unit = Thread.sleep(timeoutSeconds * 1000)
 }

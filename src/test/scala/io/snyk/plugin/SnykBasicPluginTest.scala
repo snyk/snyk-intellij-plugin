@@ -33,7 +33,7 @@ class SnykBasicPluginTest extends AbstractMavenTestCase() {
     myProjectsTree
       .update(ju.Arrays.asList({myProjectPom}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
 
-    waitBackgroundTasks()
+    waitBackgroundTasks(7)
 
     val snykPluginState = SnykPluginState.forIntelliJ(myProject)
 
@@ -45,6 +45,4 @@ class SnykBasicPluginTest extends AbstractMavenTestCase() {
     assertEquals("org.codehaus.jackson:jackson-mapper-asl",
                           vulnerabilities.head.asInstanceOf[SecurityVuln].moduleName)
   }
-
-  private[this] def waitBackgroundTasks(): Unit = Thread.sleep(6000)
 }
