@@ -29,7 +29,7 @@ class SnykBasicPluginTest extends AbstractMavenTestCase() {
   }
 
   @Test
-  def testImportMavenProject(): Unit = {
+  def testGetVulnerabilities(): Unit = {
     myProjectsTree
       .update(ju.Arrays.asList({myProjectPom}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
 
