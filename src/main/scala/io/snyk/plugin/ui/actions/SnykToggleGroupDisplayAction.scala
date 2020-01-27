@@ -6,7 +6,7 @@ import io.snyk.plugin.SnykPluginProjectComponent
 import io.snyk.plugin.ui.state.Flag
 
 class SnykToggleGroupDisplayAction()
-extends ToggleAction("Toggle display of Maven Groups", null, AllIcons.General.HideDownPart) {
+extends ToggleAction("Toggle display of Maven Groups", null, AllIcons.General.HideToolWindow) {
   override def update(e: AnActionEvent): Unit = {
     super.update(e)
     val p = e.getPresentation
