@@ -44,6 +44,7 @@ dependencies {
     testCompile "com.lihaoyi:pprint_$scala_version:0.5.3"
     testCompile "com.github.nikita-volkov:sext:0.2.4"
     testCompile "junit:junit:4.12"
+    testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.+'
 }
 
 intellij {
@@ -53,7 +54,7 @@ intellij {
     version '2018.2.2'
     //version '182.3684.40' // 2018-07-17 release of 2018.2 EAP
     pluginName 'snyk-intellij-plugin'
-    plugins = ['maven', 'gradle']
+    plugins = ['maven', 'gradle', 'properties']
     downloadSources = true
     intellij.updateSinceUntilBuild false
 
@@ -75,3 +76,4 @@ task previewHtmlUi(type:JavaExec) {
     main = "PreviewHtmlUi"
     classpath = sourceSets.test.runtimeClasspath
 }
+verifyPlugin.dependsOn test

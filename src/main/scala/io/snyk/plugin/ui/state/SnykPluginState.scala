@@ -127,7 +127,31 @@ trait SnykPluginState extends IntellijLogging {
 }
 
 object SnykPluginState {
-  def forIntelliJ(project: Project): SnykPluginState = new IntelliJSnykPluginState(project)
+  val pluginStates: Atomic[Map[String, SnykPluginState]] = Atomic(Map.empty[String, SnykPluginState])
+
+  def forIntelliJ(project: Project): SnykPluginState = {
+    val pluginStateOption: Option[SnykPluginState] = pluginStates.get.get(project.getName)
+
+    if (pluginStateOption.isEmpty) {
+      val snykPluginState = new IntelliJSnykPluginState(project)
+
+      val projectStatePair = project.getName -> snykPluginState
+
+      pluginStates.transform{_ + projectStatePair}
+
+      snykPluginState
+    } else {
+      pluginStateOption.get
+    }
+  }
+
+  def removeForProject(project: Project): Unit = {
+    val pluginStateOption: Option[SnykPluginState] = pluginStates.get.get(project.getName)
+
+    if (pluginStateOption.isDefined) {
+      pluginStates.transform{_ -- Seq(project.getName)}
+    }
+  }
 
   def mock(
     depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
@@ -175,6 +199,9 @@ object SnykPluginState {
     projects := Map("dummy-root-project" -> PerProjectState(depTreeProvider.getDepTree("")))
 
     override def externProj: ExternProj = ???
+
+    override def performScan(projectId: String, force: Boolean): Future[SnykVulnResponse] =
+      Future[SnykVulnResponse](SnykVulnResponse.empty)
   }
 
 }
