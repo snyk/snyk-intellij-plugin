@@ -33,7 +33,7 @@ class SnykMavenRedUnderlineAnnotator extends Annotator {
           import com.intellij.openapi.util.TextRange
 
           val range = new TextRange(element.getTextRange.getStartOffset, element.getTextRange.getEndOffset)
-          holder.createErrorAnnotation(range, "Vulnerability issue")
+          holder.createErrorAnnotation(range, "Vulnerable package")
         }
       })
     })
