@@ -153,6 +153,18 @@ object SnykPluginState {
     }
   }
 
+  def mockForProject(project: Project,
+                     depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
+                     mockResponder: SnykMavenArtifact => Try[String]): SnykPluginState = {
+    val snykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
+
+    val projectStatePair = project.getName -> snykPluginState
+
+    pluginStates.transform{_ + projectStatePair}
+
+    snykPluginState
+  }
+
   def mock(
     depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
     mockResponder: SnykMavenArtifact => Try[String] //= defaultMockResponder
