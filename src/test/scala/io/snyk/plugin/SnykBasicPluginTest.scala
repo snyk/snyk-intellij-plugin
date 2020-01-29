@@ -21,21 +21,21 @@ class SnykBasicPluginTest extends AbstractMavenTestCase() {
 
     importProject(projectXmlStr)
 
-    val mockToolWindow = new ToolWindowHeadlessManagerImpl.MockToolWindow(myProject)
+    val mockToolWindow = new ToolWindowHeadlessManagerImpl.MockToolWindow(currentProject)
 
     val snykToolWindowFactory = new SnykToolWindowFactory
 
-    snykToolWindowFactory.createToolWindowContent(myProject, mockToolWindow)
+    snykToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
   }
 
   @Test
   def testGetVulnerabilities(): Unit = {
     myProjectsTree
-      .update(ju.Arrays.asList({myProjectPom}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
+      .update(ju.Arrays.asList({projectPomVirtualFile}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
 
-    waitBackgroundTasks(7)
+    waitBackgroundTasks(15)
 
-    val snykPluginState = SnykPluginState.forIntelliJ(myProject)
+    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
 

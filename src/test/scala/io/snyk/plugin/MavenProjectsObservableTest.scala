@@ -26,16 +26,16 @@ class MavenProjectsObservableTest extends AbstractMavenTestCase() {
 
   @Test
   def testForProject(): Unit = {
-    val observableSeq: Observable[Seq[MavenProject]] = MavenProjectsObservable.forProject(myProject)
+    val observableSeq: Observable[Seq[MavenProject]] = MavenProjectsObservable.forProject(currentProject)
 
     assertNotNull(observableSeq)
   }
 
   @Test
   def testNoImportAndResolveScheduledEvent(): Unit = {
-    SnykPluginState.mockForProject(myProject, mockResponder = myMockResponder)
+    SnykPluginState.mockForProject(currentProject, mockResponder = myMockResponder)
 
-    val observable = MavenProjectsObservable.forProject(myProject).map(_.map(_.toString))
+    val observable = MavenProjectsObservable.forProject(currentProject).map(_.map(_.toString))
 
     observable subscribe { list =>
       fail("The event importAndResolveScheduled() did not happen and should not get here.")
@@ -48,9 +48,9 @@ class MavenProjectsObservableTest extends AbstractMavenTestCase() {
 
   @Test
   def testImportAndResolveScheduled(): Unit = {
-    SnykPluginState.mockForProject(myProject, mockResponder = myMockResponder)
+    SnykPluginState.mockForProject(currentProject, mockResponder = myMockResponder)
 
-    val observable = MavenProjectsObservable.forProject(myProject).map(_.map(_.toString))
+    val observable = MavenProjectsObservable.forProject(currentProject).map(_.map(_.toString))
 
     var isEventExecuted = false
 
@@ -76,7 +76,7 @@ class MavenProjectsObservableTest extends AbstractMavenTestCase() {
   }
 
   private[this] def scheduleImportAndResolveEvent() = {
-    val mavenProjectsManager = MavenProjectsManager.getInstance(myProject)
+    val mavenProjectsManager = MavenProjectsManager.getInstance(currentProject)
 
     mavenProjectsManager.scheduleImportAndResolve()
   }

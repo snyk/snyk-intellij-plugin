@@ -19,7 +19,7 @@ import org.intellij.lang.annotations.Language
 import org.jetbrains.idea.maven.indices.MavenIndicesManager
 import org.jetbrains.idea.maven.model.MavenExplicitProfiles
 import org.jetbrains.idea.maven.project.{MavenArtifactDownloader, MavenProjectsManager, MavenProjectsTree,
-                                         MavenWorkspaceSettings, MavenWorkspaceSettingsComponent}
+  MavenWorkspaceSettings, MavenWorkspaceSettingsComponent}
 import org.jetbrains.idea.maven.server.MavenServerManager
 import java.{util => ju}
 
@@ -28,29 +28,23 @@ import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 
 abstract class AbstractMavenTestCase extends UsefulTestCase() {
+  val POM_XML_FILE_NAME: String = "pom.xml"
+  val SETTINGS_XML_FILE_NAME: String = "settings.xml"
+
   protected var myAllPoms: util.List[VirtualFile] = new util.ArrayList[VirtualFile]
 
   protected var myProjectsTree: MavenProjectsTree = _
   protected var myProjectsManager: MavenProjectsManager = _
 
-  protected var myDir: File = _
-  protected var myProjectRoot: VirtualFile = _
-  private var ourTempDir: File = _
-
   protected var myTestFixture: IdeaProjectTestFixture = _
 
-  protected var myProject: Project = _
+  protected var currentProject: Project = _
 
-  protected var myProjectPom: VirtualFile = _
+  protected var projectPomVirtualFile: VirtualFile = _
 
   @throws[Exception]
   protected def setUpInWriteAction(): Unit = {
-    val projectDir = new File(myDir, "project")
-
-    projectDir.mkdirs
-
-    myProjectRoot = LocalFileSystem.getInstance.refreshAndFindFileByIoFile(projectDir)
-    myProjectsManager = MavenProjectsManager.getInstance(myProject)
+    myProjectsManager = MavenProjectsManager.getInstance(currentProject)
 
     removeFromLocalMavenRepository("test")
   }
@@ -59,17 +53,11 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
   override protected def setUp(): Unit = {
     super.setUp()
 
-    checkProjectTempDirectoryCreated()
-
-    myDir = new File(ourTempDir, getTestName(false))
-
-    FileUtil.ensureExists(myDir)
-
     setUpFixtures()
 
-    myProject = myTestFixture.getProject
+    currentProject = myTestFixture.getProject
 
-    MavenWorkspaceSettingsComponent.getInstance(myProject).loadState(new MavenWorkspaceSettings)
+    MavenWorkspaceSettingsComponent.getInstance(currentProject).loadState(new MavenWorkspaceSettings)
 
     val home = getTestMavenHome
 
@@ -113,20 +101,10 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
       () => WriteAction.runAndWait(() => JavaAwareProjectJdkTableImpl.removeInternalJdkInTests()),
       () => MavenServerManager.getInstance.shutdown(true),
       () => MavenArtifactDownloader.awaitQuiescence(100, TimeUnit.SECONDS),
-      () => myProject = null,
+      () => currentProject = null,
       () => EdtTestUtil.runInEdtAndWait(() => tearDownFixtures()),
       () => MavenIndicesManager.getInstance.clear(),
       () => super.tearDown(),
-      () => {
-        FileUtil.delete(myDir)
-        // cannot use reliably the result of the com.intellij.openapi.util.io.FileUtil.delete() method
-        // because com.intellij.openapi.util.io.FileUtilRt.deleteRecursivelyNIO() does not honor this contract
-        if (myDir.exists) {
-          System.err.println("Cannot delete " + myDir)
-          //printDirectoryContent(myDir);
-          myDir.deleteOnExit()
-        }
-      },
       () => resetClassFields(getClass)
     ).run()
   }
@@ -158,28 +136,17 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
     resetClassFields(aClass.getSuperclass)
   }
 
-  @throws[IOException]
-  private def checkProjectTempDirectoryCreated(): Unit = {
-    if (ourTempDir != null) {
-      return
-    }
-
-    ourTempDir = new File(FileUtil.getTempDirectory, "mavenTests")
-
-    FileUtil.delete(ourTempDir)
-    FileUtil.ensureExists(ourTempDir)
-  }
-
   @throws[Exception]
   protected def setUpFixtures(): Unit = {
-    myTestFixture = IdeaTestFixtureFactory.getFixtureFactory.createFixtureBuilder(getName).getFixture
+    myTestFixture = IdeaTestFixtureFactory.getFixtureFactory
+      .createFixtureBuilder(getName, false).getFixture
 
     myTestFixture.setUp()
   }
 
   private def getTestMavenHome = System.getProperty("idea.maven.test.home")
 
-  protected def getMavenGeneralSettings = MavenProjectsManager.getInstance(myProject).getGeneralSettings
+  protected def getMavenGeneralSettings = MavenProjectsManager.getInstance(currentProject).getGeneralSettings
 
   @throws[IOException]
   protected def restoreSettingsFile(): Unit = {
@@ -187,16 +154,13 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
   }
 
   @throws[IOException]
-  protected def updateSettingsXml(content: String) = updateSettingsXmlFully(createSettingsXmlContent(content))
+  protected def updateSettingsXml(content: String) = {
+    val settingsXmlFile = new File(currentProject.getBasePath, SETTINGS_XML_FILE_NAME)
+    settingsXmlFile.createNewFile
 
-  @throws[IOException]
-  protected def updateSettingsXmlFully(@Language("XML") content: String) = {
-    val ioFile = new File(myDir, "settings.xml")
-    ioFile.createNewFile
+    val virtualFile = LocalFileSystem.getInstance.refreshAndFindFileByIoFile(settingsXmlFile)
 
-    val virtualFile = LocalFileSystem.getInstance.refreshAndFindFileByIoFile(ioFile)
-
-    setFileContent(virtualFile, content, true)
+    setFileContent(virtualFile, createSettingsXmlContent(content))
 
     getMavenGeneralSettings.setUserSettingsFile(virtualFile.getPath)
 
@@ -210,7 +174,7 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
     "<settings>" + content + "<mirrors>" + "  <mirror>" + "    <id>jb-central-proxy</id>" + "    <url>" + mirror + "</url>" + "    <mirrorOf>external:*,!flex-repository</mirrorOf>" + "  </mirror>" + "</mirrors>" + "</settings>"
   }
 
-  private def setFileContent(file: VirtualFile, content: String, advanceStamps: Boolean): Unit = {
+  private def setFileContent(file: VirtualFile, content: String, advanceStamps: Boolean = true): Unit = {
     try WriteAction.runAndWait(() => {
       if (advanceStamps) {
         file.setBinaryContent(content.getBytes(StandardCharsets.UTF_8), -1, file.getTimeStamp + 4000)
@@ -219,45 +183,37 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
       }
     })
     catch {
-      case e: IOException =>
-        throw new RuntimeException(e)
+      case ioException: IOException => throw new RuntimeException(ioException)
     }
   }
 
   protected def createProjectPom(xml: String): VirtualFile = {
-    myProjectPom = createPomFile(myProjectRoot, xml)
+    projectPomVirtualFile = createPomXmlVirtualFile(currentProject.getBaseDir, xml)
 
-    myProjectPom
+    projectPomVirtualFile
   }
 
-  protected def createPomFile(directoryVirtualFile: VirtualFile, xml: String): VirtualFile = {
-    var pomXmlVirtualFile = directoryVirtualFile.findChild("pom.xml")
+  protected def createPomXmlVirtualFile(directoryVirtualFile: VirtualFile, xml: String): VirtualFile = {
+    val pomXmlFile = new File(currentProject.getBasePath, POM_XML_FILE_NAME)
+    pomXmlFile.createNewFile
 
-    if (pomXmlVirtualFile == null) {
-      try pomXmlVirtualFile = WriteAction.computeAndWait(() => {
-        directoryVirtualFile.createChildData(null, "pom.xml")
-      })
-      catch {
-        case exception: IOException =>
-          throw new RuntimeException(exception)
-      }
+    val pomXmlVirtualFile = LocalFileSystem.getInstance.refreshAndFindFileByIoFile(pomXmlFile)
 
-      myAllPoms.add(pomXmlVirtualFile)
-    }
+    setFileContent(pomXmlVirtualFile, createPomXmlStr(xml))
 
-    setFileContent(pomXmlVirtualFile, createPomXml(xml), true)
+    myAllPoms.add(pomXmlVirtualFile)
 
     pomXmlVirtualFile
   }
 
   @Language(value = "XML")
-  def createPomXml(@Language(value = "XML", prefix = "<project>", suffix = "</project>") xml: String) =
+  def createPomXmlStr(@Language(value = "XML", prefix = "<project>", suffix = "</project>") xmlString: String) =
     "<?xml version=\"1.0\"?>" +
       "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" " +
       "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
       "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" +
       "  <modelVersion>4.0.0</modelVersion>" +
-      xml +
+      xmlString +
       "</project>"
 
   protected def importProject(@Language(value = "XML", prefix = "<project>", suffix = "</project>") xml: String): Unit = {
@@ -266,14 +222,14 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
   }
 
   protected def importProject(): Unit = {
-    importProjectWithProfiles("")
+    importProjectWithProfiles()
   }
 
-  protected def importProjectWithProfiles(profiles: String): Unit = {
-    doImportProjects(Collections.singletonList(myProjectPom), true, profiles)
+  protected def importProjectWithProfiles(profiles: String = ""): Unit = {
+    doImportProjects(Collections.singletonList(projectPomVirtualFile), true, profiles)
   }
 
-  protected def removeFromLocalMavenRepository(relativePath: String): Unit = {
+  protected def removeFromLocalMavenRepository(relativePath: String = ""): Unit = {
     if (SystemInfo.isWindows) {
       MavenServerManager.getInstance.shutdown(true)
     }
@@ -342,7 +298,7 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
   }
 
   protected def setupJdkForAllModules(): Unit = {
-    ModuleManager.getInstance(myProject).getModules.foreach(module => {
+    ModuleManager.getInstance(currentProject).getModules.foreach(module => {
       val sdk = JavaAwareProjectJdkTableImpl.getInstanceEx.getInternalJdk
 
       ModuleRootModificationUtil.setModuleSdk(module, sdk)
@@ -358,9 +314,11 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
   }
 
   protected def getModule(name: String) =
-    ReadAction.compute(() => ModuleManager.getInstance(myProject).findModuleByName(name))
+    ReadAction.compute(() => ModuleManager.getInstance(currentProject).findModuleByName(name))
 
   protected def waitBackgroundTasks(): Unit = waitBackgroundTasks(6)
+
+  protected def wait10SecondsForBackgroundTasks(): Unit = waitBackgroundTasks(10)
 
   protected def waitBackgroundTasks(timeoutSeconds: Long): Unit = Thread.sleep(timeoutSeconds * 1000)
 }
