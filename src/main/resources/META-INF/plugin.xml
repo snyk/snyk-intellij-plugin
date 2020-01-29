@@ -47,6 +47,8 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
+
+        <annotator language="XML" implementationClass="io.snyk.plugin.ui.annotators.SnykMavenRedUnderlineAnnotator"/>
     </extensions>
 
     <application-components>
