@@ -12,7 +12,7 @@ import io.snyk.plugin.ui.SnykToolWindowFactory
 
 import scala.io.{Codec, Source}
 
-class SnykBasicPluginTest extends AbstractMavenTestCase() {
+class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {
     super.setUp()
