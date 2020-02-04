@@ -75,7 +75,7 @@ abstract class AbstractTestCase extends UsefulTestCase() {
     ).run()
   }
 
-  private def resetClassFields(aClass: Class[_]): Unit = {
+  protected def resetClassFields(aClass: Class[_]): Unit = {
     if (aClass == null) {
       return
     }
@@ -149,8 +149,6 @@ abstract class AbstractTestCase extends UsefulTestCase() {
     ReadAction.compute(() => ModuleManager.getInstance(currentProject).findModuleByName(name))
 
   protected def waitBackgroundTasks(): Unit = waitBackgroundTasks(6)
-
-  protected def wait10SecondsForBackgroundTasks(): Unit = waitBackgroundTasks(10)
 
   protected def waitBackgroundTasks(timeoutSeconds: Long): Unit = Thread.sleep(timeoutSeconds * 1000)
 }
