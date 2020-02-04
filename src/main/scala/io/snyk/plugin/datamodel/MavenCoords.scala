@@ -10,9 +10,19 @@ case class MavenCoords(group: String, name: String, version: String) {
 
 object MavenCoords {
   def from(fullVersionedName: String): MavenCoords = {
-    val arr1 = fullVersionedName.split('@')
-    val arr2 = arr1.head.split(':')
-    MavenCoords(arr2(0), arr2(1), arr1(1))
+    val versionArray = fullVersionedName.split('@')
+    val groupNameArray = versionArray.head.split(':')
+
+    val version = versionArray(1)
+    val group = groupNameArray(0)
+
+    if (groupNameArray.length > 1) {
+      val name = groupNameArray(1)
+
+      MavenCoords(group, name, version)
+    } else {
+      MavenCoords(group, "", version)
+    }
   }
 
   def from(fullName: String, version: String): MavenCoords = {

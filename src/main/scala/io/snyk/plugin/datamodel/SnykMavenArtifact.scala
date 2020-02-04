@@ -1,6 +1,7 @@
 package io.snyk.plugin.datamodel
 
 import com.intellij.openapi.util.text.StringUtil
+import io.snyk.plugin.depsource.BuildToolProject
 import org.jetbrains.idea.maven.model.MavenArtifactNode
 import org.jetbrains.idea.maven.project.MavenProject
 
@@ -8,7 +9,7 @@ import scala.collection.JavaConverters._
 
 object SnykMavenArtifact {
   def fromMavenArtifactNode(n: MavenArtifactNode): SnykMavenArtifact = {
-//    log.debug(s"dep tree for node: ${n.getDependencies}")
+    //    log.debug(s"dep tree for node: ${n.getDependencies}")
 
     SnykMavenArtifact(
       n.getArtifact.getGroupId,
@@ -34,6 +35,18 @@ object SnykMavenArtifact {
     )
   }
 
+  def fromBuildToolProject(buildToolProject: BuildToolProject): SnykMavenArtifact = {
+    SnykMavenArtifact(
+      buildToolProject.groupId,
+      buildToolProject.artifactId,
+      buildToolProject.version,
+      buildToolProject.packaging,
+      None,
+      None,
+      List.empty[SnykMavenArtifact]
+    )
+  }
+
   val empty: SnykMavenArtifact = SnykMavenArtifact(
     "<none>",
     "<none>",
@@ -46,14 +59,14 @@ object SnykMavenArtifact {
 }
 
 case class SnykMavenArtifact(
-  groupId: String,
-  artifactId: String,
-  version: String,
-  packaging: String,
-  classifier: Option[String],
-  scope: Option[String],
-  deps: Seq[SnykMavenArtifact]
-) {
+                              groupId: String,
+                              artifactId: String,
+                              version: String,
+                              packaging: String,
+                              classifier: Option[String],
+                              scope: Option[String],
+                              deps: Seq[SnykMavenArtifact]
+                            ) {
   val name: String = s"$groupId:$artifactId"
   val depsMap: Map[String, SnykMavenArtifact] = deps.map(x => x.name -> x).toMap
 }

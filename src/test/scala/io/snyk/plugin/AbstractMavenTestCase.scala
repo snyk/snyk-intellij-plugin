@@ -18,14 +18,15 @@ import com.intellij.util.ui.UIUtil
 import org.intellij.lang.annotations.Language
 import org.jetbrains.idea.maven.indices.MavenIndicesManager
 import org.jetbrains.idea.maven.model.MavenExplicitProfiles
-import org.jetbrains.idea.maven.project.{MavenArtifactDownloader, MavenProjectsManager, MavenProjectsTree,
-  MavenWorkspaceSettings, MavenWorkspaceSettingsComponent}
+import org.jetbrains.idea.maven.project.{MavenArtifactDownloader, MavenProjectsManager, MavenProjectsTree, MavenWorkspaceSettings, MavenWorkspaceSettingsComponent}
 import org.jetbrains.idea.maven.server.MavenServerManager
 import java.{util => ju}
 
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import io.snyk.plugin.ui.state.SnykPluginState
+import org.apache.commons.io.FileUtils
 
 abstract class AbstractMavenTestCase extends UsefulTestCase() {
   val POM_XML_FILE_NAME: String = "pom.xml"
@@ -97,15 +98,19 @@ abstract class AbstractMavenTestCase extends UsefulTestCase() {
 
   @throws[Exception]
   override protected def tearDown(): Unit = {
+    val projectDirectoryPath = currentProject.getBasePath
+
     new RunAll(
+      () => SnykPluginState.removeForProject(currentProject),
       () => WriteAction.runAndWait(() => JavaAwareProjectJdkTableImpl.removeInternalJdkInTests()),
       () => MavenServerManager.getInstance.shutdown(true),
       () => MavenArtifactDownloader.awaitQuiescence(100, TimeUnit.SECONDS),
-      () => currentProject = null,
       () => EdtTestUtil.runInEdtAndWait(() => tearDownFixtures()),
       () => MavenIndicesManager.getInstance.clear(),
       () => super.tearDown(),
-      () => resetClassFields(getClass)
+      () => resetClassFields(getClass),
+      () => FileUtils.deleteDirectory(new File(projectDirectoryPath)),
+      () => currentProject = null
     ).run()
   }
 

@@ -37,7 +37,7 @@
     ]]></change-notes>
 
     <!--see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html-->
-    <idea-version since-build="173"/>
+    <idea-version since-build="191"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -60,7 +60,6 @@
             <implementation-class>io.snyk.plugin.SnykPluginProjectComponent</implementation-class>
         </component>
     </project-components>
-
 
     <actions>
         <group id="io.snyk.plugin.ActionBar">

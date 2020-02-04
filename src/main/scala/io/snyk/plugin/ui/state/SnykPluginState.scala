@@ -4,7 +4,7 @@ package state
 import io.snyk.plugin.client.{ApiClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
-import io.snyk.plugin.depsource.{DepTreeProvider, MavenProjectsObservable}
+import io.snyk.plugin.depsource.{DepTreeProvider, GradleProjectsObservable, MavenProjectsObservable}
 import io.snyk.plugin.IntellijLogging
 import monix.execution.Scheduler.Implicits.global
 import monix.execution.Ack.Continue
@@ -76,6 +76,7 @@ trait SnykPluginState extends IntellijLogging {
   protected def depTreeProvider: DepTreeProvider
   def rootProjectIds: Seq[String] = depTreeProvider.rootIds
   def mavenProjectsObservable: Observable[Seq[String]]
+  def gradleProjectsObservable: Observable[Seq[String]]
   def idToMavenProject(id: String): Option[MavenProject] = depTreeProvider.idToMavenProject(id)
 
   def depTree(
@@ -183,9 +184,19 @@ object SnykPluginState {
     override def mavenProjectsObservable: Observable[Seq[String]] =
       MavenProjectsObservable.forProject(project).map(_.map(_.toString))
 
+    override def gradleProjectsObservable: Observable[Seq[String]] =
+      GradleProjectsObservable.forProject(project).map(_.map(_.toString))
+
     override lazy val externProj: ExternProj = new ExternProj(project)
 
     mavenProjectsObservable subscribe { list =>
+      log.info(s"updated projects: $list")
+      projects := Map.empty
+      navigator().navToVulns()
+      Continue
+    }
+
+    gradleProjectsObservable subscribe { list =>
       log.info(s"updated projects: $list")
       projects := Map.empty
       navigator().navToVulns()
@@ -219,6 +230,8 @@ object SnykPluginState {
       Future[SnykVulnResponse](SnykVulnResponse.empty)
 
     override def getProject: Project = ???
+
+    override def gradleProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
   }
 
 }
