@@ -19,6 +19,8 @@ import scala.concurrent.Future
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
+import io.circe.parser.decode
+import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 
 /**
   * Central abstraction to the plugin, exposes `Atomic` instances of the relevant bits of
@@ -202,10 +204,8 @@ object SnykPluginState {
     Source.fromResource("sampleResponse.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 
-  private[this] class MockSnykPluginState(
-    val depTreeProvider: DepTreeProvider,
-    val mockResponder: SnykMavenArtifact => Try[String]
-  ) extends SnykPluginState {
+  private[this] class MockSnykPluginState(val depTreeProvider: DepTreeProvider,
+                                          val mockResponder: SnykMavenArtifact => Try[String]) extends SnykPluginState {
     override val apiClient: ApiClient = ApiClient.mock(mockResponder)
     override val segmentApi: SegmentApi = MockSegmentApi
 
@@ -221,4 +221,11 @@ object SnykPluginState {
     override def getProject: Project = ???
   }
 
+    override def latestScanForSelectedProject: Option[SnykVulnResponse] = {
+      val treeRoot: SnykMavenArtifact = SnykMavenArtifact.empty
+      val triedResponse = mockResponder(treeRoot) flatMap { str => decode[SnykVulnResponse](str).toTry }
+
+      triedResponse.toOption
+    }
+  }
 }
