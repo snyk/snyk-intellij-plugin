@@ -1,9 +1,14 @@
 package io.snyk.plugin.client
 
+import java.io.FileNotFoundException
 import java.net.URI
+import java.nio.charset.Charset
 import java.time.OffsetDateTime
+import java.util
 import java.util.UUID
 
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.ApplicationInfo
@@ -15,14 +20,16 @@ import io.circe.parser.decode
 import io.circe.{Json, Printer}
 
 import scala.util.{Failure, Success, Try}
+import java.nio.file.{Files, Path, Paths}
 
+import com.intellij.openapi.project.Project
 
 /**
   * Represents the connection to the Snyk servers for the security scan.
   */
 sealed trait ApiClient {
   /** Run a scan on the supplied artifact tree */
-  def runScan(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse]
+  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse]
   def userInfo(): Try[SnykUserInfo]
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
@@ -72,41 +79,33 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
     }
   }
 
-  private def runRaw(treeRoot: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
-    val jsonReq = stringifyWithoutNulls(SnykClientSerialisation.encodeRoot(treeRoot, config.org))
+  private def runRaw(project: Project, treeRoot: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
+    log.debug("ApiClient: run Snyk CLI")
 
-    log.debug("ApiClient: Built JSON Request")
-    log.debug(jsonReq)
+    val projectPath = project.getBasePath
 
-    val apiEndpoint = config.endpointOrDefault
-    val apiToken = config.api
+    if (Files.notExists(Paths.get(projectPath))) {
+      return Failure(new FileNotFoundException("pom.xml"))
+    }
 
-    val uri = uri"$apiEndpoint/v1/vuln/maven"
+    val commands: util.ArrayList[String] = new util.ArrayList[String]
+    commands.add("snyk")
+    commands.add("--json")
+    commands.add("test")
 
-    val request = sttp.post(uri)
-      .header("Authorization", s"token $apiToken")
-      .header("x-is-ci", "false")
-      .header("content-type", "application/json")
-      .header("user-agent", userAgent)
-      .body(jsonReq)
+    val generalCommandLine = new GeneralCommandLine(commands)
+    generalCommandLine.setCharset(Charset.forName("UTF-8"))
+    generalCommandLine.setWorkDirectory(projectPath)
 
-    implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
+    try {
+      val snykResultJsonStr = ScriptRunnerUtil.getProcessOutput(generalCommandLine)
 
-    retry(3) {
-      log.debug(s"Sending... with userAgent = $userAgent")
-      val response = request.send()
-      log.debug("...Sent")
+      Success(snykResultJsonStr)
+    } catch {
+      case e: Exception => {
+        println(e.getMessage)
 
-      response.body match {
-        case Left(err) =>
-          log.warn(s"Got Error Response: $err")
-          log.warn(jsonReq)
-
-          Failure(new RuntimeException(s"Status code ${response.code}, Error: $err"))
-        case Right(body) =>
-          log.debug("Got Good Response")
-          log.trace(body)
-          Success(body)
+        Failure(e)
       }
     }
   }
@@ -141,8 +140,8 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
 
   }
 
-  def runScan(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {
-    jsonStr <- runRaw(treeRoot)
+  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {
+    jsonStr <- runRaw(project, treeRoot)
     json <- decode[SnykVulnResponse](jsonStr).toTry
   } yield json
 
@@ -155,7 +154,7 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
 
 private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[String]) extends ApiClient {
   val isAvailable: Boolean = true
-  def runScan(treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] =
+  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] =
     mockResponder(treeRoot) flatMap { str => decode[SnykVulnResponse](str).toTry }
   def userInfo(): Try[SnykUserInfo] = Success {
     val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")

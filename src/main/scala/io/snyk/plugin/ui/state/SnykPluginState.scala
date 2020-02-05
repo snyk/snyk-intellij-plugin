@@ -32,6 +32,7 @@ import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 trait SnykPluginState extends IntellijLogging {
   //MODEL
 
+  def getProject: Project
   def apiClient: ApiClient
   def segmentApi: SegmentApi
   val projects: Atomic[Map[String,PerProjectState]] = Atomic(Map.empty[String,PerProjectState])
@@ -111,7 +112,7 @@ trait SnykPluginState extends IntellijLogging {
       //Use a monix task instead of a vanilla future, *specifically* for access to the `timeout` functionality
       val task = Task.eval{
 
-        val result = deps flatMap (apiClient.runScan(_))
+        val result = deps flatMap (apiClient.runScan(getProject, _))
         val statePair = projectId -> PerProjectState(deps.toOption, result.toOption)
         projects.transform{ _ + statePair}
         segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))
@@ -192,6 +193,8 @@ object SnykPluginState {
       navigator().navToVulns()
       Continue
     }
+
+    override def getProject: Project = project
   }
 
   /**
@@ -214,6 +217,9 @@ object SnykPluginState {
 
     override def performScan(projectId: String, force: Boolean): Future[SnykVulnResponse] =
       Future[SnykVulnResponse](SnykVulnResponse.empty)
+
+    override def getProject: Project = ???
+  }
 
     override def latestScanForSelectedProject: Option[SnykVulnResponse] = {
       val treeRoot: SnykMavenArtifact = SnykMavenArtifact.empty
