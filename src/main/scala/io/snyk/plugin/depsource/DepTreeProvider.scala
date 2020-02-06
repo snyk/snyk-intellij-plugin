@@ -20,25 +20,42 @@ trait DepTreeProvider {
 }
 
 private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
-  private[this] def getAllBuildToolProjects: Seq[BuildToolProject] = {
+
+  private[this] def isMavenProject: Boolean = !MavenProjectsManager.getInstance(project).getProjects.isEmpty
+
+  private[this] def isGradleProject: Boolean = !GradleSettings.getInstance(project).getLinkedProjectsSettings.isEmpty
+
+  private[this] def getMavenBuildToolProjects: Seq[BuildToolProject] = {
     val mavenProjects = MavenProjectsManager.getInstance(project).getProjects.asScala
 
-    if (mavenProjects.nonEmpty) {
-      mavenProjects.map(mavenProject => {
-        MavenBuildToolProject(mavenProject)
-      })
+    mavenProjects.map(mavenProject => {
+      MavenBuildToolProject(mavenProject)
+    })
+  }
+
+  private[this] def getGradleBuildToolProjects: Seq[BuildToolProject] = {
+    val gradleProjects = GradleSettings.getInstance(project).getLinkedProjectsSettings.asScala
+
+    gradleProjects.map(gradleSettings => {
+      val projectPath = gradleSettings.getExternalProjectPath
+
+      val projectData = findProjectData(project, GradleConstants.SYSTEM_ID, projectPath)
+
+      val gradleModuleData = ExternalSystemApiUtil.find(projectData, ProjectKeys.MODULE)
+
+      GradleBuildToolProject(gradleModuleData.getData)
+    }).toList
+  }
+
+  private[this] def getAllBuildToolProjects: Seq[BuildToolProject] = {
+    if (isMavenProject) {
+      getMavenBuildToolProjects
+    } else if (isGradleProject) {
+      getGradleBuildToolProjects
     } else {
-      val gradleProjects = GradleSettings.getInstance(project).getLinkedProjectsSettings.asScala
+      println("Unsupported (for now) project type.")
 
-      gradleProjects.map(gradleSettings => {
-        val projectPath = gradleSettings.getExternalProjectPath
-
-        val projectData = findProjectData(project, GradleConstants.SYSTEM_ID, projectPath)
-
-        val gradleModuleData = ExternalSystemApiUtil.find(projectData, ProjectKeys.MODULE)
-
-        GradleBuildToolProject(gradleModuleData.getData)
-      }).toList
+      Seq()
     }
   }
 
