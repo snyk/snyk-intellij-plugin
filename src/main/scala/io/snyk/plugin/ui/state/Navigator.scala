@@ -74,17 +74,7 @@ object Navigator extends IntellijLogging {
 
         promisedUnit complete Try {
           if (buildToolProject.isMaven) {
-            val file = buildToolProject.getFile
-
-            log.debug(s"  file: $file")
-
-            val artifact = buildToolProject.asInstanceOf[MavenBuildToolProject].findDependencies(group, name).asScala.head
-
-            log.debug(s"  artifact: $artifact")
-
-            val navigatable = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
-
-            navigatable.navigate(true)
+            openMavenDependency(group, name, buildToolProject)
           }
         }
       }
@@ -93,6 +83,20 @@ object Navigator extends IntellijLogging {
     } getOrElse Future.successful(())
 
     override def reloadWebView(): Unit = toolWindow.htmlPanel.reload()
+
+    private[this] def openMavenDependency(group: String, name: String, buildToolProject: BuildToolProject): Unit = {
+      val file = buildToolProject.getFile
+
+      log.debug(s"  file: $file")
+
+      val artifact = buildToolProject.asInstanceOf[MavenBuildToolProject].findDependencies(group, name).asScala.head
+
+      log.debug(s"  artifact: $artifact")
+
+      val navigatable = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
+
+      navigatable.navigate(true)
+    }
   }
 
   object MockNavigator extends Navigator {
