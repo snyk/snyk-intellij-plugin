@@ -28,9 +28,9 @@ class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true) with DataProvider with Disposable {
   this.setBackground(UIUtil.getPanelBackground)
 
-  private val projComp = project.getComponent(classOf[SnykPluginProjectComponent])
+  private val projectComponent = project.getComponent(classOf[SnykPluginProjectComponent])
 
-  import projComp.pluginState
+  import projectComponent.pluginState
 
   pluginState.navigator := Navigator.newInstance(project, this, pluginState.idToBuildToolProject)
 
