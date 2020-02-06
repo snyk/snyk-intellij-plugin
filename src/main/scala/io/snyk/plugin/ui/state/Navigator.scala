@@ -16,7 +16,7 @@ import monix.execution.Scheduler.Implicits.global
 
 trait Navigator {
   def navigateTo(path: String, params: ParamSet): Future[String]
-  def navToArtifact(group: String, name: String, projectId: String): Future[Unit]
+  def navigateToDependency(group: String, name: String, projectId: String): Future[Unit]
 
   def navToVulns(): Future[String] = navigateTo("/vulnerabilities", ParamSet.Empty)
   def navToScanning(): Future[String] = navigateTo("/scanning", ParamSet.Empty)
@@ -62,7 +62,7 @@ object Navigator extends IntellijLogging {
       * Use MavenProjectsManager to open the editor and highlight where the specified artifact
       * is imported.
       */
-    override def navToArtifact(
+    override def navigateToDependency(
       group: String,
       name: String,
       projectId: String
@@ -101,7 +101,7 @@ object Navigator extends IntellijLogging {
       Future.successful(path)
     }
 
-    override def navToArtifact(group: String, name: String, projectId: String): Future[Unit] = {
+    override def navigateToDependency(group: String, name: String, projectId: String): Future[Unit] = {
       log.info(s"MockSnykPluginState.navToArtifact($group, $name)")
       Future.successful(())
     }
