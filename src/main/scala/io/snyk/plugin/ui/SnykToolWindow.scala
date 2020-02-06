@@ -1,15 +1,14 @@
 package io.snyk.plugin.ui
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.{ActionGroup, ActionManager, DataProvider, DefaultActionGroup}
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.{DumbAware, Project, ProjectManager}
+import com.intellij.openapi.actionSystem.{ActionGroup, ActionManager, DataProvider}
+import com.intellij.openapi.project.{DumbAware, Project}
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.SnykPluginProjectComponent
-import io.snyk.plugin.ui.state.{Navigator, SnykPluginState}
+import io.snyk.plugin.ui.state.Navigator
 
 
 /**
@@ -29,9 +28,11 @@ class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true) with DataProvider with Disposable {
   this.setBackground(UIUtil.getPanelBackground)
 
-  val projComp = project.getComponent(classOf[SnykPluginProjectComponent])
+  private val projComp = project.getComponent(classOf[SnykPluginProjectComponent])
+
   import projComp.pluginState
-  pluginState.navigator := Navigator.forIntelliJ(project, this, pluginState.idToMavenProject)
+
+  pluginState.navigator := Navigator.newInstance(project, this, pluginState.idToBuildToolProject)
 
   val htmlPanel = new SnykHtmlPanel(project, pluginState)
 

@@ -37,10 +37,10 @@ object SnykMavenArtifact {
 
   def fromBuildToolProject(buildToolProject: BuildToolProject): SnykMavenArtifact = {
     SnykMavenArtifact(
-      buildToolProject.groupId,
-      buildToolProject.artifactId,
-      buildToolProject.version,
-      buildToolProject.packaging,
+      buildToolProject.getGroupId,
+      buildToolProject.getArtifactId,
+      buildToolProject.getVersion,
+      buildToolProject.getPackaging,
       None,
       None,
       List.empty[SnykMavenArtifact]

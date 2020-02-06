@@ -4,7 +4,7 @@ package state
 import io.snyk.plugin.client.{ApiClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
-import io.snyk.plugin.depsource.{DepTreeProvider, GradleProjectsObservable, MavenProjectsObservable}
+import io.snyk.plugin.depsource.{BuildToolProject, DepTreeProvider, GradleProjectsObservable, MavenProjectsObservable}
 import io.snyk.plugin.IntellijLogging
 import monix.execution.Scheduler.Implicits.global
 import monix.execution.Ack.Continue
@@ -77,7 +77,7 @@ trait SnykPluginState extends IntellijLogging {
   def rootProjectIds: Seq[String] = depTreeProvider.rootIds
   def mavenProjectsObservable: Observable[Seq[String]]
   def gradleProjectsObservable: Observable[Seq[String]]
-  def idToMavenProject(id: String): Option[MavenProject] = depTreeProvider.idToMavenProject(id)
+  def idToBuildToolProject(id: String): Option[BuildToolProject] = depTreeProvider.idToBuildToolProject(id)
 
   def depTree(
     projectId: String = selectedProjectId.get

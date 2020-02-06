@@ -25,12 +25,7 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
     if (mavenProjects.nonEmpty) {
       mavenProjects.map(mavenProject => {
-        BuildToolProject(
-          mavenProject.getMavenId.getGroupId,
-          mavenProject.getMavenId.getArtifactId,
-          mavenProject.getMavenId.getVersion,
-          mavenProject.getPackaging
-        )
+        MavenBuildToolProject(mavenProject)
       })
     } else {
       val gradleProjects = GradleSettings.getInstance(project).getLinkedProjectsSettings.asScala
@@ -42,12 +37,7 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
         val gradleModuleData = ExternalSystemApiUtil.find(projectData, ProjectKeys.MODULE)
 
-        BuildToolProject(
-          gradleModuleData.getData.getGroup,
-          gradleModuleData.getData.getId,
-          gradleModuleData.getData.getVersion,
-          ""
-        )
+        GradleBuildToolProject(gradleModuleData.getData)
       }).toList
     }
   }

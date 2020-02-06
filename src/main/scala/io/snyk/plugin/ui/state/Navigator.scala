@@ -3,6 +3,7 @@ package ui.state
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.depsource.{BuildToolProject, MavenBuildToolProject}
 import io.snyk.plugin.embeddedserver.ParamSet
 import io.snyk.plugin.ui.SnykToolWindow
 import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
@@ -25,18 +26,23 @@ trait Navigator {
 
 object Navigator extends IntellijLogging {
 
-  def forIntelliJ(
-    project: Project,
-    toolWindow: SnykToolWindow,
-    idToProject: String => Option[MavenProject]
-  ): Navigator = new IntellijNavigator(project, toolWindow, idToProject)
+//  def forIntelliJ(
+//    project: Project,
+//    toolWindow: SnykToolWindow,
+//    idToProject: String => Option[MavenProject]
+//  ): Navigator = new IntellijNavigator(project, toolWindow, idToProject)
+
+  def newInstance(project: Project,
+                  toolWindow: SnykToolWindow,
+                  idToProject: String => Option[BuildToolProject]
+                 ): Navigator = new IntellijNavigator(project, toolWindow, idToProject)
 
   def mock: Navigator = MockNavigator
 
   class IntellijNavigator(
     project: Project,
     toolWindow: SnykToolWindow,
-    idToProject: String => Option[MavenProject]
+    idToProject: String => Option[BuildToolProject]
   ) extends Navigator {
 
     override def navigateTo(path: String, params: ParamSet): Future[String] = {
@@ -60,20 +66,30 @@ object Navigator extends IntellijLogging {
       group: String,
       name: String,
       projectId: String
-    ): Future[Unit] = idToProject(projectId) map { mp =>
-      val p = Promise[Unit]
+    ): Future[Unit] = idToProject(projectId) map { buildToolProject =>
+      val promisedUnit = Promise[Unit]
+
       ApplicationManager.getApplication.invokeLater { () =>
         log.info(s"Navigating to Artifact: $group : $name in $projectId")
-        p complete Try {
-          val file = mp.getFile
-          log.debug(s"  file: $file")
-          val artifact = mp.findDependencies(group, name).asScala.head
-          log.debug(s"  artifact: $artifact")
-          val nav = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
-          nav.navigate(true)
+
+        promisedUnit complete Try {
+          if (buildToolProject.isMaven) {
+            val file = buildToolProject.getFile
+
+            log.debug(s"  file: $file")
+
+            val artifact = buildToolProject.asInstanceOf[MavenBuildToolProject].findDependencies(group, name).asScala.head
+
+            log.debug(s"  artifact: $artifact")
+
+            val navigatable = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
+
+            navigatable.navigate(true)
+          }
         }
       }
-      p.future
+
+      promisedUnit.future
     } getOrElse Future.successful(())
 
     override def reloadWebView(): Unit = toolWindow.htmlPanel.reload()
