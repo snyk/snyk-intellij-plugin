@@ -20,7 +20,7 @@ trait DepTreeProvider {
 }
 
 private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
-  private[this] def allMavenProjects: Seq[BuildToolProject] = {
+  private[this] def getAllBuildToolProjects: Seq[BuildToolProject] = {
     val mavenProjects = MavenProjectsManager.getInstance(project).getProjects.asScala
 
     if (mavenProjects.nonEmpty) {
@@ -42,15 +42,15 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     }
   }
 
-  override def rootIds: Seq[String] = allMavenProjects.map(_.toString)
+  override def rootIds: Seq[String] = getAllBuildToolProjects.map(_.toString)
 
   override def idToMavenProject(id: String): Option[MavenProject] = ???
 
   override def idToBuildToolProject(id: String): Option[BuildToolProject] =
-    allMavenProjects.find(_.toString == id)
+    getAllBuildToolProjects.find(_.toString == id)
 
   override def getDepTree(rootId: String): Option[SnykMavenArtifact] = {
-    val projects = allMavenProjects
+    val projects = getAllBuildToolProjects
     val maybeBuildToolProject = idToBuildToolProject(rootId) orElse projects.headOption
 
     maybeBuildToolProject map SnykMavenArtifact.fromBuildToolProject
