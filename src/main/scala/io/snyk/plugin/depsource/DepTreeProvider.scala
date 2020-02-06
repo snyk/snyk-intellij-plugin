@@ -6,7 +6,7 @@ import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.datamodel.SnykMavenArtifact
-import org.jetbrains.idea.maven.project.{MavenProject, MavenProjectsManager}
+import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
 
@@ -15,7 +15,6 @@ import scala.collection.JavaConverters._
 trait DepTreeProvider {
   def rootIds: Seq[String]
   def getDepTree(rootId: String): Option[SnykMavenArtifact]
-  def idToMavenProject(id: String): Option[MavenProject]
   def idToBuildToolProject(id: String): Option[BuildToolProject]
 }
 
@@ -61,8 +60,6 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
   override def rootIds: Seq[String] = getAllBuildToolProjects.map(_.toString)
 
-  override def idToMavenProject(id: String): Option[MavenProject] = ???
-
   override def idToBuildToolProject(id: String): Option[BuildToolProject] =
     getAllBuildToolProjects.find(_.toString == id)
 
@@ -104,7 +101,6 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
 private class MockDepTreeProvider(val rootIds: Seq[String], mockTree: SnykMavenArtifact) extends DepTreeProvider {
   override def getDepTree(rootId: String): Option[SnykMavenArtifact] = Some(mockTree)
-  override def idToMavenProject(id: String): Option[MavenProject] = None
 
   override def idToBuildToolProject(id: String): Option[BuildToolProject] = None
 }
