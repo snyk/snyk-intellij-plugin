@@ -1,13 +1,17 @@
 package io.snyk.plugin
 package ui.state
 
+import java.util.ArrayList
+
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.pom.NavigatableAdapter
+import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.{PsiElement, PsiManager, PsiRecursiveElementWalkingVisitor}
 import io.snyk.plugin.depsource.{BuildToolProject, MavenBuildToolProject}
 import io.snyk.plugin.embeddedserver.ParamSet
 import io.snyk.plugin.ui.SnykToolWindow
 import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
-import org.jetbrains.idea.maven.project.MavenProject
 
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
@@ -26,11 +30,7 @@ trait Navigator {
 
 object Navigator extends IntellijLogging {
 
-//  def forIntelliJ(
-//    project: Project,
-//    toolWindow: SnykToolWindow,
-//    idToProject: String => Option[MavenProject]
-//  ): Navigator = new IntellijNavigator(project, toolWindow, idToProject)
+  private val DEPENDENCIES_KEY = "dependencies"
 
   def newInstance(project: Project,
                   toolWindow: SnykToolWindow,
@@ -39,11 +39,9 @@ object Navigator extends IntellijLogging {
 
   def mock: Navigator = MockNavigator
 
-  class IntellijNavigator(
-    project: Project,
-    toolWindow: SnykToolWindow,
-    idToProject: String => Option[BuildToolProject]
-  ) extends Navigator {
+  class IntellijNavigator(project: Project,
+                          toolWindow: SnykToolWindow,
+                          idToProject: String => Option[BuildToolProject]) extends Navigator {
 
     override def navigateTo(path: String, params: ParamSet): Future[String] = {
       val p = Promise[String]
@@ -75,6 +73,8 @@ object Navigator extends IntellijLogging {
         promisedUnit complete Try {
           if (buildToolProject.isMaven) {
             openMavenDependency(group, name, buildToolProject)
+          } else if (buildToolProject.isGradle) {
+            openGradleDependency(group, name, buildToolProject)
           }
         }
       }
@@ -96,6 +96,37 @@ object Navigator extends IntellijLogging {
       val navigatable = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
 
       navigatable.navigate(true)
+    }
+
+    private[this] def openGradleDependency(group: String, name: String, buildToolProject: BuildToolProject): Unit = {
+      val gradleBuildVirtualFile = buildToolProject.getFile
+
+      val psiFile = PsiManager.getInstance(project).findFile(gradleBuildVirtualFile)
+
+      val dependenciesPsiElement = PsiTreeUtil
+        .getChildrenOfType(psiFile, classOf[PsiElement])
+        .filter(_.getText.startsWith(DEPENDENCIES_KEY))
+
+      val navigateToDependencyPsiElements = new ArrayList[PsiElement]
+
+      dependenciesPsiElement.head.accept(new PsiRecursiveElementWalkingVisitor() {
+        override def visitElement(element: PsiElement): Unit = {
+          val elementText = element.getText
+
+          if (!elementText.startsWith(DEPENDENCIES_KEY) && !elementText.contains("\n")
+              && elementText.contains(group) && elementText.contains(name)) {
+
+            navigateToDependencyPsiElements.add(element)
+          }
+
+          super.visitElement(element)
+        }
+      })
+
+      if (!navigateToDependencyPsiElements.isEmpty) {
+        NavigatableAdapter
+          .navigate(project, gradleBuildVirtualFile, navigateToDependencyPsiElements.get(0).getTextRange.getStartOffset, true)
+      }
     }
   }
 
