@@ -7,7 +7,7 @@ import org.junit.Test
 
 import scala.io.{Codec, Source}
 
-class SnykCLIApiClientTest extends AbstractMavenTestCase() {
+class SnykCLISnykCLIClientTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {
     super.setUp()

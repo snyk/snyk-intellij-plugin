@@ -1,6 +1,6 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.client.ApiClient
+import io.snyk.plugin.client.SnykCLIClient
 import io.snyk.plugin.metrics.SegmentApi
 import org.junit.Test
 import org.junit.Assert._
@@ -9,7 +9,7 @@ class SegmentApiTest {
 
   @Test
   def testSendSegmentTestEvent(): Unit = {
-    val clientMock = ApiClient.mock(null)
+    val clientMock = SnykCLIClient.mock(null)
     val segmentApi = SegmentApi(clientMock)
 
     assertNotNull(segmentApi)

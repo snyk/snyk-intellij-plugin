@@ -27,7 +27,7 @@ import com.intellij.openapi.project.Project
 /**
   * Represents the connection to the Snyk servers for the security scan.
   */
-sealed trait ApiClient {
+sealed trait SnykCLIClient {
   /** Run a scan on the supplied artifact tree */
   def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse]
   def userInfo(): Try[SnykUserInfo]
@@ -40,7 +40,7 @@ sealed trait ApiClient {
   * Note: `config` is by-name, and will be freshly evaluated on each access -
   *       any property depending on it MUST NOT be cached as a `val`
   */
-private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends ApiClient {
+private final class StandardSnykCLIClient(tryConfig: => Try[SnykConfig]) extends SnykCLIClient {
   val log = Logger.getInstance(this.getClass)
 
   def isAvailable: Boolean = tryConfig.isSuccess
@@ -152,7 +152,7 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
 
 }
 
-private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[String]) extends ApiClient {
+private final class MockSnykCLIClient(mockResponder: SnykMavenArtifact => Try[String]) extends SnykCLIClient {
   val isAvailable: Boolean = true
   def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] =
     mockResponder(treeRoot) flatMap { str => decode[SnykVulnResponse](str).toTry }
@@ -165,19 +165,19 @@ private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[Strin
 /**
   * Provides the connection to the Snyk servers for the security scan.
   */
-object ApiClient {
+object SnykCLIClient {
 
   /**
     * Build a "standard" `ApiClient` that connects via the supplied config.
     * Note: `config` is by-name, and will be re-evaluated on every usage
     */
-  def standard(config: => Try[SnykConfig]): ApiClient =
-    new StandardApiClient(config)
+  def standard(config: => Try[SnykConfig]): SnykCLIClient =
+    new StandardSnykCLIClient(config)
 
   /**
     * Build a mock client, using the supplied function to provide the mocked response.
     * A default implementation is supplied.
     */
-  def mock(mockResponder: SnykMavenArtifact => Try[String]): ApiClient =
-    new MockApiClient(mockResponder)
+  def mock(mockResponder: SnykMavenArtifact => Try[String]): SnykCLIClient =
+    new MockSnykCLIClient(mockResponder)
 }

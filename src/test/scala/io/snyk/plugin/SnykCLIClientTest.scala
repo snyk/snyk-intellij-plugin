@@ -1,15 +1,15 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.client.{ApiClient, SnykConfig}
+import io.snyk.plugin.client.{SnykCLIClient, SnykConfig}
 import org.junit.Test
 import org.junit.Assert._
 
-class ApiClientTest {
+class SnykCLIClientTest {
 
   @Test
   def testUserInfoEndpoint(): Unit = {
     val config = SnykConfig.default
-    val apiClient = ApiClient.standard(config)
+    val apiClient = SnykCLIClient.standard(config)
 
     assertNotNull(apiClient)
     assertTrue(apiClient.userInfo().isSuccess)

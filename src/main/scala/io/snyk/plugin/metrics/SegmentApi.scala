@@ -4,7 +4,7 @@ package io.snyk.plugin.metrics
 import java.util.UUID
 
 import com.segment.analytics.messages._
-import io.snyk.plugin.client.{ApiClient, SnykUserInfo}
+import io.snyk.plugin.client.{SnykCLIClient, SnykUserInfo}
 import com.segment.analytics.Analytics
 
 import scala.util.{Success, Try}
@@ -36,7 +36,7 @@ object SegmentApi {
       PageMessage.builder(name).userId(userId.toString).properties(props.asJava)
   }
 
-  def apply(apiClient: ApiClient): SegmentApi = new LiveSegmentApi(apiClient)
+  def apply(apiClient: SnykCLIClient): SegmentApi = new LiveSegmentApi(apiClient)
 }
 
 
@@ -50,7 +50,7 @@ object MockSegmentApi extends SegmentApi {
   override def track(eventName: String, props: Map[String, Any]): Try[Unit] = Success(())
 }
 
-class LiveSegmentApi(apiClient: ApiClient) extends SegmentApi {
+class LiveSegmentApi(apiClient: SnykCLIClient) extends SegmentApi {
   import SegmentApi._
 
   val DefaultWriteKey = "rrZlYpGGcdrLvloIXwGTqX8ZAQNsB9A0"
