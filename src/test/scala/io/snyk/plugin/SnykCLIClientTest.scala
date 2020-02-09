@@ -63,7 +63,7 @@ class SnykCLIClientTest extends AbstractMavenTestCase() {
 
     val isCliInstalled = snykPluginState.apiClient.isCLIInstalled(new ConsoleCommandRunner() {
       override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
-        "snyk version 1.2.6"
+        "1.290.2"
       }
     })
 

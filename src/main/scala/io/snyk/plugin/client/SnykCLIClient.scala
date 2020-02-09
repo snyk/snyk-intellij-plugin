@@ -20,7 +20,8 @@ import io.circe.parser.decode
 import io.circe.{Json, Printer}
 
 import scala.util.{Failure, Success, Try}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
+import java.util.regex.Pattern
 
 import com.intellij.openapi.project.Project
 
@@ -169,7 +170,10 @@ private final class StandardSnykCLIClient(tryConfig: => Try[SnykConfig]) extends
     try {
       val consoleResultStr = consoleCommandRunner.execute(commands)
 
-      consoleResultStr.contains("version")
+      val pattern = Pattern.compile("^\\d+\\.\\d+\\.\\d+")
+      val matcher = pattern.matcher(consoleResultStr.trim)
+
+      matcher.matches()
     } catch {
       case exception: Exception => {
         println(exception.getMessage)
