@@ -33,6 +33,15 @@ sealed trait SnykCLIClient {
   def userInfo(): Try[SnykUserInfo]
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
+
+  /**
+    * Check is Snyk CLI is installed.
+    *
+    * @param consoleCommandRunner - for command execution and possibility to test
+    *
+    * @return Boolean
+    */
+  def isCLIInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean
 }
 
 /**
@@ -124,19 +133,19 @@ private final class StandardSnykCLIClient(tryConfig: => Try[SnykConfig]) extends
     implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
 
     retry(3) {
-       log.debug(s"Getting user info...")
-       val response = request.send()
-       log.debug("...Sent")
+      log.debug(s"Getting user info...")
+      val response = request.send()
+      log.debug("...Sent")
 
-       response.body match {
-         case Left(err) =>
-           log.warn(s"Got Error Response from user info: $err")
-           Failure(new RuntimeException(s"Status code ${response.code}, Error: $err"))
-         case Right(body) =>
-           log.debug("Got Good Response from user info")
-           Success(body)
-       }
-     }
+      response.body match {
+        case Left(err) =>
+          log.warn(s"Got Error Response from user info: $err")
+          Failure(new RuntimeException(s"Status code ${response.code}, Error: $err"))
+        case Right(body) =>
+          log.debug("Got Good Response from user info")
+          Success(body)
+      }
+    }
 
   }
 
@@ -150,6 +159,25 @@ private final class StandardSnykCLIClient(tryConfig: => Try[SnykConfig]) extends
     json <- decode[SnykUserResponse](jsonStr).toTry
   } yield json.user
 
+  def isCLIInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = {
+    log.debug("Check is Snyk CLI is installed")
+
+    val commands: util.ArrayList[String] = new util.ArrayList[String]
+    commands.add("snyk")
+    commands.add("--version")
+
+    try {
+      val consoleResultStr = consoleCommandRunner.execute(commands)
+
+      consoleResultStr.contains("version")
+    } catch {
+      case exception: Exception => {
+        println(exception.getMessage)
+
+        false
+      }
+    }
+  }
 }
 
 private final class MockSnykCLIClient(mockResponder: SnykMavenArtifact => Try[String]) extends SnykCLIClient {
@@ -160,6 +188,8 @@ private final class MockSnykCLIClient(mockResponder: SnykMavenArtifact => Try[St
     val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")
     SnykUserInfo("mockuser", "mock user", "mock@user", OffsetDateTime.now(), uri, UUID.randomUUID())
   }
+
+  def isCLIInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = true
 }
 
 /**
@@ -180,4 +210,19 @@ object SnykCLIClient {
     */
   def mock(mockResponder: SnykMavenArtifact => Try[String]): SnykCLIClient =
     new MockSnykCLIClient(mockResponder)
+}
+
+/**
+  * Encapsulate work with IntelliJ OpenAPI {@link ScriptRunnerUtil}
+  */
+class ConsoleCommandRunner {
+
+  def execute(commands: util.ArrayList[String], workDirectory: String = "/"): String = {
+    val generalCommandLine = new GeneralCommandLine(commands)
+
+    generalCommandLine.setCharset(Charset.forName("UTF-8"))
+    generalCommandLine.setWorkDirectory(workDirectory)
+
+    ScriptRunnerUtil.getProcessOutput(generalCommandLine)
+  }
 }

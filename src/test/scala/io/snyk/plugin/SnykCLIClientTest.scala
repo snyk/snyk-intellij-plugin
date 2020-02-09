@@ -1,9 +1,11 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.client.{SnykCLIClient, SnykConfig}
+import java.util
+
+import io.snyk.plugin.client.{ConsoleCommandRunner, SnykCLIClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
 import io.snyk.plugin.ui.state.SnykPluginState
-import org.junit.Assert.{assertEquals, assertNotNull, assertTrue}
+import org.junit.Assert.{assertEquals, assertNotNull, assertTrue, assertFalse}
 import org.junit.Test
 
 import scala.io.{Codec, Source}
@@ -40,5 +42,31 @@ class SnykCLIClientTest extends AbstractMavenTestCase() {
 
     assertNotNull(apiClient)
     assertTrue(apiClient.userInfo().isSuccess)
+  }
+
+  @Test
+  def testIsCLIInstalledFailed(): Unit = {
+    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+
+    val isCliInstalled = snykPluginState.apiClient.isCLIInstalled(new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "command not found"
+      }
+    })
+
+    assertFalse(isCliInstalled)
+  }
+
+  @Test
+  def testIsCLIInstalledSuccess(): Unit = {
+    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+
+    val isCliInstalled = snykPluginState.apiClient.isCLIInstalled(new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "snyk version 1.2.6"
+      }
+    })
+
+    assertTrue(isCliInstalled)
   }
 }
