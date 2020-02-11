@@ -59,14 +59,13 @@ object SnykMavenArtifact {
 }
 
 case class SnykMavenArtifact(
-                              groupId: String,
-                              artifactId: String,
-                              version: String,
-                              packaging: String,
-                              classifier: Option[String],
-                              scope: Option[String],
-                              deps: Seq[SnykMavenArtifact]
-                            ) {
+    groupId: String,
+    artifactId: String,
+    version: String,
+    packaging: String,
+    classifier: Option[String],
+    scope: Option[String],
+    deps: Seq[SnykMavenArtifact]) {
   val name: String = s"$groupId:$artifactId"
   val depsMap: Map[String, SnykMavenArtifact] = deps.map(x => x.name -> x).toMap
 }
