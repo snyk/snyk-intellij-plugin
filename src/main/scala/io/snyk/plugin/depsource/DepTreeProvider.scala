@@ -76,7 +76,6 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
     val predicate = (node: DataNode[ModuleData]) => projectPath == node.getData.getLinkedExternalProjectPath
 
-    //    ExternalSystemApiUtil.find(projectNode, ProjectKeys.MODULE, predicate)
     ExternalSystemApiUtil.find(projectNode, ProjectKeys.MODULE)
   }
 
