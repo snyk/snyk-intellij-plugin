@@ -107,8 +107,6 @@ private class MockDepTreeProvider(val rootIds: Seq[String], mockTree: SnykMavenA
 
 object DepTreeProvider {
   def forProject(project: Project): DepTreeProvider = new ProjectDepTreeProvider(project)
-  def mock(
-            rootIds: Seq[String] = Seq("dummy root"),
-            mockTree: SnykMavenArtifact = SnykMavenArtifact.empty
-          ): DepTreeProvider = new MockDepTreeProvider(rootIds, mockTree)
+  def mock(rootIds: Seq[String] = Seq("dummy root"),
+           mockTree: SnykMavenArtifact = SnykMavenArtifact.empty): DepTreeProvider = new MockDepTreeProvider(rootIds, mockTree)
 }
