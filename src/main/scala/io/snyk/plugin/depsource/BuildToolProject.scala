@@ -19,9 +19,7 @@ trait BuildToolProject {
 
   def getFile: VirtualFile
 
-  def isGradle: Boolean
-
-  def isMaven: Boolean
+  def getType: String
 }
 
 case class MavenBuildToolProject(mavenProject: MavenProject) extends BuildToolProject {
@@ -40,9 +38,7 @@ case class MavenBuildToolProject(mavenProject: MavenProject) extends BuildToolPr
 
   override def getFile: VirtualFile = mavenProject.getFile
 
-  override def isGradle: Boolean = false
-
-  override def isMaven: Boolean = true
+  override def getType: String = ProjectType.MAVEN
 }
 
 case class GradleBuildToolProject(moduleData: ModuleData) extends BuildToolProject {
@@ -65,7 +61,5 @@ case class GradleBuildToolProject(moduleData: ModuleData) extends BuildToolProje
     VfsUtil.findFileByIoFile(gradleBuildFile, true)
   }
 
-  override def isGradle: Boolean = true
-
-  override def isMaven: Boolean = false
+  override def getType: String = ProjectType.GRADLE
 }

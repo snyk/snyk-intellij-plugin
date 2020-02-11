@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.pom.NavigatableAdapter
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.{PsiElement, PsiManager, PsiRecursiveElementWalkingVisitor}
-import io.snyk.plugin.depsource.{BuildToolProject, MavenBuildToolProject}
+import io.snyk.plugin.depsource.{BuildToolProject, MavenBuildToolProject, ProjectType}
 import io.snyk.plugin.embeddedserver.ParamSet
 import io.snyk.plugin.ui.SnykToolWindow
 import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
@@ -71,9 +71,11 @@ object Navigator extends IntellijLogging {
         log.info(s"Navigating to Artifact: $group : $name in $projectId")
 
         promisedUnit complete Try {
-          if (buildToolProject.isMaven) {
+          val projectType = buildToolProject.getType
+
+          if (ProjectType.MAVEN == projectType) {
             openMavenDependency(group, name, buildToolProject)
-          } else if (buildToolProject.isGradle) {
+          } else if (ProjectType.GRADLE == projectType) {
             openGradleDependency(group, name, buildToolProject)
           }
         }
