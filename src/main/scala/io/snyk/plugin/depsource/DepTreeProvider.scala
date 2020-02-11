@@ -6,6 +6,7 @@ import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.datamodel.SnykMavenArtifact
+import io.snyk.plugin.ui.NotificationService
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
@@ -52,7 +53,7 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     } else if (isGradleProject) {
       getGradleBuildToolProjects
     } else {
-      println("Unsupported (for now) project type.")
+      NotificationService.showWarning(project, "Project type is not supported")
 
       Seq()
     }
