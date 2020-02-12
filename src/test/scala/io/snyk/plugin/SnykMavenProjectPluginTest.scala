@@ -12,7 +12,7 @@ import io.snyk.plugin.ui.SnykToolWindowFactory
 
 import scala.io.{Codec, Source}
 
-class SnykBasicPluginTest extends AbstractMavenTestCase() {
+class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {
     super.setUp()
@@ -33,7 +33,7 @@ class SnykBasicPluginTest extends AbstractMavenTestCase() {
     myProjectsTree
       .update(ju.Arrays.asList({projectPomVirtualFile}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
 
-    waitBackgroundTasks(15)
+    waitBackgroundTasks(20) // This is still a tiny and vulnerable part for this test.
 
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
@@ -41,8 +41,10 @@ class SnykBasicPluginTest extends AbstractMavenTestCase() {
 
     val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.vulnerabilities
 
+    assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.packageManager)
+
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
     assertEquals("org.codehaus.jackson:jackson-mapper-asl",
-                          vulnerabilities.head.asInstanceOf[SecurityVuln].moduleName)
+      vulnerabilities.head.asInstanceOf[SecurityVuln].moduleName)
   }
 }

@@ -51,18 +51,24 @@ extends Callback[PopupFeatures, WebEngine] with IntellijLogging {
 
   private[this] def processUrl(url: String) = {
     log.info(s"External Popup Handler tackling: $url")
+
     try {
-      if(url.startsWith(navPrefix)) {
+      if (url.startsWith(navPrefix)) {
         val parts = url.drop(navPrefix.length).split(":|@")
-        val g = parts(0)
-        val a = parts(1)
-        pluginState.navigator().navToArtifact(g, a, pluginState.selectedProjectId.get)
-      } else  BrowserUtil.browse(new URL(url))
-    } catch { case NonFatal(e) => log.warn(e) }
+
+        val group = parts(0)
+        val artifact = parts(1)
+
+        pluginState.navigator().navigateToDependency(group, artifact, pluginState.selectedProjectId.get)
+      } else {
+        BrowserUtil.browse(new URL(url))
+      }
+    } catch {
+      case NonFatal(e) => log.warn(e)
+    }
   }
 
   def call(popupFeatures: PopupFeatures): WebEngine = zombieEngine
-
 }
 
 
