@@ -13,7 +13,6 @@ import monix.reactive.Observable
 import monix.eval.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.metrics.{MockSegmentApi, SegmentApi}
-import org.jetbrains.idea.maven.project.MavenProject
 
 import scala.concurrent.Future
 import scala.io.{Codec, Source}
@@ -232,7 +231,6 @@ object SnykPluginState {
     override def getProject: Project = ???
 
     override def gradleProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
-  }
 
     override def latestScanForSelectedProject: Option[SnykVulnResponse] = {
       val treeRoot: SnykMavenArtifact = SnykMavenArtifact.empty

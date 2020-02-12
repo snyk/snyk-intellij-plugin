@@ -31,19 +31,25 @@ trait ServerResponses { self: MiniServer =>
     log.debug(s"async task failed, redirecting to error page")
     navigateTo("/error", params.plus("errmsg" -> x.getMessage))
   }
+
   /**
     * Initiate an asynchronous security scan... once complete, navigate to the supplied URL
     */
-  def asyncScanAndRedirectTo(
-    successPath: String,
-    params: ParamSet,
-    onError: (Throwable, ParamSet) => Unit = defaultFailureHandler
-  ): Future[SnykVulnResponse] = {
+  def asyncScanAndRedirectTo(successPath: String,
+                             params: ParamSet,
+                             onError: (Throwable, ParamSet) => Unit = defaultFailureHandler): Future[SnykVulnResponse] = {
     log.debug(s"triggered async scan, will redirect to $successPath with params $params")
+
     pluginState.performScan() andThen {
-      case Success(_) =>
-        log.debug(s"async scan success, redirecting to $successPath with params $params")
-        navigateTo(successPath, params)
+      case Success(vulnResponse) =>
+        if (vulnResponse.error.isEmpty) {
+          log.debug(s"async scan success, redirecting to $successPath with params $params")
+
+          navigateTo(successPath, params)
+        } else {
+          onError(new RuntimeException(vulnResponse.error.get), params)
+        }
+
       case Failure(x) => onError(x, params)
     }
   }
@@ -52,12 +58,9 @@ trait ServerResponses { self: MiniServer =>
   /**
     * Initiate an asynchronous authorisation... once complete, navigate to the supplied URL
     */
-  def asyncAuthAndRedirectTo(
-    successPath: String,
-    params: ParamSet,
-    onError: (Throwable, ParamSet) => Unit = defaultFailureHandler
-  ): Future[SnykConfig] = {
-    if(pluginState.config.get.isSuccess) {
+  def asyncAuthAndRedirectTo(successPath: String, params: ParamSet,
+                             onError: (Throwable, ParamSet) => Unit = defaultFailureHandler): Future[SnykConfig] = {
+    if (pluginState.config.get.isSuccess) {
       Future fromTry pluginState.config.get
     } else {
       SnykConfig.auth(openBrowserFn = BrowserUtil.browse) transform { tryConfig =>
@@ -72,11 +75,10 @@ trait ServerResponses { self: MiniServer =>
       } andThen {
         case Failure(x) =>
           onError(x, params)
-        case s @ Success(config) =>
+        case s@Success(config) =>
           log.debug(s"navigating to $successPath with config updated")
           navigateTo(successPath, params)
       }
     }
   }
-
 }
