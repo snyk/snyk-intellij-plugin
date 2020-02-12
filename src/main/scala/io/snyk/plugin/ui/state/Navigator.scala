@@ -71,12 +71,9 @@ object Navigator extends IntellijLogging {
         log.info(s"Navigating to Artifact: $group : $name in $projectId")
 
         promisedUnit complete Try {
-          val projectType = buildToolProject.getType
-
-          if (ProjectType.MAVEN == projectType) {
-            openMavenDependency(group, name, buildToolProject)
-          } else if (ProjectType.GRADLE == projectType) {
-            openGradleDependency(group, name, buildToolProject)
+          buildToolProject.getType match {
+            case ProjectType.MAVEN => openMavenDependency(group, name, buildToolProject)
+            case ProjectType.GRADLE => openGradleDependency(group, name, buildToolProject)
           }
         }
       }
