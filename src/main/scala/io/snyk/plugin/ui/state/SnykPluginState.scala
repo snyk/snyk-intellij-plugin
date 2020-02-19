@@ -13,7 +13,6 @@ import monix.reactive.Observable
 import monix.eval.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.metrics.{MockSegmentApi, SegmentApi}
-import org.jetbrains.idea.maven.project.MavenProject
 
 import scala.concurrent.Future
 import scala.io.{Codec, Source}
@@ -40,7 +39,7 @@ trait SnykPluginState extends IntellijLogging {
   val flags: Flags = new Flags
   val selectedProjectId: Atomic[String] = Atomic("")
 
-  def latestScanForSelectedProject: Option[SnykVulnResponse] = for {
+  def latestScanForSelectedProject: Option[Seq[SnykVulnResponse]] = for {
     projId <- safeProjectId
     projState <- projects().get(projId)
     scanResult <- projState.scanResult
@@ -96,9 +95,9 @@ trait SnykPluginState extends IntellijLogging {
   def performScan(
     projectId: String = selectedProjectId(),
     force: Boolean = false
-  ): Future[SnykVulnResponse] = {
+  ): Future[Seq[SnykVulnResponse]] = {
     val pps: Option[PerProjectState] = projects.get.get(projectId)
-    val existingScan: Option[SnykVulnResponse] = pps.flatMap(_.scanResult).filterNot(_.isEmpty)
+    val existingScan: Option[Seq[SnykVulnResponse]] = pps.flatMap(_.scanResult).filterNot(_.isEmpty)
     if(force || existingScan.isEmpty) {
       //do new scan
       val deps = pps.flatMap(_.depTree).orElse(depTreeProvider.getDepTree(projectId)) match {
@@ -112,8 +111,7 @@ trait SnykPluginState extends IntellijLogging {
 
       //Use a monix task instead of a vanilla future, *specifically* for access to the `timeout` functionality
       val task = Task.eval{
-
-        val result = deps flatMap (apiClient.runScan(getProject, _))
+        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (apiClient.runScan(getProject, _))
         val statePair = projectId -> PerProjectState(deps.toOption, result.toOption)
         projects.transform{ _ + statePair}
         segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))
@@ -226,17 +224,16 @@ object SnykPluginState {
 
     override def externProj: ExternProj = ???
 
-    override def performScan(projectId: String, force: Boolean): Future[SnykVulnResponse] =
-      Future[SnykVulnResponse](SnykVulnResponse.empty)
+    override def performScan(projectId: String, force: Boolean): Future[Seq[SnykVulnResponse]] =
+      Future[Seq[SnykVulnResponse]](Seq.empty)
 
     override def getProject: Project = ???
 
     override def gradleProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
-  }
 
-    override def latestScanForSelectedProject: Option[SnykVulnResponse] = {
+    override def latestScanForSelectedProject: Option[Seq[SnykVulnResponse]] = {
       val treeRoot: SnykMavenArtifact = SnykMavenArtifact.empty
-      val triedResponse = mockResponder(treeRoot) flatMap { str => decode[SnykVulnResponse](str).toTry }
+      val triedResponse = mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
 
       triedResponse.toOption
     }

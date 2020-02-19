@@ -38,7 +38,7 @@ trait ServerResponses { self: MiniServer =>
     successPath: String,
     params: ParamSet,
     onError: (Throwable, ParamSet) => Unit = defaultFailureHandler
-  ): Future[SnykVulnResponse] = {
+  ): Future[Seq[SnykVulnResponse]] = {
     log.debug(s"triggered async scan, will redirect to $successPath with params $params")
     pluginState.performScan() andThen {
       case Success(_) =>

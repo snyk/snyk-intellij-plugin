@@ -8,10 +8,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.pom.NavigatableAdapter
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.{PsiElement, PsiManager, PsiRecursiveElementWalkingVisitor}
-import io.snyk.plugin.depsource.{BuildToolProject, MavenBuildToolProject, ProjectType}
+import io.snyk.plugin.depsource.{BuildToolProject, ProjectType}
 import io.snyk.plugin.embeddedserver.ParamSet
 import io.snyk.plugin.ui.SnykToolWindow
-import org.jetbrains.idea.maven.navigator.MavenNavigationUtil
 
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
@@ -84,17 +83,28 @@ object Navigator extends IntellijLogging {
     override def reloadWebView(): Unit = toolWindow.htmlPanel.reload()
 
     private[this] def openMavenDependency(group: String, name: String, buildToolProject: BuildToolProject): Unit = {
-      val file = buildToolProject.getFile
+      val pomXmlVirtualFile = buildToolProject.getFile
 
-      log.debug(s"  file: $file")
+      val psiFile = PsiManager.getInstance(project).findFile(pomXmlVirtualFile)
 
-      val artifact = buildToolProject.asInstanceOf[MavenBuildToolProject].findDependencies(group, name).asScala.head
+      val pomXmlPsiElement = PsiTreeUtil.getChildrenOfType(psiFile, classOf[PsiElement])
 
-      log.debug(s"  artifact: $artifact")
+      val navigateToDependencyPsiElements = new ArrayList[PsiElement]
 
-      val navigatable = MavenNavigationUtil.createNavigatableForDependency(project, file, artifact)
+      pomXmlPsiElement.head.accept(new PsiRecursiveElementWalkingVisitor() {
+        override def visitElement(element: PsiElement): Unit = {
+          if (element.getText.equals(name) && element.getParent.getPrevSibling.getPrevSibling.getText.contains(group)) {
+            navigateToDependencyPsiElements.add(element)
+          }
 
-      navigatable.navigate(true)
+          super.visitElement(element)
+        }
+      })
+
+      if (!navigateToDependencyPsiElements.isEmpty) {
+        NavigatableAdapter
+          .navigate(project, pomXmlVirtualFile, navigateToDependencyPsiElements.get(0).getTextRange.getStartOffset, true)
+      }
     }
 
     private[this] def openGradleDependency(group: String, name: String, buildToolProject: BuildToolProject): Unit = {

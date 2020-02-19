@@ -1,0 +1,12 @@
+<groupId>io.snyk.multi</groupId>
+<artifactId>java-multi-modules</artifactId>
+<packaging>pom</packaging>
+<version>1.0</version>
+
+<modules>
+    <module>core</module>
+    <module>web</module>
+</modules>
+
+<dependencies>
+</dependencies>

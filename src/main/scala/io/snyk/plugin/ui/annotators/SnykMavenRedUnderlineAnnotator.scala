@@ -22,19 +22,21 @@ class SnykMavenRedUnderlineAnnotator extends Annotator {
       return
     }
 
-    latestScanForSelectedProject.get.vulnerabilities.seq.foreach(vulnerability => {
-      val securityVulnerability = vulnerability.asInstanceOf[SecurityVuln]
+    latestScanForSelectedProject.get.foreach(snykVulnResponse => {
+      snykVulnResponse.vulnerabilities.foreach(vulnerability => {
+        val securityVulnerability = vulnerability.asInstanceOf[SecurityVuln]
 
-      val vulnerabilityName = securityVulnerability.name
-      val vulnerabilityNameParts = vulnerabilityName.split(":")
+        val vulnerabilityName = securityVulnerability.name
+        val vulnerabilityNameParts = vulnerabilityName.split(":")
 
-      vulnerabilityNameParts.foreach(name => {
-        if (element.getText == name) {
-          import com.intellij.openapi.util.TextRange
+        vulnerabilityNameParts.foreach(name => {
+          if (element.getText == name) {
+            import com.intellij.openapi.util.TextRange
 
-          val range = new TextRange(element.getTextRange.getStartOffset, element.getTextRange.getEndOffset)
-          holder.createErrorAnnotation(range, "Vulnerable package")
-        }
+            val range = new TextRange(element.getTextRange.getStartOffset, element.getTextRange.getEndOffset)
+            holder.createErrorAnnotation(range, "Vulnerable package")
+          }
+        })
       })
     })
   }
