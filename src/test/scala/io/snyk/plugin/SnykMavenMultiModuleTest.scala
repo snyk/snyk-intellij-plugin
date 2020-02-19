@@ -8,6 +8,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.client.{ApiClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
+import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.SnykToolWindowFactory
 
 import scala.io.{Codec, Source}
@@ -36,7 +37,18 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
     val config = SnykConfig.default
     val apiClient = ApiClient.standard(config)
 
-    val triedResponse = apiClient.runScan(currentProject, SnykMavenArtifact.empty)
+    val mavenArtifact = SnykMavenArtifact(
+      "<none>",
+      "<none>",
+      "<none>",
+      "<none>",
+      None,
+      None,
+      Nil,
+      ProjectType.MAVEN
+    )
+
+    val triedResponse = apiClient.runScan(currentProject, mavenArtifact)
 
     assertTrue(triedResponse.isSuccess)
 
