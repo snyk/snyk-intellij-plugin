@@ -10,6 +10,10 @@ import io.snyk.plugin.client.{ApiClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.SnykToolWindowFactory
+import java.{util => ju}
+
+import io.snyk.plugin.ui.state.SnykPluginState
+import org.jetbrains.idea.maven.utils.MavenProgressIndicator
 
 import scala.io.{Codec, Source}
 
@@ -48,11 +52,36 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
       ProjectType.MAVEN
     )
 
-    val triedResponse = apiClient.runScan(currentProject, mavenArtifact)
+    val snykVulnResponseSeqTry = apiClient.runScan(currentProject, mavenArtifact)
 
-    assertTrue(triedResponse.isSuccess)
+    assertTrue(snykVulnResponseSeqTry.isSuccess)
 
-    val snykVulnResponseSeq = triedResponse.get
+    val snykVulnResponseSeq = snykVulnResponseSeqTry.get
+
+    assertEquals(3, snykVulnResponseSeq.size)
+
+    assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
+      snykVulnResponseSeq(0).vulnerabilities(0).asInstanceOf[SecurityVuln].id)
+    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-542935",
+      snykVulnResponseSeq(1).vulnerabilities(0).asInstanceOf[SecurityVuln].id)
+    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470",
+      snykVulnResponseSeq(1).vulnerabilities(1).asInstanceOf[SecurityVuln].id)
+  }
+
+  @Test
+  def testSnykPluginWithMultiModuleProject(): Unit = {
+    myProjectsTree
+      .update(ju.Arrays.asList({projectPomVirtualFile}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
+
+    waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
+
+    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+
+    val snykVulnResponseSeqOption = snykPluginState.latestScanForSelectedProject
+
+    assertTrue(snykVulnResponseSeqOption.isDefined)
+
+    val snykVulnResponseSeq = snykVulnResponseSeqOption.get
 
     assertEquals(3, snykVulnResponseSeq.size)
 
