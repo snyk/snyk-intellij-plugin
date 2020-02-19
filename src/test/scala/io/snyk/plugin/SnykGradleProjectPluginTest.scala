@@ -44,9 +44,9 @@ class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
 
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
 
-    assertEquals("gradle", snykPluginState.latestScanForSelectedProject.get.packageManager)
+    assertEquals("gradle", snykPluginState.latestScanForSelectedProject.get.head.packageManager)
 
-    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.vulnerabilities
+    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities
 
     assertEquals("One vulnerability expected", 4, vulnerabilities.size)
 

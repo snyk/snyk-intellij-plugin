@@ -105,7 +105,7 @@ abstract class AbstractMavenTestCase extends AbstractTestCase() {
   }
 
   protected def createPomXmlVirtualFile(directoryVirtualFile: VirtualFile, xml: String): VirtualFile = {
-    val pomXmlFile = new File(currentProject.getBasePath, POM_XML_FILE_NAME)
+    val pomXmlFile = new File(directoryVirtualFile.getCanonicalPath, POM_XML_FILE_NAME)
     pomXmlFile.createNewFile
 
     val pomXmlVirtualFile = LocalFileSystem.getInstance.refreshAndFindFileByIoFile(pomXmlFile)

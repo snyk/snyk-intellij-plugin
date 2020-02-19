@@ -25,7 +25,7 @@ class SnykCLIApiClientTest extends AbstractMavenTestCase() {
 
     assertTrue(triedSnykVulnResponse.isSuccess)
 
-    val vulnerabilities = triedSnykVulnResponse.get.vulnerabilities
+    val vulnerabilities = triedSnykVulnResponse.get.head.vulnerabilities
 
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
     assertEquals("org.codehaus.jackson:jackson-mapper-asl",
