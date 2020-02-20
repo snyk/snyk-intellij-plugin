@@ -175,7 +175,7 @@ abstract class AbstractGradleTestCase extends AbstractTestCase {
 
   protected def getCurrentExternalProjectSettings = myProjectSettings
 
-  private def doImportProject(): Unit = {
+  protected def doImportProject(): Unit = {
     val systemSettings =
       ExternalSystemApiUtil.getSettings(currentProject, GradleConstants.SYSTEM_ID)
         .asInstanceOf[AbstractExternalSystemSettings[GradleSettings, GradleProjectSettings, GradleSettingsListener]]
@@ -273,15 +273,15 @@ abstract class AbstractGradleTestCase extends AbstractTestCase {
     myProjectConfig
   }
 
-  protected def createConfigFile(dir: VirtualFile, config: String) = {
+  protected def createConfigFile(directoryVirtualFile: VirtualFile, config: String) = {
     val configFileName = getExternalSystemConfigFileName
 
     try {
       val configFile = WriteAction.computeAndWait(() => {
-        val file: VirtualFile = dir.findChild(configFileName)
+        val file: VirtualFile = directoryVirtualFile.findChild(configFileName)
 
         if (file == null) {
-          dir.createChildData(null, configFileName)
+          directoryVirtualFile.createChildData(null, configFileName)
         } else {
           file
         }

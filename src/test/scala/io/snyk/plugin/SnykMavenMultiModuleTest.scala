@@ -94,11 +94,11 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
   }
 
   private def createModule(moduleName: String, pomXmlStr: String): Unit = {
-    val webModuleDirectory = new File(currentProject.getBasePath, moduleName)
-    webModuleDirectory.mkdir()
+    val moduleDirectory = new File(currentProject.getBasePath, moduleName)
+    moduleDirectory.mkdir()
 
-    val webModuleDirectoryVirtualFile = LocalFileSystem.getInstance.refreshAndFindFileByIoFile(webModuleDirectory)
+    val moduleDirectoryVirtualFile = LocalFileSystem.getInstance.refreshAndFindFileByIoFile(moduleDirectory)
 
-    createPomXmlVirtualFile(webModuleDirectoryVirtualFile, pomXmlStr)
+    createPomXmlVirtualFile(moduleDirectoryVirtualFile, pomXmlStr)
   }
 }

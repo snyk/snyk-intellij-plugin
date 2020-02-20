@@ -1,0 +1,2 @@
+include 'template-core'
+include 'template-server'
