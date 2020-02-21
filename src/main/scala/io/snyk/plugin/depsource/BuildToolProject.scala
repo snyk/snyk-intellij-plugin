@@ -20,6 +20,22 @@ trait BuildToolProject {
   def getFile: VirtualFile
 
   def getType: String
+
+  override def toString: String = {
+    val groupName = normalizeString(getGroupId)
+    val artifactName = normalizeString(getArtifactId)
+    val version = normalizeString(getVersion)
+
+    s"$groupName:$artifactName:$version"
+  }
+
+  private def normalizeString(originalString: String): String = {
+    if (originalString == null || originalString == "unspecified") {
+      ""
+    } else {
+      getGroupId
+    }
+  }
 }
 
 case class MavenBuildToolProject(mavenProject: MavenProject) extends BuildToolProject {
