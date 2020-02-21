@@ -33,7 +33,7 @@ trait BuildToolProject {
     if (originalString == null || originalString == "unspecified") {
       ""
     } else {
-      getGroupId
+      originalString
     }
   }
 }
