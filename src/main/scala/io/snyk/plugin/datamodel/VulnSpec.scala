@@ -4,15 +4,15 @@ import io.circe.{Decoder, ObjectEncoder}
 import io.circe.derivation.{deriveDecoder, deriveEncoder}
 
 case class VulnSpec(
-  title            : String,
-  id               : String,
-  severity         : String,
-  module           : MavenCoords,
-  affectedVersions : Seq[String],
-  isUpgradable     : Boolean,
-  isPatchable      : Boolean,
-  isIgnored        : Boolean,
-  filterInfo       : Option[VulnFilteredInfo]
+                     title            : String,
+                     id               : String,
+                     severity         : String,
+                     module           : VulnerabilityCoordinate,
+                     affectedVersions : Seq[String],
+                     isUpgradable     : Boolean,
+                     isPatchable      : Boolean,
+                     isIgnored        : Boolean,
+                     filterInfo       : Option[VulnFilteredInfo]
 ) {
   /** for sorting **/
   def severityRank: Int = severity match {
@@ -47,7 +47,7 @@ object VulnSpec {
   def from(vuln: SecurityVuln): VulnSpec = VulnSpec(
     title            = vuln.title,
     id               = vuln.id,
-    module           = MavenCoords.from(vuln.moduleName, vuln.version),
+    module           = VulnerabilityCoordinate.from(vuln.moduleName, vuln.version),
     severity         = vuln.severity,
     affectedVersions = vuln.semver.vulnerable,
     isUpgradable     = vuln.isUpgradable,

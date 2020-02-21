@@ -8,8 +8,8 @@ import io.snyk.plugin.IntellijLogging
 
 
 case class VulnDerivation(
-  module       : MavenCoords,
-  remediations : Map[String, Seq[MiniTree[MavenCoords]]]
+                           module       : VulnerabilityCoordinate,
+                           remediations : Map[String, Seq[MiniTree[VulnerabilityCoordinate]]]
 )
 
 object VulnDerivation {
@@ -88,20 +88,20 @@ object MiniVuln extends IntellijLogging {
         mkDerivationSeq(
           fTail,
           upTail,
-          acc :+ VulnDerivation(MavenCoords.from(fHead), Map.empty)
+          acc :+ VulnDerivation(VulnerabilityCoordinate.from(fHead), Map.empty)
         )
 
       case (fHead +: fTail, up) if up.isEmpty =>
         mkDerivationSeq(
           fTail,
           Nil,
-          acc :+ VulnDerivation(MavenCoords.from(fHead), Map.empty)
+          acc :+ VulnDerivation(VulnerabilityCoordinate.from(fHead), Map.empty)
         )
 
       case (fHead +: fTail, Right(upHead) +: upTail) =>
-        val newCoords = MavenCoords.from(upHead)
+        val newCoords = VulnerabilityCoordinate.from(upHead)
         val newVersion = newCoords.version
-        val pivotSeq = upTail collect { case Right(ver) => MavenCoords.from(ver) }
+        val pivotSeq = upTail collect { case Right(ver) => VulnerabilityCoordinate.from(ver) }
         val pivot = MiniTree.fromLinear(pivotSeq) match {
           case Some(tree) => Map(newVersion -> Seq(tree))
           case None => Map(newVersion -> Nil)
@@ -110,7 +110,7 @@ object MiniVuln extends IntellijLogging {
         mkDerivationSeq(
           fTail,
           Nil,
-          acc :+ VulnDerivation(MavenCoords.from(fHead), pivot)
+          acc :+ VulnDerivation(VulnerabilityCoordinate.from(fHead), pivot)
         )
 
       case (f, _) if f.isEmpty =>
