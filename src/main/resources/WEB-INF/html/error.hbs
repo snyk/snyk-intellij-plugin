@@ -2,6 +2,11 @@
     <p id="errorMessageBlock">{{errmsg}}</p>
     <p><a id="showMoreDetailsButton" onclick="showMoreDetails()" style="display: none; cursor: pointer;">Show more details</a></p>
     <p><a id="hideMoreDetailsButton" onclick="hideMoreDetails()" style="display: none; cursor: pointer;">Hide details</a></p>
+    <p>
+        {{#if additionalInfo}}
+            {{additionalInfo}}
+        {{/if}}
+    </p>
     <p>Click <a href="/vulnerabilities">refresh</a> to try again.</p>
     <script>
         if (isErrorMessageToLong()) {
@@ -34,7 +39,7 @@
         function hideMoreDetails() {
             var errorMessageBlock = document.getElementById("errorMessageBlock");
 
-            errorMessageBlock.style.width = "500px";
+            errorMessageBlock.style.width = "0px";
             errorMessageBlock.style.whiteSpace = "nowrap";
             errorMessageBlock.style.overflow = "hidden";
             errorMessageBlock.style.textOverflow = "ellipsis";

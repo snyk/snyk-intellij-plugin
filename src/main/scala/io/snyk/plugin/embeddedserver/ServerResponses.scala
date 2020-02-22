@@ -47,7 +47,21 @@ trait ServerResponses { self: MiniServer =>
 
           navigateTo(successPath, params)
         } else {
-          onError(new RuntimeException(vulnResponse.error.get), params)
+          val errorMessage = vulnResponse.error.get
+
+          log.debug(s"Error message: $errorMessage")
+
+          val errorParameters = if (errorMessage.contains("Maven") && errorMessage.contains("[ERROR]")) {
+            params
+              .plus("errmsg" -> errorMessage)
+              .plus("additionalInfo" -> "Please, try to run 'mvn install'.")
+          } else {
+            params.plus("errmsg" -> errorMessage)
+          }
+
+          log.debug(s"Navigate to error page with parameters: $errorParameters")
+
+          navigateTo("/error", errorParameters)
         }
 
       case Failure(x) => onError(x, params)
