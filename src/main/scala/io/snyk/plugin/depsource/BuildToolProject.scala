@@ -21,6 +21,8 @@ trait BuildToolProject {
 
   def getType: String
 
+  def getProjectDirectoryPath: String
+
   override def toString: String = {
     val groupName = normalizeString(getGroupId)
     val artifactName = normalizeString(getArtifactId)
@@ -38,7 +40,7 @@ trait BuildToolProject {
   }
 }
 
-case class MavenBuildToolProject(mavenProject: MavenProject) extends BuildToolProject {
+case class MavenBuildToolProject(mavenProject: MavenProject, projectDirectoryPath: String) extends BuildToolProject {
 
   def findDependencies(groupId: String, artifactId: String): util.List[MavenArtifact] = {
     mavenProject.findDependencies(groupId, artifactId)
@@ -55,9 +57,11 @@ case class MavenBuildToolProject(mavenProject: MavenProject) extends BuildToolPr
   override def getFile: VirtualFile = mavenProject.getFile
 
   override def getType: String = ProjectType.MAVEN
+
+  override def getProjectDirectoryPath: String = projectDirectoryPath
 }
 
-case class GradleBuildToolProject(moduleData: ModuleData) extends BuildToolProject {
+case class GradleBuildToolProject(moduleData: ModuleData, projectDirectoryPath: String) extends BuildToolProject {
 
   private val BUILD_GRADLE_FILE_NAME = "build.gradle"
 
@@ -78,4 +82,6 @@ case class GradleBuildToolProject(moduleData: ModuleData) extends BuildToolProje
   }
 
   override def getType: String = ProjectType.GRADLE
+
+  override def getProjectDirectoryPath: String = projectDirectoryPath
 }

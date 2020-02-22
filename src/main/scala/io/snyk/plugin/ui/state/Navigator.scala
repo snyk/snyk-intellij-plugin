@@ -1,10 +1,12 @@
 package io.snyk.plugin
 package ui.state
 
+import java.io.File
 import java.util.ArrayList
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.pom.NavigatableAdapter
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.{PsiElement, PsiManager, PsiRecursiveElementWalkingVisitor}
@@ -19,7 +21,7 @@ import monix.execution.Scheduler.Implicits.global
 
 trait Navigator {
   def navigateTo(path: String, params: ParamSet): Future[String]
-  def navigateToDependency(group: String, name: String, projectId: String): Future[Unit]
+  def navigateToDependency(group: String, name: String, projectId: String, cliProjectName: String, cliTargetFile: String): Future[Unit]
 
   def navToVulns(): Future[String] = navigateTo("/vulnerabilities", ParamSet.Empty)
   def navToScanning(): Future[String] = navigateTo("/scanning", ParamSet.Empty)
@@ -59,10 +61,11 @@ object Navigator extends IntellijLogging {
       * Use MavenProjectsManager to open the editor and highlight where the specified artifact
       * is imported.
       */
-    override def navigateToDependency(
-      group: String,
-      name: String,
-      projectId: String
+    override def navigateToDependency(group: String,
+                                      name: String,
+                                      projectId: String,
+                                      cliProjectName: String,
+                                      cliTargetFilePath: String
     ): Future[Unit] = idToProject(projectId) map { buildToolProject =>
       val promisedUnit = Promise[Unit]
 
@@ -71,8 +74,8 @@ object Navigator extends IntellijLogging {
 
         promisedUnit complete Try {
           buildToolProject.getType match {
-            case ProjectType.MAVEN => openMavenDependency(group, name, buildToolProject)
-            case ProjectType.GRADLE => openGradleDependency(group, name, buildToolProject)
+            case ProjectType.MAVEN => openMavenDependency(group, name, buildToolProject, cliTargetFilePath)
+            case ProjectType.GRADLE => openGradleDependency(group, name, buildToolProject, cliProjectName, cliTargetFilePath)
           }
         }
       }
@@ -82,10 +85,15 @@ object Navigator extends IntellijLogging {
 
     override def reloadWebView(): Unit = toolWindow.htmlPanel.reload()
 
-    private[this] def openMavenDependency(group: String, name: String, buildToolProject: BuildToolProject): Unit = {
-      val pomXmlVirtualFile = buildToolProject.getFile
+    private[this] def openMavenDependency(group: String,
+                                          name: String,
+                                          buildToolProject: BuildToolProject,
+                                          cliTargetFilePath: String): Unit = {
+      val destinationFile = new File(buildToolProject.getProjectDirectoryPath + File.separator + cliTargetFilePath)
 
-      val psiFile = PsiManager.getInstance(project).findFile(pomXmlVirtualFile)
+      val destinationVirtualFile = VfsUtil.findFileByIoFile(destinationFile, true)
+
+      val psiFile = PsiManager.getInstance(project).findFile(destinationVirtualFile)
 
       val pomXmlPsiElement = PsiTreeUtil.getChildrenOfType(psiFile, classOf[PsiElement])
 
@@ -103,12 +111,31 @@ object Navigator extends IntellijLogging {
 
       if (!navigateToDependencyPsiElements.isEmpty) {
         NavigatableAdapter
-          .navigate(project, pomXmlVirtualFile, navigateToDependencyPsiElements.get(0).getTextRange.getStartOffset, true)
+          .navigate(project, destinationVirtualFile, navigateToDependencyPsiElements.get(0).getTextRange.getStartOffset, true)
       }
     }
 
-    private[this] def openGradleDependency(group: String, name: String, buildToolProject: BuildToolProject): Unit = {
-      val gradleBuildVirtualFile = buildToolProject.getFile
+    private[this] def openGradleDependency(group: String,
+                                           name: String,
+                                           buildToolProject: BuildToolProject,
+                                           cliProjectName: String,
+                                           cliTargetFilePath: String): Unit = {
+      val projectModuleParts = cliProjectName.split("/")
+
+      // If it's multi module part project name will contain 'project-name/module-name' from CLI.
+      val gradleBuildFile = if (projectModuleParts.size > 1) {
+        new File(buildToolProject.getProjectDirectoryPath
+          + File.separator
+          + projectModuleParts(1)
+          + File.separator
+          + cliTargetFilePath)
+      } else {
+        new File(buildToolProject.getProjectDirectoryPath + File.separator + cliTargetFilePath)
+      }
+
+      import com.intellij.openapi.vfs.VfsUtil
+
+      val gradleBuildVirtualFile = VfsUtil.findFileByIoFile(gradleBuildFile, true)
 
       val psiFile = PsiManager.getInstance(project).findFile(gradleBuildVirtualFile)
 
@@ -123,7 +150,7 @@ object Navigator extends IntellijLogging {
           val elementText = element.getText
 
           if (!elementText.startsWith(DEPENDENCIES_KEY) && !elementText.contains("\n")
-              && elementText.contains(group) && elementText.contains(name)) {
+            && elementText.contains(group) && elementText.contains(name)) {
 
             navigateToDependencyPsiElements.add(element)
           }
@@ -131,6 +158,7 @@ object Navigator extends IntellijLogging {
           super.visitElement(element)
         }
       })
+
 
       if (!navigateToDependencyPsiElements.isEmpty) {
         NavigatableAdapter
@@ -145,7 +173,7 @@ object Navigator extends IntellijLogging {
       Future.successful(path)
     }
 
-    override def navigateToDependency(group: String, name: String, projectId: String): Future[Unit] = {
+    override def navigateToDependency(group: String, name: String, projectId: String, cliProjectName: String, targetFile: String): Future[Unit] = {
       log.info(s"MockSnykPluginState.navToArtifact($group, $name)")
       Future.successful(())
     }
