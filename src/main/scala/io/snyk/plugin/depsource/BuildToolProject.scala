@@ -22,22 +22,6 @@ trait BuildToolProject {
   def getType: String
 
   def getProjectDirectoryPath: String
-
-  override def toString: String = {
-    val groupName = normalizeString(getGroupId)
-    val artifactName = normalizeString(getArtifactId)
-    val version = normalizeString(getVersion)
-
-    s"$groupName:$artifactName:$version"
-  }
-
-  private def normalizeString(originalString: String): String = {
-    if (originalString == null || originalString == "unspecified") {
-      ""
-    } else {
-      originalString
-    }
-  }
 }
 
 case class MavenBuildToolProject(mavenProject: MavenProject, projectDirectoryPath: String) extends BuildToolProject {
@@ -59,6 +43,8 @@ case class MavenBuildToolProject(mavenProject: MavenProject, projectDirectoryPat
   override def getType: String = ProjectType.MAVEN
 
   override def getProjectDirectoryPath: String = projectDirectoryPath
+
+  override def toString: String = mavenProject.toString
 }
 
 case class GradleBuildToolProject(moduleData: ModuleData, projectDirectoryPath: String) extends BuildToolProject {
@@ -84,4 +70,30 @@ case class GradleBuildToolProject(moduleData: ModuleData, projectDirectoryPath: 
   override def getType: String = ProjectType.GRADLE
 
   override def getProjectDirectoryPath: String = projectDirectoryPath
+
+  override def toString: String = {
+    val groupName = normalizeString(getGroupId)
+    val artifactName = normalizeString(getArtifactId)
+    val version = normalizeString(getVersion)
+
+    val projectName = new StringBuilder(s"$groupName:$artifactName:$version")
+
+    if (projectName.charAt(0) == ':') {
+      projectName.deleteCharAt(0)
+    }
+
+    if (projectName.charAt(projectName.size - 1) == ':') {
+      projectName.deleteCharAt(projectName.size - 1)
+    }
+
+    projectName.toString
+  }
+
+  private def normalizeString(originalString: String): String = {
+    if (originalString == null || originalString == "unspecified") {
+      ""
+    } else {
+      originalString
+    }
+  }
 }
