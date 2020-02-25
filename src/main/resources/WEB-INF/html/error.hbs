@@ -4,7 +4,7 @@
     <p><a id="hideMoreDetailsButton" onclick="hideMoreDetails()" style="display: none; cursor: pointer;">Hide details</a></p>
     <p>
         {{#if additionalInfo}}
-            {{additionalInfo}}
+            {{additionalInfo}} <b><i>{{suggestedFixCommand}}</i></b>.
         {{/if}}
     </p>
     <p>Click <a href="/vulnerabilities">refresh</a> to try again.</p>
