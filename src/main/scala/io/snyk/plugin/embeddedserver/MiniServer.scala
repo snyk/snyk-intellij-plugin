@@ -20,10 +20,10 @@ import scala.util.{Failure, Success}
   * then asynchronously show the requested URL once the scan is complete
   */
 class MiniServer(
-                  protected val pluginState: SnykPluginState,
-                  colorProvider: ColorProvider,
-                  port0: Int = 0
-                ) extends NanoHTTPD(port0)
+    protected val pluginState: SnykPluginState,
+    colorProvider: ColorProvider,
+    port0: Int = 0
+  ) extends NanoHTTPD(port0)
   with ServerFilters
   with ServerResponses
   with IntellijLogging

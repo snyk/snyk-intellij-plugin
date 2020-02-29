@@ -6,10 +6,9 @@ import io.circe.derivation.{deriveDecoder, deriveEncoder}
 import scala.annotation.tailrec
 import io.snyk.plugin.IntellijLogging
 
-
 case class VulnDerivation(
-                           module       : VulnerabilityCoordinate,
-                           remediations : Map[String, Seq[MiniTree[VulnerabilityCoordinate]]]
+  module: VulnerabilityCoordinate,
+  remediations: Map[String, Seq[MiniTree[VulnerabilityCoordinate]]]
 )
 
 object VulnDerivation {

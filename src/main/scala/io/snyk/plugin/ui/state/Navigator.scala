@@ -21,6 +21,7 @@ import monix.execution.Scheduler.Implicits.global
 
 trait Navigator {
   def navigateTo(path: String, params: ParamSet): Future[String]
+
   def navigateToDependency(group: String, name: String, projectId: String, cliProjectName: String, cliTargetFile: String): Future[Unit]
 
   def navToVulns(): Future[String] = navigateTo("/vulnerabilities", ParamSet.Empty)
@@ -33,16 +34,18 @@ object Navigator extends IntellijLogging {
 
   private val DEPENDENCIES_KEY = "dependencies"
 
-  def newInstance(project: Project,
-                  toolWindow: SnykToolWindow,
-                  idToProject: String => Option[BuildToolProject]
-                 ): Navigator = new IntellijNavigator(project, toolWindow, idToProject)
+  def newInstance(
+    project: Project,
+    toolWindow: SnykToolWindow,
+    idToProject: String => Option[BuildToolProject]
+  ): Navigator = new IntellijNavigator(project, toolWindow, idToProject)
 
   def mock: Navigator = MockNavigator
 
-  class IntellijNavigator(project: Project,
-                          toolWindow: SnykToolWindow,
-                          idToProject: String => Option[BuildToolProject]) extends Navigator {
+  class IntellijNavigator(
+    project: Project,
+    toolWindow: SnykToolWindow,
+    idToProject: String => Option[BuildToolProject]) extends Navigator {
 
     override def navigateTo(path: String, params: ParamSet): Future[String] = {
       val p = Promise[String]
@@ -61,11 +64,12 @@ object Navigator extends IntellijLogging {
       * Use MavenProjectsManager to open the editor and highlight where the specified artifact
       * is imported.
       */
-    override def navigateToDependency(group: String,
-                                      name: String,
-                                      projectId: String,
-                                      cliProjectName: String,
-                                      cliTargetFilePath: String
+    override def navigateToDependency(
+      group: String,
+      name: String,
+      projectId: String,
+      cliProjectName: String,
+      cliTargetFilePath: String
     ): Future[Unit] = idToProject(projectId) map { buildToolProject =>
       val promisedUnit = Promise[Unit]
 
@@ -85,10 +89,12 @@ object Navigator extends IntellijLogging {
 
     override def reloadWebView(): Unit = toolWindow.htmlPanel.reload()
 
-    private[this] def openMavenDependency(group: String,
-                                          name: String,
-                                          buildToolProject: BuildToolProject,
-                                          cliTargetFilePath: String): Unit = {
+    private[this] def openMavenDependency(
+      group: String,
+      name: String,
+      buildToolProject: BuildToolProject,
+      cliTargetFilePath: String): Unit = {
+
       val destinationFile = new File(buildToolProject.getProjectDirectoryPath + File.separator + cliTargetFilePath)
 
       val destinationVirtualFile = VfsUtil.findFileByIoFile(destinationFile, true)
@@ -115,11 +121,13 @@ object Navigator extends IntellijLogging {
       }
     }
 
-    private[this] def openGradleDependency(group: String,
-                                           name: String,
-                                           buildToolProject: BuildToolProject,
-                                           cliProjectName: String,
-                                           cliTargetFilePath: String): Unit = {
+    private[this] def openGradleDependency(
+      group: String,
+      name: String,
+      buildToolProject: BuildToolProject,
+      cliProjectName: String,
+      cliTargetFilePath: String): Unit = {
+
       val projectModuleParts = cliProjectName.split("/")
 
       // If it's multi module part project name will contain 'project-name/module-name' from CLI.
@@ -158,7 +166,6 @@ object Navigator extends IntellijLogging {
           super.visitElement(element)
         }
       })
-
 
       if (!navigateToDependencyPsiElements.isEmpty) {
         NavigatableAdapter
