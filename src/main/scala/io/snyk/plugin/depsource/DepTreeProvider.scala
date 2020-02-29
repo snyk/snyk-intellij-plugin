@@ -1,5 +1,6 @@
 package io.snyk.plugin.depsource
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.externalSystem.model.{DataNode, ExternalProjectInfo, ProjectKeys, ProjectSystemId}
 import com.intellij.openapi.externalSystem.model.project.{ModuleData, ProjectData}
 import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
@@ -19,6 +20,8 @@ trait DepTreeProvider {
 }
 
 private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
+
+  private val logger = Logger.getInstance(this.getClass)
 
   private[this] def isMavenProject: Boolean = !MavenProjectsManager.getInstance(project).getProjects.isEmpty
 
@@ -64,7 +67,7 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     } else if (isGradleProject) {
       getGradleBuildToolProjects
     } else {
-      println(project, "Project type is not supported") // FIXME: replace with log.info message.
+      logger.info("Project type is not supported.")
 
       Seq()
     }
