@@ -41,9 +41,15 @@ trait ServerResponses { self: MiniServer =>
   ): Future[SnykVulnResponse] = {
     log.debug(s"triggered async scan, will redirect to $successPath with params $params")
     pluginState.performScan() andThen {
-      case Success(_) =>
-        log.debug(s"async scan success, redirecting to $successPath with params $params")
-        navigateTo(successPath, params)
+      case Success(vulnResponse) => {
+        if (vulnResponse.error.isEmpty) {
+          log.debug(s"async scan success, redirecting to $successPath with params $params")
+
+          navigateTo(successPath, params)
+        } else {
+          onError(new RuntimeException(vulnResponse.error.get), params)
+        }
+      }
       case Failure(x) => onError(x, params)
     }
   }
