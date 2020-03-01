@@ -1,4 +1,51 @@
 {{#> @interstitial img="/assets/images/snyk-logo.svg" title="An Error Occurred"}}
-    <p>{{errmsg}}</p>
+    <p id="errorMessageBlock">{{errmsg}}</p>
+    <p><a id="showMoreDetailsButton" onclick="showMoreDetails()" style="display: none; cursor: pointer;">Show more details</a></p>
+    <p><a id="hideMoreDetailsButton" onclick="hideMoreDetails()" style="display: none; cursor: pointer;">Hide details</a></p>
     <p>Click <a href="/vulnerabilities">refresh</a> to try again.</p>
+    <script>
+        if (isErrorMessageToLong()) {
+            hideMoreDetails();
+        }
+
+        function isErrorMessageToLong() {
+            var text = document.getElementById("errorMessageBlock").textContent;
+
+            return text.length > 100;
+        }
+
+        function showMoreDetails() {
+            var errorMessageBlock = document.getElementById("errorMessageBlock");
+
+            errorMessageBlock.style.width = "";
+            errorMessageBlock.style.whiteSpace = "";
+            errorMessageBlock.style.overflow = "";
+            errorMessageBlock.style.textOverflow = "";
+
+            var hideMoreDetailsButton = document.getElementById("hideMoreDetailsButton");
+
+            hideMoreDetailsButton.style.display = 'block';
+
+            var showMoreDetailsButton = document.getElementById("showMoreDetailsButton");
+
+            showMoreDetailsButton.style.display = 'none';
+        }
+
+        function hideMoreDetails() {
+            var errorMessageBlock = document.getElementById("errorMessageBlock");
+
+            errorMessageBlock.style.width = "500px";
+            errorMessageBlock.style.whiteSpace = "nowrap";
+            errorMessageBlock.style.overflow = "hidden";
+            errorMessageBlock.style.textOverflow = "ellipsis";
+
+            var showMoreDetailsButton = document.getElementById("showMoreDetailsButton");
+
+            showMoreDetailsButton.style.display = 'block';
+
+            var hideMoreDetailsButton = document.getElementById("hideMoreDetailsButton");
+
+            hideMoreDetailsButton.style.display = 'none';
+        }
+    </script>
 {{/@interstitial}}
