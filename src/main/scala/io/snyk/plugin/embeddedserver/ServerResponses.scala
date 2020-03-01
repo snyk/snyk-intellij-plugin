@@ -54,7 +54,8 @@ trait ServerResponses { self: MiniServer =>
           val errorParameters = if (errorMessage.contains("Maven") && errorMessage.contains("[ERROR]")) {
             params
               .plus("errmsg" -> errorMessage)
-              .plus("additionalInfo" -> "Please, try to run 'mvn install'.")
+              .plus("additionalInfo" -> "Please, try to run ")
+              .plus("suggestedFixCommand" -> "mvn install")
           } else {
             params.plus("errmsg" -> errorMessage)
           }
