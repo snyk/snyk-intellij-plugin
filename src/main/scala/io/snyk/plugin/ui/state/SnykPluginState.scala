@@ -232,7 +232,6 @@ object SnykPluginState {
     override def getProject: Project = ???
 
     override def gradleProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
-  }
 
     override def latestScanForSelectedProject: Option[SnykVulnResponse] = {
       val treeRoot: SnykMavenArtifact = SnykMavenArtifact.empty
