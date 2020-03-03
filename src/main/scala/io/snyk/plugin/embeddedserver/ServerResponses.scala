@@ -41,9 +41,30 @@ trait ServerResponses { self: MiniServer =>
   ): Future[SnykVulnResponse] = {
     log.debug(s"triggered async scan, will redirect to $successPath with params $params")
     pluginState.performScan() andThen {
-      case Success(_) =>
-        log.debug(s"async scan success, redirecting to $successPath with params $params")
-        navigateTo(successPath, params)
+      case Success(vulnResponse) => {
+        if (vulnResponse.error.isEmpty) {
+          log.debug(s"async scan success, redirecting to $successPath with params $params")
+
+          navigateTo(successPath, params)
+        } else {
+          val errorMessage = vulnResponse.error.get
+
+          log.debug(s"Error message: $errorMessage")
+
+          val errorParameters = if (errorMessage.contains("Maven") && errorMessage.contains("[ERROR]")) {
+            params
+              .plus("errmsg" -> errorMessage)
+              .plus("additionalInfo" -> "Please, try to run ")
+              .plus("suggestedFixCommand" -> "mvn install")
+          } else {
+            params.plus("errmsg" -> errorMessage)
+          }
+
+          log.debug(s"Navigate to error page with parameters: $errorParameters")
+
+          navigateTo("/error", errorParameters)
+        }
+      }
       case Failure(x) => onError(x, params)
     }
   }
