@@ -1,10 +1,12 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.client.{CliClient, SnykConfig}
+import java.util
+
+import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, SnykConfig}
 import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.state.SnykPluginState
-import org.junit.Assert.{assertEquals, assertNotNull, assertTrue}
+import org.junit.Assert.{assertEquals, assertFalse, assertNotNull, assertTrue}
 import org.junit.Test
 
 import scala.io.{Codec, Source}
@@ -51,6 +53,32 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
     assertEquals("org.codehaus.jackson:jackson-mapper-asl",
-      vulnerabilities.head.asInstanceOf[SecurityVuln].moduleName)
+      vulnerabilities.head.head.asInstanceOf[SecurityVuln].moduleName)
+  }
+
+  @Test
+  def testIsCliInstalledFailed(): Unit = {
+    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+
+    val isCliInstalled = snykPluginState.apiClient.isCliInstalled(new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "command not found"
+      }
+    })
+
+    assertFalse(isCliInstalled)
+  }
+
+  @Test
+  def testIsCliInstalledSuccess(): Unit = {
+    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+
+    val isCliInstalled = snykPluginState.apiClient.isCliInstalled(new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "1.290.2"
+      }
+    })
+
+    assertTrue(isCliInstalled)
   }
 }
