@@ -1,14 +1,15 @@
 package io.snyk.plugin
 
+import io.snyk.plugin.client.{CliClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.state.SnykPluginState
-import org.junit.Assert.{assertEquals, assertTrue}
+import org.junit.Assert.{assertEquals, assertNotNull, assertTrue}
 import org.junit.Test
 
 import scala.io.{Codec, Source}
 
-class SnykCliApiTest extends AbstractMavenTestCase() {
+class SnykCliClientTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {
     super.setUp()
@@ -16,6 +17,15 @@ class SnykCliApiTest extends AbstractMavenTestCase() {
     val projectXmlStr = Source.fromResource("sample-pom.xml", getClass.getClassLoader)(Codec.UTF8).mkString
 
     importProject(projectXmlStr)
+  }
+
+  @Test
+  def testUserInfoEndpoint(): Unit = {
+    val config = SnykConfig.default
+    val apiClient = CliClient.standard(config)
+
+    assertNotNull(apiClient)
+    assertTrue(apiClient.userInfo().isSuccess)
   }
 
   @Test
