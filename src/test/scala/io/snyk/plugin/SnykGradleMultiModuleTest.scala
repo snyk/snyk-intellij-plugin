@@ -8,7 +8,7 @@ import com.intellij.openapi.externalSystem.service.notification.ExternalSystemPr
 import com.intellij.openapi.externalSystem.service.remote.RemoteExternalSystemProgressNotificationManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
-import io.snyk.plugin.client.{ApiClient, SnykConfig}
+import io.snyk.plugin.client.{CliClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.SnykToolWindowFactory
@@ -52,7 +52,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
   @Test
   def testRunScanForMultiModuleProject(): Unit = {
     val config = SnykConfig.default
-    val apiClient = ApiClient.standard(config)
+    val apiClient = CliClient.standard(config)
 
     val artifact = SnykMavenArtifact(
       "<none>",
