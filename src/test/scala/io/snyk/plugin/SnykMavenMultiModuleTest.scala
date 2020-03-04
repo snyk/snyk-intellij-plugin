@@ -61,11 +61,11 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
     assertEquals(3, snykVulnResponseSeq.size)
 
     assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
-      snykVulnResponseSeq(0).vulnerabilities(0).asInstanceOf[SecurityVuln].id)
+      snykVulnResponseSeq(0).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
     assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-542935",
-      snykVulnResponseSeq(1).vulnerabilities(0).asInstanceOf[SecurityVuln].id)
+      snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
     assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470",
-      snykVulnResponseSeq(1).vulnerabilities(1).asInstanceOf[SecurityVuln].id)
+      snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
   }
 
   @Test
@@ -86,11 +86,11 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
     assertEquals(3, snykVulnResponseSeq.size)
 
     assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
-      snykVulnResponseSeq(0).vulnerabilities(0).asInstanceOf[SecurityVuln].id)
+      snykVulnResponseSeq(0).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
     assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-542935",
-      snykVulnResponseSeq(1).vulnerabilities(0).asInstanceOf[SecurityVuln].id)
+      snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
     assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470",
-      snykVulnResponseSeq(1).vulnerabilities(1).asInstanceOf[SecurityVuln].id)
+      snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
   }
 
   private def createModule(moduleName: String, pomXmlStr: String): Unit = {

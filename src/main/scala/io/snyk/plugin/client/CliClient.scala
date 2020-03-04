@@ -145,7 +145,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
       throw new FileNotFoundException("pom.xml")
     }
 
-    new ConsoleCommandRunner().execute(commands)
+    new ConsoleCommandRunner().execute(commands, projectPath)
   }
 
   def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = {
