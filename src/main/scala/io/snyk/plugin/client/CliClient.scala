@@ -21,6 +21,7 @@ import io.circe.{Json, Printer}
 
 import scala.util.{Failure, Success, Try}
 import java.nio.file.{Files, Path, Paths}
+import java.util.regex.Pattern
 
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.depsource.ProjectType
@@ -34,6 +35,15 @@ sealed trait CliClient {
   def userInfo(): Try[SnykUserInfo]
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
+
+  /**
+    * Check is Snyk CLI is installed.
+    *
+    * @param consoleCommandRunner - for command execution and possibility to test
+    *
+    * @return Boolean
+    */
+  def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean
 }
 
 /**
@@ -135,11 +145,30 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
       throw new FileNotFoundException("pom.xml")
     }
 
-    val generalCommandLine = new GeneralCommandLine(commands)
-    generalCommandLine.setCharset(Charset.forName("UTF-8"))
-    generalCommandLine.setWorkDirectory(projectPath)
+    new ConsoleCommandRunner().execute(commands)
+  }
 
-    ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 120000)
+  def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = {
+    log.debug("Check is Snyk CLI is installed")
+
+    val commands: util.ArrayList[String] = new util.ArrayList[String]
+    commands.add("snyk")
+    commands.add("--version")
+
+    try {
+      val consoleResultStr = consoleCommandRunner.execute(commands)
+
+      val pattern = Pattern.compile("^\\d+\\.\\d+\\.\\d+")
+      val matcher = pattern.matcher(consoleResultStr.trim)
+
+      matcher.matches()
+    } catch {
+      case exception: Exception => {
+        println(exception.getMessage)
+
+        false
+      }
+    }
   }
 
   private def userInfoRaw(): Try[String] = tryConfig flatMap { config =>
@@ -192,6 +221,8 @@ private final class MockCliClient (mockResponder: SnykMavenArtifact => Try[Strin
     val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")
     SnykUserInfo("mockuser", "mock user", "mock@user", OffsetDateTime.now(), uri, UUID.randomUUID())
   }
+
+  def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = true
 }
 
 /**
@@ -212,4 +243,19 @@ object CliClient {
     */
   def mock(mockResponder: SnykMavenArtifact => Try[String]): CliClient =
     new MockCliClient(mockResponder)
+}
+
+/**
+  * Encapsulate work with IntelliJ OpenAPI {@link ScriptRunnerUtil}
+  */
+class ConsoleCommandRunner {
+
+  def execute(commands: util.ArrayList[String], workDirectory: String = "/"): String = {
+    val generalCommandLine = new GeneralCommandLine(commands)
+
+    generalCommandLine.setCharset(Charset.forName("UTF-8"))
+    generalCommandLine.setWorkDirectory(workDirectory)
+
+    ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 120000)
+  }
 }
