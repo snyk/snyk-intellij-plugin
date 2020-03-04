@@ -1,0 +1,7 @@
+apply plugin: 'application'
+
+mainClassName = 'io.jeffchao.template.server.Server'
+
+dependencies {
+    compile group: 'org.jolokia', name: 'jolokia-core', version: '1.2.2'
+}

@@ -1,12 +1,12 @@
 package io.snyk.plugin.depsource
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.externalSystem.model.{DataNode, ExternalProjectInfo, ProjectKeys, ProjectSystemId}
 import com.intellij.openapi.externalSystem.model.project.{ModuleData, ProjectData}
 import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.datamodel.SnykMavenArtifact
-import io.snyk.plugin.ui.NotificationService
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
@@ -21,6 +21,8 @@ trait DepTreeProvider {
 
 private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
+  private val logger = Logger.getInstance(this.getClass)
+
   private[this] def isMavenProject: Boolean = !MavenProjectsManager.getInstance(project).getProjects.isEmpty
 
   private[this] def isGradleProject: Boolean = !GradleSettings.getInstance(project).getLinkedProjectsSettings.isEmpty
@@ -29,7 +31,7 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     val mavenProjects = MavenProjectsManager.getInstance(project).getProjects.asScala
 
     mavenProjects.map(mavenProject => {
-      MavenBuildToolProject(mavenProject)
+      MavenBuildToolProject(mavenProject, project.getBasePath)
     })
   }
 
@@ -39,11 +41,23 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     gradleProjects.map(gradleSettings => {
       val projectPath = gradleSettings.getExternalProjectPath
 
-      val projectData = findProjectData(project, GradleConstants.SYSTEM_ID, projectPath)
+      val projectDataOption = findProjectData(project, GradleConstants.SYSTEM_ID, projectPath)
 
-      val gradleModuleData = ExternalSystemApiUtil.find(projectData, ProjectKeys.MODULE)
+      if (projectDataOption.isDefined) {
+        val gradleModuleData = ExternalSystemApiUtil.find(projectDataOption.get, ProjectKeys.MODULE)
 
-      GradleBuildToolProject(gradleModuleData.getData)
+        GradleBuildToolProject(gradleModuleData.getData, projectPath)
+      } else {
+        val emptyModuleData = new ModuleData(
+          project.getName,
+          new ProjectSystemId(ProjectType.GRADLE),
+          ProjectType.GRADLE,
+          project.getName,
+          projectPath,
+          projectPath)
+
+        GradleBuildToolProject(emptyModuleData, projectPath)
+      }
     }).toList
   }
 
@@ -53,7 +67,7 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     } else if (isGradleProject) {
       getGradleBuildToolProjects
     } else {
-      NotificationService.showWarning(project, "Project type is not supported")
+      logger.info("Project type is not supported.")
 
       Seq()
     }
@@ -71,22 +85,24 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     maybeBuildToolProject map SnykMavenArtifact.fromBuildToolProject
   }
 
-  def findGradleModuleData(project: Project, projectPath: String): DataNode[ModuleData] = {
-    val projectNode = findProjectData(project, GradleConstants.SYSTEM_ID, projectPath)
+  def findGradleModuleData(project: Project, projectPath: String): Option[DataNode[ModuleData]] = {
+    val projectNodeOption = findProjectData(project, GradleConstants.SYSTEM_ID, projectPath)
 
-    val predicate = (node: DataNode[ModuleData]) => projectPath == node.getData.getLinkedExternalProjectPath
-
-    ExternalSystemApiUtil.find(projectNode, ProjectKeys.MODULE)
+    if (projectNodeOption.isDefined) {
+      Option(ExternalSystemApiUtil.find(projectNodeOption.get, ProjectKeys.MODULE))
+    } else {
+      Option.empty
+    }
   }
 
-  def findProjectData(project: Project, systemId: ProjectSystemId, projectPath: String): DataNode[ProjectData] = {
+  def findProjectData(project: Project, systemId: ProjectSystemId, projectPath: String): Option[DataNode[ProjectData]] = {
     val projectInfo = findProjectInfo(project, systemId, projectPath)
 
     if (projectInfo == null) {
-      return null
+      return Option.empty
     }
 
-    projectInfo.getExternalProjectStructure
+    Option(projectInfo.getExternalProjectStructure)
   }
 
   def findProjectInfo(project: Project, systemId: ProjectSystemId, projectPath: String): ExternalProjectInfo = {

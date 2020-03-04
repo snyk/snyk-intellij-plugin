@@ -1,13 +1,14 @@
 package io.snyk.plugin
 
 import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
+import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
 import scala.io.{Codec, Source}
 
-class SnykCLIApiClientTest extends AbstractMavenTestCase() {
+class SnykCliApiTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {
     super.setUp()
@@ -21,11 +22,22 @@ class SnykCLIApiClientTest extends AbstractMavenTestCase() {
   def testRunScan(): Unit = {
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
-    val triedSnykVulnResponse = snykPluginState.apiClient.runScan(currentProject, SnykMavenArtifact.empty)
+    val mavenArtifact = SnykMavenArtifact(
+      "<none>",
+      "<none>",
+      "<none>",
+      "<none>",
+      None,
+      None,
+      Nil,
+      ProjectType.MAVEN
+    )
 
-    assertTrue(triedSnykVulnResponse.isSuccess)
+    val snykVulnResponse = snykPluginState.apiClient.runScan(currentProject, mavenArtifact)
 
-    val vulnerabilities = triedSnykVulnResponse.get.vulnerabilities
+    assertTrue(snykVulnResponse.isSuccess)
+
+    val vulnerabilities = snykVulnResponse.get.head.vulnerabilities
 
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
     assertEquals("org.codehaus.jackson:jackson-mapper-asl",

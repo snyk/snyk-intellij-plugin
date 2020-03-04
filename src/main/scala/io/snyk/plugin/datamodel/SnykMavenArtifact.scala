@@ -19,7 +19,8 @@ object SnykMavenArtifact {
       n.getArtifact.getType,
       Option(n.getArtifact.getClassifier),
       Option(n.getArtifact.getScope),
-      n.getDependencies.asScala.map { fromMavenArtifactNode }
+      n.getDependencies.asScala.map { fromMavenArtifactNode },
+      "Maven"
     )
   }
 
@@ -31,7 +32,8 @@ object SnykMavenArtifact {
       proj.getPackaging,
       None,
       None,
-      proj.getDependencyTree.asScala.map { SnykMavenArtifact.fromMavenArtifactNode }
+      proj.getDependencyTree.asScala.map { SnykMavenArtifact.fromMavenArtifactNode },
+      "Maven"
     )
   }
 
@@ -43,7 +45,8 @@ object SnykMavenArtifact {
       buildToolProject.getPackaging,
       None,
       None,
-      List.empty[SnykMavenArtifact]
+      List.empty[SnykMavenArtifact],
+      buildToolProject.getType
     )
   }
 
@@ -54,7 +57,8 @@ object SnykMavenArtifact {
     "<none>",
     None,
     None,
-    Nil
+    Nil,
+    ""
   )
 }
 
@@ -65,7 +69,8 @@ case class SnykMavenArtifact(
     packaging: String,
     classifier: Option[String],
     scope: Option[String],
-    deps: Seq[SnykMavenArtifact]) {
+    deps: Seq[SnykMavenArtifact],
+    projectType: String) {
   val name: String = s"$groupId:$artifactId"
   val depsMap: Map[String, SnykMavenArtifact] = deps.map(x => x.name -> x).toMap
 }

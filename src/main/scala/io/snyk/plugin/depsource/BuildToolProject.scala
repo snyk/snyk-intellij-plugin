@@ -20,9 +20,11 @@ trait BuildToolProject {
   def getFile: VirtualFile
 
   def getType: String
+
+  def getProjectDirectoryPath: String
 }
 
-case class MavenBuildToolProject(mavenProject: MavenProject) extends BuildToolProject {
+case class MavenBuildToolProject(mavenProject: MavenProject, projectDirectoryPath: String) extends BuildToolProject {
 
   def findDependencies(groupId: String, artifactId: String): util.List[MavenArtifact] = {
     mavenProject.findDependencies(groupId, artifactId)
@@ -39,9 +41,13 @@ case class MavenBuildToolProject(mavenProject: MavenProject) extends BuildToolPr
   override def getFile: VirtualFile = mavenProject.getFile
 
   override def getType: String = ProjectType.MAVEN
+
+  override def getProjectDirectoryPath: String = projectDirectoryPath
+
+  override def toString: String = mavenProject.toString
 }
 
-case class GradleBuildToolProject(moduleData: ModuleData) extends BuildToolProject {
+case class GradleBuildToolProject(moduleData: ModuleData, projectDirectoryPath: String) extends BuildToolProject {
 
   private val BUILD_GRADLE_FILE_NAME = "build.gradle"
 
@@ -62,4 +68,32 @@ case class GradleBuildToolProject(moduleData: ModuleData) extends BuildToolProje
   }
 
   override def getType: String = ProjectType.GRADLE
+
+  override def getProjectDirectoryPath: String = projectDirectoryPath
+
+  override def toString: String = {
+    val groupName = normalizeString(getGroupId)
+    val artifactName = normalizeString(getArtifactId)
+    val version = normalizeString(getVersion)
+
+    val projectName = new StringBuilder(s"$groupName:$artifactName:$version")
+
+    if (projectName.charAt(0) == ':') {
+      projectName.deleteCharAt(0)
+    }
+
+    if (projectName.charAt(projectName.size - 1) == ':') {
+      projectName.deleteCharAt(projectName.size - 1)
+    }
+
+    projectName.toString
+  }
+
+  private def normalizeString(originalString: String): String = {
+    if (originalString == null || originalString == "unspecified") {
+      ""
+    } else {
+      originalString
+    }
+  }
 }

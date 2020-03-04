@@ -20,10 +20,10 @@ import scala.util.{Failure, Success}
   * then asynchronously show the requested URL once the scan is complete
   */
 class MiniServer(
-  protected val pluginState: SnykPluginState,
-  colorProvider: ColorProvider,
-  port0: Int = 0
-) extends NanoHTTPD(port0)
+    protected val pluginState: SnykPluginState,
+    colorProvider: ColorProvider,
+    port0: Int = 0
+  ) extends NanoHTTPD(port0)
   with ServerFilters
   with ServerResponses
   with IntellijLogging
@@ -114,8 +114,8 @@ class MiniServer(
     }
   }
 
-  private[this] def safeScanResult: SnykVulnResponse =
-    pluginState.latestScanForSelectedProject getOrElse SnykVulnResponse.empty
+  private[this] def safeScanResult: Seq[SnykVulnResponse] =
+    pluginState.latestScanForSelectedProject getOrElse Seq.empty
 
   def serveRawScanResults(path: String, params: ParamSet): Response = {
     requireAuth {
@@ -132,7 +132,7 @@ class MiniServer(
     requireAuth {
       requireProjectId {
         requireScan(path, params) {
-          jsonResponse(safeScanResult.flatMiniVulns)
+          jsonResponse(safeScanResult.flatMap(vulnResponse => vulnResponse.flatMiniVulns))
         }
       }
     }
@@ -141,7 +141,7 @@ class MiniServer(
     requireAuth {
       requireProjectId {
         requireScan(path, params) {
-          jsonResponse(safeScanResult.mergedMiniVulns.sortBy(_.spec))
+          jsonResponse(safeScanResult.flatMap(vulnResponse => vulnResponse.mergedMiniVulns).sortBy(_.spec))
         }
       }
     }
@@ -161,10 +161,10 @@ class MiniServer(
         ctx ++= colorProvider.toMap.mapValues (_.hexRepr)
         ctx += "currentProject" -> pluginState.selectedProjectId.get
         ctx += "projectIds" -> pluginState.rootProjectIds
-        ctx += "miniVulns" -> latestScanResult.mergedMiniVulns.sortBy (_.spec)
-        ctx += "vulnerabilities" -> latestScanResult.vulnerabilities
+        ctx += "miniVulns" -> latestScanResult.flatMap(vulnResponse => vulnResponse.mergedMiniVulns).sortBy (_.spec)
+        ctx += "vulnerabilities" -> latestScanResult.flatMap(vulnResponse => vulnResponse.vulnerabilities)
 
-          //TODO: should these just be added to state?
+        //TODO: should these just be added to state?
         val paramFlags = params.all ("flags").map (_.toLowerCase -> true).toMap
         ctx += "flags" -> (paramFlags ++ pluginState.flags.asStringMap)
         ctx += "localhost" -> s"http://localhost:$port"
@@ -177,5 +177,4 @@ class MiniServer(
         redirectTo("/error?errmsg=" + URLEncoder.encode(x.getMessage, "UTF-8"))
     }
   }
-
 }

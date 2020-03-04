@@ -1,0 +1,7 @@
+apply plugin: 'application'
+
+mainClassName = 'io.jeffchao.template.core.Core'
+
+dependencies {
+    compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.13'
+}

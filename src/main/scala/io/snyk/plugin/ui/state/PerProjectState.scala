@@ -4,6 +4,6 @@ import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 
 case class PerProjectState(
   depTree: Option[SnykMavenArtifact] = None,
-  scanResult: Option[SnykVulnResponse] = None
+  scanResult: Option[Seq[SnykVulnResponse]] = None
 )
 

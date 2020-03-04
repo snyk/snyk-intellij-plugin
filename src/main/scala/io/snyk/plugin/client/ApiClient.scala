@@ -23,13 +23,14 @@ import scala.util.{Failure, Success, Try}
 import java.nio.file.{Files, Path, Paths}
 
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.depsource.ProjectType
 
 /**
   * Represents the connection to the Snyk servers for the security scan.
   */
 sealed trait ApiClient {
   /** Run a scan on the supplied artifact tree */
-  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse]
+  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[Seq[SnykVulnResponse]]
   def userInfo(): Try[SnykUserInfo]
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
@@ -79,7 +80,7 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
     }
   }
 
-  private def runRaw(project: Project, treeRoot: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
+  private def runRaw(project: Project, artifact: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
     log.debug("ApiClient: run Snyk CLI")
 
     val projectPath = project.getBasePath
@@ -91,6 +92,12 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add("snyk")
     commands.add("--json")
+
+    artifact.projectType match {
+      case ProjectType.MAVEN => commands.add("--all-projects")
+      case ProjectType.GRADLE => commands.add("--all-sub-projects")
+    }
+
     commands.add("test")
 
     val generalCommandLine = new GeneralCommandLine(commands)
@@ -98,9 +105,13 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
     generalCommandLine.setWorkDirectory(projectPath)
 
     try {
-      val snykResultJsonStr = ScriptRunnerUtil.getProcessOutput(generalCommandLine)
+      val snykResultJsonStr = ScriptRunnerUtil
+        .getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 120000)
 
-      Success(snykResultJsonStr)
+      snykResultJsonStr.charAt(0) match {
+        case '{' => Success(s"[$snykResultJsonStr]")
+        case '[' => Success(snykResultJsonStr)
+      }
     } catch {
       case e: Exception => {
         println(e.getMessage)
@@ -140,9 +151,9 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
 
   }
 
-  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] = for {
-    jsonStr <- runRaw(project, treeRoot)
-    json <- decode[SnykVulnResponse](jsonStr).toTry
+  def runScan(project: Project, snykMavenArtifact: SnykMavenArtifact): Try[Seq[SnykVulnResponse]] = for {
+    jsonStr <- runRaw(project, snykMavenArtifact)
+    json <- decode[Seq[SnykVulnResponse]](jsonStr).toTry
   } yield json
 
   def userInfo(): Try[SnykUserInfo] = for {
@@ -154,8 +165,8 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
 
 private final class MockApiClient (mockResponder: SnykMavenArtifact => Try[String]) extends ApiClient {
   val isAvailable: Boolean = true
-  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[SnykVulnResponse] =
-    mockResponder(treeRoot) flatMap { str => decode[SnykVulnResponse](str).toTry }
+  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[Seq[SnykVulnResponse]] =
+    mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
   def userInfo(): Try[SnykUserInfo] = Success {
     val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")
     SnykUserInfo("mockuser", "mock user", "mock@user", OffsetDateTime.now(), uri, UUID.randomUUID())

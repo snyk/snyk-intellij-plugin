@@ -6,10 +6,9 @@ import io.circe.derivation.{deriveDecoder, deriveEncoder}
 import scala.annotation.tailrec
 import io.snyk.plugin.IntellijLogging
 
-
 case class VulnDerivation(
-  module       : MavenCoords,
-  remediations : Map[String, Seq[MiniTree[MavenCoords]]]
+  module: VulnerabilityCoordinate,
+  remediations: Map[String, Seq[MiniTree[VulnerabilityCoordinate]]]
 )
 
 object VulnDerivation {
@@ -79,7 +78,9 @@ object MiniVuln extends IntellijLogging {
   @tailrec private[this] def mkDerivationSeq(
     from        : Seq[String],
     upgradePath : Seq[Either[Boolean, String]],
-    acc         : Seq[VulnDerivation] = Nil
+    acc         : Seq[VulnDerivation] = Nil,
+    projectName: Option[String],
+    targetFile: Option[String]
   ): Seq[VulnDerivation] = {
     (from, upgradePath) match {
       case (_, Left(true) +: _) => ???
@@ -88,20 +89,24 @@ object MiniVuln extends IntellijLogging {
         mkDerivationSeq(
           fTail,
           upTail,
-          acc :+ VulnDerivation(MavenCoords.from(fHead), Map.empty)
+          acc :+ VulnDerivation(VulnerabilityCoordinate.from(fHead, projectName, targetFile), Map.empty),
+          projectName,
+          targetFile
         )
 
       case (fHead +: fTail, up) if up.isEmpty =>
         mkDerivationSeq(
           fTail,
           Nil,
-          acc :+ VulnDerivation(MavenCoords.from(fHead), Map.empty)
+          acc :+ VulnDerivation(VulnerabilityCoordinate.from(fHead, projectName, targetFile), Map.empty),
+          projectName,
+          targetFile
         )
 
       case (fHead +: fTail, Right(upHead) +: upTail) =>
-        val newCoords = MavenCoords.from(upHead)
+        val newCoords = VulnerabilityCoordinate.from(upHead, projectName, targetFile)
         val newVersion = newCoords.version
-        val pivotSeq = upTail collect { case Right(ver) => MavenCoords.from(ver) }
+        val pivotSeq = upTail collect { case Right(ver) => VulnerabilityCoordinate.from(ver, projectName, targetFile) }
         val pivot = MiniTree.fromLinear(pivotSeq) match {
           case Some(tree) => Map(newVersion -> Seq(tree))
           case None => Map(newVersion -> Nil)
@@ -110,7 +115,9 @@ object MiniVuln extends IntellijLogging {
         mkDerivationSeq(
           fTail,
           Nil,
-          acc :+ VulnDerivation(MavenCoords.from(fHead), pivot)
+          acc :+ VulnDerivation(VulnerabilityCoordinate.from(fHead, projectName, targetFile), pivot),
+          projectName,
+          targetFile
         )
 
       case (f, _) if f.isEmpty =>
@@ -124,14 +131,14 @@ object MiniVuln extends IntellijLogging {
     }
   }
 
-  def from(vuln: SecurityVuln): MiniVuln = {
-    val dseq = mkDerivationSeq(vuln.from, vuln.upgradePath)
-    val dtree = MiniTree.fromLinear(dseq).toSeq
-    MiniVuln(spec = VulnSpec.from(vuln), derivations = dtree)
+  def from(securityVuln: SecurityVuln, projectName: Option[String], targetFile: Option[String]): MiniVuln = {
+    val vulnDerivations = mkDerivationSeq(securityVuln.from, securityVuln.upgradePath, Nil, projectName, targetFile)
+    val dtree = MiniTree.fromLinear(vulnDerivations).toSeq
+    MiniVuln(spec = VulnSpec.from(securityVuln), derivations = dtree)
   }
 
-  def mergedFrom(vulns: Seq[SecurityVuln]): Seq[MiniVuln] =
-    merge(vulns.map(MiniVuln.from))
+  def mergedFrom(vulns: Seq[SecurityVuln], projectName: Option[String], targetFile: Option[String]): Seq[MiniVuln] =
+    merge(vulns.map(securityVuln => MiniVuln.from(securityVuln, projectName, targetFile)))
 
   implicit val encoder: Encoder[MiniVuln] = deriveEncoder
   implicit val decoder: Decoder[MiniVuln] = deriveDecoder

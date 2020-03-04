@@ -58,8 +58,11 @@ extends Callback[PopupFeatures, WebEngine] with IntellijLogging {
 
         val group = parts(0)
         val artifact = parts(1)
+        val cliProjectName = parts(3)
+        val cliTargetFile = parts(parts.size - 1)
 
-        pluginState.navigator().navigateToDependency(group, artifact, pluginState.selectedProjectId.get)
+        pluginState.navigator()
+          .navigateToDependency(group, artifact, pluginState.selectedProjectId.get, cliProjectName, cliTargetFile)
       } else {
         BrowserUtil.browse(new URL(url))
       }
