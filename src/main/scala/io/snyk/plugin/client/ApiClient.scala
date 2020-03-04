@@ -83,12 +83,6 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
   private def runRaw(project: Project, artifact: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
     log.debug("ApiClient: run Snyk CLI")
 
-    val projectPath = project.getBasePath
-
-    if (Files.notExists(Paths.get(projectPath))) {
-      return Failure(new FileNotFoundException("pom.xml"))
-    }
-
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add("snyk")
     commands.add("--json")
@@ -100,17 +94,20 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
 
     commands.add("test")
 
-    val generalCommandLine = new GeneralCommandLine(commands)
-    generalCommandLine.setCharset(Charset.forName("UTF-8"))
-    generalCommandLine.setWorkDirectory(projectPath)
-
     try {
-      val snykResultJsonStr = ScriptRunnerUtil
-        .getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 120000)
+      val projectPath = project.getBasePath
 
+      val snykResultJsonStr = requestCli(projectPath, commands)
+
+      // Description: if project is one module project Snyk CLI will return JSON object.
+      // If project is multi-module project Snyk CLI will return array of JSON objects.
+      // If project is one module project and Snyk CLI return an error it will return it as JSON object with error
+      // property. But if it's multi-module project and Snyk CLI return an error it will return it as plain text without
+      // JSON.
       snykResultJsonStr.charAt(0) match {
         case '{' => Success(s"[$snykResultJsonStr]")
         case '[' => Success(snykResultJsonStr)
+        case _ => Success(s"[${requestCliForError(projectPath)}]")
       }
     } catch {
       case e: Exception => {
@@ -119,6 +116,30 @@ private final class StandardApiClient(tryConfig: => Try[SnykConfig]) extends Api
         Failure(e)
       }
     }
+  }
+
+  private def requestCliForError(projectPath: String): String = {
+    val commands: util.ArrayList[String] = new util.ArrayList[String]
+
+    commands.add("snyk")
+    commands.add("--json")
+    commands.add("test")
+
+    requestCli(projectPath, commands)
+  }
+
+  private def requestCli(projectPath: String, commands: util.ArrayList[String]): String = {
+    log.debug("ApiClient: run Snyk CLI")
+
+    if (Files.notExists(Paths.get(projectPath))) {
+      throw new FileNotFoundException("pom.xml")
+    }
+
+    val generalCommandLine = new GeneralCommandLine(commands)
+    generalCommandLine.setCharset(Charset.forName("UTF-8"))
+    generalCommandLine.setWorkDirectory(projectPath)
+
+    ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 120000)
   }
 
   private def userInfoRaw(): Try[String] = tryConfig flatMap { config =>
