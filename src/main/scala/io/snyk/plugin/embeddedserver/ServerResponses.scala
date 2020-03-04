@@ -41,13 +41,13 @@ trait ServerResponses { self: MiniServer =>
   ): Future[Seq[SnykVulnResponse]] = {
     log.debug(s"triggered async scan, will redirect to $successPath with params $params")
     pluginState.performScan() andThen {
-      case Success(vulnResponse) => {
-        if (vulnResponse.error.isEmpty) {
+      case Success(vulnResponseSeq) =>
+        if (vulnResponseSeq.nonEmpty && vulnResponseSeq.head.error.isEmpty) {
           log.debug(s"async scan success, redirecting to $successPath with params $params")
 
           navigateTo(successPath, params)
         } else {
-          val errorMessage = vulnResponse.error.get
+          val errorMessage = vulnResponseSeq.head.error.get
 
           log.debug(s"Error message: $errorMessage")
 
@@ -64,7 +64,6 @@ trait ServerResponses { self: MiniServer =>
 
           navigateTo("/error", errorParameters)
         }
-      }
       case Failure(x) => onError(x, params)
     }
   }
