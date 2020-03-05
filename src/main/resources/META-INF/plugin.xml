@@ -51,12 +51,6 @@
         <annotator language="XML" implementationClass="io.snyk.plugin.ui.annotators.SnykMavenRedUnderlineAnnotator"/>
     </extensions>
 
-    <application-components>
-        <component>
-            <implementation-class>io.snyk.plugin.SnykPluginAppComponent</implementation-class>
-        </component>
-    </application-components>
-
     <project-components>
         <component>
             <implementation-class>io.snyk.plugin.SnykPluginProjectComponent</implementation-class>
