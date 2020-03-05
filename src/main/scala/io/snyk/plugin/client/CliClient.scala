@@ -37,7 +37,7 @@ sealed trait CliClient {
   def isAvailable: Boolean
 
   /**
-    * Check is Snyk CLI is installed.
+    * Check whether Snyk CLI is installed.
     *
     * @param consoleCommandRunner - for command execution and possibility to test
     *
@@ -149,7 +149,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
   }
 
   def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = {
-    log.debug("Check is Snyk CLI is installed")
+    log.debug("Check whether Snyk CLI is installed")
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add("snyk")

@@ -25,9 +25,9 @@ class SnykPluginProjectComponent(project: Project) extends ProjectComponent {
     if (!pluginState.apiClient.isCliInstalled()) {
       ReportMessages.GROUP.createNotification(
         "Warning",
-        """Snyk CLI not installed.
+        """The Snyk CLI has not been installed.
           |<a href=\"https://support.snyk.io/hc/en-us/articles/360003812458-Getting-started-with-the-CLI\">
-          |Please, install it
+          |See Snyk docs to help you install it.
           |</a>"""
           .stripMargin,
         NotificationType.WARNING,
