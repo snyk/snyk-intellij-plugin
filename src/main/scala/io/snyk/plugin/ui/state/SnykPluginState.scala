@@ -1,7 +1,7 @@
 package io.snyk.plugin.ui
 package state
 
-import io.snyk.plugin.client.{ApiClient, SnykConfig}
+import io.snyk.plugin.client.{CliClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.depsource.{BuildToolProject, DepTreeProvider, GradleProjectsObservable, MavenProjectsObservable}
@@ -32,7 +32,7 @@ trait SnykPluginState extends IntellijLogging {
   //MODEL
 
   def getProject: Project
-  def apiClient: ApiClient
+  def apiClient: CliClient
   def segmentApi: SegmentApi
   val projects: Atomic[Map[String,PerProjectState]] = Atomic(Map.empty[String,PerProjectState])
   val config: Atomic[Try[SnykConfig]] = Atomic(SnykConfig.default)
@@ -173,7 +173,7 @@ object SnykPluginState {
   ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
   private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
-    override val apiClient = ApiClient.standard(config())
+    override val apiClient = CliClient.standard(config())
     override val depTreeProvider = DepTreeProvider.forProject(project)
     override val segmentApi: SegmentApi =
       config().toOption.map(_.disableAnalytics) match {
@@ -215,7 +215,7 @@ object SnykPluginState {
 
   private[this] class MockSnykPluginState(val depTreeProvider: DepTreeProvider,
                                           val mockResponder: SnykMavenArtifact => Try[String]) extends SnykPluginState {
-    override val apiClient: ApiClient = ApiClient.mock(mockResponder)
+    override val apiClient: CliClient = CliClient.mock(mockResponder)
     override val segmentApi: SegmentApi = MockSegmentApi
 
     override def mavenProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
