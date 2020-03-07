@@ -2,7 +2,7 @@ package io.snyk.plugin.embeddedserver
 
 import java.awt.Color
 
-import com.intellij.util.ui.UIUtil
+import com.intellij.util.ui.{JBUI, UIUtil}
 
 object ColorProvider {
   implicit class RichColor(val c: Color) extends AnyVal {
@@ -64,7 +64,7 @@ private object IntelliJColorProvider extends ColorProvider {
   override def bgColor                 : Color = UIUtil.getPanelBackground
   override def textColor               : Color = UIUtil.getLabelForeground
   override def inactiveTextColor       : Color = UIUtil.getInactiveTextColor
-  override def separatorColor          : Color = UIUtil.getSeparatorForeground
+  override def separatorColor          : Color = JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground
 
   //unused, delete?
   override def boundsColor             : Color = UIUtil.getBoundsColor
