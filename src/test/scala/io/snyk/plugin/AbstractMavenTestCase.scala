@@ -17,6 +17,7 @@ import org.jetbrains.idea.maven.project.{MavenArtifactDownloader, MavenProjectsM
 import org.jetbrains.idea.maven.server.MavenServerManager
 import java.{util => ju}
 
+import com.intellij.openapi.project.ProjectUtil
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.apache.commons.io.FileUtils
@@ -99,7 +100,7 @@ abstract class AbstractMavenTestCase extends AbstractTestCase() {
 
 
   protected def createProjectPom(xml: String): VirtualFile = {
-    projectPomVirtualFile = createPomXmlVirtualFile(currentProject.getBaseDir, xml)
+    projectPomVirtualFile = createPomXmlVirtualFile(ProjectUtil.guessProjectDir(currentProject), xml)
 
     projectPomVirtualFile
   }
