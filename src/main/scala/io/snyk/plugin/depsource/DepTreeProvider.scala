@@ -23,9 +23,11 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
   private val logger = Logger.getInstance(this.getClass)
 
-  private[this] def isMavenProject: Boolean = !MavenProjectsManager.getInstance(project).getProjects.isEmpty
+  private[this] def isMavenProject: Boolean =
+    project.isOpen && !MavenProjectsManager.getInstance(project).getProjects.isEmpty
 
-  private[this] def isGradleProject: Boolean = !GradleSettings.getInstance(project).getLinkedProjectsSettings.isEmpty
+  private[this] def isGradleProject: Boolean =
+    project.isOpen && !GradleSettings.getInstance(project).getLinkedProjectsSettings.isEmpty
 
   private[this] def getMavenBuildToolProjects: Seq[BuildToolProject] = {
     val mavenProjects = MavenProjectsManager.getInstance(project).getProjects.asScala
