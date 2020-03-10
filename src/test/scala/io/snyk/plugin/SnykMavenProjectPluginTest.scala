@@ -38,10 +38,9 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
+    assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.head.packageManager.get)
 
-    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities
-
-    assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.head.packageManager)
+    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities.get
 
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
     assertEquals("org.codehaus.jackson:jackson-mapper-asl",
