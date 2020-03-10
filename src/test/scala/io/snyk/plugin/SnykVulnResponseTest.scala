@@ -22,7 +22,7 @@ class SnykVulnResponseTest {
     assertNotNull(snykVulnResponse)
     assertNotNull(snykVulnResponse.vulnerabilities)
 
-    assertEquals(0, snykVulnResponse.vulnerabilities.size)
+    assertEquals(0, snykVulnResponse.vulnerabilities.get.size)
   }
 
   @Test
@@ -37,6 +37,6 @@ class SnykVulnResponseTest {
     assertNotNull(snykVulnResponse)
     assertNotNull(snykVulnResponse.vulnerabilities)
 
-    assertEquals(1, snykVulnResponse.vulnerabilities.size)
+    assertEquals(1, snykVulnResponse.vulnerabilities.get.size)
   }
 }
