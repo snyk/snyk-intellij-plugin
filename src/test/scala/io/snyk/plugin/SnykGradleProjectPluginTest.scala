@@ -31,7 +31,7 @@ class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
   }
 
   @Test
-  def testGetVulnerabilities(): Unit = {
+  def testSingleModuleGradleGetVulnerabilities(): Unit = {
     val notificationManager = ServiceManager.getService(classOf[ExternalSystemProgressNotificationManager])
     val externalSystemProgressNotificationManager = notificationManager.asInstanceOf[RemoteExternalSystemProgressNotificationManager]
 

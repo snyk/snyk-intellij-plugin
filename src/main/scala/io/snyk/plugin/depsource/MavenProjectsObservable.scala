@@ -17,11 +17,9 @@ object MavenProjectsObservable {
 
       mavenProjectsManager.addManagerListener(new MavenProjectsManager.Listener {
         override def importAndResolveScheduled(): Unit = {
-          if (!mavenProjectsManager.hasScheduledProjects) {
-            val mavenProjects: Seq[MavenProject]  = mavenProjectsManager.getProjects.asScala
+          val mavenProjects: Seq[MavenProject]  = mavenProjectsManager.getProjects.asScala
 
-            downstream.onNext(mavenProjects)
-          }
+          downstream.onNext(mavenProjects)
         }
       })
       Cancelable.empty

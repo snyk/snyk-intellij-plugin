@@ -37,7 +37,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
   }
 
   @Test
-  def testRunScanForMultiModuleProject(): Unit = {
+  def testRunScanForMavenMultiModuleProject(): Unit = {
     val config = SnykConfig.default
     val apiClient = CliClient.standard(config)
 
@@ -69,7 +69,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
   }
 
   @Test
-  def testSnykPluginWithMultiModuleProject(): Unit = {
+  def testSnykPluginWithMavenMultiModuleProject(): Unit = {
     myProjectsTree
       .update(ju.Arrays.asList({projectPomVirtualFile}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
 
