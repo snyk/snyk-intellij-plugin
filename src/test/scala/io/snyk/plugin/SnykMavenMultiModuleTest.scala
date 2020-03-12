@@ -37,7 +37,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
   }
 
   @Test
-  def testRunScanForMultiModuleProject(): Unit = {
+  def testRunScanForMavenMultiModuleProject(): Unit = {
     val config = SnykConfig.default
     val apiClient = CliClient.standard(config)
 
@@ -62,14 +62,14 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
     assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
       snykVulnResponseSeq(0).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
-    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-542935",
+    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-559346",
       snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
     assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470",
       snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
   }
 
   @Test
-  def testSnykPluginWithMultiModuleProject(): Unit = {
+  def testSnykPluginWithMavenMultiModuleProject(): Unit = {
     myProjectsTree
       .update(ju.Arrays.asList({projectPomVirtualFile}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
 
@@ -87,7 +87,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
     assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
       snykVulnResponseSeq(0).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
-    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-542935",
+    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-559346",
       snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
     assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470",
       snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)

@@ -50,7 +50,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
   }
 
   @Test
-  def testRunScanForMultiModuleProject(): Unit = {
+  def testRunScanForGradleMultiModuleProject(): Unit = {
     val config = SnykConfig.default
     val apiClient = CliClient.standard(config)
 
@@ -93,7 +93,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
   }
 
   @Test
-  def testSnykPluginWithMultiModuleProject(): Unit = {
+  def testSnykPluginWithGradleMultiModuleProject(): Unit = {
     val notificationManager = ServiceManager.getService(classOf[ExternalSystemProgressNotificationManager])
     val externalSystemProgressNotificationManager = notificationManager.asInstanceOf[RemoteExternalSystemProgressNotificationManager]
 
@@ -102,7 +102,6 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
 
     waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
 
-    println(myTestFixture)
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
     val snykVulnResponseSeqOption = snykPluginState.latestScanForSelectedProject

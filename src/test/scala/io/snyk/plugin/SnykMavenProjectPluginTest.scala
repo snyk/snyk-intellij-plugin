@@ -1,14 +1,13 @@
 package io.snyk.plugin
 
 import io.snyk.plugin.ui.state.SnykPluginState
-import org.jetbrains.idea.maven.utils.MavenProgressIndicator
 import org.junit.Test
 import org.junit.Assert._
-import java.{util => ju}
 
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.datamodel.SecurityVuln
 import io.snyk.plugin.ui.SnykToolWindowFactory
+import org.jetbrains.idea.maven.project.MavenProjectsManager
 
 import scala.io.{Codec, Source}
 
@@ -29,19 +28,17 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
   }
 
   @Test
-  def testGetVulnerabilities(): Unit = {
-    myProjectsTree
-      .update(ju.Arrays.asList({projectPomVirtualFile}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
-
-    waitBackgroundTasks(20) // This is still a tiny and vulnerable part for this test.
+  def testSingleModuleMavenGetVulnerabilities(): Unit = {
+    MavenProjectsManager.getInstance(currentProject).scheduleImportAndResolve()
 
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
+    waitBackgroundTasks(30) // This is still a tiny and vulnerable part for this test.
+
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
+    assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.head.packageManager.get)
 
-    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities
-
-    assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.head.packageManager)
+    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities.get
 
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
     assertEquals("org.codehaus.jackson:jackson-mapper-asl",

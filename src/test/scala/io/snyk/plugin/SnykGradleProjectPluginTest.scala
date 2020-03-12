@@ -31,7 +31,7 @@ class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
   }
 
   @Test
-  def testGetVulnerabilities(): Unit = {
+  def testSingleModuleGradleGetVulnerabilities(): Unit = {
     val notificationManager = ServiceManager.getService(classOf[ExternalSystemProgressNotificationManager])
     val externalSystemProgressNotificationManager = notificationManager.asInstanceOf[RemoteExternalSystemProgressNotificationManager]
 
@@ -44,9 +44,9 @@ class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
 
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
 
-    assertEquals("gradle", snykPluginState.latestScanForSelectedProject.get.head.packageManager)
+    assertEquals("gradle", snykPluginState.latestScanForSelectedProject.get.head.packageManager.get)
 
-    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities
+    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities.get
 
     assertEquals("One vulnerability expected", 4, vulnerabilities.size)
 
