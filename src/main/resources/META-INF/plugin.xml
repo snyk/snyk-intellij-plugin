@@ -61,7 +61,6 @@
         <group id="io.snyk.plugin.ActionBar">
             <action id="io.snyk.plugin.RescanAction" class="io.snyk.plugin.ui.actions.SnykRescanAction" text="Re-Scan project with Snyk" />
             <action id="io.snyk.plugin.ToggleGroupDisplayAction" class="io.snyk.plugin.ui.actions.SnykToggleGroupDisplayAction" text="Toggle display of Maven Groups" />
-            <action id="io.snyk.plugin.SelectProjectAction" class="io.snyk.plugin.ui.actions.SnykSelectProjectAction" text="Toggle display of Maven Groups" />
         </group>
         <!--group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
             <add-to-group group-id="MainMenu" anchor="last"  />
