@@ -1,9 +1,10 @@
 package io.snyk.plugin.ui.annotators
 
-import com.intellij.lang.annotation.{AnnotationHolder, Annotator}
+import com.intellij.lang.annotation.{Annotation, AnnotationHolder, Annotator}
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.{PsiComment, PsiElement}
+import com.intellij.util.SmartList
 import io.snyk.plugin.IntellijLogging.ScalaLogger
 import io.snyk.plugin.datamodel.SecurityVuln
 import io.snyk.plugin.ui.state.SnykPluginState
@@ -13,6 +14,20 @@ import io.snyk.plugin.ui.state.SnykPluginState
   */
 class SnykGradleRedUnderlineAnnotator extends Annotator {
   protected lazy val log: ScalaLogger = new ScalaLogger(Logger.getInstance(this.getClass))
+
+  def checkAnnotationNotExists(holder: AnnotationHolder, textRange: TextRange): Boolean = {
+    val annotations: SmartList[Annotation] = holder.asInstanceOf[SmartList[Annotation]]
+
+    annotations.forEach(annotation => {
+      if (annotation.getStartOffset == textRange.getStartOffset
+        && annotation.getEndOffset == textRange.getEndOffset) {
+        return false
+      }
+    })
+
+    true
+  }
+
 
   override def annotate(element: PsiElement, holder: AnnotationHolder): Unit = {
     val pluginState = SnykPluginState.forIntelliJ(element.getProject)
@@ -40,12 +55,14 @@ class SnykGradleRedUnderlineAnnotator extends Annotator {
               val name = dependencyInfos(1)
 
               val elementText = element.getText
+              val textRange = element.getTextRange
 
               if (elementText.contains(group)
                 && elementText.contains(name)
                 && elementText.contains(securityVulnerability.version)
-                && !elementText.contains("{") && !elementText.contains("}")) {
-                val range = new TextRange(element.getTextRange.getStartOffset, element.getTextRange.getEndOffset)
+                && !elementText.contains("{") && !elementText.contains("}")
+                && checkAnnotationNotExists(holder, textRange)) {
+                val range = new TextRange(textRange.getStartOffset, textRange.getEndOffset)
                 holder.createErrorAnnotation(range, "Vulnerable package")
               }
             })

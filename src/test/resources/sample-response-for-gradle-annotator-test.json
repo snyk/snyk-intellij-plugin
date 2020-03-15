@@ -1,0 +1,418 @@
+[{
+  "vulnerabilities": [
+    {
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+      "alternativeIds": [],
+      "creationTime": "2016-12-25T16:51:53Z",
+      "credit": [
+        "David Jorm",
+        "Arun Neelicattu"
+      ],
+      "cvssScore": 5.4,
+      "description": "## Overview\n\n[axis:axis](https://search.maven.org/search?q=g:axis) is an implementation of the SOAP (\"Simple Object Access Protocol\") submission to W3C.\n\n\nAffected versions of this package are vulnerable to Man-in-the-Middle (MitM).\nIt does not verify the requesting server's hostname agains existing domain names in the SSL Certificate. \r\n\r\n## Details\r\nThe `getCN` function in Apache Axis 1.4 and earlier does not properly verify that the server hostname matches a domain name in the subject's `Common Name (CN)` or `subjectAltName` field of the X.509 certificate, which allows man-in-the-middle attackers to spoof SSL servers via a certificate with a subject that specifies a common name in a field that is not the CN field.  \r\n\r\n**NOTE:** this issue exists because of an incomplete fix for [CVE-2012-5784](https://snyk.io/vuln/SNYK-JAVA-AXIS-30189).\n\n## Remediation\n\nThere is no fixed version for `axis:axis`.\n\n\n## References\n\n- [Axis Issue](https://issues.apache.org/jira/browse/AXIS-2905)\n\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-3596)\n\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2014-3596)\n",
+      "disclosureTime": "2014-08-18T16:51:53Z",
+      "exploit": "Not Defined",
+      "fixedIn": [],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-AXIS-30071",
+      "identifiers": {
+        "CVE": [
+          "CVE-2014-3596"
+        ],
+        "CWE": [
+          "CWE-297"
+        ]
+      },
+      "language": "java",
+      "mavenModuleName": {
+        "artifactId": "axis",
+        "groupId": "axis"
+      },
+      "modificationTime": "2019-10-24T11:49:13.660927Z",
+      "moduleName": "axis:axis",
+      "packageManager": "maven",
+      "packageName": "axis:axis",
+      "patches": [],
+      "publicationTime": "2014-08-18T16:51:53Z",
+      "references": [
+        {
+          "title": "Axis Issue",
+          "url": "https://issues.apache.org/jira/browse/AXIS-2905"
+        },
+        {
+          "title": "NVD",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-3596"
+        },
+        {
+          "title": "RedHat Bugzilla Bug",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2014-3596"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[0,]"
+        ]
+      },
+      "severity": "medium",
+      "title": "Man-in-the-Middle (MitM)",
+      "from": [
+        "gradle-test@0.0.0",
+        "axis:axis@1.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "axis:axis",
+      "version": "1.4"
+    },
+    {
+      "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+      "alternativeIds": [],
+      "creationTime": "2017-02-22T07:28:15.850000Z",
+      "credit": [
+        "Alberto Fernández"
+      ],
+      "cvssScore": 5.4,
+      "description": "## Overview\n\n[axis:axis](https://search.maven.org/search?q=g:axis) is an implementation of the SOAP (\"Simple Object Access Protocol\") submission to W3C.\n\n\nAffected versions of this package are vulnerable to Man-in-the-Middle (MitM).\nIt does not verify the requesting server's hostname agains existing domain names in the SSL Certificate.\r\n\r\n## Details\r\nApache Axis 1.4 and earlier does not properly verify that the server hostname matches a domain name in the subject's `Common Name (CN)` or `subjectAltName` field of the X.509 certificate, which allows man-in-the-middle attackers to spoof SSL servers via an arbitrary valid certificate.\n\n## Remediation\n\nThere is no fixed version for `axis:axis`.\n\n\n## References\n\n- [Jira Issue](https://issues.apache.org/jira/browse/AXIS-2883)\n\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2012-5784)\n\n- [Texas University](http://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf)\n",
+      "disclosureTime": "2012-11-04T22:55:00Z",
+      "exploit": "Not Defined",
+      "fixedIn": [],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-AXIS-30189",
+      "identifiers": {
+        "CVE": [
+          "CVE-2012-5784"
+        ],
+        "CWE": [
+          "CWE-20"
+        ]
+      },
+      "language": "java",
+      "mavenModuleName": {
+        "artifactId": "axis",
+        "groupId": "axis"
+      },
+      "modificationTime": "2019-10-24T12:00:19.267597Z",
+      "moduleName": "axis:axis",
+      "packageManager": "maven",
+      "packageName": "axis:axis",
+      "patches": [],
+      "publicationTime": "2017-03-13T08:00:21Z",
+      "references": [
+        {
+          "title": "Jira Issue",
+          "url": "https://issues.apache.org/jira/browse/AXIS-2883"
+        },
+        {
+          "title": "NVD",
+          "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2012-5784"
+        },
+        {
+          "title": "Texas University",
+          "url": "http://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[0,]"
+        ]
+      },
+      "severity": "medium",
+      "title": "Man-in-the-Middle (MitM)",
+      "from": [
+        "gradle-test@0.0.0",
+        "axis:axis@1.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "axis:axis",
+      "version": "1.4"
+    },
+    {
+      "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "alternativeIds": [],
+      "creationTime": "2019-11-19T11:44:30.225935Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.9,
+      "description": "## Overview\n\n[org.codehaus.jackson:jackson-mapper-asl](https://mvnrepository.com/artifact/org.codehaus.jackson/jackson-mapper-asl) is a high-performance data binding package built on Jackson JSON processor.\n\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection.\nMultiple classes including  `XmlMapper` was found to be vulnerabiltiy to XXE, which might allow attackers to have unspecified impact via unknown vectors.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\r\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\r\n\r\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\r\n\r\nFor example, below is a sample XML document, containing an XML element- username.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n   <username>John</username>\r\n</xml>\r\n```\r\n\r\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<!DOCTYPE foo [\r\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\r\n   <username>&xxe;</username>\r\n</xml>\r\n```\r\n\r\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n\n## Remediation\n\nThere is no fixed version for `org.codehaus.jackson:jackson-mapper-asl`.\n\n\n## References\n\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1715075)\n",
+      "disclosureTime": "2019-11-18T00:00:00Z",
+      "exploit": "Not Defined",
+      "fixedIn": [],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
+      "identifiers": {
+        "CVE": [
+          "CVE-2019-10172"
+        ],
+        "CWE": [
+          "CWE-611"
+        ],
+        "GHSA": [
+          "GHSA-r6j9-8759-g62w"
+        ]
+      },
+      "language": "java",
+      "mavenModuleName": {
+        "artifactId": "jackson-mapper-asl",
+        "groupId": "org.codehaus.jackson"
+      },
+      "modificationTime": "2019-12-02T14:45:32.742563Z",
+      "moduleName": "org.codehaus.jackson:jackson-mapper-asl",
+      "packageManager": "maven",
+      "packageName": "org.codehaus.jackson:jackson-mapper-asl",
+      "patches": [],
+      "publicationTime": "2019-11-19T11:56:32Z",
+      "references": [
+        {
+          "title": "RedHat Bugzilla Bug",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1715075"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[0,]"
+        ]
+      },
+      "severity": "medium",
+      "title": "XML External Entity (XXE) Injection",
+      "from": [
+        "gradle-test@0.0.0",
+        "org.codehaus.jackson:jackson-mapper-asl@1.9.13"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "org.codehaus.jackson:jackson-mapper-asl",
+      "version": "1.9.13"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 10,
+  "org": "aldanchenko",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.14.1\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": {
+    "severities": {},
+    "orgLicenseRules": {}
+  },
+  "packageManager": "gradle",
+  "ignoreSettings": null,
+  "summary": "3 vulnerable dependency paths",
+  "remediation": {
+    "unresolved": [
+      {
+        "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+        "alternativeIds": [],
+        "creationTime": "2016-12-25T16:51:53Z",
+        "credit": [
+          "David Jorm",
+          "Arun Neelicattu"
+        ],
+        "cvssScore": 5.4,
+        "description": "## Overview\n\n[axis:axis](https://search.maven.org/search?q=g:axis) is an implementation of the SOAP (\"Simple Object Access Protocol\") submission to W3C.\n\n\nAffected versions of this package are vulnerable to Man-in-the-Middle (MitM).\nIt does not verify the requesting server's hostname agains existing domain names in the SSL Certificate. \r\n\r\n## Details\r\nThe `getCN` function in Apache Axis 1.4 and earlier does not properly verify that the server hostname matches a domain name in the subject's `Common Name (CN)` or `subjectAltName` field of the X.509 certificate, which allows man-in-the-middle attackers to spoof SSL servers via a certificate with a subject that specifies a common name in a field that is not the CN field.  \r\n\r\n**NOTE:** this issue exists because of an incomplete fix for [CVE-2012-5784](https://snyk.io/vuln/SNYK-JAVA-AXIS-30189).\n\n## Remediation\n\nThere is no fixed version for `axis:axis`.\n\n\n## References\n\n- [Axis Issue](https://issues.apache.org/jira/browse/AXIS-2905)\n\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-3596)\n\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2014-3596)\n",
+        "disclosureTime": "2014-08-18T16:51:53Z",
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "functions": [],
+        "functions_new": [],
+        "id": "SNYK-JAVA-AXIS-30071",
+        "identifiers": {
+          "CVE": [
+            "CVE-2014-3596"
+          ],
+          "CWE": [
+            "CWE-297"
+          ]
+        },
+        "language": "java",
+        "mavenModuleName": {
+          "artifactId": "axis",
+          "groupId": "axis"
+        },
+        "modificationTime": "2019-10-24T11:49:13.660927Z",
+        "moduleName": "axis:axis",
+        "packageManager": "maven",
+        "packageName": "axis:axis",
+        "patches": [],
+        "publicationTime": "2014-08-18T16:51:53Z",
+        "references": [
+          {
+            "title": "Axis Issue",
+            "url": "https://issues.apache.org/jira/browse/AXIS-2905"
+          },
+          {
+            "title": "NVD",
+            "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2014-3596"
+          },
+          {
+            "title": "RedHat Bugzilla Bug",
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2014-3596"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[0,]"
+          ]
+        },
+        "severity": "medium",
+        "title": "Man-in-the-Middle (MitM)",
+        "from": [
+          "gradle-test@0.0.0",
+          "axis:axis@1.4"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "name": "axis:axis",
+        "version": "1.4"
+      },
+      {
+        "CVSSv3": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+        "alternativeIds": [],
+        "creationTime": "2017-02-22T07:28:15.850000Z",
+        "credit": [
+          "Alberto Fernández"
+        ],
+        "cvssScore": 5.4,
+        "description": "## Overview\n\n[axis:axis](https://search.maven.org/search?q=g:axis) is an implementation of the SOAP (\"Simple Object Access Protocol\") submission to W3C.\n\n\nAffected versions of this package are vulnerable to Man-in-the-Middle (MitM).\nIt does not verify the requesting server's hostname agains existing domain names in the SSL Certificate.\r\n\r\n## Details\r\nApache Axis 1.4 and earlier does not properly verify that the server hostname matches a domain name in the subject's `Common Name (CN)` or `subjectAltName` field of the X.509 certificate, which allows man-in-the-middle attackers to spoof SSL servers via an arbitrary valid certificate.\n\n## Remediation\n\nThere is no fixed version for `axis:axis`.\n\n\n## References\n\n- [Jira Issue](https://issues.apache.org/jira/browse/AXIS-2883)\n\n- [NVD](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2012-5784)\n\n- [Texas University](http://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf)\n",
+        "disclosureTime": "2012-11-04T22:55:00Z",
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "functions": [],
+        "functions_new": [],
+        "id": "SNYK-JAVA-AXIS-30189",
+        "identifiers": {
+          "CVE": [
+            "CVE-2012-5784"
+          ],
+          "CWE": [
+            "CWE-20"
+          ]
+        },
+        "language": "java",
+        "mavenModuleName": {
+          "artifactId": "axis",
+          "groupId": "axis"
+        },
+        "modificationTime": "2019-10-24T12:00:19.267597Z",
+        "moduleName": "axis:axis",
+        "packageManager": "maven",
+        "packageName": "axis:axis",
+        "patches": [],
+        "publicationTime": "2017-03-13T08:00:21Z",
+        "references": [
+          {
+            "title": "Jira Issue",
+            "url": "https://issues.apache.org/jira/browse/AXIS-2883"
+          },
+          {
+            "title": "NVD",
+            "url": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2012-5784"
+          },
+          {
+            "title": "Texas University",
+            "url": "http://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[0,]"
+          ]
+        },
+        "severity": "medium",
+        "title": "Man-in-the-Middle (MitM)",
+        "from": [
+          "gradle-test@0.0.0",
+          "axis:axis@1.4"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "name": "axis:axis",
+        "version": "1.4"
+      },
+      {
+        "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N",
+        "alternativeIds": [],
+        "creationTime": "2019-11-19T11:44:30.225935Z",
+        "credit": [
+          "Unknown"
+        ],
+        "cvssScore": 5.9,
+        "description": "## Overview\n\n[org.codehaus.jackson:jackson-mapper-asl](https://mvnrepository.com/artifact/org.codehaus.jackson/jackson-mapper-asl) is a high-performance data binding package built on Jackson JSON processor.\n\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection.\nMultiple classes including  `XmlMapper` was found to be vulnerabiltiy to XXE, which might allow attackers to have unspecified impact via unknown vectors.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\r\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\r\n\r\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\r\n\r\nFor example, below is a sample XML document, containing an XML element- username.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n   <username>John</username>\r\n</xml>\r\n```\r\n\r\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<!DOCTYPE foo [\r\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\r\n   <username>&xxe;</username>\r\n</xml>\r\n```\r\n\r\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n\n## Remediation\n\nThere is no fixed version for `org.codehaus.jackson:jackson-mapper-asl`.\n\n\n## References\n\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1715075)\n",
+        "disclosureTime": "2019-11-18T00:00:00Z",
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "functions": [],
+        "functions_new": [],
+        "id": "SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
+        "identifiers": {
+          "CVE": [
+            "CVE-2019-10172"
+          ],
+          "CWE": [
+            "CWE-611"
+          ],
+          "GHSA": [
+            "GHSA-r6j9-8759-g62w"
+          ]
+        },
+        "language": "java",
+        "mavenModuleName": {
+          "artifactId": "jackson-mapper-asl",
+          "groupId": "org.codehaus.jackson"
+        },
+        "modificationTime": "2019-12-02T14:45:32.742563Z",
+        "moduleName": "org.codehaus.jackson:jackson-mapper-asl",
+        "packageManager": "maven",
+        "packageName": "org.codehaus.jackson:jackson-mapper-asl",
+        "patches": [],
+        "publicationTime": "2019-11-19T11:56:32Z",
+        "references": [
+          {
+            "title": "RedHat Bugzilla Bug",
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1715075"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[0,]"
+          ]
+        },
+        "severity": "medium",
+        "title": "XML External Entity (XXE) Injection",
+        "from": [
+          "gradle-test@0.0.0",
+          "org.codehaus.jackson:jackson-mapper-asl@1.9.13"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "name": "org.codehaus.jackson:jackson-mapper-asl",
+        "version": "1.9.13"
+      }
+    ],
+    "upgrade": {},
+    "patch": {},
+    "ignore": {},
+    "pin": {}
+  },
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 3,
+  "projectName": "gradle-test",
+  "displayTargetFile": "build.gradle",
+  "path": "/Users/aleksandr/Temp/snyk-test-projects/gradle/gradle-test"
+}]

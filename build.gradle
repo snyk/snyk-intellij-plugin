@@ -51,7 +51,7 @@ intellij {
     type 'IC'
     version '2019.1'
     pluginName 'snyk-intellij-plugin'
-    plugins = ['maven', 'gradle', 'properties']
+    plugins = ['maven', 'gradle', 'properties', 'Groovy']
     downloadSources = true
     intellij.updateSinceUntilBuild false
 
