@@ -9,7 +9,7 @@ import scala.util.Try
 
 class SnykMavenRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCase() {
 
-  def testHighlighting(): Unit = {
+  def testSnykMavenRedUnderlineAnnotatorHighlighting(): Unit = {
     SnykPluginState.mockForProject(myModule.getProject, mockResponder = myMockResponder)
 
     myFixture.configureByText("pom.xml",
@@ -25,8 +25,8 @@ class SnykMavenRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCase
 
                     <dependencies>
                       <dependency>
-                        <groupId><error>org.codehaus.jackson</error></groupId>
-                        <artifactId><error>jackson-mapper-asl</error></artifactId>
+                        <groupId><error descr="Vulnerable package: org.codehaus.jackson:1.8.5">org.codehaus.jackson</error></groupId>
+                        <artifactId><error descr="Vulnerable package: jackson-mapper-asl:1.8.5">jackson-mapper-asl</error></artifactId>
                         <version>1.8.5</version>
                       </dependency>
                     </dependencies>
