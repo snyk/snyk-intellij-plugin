@@ -21,7 +21,7 @@ class SnykGradleRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCas
                }
 
                dependencies {
-                compile <error descr="Vulnerable package">'axis:axis:1.4'</error>
+                <error descr="Vulnerable package: axis:axis:1.4">compile 'axis:axis:1.4'</error>
                }""")
 
     myFixture.checkHighlighting(true, false, true)
@@ -39,7 +39,7 @@ class SnykGradleRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCas
                }
 
                dependencies {
-                compile <error descr="Vulnerable package">group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.13'</error>
+                <error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.9.13">compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.13'</error>
                }""")
 
     myFixture.checkHighlighting(true, false, true)
@@ -57,8 +57,8 @@ class SnykGradleRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCas
                }
 
                dependencies {
-               compile <error descr="Vulnerable package">'axis:axis:1.4'</error>
-                compile <error descr="Vulnerable package">group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.13'</error>
+                <error descr="Vulnerable package: axis:axis:1.4">compile 'axis:axis:1.4'</error>
+                <error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.9.13">compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.13'</error>
                }""")
 
     myFixture.checkHighlighting(true, false, true)
