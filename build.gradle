@@ -12,7 +12,7 @@ plugins {
 
 group 'io.snyk'
 description = 'Snyk security scanning for IntelliJ IDEA'
-version '0.1.2'
+version '0.2.0'
 
 apply plugin: 'idea'
 apply plugin: 'scala'
