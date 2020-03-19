@@ -10,7 +10,7 @@ import scala.util.Try
 class SnykMavenRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCase() {
 
   def testSnykMavenRedUnderlineAnnotatorHighlighting(): Unit = {
-    SnykPluginState.mockForProject(myModule.getProject, mockResponder = myMockResponder)
+    SnykPluginState.mockForProject(myModule.getProject, mockResponder = sampleMockResponder)
 
     myFixture.configureByText("pom.xml",
       """<?xml version="1.0" encoding="UTF-8"?>
@@ -25,9 +25,9 @@ class SnykMavenRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCase
 
                     <dependencies>
                       <dependency>
-                        <groupId><error descr="Vulnerable package: org.codehaus.jackson:1.8.5">org.codehaus.jackson</error></groupId>
-                        <artifactId><error descr="Vulnerable package: jackson-mapper-asl:1.8.5">jackson-mapper-asl</error></artifactId>
-                        <version>1.8.5</version>
+                        <groupId><error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.8.5">org.codehaus.jackson</error></groupId>
+                        <artifactId><error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.8.5">jackson-mapper-asl</error></artifactId>
+                        <version><error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.8.5">1.8.5</error></version>
                       </dependency>
                     </dependencies>
                   </project>
@@ -36,7 +36,42 @@ class SnykMavenRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCase
     myFixture.checkHighlighting(true, false, true)
   }
 
-  private[this] def myMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  def testSnykMavenRedUnderlineAnnotatorHighlightingExcludingProperties(): Unit = {
+    SnykPluginState.mockForProject(myModule.getProject, mockResponder = samplePropertiesMockResponder)
+
+    myFixture.configureByText("pom.xml",
+      """<?xml version="1.0" encoding="UTF-8"?>
+                  <project xmlns="http://maven.apache.org/POM/4.0.0"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                           xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+                    <modelVersion>4.0.0</modelVersion>
+
+                    <groupId>simpleMaven</groupId>
+                    <artifactId>simpleMaven</artifactId>
+                    <version>1.0</version>
+
+                    <properties>
+                      <mysql.version>5.1.36</mysql.version>
+                    </properties>
+
+                    <dependencies>
+                      <dependency>
+                          <groupId><error descr="Vulnerable package: mysql:mysql-connector-java:5.1.36">mysql</error></groupId>
+                          <artifactId><error descr="Vulnerable package: mysql:mysql-connector-java:5.1.36">mysql-connector-java</error></artifactId>
+                          <version><error descr="Vulnerable package: mysql:mysql-connector-java:5.1.36">${mysql.version}</error></version>
+                      </dependency>
+                    </dependencies>
+                  </project>
+    """)
+
+    myFixture.checkHighlighting(true, false, true)
+  }
+
+  private[this] def sampleMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
     Source.fromResource("sample-response-for-annotator-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
+  }
+
+  private[this] def samplePropertiesMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+    Source.fromResource("properties-response-for-annotator-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 }

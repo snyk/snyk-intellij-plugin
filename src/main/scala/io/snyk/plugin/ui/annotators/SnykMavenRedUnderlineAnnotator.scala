@@ -4,6 +4,7 @@ import com.intellij.lang.annotation.{AnnotationHolder, ExternalAnnotator}
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
+import com.intellij.psi.xml.XmlText
 import com.intellij.psi.{PsiElement, PsiFile, PsiRecursiveElementWalkingVisitor}
 import io.snyk.plugin.IntellijLogging.ScalaLogger
 import io.snyk.plugin.datamodel.SecurityVuln
@@ -14,12 +15,12 @@ import scala.collection.mutable
 /**
   * Red underline annotator for Maven vulnerabilities.
   */
-class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.HashSet[AnnotationInfo]] {
+class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.HashSet[MavenAnnotationInfo]] {
 
   protected lazy val log: ScalaLogger = new ScalaLogger(Logger.getInstance(this.getClass))
 
-  override def doAnnotate(psiFile: PsiFile): mutable.HashSet[AnnotationInfo] = {
-    val annotationInfos = mutable.HashSet[AnnotationInfo]()
+  override def doAnnotate(psiFile: PsiFile): mutable.HashSet[MavenAnnotationInfo] = {
+    val annotationInfos = mutable.HashSet[MavenAnnotationInfo]()
 
     val project = psiFile.getProject
 
@@ -47,16 +48,20 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
                       val securityVulnerability = vulnerability.asInstanceOf[SecurityVuln]
 
                       val fullName = securityVulnerability.name
-                      val version = securityVulnerability.version
                       val nameParts = fullName.split(":")
+
+                      val name = nameParts(0)
+                      val group = nameParts(1)
+                      val version = securityVulnerability.version
 
                       val elementText = element.getText
 
-                      nameParts.foreach(name => {
-                        if (elementText == name) {
-                          annotationInfos += AnnotationInfo(s"Vulnerable package: $name:$version", element)
-                        }
-                      })
+                      if (elementText.contains("dependency")
+                        && elementText.contains(name)
+                        && elementText.contains(group)
+                        && !elementText.contains("dependencies")) {
+                        annotationInfos += new MavenAnnotationInfo(element, name, group, version)
+                      }
                     })
                   })
                 })
@@ -77,15 +82,59 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
   }
 
   override def apply(psiFile: PsiFile,
-    annotationInfos: mutable.HashSet[AnnotationInfo],
+    annotationInfos: mutable.HashSet[MavenAnnotationInfo],
     annotationHolder: AnnotationHolder): Unit = {
 
     annotationInfos.foreach(annotationInfo => {
-      val psiElement = annotationInfo.psiElement
+      val parentPsiElement = annotationInfo.psiElement
 
-      if (psiElement != null) {
-        annotationHolder.createErrorAnnotation(psiElement, annotationInfo.message)
+      if (parentPsiElement != null) {
+        parentPsiElement.accept(new PsiRecursiveElementWalkingVisitor() {
+          override def visitElement(element: PsiElement): Unit = {
+            if (element.isInstanceOf[XmlText]) {
+              val elementText = element.getText
+
+              if (elementText == annotationInfo.name) {
+                annotationHolder.createErrorAnnotation(element, annotationInfo.message)
+              }
+
+              if (elementText == annotationInfo.group) {
+                annotationHolder.createErrorAnnotation(element, annotationInfo.message)
+              }
+
+
+              if (elementText == annotationInfo.version || (elementText.contains("${") && elementText.contains("}"))) {
+                annotationHolder.createErrorAnnotation(element, annotationInfo.message)
+              }
+            }
+
+            super.visitElement(element)
+          }
+        })
       }
     })
+  }
+}
+
+class MavenAnnotationInfo(aPsiElement: PsiElement, aName: String, aGroup: String, aVersion: String) {
+
+  val psiElement: PsiElement = aPsiElement
+
+  val message = s"Vulnerable package: $aName:$aGroup:$aVersion"
+
+  val name: String = aName
+  val group: String = aGroup
+  val version: String = aVersion
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[MavenAnnotationInfo]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: MavenAnnotationInfo => (that canEqual this) && message == that.message
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(message)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }
