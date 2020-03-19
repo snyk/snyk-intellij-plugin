@@ -56,10 +56,7 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
 
                       val elementText = element.getText
 
-                      if (elementText.contains("dependency")
-                        && elementText.contains(name)
-                        && elementText.contains(group)
-                        && !elementText.contains("dependencies")) {
+                      if (isPsiElementMatchDependencyByNameAndGroup(element, name, group, version)) {
                         annotationInfos += new MavenAnnotationInfo(element, name, group, version)
                       }
 
@@ -72,10 +69,7 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
                         val fromModuleGroup = moduleGroupParts(0)
                         val fromModuleVersion = moduleGroupParts(1)
 
-                        if (elementText.contains("dependency")
-                          && elementText.contains(fromModuleName)
-                          && elementText.contains(fromModuleGroup)
-                          && !elementText.contains("dependencies")) {
+                        if (isPsiElementMatchDependencyByNameAndGroup(element, fromModuleName, fromModuleGroup, fromModuleVersion)) {
                           annotationInfos += new MavenAnnotationInfo(element, fromModuleName, fromModuleGroup, fromModuleVersion)
                         }
                       })
@@ -111,16 +105,9 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
             if (element.isInstanceOf[XmlText]) {
               val elementText = element.getText
 
-              if (elementText == annotationInfo.name) {
-                annotationHolder.createErrorAnnotation(element, annotationInfo.message)
-              }
-
-              if (elementText == annotationInfo.group) {
-                annotationHolder.createErrorAnnotation(element, annotationInfo.message)
-              }
-
-
-              if (elementText == annotationInfo.version || (elementText.contains("${") && elementText.contains("}"))) {
+              if (annotationInfo.isArtifactIdMatch(elementText)
+                || annotationInfo.isGroupIdMatch(elementText)
+                || annotationInfo.isVersionMatch(elementText)) {
                 annotationHolder.createErrorAnnotation(element, annotationInfo.message)
               }
             }
@@ -130,6 +117,17 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
         })
       }
     })
+  }
+
+  private def isPsiElementMatchDependencyByNameAndGroup(
+    element: PsiElement,
+    name: String,
+    group: String,
+    version: String): Boolean = {
+
+    val elementText = element.getText
+
+    elementText.contains("dependency") && elementText.contains(name) && elementText.contains(group) && !elementText.contains("dependencies")
   }
 }
 
@@ -154,4 +152,13 @@ class MavenAnnotationInfo(aPsiElement: PsiElement, aName: String, aGroup: String
     val state = Seq(message)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
+
+  def isArtifactIdMatch(psiElementText: String): Boolean =
+    psiElementText == this.name
+
+  def isGroupIdMatch(psiElementText: String): Boolean =
+    psiElementText == this.group
+
+  def isVersionMatch(psiElementText: String): Boolean =
+    psiElementText == this.version || (psiElementText.contains("${") && psiElementText.contains("}"))
 }
