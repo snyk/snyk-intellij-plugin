@@ -8,6 +8,7 @@ import com.intellij.psi.{PsiComment, PsiElement, PsiFile, PsiRecursiveElementWal
 import io.snyk.plugin.IntellijLogging.ScalaLogger
 import io.snyk.plugin.datamodel.SecurityVuln
 import io.snyk.plugin.ui.state.SnykPluginState
+import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrCommandArgumentList
 
 import scala.collection.mutable
 
@@ -62,6 +63,7 @@ class SnykGradleRedUnderlineAnnotator
                       if (elementText.contains(group)
                         && elementText.contains(name)
                         && elementText.contains(version)
+                        && element.isInstanceOf[GrCommandArgumentList]
                         && !elementText.contains("{") && !elementText.contains("}")) {
 
                         annotationInfos += AnnotationInfo(s"Vulnerable package: $group:$name:$version", element)
