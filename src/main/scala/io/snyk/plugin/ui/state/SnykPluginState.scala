@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui
 package state
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import io.snyk.plugin.client.{CliClient, SnykConfig}
 import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
@@ -17,7 +18,6 @@ import io.snyk.plugin.metrics.{MockSegmentApi, SegmentApi}
 import scala.concurrent.Future
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
-
 import io.circe.parser.decode
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 
@@ -116,6 +116,9 @@ trait SnykPluginState extends IntellijLogging {
         projects.transform{ _ + statePair}
         segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))
         log.info(s"async scan success")
+
+        DaemonCodeAnalyzer.getInstance(getProject).restart()
+
         result
       }
 
