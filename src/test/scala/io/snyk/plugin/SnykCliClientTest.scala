@@ -7,10 +7,12 @@ import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Assert.{assertEquals, assertFalse, assertNotNull, assertTrue}
+import org.junit.Ignore
 import org.junit.Test
 
 import scala.io.{Codec, Source}
 
+@Ignore
 class SnykCliClientTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {

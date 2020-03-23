@@ -1,0 +1,37 @@
+dist: trusty
+language: java
+os: linux
+
+jdk:
+  - oraclejdk8
+
+env:
+  - GRADLE_OPTS="-Dorg.gradle.daemon=false"
+
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+
+jobs:
+  include:
+    - name: IntelliJ 2019.1
+      env: ORG_GRADLE_PROJECT_ideaVersion=2019.1
+    - name: IntelliJ 2019.3
+      env: ORG_GRADLE_PROJECT_ideaVersion=2019.3
+    - name: IntelliJ LATEST-EAP-SNAPSHOT
+      env: ORG_GRADLE_PROJECT_ideaVersion=LATEST-EAP-SNAPSHOT
+
+install: true
+before_script:
+  - wget -q https://github.com/snyk/snyk/releases/download/v1.303.0/snyk-linux
+  - wget -q https://github.com/snyk/snyk/releases/download/v1.303.0/snyk-linux.sha256
+  - sha256sum -c snyk-linux.sha256
+  - sudo mv snyk-linux /usr/local/bin/snyk
+  - sudo chmod +x /usr/local/bin/snyk
+  - snyk --version
+  - snyk config set api $SNYK_API_KEY
+script: ./gradlew clean verifyPlugin

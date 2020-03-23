@@ -49,17 +49,15 @@ dependencies {
 
 intellij {
     type 'IC'
-    version '2019.1'
+    version ideaVersion
     pluginName 'snyk-intellij-plugin'
     plugins = ['maven', 'gradle', 'properties', 'Groovy']
     downloadSources = true
     intellij.updateSinceUntilBuild false
-
-    publishPlugin {
-        username project.properties['intellijPublishUsername'] ?: "snyksec"
-        password project.properties['intellijPublishPassword'] ?: "<not public>"
-        channels 'develop'
-    }
+}
+publishPlugin {
+    token publishToken
+    channels publishChannels
 }
 
 idea {
@@ -82,4 +80,7 @@ dependencies {
 
 test {
     useJUnit()
+    testLogging {
+        exceptionFormat = 'full'
+    }
 }

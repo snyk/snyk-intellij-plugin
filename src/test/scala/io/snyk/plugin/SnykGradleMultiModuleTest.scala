@@ -15,10 +15,12 @@ import io.snyk.plugin.ui.SnykToolWindowFactory
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert._
+import org.junit.Ignore
 import org.junit.Test
 
 import scala.io.{Codec, Source}
 
+@Ignore
 class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
 
   override protected def importProject(buildGradleStr: String): Unit = {

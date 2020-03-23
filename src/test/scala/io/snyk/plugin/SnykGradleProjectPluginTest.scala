@@ -10,10 +10,12 @@ import io.snyk.plugin.ui.SnykToolWindowFactory
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
+import org.junit.Ignore
 import org.junit.Test
 
 import scala.io.{Codec, Source}
 
+@Ignore
 class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
 
   override protected def setUp(): Unit = {

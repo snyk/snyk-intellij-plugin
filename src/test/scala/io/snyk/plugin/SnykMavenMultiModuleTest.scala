@@ -2,6 +2,7 @@ package io.snyk.plugin
 
 import java.io.File
 
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -18,6 +19,7 @@ import org.jetbrains.idea.maven.utils.MavenProgressIndicator
 
 import scala.io.{Codec, Source}
 
+@Ignore
 class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {
