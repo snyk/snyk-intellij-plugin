@@ -7,7 +7,7 @@ import org.junit.Assert._
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.client.{CliClient, SnykConfig}
-import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
+import io.snyk.plugin.datamodel.{SecurityVuln, ProjectDependency}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.SnykToolWindowFactory
 import java.{util => ju}
@@ -41,7 +41,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
     val config = SnykConfig.default
     val apiClient = CliClient.standard(config)
 
-    val mavenArtifact = SnykMavenArtifact(
+    val mavenArtifact = ProjectDependency(
       "<none>",
       "<none>",
       "<none>",

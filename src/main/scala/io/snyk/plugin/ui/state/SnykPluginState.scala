@@ -3,7 +3,7 @@ package state
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import io.snyk.plugin.client.{CliClient, SnykConfig}
-import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
+import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.depsource.{BuildToolProject, DepTreeProvider, GradleProjectsObservable, MavenProjectsObservable}
 import io.snyk.plugin.IntellijLogging
@@ -82,7 +82,7 @@ trait SnykPluginState extends IntellijLogging {
 
   def depTree(
     projectId: String = selectedProjectId.get
-  ): Option[SnykMavenArtifact] = {
+  ): Option[ProjectDependency] = {
     val pps: Option[PerProjectState] = projects.get.get(projectId)
     val existingDeps = pps.flatMap(_.depTree).orElse(depTreeProvider.getDepTree(projectId))
     existingDeps
@@ -160,7 +160,7 @@ object SnykPluginState {
 
   def mockForProject(project: Project,
                      depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
-                     mockResponder: SnykMavenArtifact => Try[String]): SnykPluginState = {
+                     mockResponder: ProjectDependency => Try[String]): SnykPluginState = {
     val snykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
     val projectStatePair = project.getName -> snykPluginState
@@ -172,7 +172,7 @@ object SnykPluginState {
 
   def mock(
     depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
-    mockResponder: SnykMavenArtifact => Try[String] //= defaultMockResponder
+    mockResponder: ProjectDependency => Try[String] //= defaultMockResponder
   ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
   private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
@@ -212,12 +212,12 @@ object SnykPluginState {
   /**
     * Default response as used by `mock`, always returns `sampleResponse.json` from the classpath
     */
-  private[this] def defaultMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def defaultMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sampleResponse.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 
   private[this] class MockSnykPluginState(val depTreeProvider: DepTreeProvider,
-                                          val mockResponder: SnykMavenArtifact => Try[String]) extends SnykPluginState {
+                                          val mockResponder: ProjectDependency => Try[String]) extends SnykPluginState {
     override val apiClient: CliClient = CliClient.mock(mockResponder)
     override val segmentApi: SegmentApi = MockSegmentApi
 
@@ -235,7 +235,7 @@ object SnykPluginState {
     override def gradleProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
 
     override def latestScanForSelectedProject: Option[Seq[SnykVulnResponse]] = {
-      val treeRoot: SnykMavenArtifact = SnykMavenArtifact.empty
+      val treeRoot: ProjectDependency = ProjectDependency.empty
       val triedResponse = mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
 
       triedResponse.toOption

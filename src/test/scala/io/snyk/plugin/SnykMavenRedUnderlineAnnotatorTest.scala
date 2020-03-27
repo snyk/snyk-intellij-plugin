@@ -1,7 +1,7 @@
 package io.snyk.plugin
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
-import io.snyk.plugin.datamodel.SnykMavenArtifact
+import io.snyk.plugin.datamodel.ProjectDependency
 import io.snyk.plugin.ui.state.SnykPluginState
 
 import scala.io.{Codec, Source}
@@ -99,15 +99,15 @@ class SnykMavenRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCase
     myFixture.checkHighlighting(true, false, true)
   }
 
-  private[this] def sampleMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def sampleMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-for-annotator-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 
-  private[this] def samplePropertiesMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def samplePropertiesMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("properties-response-for-annotator-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 
-  private[this] def sampleForFromDependenciesMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def sampleForFromDependenciesMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-for-annotator-from-dependencies-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 }

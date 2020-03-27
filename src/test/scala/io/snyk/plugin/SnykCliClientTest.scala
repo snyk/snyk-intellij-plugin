@@ -3,7 +3,7 @@ package io.snyk.plugin
 import java.util
 
 import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, SnykConfig}
-import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
+import io.snyk.plugin.datamodel.{SecurityVuln, ProjectDependency}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Assert.{assertEquals, assertFalse, assertNotNull, assertTrue}
@@ -34,7 +34,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
   def testRunScan(): Unit = {
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
-    val mavenArtifact = SnykMavenArtifact(
+    val mavenArtifact = ProjectDependency(
       "<none>",
       "<none>",
       "<none>",

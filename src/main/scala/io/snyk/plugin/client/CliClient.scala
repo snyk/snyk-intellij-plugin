@@ -13,7 +13,7 @@ import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.diagnostic.Logger
-import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
+import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 import com.softwaremill.sttp._
 import io.circe.parser.decode
@@ -31,7 +31,7 @@ import io.snyk.plugin.depsource.ProjectType
   */
 sealed trait CliClient {
   /** Run a scan on the supplied artifact tree */
-  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[Seq[SnykVulnResponse]]
+  def runScan(project: Project, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]]
   def userInfo(): Try[SnykUserInfo]
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
@@ -90,7 +90,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
     }
   }
 
-  private def runRaw(project: Project, artifact: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
+  private def runRaw(project: Project, artifact: ProjectDependency): Try[String] = tryConfig flatMap { config =>
     log.debug("ApiClient: run Snyk CLI")
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
@@ -201,7 +201,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
 
   }
 
-  def runScan(project: Project, snykMavenArtifact: SnykMavenArtifact): Try[Seq[SnykVulnResponse]] = for {
+  def runScan(project: Project, snykMavenArtifact: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
     jsonStr <- runRaw(project, snykMavenArtifact)
     json <- decode[Seq[SnykVulnResponse]](jsonStr).toTry
   } yield json
@@ -213,9 +213,9 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
 
 }
 
-private final class MockCliClient (mockResponder: SnykMavenArtifact => Try[String]) extends CliClient {
+private final class MockCliClient (mockResponder: ProjectDependency => Try[String]) extends CliClient {
   val isAvailable: Boolean = true
-  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[Seq[SnykVulnResponse]] =
+  def runScan(project: Project, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
     mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
   def userInfo(): Try[SnykUserInfo] = Success {
     val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")
@@ -241,7 +241,7 @@ object CliClient {
     * Build a mock client, using the supplied function to provide the mocked response.
     * A default implementation is supplied.
     */
-  def mock(mockResponder: SnykMavenArtifact => Try[String]): CliClient =
+  def mock(mockResponder: ProjectDependency => Try[String]): CliClient =
     new MockCliClient(mockResponder)
 }
 

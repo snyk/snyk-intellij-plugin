@@ -2,7 +2,7 @@ package io.snyk.plugin
 
 import com.intellij.openapi.project.Project
 import io.circe.{Json, JsonObject}
-import io.snyk.plugin.datamodel.SnykMavenArtifact
+import io.snyk.plugin.datamodel.ProjectDependency
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.concurrent.Worker
 import org.jetbrains.idea.maven.project.MavenProjectsManager
@@ -20,14 +20,14 @@ object Implicits {
   val log = Logger.getInstance(this.getClass)
 
   implicit class RichProject(val p: Project) extends AnyVal {
-    def toDepNode: SnykMavenArtifact = {
+    def toDepNode: ProjectDependency = {
       val allMavenProjects = MavenProjectsManager.getInstance(p).getProjects.asScala
       val mp = allMavenProjects.head
       allMavenProjects.foreach { p =>
         log.debug(s"Enumerating maven project $p")
       }
 
-      SnykMavenArtifact.fromMavenProject(mp)
+      ProjectDependency.fromMavenProject(mp)
     }
   }
 

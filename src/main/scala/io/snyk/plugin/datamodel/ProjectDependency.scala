@@ -7,11 +7,11 @@ import org.jetbrains.idea.maven.project.MavenProject
 
 import scala.collection.JavaConverters._
 
-object SnykMavenArtifact {
-  def fromMavenArtifactNode(n: MavenArtifactNode): SnykMavenArtifact = {
+object ProjectDependency {
+  def fromMavenArtifactNode(n: MavenArtifactNode): ProjectDependency = {
     //    log.debug(s"dep tree for node: ${n.getDependencies}")
 
-    SnykMavenArtifact(
+    ProjectDependency(
       n.getArtifact.getGroupId,
       n.getArtifact.getArtifactId,
       if(StringUtil.isEmptyOrSpaces(n.getArtifact.getBaseVersion)) n.getArtifact.getVersion
@@ -24,33 +24,33 @@ object SnykMavenArtifact {
     )
   }
 
-  def fromMavenProject(proj: MavenProject): SnykMavenArtifact = {
-    SnykMavenArtifact(
+  def fromMavenProject(proj: MavenProject): ProjectDependency = {
+    ProjectDependency(
       proj.getMavenId.getGroupId,
       proj.getMavenId.getArtifactId,
       proj.getMavenId.getVersion,
       proj.getPackaging,
       None,
       None,
-      proj.getDependencyTree.asScala.map { SnykMavenArtifact.fromMavenArtifactNode },
+      proj.getDependencyTree.asScala.map { ProjectDependency.fromMavenArtifactNode },
       "Maven"
     )
   }
 
-  def fromBuildToolProject(buildToolProject: BuildToolProject): SnykMavenArtifact = {
-    SnykMavenArtifact(
+  def fromBuildToolProject(buildToolProject: BuildToolProject): ProjectDependency = {
+    ProjectDependency(
       buildToolProject.getGroupId,
       buildToolProject.getArtifactId,
       buildToolProject.getVersion,
       buildToolProject.getPackaging,
       None,
       None,
-      List.empty[SnykMavenArtifact],
+      List.empty[ProjectDependency],
       buildToolProject.getType
     )
   }
 
-  val empty: SnykMavenArtifact = SnykMavenArtifact(
+  val empty: ProjectDependency = ProjectDependency(
     "<none>",
     "<none>",
     "<none>",
@@ -62,15 +62,15 @@ object SnykMavenArtifact {
   )
 }
 
-case class SnykMavenArtifact(
+case class ProjectDependency(
     groupId: String,
     artifactId: String,
     version: String,
     packaging: String,
     classifier: Option[String],
     scope: Option[String],
-    deps: Seq[SnykMavenArtifact],
+    deps: Seq[ProjectDependency],
     projectType: String) {
   val name: String = s"$groupId:$artifactId"
-  val depsMap: Map[String, SnykMavenArtifact] = deps.map(x => x.name -> x).toMap
+  val depsMap: Map[String, ProjectDependency] = deps.map(x => x.name -> x).toMap
 }
