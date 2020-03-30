@@ -42,7 +42,8 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       None,
       None,
       Nil,
-      ProjectType.MAVEN
+      ProjectType.MAVEN,
+      false
     )
 
     val snykVulnResponse = snykPluginState.apiClient.runScan(currentProject, mavenArtifact)
