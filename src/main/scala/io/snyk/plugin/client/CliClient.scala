@@ -11,7 +11,7 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
-import com.intellij.openapi.application.ApplicationInfo
+import com.intellij.openapi.application.{ApplicationInfo, WriteAction}
 import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
@@ -25,6 +25,8 @@ import java.util.regex.Pattern
 
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.depsource.ProjectType
+import org.jetbrains.idea.maven.execution.{MavenRunner, MavenRunnerParameters}
+import org.jetbrains.idea.maven.project.{MavenProject, MavenProjectsManager}
 
 /**
   * Represents the connection to the Snyk servers for the security scan.
@@ -90,14 +92,16 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
     }
   }
 
-  private def runRaw(project: Project, artifact: ProjectDependency): Try[String] = tryConfig flatMap { config =>
+  private def runRaw(project: Project, projectDependency: ProjectDependency): Try[String] = tryConfig flatMap { config =>
     log.debug("ApiClient: run Snyk CLI")
+
+    prepareProjectBeforeCliCall(project, projectDependency)
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add("snyk")
     commands.add("--json")
 
-    artifact.projectType match {
+    projectDependency.projectType match {
       case ProjectType.MAVEN => commands.add("--all-projects")
       case ProjectType.GRADLE => commands.add("--all-sub-projects")
     }
@@ -126,6 +130,37 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
         Failure(e)
       }
     }
+  }
+
+  private def prepareProjectBeforeCliCall(project: Project, projectDependency: ProjectDependency): Unit = {
+    if (projectDependency.projectType == ProjectType.MAVEN && projectDependency.isMultiModuleProject) {
+      runMavenInstallGoal(project)
+    }
+  }
+
+  private def runMavenInstallGoal(project: Project): Unit = {
+    WriteAction.runAndWait(() => {
+      val projectsManager = MavenProjectsManager.getInstance(project)
+
+      val explicitProfiles = projectsManager.getExplicitProfiles
+
+      val mavenProjects = projectsManager.getRootProjects
+      val mavenProject: MavenProject = mavenProjects.get(0)
+
+      val goals: util.List[String] = new util.ArrayList[String]
+      goals.add("install")
+
+      val params = new MavenRunnerParameters(true,
+        mavenProject.getDirectory,
+        mavenProject.getFile.getName,
+        goals,
+        explicitProfiles.getEnabledProfiles,
+        explicitProfiles.getDisabledProfiles)
+
+      val mavenRunner = MavenRunner.getInstance(project)
+
+      mavenRunner.run(params, mavenRunner.getSettings, null)
+    })
   }
 
   private def requestCliForError(projectPath: String): String = {

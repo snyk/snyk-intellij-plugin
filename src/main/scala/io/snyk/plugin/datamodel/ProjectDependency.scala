@@ -1,7 +1,7 @@
 package io.snyk.plugin.datamodel
 
 import com.intellij.openapi.util.text.StringUtil
-import io.snyk.plugin.depsource.BuildToolProject
+import io.snyk.plugin.depsource.{BuildToolProject, ProjectType}
 import org.jetbrains.idea.maven.model.MavenArtifactNode
 import org.jetbrains.idea.maven.project.MavenProject
 
@@ -20,7 +20,8 @@ object ProjectDependency {
       Option(n.getArtifact.getClassifier),
       Option(n.getArtifact.getScope),
       n.getDependencies.asScala.map { fromMavenArtifactNode },
-      "Maven"
+      ProjectType.MAVEN,
+      false
     )
   }
 
@@ -33,7 +34,8 @@ object ProjectDependency {
       None,
       None,
       proj.getDependencyTree.asScala.map { ProjectDependency.fromMavenArtifactNode },
-      "Maven"
+      ProjectType.MAVEN,
+      false
     )
   }
 
@@ -46,7 +48,8 @@ object ProjectDependency {
       None,
       None,
       List.empty[ProjectDependency],
-      buildToolProject.getType
+      buildToolProject.getType,
+      buildToolProject.isMultiModule
     )
   }
 
@@ -58,7 +61,8 @@ object ProjectDependency {
     None,
     None,
     Nil,
-    ""
+    "",
+    false
   )
 }
 
@@ -70,7 +74,8 @@ case class ProjectDependency(
     classifier: Option[String],
     scope: Option[String],
     deps: Seq[ProjectDependency],
-    projectType: String) {
+    projectType: String,
+    isMultiModuleProject: Boolean) {
   val name: String = s"$groupId:$artifactId"
   val depsMap: Map[String, ProjectDependency] = deps.map(x => x.name -> x).toMap
 }

@@ -22,9 +22,14 @@ trait BuildToolProject {
   def getType: String
 
   def getProjectDirectoryPath: String
+
+  def isMultiModule: Boolean
 }
 
-case class MavenBuildToolProject(mavenProject: MavenProject, projectDirectoryPath: String) extends BuildToolProject {
+case class MavenBuildToolProject(
+  mavenProject: MavenProject,
+  projectDirectoryPath: String,
+  isMultiModuleProject: Boolean) extends BuildToolProject {
 
   def findDependencies(groupId: String, artifactId: String): util.List[MavenArtifact] = {
     mavenProject.findDependencies(groupId, artifactId)
@@ -45,6 +50,8 @@ case class MavenBuildToolProject(mavenProject: MavenProject, projectDirectoryPat
   override def getProjectDirectoryPath: String = projectDirectoryPath
 
   override def toString: String = mavenProject.toString
+
+  override def isMultiModule: Boolean = isMultiModuleProject
 }
 
 case class GradleBuildToolProject(moduleData: ModuleData, projectDirectoryPath: String) extends BuildToolProject {
@@ -96,4 +103,6 @@ case class GradleBuildToolProject(moduleData: ModuleData, projectDirectoryPath: 
       originalString
     }
   }
+
+  override def isMultiModule: Boolean = false
 }

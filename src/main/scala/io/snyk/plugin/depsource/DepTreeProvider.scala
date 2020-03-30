@@ -31,9 +31,10 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
   private[this] def getMavenBuildToolProjects: Seq[BuildToolProject] = {
     val mavenProjects = MavenProjectsManager.getInstance(project).getProjects.asScala
+    val isMultiModuleProject = mavenProjects.size > 1
 
     mavenProjects.map(mavenProject => {
-      MavenBuildToolProject(mavenProject, project.getBasePath)
+      MavenBuildToolProject(mavenProject, project.getBasePath, isMultiModuleProject)
     })
   }
 
