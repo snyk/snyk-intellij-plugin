@@ -13,7 +13,7 @@ object SnykPluginProjectComponent {
 }
 
 class SnykPluginProjectComponent(project: Project) extends ProjectComponent {
-  val pluginState: SnykPluginState = SnykPluginState.forIntelliJ(project)
+  val pluginState: SnykPluginState = SnykPluginState.newInstance(project)
 
   override def initComponent() : Unit = {
   }

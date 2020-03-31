@@ -49,7 +49,8 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
       None,
       None,
       Nil,
-      ProjectType.MAVEN
+      ProjectType.MAVEN,
+      true
     )
 
     val snykVulnResponseSeqTry = apiClient.runScan(currentProject, mavenArtifact)
@@ -75,7 +76,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
     waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
 
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     val snykVulnResponseSeqOption = snykPluginState.latestScanForSelectedProject
 

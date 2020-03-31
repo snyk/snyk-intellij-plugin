@@ -62,7 +62,8 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
       None,
       None,
       Nil,
-      ProjectType.GRADLE
+      ProjectType.GRADLE,
+      false
     )
 
     val snykVulnResponseSeqTry = apiClient.runScan(currentProject, artifact)
@@ -102,7 +103,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
 
     waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
 
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     val snykVulnResponseSeqOption = snykPluginState.latestScanForSelectedProject
 

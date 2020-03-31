@@ -134,7 +134,7 @@ trait SnykPluginState extends IntellijLogging {
 object SnykPluginState {
   val pluginStates: Atomic[Map[String, SnykPluginState]] = Atomic(Map.empty[String, SnykPluginState])
 
-  def forIntelliJ(project: Project): SnykPluginState = {
+  def newInstance(project: Project): SnykPluginState = {
     val pluginStateOption: Option[SnykPluginState] = pluginStates.get.get(project.getName)
 
     if (pluginStateOption.isEmpty) {
@@ -149,6 +149,8 @@ object SnykPluginState {
       pluginStateOption.get
     }
   }
+
+  def getInstance(project: Project): SnykPluginState = pluginStates.get.get(project.getName).get
 
   def removeForProject(project: Project): Unit = {
     val pluginStateOption: Option[SnykPluginState] = pluginStates.get.get(project.getName)

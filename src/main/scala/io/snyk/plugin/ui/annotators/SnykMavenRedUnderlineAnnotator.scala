@@ -28,7 +28,7 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
       return annotationInfos
     }
 
-    val pluginState = SnykPluginState.forIntelliJ(project)
+    val pluginState = SnykPluginState.getInstance(project)
 
     val latestScanForSelectedProject = pluginState.latestScanForSelectedProject
 

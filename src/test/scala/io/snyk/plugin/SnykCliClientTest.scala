@@ -32,7 +32,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
   @Test
   def testRunScan(): Unit = {
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     val mavenArtifact = ProjectDependency(
       "<none>",
@@ -59,7 +59,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
   @Test
   def testIsCliInstalledFailed(): Unit = {
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     val isCliInstalled = snykPluginState.cliClient.isCliInstalled(new ConsoleCommandRunner() {
       override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
@@ -72,7 +72,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
   @Test
   def testIsCliInstalledSuccess(): Unit = {
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     val isCliInstalled = snykPluginState.cliClient.isCliInstalled(new ConsoleCommandRunner() {
       override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
