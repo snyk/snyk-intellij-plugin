@@ -150,7 +150,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
       val goals: util.List[String] = new util.ArrayList[String]
       goals.add("install")
 
-      val params = new MavenRunnerParameters(true,
+      val parameters = new MavenRunnerParameters(true,
         mavenProject.getDirectory,
         mavenProject.getFile.getName,
         goals,
@@ -159,7 +159,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
 
       val mavenRunner = MavenRunner.getInstance(project)
 
-      mavenRunner.run(params, mavenRunner.getSettings, null)
+      mavenRunner.run(parameters, mavenRunner.getSettings, null)
     })
   }
 
