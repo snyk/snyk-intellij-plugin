@@ -46,7 +46,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       false
     )
 
-    val snykVulnResponse = snykPluginState.apiClient.runScan(currentProject, mavenArtifact)
+    val snykVulnResponse = snykPluginState.cliClient.runScan(currentProject, mavenArtifact)
 
     assertTrue(snykVulnResponse.isSuccess)
 
@@ -61,7 +61,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
   def testIsCliInstalledFailed(): Unit = {
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
-    val isCliInstalled = snykPluginState.apiClient.isCliInstalled(new ConsoleCommandRunner() {
+    val isCliInstalled = snykPluginState.cliClient.isCliInstalled(new ConsoleCommandRunner() {
       override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
         "command not found"
       }
@@ -74,7 +74,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
   def testIsCliInstalledSuccess(): Unit = {
     val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
 
-    val isCliInstalled = snykPluginState.apiClient.isCliInstalled(new ConsoleCommandRunner() {
+    val isCliInstalled = snykPluginState.cliClient.isCliInstalled(new ConsoleCommandRunner() {
       override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
         "1.290.2"
       }

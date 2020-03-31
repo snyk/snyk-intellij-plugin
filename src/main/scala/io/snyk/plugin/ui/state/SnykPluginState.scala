@@ -32,7 +32,7 @@ trait SnykPluginState extends IntellijLogging {
   //MODEL
 
   def getProject: Project
-  def apiClient: CliClient
+  def cliClient: CliClient
   def segmentApi: SegmentApi
   val projects: Atomic[Map[String,PerProjectState]] = Atomic(Map.empty[String,PerProjectState])
   val config: Atomic[Try[SnykConfig]] = Atomic(SnykConfig.default)
@@ -111,7 +111,7 @@ trait SnykPluginState extends IntellijLogging {
 
       //Use a monix task instead of a vanilla future, *specifically* for access to the `timeout` functionality
       val task = Task.eval{
-        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (apiClient.runScan(getProject, _))
+        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (cliClient.runScan(getProject, _))
         val statePair = projectId -> PerProjectState(deps.toOption, result.toOption)
         projects.transform{ _ + statePair}
         segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))
@@ -176,12 +176,12 @@ object SnykPluginState {
   ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
   private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
-    override val apiClient = CliClient.standard(config())
+    override val cliClient = CliClient.standard(config())
     override val depTreeProvider = DepTreeProvider.forProject(project)
     override val segmentApi: SegmentApi =
       config().toOption.map(_.disableAnalytics) match {
         case Some(true) => MockSegmentApi
-        case _ => SegmentApi(apiClient)
+        case _ => SegmentApi(cliClient)
       }
 
     override def mavenProjectsObservable: Observable[Seq[String]] =
@@ -218,7 +218,7 @@ object SnykPluginState {
 
   private[this] class MockSnykPluginState(val depTreeProvider: DepTreeProvider,
                                           val mockResponder: ProjectDependency => Try[String]) extends SnykPluginState {
-    override val apiClient: CliClient = CliClient.mock(mockResponder)
+    override val cliClient: CliClient = CliClient.mock(mockResponder)
     override val segmentApi: SegmentApi = MockSegmentApi
 
     override def mavenProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
