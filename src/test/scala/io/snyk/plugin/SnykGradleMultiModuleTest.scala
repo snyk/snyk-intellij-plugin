@@ -52,7 +52,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
   @Test
   def testRunScanForGradleMultiModuleProject(): Unit = {
     val config = SnykConfig.default
-    val apiClient = CliClient.standard(config)
+    val apiClient = CliClient.newInstance(config)
 
     val artifact = ProjectDependency(
       "<none>",

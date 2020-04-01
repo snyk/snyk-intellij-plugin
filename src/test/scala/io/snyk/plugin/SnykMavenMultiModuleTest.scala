@@ -6,12 +6,13 @@ import org.junit.Test
 import org.junit.Assert._
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
-import io.snyk.plugin.client.{CliClient, SnykConfig}
-import io.snyk.plugin.datamodel.{SecurityVuln, ProjectDependency}
+import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, SnykConfig}
+import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.SnykToolWindowFactory
 import java.{util => ju}
 
+import com.intellij.openapi.project.Project
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.idea.maven.utils.MavenProgressIndicator
 
@@ -39,7 +40,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
   @Test
   def testRunScanForMavenMultiModuleProject(): Unit = {
     val config = SnykConfig.default
-    val apiClient = CliClient.standard(config)
+    val apiClient = CliClient.newInstance(config)
 
     val mavenArtifact = ProjectDependency(
       "<none>",
@@ -71,6 +72,11 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
   @Test
   def testSnykPluginWithMavenMultiModuleProject(): Unit = {
+    SnykPluginState.getInstance(currentProject).cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
+      override def runMavenInstallGoal(project: Project): Unit = {
+      }
+    })
+
     myProjectsTree
       .update(ju.Arrays.asList({projectPomVirtualFile}), true, myProjectsManager.getGeneralSettings, new MavenProgressIndicator())
 

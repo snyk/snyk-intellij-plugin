@@ -2,7 +2,7 @@ package io.snyk.plugin.ui
 package state
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import io.snyk.plugin.client.{CliClient, SnykConfig}
+import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, SnykConfig}
 import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.depsource.{BuildToolProject, DepTreeProvider, GradleProjectsObservable, MavenProjectsObservable}
@@ -160,9 +160,11 @@ object SnykPluginState {
     }
   }
 
-  def mockForProject(project: Project,
-                     depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
-                     mockResponder: ProjectDependency => Try[String]): SnykPluginState = {
+  def mockForProject(
+    project: Project,
+    depTreeProvider: DepTreeProvider = DepTreeProvider.mock(),
+    mockResponder: ProjectDependency => Try[String]): SnykPluginState = {
+
     val snykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
     val projectStatePair = project.getName -> snykPluginState
@@ -178,7 +180,8 @@ object SnykPluginState {
   ): SnykPluginState = new MockSnykPluginState(depTreeProvider, mockResponder)
 
   private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
-    override val cliClient = CliClient.standard(config())
+
+    override val cliClient = CliClient.newInstance(config(), new ConsoleCommandRunner)
     override val depTreeProvider = DepTreeProvider.forProject(project)
     override val segmentApi: SegmentApi =
       config().toOption.map(_.disableAnalytics) match {
@@ -218,9 +221,11 @@ object SnykPluginState {
     Source.fromResource("sampleResponse.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 
-  private[this] class MockSnykPluginState(val depTreeProvider: DepTreeProvider,
-                                          val mockResponder: ProjectDependency => Try[String]) extends SnykPluginState {
-    override val cliClient: CliClient = CliClient.mock(mockResponder)
+  private[this] class MockSnykPluginState(
+    val depTreeProvider: DepTreeProvider,
+    val mockResponder: ProjectDependency => Try[String]) extends SnykPluginState {
+
+    override val cliClient: CliClient = CliClient.newMockInstance(mockResponder)
     override val segmentApi: SegmentApi = MockSegmentApi
 
     override def mavenProjectsObservable: Observable[Seq[String]] = Observable.pure(Seq("dummy-root-project"))
