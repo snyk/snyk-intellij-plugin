@@ -15,7 +15,6 @@ import org.junit.Test
 
 import scala.io.{Codec, Source}
 
-@Ignore
 class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
 
   override protected def setUp(): Unit = {

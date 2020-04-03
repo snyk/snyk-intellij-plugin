@@ -1,7 +1,6 @@
 package io.snyk.plugin
 
 import io.snyk.plugin.ui.state.SnykPluginState
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
@@ -11,7 +10,6 @@ import org.jetbrains.idea.maven.project.MavenProjectsManager
 
 import scala.io.{Codec, Source}
 
-@Ignore
 class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
 
   override protected def setUp(): Unit = {
