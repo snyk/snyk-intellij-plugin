@@ -10,7 +10,6 @@ import io.snyk.plugin.ui.MockSnykToolWindowFactory
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
-import org.junit.Ignore
 import org.junit.Test
 
 import scala.io.{Codec, Source}
@@ -41,7 +40,7 @@ class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
 
-    waitBackgroundTasks(30) // This is still a tiny and vulnerable part for this test.
+    waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
 
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
 

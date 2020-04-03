@@ -32,7 +32,7 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
 
-    waitBackgroundTasks(30) // This is still a tiny and vulnerable part for this test.
+    waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
 
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
     assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.head.packageManager.get)
