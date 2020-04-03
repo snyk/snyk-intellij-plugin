@@ -4,10 +4,9 @@ import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
-
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.datamodel.SecurityVuln
-import io.snyk.plugin.ui.SnykToolWindowFactory
+import io.snyk.plugin.ui.MockSnykToolWindowFactory
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 
 import scala.io.{Codec, Source}
@@ -24,9 +23,9 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
 
     val mockToolWindow = new ToolWindowHeadlessManagerImpl.MockToolWindow(currentProject)
 
-    val snykToolWindowFactory = new SnykToolWindowFactory
+    val mockToolWindowFactory = MockSnykToolWindowFactory(SnykPluginState.forIntelliJ(currentProject))
 
-    snykToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
+    mockToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
   }
 
   @Test
