@@ -12,7 +12,15 @@ plugins {
 
 group 'io.snyk'
 description = 'Snyk security scanning for IntelliJ IDEA'
-version '0.2.2'
+
+def buildSuffix = ""
+if (!buildNumber.isBlank()) {
+    buildSuffix += ".$buildNumber"
+}
+if (!publishChannel.isBlank()) {
+    buildSuffix += "-$publishChannel"
+}
+version "0.2.$patchVersion$buildSuffix"
 
 apply plugin: 'idea'
 apply plugin: 'scala'
@@ -56,7 +64,7 @@ intellij {
 }
 publishPlugin {
     token publishToken
-    channels publishChannels
+    channels publishChannel
 }
 
 idea {
