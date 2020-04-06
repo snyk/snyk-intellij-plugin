@@ -34,7 +34,6 @@ dependencies {
     compile "io.monix:monix_$scala_version:3.0.0-RC1"
     compile "com.softwaremill.sttp:core_$scala_version:1.3.2"
     compile "com.beachape:enumeratum_$scala_version:1.5.13"
-//    compile "org.scalafx:scalafx_$scala_version:8.0.144-R12"
     compile "io.circe:circe-core_$scala_version:0.9.3"
     compile "io.circe:circe-parser_$scala_version:0.9.3"
     compile "io.circe:circe-java8_$scala_version:0.9.3"

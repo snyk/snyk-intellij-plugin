@@ -20,10 +20,10 @@ jobs:
   include:
     - name: IntelliJ 2019.1
       env: ORG_GRADLE_PROJECT_ideaVersion=2019.1
-    - name: IntelliJ 2019.3
-      env: ORG_GRADLE_PROJECT_ideaVersion=2019.3
-    - name: IntelliJ LATEST-EAP-SNAPSHOT
-      env: ORG_GRADLE_PROJECT_ideaVersion=LATEST-EAP-SNAPSHOT
+    #- name: IntelliJ 2019.3
+    #  env: ORG_GRADLE_PROJECT_ideaVersion=2019.3
+    #- name: IntelliJ LATEST-EAP-SNAPSHOT
+    #  env: ORG_GRADLE_PROJECT_ideaVersion=LATEST-EAP-SNAPSHOT
 
 install: true
 before_script:
@@ -33,5 +33,5 @@ before_script:
   - sudo mv snyk-linux /usr/local/bin/snyk
   - sudo chmod +x /usr/local/bin/snyk
   - snyk --version
-  - snyk config set api $SNYK_API_KEY
+  - echo {\"api\":\"$SNYK_API_KEY\"} > $HOME/.config/configstore/snyk.json
 script: ./gradlew clean verifyPlugin
