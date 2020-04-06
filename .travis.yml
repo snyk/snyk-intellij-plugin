@@ -29,7 +29,7 @@ jobs:
       env: ORG_GRADLE_PROJECT_ideaVersion=2019.1 ORG_GRADLE_PROJECT_buildNumber=$TRAVIS_BUILD_NUMBER
       script: ./gradlew clean buildPlugin publishPlugin -PpublishToken=$JETBRAINS_TOKEN
     - name: Upload Stable
-      if: branch = master
+      if: branch = master AND tag is present
       env: ORG_GRADLE_PROJECT_ideaVersion=2019.1 ORG_GRADLE_PROJECT_buildNumber= ORG_GRADLE_PROJECT_publishChannel=
       script: true
 
