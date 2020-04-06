@@ -69,6 +69,7 @@
         </group-->
     </actions>
 
+    <depends>com.intellij.modules.java</depends>
     <depends>org.jetbrains.idea.maven</depends>
     <depends>org.jetbrains.plugins.gradle</depends>
 </idea-plugin>
