@@ -32,7 +32,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
     val mockToolWindow = new ToolWindowHeadlessManagerImpl.MockToolWindow(currentProject)
 
-    val mockToolWindowFactory = MockSnykToolWindowFactory(SnykPluginState.forIntelliJ(currentProject))
+    val mockToolWindowFactory = MockSnykToolWindowFactory(SnykPluginState.newInstance(currentProject))
 
     mockToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
   }
