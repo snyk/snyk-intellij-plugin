@@ -9,7 +9,7 @@ class SegmentApiTest {
 
   @Test
   def testSendSegmentTestEvent(): Unit = {
-    val clientMock = CliClient.mock(null)
+    val clientMock = CliClient.newMockInstance(null)
     val segmentApi = SegmentApi(clientMock)
 
     assertNotNull(segmentApi)

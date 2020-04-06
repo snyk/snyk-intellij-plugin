@@ -6,7 +6,7 @@ import com.intellij.openapi.externalSystem.model.project.{ModuleData, ProjectDat
 import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.datamodel.SnykMavenArtifact
+import io.snyk.plugin.datamodel.ProjectDependency
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 
 trait DepTreeProvider {
   def rootIds: Seq[String]
-  def getDepTree(rootId: String): Option[SnykMavenArtifact]
+  def getDepTree(rootId: String): Option[ProjectDependency]
   def idToBuildToolProject(id: String): Option[BuildToolProject]
 }
 
@@ -31,9 +31,10 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
 
   private[this] def getMavenBuildToolProjects: Seq[BuildToolProject] = {
     val mavenProjects = MavenProjectsManager.getInstance(project).getProjects.asScala
+    val isMultiModuleProject = mavenProjects.size > 1
 
     mavenProjects.map(mavenProject => {
-      MavenBuildToolProject(mavenProject, project.getBasePath)
+      MavenBuildToolProject(mavenProject, project.getBasePath, isMultiModuleProject)
     })
   }
 
@@ -80,11 +81,11 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
   override def idToBuildToolProject(id: String): Option[BuildToolProject] =
     getAllBuildToolProjects.find(_.toString == id)
 
-  override def getDepTree(rootId: String): Option[SnykMavenArtifact] = {
+  override def getDepTree(rootId: String): Option[ProjectDependency] = {
     val projects = getAllBuildToolProjects
     val maybeBuildToolProject = idToBuildToolProject(rootId) orElse projects.headOption
 
-    maybeBuildToolProject map SnykMavenArtifact.fromBuildToolProject
+    maybeBuildToolProject map ProjectDependency.fromBuildToolProject
   }
 
   def findGradleModuleData(project: Project, projectPath: String): Option[DataNode[ModuleData]] = {
@@ -117,8 +118,8 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
   }
 }
 
-private class MockDepTreeProvider(val rootIds: Seq[String], mockTree: SnykMavenArtifact) extends DepTreeProvider {
-  override def getDepTree(rootId: String): Option[SnykMavenArtifact] = Some(mockTree)
+private class MockDepTreeProvider(val rootIds: Seq[String], mockTree: ProjectDependency) extends DepTreeProvider {
+  override def getDepTree(rootId: String): Option[ProjectDependency] = Some(mockTree)
 
   override def idToBuildToolProject(id: String): Option[BuildToolProject] = None
 }
@@ -126,5 +127,5 @@ private class MockDepTreeProvider(val rootIds: Seq[String], mockTree: SnykMavenA
 object DepTreeProvider {
   def forProject(project: Project): DepTreeProvider = new ProjectDepTreeProvider(project)
   def mock(rootIds: Seq[String] = Seq("dummy root"),
-           mockTree: SnykMavenArtifact = SnykMavenArtifact.empty): DepTreeProvider = new MockDepTreeProvider(rootIds, mockTree)
+           mockTree: ProjectDependency = ProjectDependency.empty): DepTreeProvider = new MockDepTreeProvider(rootIds, mockTree)
 }

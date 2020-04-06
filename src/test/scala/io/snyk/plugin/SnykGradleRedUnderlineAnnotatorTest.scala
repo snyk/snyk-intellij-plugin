@@ -1,7 +1,7 @@
 package io.snyk.plugin
 
 import com.intellij.testFramework.fixtures.LightCodeInsightFixtureTestCase
-import io.snyk.plugin.datamodel.SnykMavenArtifact
+import io.snyk.plugin.datamodel.ProjectDependency
 import io.snyk.plugin.ui.state.SnykPluginState
 
 import scala.io.{Codec, Source}
@@ -94,11 +94,11 @@ class SnykGradleRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCas
     myFixture.checkHighlighting(true, false, true)
   }
 
-  private[this] def cliMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def cliMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-for-gradle-annotator-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 
-  private[this] def cliDifferentConfigTypesMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def cliDifferentConfigTypesMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-for-gradle-annotator-different-config-types.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 }

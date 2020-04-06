@@ -1,6 +1,6 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.datamodel.SnykMavenArtifact
+import io.snyk.plugin.datamodel.ProjectDependency
 import io.snyk.plugin.embeddedserver.{ColorProvider, HandlebarsEngine, MiniServer}
 import io.snyk.plugin.ui.state.{PerProjectState, SnykPluginState}
 import org.junit.Test
@@ -40,7 +40,7 @@ class MiniServerTest {
     Thread.sleep(5000)
   }
 
-  private[this] def myMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def myMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-2.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 }

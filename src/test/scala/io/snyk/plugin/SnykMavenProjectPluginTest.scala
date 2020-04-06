@@ -31,7 +31,7 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
   def testSingleModuleMavenGetVulnerabilities(): Unit = {
     MavenProjectsManager.getInstance(currentProject).scheduleImportAndResolve()
 
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     waitBackgroundTasks(30) // This is still a tiny and vulnerable part for this test.
 

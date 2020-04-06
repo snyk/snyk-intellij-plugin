@@ -13,7 +13,7 @@ object SnykPluginProjectComponent {
 }
 
 class SnykPluginProjectComponent(project: Project) extends ProjectComponent {
-  val pluginState: SnykPluginState = SnykPluginState.forIntelliJ(project)
+  val pluginState: SnykPluginState = SnykPluginState.newInstance(project)
 
   override def initComponent() : Unit = {
   }
@@ -22,7 +22,7 @@ class SnykPluginProjectComponent(project: Project) extends ProjectComponent {
   }
 
   override def projectOpened(): Unit = {
-    if (!pluginState.apiClient.isCliInstalled()) {
+    if (!pluginState.cliClient.isCliInstalled()) {
       ReportMessages.GROUP.createNotification(
         "Warning",
         """The Snyk CLI has not been installed.

@@ -2,36 +2,34 @@ package io.snyk.plugin.client
 
 import java.io.FileNotFoundException
 import java.net.URI
-import java.nio.charset.Charset
 import java.time.OffsetDateTime
 import java.util
 import java.util.UUID
 
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.diagnostic.Logger
-import io.snyk.plugin.datamodel.{SnykMavenArtifact, SnykVulnResponse}
+import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 import com.softwaremill.sttp._
 import io.circe.parser.decode
 import io.circe.{Json, Printer}
 
 import scala.util.{Failure, Success, Try}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.depsource.ProjectType
+import monix.execution.atomic.Atomic
 
 /**
   * Represents the connection to the Snyk servers for the security scan.
   */
 sealed trait CliClient {
   /** Run a scan on the supplied artifact tree */
-  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[Seq[SnykVulnResponse]]
+  def runScan(project: Project, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]]
   def userInfo(): Try[SnykUserInfo]
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
@@ -39,11 +37,24 @@ sealed trait CliClient {
   /**
     * Check whether Snyk CLI is installed.
     *
-    * @param consoleCommandRunner - for command execution and possibility to test
-    *
     * @return Boolean
     */
-  def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean
+  def isCliInstalled(): Boolean
+
+  /**
+    * This method will be called before Snyk CLI runRaw().
+    *
+    * @param project            - IntelliJ project
+    * @param projectDependency  - project dependency information
+    */
+  def prepareProjectBeforeCliCall(project: Project, projectDependency: ProjectDependency): String
+
+  /**
+    * Set new ConsoleCommandRunner instance.
+    *
+    * @param newRunner - new instance
+    */
+  def setConsoleCommandRunner(newRunner: ConsoleCommandRunner): Unit
 }
 
 /**
@@ -51,8 +62,10 @@ sealed trait CliClient {
   * Note: `config` is by-name, and will be freshly evaluated on each access -
   *       any property depending on it MUST NOT be cached as a `val`
   */
-private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends CliClient {
+private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCommandRunner: ConsoleCommandRunner) extends CliClient {
   val log = Logger.getInstance(this.getClass)
+
+  val consoleCommandRunner: Atomic[ConsoleCommandRunner] = Atomic(aConsoleCommandRunner)
 
   def isAvailable: Boolean = tryConfig.isSuccess
 
@@ -90,14 +103,16 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
     }
   }
 
-  private def runRaw(project: Project, artifact: SnykMavenArtifact): Try[String] = tryConfig flatMap { config =>
+  private def runRaw(project: Project, projectDependency: ProjectDependency): Try[String] = tryConfig flatMap { config =>
     log.debug("ApiClient: run Snyk CLI")
+
+    prepareProjectBeforeCliCall(project, projectDependency)
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add("snyk")
     commands.add("--json")
 
-    artifact.projectType match {
+    projectDependency.projectType match {
       case ProjectType.MAVEN => commands.add("--all-projects")
       case ProjectType.GRADLE => commands.add("--all-sub-projects")
     }
@@ -128,6 +143,18 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
     }
   }
 
+  override def setConsoleCommandRunner(newRunner: ConsoleCommandRunner): Unit = consoleCommandRunner := newRunner
+
+  override def prepareProjectBeforeCliCall(project: Project, projectDependency: ProjectDependency): String = {
+    if (projectDependency.projectType == ProjectType.MAVEN && projectDependency.isMultiModuleProject) {
+      consoleCommandRunner().runMavenInstallGoal(project)
+
+      PrepareProjectStatus.MAVEN_INSTALL_STEP_FINISHED
+    } else {
+      PrepareProjectStatus.DEFAULT_STEP
+    }
+  }
+
   private def requestCliForError(projectPath: String): String = {
     val commands: util.ArrayList[String] = new util.ArrayList[String]
 
@@ -145,10 +172,10 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
       throw new FileNotFoundException("pom.xml")
     }
 
-    new ConsoleCommandRunner().execute(commands, projectPath)
+    consoleCommandRunner().execute(commands, projectPath)
   }
 
-  def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = {
+  def isCliInstalled(): Boolean = {
     log.debug("Check whether Snyk CLI is installed")
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
@@ -156,7 +183,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
     commands.add("--version")
 
     try {
-      val consoleResultStr = consoleCommandRunner.execute(commands)
+      val consoleResultStr = consoleCommandRunner().execute(commands)
 
       val pattern = Pattern.compile("^\\d+\\.\\d+\\.\\d+")
       val matcher = pattern.matcher(consoleResultStr.trim)
@@ -198,10 +225,9 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
            Success(body)
        }
      }
-
   }
 
-  def runScan(project: Project, snykMavenArtifact: SnykMavenArtifact): Try[Seq[SnykVulnResponse]] = for {
+  def runScan(project: Project, snykMavenArtifact: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
     jsonStr <- runRaw(project, snykMavenArtifact)
     json <- decode[Seq[SnykVulnResponse]](jsonStr).toTry
   } yield json
@@ -213,16 +239,29 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig]) extends Cli
 
 }
 
-private final class MockCliClient (mockResponder: SnykMavenArtifact => Try[String]) extends CliClient {
+private final class MockCliClient(
+  mockResponder: ProjectDependency => Try[String],
+  consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner) extends CliClient {
+
   val isAvailable: Boolean = true
-  def runScan(project: Project, treeRoot: SnykMavenArtifact): Try[Seq[SnykVulnResponse]] =
+  def runScan(project: Project, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
     mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
   def userInfo(): Try[SnykUserInfo] = Success {
     val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")
     SnykUserInfo("mockuser", "mock user", "mock@user", OffsetDateTime.now(), uri, UUID.randomUUID())
   }
 
-  def isCliInstalled(consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): Boolean = true
+  def isCliInstalled(): Boolean = true
+
+  override def prepareProjectBeforeCliCall(project: Project, projectDependency: ProjectDependency): String =
+    PrepareProjectStatus.DEFAULT_STEP
+
+  /**
+    * Set new ConsoleCommandRunner instance.
+    *
+    * @param newRunner - new instance
+    */
+  override def setConsoleCommandRunner(newRunner: ConsoleCommandRunner): Unit = ???
 }
 
 /**
@@ -234,28 +273,18 @@ object CliClient {
     * Build a "standard" `ApiClient` that connects via the supplied config.
     * Note: `config` is by-name, and will be re-evaluated on every usage
     */
-  def standard(config: => Try[SnykConfig]): CliClient =
-    new StandardCliClient(config)
+  def newInstance(config: => Try[SnykConfig], consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): CliClient =
+    new StandardCliClient(config, consoleCommandRunner)
 
   /**
     * Build a mock client, using the supplied function to provide the mocked response.
     * A default implementation is supplied.
     */
-  def mock(mockResponder: SnykMavenArtifact => Try[String]): CliClient =
+  def newMockInstance(mockResponder: ProjectDependency => Try[String]): CliClient =
     new MockCliClient(mockResponder)
 }
 
-/**
-  * Encapsulate work with IntelliJ OpenAPI {@link ScriptRunnerUtil}
-  */
-class ConsoleCommandRunner {
-
-  def execute(commands: util.ArrayList[String], workDirectory: String = "/"): String = {
-    val generalCommandLine = new GeneralCommandLine(commands)
-
-    generalCommandLine.setCharset(Charset.forName("UTF-8"))
-    generalCommandLine.setWorkDirectory(workDirectory)
-
-    ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 120000)
-  }
+object PrepareProjectStatus {
+  val MAVEN_INSTALL_STEP_FINISHED = "MavenInstallStepFinished"
+  val DEFAULT_STEP = "DefaultStep"
 }

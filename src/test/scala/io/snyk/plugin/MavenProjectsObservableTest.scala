@@ -1,6 +1,6 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.datamodel.SnykMavenArtifact
+import io.snyk.plugin.datamodel.ProjectDependency
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Assert.{assertEquals, assertNotNull, assertTrue, fail}
 import org.junit.Test
@@ -71,7 +71,7 @@ class MavenProjectsObservableTest extends AbstractMavenTestCase() {
     assertTrue(isEventExecuted)
   }
 
-  private[this] def myMockResponder(treeRoot: SnykMavenArtifact): Try[String] = Try {
+  private[this] def myMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-for-maven-observable-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 

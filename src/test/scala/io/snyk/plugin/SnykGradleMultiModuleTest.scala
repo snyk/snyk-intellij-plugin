@@ -9,7 +9,7 @@ import com.intellij.openapi.externalSystem.service.remote.RemoteExternalSystemPr
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.client.{CliClient, SnykConfig}
-import io.snyk.plugin.datamodel.{SecurityVuln, SnykMavenArtifact}
+import io.snyk.plugin.datamodel.{SecurityVuln, ProjectDependency}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.SnykToolWindowFactory
 import io.snyk.plugin.ui.state.SnykPluginState
@@ -52,9 +52,9 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
   @Test
   def testRunScanForGradleMultiModuleProject(): Unit = {
     val config = SnykConfig.default
-    val apiClient = CliClient.standard(config)
+    val apiClient = CliClient.newInstance(config)
 
-    val artifact = SnykMavenArtifact(
+    val artifact = ProjectDependency(
       "<none>",
       "<none>",
       "<none>",
@@ -62,7 +62,8 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
       None,
       None,
       Nil,
-      ProjectType.GRADLE
+      ProjectType.GRADLE,
+      false
     )
 
     val snykVulnResponseSeqTry = apiClient.runScan(currentProject, artifact)
@@ -102,7 +103,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
 
     waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
 
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     val snykVulnResponseSeqOption = snykPluginState.latestScanForSelectedProject
 

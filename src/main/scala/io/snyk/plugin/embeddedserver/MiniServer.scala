@@ -30,7 +30,7 @@ class MiniServer(
 { // 0 == first available port
 
   import NanoHTTPD._
-  import pluginState.apiClient
+  import pluginState.cliClient
 
   start(SOCKET_READ_TIMEOUT, false)
   val port: Int = this.getListeningPort
@@ -168,7 +168,7 @@ class MiniServer(
         val paramFlags = params.all ("flags").map (_.toLowerCase -> true).toMap
         ctx += "flags" -> (paramFlags ++ pluginState.flags.asStringMap)
         ctx += "localhost" -> s"http://localhost:$port"
-        ctx += "apiAvailable" -> apiClient.isAvailable
+        ctx += "apiAvailable" -> cliClient.isAvailable
 
         val body = template render ctx.result()
         newFixedLengthResponse (Response.Status.OK, "text/html", body)

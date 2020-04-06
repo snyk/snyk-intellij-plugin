@@ -29,7 +29,7 @@ class SnykGradleRedUnderlineAnnotator
       return annotationInfos
     }
 
-    val pluginState = SnykPluginState.forIntelliJ(project)
+    val pluginState = SnykPluginState.getInstance(project)
 
     val latestScanForSelectedProject = pluginState.latestScanForSelectedProject
 

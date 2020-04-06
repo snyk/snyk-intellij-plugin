@@ -38,7 +38,7 @@ class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
     val taskId = ExternalSystemTaskId.create(GradleConstants.SYSTEM_ID, ExternalSystemTaskType.RESOLVE_PROJECT, currentProject)
     externalSystemProgressNotificationManager.onEnd(taskId)
 
-    val snykPluginState = SnykPluginState.forIntelliJ(currentProject)
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     waitBackgroundTasks(30) // This is still a tiny and vulnerable part for this test.
 
