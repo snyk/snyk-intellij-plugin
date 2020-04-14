@@ -45,7 +45,7 @@ class SnykGradleRedUnderlineAnnotator
               case Some(vulnerabilitiesResponse) =>
                 vulnerabilitiesResponse.foreach(snykVulnResponse => {
                   snykVulnResponse.vulnerabilities.seq.foreach(vulnerabilities => {
-                    vulnerabilities.foreach(vulnerability => {
+                    vulnerabilities.filter(_.isInstanceOf[SecurityVuln]).foreach(vulnerability => {
                       if (element.isInstanceOf[PsiComment]) {
                         return
                       }

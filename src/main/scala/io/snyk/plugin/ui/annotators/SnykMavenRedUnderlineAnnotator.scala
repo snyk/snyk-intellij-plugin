@@ -44,7 +44,7 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
               case Some(vulnerabilitiesResponse) =>
                 vulnerabilitiesResponse.foreach(snykVulnResponse => {
                   snykVulnResponse.vulnerabilities.seq.foreach(vulnerabilities => {
-                    vulnerabilities.foreach(vulnerability => {
+                    vulnerabilities.filter(_.isInstanceOf[SecurityVuln]).foreach(vulnerability => {
                       val securityVulnerability = vulnerability.asInstanceOf[SecurityVuln]
 
                       val fullName = securityVulnerability.name
