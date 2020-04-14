@@ -38,6 +38,15 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     })
   }
 
+  private[this] def getMavenRootBuildToolProjects: Seq[BuildToolProject] = {
+    val mavenProjects = MavenProjectsManager.getInstance(project).getRootProjects.asScala
+    val isMultiModuleProject = mavenProjects.size > 1
+
+    mavenProjects.map(mavenProject => {
+      MavenBuildToolProject(mavenProject, project.getBasePath, isMultiModuleProject)
+    })
+  }
+
   private[this] def getGradleBuildToolProjects: Seq[BuildToolProject] = {
     val gradleProjects = GradleSettings.getInstance(project).getLinkedProjectsSettings.asScala
 
@@ -76,7 +85,19 @@ private class ProjectDepTreeProvider(project: Project) extends DepTreeProvider {
     }
   }
 
-  override def rootIds: Seq[String] = getAllBuildToolProjects.map(_.toString)
+  private[this] def rootBuildToolProjects: Seq[BuildToolProject] = {
+    if (isMavenProject) {
+      getMavenRootBuildToolProjects
+    } else if (isGradleProject) {
+      getGradleBuildToolProjects
+    } else {
+      logger.info("Project type is not supported.")
+
+      Seq()
+    }
+  }
+
+  override def rootIds: Seq[String] = rootBuildToolProjects.map(_.toString)
 
   override def idToBuildToolProject(id: String): Option[BuildToolProject] =
     getAllBuildToolProjects.find(_.toString == id)
