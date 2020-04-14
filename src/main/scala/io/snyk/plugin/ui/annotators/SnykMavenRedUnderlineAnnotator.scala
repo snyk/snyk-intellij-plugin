@@ -54,8 +54,6 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
                       val group = nameParts(1)
                       val version = securityVulnerability.version
 
-                      val elementText = element.getText
-
                       if (isPsiElementMatchDependencyByNameAndGroup(element, name, group, version)) {
                         annotationInfos += new MavenAnnotationInfo(element, name, group, version)
                       }
