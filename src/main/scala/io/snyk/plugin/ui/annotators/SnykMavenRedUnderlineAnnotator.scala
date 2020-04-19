@@ -7,7 +7,6 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.psi.xml.XmlText
 import com.intellij.psi.{PsiElement, PsiFile, PsiRecursiveElementWalkingVisitor}
 import io.snyk.plugin.IntellijLogging.ScalaLogger
-import io.snyk.plugin.datamodel.SecurityVuln
 import io.snyk.plugin.ui.state.SnykPluginState
 
 import scala.collection.mutable
@@ -44,21 +43,19 @@ class SnykMavenRedUnderlineAnnotator extends ExternalAnnotator[PsiFile, mutable.
               case Some(vulnerabilitiesResponse) =>
                 vulnerabilitiesResponse.foreach(snykVulnResponse => {
                   snykVulnResponse.vulnerabilities.seq.foreach(vulnerabilities => {
-                    vulnerabilities.filter(_.isInstanceOf[SecurityVuln]).foreach(vulnerability => {
-                      val securityVulnerability = vulnerability.asInstanceOf[SecurityVuln]
-
-                      val fullName = securityVulnerability.name
+                    vulnerabilities.foreach(vulnerability => {
+                      val fullName = vulnerability.name
                       val nameParts = fullName.split(":")
 
                       val name = nameParts(0)
                       val group = nameParts(1)
-                      val version = securityVulnerability.version
+                      val version = vulnerability.version
 
                       if (isPsiElementMatchDependencyByNameAndGroup(element, name, group, version)) {
                         annotationInfos += new MavenAnnotationInfo(element, name, group, version)
                       }
 
-                      securityVulnerability.from.foreach(fromFullModuleName => {
+                      vulnerability.from.foreach(fromFullModuleName => {
                         val moduleNameParts = fromFullModuleName.split(":")
 
                         val fromModuleName = moduleNameParts(0)
