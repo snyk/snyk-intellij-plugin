@@ -6,7 +6,6 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.{PsiComment, PsiElement, PsiFile, PsiRecursiveElementWalkingVisitor}
 import io.snyk.plugin.IntellijLogging.ScalaLogger
-import io.snyk.plugin.datamodel.SecurityVuln
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrCommandArgumentList
 
@@ -50,13 +49,11 @@ class SnykGradleRedUnderlineAnnotator
                         return
                       }
 
-                      val securityVulnerability = vulnerability.asInstanceOf[SecurityVuln]
-
-                      val dependencyInfos = securityVulnerability.name.split(":")
+                      val dependencyInfos = vulnerability.name.split(":")
 
                       val group = dependencyInfos(0)
                       val name = dependencyInfos(1)
-                      val version = securityVulnerability.version
+                      val version = vulnerability.version
 
                       val elementText = element.getText
 

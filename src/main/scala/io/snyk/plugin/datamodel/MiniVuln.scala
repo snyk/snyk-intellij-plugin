@@ -131,10 +131,25 @@ object MiniVuln extends IntellijLogging {
     }
   }
 
-  def from(securityVuln: SecurityVuln, projectName: Option[String], targetFile: Option[String]): MiniVuln = {
-    val vulnDerivations = mkDerivationSeq(securityVuln.from, securityVuln.upgradePath, Nil, projectName, targetFile)
-    val dtree = MiniTree.fromLinear(vulnDerivations).toSeq
-    MiniVuln(spec = VulnSpec.from(securityVuln), derivations = dtree)
+  def from(vulnerability: Vulnerability, projectName: Option[String], targetFile: Option[String]): MiniVuln = {
+    val derivationsTree = buildDerivationsTree(vulnerability, projectName, targetFile)
+
+    MiniVuln(spec = VulnSpec.from(vulnerability), derivationsTree)
+  }
+
+  def buildDerivationsTree(
+    vulnerability: Vulnerability,
+    projectName: Option[String],
+    targetFile: Option[String]): Seq[MiniTree[VulnDerivation]] = {
+
+    val vulnerabilityDerivations = vulnerability match  {
+      case securityVuln: SecurityVuln =>
+        mkDerivationSeq(securityVuln.from, securityVuln.upgradePath, Nil, projectName, targetFile)
+      case licenseVuln: LicenseVuln =>
+        mkDerivationSeq(licenseVuln.from, licenseVuln.upgradePath, Nil, projectName, targetFile)
+    }
+
+    MiniTree.fromLinear(vulnerabilityDerivations).toSeq
   }
 
   def mergedFrom(vulns: Seq[SecurityVuln], projectName: Option[String], targetFile: Option[String]): Seq[MiniVuln] =

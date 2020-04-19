@@ -99,6 +99,36 @@ class SnykMavenRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCase
     myFixture.checkHighlighting(true, false, true)
   }
 
+  def testSnykMavenRedUnderlineAnnotatorHighlightingForLicenseDependencies(): Unit = {
+    SnykPluginState.mockForProject(myModule.getProject, mockResponder = sampleMockLicenseResponder)
+
+    myFixture.configureByText("pom.xml",
+      """<?xml version="1.0" encoding="UTF-8"?>
+                <project xmlns="http://maven.apache.org/POM/4.0.0"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+                  <modelVersion>4.0.0</modelVersion>
+
+                  <groupId>emailbroadcaster</groupId>
+                  <artifactId>emailbroadcaster</artifactId>
+                  <version>1.0-SNAPSHOT</version>
+
+                  <dependencies>
+                    <dependency>
+                      <groupId><error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.8.5">org.codehaus.jackson</error></groupId>
+                      <artifactId><error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.8.5">jackson-mapper-asl</error></artifactId>
+                      <version><error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.8.5">1.8.5</error></version>
+                    </dependency>
+                  </dependencies>
+                </project>""")
+
+    myFixture.checkHighlighting(true, false, true)
+  }
+
+  private[this] def sampleMockLicenseResponder(treeRoot: ProjectDependency): Try[String] = Try {
+    Source.fromResource("sample-response-for-annotator-license-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
+  }
+
   private[this] def sampleMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-for-annotator-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }

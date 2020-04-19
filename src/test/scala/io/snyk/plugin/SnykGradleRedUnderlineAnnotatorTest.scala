@@ -94,8 +94,35 @@ class SnykGradleRedUnderlineAnnotatorTest extends LightCodeInsightFixtureTestCas
     myFixture.checkHighlighting(true, false, true)
   }
 
+  def testGradleHighlightingForLicense(): Unit = {
+    SnykPluginState.mockForProject(myModule.getProject, mockResponder = cliLicenseMockResponder)
+
+    myFixture.configureByText("build.groovy",
+       """apply plugin: 'java'
+                apply plugin: 'maven'
+
+                group = 'com.github.jitpack'
+
+                sourceCompatibility = 1.8 // java 8
+                targetCompatibility = 1.8
+
+                repositories {
+                  mavenCentral()
+                }
+
+                dependencies {
+                  compile <error descr="Vulnerable package: org.codehaus.jackson:jackson-mapper-asl:1.8.5">group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.8.5'</error>
+                }""")
+
+    myFixture.checkHighlighting(true, false, true)
+  }
+
   private[this] def cliMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
     Source.fromResource("sample-response-for-gradle-annotator-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
+  }
+
+  private[this] def cliLicenseMockResponder(treeRoot: ProjectDependency): Try[String] = Try {
+    Source.fromResource("sample-response-for-gradle-annotator-license-test.json", getClass.getClassLoader)(Codec.UTF8).mkString
   }
 
   private[this] def cliDifferentConfigTypesMockResponder(treeRoot: ProjectDependency): Try[String] = Try {

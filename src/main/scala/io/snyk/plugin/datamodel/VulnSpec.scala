@@ -44,6 +44,11 @@ case class VulnSpec(
 object VulnSpec {
   implicit val ordering: Ordering[VulnSpec] = Ordering.by(x => (x.severityRank, x.module.name, x.id))
 
+  def from(vulnerability: Vulnerability): VulnSpec = vulnerability match  {
+    case securityVuln: SecurityVuln => from(securityVuln)
+    case licenseVuln: LicenseVuln => from(licenseVuln)
+  }
+
   def from(vuln: SecurityVuln): VulnSpec = VulnSpec(
     title            = vuln.title,
     id               = vuln.id,
@@ -54,6 +59,18 @@ object VulnSpec {
     isPatchable      = vuln.isPatchable,
     isIgnored        = vuln.filtered.isDefined,
     filterInfo       = vuln.filtered
+  )
+
+  def from(vuln: LicenseVuln): VulnSpec = VulnSpec(
+    title            = vuln.title,
+    id               = vuln.id,
+    module           = VulnerabilityCoordinate.from(vuln.packageName, vuln.version),
+    severity         = vuln.severity,
+    affectedVersions = vuln.semver.vulnerable,
+    isUpgradable     = vuln.isUpgradable,
+    isPatchable      = vuln.isPatchable,
+    isIgnored        = false,
+    filterInfo       = Option.empty
   )
 
   implicit val encoder: ObjectEncoder[VulnSpec] = deriveEncoder

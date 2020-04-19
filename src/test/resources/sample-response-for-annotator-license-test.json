@@ -1,0 +1,392 @@
+[
+  {
+    "vulnerabilities": [
+      {
+        "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N",
+        "alternativeIds": [],
+        "creationTime": "2019-11-19T11:44:30.225935Z",
+        "credit": [
+          "Unknown"
+        ],
+        "cvssScore": 5.9,
+        "description": "## Overview\n\n[org.codehaus.jackson:jackson-mapper-asl](https://mvnrepository.com/artifact/org.codehaus.jackson/jackson-mapper-asl) is a high-performance data binding package built on Jackson JSON processor.\n\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection.\nMultiple classes including  `XmlMapper` was found to be vulnerabiltiy to XXE, which might allow attackers to have unspecified impact via unknown vectors.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\r\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\r\n\r\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\r\n\r\nFor example, below is a sample XML document, containing an XML element- username.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n   <username>John</username>\r\n</xml>\r\n```\r\n\r\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<!DOCTYPE foo [\r\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\r\n   <username>&xxe;</username>\r\n</xml>\r\n```\r\n\r\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n\n## Remediation\n\nThere is no fixed version for `org.codehaus.jackson:jackson-mapper-asl`.\n\n\n## References\n\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1715075)\n",
+        "disclosureTime": "2019-11-18T00:00:00Z",
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "functions": [],
+        "functions_new": [],
+        "id": "SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
+        "identifiers": {
+          "CVE": [
+            "CVE-2019-10172"
+          ],
+          "CWE": [
+            "CWE-611"
+          ],
+          "GHSA": [
+            "GHSA-r6j9-8759-g62w"
+          ]
+        },
+        "language": "java",
+        "mavenModuleName": {
+          "artifactId": "jackson-mapper-asl",
+          "groupId": "org.codehaus.jackson"
+        },
+        "modificationTime": "2019-12-02T14:45:32.742563Z",
+        "moduleName": "org.codehaus.jackson:jackson-mapper-asl",
+        "packageManager": "maven",
+        "packageName": "org.codehaus.jackson:jackson-mapper-asl",
+        "patches": [],
+        "publicationTime": "2019-11-19T11:56:32Z",
+        "references": [
+          {
+            "title": "RedHat Bugzilla Bug",
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1715075"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[0,]"
+          ]
+        },
+        "severity": "medium",
+        "title": "XML External Entity (XXE) Injection",
+        "from": [
+          "emailbroadcaster:emailbroadcaster@1.0-SNAPSHOT",
+          "org.codehaus.jackson:jackson-mapper-asl@1.8.5"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "org.codehaus.jackson:jackson-mapper-asl",
+        "version": "1.8.5"
+      },
+      {
+        "license": "Apache-2.0",
+        "semver": {
+          "vulnerable": [
+            "[0,)"
+          ]
+        },
+        "id": "snyk:lic:maven:org.codehaus.jackson:jackson-mapper-asl:Apache-2.0",
+        "type": "license",
+        "packageManager": "maven",
+        "language": "java",
+        "packageName": "org.codehaus.jackson:jackson-mapper-asl",
+        "title": "Apache-2.0 license",
+        "description": "Apache-2.0 license",
+        "publicationTime": "2020-04-16T18:43:42.942Z",
+        "creationTime": "2020-04-16T18:43:42.942Z",
+        "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/Apache-2.0.txt",
+        "severity": "high",
+        "from": [
+          "emailbroadcaster:emailbroadcaster@1.0-SNAPSHOT",
+          "org.codehaus.jackson:jackson-mapper-asl@1.8.5"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "org.codehaus.jackson:jackson-mapper-asl",
+        "version": "1.8.5"
+      },
+      {
+        "license": "Apache-2.0",
+        "semver": {
+          "vulnerable": [
+            "[0,)"
+          ]
+        },
+        "id": "snyk:lic:maven:org.codehaus.jackson:jackson-core-asl:Apache-2.0",
+        "type": "license",
+        "packageManager": "maven",
+        "language": "java",
+        "packageName": "org.codehaus.jackson:jackson-core-asl",
+        "title": "Apache-2.0 license",
+        "description": "Apache-2.0 license",
+        "publicationTime": "2020-04-16T18:43:42.713Z",
+        "creationTime": "2020-04-16T18:43:42.713Z",
+        "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/Apache-2.0.txt",
+        "severity": "high",
+        "from": [
+          "emailbroadcaster:emailbroadcaster@1.0-SNAPSHOT",
+          "org.codehaus.jackson:jackson-mapper-asl@1.8.5",
+          "org.codehaus.jackson:jackson-core-asl@1.8.5"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "org.codehaus.jackson:jackson-core-asl",
+        "version": "1.8.5"
+      }
+    ],
+    "ok": false,
+    "dependencyCount": 2,
+    "org": "pavel-snyk-org-with-licenses",
+    "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.14.1\nignore: {}\npatch: {}\n",
+    "isPrivate": true,
+    "licensesPolicy": {
+      "severities": {
+        "AGPL-1.0": "high",
+        "AGPL-3.0": "high",
+        "Artistic-1.0": "medium",
+        "Artistic-2.0": "medium",
+        "CDDL-1.0": "medium",
+        "CPOL-1.02": "high",
+        "EPL-1.0": "medium",
+        "GPL-2.0": "high",
+        "GPL-3.0": "high",
+        "LGPL-2.0": "medium",
+        "LGPL-2.1": "medium",
+        "LGPL-3.0": "medium",
+        "LGPL-2.1+": "medium",
+        "LGPL-3.0+": "medium",
+        "MPL-1.1": "medium",
+        "MPL-2.0": "medium",
+        "MS-RL": "medium",
+        "SimPL-2.0": "high",
+        "MIT": "medium",
+        "Apache-2.0": "high"
+      },
+      "orgLicenseRules": {
+        "AGPL-1.0": {
+          "licenseType": "AGPL-1.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "AGPL-3.0": {
+          "licenseType": "AGPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "Artistic-1.0": {
+          "licenseType": "Artistic-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "Artistic-2.0": {
+          "licenseType": "Artistic-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CDDL-1.0": {
+          "licenseType": "CDDL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CPOL-1.02": {
+          "licenseType": "CPOL-1.02",
+          "severity": "high",
+          "instructions": ""
+        },
+        "EPL-1.0": {
+          "licenseType": "EPL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "GPL-2.0": {
+          "licenseType": "GPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "GPL-3.0": {
+          "licenseType": "GPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "LGPL-2.0": {
+          "licenseType": "LGPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1": {
+          "licenseType": "LGPL-2.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0": {
+          "licenseType": "LGPL-3.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1+": {
+          "licenseType": "LGPL-2.1+",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0+": {
+          "licenseType": "LGPL-3.0+",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-1.1": {
+          "licenseType": "MPL-1.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-2.0": {
+          "licenseType": "MPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MS-RL": {
+          "licenseType": "MS-RL",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "SimPL-2.0": {
+          "licenseType": "SimPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "MIT": {
+          "licenseType": "MIT",
+          "severity": "medium"
+        },
+        "Apache-2.0": {
+          "licenseType": "Apache-2.0",
+          "severity": "high"
+        }
+      }
+    },
+    "packageManager": "maven",
+    "ignoreSettings": null,
+    "summary": "3 vulnerable dependency paths",
+    "remediation": {
+      "unresolved": [
+        {
+          "CVSSv3": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N",
+          "alternativeIds": [],
+          "creationTime": "2019-11-19T11:44:30.225935Z",
+          "credit": [
+            "Unknown"
+          ],
+          "cvssScore": 5.9,
+          "description": "## Overview\n\n[org.codehaus.jackson:jackson-mapper-asl](https://mvnrepository.com/artifact/org.codehaus.jackson/jackson-mapper-asl) is a high-performance data binding package built on Jackson JSON processor.\n\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection.\nMultiple classes including  `XmlMapper` was found to be vulnerabiltiy to XXE, which might allow attackers to have unspecified impact via unknown vectors.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\r\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\r\n\r\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\r\n\r\nFor example, below is a sample XML document, containing an XML element- username.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n   <username>John</username>\r\n</xml>\r\n```\r\n\r\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\r\n\r\n```xml\r\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n<!DOCTYPE foo [\r\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\r\n   <username>&xxe;</username>\r\n</xml>\r\n```\r\n\r\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n\n## Remediation\n\nThere is no fixed version for `org.codehaus.jackson:jackson-mapper-asl`.\n\n\n## References\n\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1715075)\n",
+          "disclosureTime": "2019-11-18T00:00:00Z",
+          "exploit": "Not Defined",
+          "fixedIn": [],
+          "functions": [],
+          "functions_new": [],
+          "id": "SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
+          "identifiers": {
+            "CVE": [
+              "CVE-2019-10172"
+            ],
+            "CWE": [
+              "CWE-611"
+            ],
+            "GHSA": [
+              "GHSA-r6j9-8759-g62w"
+            ]
+          },
+          "language": "java",
+          "mavenModuleName": {
+            "artifactId": "jackson-mapper-asl",
+            "groupId": "org.codehaus.jackson"
+          },
+          "modificationTime": "2019-12-02T14:45:32.742563Z",
+          "moduleName": "org.codehaus.jackson:jackson-mapper-asl",
+          "packageManager": "maven",
+          "packageName": "org.codehaus.jackson:jackson-mapper-asl",
+          "patches": [],
+          "publicationTime": "2019-11-19T11:56:32Z",
+          "references": [
+            {
+              "title": "RedHat Bugzilla Bug",
+              "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1715075"
+            }
+          ],
+          "semver": {
+            "vulnerable": [
+              "[0,]"
+            ]
+          },
+          "severity": "medium",
+          "title": "XML External Entity (XXE) Injection",
+          "from": [
+            "emailbroadcaster:emailbroadcaster@1.0-SNAPSHOT",
+            "org.codehaus.jackson:jackson-mapper-asl@1.8.5"
+          ],
+          "upgradePath": [],
+          "isUpgradable": false,
+          "isPatchable": false,
+          "isPinnable": false,
+          "name": "org.codehaus.jackson:jackson-mapper-asl",
+          "version": "1.8.5"
+        },
+        {
+          "license": "Apache-2.0",
+          "semver": {
+            "vulnerable": [
+              "[0,)"
+            ]
+          },
+          "id": "snyk:lic:maven:org.codehaus.jackson:jackson-mapper-asl:Apache-2.0",
+          "type": "license",
+          "packageManager": "maven",
+          "language": "java",
+          "packageName": "org.codehaus.jackson:jackson-mapper-asl",
+          "title": "Apache-2.0 license",
+          "description": "Apache-2.0 license",
+          "publicationTime": "2020-04-16T18:43:42.942Z",
+          "creationTime": "2020-04-16T18:43:42.942Z",
+          "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/Apache-2.0.txt",
+          "severity": "high",
+          "from": [
+            "emailbroadcaster:emailbroadcaster@1.0-SNAPSHOT",
+            "org.codehaus.jackson:jackson-mapper-asl@1.8.5"
+          ],
+          "upgradePath": [],
+          "isUpgradable": false,
+          "isPatchable": false,
+          "isPinnable": false,
+          "name": "org.codehaus.jackson:jackson-mapper-asl",
+          "version": "1.8.5"
+        },
+        {
+          "license": "Apache-2.0",
+          "semver": {
+            "vulnerable": [
+              "[0,)"
+            ]
+          },
+          "id": "snyk:lic:maven:org.codehaus.jackson:jackson-core-asl:Apache-2.0",
+          "type": "license",
+          "packageManager": "maven",
+          "language": "java",
+          "packageName": "org.codehaus.jackson:jackson-core-asl",
+          "title": "Apache-2.0 license",
+          "description": "Apache-2.0 license",
+          "publicationTime": "2020-04-16T18:43:42.713Z",
+          "creationTime": "2020-04-16T18:43:42.713Z",
+          "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/Apache-2.0.txt",
+          "severity": "high",
+          "from": [
+            "emailbroadcaster:emailbroadcaster@1.0-SNAPSHOT",
+            "org.codehaus.jackson:jackson-mapper-asl@1.8.5",
+            "org.codehaus.jackson:jackson-core-asl@1.8.5"
+          ],
+          "upgradePath": [],
+          "isUpgradable": false,
+          "isPatchable": false,
+          "isPinnable": false,
+          "name": "org.codehaus.jackson:jackson-core-asl",
+          "version": "1.8.5"
+        }
+      ],
+      "upgrade": {},
+      "patch": {},
+      "ignore": {},
+      "pin": {}
+    },
+    "filesystemPolicy": false,
+    "filtered": {
+      "ignore": [],
+      "patch": []
+    },
+    "uniqueCount": 3,
+    "projectName": "emailbroadcaster:emailbroadcaster",
+    "displayTargetFile": "pom.xml",
+    "path": "/Users/aleksandr/Temp/_simple-emailbroadcaster"
+  }
+]
