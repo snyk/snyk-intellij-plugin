@@ -1,11 +1,37 @@
-*.DS_Store
-/.gradle/
-/.idea/
-/build/
-/gradle/
-/out/
-/snyk-intellij-plugin.iml
-/snyk-intellij-plugin.ipr
-/snyk-intellij-plugin.iws
-/target/
-*.properties
+#################################
+# Compiled source               #
+#################################
+build/
+out/
+
+#################################
+# Gradle files                  #
+#################################
+.gradle/
+!gradle-wrapper.jar
+gradle-app.setting
+
+#################################
+# IDE generated files           #
+#################################
+.settings/
+.classpath
+.project
+.idea/
+*.iml
+*.ipr
+*.iws
+
+#################################
+# Logs and temp files           #
+#################################
+*.log
+*.tmp
+*~
+
+#################################
+# OS generated files            #
+#################################
+Thumbs.db
+.directory
+.DS_Store

@@ -3,10 +3,9 @@ package io.snyk.plugin
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Test
 import org.junit.Assert._
-
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.datamodel.SecurityVuln
-import io.snyk.plugin.ui.SnykToolWindowFactory
+import io.snyk.plugin.ui.MockSnykToolWindowFactory
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 
 import scala.io.{Codec, Source}
@@ -22,9 +21,9 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
 
     val mockToolWindow = new ToolWindowHeadlessManagerImpl.MockToolWindow(currentProject)
 
-    val snykToolWindowFactory = new SnykToolWindowFactory
+    val mockToolWindowFactory = MockSnykToolWindowFactory(SnykPluginState.newInstance(currentProject))
 
-    snykToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
+    mockToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
   }
 
   @Test
@@ -33,7 +32,7 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
 
-    waitBackgroundTasks(30) // This is still a tiny and vulnerable part for this test.
+    waitBackgroundTasks(60) // This is still a tiny and vulnerable part for this test.
 
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
     assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.head.packageManager.get)

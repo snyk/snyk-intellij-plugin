@@ -8,7 +8,10 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.SnykPluginProjectComponent
-import io.snyk.plugin.ui.state.Navigator
+import io.snyk.plugin.embeddedserver.{ColorProvider, MiniServer, ParamSet}
+import io.snyk.plugin.ui.state.{Navigator, SnykPluginState}
+
+import scala.io.Source
 
 
 /**
@@ -48,6 +51,16 @@ class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true)
   }
 
   override def dispose(): Unit = {
+  }
+}
+
+case class MockSnykToolWindowFactory(snykPluginState: SnykPluginState) extends ToolWindowFactory with DumbAware {
+  val miniServer = new MiniServer(snykPluginState, ColorProvider.intellij)
+
+  override def createToolWindowContent(project: Project, toolWindow: ToolWindow): Unit = {
+    val url = miniServer.rootUrl.toURI.resolve("/vulnerabilities").toString + ParamSet.Empty.queryString
+
+    Source.fromURL(url)
   }
 }
 

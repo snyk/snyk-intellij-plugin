@@ -9,7 +9,7 @@ import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, SnykConfig}
 import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
 import io.snyk.plugin.depsource.ProjectType
-import io.snyk.plugin.ui.SnykToolWindowFactory
+import io.snyk.plugin.ui.MockSnykToolWindowFactory
 import java.{util => ju}
 
 import com.intellij.openapi.project.Project
@@ -32,9 +32,9 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
     val mockToolWindow = new ToolWindowHeadlessManagerImpl.MockToolWindow(currentProject)
 
-    val snykToolWindowFactory = new SnykToolWindowFactory
+    val mockToolWindowFactory = MockSnykToolWindowFactory(SnykPluginState.newInstance(currentProject))
 
-    snykToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
+    mockToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
   }
 
   @Test
