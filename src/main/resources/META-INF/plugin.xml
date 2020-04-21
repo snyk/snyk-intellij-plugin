@@ -1,39 +1,53 @@
 <idea-plugin url="snyk.io">
     <id>io.snyk.snyk-intellij-plugin</id>
     <name>Snyk Vulnerability Scanning</name>
-    <vendor url="http://snyk.io">Snyk.io</vendor>
+    <vendor url="https://snyk.io">Snyk Ltd.</vendor>
     <version>${project.version}</version>
 
     <description><![CDATA[
-    <html>
-        <p>
-            This is an IDE extension that helps you detect and fix security issues in your project.
-        </p>
-        <p>
-            By scanning against the vast Snyk database, we can identify and advise
-            you how to fix security problems in your open source dependencies.
-        </p>
-    </html>
+    <p>
+        The Snyk Vulnerability Scanner plugin for IntelliJ helps you find and fix
+        security vulnerabilities in your projects, all from within your favorite IDE.
+    </p>
+    <br/>
+    <p>
+        The plugin integrates seamlessly into your development environment and scans the open source
+        dependencies included in your IntelliJ projects for security vulnerabilities. Identified
+        vulnerabilities are displayed with actionable information, including the full dependency path
+        and remediation advice to help you fix issues as fast as possible.
+    </p>
+
+    <h2><strong>Key features:</strong></h2>
+    <ul>
+        <li>Seamless integration</li>
+        <li>Accurate results based on Snyk Intel</li>
+        <li>Dependency path</li>
+        <li>Remediation advice</li>
+    </ul>
+
+    <h2><strong>Supported package managers:</strong></h2>
+    <ul>
+        <li>Maven</li>
+        <li>Gradle</li>
+    </ul>
     ]]></description>
 
     <change-notes><![CDATA[
-    <html>
-        <ul>
-            <li><b>0.0.1</b> - This is the initial release<br/></li>
-            <li><b>0.0.2</b> - Improved performance<br/></li>
-            <li><b>0.0.3</b> - New version to test automated release</li>
-            <li><b>0.0.4</b> - multi-module support, login workflow, improved behaviour on unscanned projects,
-                               cache invalidation on project changes, collapsible dep trees</li>
-            <li><b>0.0.5</b> - Numerous visual improvements and bug fixes.  Improved the login workflow and
-                               error handling.</li>
-            <li><b>0.0.6</b> - More visual improvements.</li>
-            <li><b>0.0.7</b> - Much-improved algorithm for initially collapsing vulnerability trees.</li>
-            <li><b>0.0.8</b> - Minor bugfixes, improved user experience.</li>
-            <li><b>0.0.9</b> - Minor bugfix around the login workflow.</li>
-            <li><b>0.1.0</b> - Further login enhancements, and updated with latest API JSON format.</li>
-            <li><b>0.1.1</b> - Fixes an exception thrown if the plugin loads before Intellij has loaded a maven project.</li>
-        </ul>
-    </html>
+    <ul>
+        <li><b>0.1.1</b> - Fixes an exception thrown if the plugin loads before Intellij has loaded a maven project.</li>
+        <li><b>0.1.0</b> - Further login enhancements, and updated with latest API JSON format.</li>
+        <li><b>0.0.9</b> - Minor bugfix around the login workflow.</li>
+        <li><b>0.0.8</b> - Minor bugfixes, improved user experience.</li>
+        <li><b>0.0.7</b> - Much-improved algorithm for initially collapsing vulnerability trees.</li>
+        <li><b>0.0.6</b> - More visual improvements.</li>
+        <li><b>0.0.5</b> - Numerous visual improvements and bug fixes.  Improved the login workflow and
+                            error handling.</li>
+        <li><b>0.0.4</b> - multi-module support, login workflow, improved behaviour on unscanned projects,
+                            cache invalidation on project changes, collapsible dep trees</li>
+        <li><b>0.0.3</b> - New version to test automated release</li>
+        <li><b>0.0.2</b> - Improved performance<br/></li>
+        <li><b>0.0.1</b> - This is the initial release<br/></li>
+    </ul>
     ]]></change-notes>
 
     <!--see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html-->
