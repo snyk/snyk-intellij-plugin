@@ -30,6 +30,13 @@
         <li>Maven</li>
         <li>Gradle</li>
     </ul>
+
+    <h2><strong>Prerequisites:</strong></h2>
+    <p>
+        To use the Snyk Vulnerability Scanner plugin, you must have Snyk CLI installed on your machine.
+        <a href="https://support.snyk.io/hc/en-us/articles/360003812538-Install-the-Snyk-CLI">See how to install</a>
+        Snyk CLI on our documentation page.
+    </p>
     ]]></description>
 
     <change-notes><![CDATA[
