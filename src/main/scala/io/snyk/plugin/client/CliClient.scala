@@ -21,8 +21,9 @@ import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import io.snyk.plugin.depsource.ProjectType
-import io.snyk.plugin.ui.settings.{SnykIntelliJSettings, SnykPersistentStateComponent}
+import io.snyk.plugin.ui.settings.SnykIntelliJSettings
 import monix.execution.atomic.Atomic
 
 /**
@@ -165,7 +166,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
   private def requestCliForError(projectPath: String): String = {
     val commands: util.ArrayList[String] = new util.ArrayList[String]
 
-    commands.add("snyk")
+    commands.add(snykCliCommandName)
     commands.add("--json")
     commands.add("test")
 
@@ -186,7 +187,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
     log.debug("Check whether Snyk CLI is installed")
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
-    commands.add("snyk")
+    commands.add(snykCliCommandName)
     commands.add("--version")
 
     try {
@@ -246,7 +247,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
 
   override def buildCliCommandsList(settings: SnykIntelliJSettings, projectDependency: ProjectDependency): util.ArrayList[String] = {
     val commands: util.ArrayList[String] = new util.ArrayList[String]
-    commands.add("snyk")
+    commands.add(snykCliCommandName)
     commands.add("--json")
 
     val customEndpoint = settings.getCustomEndpointUrl()
@@ -274,6 +275,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
 
     commands
   }
+  private def snykCliCommandName: String = if (SystemInfo.isWindows) "snyk.cmd" else "snyk"
 }
 
 private final class MockCliClient(
