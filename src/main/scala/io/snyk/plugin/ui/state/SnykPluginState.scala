@@ -20,6 +20,7 @@ import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 import io.circe.parser.decode
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
+import io.snyk.plugin.ui.settings.{SnykIntelliJSettings, SnykPersistentStateComponent}
 
 /**
   * Central abstraction to the plugin, exposes `Atomic` instances of the relevant bits of
@@ -111,13 +112,17 @@ trait SnykPluginState extends IntellijLogging {
 
       //Use a monix task instead of a vanilla future, *specifically* for access to the `timeout` functionality
       val task = Task.eval{
-        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (cliClient.runScan(getProject, _))
+        val project = getProject
+
+        val snykIntelliJSettings: SnykIntelliJSettings = SnykPersistentStateComponent.getInstance(project)
+
+        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (cliClient.runScan(project, snykIntelliJSettings, _))
         val statePair = projectId -> PerProjectState(deps.toOption, result.toOption)
         projects.transform{ _ + statePair}
         segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))
         log.info(s"async scan success")
 
-        DaemonCodeAnalyzer.getInstance(getProject).restart()
+        DaemonCodeAnalyzer.getInstance(project).restart()
 
         result
       }

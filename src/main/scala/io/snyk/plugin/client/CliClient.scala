@@ -22,6 +22,7 @@ import java.util.regex.Pattern
 
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.depsource.ProjectType
+import io.snyk.plugin.ui.settings.{SnykIntelliJSettings, SnykPersistentStateComponent}
 import monix.execution.atomic.Atomic
 
 /**
@@ -29,8 +30,13 @@ import monix.execution.atomic.Atomic
   */
 sealed trait CliClient {
   /** Run a scan on the supplied artifact tree */
-  def runScan(project: Project, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]]
+  def runScan(
+    project: Project,
+    settings: SnykIntelliJSettings,
+    projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]]
+
   def userInfo(): Try[SnykUserInfo]
+
   /** For the "standard" client, returns false if we don't have the necessary credentials */
   def isAvailable: Boolean
 
@@ -55,6 +61,14 @@ sealed trait CliClient {
     * @param newRunner - new instance
     */
   def setConsoleCommandRunner(newRunner: ConsoleCommandRunner): Unit
+
+  /**
+   * Build list of commands for run Snyk CLI command.
+   * @param settings           - Snyk IntelliJ settings
+   * @param projectDependency  - Information about project dependencies.
+   * @return
+   */
+  def buildCliCommandsList(settings: SnykIntelliJSettings, projectDependency: ProjectDependency): util.ArrayList[String]
 }
 
 /**
@@ -103,26 +117,19 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
     }
   }
 
-  private def runRaw(project: Project, projectDependency: ProjectDependency): Try[String] = tryConfig flatMap { config =>
+  private def runSnykCli(
+    project: Project,
+    settings: SnykIntelliJSettings,
+    projectDependency: ProjectDependency): Try[String] = tryConfig flatMap { config =>
+
     log.debug("ApiClient: run Snyk CLI")
 
     prepareProjectBeforeCliCall(project, projectDependency)
 
-    val commands: util.ArrayList[String] = new util.ArrayList[String]
-    commands.add("snyk")
-    commands.add("--json")
-
-    projectDependency.projectType match {
-      case ProjectType.MAVEN => commands.add("--all-projects")
-      case ProjectType.GRADLE => commands.add("--all-sub-projects")
-    }
-
-    commands.add("test")
-
     try {
       val projectPath = project.getBasePath
 
-      val snykResultJsonStr = requestCli(projectPath, commands)
+      val snykResultJsonStr = requestCli(projectPath, buildCliCommandsList(settings, projectDependency))
 
       // Description: if project is one module project Snyk CLI will return JSON object.
       // If project is multi-module project Snyk CLI will return array of JSON objects.
@@ -227,8 +234,8 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
      }
   }
 
-  def runScan(project: Project, snykMavenArtifact: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
-    jsonStr <- runRaw(project, snykMavenArtifact)
+  def runScan(project: Project, settings: SnykIntelliJSettings, projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
+    jsonStr <- runSnykCli(project, settings, projectDependency)
     json <- decode[Seq[SnykVulnResponse]](jsonStr).toTry
   } yield json
 
@@ -237,6 +244,36 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
     json <- decode[SnykUserResponse](jsonStr).toTry
   } yield json.user
 
+  override def buildCliCommandsList(settings: SnykIntelliJSettings, projectDependency: ProjectDependency): util.ArrayList[String] = {
+    val commands: util.ArrayList[String] = new util.ArrayList[String]
+    commands.add("snyk")
+    commands.add("--json")
+
+    val customEndpoint = settings.getCustomEndpointUrl()
+
+    if (customEndpoint != null && customEndpoint.nonEmpty) {
+      commands.add(s"--api=${customEndpoint}")
+    }
+
+    if (settings.isIgnoreUnknownCA()) {
+      commands.add("--insecure")
+    }
+
+    val organization = settings.getOrganization()
+
+    if (organization != null && organization.nonEmpty) {
+      commands.add(s"--org=${organization}")
+    }
+
+    projectDependency.projectType match {
+      case ProjectType.MAVEN => commands.add("--all-projects")
+      case ProjectType.GRADLE => commands.add("--all-sub-projects")
+    }
+
+    commands.add("test")
+
+    commands
+  }
 }
 
 private final class MockCliClient(
@@ -244,8 +281,10 @@ private final class MockCliClient(
   consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner) extends CliClient {
 
   val isAvailable: Boolean = true
-  def runScan(project: Project, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
+
+  def runScan(project: Project, settings: SnykIntelliJSettings, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
     mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
+
   def userInfo(): Try[SnykUserInfo] = Success {
     val uri = URI.create("https://s.gravatar.com/avatar/XXX/gravatar_l.png")
     SnykUserInfo("mockuser", "mock user", "mock@user", OffsetDateTime.now(), uri, UUID.randomUUID())
@@ -262,6 +301,17 @@ private final class MockCliClient(
     * @param newRunner - new instance
     */
   override def setConsoleCommandRunner(newRunner: ConsoleCommandRunner): Unit = ???
+
+  /**
+   * Build list of commands for run Snyk CLI command.
+   *
+   * @param settings          - Snyk IntelliJ settings
+   * @param projectDependency - Information about project dependencies.
+   * @return
+   */
+  override def buildCliCommandsList(
+    settings: SnykIntelliJSettings,
+    projectDependency: ProjectDependency): util.ArrayList[String] = new util.ArrayList[String]()
 }
 
 /**

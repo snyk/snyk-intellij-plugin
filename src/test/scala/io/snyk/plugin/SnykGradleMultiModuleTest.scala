@@ -9,9 +9,10 @@ import com.intellij.openapi.externalSystem.service.remote.RemoteExternalSystemPr
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
 import io.snyk.plugin.client.{CliClient, SnykConfig}
-import io.snyk.plugin.datamodel.{SecurityVuln, ProjectDependency}
+import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.MockSnykToolWindowFactory
+import io.snyk.plugin.ui.settings.SnykIntelliJSettings
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert._
@@ -54,7 +55,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
     val config = SnykConfig.default
     val apiClient = CliClient.newInstance(config)
 
-    val artifact = ProjectDependency(
+    val projectDependency = ProjectDependency(
       "<none>",
       "<none>",
       "<none>",
@@ -66,7 +67,7 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
       false
     )
 
-    val snykVulnResponseSeqTry = apiClient.runScan(currentProject, artifact)
+    val snykVulnResponseSeqTry = apiClient.runScan(currentProject, SnykIntelliJSettings.Empty, projectDependency)
 
     assertTrue(snykVulnResponseSeqTry.isSuccess)
 
