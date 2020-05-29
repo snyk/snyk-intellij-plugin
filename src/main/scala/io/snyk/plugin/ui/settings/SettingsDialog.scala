@@ -67,7 +67,7 @@ class SettingsDialog(project: Project) {
     rootPanel.setLayout(gridLayoutManager)
 
     val customEndpointLabel = new JLabel
-    customEndpointLabel.setText("Custom Endpoint:")
+    customEndpointLabel.setText("Custom endpoint:")
 
     rootPanel.add(customEndpointLabel, new UIGridConstraints(
       0,
