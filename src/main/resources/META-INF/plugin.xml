@@ -71,6 +71,9 @@
 
         <externalAnnotator language="XML" implementationClass="io.snyk.plugin.ui.annotators.SnykMavenRedUnderlineAnnotator"/>
         <externalAnnotator language="Groovy" implementationClass="io.snyk.plugin.ui.annotators.SnykGradleRedUnderlineAnnotator"/>
+
+        <projectConfigurable id="preference.SnykConfigurable" instance="io.snyk.plugin.ui.settings.SnykConfigurable" groupId="tools" displayName="Snyk"/>
+        <projectService serviceImplementation="io.snyk.plugin.ui.settings.SnykPersistentStateComponent"/>
     </extensions>
 
     <project-components>
