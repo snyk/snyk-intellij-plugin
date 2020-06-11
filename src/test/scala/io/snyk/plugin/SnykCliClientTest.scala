@@ -3,7 +3,6 @@ package io.snyk.plugin
 import java.io.File
 import java.util
 
-import com.intellij.openapi.application.PathManager
 import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, Platform, PrepareProjectStatus, SnykConfig}
 import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
 import io.snyk.plugin.depsource.ProjectType
