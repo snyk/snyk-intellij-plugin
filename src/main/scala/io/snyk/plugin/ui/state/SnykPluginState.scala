@@ -2,6 +2,7 @@ package io.snyk.plugin.ui
 package state
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.openapi.application.PathManager
 import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, SnykConfig}
 import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.depsource.externalproject.ExternProj
@@ -48,6 +49,8 @@ trait SnykPluginState extends IntellijLogging {
   } yield scanResult
 
   def isCliInstalled: Boolean = cliClient.isCliInstalled()
+
+  def pluginPath: String = PathManager.getPluginsPath + "/snyk-intellij-plugin"
 
   /**
     * Ensure that we have a valid `selectedProjectId`.  If it's empty, or not in `rootProjectIds`
@@ -141,6 +144,8 @@ trait SnykPluginState extends IntellijLogging {
 object SnykPluginState {
   val pluginStates: Atomic[Map[String, SnykPluginState]] = Atomic(Map.empty[String, SnykPluginState])
 
+  val PluginDirectoryName = "snyk-intellij-plugin"
+
   def newInstance(project: Project): SnykPluginState = {
     val pluginStateOption: Option[SnykPluginState] = pluginStates.get.get(project.getName)
 
@@ -188,7 +193,7 @@ object SnykPluginState {
 
   private[this] class IntelliJSnykPluginState(project: Project) extends SnykPluginState {
 
-    override val cliClient = CliClient.newInstance(config(), new ConsoleCommandRunner)
+    override val cliClient = CliClient.newInstance(config(), new ConsoleCommandRunner, pluginPath)
     override val depTreeProvider = DepTreeProvider.forProject(project)
     override val segmentApi: SegmentApi =
       config().toOption.map(_.disableAnalytics) match {

@@ -89,7 +89,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       }
     })
 
-    val cliFile = new File(PathManager.getPluginsPath, Platform.current.snykWrapperFileName)
+    val cliFile = new File(snykPluginState.pluginPath, Platform.current.snykWrapperFileName)
 
     if (cliFile.exists()) {
       cliFile.delete()
@@ -112,7 +112,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       }
     })
 
-    val cliFile = new File(PathManager.getPluginsPath, Platform.current.snykWrapperFileName)
+    val cliFile = new File(snykPluginState.pluginPath, Platform.current.snykWrapperFileName)
 
     if (!cliFile.exists()) {
       cliFile.createNewFile()
