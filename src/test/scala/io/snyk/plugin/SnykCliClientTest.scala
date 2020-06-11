@@ -1,8 +1,10 @@
 package io.snyk.plugin
 
+import java.io.File
 import java.util
 
-import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, PrepareProjectStatus, SnykConfig}
+import com.intellij.openapi.application.PathManager
+import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, Platform, PrepareProjectStatus, SnykConfig}
 import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.settings.SnykIntelliJSettings
@@ -73,6 +75,54 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     val isCliInstalled = snykPluginState.cliClient.isCliInstalled()
 
     assertFalse(isCliInstalled)
+  }
+
+  @Test
+  def testIsCliInstalledAutomaticallyByPluginFailed(): Unit = {
+    SnykPluginState.removeForProject(currentProject)
+
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
+
+    snykPluginState.cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "command not found"
+      }
+    })
+
+    val cliFile = new File(PathManager.getPluginsPath, Platform.current.snykWrapperFileName)
+
+    if (cliFile.exists()) {
+      cliFile.delete()
+    }
+
+    val isCliInstalled = snykPluginState.cliClient.isCliInstalled()
+
+    assertFalse(isCliInstalled)
+  }
+
+  @Test
+  def testIsCliInstalledAutomaticallyByPluginSuccess(): Unit = {
+    SnykPluginState.removeForProject(currentProject)
+
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
+
+    snykPluginState.cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "command not found"
+      }
+    })
+
+    val cliFile = new File(PathManager.getPluginsPath, Platform.current.snykWrapperFileName)
+
+    if (!cliFile.exists()) {
+      cliFile.createNewFile()
+    }
+
+    val isCliInstalled = snykPluginState.cliClient.isCliInstalled()
+
+    assertTrue(isCliInstalled)
+
+    cliFile.delete()
   }
 
   @Test

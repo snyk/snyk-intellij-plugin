@@ -22,7 +22,7 @@ class SnykPluginProjectComponent(project: Project) extends ProjectComponent {
   }
 
   override def projectOpened(): Unit = {
-    if (!pluginState.cliClient.isCliInstalled()) {
+    if (!pluginState.isCliInstalled) {
       ReportMessages.GROUP.createNotification(
         "Warning",
         """The Snyk CLI has not been installed.

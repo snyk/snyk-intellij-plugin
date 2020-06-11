@@ -35,6 +35,7 @@ trait SnykPluginState extends IntellijLogging {
   def getProject: Project
   def cliClient: CliClient
   def segmentApi: SegmentApi
+
   val projects: Atomic[Map[String,PerProjectState]] = Atomic(Map.empty[String,PerProjectState])
   val config: Atomic[Try[SnykConfig]] = Atomic(SnykConfig.default)
   val flags: Flags = new Flags
@@ -46,6 +47,7 @@ trait SnykPluginState extends IntellijLogging {
     scanResult <- projState.scanResult
   } yield scanResult
 
+  def isCliInstalled: Boolean = cliClient.isCliInstalled()
 
   /**
     * Ensure that we have a valid `selectedProjectId`.  If it's empty, or not in `rootProjectIds`

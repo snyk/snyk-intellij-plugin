@@ -1,6 +1,6 @@
 package io.snyk.plugin.client
 
-import java.io.FileNotFoundException
+import java.io.{File, FileNotFoundException}
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util
@@ -8,7 +8,7 @@ import java.util.UUID
 
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
-import com.intellij.openapi.application.ApplicationInfo
+import com.intellij.openapi.application.{ApplicationInfo, PathManager}
 import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
@@ -186,6 +186,12 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
   def isCliInstalled(): Boolean = {
     log.debug("Check whether Snyk CLI is installed")
 
+    checkIsCliInstalledManualyByUser() || checkIsCliInstalledAutomaticallyByPlugin()
+  }
+
+  def checkIsCliInstalledManualyByUser(): Boolean = {
+    log.debug("Check whether Snyk CLI is installed by user.")
+
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add(snykCliCommandName)
     commands.add("--version")
@@ -204,6 +210,12 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
         false
       }
     }
+  }
+
+  def checkIsCliInstalledAutomaticallyByPlugin(): Boolean = {
+    log.debug("Check whether Snyk CLI is installed by plugin automatically.")
+
+    new File(PathManager.getPluginsPath, Platform.current.snykWrapperFileName).exists()
   }
 
   private def userInfoRaw(): Try[String] = tryConfig flatMap { config =>
