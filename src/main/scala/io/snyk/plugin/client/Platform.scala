@@ -24,7 +24,7 @@ object Platform {
     architectureName match {
       case "linux" => if (Paths.get("/etc/alpine-release").toFile.exists) LinuxAlpine else Linux
       case "mac os x" | "darwin" | "osx" => MacOS
-      case "windows" => Windows
+      case name if name.contains("windows") => Windows
       case _ => throw new PlatformDetectionException(architectureName + " is not supported CPU type")
     }
   }
