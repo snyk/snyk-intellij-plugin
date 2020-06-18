@@ -7,14 +7,14 @@ import java.util
 
 import com.intellij.openapi.application.{ApplicationManager, ReadAction, WriteAction}
 import com.intellij.openapi.project.Project
-
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.{EdtTestUtil, RunAll, UsefulTestCase}
 import com.intellij.testFramework.fixtures.{IdeaProjectTestFixture, IdeaTestFixtureFactory}
-
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import io.snyk.plugin.client.ConsoleCommandRunner
+import io.snyk.plugin.ui.state.SnykPluginState
 
 abstract class AbstractTestCase extends UsefulTestCase() {
   protected var myAllPoms: util.List[VirtualFile] = new util.ArrayList[VirtualFile]
@@ -151,4 +151,16 @@ abstract class AbstractTestCase extends UsefulTestCase() {
   protected def waitBackgroundTasks(): Unit = waitBackgroundTasks(6)
 
   protected def waitBackgroundTasks(timeoutSeconds: Long): Unit = Thread.sleep(timeoutSeconds * 1000)
+
+  protected def setupConsoleCliNotExists(): Unit = {
+    SnykPluginState.removeForProject(currentProject)
+
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
+
+    snykPluginState.cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "command not found"
+      }
+    })
+  }
 }

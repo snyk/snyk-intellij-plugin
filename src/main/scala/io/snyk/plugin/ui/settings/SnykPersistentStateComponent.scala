@@ -27,6 +27,8 @@ class SnykPersistentStateComponent
   def setIgnoreUnknownCA(newIgnoreUnknownCA: Boolean): Unit = snykIntelliJSettingsState.ignoreUnknownCA = newIgnoreUnknownCA
 
   def cliVersion: String = snykIntelliJSettingsState.cliVersion
+
+  def setCliVersion(newCliVersion: String) = snykIntelliJSettingsState.cliVersion = newCliVersion
 }
 
 object SnykPersistentStateComponent {

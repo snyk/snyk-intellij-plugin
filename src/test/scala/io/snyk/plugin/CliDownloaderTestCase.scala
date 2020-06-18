@@ -1,9 +1,9 @@
 package io.snyk.plugin
 
 import java.io.File
-import java.util
 
-import io.snyk.plugin.client.{CliDownloader, ConsoleCommandRunner, Platform}
+import io.snyk.plugin.client.{CliDownloader, Platform}
+import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Test
 import org.junit.Assert.assertTrue
@@ -21,16 +21,22 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   }
 
   @Test
-  def testGetLatestReleasesInformation(): Unit = {
-    SnykPluginState.removeForProject(currentProject)
+  def testCliAutoUpdate(): Unit = {
+    setupConsoleCliNotExists()
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
 
-    snykPluginState.cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
-      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
-        "command not found"
-      }
-    })
+    val persistentStateComponent = SnykPersistentStateComponent()
+    persistentStateComponent.setCliVersion("v1.342.0")
+
+    persistentStateComponent.cliVersion
+  }
+
+  @Test
+  def testGetLatestReleasesInformation(): Unit = {
+    setupConsoleCliNotExists()
+
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
 
     val cliFile = new File(snykPluginState.pluginPath, Platform.current.snykWrapperFileName)
 
@@ -45,15 +51,9 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
 
   @Test
   def testDownloadLatestCliRelease(): Unit = {
-    SnykPluginState.removeForProject(currentProject)
+    setupConsoleCliNotExists()
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
-
-    snykPluginState.cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
-      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
-        "Command not found"
-      }
-    })
 
     val cliFile = new File(snykPluginState.pluginPath, Platform.current.snykWrapperFileName)
 
