@@ -3,7 +3,6 @@ package io.snyk.plugin
 import java.io.File
 
 import io.snyk.plugin.client.{CliDownloader, Platform}
-import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Test
 import org.junit.Assert.assertTrue
@@ -21,15 +20,22 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   }
 
   @Test
-  def testCliAutoUpdate(): Unit = {
+  def testCheckCliInstalledByPlugin(): Unit = {
     setupConsoleCliNotExists()
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
 
-    val persistentStateComponent = SnykPersistentStateComponent()
-    persistentStateComponent.setCliVersion("v1.342.0")
+    val cliDownloader = CliDownloader(snykPluginState)
 
-    persistentStateComponent.cliVersion
+    val cliFile = cliDownloader.cliFile
+
+    if (!cliFile.exists()) {
+      cliFile.createNewFile()
+    }
+
+    assertTrue(cliDownloader.checkCliInstalledByPlugin())
+
+    cliFile.delete()
   }
 
   @Test

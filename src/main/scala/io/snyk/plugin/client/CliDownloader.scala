@@ -8,12 +8,32 @@ import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.util.io.HttpRequests
 import io.circe.{Decoder, Encoder}
 import io.circe.parser.decode
+import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 
 import scala.io.{Codec, Source}
 import scala.util.{Success, Try}
 
 sealed class CliDownloader(pluginState: SnykPluginState) {
+
+  def checkCliInstalledByPlugin(): Boolean = {
+    val cliClient = pluginState.cliClient
+
+    !cliClient.checkIsCliInstalledManuallyByUser() && cliClient.checkIsCliInstalledAutomaticallyByPlugin()
+  }
+
+  def cliSilentAutoUpdate(): Unit = {
+    if (checkCliInstalledByPlugin()) {
+
+    }
+//    val persistentStateComponent = SnykPersistentStateComponent()
+//    persistentStateComponent.setCliVersion("v1.342.0")
+//
+//    persistentStateComponent.cliVersion
+//
+//    snykPluginState.cliClient.checkIsCliInstalledAutomaticallyByPlugin()
+  }
+
 
   def requestLatestReleasesInformation: Option[LatestReleaseInfo] = {
     val jsonResponseStr = Try(Source.fromURL(CliDownloader.LatestReleasesUrl)(Codec.UTF8)) match {
@@ -41,7 +61,7 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
                    latestReleasesInfo.get.tagName.get,
                    snykWrapperFileName)).toString
 
-          val cliFile = new File(pluginState.pluginPath, snykWrapperFileName)
+          val cliFile = CliDownloader.this.cliFile
 
           HttpRequests
             .request(url)
@@ -55,6 +75,8 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
       }
     })
   }
+
+  def cliFile: File = new File(pluginState.pluginPath, Platform.current.snykWrapperFileName)
 }
 
 object CliDownloader {
