@@ -21,7 +21,7 @@ import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 import io.circe.parser.decode
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
-import io.snyk.plugin.ui.settings.{SnykIntelliJSettings, SnykPersistentStateComponent}
+import io.snyk.plugin.ui.settings.{SnykIntelliJSettingsState, SnykPersistentStateComponent}
 
 /**
   * Central abstraction to the plugin, exposes `Atomic` instances of the relevant bits of
@@ -119,9 +119,9 @@ trait SnykPluginState extends IntellijLogging {
       val task = Task.eval{
         val project = getProject
 
-        val snykIntelliJSettings: SnykIntelliJSettings = SnykPersistentStateComponent.getInstance(project)
+        val snykPersistentStateComponent: SnykPersistentStateComponent = SnykPersistentStateComponent.getInstance(project)
 
-        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (cliClient.runScan(project, snykIntelliJSettings, _))
+        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (cliClient.runScan(project, snykPersistentStateComponent, _))
         val statePair = projectId -> PerProjectState(deps.toOption, result.toOption)
         projects.transform{ _ + statePair}
         segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))

@@ -2,30 +2,63 @@ package io.snyk.plugin.ui.settings
 
 import com.intellij.openapi.components.{PersistentStateComponent, ServiceManager, State, Storage}
 import com.intellij.openapi.project.Project
-import com.intellij.util.xmlb.XmlSerializerUtil
 import org.jetbrains.annotations.Nullable
 
 @State(name = "SnykPersistentState", storages = Array(new Storage("SnykPersistentState.xml")))
 class SnykPersistentStateComponent
-  extends PersistentStateComponent[SnykPersistentStateComponent]
-          with SnykIntelliJSettings {
+  extends PersistentStateComponent[SnykIntelliJSettingsState] {
 
-  var customEndpointUrl: String = _
-  var organization: String = _
-  var ignoreUnknownCA: Boolean = _
+  private var snykIntelliJSettingsState: SnykIntelliJSettingsState = SnykIntelliJSettingsState.Empty
 
-  override def getState: SnykPersistentStateComponent = this
+  override def getState: SnykIntelliJSettingsState = snykIntelliJSettingsState
 
-  override def loadState(state: SnykPersistentStateComponent): Unit = XmlSerializerUtil.copyBean(state, this)
+  override def loadState(state: SnykIntelliJSettingsState): Unit = snykIntelliJSettingsState = state
 
-  override def getCustomEndpointUrl(): String = customEndpointUrl
+  def customEndpointUrl: String = snykIntelliJSettingsState.customEndpointUrl
 
-  override def getOrganization(): String = organization
+  def setCustomEndpointUrl(newEndpoint: String): Unit = snykIntelliJSettingsState.customEndpointUrl = newEndpoint
 
-  override def isIgnoreUnknownCA(): Boolean = ignoreUnknownCA
+  def organization: String = snykIntelliJSettingsState.organization
+
+  def setOrganization(newOrganization: String): Unit = snykIntelliJSettingsState.organization = newOrganization
+
+  def isIgnoreUnknownCA: Boolean = snykIntelliJSettingsState.ignoreUnknownCA
+
+  def setIgnoreUnknownCA(newIgnoreUnknownCA: Boolean): Unit = snykIntelliJSettingsState.ignoreUnknownCA = newIgnoreUnknownCA
+
+  def cliVersion: String = snykIntelliJSettingsState.cliVersion
 }
 
 object SnykPersistentStateComponent {
+
+  def apply(): SnykPersistentStateComponent = {
+    val stateComponent = new SnykPersistentStateComponent()
+
+    stateComponent.loadState(SnykIntelliJSettingsState())
+
+    stateComponent
+  }
+
+  def apply(
+    customEndpointUrl: String = "",
+    organization: String = "",
+    isIgnoreUnknownCA: Boolean = false): SnykPersistentStateComponent = {
+
+    val stateComponent = SnykPersistentStateComponent()
+
+    stateComponent.setCustomEndpointUrl(customEndpointUrl)
+    stateComponent.setOrganization(organization)
+    stateComponent.setIgnoreUnknownCA(isIgnoreUnknownCA)
+
+    stateComponent
+  }
+
+  val Empty: SnykPersistentStateComponent = {
+    val snykPersistentStateComponent: SnykPersistentStateComponent = new SnykPersistentStateComponent()
+    snykPersistentStateComponent.loadState(SnykIntelliJSettingsState.Empty)
+
+    snykPersistentStateComponent
+  }
 
   @Nullable
   def getInstance(project: Project): SnykPersistentStateComponent =

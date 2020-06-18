@@ -13,7 +13,7 @@ import io.snyk.plugin.ui.MockSnykToolWindowFactory
 import java.{util => ju}
 
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.ui.settings.SnykIntelliJSettings
+import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.idea.maven.utils.MavenProgressIndicator
 
@@ -55,7 +55,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
       true
     )
 
-    val snykVulnResponseSeqTry = apiClient.runScan(currentProject, SnykIntelliJSettings.Empty, projectDependency)
+    val snykVulnResponseSeqTry = apiClient.runScan(currentProject, SnykPersistentStateComponent(), projectDependency)
 
     assertTrue(snykVulnResponseSeqTry.isSuccess)
 
