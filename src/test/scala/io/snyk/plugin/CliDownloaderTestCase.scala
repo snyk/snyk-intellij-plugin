@@ -28,6 +28,18 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   }
 
   @Test
+  def testCheckIsFourDaysPassedSinceLastCheck(): Unit = {
+    val todayDate = LocalDate.now()
+    val lastCheckDate = todayDate.minusDays(4)
+
+    val mockPluginState = mockSnykPluginState(lastCheckDate)
+
+    SnykPluginState.mockForProject(currentProject, mockPluginState)
+
+    assertTrue(CliDownloader(mockPluginState).isFourDaysPassedSinceLastCheck)
+  }
+
+  @Test
   def testCheckCliInstalledByPlugin(): Unit = {
     setupConsoleCliNotExists()
 
@@ -50,25 +62,7 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   def testGetLastCheckDateFromSettings(): Unit = {
     val lastCheckDate = LocalDate.of(2020, 6, 19)
 
-    val mockPluginState = new SnykPluginState() {
-      override def getProject: Project = currentProject
-
-      override def cliClient: CliClient = ???
-
-      override def segmentApi: SegmentApi = ???
-
-      override def externProj: ExternProj = ???
-
-      override protected def depTreeProvider: DepTreeProvider = ???
-
-      override def mavenProjectsObservable: Observable[Seq[String]] = ???
-
-      override def gradleProjectsObservable: Observable[Seq[String]] = ???
-
-      override def intelliJSettingsState: SnykPersistentStateComponent = SnykPersistentStateComponent(lastCheckDate = lastCheckDate)
-    }
-
-    SnykPluginState.mockForProject(currentProject, mockPluginState)
+    SnykPluginState.mockForProject(currentProject, mockSnykPluginState(lastCheckDate))
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
 
@@ -113,5 +107,23 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     assertTrue(downloadedFile.exists())
 
     downloadedFile.delete()
+  }
+
+  private def mockSnykPluginState(date: LocalDate): SnykPluginState = new SnykPluginState() {
+    override def getProject: Project = currentProject
+
+    override def cliClient: CliClient = ???
+
+    override def segmentApi: SegmentApi = ???
+
+    override def externProj: ExternProj = ???
+
+    override protected def depTreeProvider: DepTreeProvider = ???
+
+    override def mavenProjectsObservable: Observable[Seq[String]] = ???
+
+    override def gradleProjectsObservable: Observable[Seq[String]] = ???
+
+    override def intelliJSettingsState: SnykPersistentStateComponent = SnykPersistentStateComponent(lastCheckDate = date)
   }
 }

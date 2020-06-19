@@ -4,6 +4,7 @@ import java.io.File
 import java.net.URL
 import java.lang.String.format
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.util.io.HttpRequests
@@ -15,6 +16,10 @@ import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
 sealed class CliDownloader(pluginState: SnykPluginState) {
+
+  def isFourDaysPassedSinceLastCheck: Boolean = {
+    ChronoUnit.DAYS.between(lastCheckDate, LocalDate.now) >= CliDownloader.NumberOfDaysBetweenReleaseCheck
+  }
 
   def checkCliInstalledByPlugin(): Boolean = {
     val cliClient = pluginState.cliClient
@@ -82,6 +87,8 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
 object CliDownloader {
   val LatestReleasesUrl = "https://api.github.com/repos/snyk/snyk/releases/latest"
   val LatestReleaseDownloadUrl = "https://github.com/snyk/snyk/releases/download/%s/%s"
+
+  val NumberOfDaysBetweenReleaseCheck = 4
 
   def apply(pluginState: SnykPluginState): CliDownloader = new CliDownloader(pluginState)
 }
