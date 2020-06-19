@@ -1,5 +1,7 @@
 package io.snyk.plugin.ui.settings
 
+import java.time.LocalDate
+
 import com.intellij.openapi.components.{PersistentStateComponent, ServiceManager, State, Storage}
 import com.intellij.openapi.project.Project
 import org.jetbrains.annotations.Nullable
@@ -8,7 +10,7 @@ import org.jetbrains.annotations.Nullable
 class SnykPersistentStateComponent
   extends PersistentStateComponent[SnykIntelliJSettingsState] {
 
-  private var snykIntelliJSettingsState: SnykIntelliJSettingsState = SnykIntelliJSettingsState.Empty
+  private var snykIntelliJSettingsState = SnykIntelliJSettingsState.Empty
 
   override def getState: SnykIntelliJSettingsState = snykIntelliJSettingsState
 
@@ -29,6 +31,10 @@ class SnykPersistentStateComponent
   def cliVersion: String = snykIntelliJSettingsState.cliVersion
 
   def setCliVersion(newCliVersion: String) = snykIntelliJSettingsState.cliVersion = newCliVersion
+
+  def lastCheckDate: LocalDate = snykIntelliJSettingsState.lastCheckDate
+
+  def setLastCheckDate(lastCheckDate: LocalDate) = snykIntelliJSettingsState.lastCheckDate = lastCheckDate
 }
 
 object SnykPersistentStateComponent {
@@ -44,13 +50,15 @@ object SnykPersistentStateComponent {
   def apply(
     customEndpointUrl: String = "",
     organization: String = "",
-    isIgnoreUnknownCA: Boolean = false): SnykPersistentStateComponent = {
+    isIgnoreUnknownCA: Boolean = false,
+    lastCheckDate: LocalDate = null): SnykPersistentStateComponent = {
 
     val stateComponent = SnykPersistentStateComponent()
 
     stateComponent.setCustomEndpointUrl(customEndpointUrl)
     stateComponent.setOrganization(organization)
     stateComponent.setIgnoreUnknownCA(isIgnoreUnknownCA)
+    stateComponent.setLastCheckDate(lastCheckDate)
 
     stateComponent
   }

@@ -1,11 +1,19 @@
 package io.snyk.plugin
 
 import java.io.File
+import java.time.LocalDate
 
-import io.snyk.plugin.client.{CliDownloader, Platform}
+import com.intellij.openapi.project.Project
+import io.snyk.plugin.client.{CliClient, CliDownloader, Platform}
+import io.snyk.plugin.depsource.DepTreeProvider
+import io.snyk.plugin.depsource.externalproject.ExternProj
+import io.snyk.plugin.metrics.SegmentApi
+import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
+import monix.reactive.Observable
 import org.junit.Test
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 
 import scala.io.{Codec, Source}
 
@@ -36,6 +44,37 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     assertTrue(cliDownloader.checkCliInstalledByPlugin())
 
     cliFile.delete()
+  }
+
+  @Test
+  def testGetLastCheckDateFromSettings(): Unit = {
+    val lastCheckDate = LocalDate.of(2020, 6, 19)
+
+    val mockPluginState = new SnykPluginState() {
+      override def getProject: Project = currentProject
+
+      override def cliClient: CliClient = ???
+
+      override def segmentApi: SegmentApi = ???
+
+      override def externProj: ExternProj = ???
+
+      override protected def depTreeProvider: DepTreeProvider = ???
+
+      override def mavenProjectsObservable: Observable[Seq[String]] = ???
+
+      override def gradleProjectsObservable: Observable[Seq[String]] = ???
+
+      override def intelliJSettingsState: SnykPersistentStateComponent = SnykPersistentStateComponent(lastCheckDate = lastCheckDate)
+    }
+
+    SnykPluginState.mockForProject(currentProject, mockPluginState)
+
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
+
+    val cliDownloader = CliDownloader(snykPluginState)
+
+    assertEquals(lastCheckDate, cliDownloader.lastCheckDate)
   }
 
   @Test

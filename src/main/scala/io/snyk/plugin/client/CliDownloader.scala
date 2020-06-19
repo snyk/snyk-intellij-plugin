@@ -3,16 +3,16 @@ package io.snyk.plugin.client
 import java.io.File
 import java.net.URL
 import java.lang.String.format
+import java.time.LocalDate
 
 import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.util.io.HttpRequests
 import io.circe.{Decoder, Encoder}
 import io.circe.parser.decode
-import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 
 import scala.io.{Codec, Source}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 sealed class CliDownloader(pluginState: SnykPluginState) {
 
@@ -26,18 +26,18 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
     if (checkCliInstalledByPlugin()) {
 
     }
-//    val persistentStateComponent = SnykPersistentStateComponent()
-//    persistentStateComponent.setCliVersion("v1.342.0")
-//
-//    persistentStateComponent.cliVersion
-//
-//    snykPluginState.cliClient.checkIsCliInstalledAutomaticallyByPlugin()
   }
 
+  def lastCheckDate: LocalDate = {
+    val persistentStateComponent = pluginState.intelliJSettingsState
+
+    persistentStateComponent.lastCheckDate
+  }
 
   def requestLatestReleasesInformation: Option[LatestReleaseInfo] = {
     val jsonResponseStr = Try(Source.fromURL(CliDownloader.LatestReleasesUrl)(Codec.UTF8)) match {
       case Success(value) => value.mkString
+      case Failure(_) => ""
     }
 
     decode[LatestReleaseInfo](jsonResponseStr).toOption

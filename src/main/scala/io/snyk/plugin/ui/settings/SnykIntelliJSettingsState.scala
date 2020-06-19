@@ -1,6 +1,6 @@
 package io.snyk.plugin.ui.settings
 
-import java.util.Date
+import java.time.LocalDate
 
 import com.intellij.openapi.components.BaseState
 
@@ -9,7 +9,7 @@ case class SnykIntelliJSettingsState(
   var organization: String,
   var ignoreUnknownCA: Boolean,
   var cliVersion: String,
-  var lastUpdateDate: Date) extends BaseState() {
+  var lastCheckDate: LocalDate) extends BaseState() {
 }
 
 object SnykIntelliJSettingsState {
@@ -18,8 +18,8 @@ object SnykIntelliJSettingsState {
     organization: String = "",
     ignoreUnknownCA: Boolean = false,
     cliVersion: String = "",
-    lastUpdateDate: Date = null): SnykIntelliJSettingsState =
-    new SnykIntelliJSettingsState(customEndpointUrl, organization, ignoreUnknownCA, cliVersion, lastUpdateDate)
+    lastCheckDate: LocalDate = null): SnykIntelliJSettingsState =
+    new SnykIntelliJSettingsState(customEndpointUrl, organization, ignoreUnknownCA, cliVersion, lastCheckDate)
 
   val Empty: SnykIntelliJSettingsState = SnykIntelliJSettingsState()
 }
