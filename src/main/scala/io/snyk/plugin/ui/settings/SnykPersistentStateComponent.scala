@@ -51,6 +51,7 @@ object SnykPersistentStateComponent {
     customEndpointUrl: String = "",
     organization: String = "",
     isIgnoreUnknownCA: Boolean = false,
+    cliVersion: String = "",
     lastCheckDate: LocalDate = null): SnykPersistentStateComponent = {
 
     val stateComponent = SnykPersistentStateComponent()
@@ -58,6 +59,7 @@ object SnykPersistentStateComponent {
     stateComponent.setCustomEndpointUrl(customEndpointUrl)
     stateComponent.setOrganization(organization)
     stateComponent.setIgnoreUnknownCA(isIgnoreUnknownCA)
+    stateComponent.setCliVersion(cliVersion)
     stateComponent.setLastCheckDate(lastCheckDate)
 
     stateComponent

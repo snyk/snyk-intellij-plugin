@@ -17,6 +17,27 @@ import scala.util.{Failure, Success, Try}
 
 sealed class CliDownloader(pluginState: SnykPluginState) {
 
+  def isNewVersionAvailable(currentCliVersion: String, newCliVersion: String): Boolean = {
+    @scala.annotation.tailrec
+    def checkIsNewVersionAvailable(
+      currentCliVersionNumbers: Array[String],
+      newCliVersionNumbers: Array[String]): Boolean =
+
+      if (currentCliVersionNumbers.length > 0 && newCliVersionNumbers.length > 0) {
+        val newVersionNumber = newCliVersionNumbers.head.toInt
+        val currentVersionNumber = currentCliVersionNumbers.head.toInt
+
+        newVersionNumber compareTo currentVersionNumber match {
+          case 0 => checkIsNewVersionAvailable(currentCliVersionNumbers.tail, newCliVersionNumbers.tail)
+          case compareResult: Int => if (compareResult > 0) true else false
+        }
+      } else {
+        false
+      }
+
+    checkIsNewVersionAvailable(currentCliVersion.split('.'), newCliVersion.split('.'))
+  }
+
   def isFourDaysPassedSinceLastCheck: Boolean = {
     ChronoUnit.DAYS.between(lastCheckDate, LocalDate.now) >= CliDownloader.NumberOfDaysBetweenReleaseCheck
   }
@@ -28,8 +49,21 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
   }
 
   def cliSilentAutoUpdate(): Unit = {
-    if (checkCliInstalledByPlugin()) {
+    if (checkCliInstalledByPlugin() && isFourDaysPassedSinceLastCheck) {
+      requestLatestReleasesInformation match {
+        case Some(releaseInfo) => {
+          val serverCliVersion = releaseInfo.tagName.getOrElse("")
 
+          if (serverCliVersion != "" && isNewVersionAvailable("", serverCliVersion)) {
+            // Delete previous CLI
+
+            downloadLatestRelease()
+
+            // Update Settings CLI information...
+          }
+        }
+        case _ =>
+      }
     }
   }
 

@@ -13,6 +13,7 @@ import io.snyk.plugin.ui.state.SnykPluginState
 import monix.reactive.Observable
 import org.junit.Test
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 
 import scala.io.{Codec, Source}
@@ -28,11 +29,28 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   }
 
   @Test
+  def testIsNewVersionAvailable(): Unit = {
+    val mockPluginState = mockSnykPluginState(lastCheckDate = LocalDate.now())
+
+    SnykPluginState.mockForProject(currentProject, mockPluginState)
+
+    assertTrue(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "1.345.1"))
+    assertTrue(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "2.345.1"))
+    assertTrue(CliDownloader(mockPluginState).isNewVersionAvailable("1.345.2", "2.342.9"))
+
+    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("2.342.2", "1.342.1"))
+    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("1.343.1", "1.342.2"))
+    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "1.342.1"))
+
+    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "1.342.2"))
+  }
+
+  @Test
   def testCheckIsFourDaysPassedSinceLastCheck(): Unit = {
     val todayDate = LocalDate.now()
     val lastCheckDate = todayDate.minusDays(4)
 
-    val mockPluginState = mockSnykPluginState(lastCheckDate)
+    val mockPluginState = mockSnykPluginState(lastCheckDate = lastCheckDate)
 
     SnykPluginState.mockForProject(currentProject, mockPluginState)
 
@@ -62,7 +80,7 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   def testGetLastCheckDateFromSettings(): Unit = {
     val lastCheckDate = LocalDate.of(2020, 6, 19)
 
-    SnykPluginState.mockForProject(currentProject, mockSnykPluginState(lastCheckDate))
+    SnykPluginState.mockForProject(currentProject, mockSnykPluginState(lastCheckDate = lastCheckDate))
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
 
@@ -109,7 +127,10 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     downloadedFile.delete()
   }
 
-  private def mockSnykPluginState(date: LocalDate): SnykPluginState = new SnykPluginState() {
+  private def mockSnykPluginState(
+    cliVersion: String = "",
+    lastCheckDate: LocalDate = null
+  ): SnykPluginState = new SnykPluginState() {
     override def getProject: Project = currentProject
 
     override def cliClient: CliClient = ???
@@ -124,6 +145,7 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
 
     override def gradleProjectsObservable: Observable[Seq[String]] = ???
 
-    override def intelliJSettingsState: SnykPersistentStateComponent = SnykPersistentStateComponent(lastCheckDate = date)
+    override def intelliJSettingsState: SnykPersistentStateComponent =
+      SnykPersistentStateComponent(cliVersion = cliVersion, lastCheckDate = lastCheckDate)
   }
 }
