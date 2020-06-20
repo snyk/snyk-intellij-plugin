@@ -4,7 +4,6 @@ import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Test
 import org.junit.Assert._
 import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
-import io.snyk.plugin.datamodel.SecurityVuln
 import io.snyk.plugin.ui.MockSnykToolWindowFactory
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 
@@ -37,10 +36,13 @@ class SnykMavenProjectPluginTest extends AbstractMavenTestCase() {
     assertFalse(snykPluginState.latestScanForSelectedProject.isEmpty)
     assertEquals("maven", snykPluginState.latestScanForSelectedProject.get.head.packageManager.get)
 
-    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities.get
+    val vulnerabilityModuleNames = snykPluginState
+      .latestScanForSelectedProject.get
+      .map(snykVulnResponse => snykVulnResponse.vulnerabilities
+      .map(vulnerabilitySeq => vulnerabilitySeq.seq.map(vuln => vuln.name)))
+      .flatMap(array => array.seq.map(item => item))
+      .flatMap(array => array.seq.map(item => item))
 
-    assertEquals("One vulnerability expected", 1, vulnerabilities.size)
-    assertEquals("org.codehaus.jackson:jackson-mapper-asl",
-      vulnerabilities.head.asInstanceOf[SecurityVuln].moduleName)
+    assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
   }
 }

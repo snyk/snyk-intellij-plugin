@@ -52,8 +52,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
       None,
       Nil,
       ProjectType.MAVEN,
-      true
-    )
+      isMultiModuleProject = true)
 
     val snykVulnResponseSeqTry = apiClient.runScan(currentProject, SnykPersistentStateComponent(), projectDependency)
 
@@ -63,12 +62,14 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
     assertEquals(3, snykVulnResponseSeq.size)
 
-    assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
-      snykVulnResponseSeq(0).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
-    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-559346",
-      snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
-    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470",
-      snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
+    val vulnerabilityModuleNames = snykVulnResponseSeq
+      .map(vulnerabilityObj => vulnerabilityObj.vulnerabilities.get
+         .map(vulnerability => vulnerability.asInstanceOf[SecurityVuln].id))
+            .flatMap(array => array.seq.map(item => item))
+
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGCODEHAUSJACKSON-534878"))
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGSPRINGFRAMEWORK-559346"))
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470"))
   }
 
   @Test
@@ -93,12 +94,14 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
 
     assertEquals(3, snykVulnResponseSeq.size)
 
-    assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
-      snykVulnResponseSeq(0).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
-    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-559346",
-      snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
-    assertEquals("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470",
-      snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
+    val vulnerabilityModuleNames = snykVulnResponseSeq
+      .map(vulnerabilityObj => vulnerabilityObj.vulnerabilities.get
+        .map(vulnerability => vulnerability.asInstanceOf[SecurityVuln].id))
+          .flatMap(array => array.seq.map(item => item))
+
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGCODEHAUSJACKSON-534878"))
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGSPRINGFRAMEWORK-559346"))
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGSPRINGFRAMEWORK-72470"))
   }
 
   private def createModule(moduleName: String, pomXmlStr: String): Unit = {
