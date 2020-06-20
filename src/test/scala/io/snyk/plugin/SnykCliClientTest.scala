@@ -54,9 +54,12 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
     val vulnerabilities = snykVulnResponse.get.head.vulnerabilities
 
+    assertTrue(vulnerabilities.isDefined)
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
-    assertEquals("org.codehaus.jackson:jackson-mapper-asl",
-      vulnerabilities.head.head.asInstanceOf[SecurityVuln].moduleName)
+
+    val vulnerabilityModuleNames = vulnerabilities.get.map(vulnerability => vulnerability.name)
+
+    assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
   }
 
   @Test
@@ -362,8 +365,11 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
     val vulnerabilities = snykVulnResponse.get.head.vulnerabilities
 
+    assertTrue(vulnerabilities.isDefined)
+
+    val vulnerabilityModuleNames = vulnerabilities.get.map(vulnerability => vulnerability.name)
+
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
-    assertEquals("org.codehaus.jackson:jackson-mapper-asl",
-                 vulnerabilities.head.head.asInstanceOf[SecurityVuln].moduleName)
+    assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
   }
 }
