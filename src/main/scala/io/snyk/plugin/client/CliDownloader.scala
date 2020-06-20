@@ -11,11 +11,14 @@ import com.intellij.util.io.HttpRequests
 import io.circe.{Decoder, Encoder}
 import io.circe.parser.decode
 import io.snyk.plugin.ui.state.SnykPluginState
+import monix.execution.atomic.Atomic
 
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 
 sealed class CliDownloader(pluginState: SnykPluginState) {
+
+  private val latestReleaseInfoAtomic: Atomic[Option[LatestReleaseInfo]] = Atomic(Option.empty[LatestReleaseInfo])
 
   def isNewVersionAvailable(currentCliVersion: String, newCliVersion: String): Boolean = {
     @scala.annotation.tailrec
@@ -42,36 +45,30 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
     ChronoUnit.DAYS.between(lastCheckDate, LocalDate.now) >= CliDownloader.NumberOfDaysBetweenReleaseCheck
   }
 
-  def checkCliInstalledByPlugin(): Boolean = {
+  def isCliInstalledByPlugin: Boolean = {
     val cliClient = pluginState.cliClient
 
     !cliClient.checkIsCliInstalledManuallyByUser() && cliClient.checkIsCliInstalledAutomaticallyByPlugin()
   }
 
   def cliSilentAutoUpdate(): Unit = {
-    if (checkCliInstalledByPlugin() && isFourDaysPassedSinceLastCheck) {
-      requestLatestReleasesInformation match {
-        case Some(releaseInfo) => {
-          val serverCliVersion = releaseInfo.tagName.getOrElse("")
+    if (isCliInstalledByPlugin && isFourDaysPassedSinceLastCheck) {
+      val releaseInfo = requestLatestReleasesInformation
 
-          if (serverCliVersion != "" && isNewVersionAvailable("", serverCliVersion)) {
-            // Delete previous CLI
+      val intelliJSettingsState = pluginState.intelliJSettingsState
 
-            downloadLatestRelease()
+      if (releaseInfo.isDefined
+        && releaseInfo.get.tagName.isDefined
+        && isNewVersionAvailable(intelliJSettingsState.cliVersion, cliVersionNumbers(releaseInfo.get.tagName.get))) {
 
-            // Update Settings CLI information...
-          }
-        }
-        case _ =>
+        downloadLatestRelease()
+
+        intelliJSettingsState.setLastCheckDate(LocalDate.now())
       }
     }
   }
 
-  def lastCheckDate: LocalDate = {
-    val persistentStateComponent = pluginState.intelliJSettingsState
-
-    persistentStateComponent.lastCheckDate
-  }
+  def lastCheckDate: LocalDate = pluginState.intelliJSettingsState.lastCheckDate
 
   def requestLatestReleasesInformation: Option[LatestReleaseInfo] = {
     val jsonResponseStr = Try(Source.fromURL(CliDownloader.LatestReleasesUrl)(Codec.UTF8)) match {
@@ -79,7 +76,9 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
       case Failure(_) => ""
     }
 
-    decode[LatestReleaseInfo](jsonResponseStr).toOption
+    latestReleaseInfoAtomic := decode[LatestReleaseInfo](jsonResponseStr).toOption
+
+    latestReleaseInfoAtomic.get
   }
 
   def downloadLatestRelease(): Unit = {
@@ -95,19 +94,32 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
 
           val snykWrapperFileName = Platform.current.snykWrapperFileName
 
-          val url = new URL(
-            format(CliDownloader.LatestReleaseDownloadUrl,
-                   latestReleasesInfo.get.tagName.get,
-                   snykWrapperFileName)).toString
+          val cliVersionOption = latestReleasesInfo.get.tagName
 
-          val cliFile = CliDownloader.this.cliFile
+          cliVersionOption match {
+            case Some(cliVersion) =>
+              val url = new URL(
+                format(CliDownloader.LatestReleaseDownloadUrl,
+                       cliVersion,
+                       snykWrapperFileName)).toString
 
-          HttpRequests
-            .request(url)
-            .productNameAsUserAgent()
-            .saveToFile(cliFile, indicator)
+              val cliFile = CliDownloader.this.cliFile
 
-          cliFile.setExecutable(true)
+              if (cliFile.exists()) {
+                cliFile.delete()
+              }
+
+              HttpRequests
+                .request(url)
+                .productNameAsUserAgent()
+                .saveToFile(cliFile, indicator)
+
+              cliFile.setExecutable(true)
+
+              pluginState.intelliJSettingsState.setCliVersion(cliVersionNumbers(cliVersion))
+              pluginState.intelliJSettingsState.setLastCheckDate(LocalDate.now())
+            case _ =>
+          }
         } finally {
           indicator.popState()
         }
@@ -116,6 +128,17 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
   }
 
   def cliFile: File = new File(pluginState.pluginPath, Platform.current.snykWrapperFileName)
+
+  def latestReleaseInfo: Option[LatestReleaseInfo] = latestReleaseInfoAtomic.get
+
+  /**
+    * Clear version number: v1.143.1 => 1.143.1
+
+    * @param sourceVersion - source cli version string
+    *
+    * @return String
+    */
+  private def cliVersionNumbers(sourceVersion: String): String = sourceVersion.substring(1, sourceVersion.length)
 }
 
 object CliDownloader {

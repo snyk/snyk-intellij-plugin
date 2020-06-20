@@ -2,9 +2,10 @@ package io.snyk.plugin
 
 import java.io.File
 import java.time.LocalDate
+import java.util
 
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.client.{CliClient, CliDownloader, Platform}
+import io.snyk.plugin.client.{CliClient, CliDownloader, ConsoleCommandRunner, Platform}
 import io.snyk.plugin.depsource.DepTreeProvider
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.metrics.SegmentApi
@@ -26,6 +27,41 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     val projectXmlStr = Source.fromResource("sample-pom.xml", getClass.getClassLoader)(Codec.UTF8).mkString
 
     importProject(projectXmlStr)
+  }
+
+  @Test
+  def testCliSilentAutoUpdate(): Unit = {
+    val consoleCommandRunner = new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "command not found"
+      }
+    }
+
+    val currentDate = LocalDate.now()
+
+    val mockPluginState = mockSnykPluginState(
+      cliVersion = "1.342.2",
+      lastCheckDate = currentDate.minusDays(5),
+      consoleCommandRunner = consoleCommandRunner)
+
+    SnykPluginState.mockForProject(currentProject, mockPluginState)
+
+    val cliDownloader = CliDownloader(mockPluginState)
+
+    val cliFile = cliDownloader.cliFile
+
+    if (!cliFile.exists()) {
+      cliFile.createNewFile()
+    }
+
+    cliDownloader.cliSilentAutoUpdate()
+
+    assertTrue(cliDownloader.cliFile.exists())
+    assertEquals(currentDate, mockPluginState.intelliJSettingsState.lastCheckDate)
+    assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
+                 "v" + mockPluginState.intelliJSettingsState.cliVersion)
+
+    cliFile.delete()
   }
 
   @Test
@@ -71,7 +107,7 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
       cliFile.createNewFile()
     }
 
-    assertTrue(cliDownloader.checkCliInstalledByPlugin())
+    assertTrue(cliDownloader.isCliInstalledByPlugin)
 
     cliFile.delete()
   }
@@ -111,29 +147,37 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     setupConsoleCliNotExists()
 
     val snykPluginState = SnykPluginState.newInstance(currentProject)
+    val cliDownloader = CliDownloader(snykPluginState)
 
-    val cliFile = new File(snykPluginState.pluginPath, Platform.current.snykWrapperFileName)
+    val cliFile = cliDownloader.cliFile
 
-    if (cliFile.exists()) {
-      cliFile.delete()
+    if (!cliFile.exists()) {
+      cliFile.createNewFile()
     }
 
-    CliDownloader(snykPluginState).downloadLatestRelease()
+    cliDownloader.downloadLatestRelease()
 
     val downloadedFile = new File(snykPluginState.pluginPath, Platform.current.snykWrapperFileName)
 
     assertTrue(downloadedFile.exists())
+    assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
+                 "v" + snykPluginState.intelliJSettingsState.cliVersion)
 
     downloadedFile.delete()
   }
 
   private def mockSnykPluginState(
     cliVersion: String = "",
-    lastCheckDate: LocalDate = null
+    lastCheckDate: LocalDate = null,
+    consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner
   ): SnykPluginState = new SnykPluginState() {
+
+    private val persistentStateComponent =
+      SnykPersistentStateComponent(cliVersion = cliVersion, lastCheckDate = lastCheckDate)
+
     override def getProject: Project = currentProject
 
-    override def cliClient: CliClient = ???
+    override def cliClient: CliClient = CliClient.newInstance(config(), consoleCommandRunner, pluginPath)
 
     override def segmentApi: SegmentApi = ???
 
@@ -145,7 +189,6 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
 
     override def gradleProjectsObservable: Observable[Seq[String]] = ???
 
-    override def intelliJSettingsState: SnykPersistentStateComponent =
-      SnykPersistentStateComponent(cliVersion = cliVersion, lastCheckDate = lastCheckDate)
+    override def intelliJSettingsState: SnykPersistentStateComponent = persistentStateComponent
   }
 }
