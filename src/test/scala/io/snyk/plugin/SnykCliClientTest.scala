@@ -4,7 +4,7 @@ import java.io.File
 import java.util
 
 import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, Platform, PrepareProjectStatus, SnykConfig}
-import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
+import io.snyk.plugin.datamodel.ProjectDependency
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
