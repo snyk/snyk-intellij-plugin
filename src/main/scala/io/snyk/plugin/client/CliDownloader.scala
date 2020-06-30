@@ -5,6 +5,7 @@ import java.net.URL
 import java.lang.String.format
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.util.Objects.isNull
 
 import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.util.io.HttpRequests
@@ -21,6 +22,10 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
   private val latestReleaseInfoAtomic: Atomic[Option[LatestReleaseInfo]] = Atomic(Option.empty[LatestReleaseInfo])
 
   def isNewVersionAvailable(currentCliVersion: String, newCliVersion: String): Boolean = {
+    if (isNull(currentCliVersion ) || currentCliVersion.isEmpty) {
+      return true
+    }
+
     @scala.annotation.tailrec
     def checkIsNewVersionAvailable(
       currentCliVersionNumbers: Array[String],
@@ -42,7 +47,13 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
   }
 
   def isFourDaysPassedSinceLastCheck: Boolean = {
-    ChronoUnit.DAYS.between(lastCheckDate, LocalDate.now) >= CliDownloader.NumberOfDaysBetweenReleaseCheck
+    val previousDate = this.lastCheckDate
+
+    if (isNull(previousDate)) {
+      return true
+    }
+
+    ChronoUnit.DAYS.between(previousDate, LocalDate.now) >= CliDownloader.NumberOfDaysBetweenReleaseCheck
   }
 
   def isCliInstalledByPlugin: Boolean = {

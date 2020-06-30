@@ -65,6 +65,41 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   }
 
   @Test
+  def testCliSilentAutoUpdateWhenPreviousUpdateInfoIsNull(): Unit = {
+    val consoleCommandRunner = new ConsoleCommandRunner() {
+      override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
+        "command not found"
+      }
+    }
+
+    val currentDate = LocalDate.now()
+
+    val mockPluginState = mockSnykPluginState(
+      cliVersion = null,
+      lastCheckDate = null,
+      consoleCommandRunner = consoleCommandRunner)
+
+    SnykPluginState.mockForProject(currentProject, mockPluginState)
+
+    val cliDownloader = CliDownloader(mockPluginState)
+
+    val cliFile = cliDownloader.cliFile
+
+    if (!cliFile.exists()) {
+      cliFile.createNewFile()
+    }
+
+    cliDownloader.cliSilentAutoUpdate()
+
+    assertTrue(cliDownloader.cliFile.exists())
+    assertEquals(currentDate, mockPluginState.intelliJSettingsState.lastCheckDate)
+    assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
+      "v" + mockPluginState.intelliJSettingsState.cliVersion)
+
+    cliFile.delete()
+  }
+
+  @Test
   def testIsNewVersionAvailable(): Unit = {
     val mockPluginState = mockSnykPluginState(lastCheckDate = LocalDate.now())
 
