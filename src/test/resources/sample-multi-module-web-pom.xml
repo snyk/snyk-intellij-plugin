@@ -7,7 +7,6 @@
 <groupId>io.snyk</groupId>
 <artifactId>web</artifactId>
 <version>1.0</version>
-<packaging>war</packaging>
 
 <properties>
     <thymeleaf.version>3.0.10.RELEASE</thymeleaf.version>

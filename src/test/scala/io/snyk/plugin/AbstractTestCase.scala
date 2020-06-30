@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets
 import java.util
 
 import com.intellij.openapi.application.{ApplicationManager, ReadAction, WriteAction}
+import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.{EdtTestUtil, RunAll, UsefulTestCase}
@@ -62,6 +63,10 @@ abstract class AbstractTestCase extends UsefulTestCase() {
     //finally myTestFixture = null
 
     myTestFixture = null
+
+    EditorFactory.getInstance().getAllEditors.foreach(editor => {
+      EditorFactory.getInstance.releaseEditor(editor)
+    })
   }
 
   @throws[Exception]

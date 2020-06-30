@@ -21,6 +21,8 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     val projectXmlStr = Source.fromResource("sample-pom.xml", getClass.getClassLoader)(Codec.UTF8).mkString
 
     importProject(projectXmlStr)
+
+    setupJdkForAllModules()
   }
 
   @Test

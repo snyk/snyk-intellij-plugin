@@ -36,6 +36,8 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
     val mockToolWindowFactory = MockSnykToolWindowFactory(SnykPluginState.newInstance(currentProject))
 
     mockToolWindowFactory.createToolWindowContent(currentProject, mockToolWindow)
+
+    setupJdkForAllModules()
   }
 
   @Test
@@ -75,7 +77,7 @@ class SnykMavenMultiModuleTest extends AbstractMavenTestCase() {
   @Test
   def testSnykPluginWithMavenMultiModuleProject(): Unit = {
     SnykPluginState.getInstance(currentProject).cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
-      override def runMavenInstallGoal(project: Project): Unit = {
+      override def runMavenInstall(project: Project): Unit = {
       }
     })
 
