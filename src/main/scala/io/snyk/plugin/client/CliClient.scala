@@ -1,6 +1,6 @@
 package io.snyk.plugin.client
 
-import java.io.FileNotFoundException
+import java.io.{File, FileNotFoundException}
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util
@@ -77,7 +77,11 @@ sealed trait CliClient {
   * Note: `config` is by-name, and will be freshly evaluated on each access -
   *       any property depending on it MUST NOT be cached as a `val`
   */
-private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCommandRunner: ConsoleCommandRunner) extends CliClient {
+private final class StandardCliClient(
+  tryConfig: => Try[SnykConfig],
+  aConsoleCommandRunner: ConsoleCommandRunner,
+  pluginPath: String) extends CliClient {
+
   val log = Logger.getInstance(this.getClass)
 
   val consoleCommandRunner: Atomic[ConsoleCommandRunner] = Atomic(aConsoleCommandRunner)
@@ -166,7 +170,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
   private def requestCliForError(projectPath: String): String = {
     val commands: util.ArrayList[String] = new util.ArrayList[String]
 
-    commands.add(snykCliCommandName)
+    commands.add(snykCliCommandPath)
     commands.add("--json")
     commands.add("test")
 
@@ -185,6 +189,12 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
 
   def isCliInstalled(): Boolean = {
     log.debug("Check whether Snyk CLI is installed")
+
+    checkIsCliInstalledManualyByUser() || checkIsCliInstalledAutomaticallyByPlugin()
+  }
+
+  def checkIsCliInstalledManualyByUser(): Boolean = {
+    log.debug("Check whether Snyk CLI is installed by user.")
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add(snykCliCommandName)
@@ -205,6 +215,14 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
       }
     }
   }
+
+  def checkIsCliInstalledAutomaticallyByPlugin(): Boolean = {
+    log.debug("Check whether Snyk CLI is installed by plugin automatically.")
+
+    cliFile.exists()
+  }
+
+  private def cliFile: File = new File(pluginPath, Platform.current.snykWrapperFileName)
 
   private def userInfoRaw(): Try[String] = tryConfig flatMap { config =>
     val apiEndpoint = config.endpointOrDefault
@@ -247,7 +265,7 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
 
   override def buildCliCommandsList(settings: SnykIntelliJSettings, projectDependency: ProjectDependency): util.ArrayList[String] = {
     val commands: util.ArrayList[String] = new util.ArrayList[String]
-    commands.add(snykCliCommandName)
+    commands.add(snykCliCommandPath)
     commands.add("--json")
 
     val customEndpoint = settings.getCustomEndpointUrl()
@@ -275,7 +293,18 @@ private final class StandardCliClient(tryConfig: => Try[SnykConfig], aConsoleCom
 
     commands
   }
+
   private def snykCliCommandName: String = if (SystemInfo.isWindows) "snyk.cmd" else "snyk"
+
+  private def snykCliCommandPath: String = {
+    if (checkIsCliInstalledManualyByUser())
+      snykCliCommandName
+    else if (checkIsCliInstalledAutomaticallyByPlugin()) {
+      cliFile.getAbsolutePath
+    } else {
+      throw new RuntimeException("Snyk CLI not installed.")
+    }
+  }
 }
 
 private final class MockCliClient(
@@ -325,8 +354,11 @@ object CliClient {
     * Build a "standard" `ApiClient` that connects via the supplied config.
     * Note: `config` is by-name, and will be re-evaluated on every usage
     */
-  def newInstance(config: => Try[SnykConfig], consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner): CliClient =
-    new StandardCliClient(config, consoleCommandRunner)
+  def newInstance(
+    config: => Try[SnykConfig],
+    consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner,
+    pluginPath: String = ""): CliClient =
+      new StandardCliClient(config, consoleCommandRunner, pluginPath)
 
   /**
     * Build a mock client, using the supplied function to provide the mocked response.
