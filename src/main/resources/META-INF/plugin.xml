@@ -74,13 +74,9 @@
 
         <projectConfigurable id="preference.SnykConfigurable" instance="io.snyk.plugin.ui.settings.SnykConfigurable" groupId="tools" displayName="Snyk"/>
         <projectService serviceImplementation="io.snyk.plugin.ui.settings.SnykPersistentStateComponent"/>
-    </extensions>
 
-    <project-components>
-        <component>
-            <implementation-class>io.snyk.plugin.SnykPluginProjectComponent</implementation-class>
-        </component>
-    </project-components>
+        <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
+    </extensions>
 
     <actions>
         <group id="io.snyk.plugin.ActionBar">

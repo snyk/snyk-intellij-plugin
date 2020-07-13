@@ -7,17 +7,16 @@ import com.intellij.openapi.actionSystem.{AnAction, AnActionEvent}
 import com.intellij.openapi.ui.popup._
 import com.intellij.ui.awt.RelativePoint
 import icons.MavenIcons
-import io.snyk.plugin.SnykPluginProjectComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 import javax.swing.Icon
 
 import scala.collection.JavaConverters._
 
-class SnykSelectProjectAction()
-extends AnAction(MavenIcons.MavenProject) {
+class SnykSelectProjectAction() extends AnAction(MavenIcons.MavenProject) {
 
   class MyPopupStep(pluginState: SnykPluginState) extends ListPopupStep[String] {
     val projIds = pluginState.rootProjectIds
+
     override def getValues: util.List[String] = projIds.asJava
     override def isSelectable(value: String): Boolean = true
     override def getIconFor(aValue: String): Icon = MavenIcons.MavenProject
@@ -46,13 +45,12 @@ extends AnAction(MavenIcons.MavenProject) {
   private[this] def mkPopup(pluginState: SnykPluginState): ListPopup =
     JBPopupFactory.getInstance.createListPopup(new MyPopupStep(pluginState))
 
-  override def actionPerformed(e: AnActionEvent): Unit = {
-    val projComp = e.getProject.getComponent(classOf[SnykPluginProjectComponent])
-    def pluginState = projComp.pluginState
+  override def actionPerformed(event: AnActionEvent): Unit = {
+    def pluginState = SnykPluginState.getInstance(event.getProject)
 
-    e.getInputEvent match {
+    event.getInputEvent match {
       case evt: MouseEvent => mkPopup(pluginState).show(new RelativePoint(evt))
-      case _               => mkPopup(pluginState).show(e.getInputEvent.getComponent)
+      case _               => mkPopup(pluginState).show(event.getInputEvent.getComponent)
     }
   }
 

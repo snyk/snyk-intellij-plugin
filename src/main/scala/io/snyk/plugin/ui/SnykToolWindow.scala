@@ -7,12 +7,10 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.{ToolWindow, ToolWindowFactory}
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.SnykPluginProjectComponent
 import io.snyk.plugin.embeddedserver.{ColorProvider, MiniServer, ParamSet}
 import io.snyk.plugin.ui.state.{Navigator, SnykPluginState}
 
 import scala.io.Source
-
 
 /**
   * Top-level entry point to the plugin, as specified in `plugin.xml`.
@@ -31,9 +29,7 @@ class SnykToolWindowFactory extends ToolWindowFactory with DumbAware {
 class SnykToolWindow(project: Project) extends SimpleToolWindowPanel(true, true) with DataProvider with Disposable {
   this.setBackground(UIUtil.getPanelBackground)
 
-  private val projectComponent = project.getComponent(classOf[SnykPluginProjectComponent])
-
-  import projectComponent.pluginState
+  private val pluginState = SnykPluginState.newInstance(project)
 
   pluginState.navigator := Navigator.newInstance(project, this, pluginState.idToBuildToolProject)
 
