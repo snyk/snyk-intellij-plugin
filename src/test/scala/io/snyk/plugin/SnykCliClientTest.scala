@@ -4,9 +4,9 @@ import java.io.File
 import java.util
 
 import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, Platform, PrepareProjectStatus, SnykConfig}
-import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
+import io.snyk.plugin.datamodel.ProjectDependency
 import io.snyk.plugin.depsource.ProjectType
-import io.snyk.plugin.ui.settings.SnykIntelliJSettings
+import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Assert.{assertEquals, assertFalse, assertNotNull, assertTrue}
 import org.junit.Test
@@ -48,15 +48,18 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val snykVulnResponse = snykPluginState.cliClient.runScan(currentProject, SnykIntelliJSettings.Empty, projectDependency)
+    val snykVulnResponse = snykPluginState.cliClient.runScan(currentProject, SnykPersistentStateComponent(), projectDependency)
 
     assertTrue(snykVulnResponse.isSuccess)
 
     val vulnerabilities = snykVulnResponse.get.head.vulnerabilities
 
+    assertTrue(vulnerabilities.isDefined)
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
-    assertEquals("org.codehaus.jackson:jackson-mapper-asl",
-      vulnerabilities.head.head.asInstanceOf[SecurityVuln].moduleName)
+
+    val vulnerabilityModuleNames = vulnerabilities.get.map(vulnerability => vulnerability.name)
+
+    assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
   }
 
   @Test
@@ -196,15 +199,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val emptySettings = new SnykIntelliJSettings {
-      override def getCustomEndpointUrl(): String = ""
-
-      override def getOrganization(): String = ""
-
-      override def isIgnoreUnknownCA(): Boolean = false
-    }
-
-    val defaultCommands = cliClient.buildCliCommandsList(emptySettings, mavenDependency)
+    val defaultCommands = cliClient.buildCliCommandsList(SnykPersistentStateComponent(), mavenDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -228,15 +223,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val emptySettings = new SnykIntelliJSettings {
-      override def getCustomEndpointUrl(): String = ""
-
-      override def getOrganization(): String = ""
-
-      override def isIgnoreUnknownCA(): Boolean = false
-    }
-
-    val defaultCommands = cliClient.buildCliCommandsList(emptySettings, gradleDependency)
+    val defaultCommands = cliClient.buildCliCommandsList(SnykPersistentStateComponent(), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -260,15 +247,8 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val customEndpointSettings = new SnykIntelliJSettings {
-      override def getCustomEndpointUrl(): String = "https://app.snyk.io/api"
-
-      override def getOrganization(): String = ""
-
-      override def isIgnoreUnknownCA(): Boolean = false
-    }
-
-    val defaultCommands = cliClient.buildCliCommandsList(customEndpointSettings, gradleDependency)
+    val defaultCommands = cliClient
+      .buildCliCommandsList(SnykPersistentStateComponent(customEndpointUrl = "https://app.snyk.io/api"), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -293,15 +273,8 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val insecureSettings = new SnykIntelliJSettings {
-      override def getCustomEndpointUrl(): String = ""
-
-      override def getOrganization(): String = ""
-
-      override def isIgnoreUnknownCA(): Boolean = true
-    }
-
-    val defaultCommands = cliClient.buildCliCommandsList(insecureSettings, gradleDependency)
+    val defaultCommands = cliClient
+      .buildCliCommandsList(SnykPersistentStateComponent(isIgnoreUnknownCA = true), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -326,15 +299,8 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val organizationSettings = new SnykIntelliJSettings {
-      override def getCustomEndpointUrl(): String = ""
-
-      override def getOrganization(): String = "test-org"
-
-      override def isIgnoreUnknownCA(): Boolean = false
-    }
-
-    val defaultCommands = cliClient.buildCliCommandsList(organizationSettings, gradleDependency)
+    val defaultCommands = cliClient
+      .buildCliCommandsList(SnykPersistentStateComponent(organization = "test-org"), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -359,13 +325,10 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val allSettings = new SnykIntelliJSettings {
-      override def getCustomEndpointUrl(): String = "https://app.snyk.io/api"
-
-      override def getOrganization(): String = "test-org"
-
-      override def isIgnoreUnknownCA(): Boolean = true
-    }
+    val allSettings = SnykPersistentStateComponent(
+      customEndpointUrl = "https://app.snyk.io/api",
+      organization = "test-org",
+      isIgnoreUnknownCA = true)
 
     val defaultCommands = cliClient.buildCliCommandsList(allSettings, gradleDependency)
 
@@ -394,22 +357,19 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val allSettings = new SnykIntelliJSettings {
-      override def getCustomEndpointUrl(): String = ""
-
-      override def getOrganization(): String = ""
-
-      override def isIgnoreUnknownCA(): Boolean = true
-    }
-
-    val snykVulnResponse = snykPluginState.cliClient.runScan(currentProject, allSettings, projectDependency)
+    val snykVulnResponse = snykPluginState
+      .cliClient
+      .runScan(currentProject, SnykPersistentStateComponent(isIgnoreUnknownCA = true), projectDependency)
 
     assertTrue(snykVulnResponse.isSuccess)
 
     val vulnerabilities = snykVulnResponse.get.head.vulnerabilities
 
+    assertTrue(vulnerabilities.isDefined)
+
+    val vulnerabilityModuleNames = vulnerabilities.get.map(vulnerability => vulnerability.name)
+
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
-    assertEquals("org.codehaus.jackson:jackson-mapper-asl",
-                 vulnerabilities.head.head.asInstanceOf[SecurityVuln].moduleName)
+    assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
   }
 }

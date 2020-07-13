@@ -23,7 +23,7 @@ import java.util.regex.Pattern
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import io.snyk.plugin.depsource.ProjectType
-import io.snyk.plugin.ui.settings.SnykIntelliJSettings
+import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import monix.execution.atomic.Atomic
 
 /**
@@ -33,7 +33,7 @@ sealed trait CliClient {
   /** Run a scan on the supplied artifact tree */
   def runScan(
     project: Project,
-    settings: SnykIntelliJSettings,
+    settings: SnykPersistentStateComponent,
     projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]]
 
   def userInfo(): Try[SnykUserInfo]
@@ -69,7 +69,21 @@ sealed trait CliClient {
    * @param projectDependency  - Information about project dependencies.
    * @return
    */
-  def buildCliCommandsList(settings: SnykIntelliJSettings, projectDependency: ProjectDependency): util.ArrayList[String]
+  def buildCliCommandsList(settings: SnykPersistentStateComponent, projectDependency: ProjectDependency): util.ArrayList[String]
+
+  /**
+    * Check is CLI installed by plugin: if CLI file exists in plugin directory.
+    *
+    * @return Boolean
+    */
+  def checkIsCliInstalledAutomaticallyByPlugin(): Boolean
+
+  /**
+    * Check is CLI installed by user manually: if CLI available via console.
+    *
+    * @return Boolean
+    */
+  def checkIsCliInstalledManuallyByUser(): Boolean
 }
 
 /**
@@ -124,7 +138,7 @@ private final class StandardCliClient(
 
   private def runSnykCli(
     project: Project,
-    settings: SnykIntelliJSettings,
+    settings: SnykPersistentStateComponent,
     projectDependency: ProjectDependency): Try[String] = tryConfig flatMap { config =>
 
     log.debug("ApiClient: run Snyk CLI")
@@ -190,10 +204,10 @@ private final class StandardCliClient(
   def isCliInstalled(): Boolean = {
     log.debug("Check whether Snyk CLI is installed")
 
-    checkIsCliInstalledManualyByUser() || checkIsCliInstalledAutomaticallyByPlugin()
+    checkIsCliInstalledManuallyByUser() || checkIsCliInstalledAutomaticallyByPlugin()
   }
 
-  def checkIsCliInstalledManualyByUser(): Boolean = {
+  override def checkIsCliInstalledManuallyByUser(): Boolean = {
     log.debug("Check whether Snyk CLI is installed by user.")
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
@@ -216,7 +230,7 @@ private final class StandardCliClient(
     }
   }
 
-  def checkIsCliInstalledAutomaticallyByPlugin(): Boolean = {
+  override def checkIsCliInstalledAutomaticallyByPlugin(): Boolean = {
     log.debug("Check whether Snyk CLI is installed by plugin automatically.")
 
     cliFile.exists()
@@ -253,7 +267,7 @@ private final class StandardCliClient(
      }
   }
 
-  def runScan(project: Project, settings: SnykIntelliJSettings, projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
+  def runScan(project: Project, settings: SnykPersistentStateComponent, projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
     jsonStr <- runSnykCli(project, settings, projectDependency)
     json <- decode[Seq[SnykVulnResponse]](jsonStr).toTry
   } yield json
@@ -263,22 +277,22 @@ private final class StandardCliClient(
     json <- decode[SnykUserResponse](jsonStr).toTry
   } yield json.user
 
-  override def buildCliCommandsList(settings: SnykIntelliJSettings, projectDependency: ProjectDependency): util.ArrayList[String] = {
+  override def buildCliCommandsList(settings: SnykPersistentStateComponent, projectDependency: ProjectDependency): util.ArrayList[String] = {
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add(snykCliCommandPath)
     commands.add("--json")
 
-    val customEndpoint = settings.getCustomEndpointUrl()
+    val customEndpoint = settings.customEndpointUrl
 
     if (customEndpoint != null && customEndpoint.nonEmpty) {
       commands.add(s"--api=${customEndpoint}")
     }
 
-    if (settings.isIgnoreUnknownCA()) {
+    if (settings.isIgnoreUnknownCA) {
       commands.add("--insecure")
     }
 
-    val organization = settings.getOrganization()
+    val organization = settings.organization
 
     if (organization != null && organization.nonEmpty) {
       commands.add(s"--org=${organization}")
@@ -297,7 +311,7 @@ private final class StandardCliClient(
   private def snykCliCommandName: String = if (SystemInfo.isWindows) "snyk.cmd" else "snyk"
 
   private def snykCliCommandPath: String = {
-    if (checkIsCliInstalledManualyByUser())
+    if (checkIsCliInstalledManuallyByUser())
       snykCliCommandName
     else if (checkIsCliInstalledAutomaticallyByPlugin()) {
       cliFile.getAbsolutePath
@@ -313,7 +327,7 @@ private final class MockCliClient(
 
   val isAvailable: Boolean = true
 
-  def runScan(project: Project, settings: SnykIntelliJSettings, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
+  def runScan(project: Project, settings: SnykPersistentStateComponent, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
     mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
 
   def userInfo(): Try[SnykUserInfo] = Success {
@@ -341,8 +355,22 @@ private final class MockCliClient(
    * @return
    */
   override def buildCliCommandsList(
-    settings: SnykIntelliJSettings,
+    settings: SnykPersistentStateComponent,
     projectDependency: ProjectDependency): util.ArrayList[String] = new util.ArrayList[String]()
+
+  /**
+    * Check is CLI installed by plugin: if CLI file exists in plugin directory.
+    *
+    * @return Boolean
+    */
+  override def checkIsCliInstalledAutomaticallyByPlugin(): Boolean = false
+
+  /**
+    * Check is CLI installed by user manually: if CLI available via console.
+    *
+    * @return Boolean
+    */
+  override def checkIsCliInstalledManuallyByUser(): Boolean = false
 }
 
 /**

@@ -38,28 +38,28 @@ class SettingsDialog(project: Project) {
       return
     }
 
-    persistentState.customEndpointUrl = customEndpoint
-    persistentState.organization = organizationTextField.getText
-    persistentState.ignoreUnknownCA = ignoreUnknownCACheckBox.isSelected
+    persistentState.setCustomEndpointUrl(customEndpoint)
+    persistentState.setOrganization(organizationTextField.getText)
+    persistentState.setIgnoreUnknownCA(ignoreUnknownCACheckBox.isSelected)
   }
 
   def reset(): Unit = {
-    customEndpointTextField.setText(persistentState.getCustomEndpointUrl())
-    organizationTextField.setText(persistentState.getOrganization())
-    ignoreUnknownCACheckBox.setSelected(persistentState.isIgnoreUnknownCA())
+    customEndpointTextField.setText(persistentState.customEndpointUrl)
+    organizationTextField.setText(persistentState.organization)
+    ignoreUnknownCACheckBox.setSelected(persistentState.isIgnoreUnknownCA)
   }
 
   def isModified: Boolean =
      isCustomEndpointModified || isOrganizationModified || isIgnoreUnknownCAModified
 
   private def isCustomEndpointModified =
-    customEndpointTextField.getText != persistentState.getCustomEndpointUrl()
+    customEndpointTextField.getText != persistentState.customEndpointUrl
 
   private def isOrganizationModified =
-    organizationTextField.getText() != persistentState.getOrganization()
+    organizationTextField.getText() != persistentState.organization
 
   private def isIgnoreUnknownCAModified =
-    ignoreUnknownCACheckBox.isSelected != persistentState.isIgnoreUnknownCA()
+    ignoreUnknownCACheckBox.isSelected != persistentState.isIgnoreUnknownCA
 
   private def setupUI(): Unit = {
     val gridLayoutManager = new UIGridLayoutManager(5, 2, new Insets(0, 0, 0, 0), -1, -1)

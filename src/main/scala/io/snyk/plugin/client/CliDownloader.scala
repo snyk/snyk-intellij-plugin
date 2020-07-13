@@ -3,24 +3,93 @@ package io.snyk.plugin.client
 import java.io.File
 import java.net.URL
 import java.lang.String.format
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.util.Objects.isNull
 
 import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.util.io.HttpRequests
 import io.circe.{Decoder, Encoder}
 import io.circe.parser.decode
 import io.snyk.plugin.ui.state.SnykPluginState
+import monix.execution.atomic.Atomic
 
 import scala.io.{Codec, Source}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 sealed class CliDownloader(pluginState: SnykPluginState) {
+
+  private val latestReleaseInfoAtomic: Atomic[Option[LatestReleaseInfo]] = Atomic(Option.empty[LatestReleaseInfo])
+
+  def isNewVersionAvailable(currentCliVersion: String, newCliVersion: String): Boolean = {
+    if (isNull(currentCliVersion ) || currentCliVersion.isEmpty) {
+      return true
+    }
+
+    @scala.annotation.tailrec
+    def checkIsNewVersionAvailable(
+      currentCliVersionNumbers: Array[String],
+      newCliVersionNumbers: Array[String]): Boolean =
+
+      if (currentCliVersionNumbers.length > 0 && newCliVersionNumbers.length > 0) {
+        val newVersionNumber = newCliVersionNumbers.head.toInt
+        val currentVersionNumber = currentCliVersionNumbers.head.toInt
+
+        newVersionNumber compareTo currentVersionNumber match {
+          case 0 => checkIsNewVersionAvailable(currentCliVersionNumbers.tail, newCliVersionNumbers.tail)
+          case compareResult: Int => if (compareResult > 0) true else false
+        }
+      } else {
+        false
+      }
+
+    checkIsNewVersionAvailable(currentCliVersion.split('.'), newCliVersion.split('.'))
+  }
+
+  def isFourDaysPassedSinceLastCheck: Boolean = {
+    val previousDate = this.lastCheckDate
+
+    if (isNull(previousDate)) {
+      return true
+    }
+
+    ChronoUnit.DAYS.between(previousDate, LocalDate.now) >= CliDownloader.NumberOfDaysBetweenReleaseCheck
+  }
+
+  def isCliInstalledByPlugin: Boolean = {
+    val cliClient = pluginState.cliClient
+
+    !cliClient.checkIsCliInstalledManuallyByUser() && cliClient.checkIsCliInstalledAutomaticallyByPlugin()
+  }
+
+  def cliSilentAutoUpdate(): Unit = {
+    if (isCliInstalledByPlugin && isFourDaysPassedSinceLastCheck) {
+      val releaseInfo = requestLatestReleasesInformation
+
+      val intelliJSettingsState = pluginState.intelliJSettingsState
+
+      if (releaseInfo.isDefined
+        && releaseInfo.get.tagName.isDefined
+        && isNewVersionAvailable(intelliJSettingsState.cliVersion, cliVersionNumbers(releaseInfo.get.tagName.get))) {
+
+        downloadLatestRelease()
+
+        intelliJSettingsState.setLastCheckDate(LocalDate.now())
+      }
+    }
+  }
+
+  def lastCheckDate: LocalDate = pluginState.intelliJSettingsState.lastCheckDate
 
   def requestLatestReleasesInformation: Option[LatestReleaseInfo] = {
     val jsonResponseStr = Try(Source.fromURL(CliDownloader.LatestReleasesUrl)(Codec.UTF8)) match {
       case Success(value) => value.mkString
+      case Failure(_) => ""
     }
 
-    decode[LatestReleaseInfo](jsonResponseStr).toOption
+    latestReleaseInfoAtomic := decode[LatestReleaseInfo](jsonResponseStr).toOption
+
+    latestReleaseInfoAtomic.get
   }
 
   def downloadLatestRelease(): Unit = {
@@ -36,30 +105,58 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
 
           val snykWrapperFileName = Platform.current.snykWrapperFileName
 
-          val url = new URL(
-            format(CliDownloader.LatestReleaseDownloadUrl,
-                   latestReleasesInfo.get.tagName.get,
-                   snykWrapperFileName)).toString
+          val cliVersionOption = latestReleasesInfo.get.tagName
 
-          val cliFile = new File(pluginState.pluginPath, snykWrapperFileName)
+          cliVersionOption match {
+            case Some(cliVersion) =>
+              val url = new URL(
+                format(CliDownloader.LatestReleaseDownloadUrl,
+                       cliVersion,
+                       snykWrapperFileName)).toString
 
-          HttpRequests
-            .request(url)
-            .productNameAsUserAgent()
-            .saveToFile(cliFile, indicator)
+              val cliFile = CliDownloader.this.cliFile
 
-          cliFile.setExecutable(true)
+              if (cliFile.exists()) {
+                cliFile.delete()
+              }
+
+              HttpRequests
+                .request(url)
+                .productNameAsUserAgent()
+                .saveToFile(cliFile, indicator)
+
+              cliFile.setExecutable(true)
+
+              pluginState.intelliJSettingsState.setCliVersion(cliVersionNumbers(cliVersion))
+              pluginState.intelliJSettingsState.setLastCheckDate(LocalDate.now())
+            case _ =>
+          }
         } finally {
           indicator.popState()
         }
       }
     })
   }
+
+  def cliFile: File = new File(pluginState.pluginPath, Platform.current.snykWrapperFileName)
+
+  def latestReleaseInfo: Option[LatestReleaseInfo] = latestReleaseInfoAtomic.get
+
+  /**
+    * Clear version number: v1.143.1 => 1.143.1
+
+    * @param sourceVersion - source cli version string
+    *
+    * @return String
+    */
+  private def cliVersionNumbers(sourceVersion: String): String = sourceVersion.substring(1, sourceVersion.length)
 }
 
 object CliDownloader {
   val LatestReleasesUrl = "https://api.github.com/repos/snyk/snyk/releases/latest"
   val LatestReleaseDownloadUrl = "https://github.com/snyk/snyk/releases/download/%s/%s"
+
+  val NumberOfDaysBetweenReleaseCheck = 4
 
   def apply(pluginState: SnykPluginState): CliDownloader = new CliDownloader(pluginState)
 }

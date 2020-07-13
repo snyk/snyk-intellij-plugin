@@ -21,8 +21,12 @@ class SnykPluginProjectComponent(project: Project) extends ProjectComponent {
   }
 
   override def projectOpened(): Unit = {
+    val cliDownloader = CliDownloader(pluginState)
+
     if (!pluginState.isCliInstalled) {
-      CliDownloader(pluginState).downloadLatestRelease()
+      cliDownloader.downloadLatestRelease()
+    } else {
+      cliDownloader.cliSilentAutoUpdate()
     }
   }
 
