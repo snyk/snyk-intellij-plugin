@@ -21,10 +21,14 @@ class ConsoleCommandRunner {
     generalCommandLine.setCharset(Charset.forName("UTF-8"))
     generalCommandLine.setWorkDirectory(workDirectory)
 
-    ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 120000)
+    ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
   }
 
   def runMavenInstallGoal(project: Project): Unit = {
+    if (project.isDisposed) {
+      return
+    }
+
     WriteAction.runAndWait(() => {
       val projectsManager = MavenProjectsManager.getInstance(project)
 
