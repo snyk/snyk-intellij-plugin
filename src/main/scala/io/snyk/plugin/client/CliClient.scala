@@ -298,9 +298,21 @@ private final class StandardCliClient(
       commands.add(s"--org=${organization}")
     }
 
-    projectDependency.projectType match {
-      case ProjectType.MAVEN => commands.add("--all-projects")
-      case ProjectType.GRADLE => commands.add("--all-sub-projects")
+    val additionalParameters = settings.additionalParameters
+
+    if (additionalParameters != null && additionalParameters.nonEmpty) {
+      commands.add(additionalParameters)
+    }
+
+    if (ProjectType.MAVEN == projectDependency.projectType) {
+      // Add --all-projects parameter only if no --file parameter. For now CLI not support use both at same time for Maven projects.
+      if (additionalParameters == null || additionalParameters.isEmpty && !additionalParameters.contains("--file")) {
+        commands.add("--all-projects")
+      }
+    }
+
+    if (ProjectType.GRADLE == projectDependency.projectType) {
+      commands.add("--all-sub-projects")
     }
 
     commands.add("test")
