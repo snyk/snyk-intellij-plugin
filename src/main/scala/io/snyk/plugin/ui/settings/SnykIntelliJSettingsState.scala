@@ -9,7 +9,8 @@ case class SnykIntelliJSettingsState(
   var organization: String,
   var ignoreUnknownCA: Boolean,
   var cliVersion: String,
-  var lastCheckDate: LocalDate) extends BaseState() {
+  var lastCheckDate: LocalDate,
+  var additionalParameters: String) extends BaseState() {
 }
 
 object SnykIntelliJSettingsState {
@@ -18,8 +19,9 @@ object SnykIntelliJSettingsState {
     organization: String = "",
     ignoreUnknownCA: Boolean = false,
     cliVersion: String = "",
-    lastCheckDate: LocalDate = null): SnykIntelliJSettingsState =
-    new SnykIntelliJSettingsState(customEndpointUrl, organization, ignoreUnknownCA, cliVersion, lastCheckDate)
+    lastCheckDate: LocalDate = null,
+    additionalParameters: String = ""): SnykIntelliJSettingsState =
+      new SnykIntelliJSettingsState(customEndpointUrl, organization, ignoreUnknownCA, cliVersion, lastCheckDate, additionalParameters)
 
   val Empty: SnykIntelliJSettingsState = SnykIntelliJSettingsState()
 }

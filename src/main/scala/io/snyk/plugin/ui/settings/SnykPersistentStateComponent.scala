@@ -35,6 +35,10 @@ class SnykPersistentStateComponent
   def lastCheckDate: LocalDate = snykIntelliJSettingsState.lastCheckDate
 
   def setLastCheckDate(lastCheckDate: LocalDate) = snykIntelliJSettingsState.lastCheckDate = lastCheckDate
+
+  def setAdditionalParameters(text: String): Unit = snykIntelliJSettingsState.additionalParameters = text
+
+  def additionalParameters: String = snykIntelliJSettingsState.additionalParameters
 }
 
 object SnykPersistentStateComponent {
@@ -52,7 +56,8 @@ object SnykPersistentStateComponent {
     organization: String = "",
     isIgnoreUnknownCA: Boolean = false,
     cliVersion: String = "",
-    lastCheckDate: LocalDate = null): SnykPersistentStateComponent = {
+    lastCheckDate: LocalDate = null,
+    additionalParameters: String = ""): SnykPersistentStateComponent = {
 
     val stateComponent = SnykPersistentStateComponent()
 
@@ -61,6 +66,7 @@ object SnykPersistentStateComponent {
     stateComponent.setIgnoreUnknownCA(isIgnoreUnknownCA)
     stateComponent.setCliVersion(cliVersion)
     stateComponent.setLastCheckDate(lastCheckDate)
+    stateComponent.setAdditionalParameters(additionalParameters)
 
     stateComponent
   }
