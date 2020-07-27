@@ -19,6 +19,7 @@ class SettingsDialog(project: Project) {
   private val customEndpointTextField: JTextField = new JTextField()
   private val organizationTextField: JTextField = new JTextField()
   private val ignoreUnknownCACheckBox: JCheckBox = new JCheckBox()
+  private val additionalParametersTextField: JTextField = new JTextField("")
 
   private val rootPanel: JPanel = new JPanel()
 
@@ -41,16 +42,18 @@ class SettingsDialog(project: Project) {
     persistentState.setCustomEndpointUrl(customEndpoint)
     persistentState.setOrganization(organizationTextField.getText)
     persistentState.setIgnoreUnknownCA(ignoreUnknownCACheckBox.isSelected)
+    persistentState.setAdditionalParameters(additionalParametersTextField.getText)
   }
 
   def reset(): Unit = {
     customEndpointTextField.setText(persistentState.customEndpointUrl)
     organizationTextField.setText(persistentState.organization)
     ignoreUnknownCACheckBox.setSelected(persistentState.isIgnoreUnknownCA)
+    additionalParametersTextField.setText(persistentState.additionalParameters)
   }
 
   def isModified: Boolean =
-     isCustomEndpointModified || isOrganizationModified || isIgnoreUnknownCAModified
+     isCustomEndpointModified || isOrganizationModified || isIgnoreUnknownCAModified || isAdditionalParametersModified
 
   private def isCustomEndpointModified =
     customEndpointTextField.getText != persistentState.customEndpointUrl
@@ -61,8 +64,11 @@ class SettingsDialog(project: Project) {
   private def isIgnoreUnknownCAModified =
     ignoreUnknownCACheckBox.isSelected != persistentState.isIgnoreUnknownCA
 
+  private def isAdditionalParametersModified =
+    additionalParametersTextField.getText() != persistentState.additionalParameters
+
   private def setupUI(): Unit = {
-    val gridLayoutManager = new UIGridLayoutManager(5, 2, new Insets(0, 0, 0, 0), -1, -1)
+    val gridLayoutManager = new UIGridLayoutManager(6, 2, new Insets(0, 0, 0, 0), -1, -1)
 
     rootPanel.setLayout(gridLayoutManager)
 
@@ -87,7 +93,7 @@ class SettingsDialog(project: Project) {
     val spacer = new Spacer()
 
     rootPanel.add(spacer, new UIGridConstraints(
-      4,
+      5,
       0,
       1,
       2,
@@ -161,6 +167,39 @@ class SettingsDialog(project: Project) {
       UIGridConstraints.SIZEPOLICY_FIXED,
       null,
       null,
+      null,
+      0,
+      false))
+
+    val additionalParametersLabel = new JLabel
+    additionalParametersLabel.setText("Additional parameters:")
+
+    rootPanel.add(additionalParametersLabel, new UIGridConstraints(
+      3,
+      0,
+      1,
+      1,
+      UIGridConstraints.ANCHOR_WEST,
+      UIGridConstraints.FILL_NONE,
+      UIGridConstraints.SIZEPOLICY_FIXED,
+      UIGridConstraints.SIZEPOLICY_FIXED,
+      null,
+      null,
+      null,
+      0,
+      false))
+
+    rootPanel.add(additionalParametersTextField, new UIGridConstraints(
+      3,
+      1,
+      1,
+      1,
+      UIGridConstraints.ANCHOR_WEST,
+      UIGridConstraints.FILL_HORIZONTAL,
+      UIGridConstraints.SIZEPOLICY_WANT_GROW,
+      UIGridConstraints.SIZEPOLICY_FIXED,
+      null,
+      new Dimension(150, -1),
       null,
       0,
       false))

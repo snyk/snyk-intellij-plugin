@@ -310,6 +310,57 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
   }
 
   @Test
+  def testBuildCliCommandsListWithFileParameter(): Unit = {
+    val cliClient = CliClient.newInstance(SnykConfig.default)
+
+    val gradleDependency = ProjectDependency(
+      "<none>",
+      "<none>",
+      "<none>",
+      "<none>",
+      None,
+      None,
+      Nil,
+      ProjectType.GRADLE,
+      isMultiModuleProject = false
+    )
+
+    val defaultCommands = cliClient
+      .buildCliCommandsList(SnykPersistentStateComponent(additionalParameters = "--file=build.gradle"), gradleDependency)
+
+    assertEquals("snyk", defaultCommands.get(0))
+    assertEquals("--json", defaultCommands.get(1))
+    assertEquals("--file=build.gradle", defaultCommands.get(2))
+    assertEquals("--all-sub-projects", defaultCommands.get(3))
+    assertEquals("test", defaultCommands.get(4))
+  }
+
+  @Test
+  def testBuildCliCommandsListForMavenProjectWithFileParameter(): Unit = {
+    val cliClient = CliClient.newInstance(SnykConfig.default)
+
+    val mavenDependency = ProjectDependency(
+      "<none>",
+      "<none>",
+      "<none>",
+      "<none>",
+      None,
+      None,
+      Nil,
+      ProjectType.MAVEN,
+      isMultiModuleProject = false
+    )
+
+    val defaultCommands = cliClient
+      .buildCliCommandsList(SnykPersistentStateComponent(additionalParameters = "--file=pom.xml"), mavenDependency)
+
+    assertEquals("snyk", defaultCommands.get(0))
+    assertEquals("--json", defaultCommands.get(1))
+    assertEquals("--file=pom.xml", defaultCommands.get(2))
+    assertEquals("test", defaultCommands.get(3))
+  }
+
+  @Test
   def testBuildCliCommandsListWithAllParameter(): Unit = {
     val cliClient = CliClient.newInstance(SnykConfig.default)
 
@@ -328,7 +379,8 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     val allSettings = SnykPersistentStateComponent(
       customEndpointUrl = "https://app.snyk.io/api",
       organization = "test-org",
-      isIgnoreUnknownCA = true)
+      isIgnoreUnknownCA = true,
+      additionalParameters = "--file=build.gradle")
 
     val defaultCommands = cliClient.buildCliCommandsList(allSettings, gradleDependency)
 
@@ -337,8 +389,9 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     assertEquals("--api=https://app.snyk.io/api", defaultCommands.get(2))
     assertEquals("--insecure", defaultCommands.get(3))
     assertEquals("--org=test-org", defaultCommands.get(4))
-    assertEquals("--all-sub-projects", defaultCommands.get(5))
-    assertEquals("test", defaultCommands.get(6))
+    assertEquals("--file=build.gradle", defaultCommands.get(5))
+    assertEquals("--all-sub-projects", defaultCommands.get(6))
+    assertEquals("test", defaultCommands.get(7))
   }
 
   @Test
@@ -371,5 +424,43 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
     assertEquals("One vulnerability expected", 1, vulnerabilities.size)
     assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
+  }
+
+  @Test
+  def testRunScanForProjectWithMavenAndNpm(): Unit = {
+    val packageJsonFile = new File(currentProject.getBasePath, "package.json")
+
+    packageJsonFile.createNewFile()
+
+    val snykPluginState = SnykPluginState.newInstance(currentProject)
+
+    val projectDependency = ProjectDependency(
+      "<none>",
+      "<none>",
+      "<none>",
+      "<none>",
+      None,
+      None,
+      Nil,
+      ProjectType.MAVEN,
+      isMultiModuleProject = false
+    )
+
+    val snykVulnResponse = snykPluginState
+      .cliClient
+      .runScan(currentProject, SnykPersistentStateComponent(additionalParameters = "--file=pom.xml"), projectDependency)
+
+    assertTrue(snykVulnResponse.isSuccess)
+
+    val vulnerabilities = snykVulnResponse.get.head.vulnerabilities
+
+    assertTrue(vulnerabilities.isDefined)
+
+    val vulnerabilityModuleNames = vulnerabilities.get.map(vulnerability => vulnerability.name)
+
+    assertEquals("One vulnerability expected", 1, vulnerabilities.size)
+    assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
+
+    packageJsonFile.delete()
   }
 }

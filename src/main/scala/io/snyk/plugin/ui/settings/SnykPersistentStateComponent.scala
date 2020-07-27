@@ -14,19 +14,19 @@ class SnykPersistentStateComponent
 
   override def getState: SnykIntelliJSettingsState = snykIntelliJSettingsState
 
-  override def loadState(state: SnykIntelliJSettingsState): Unit = snykIntelliJSettingsState = state
+  override def loadState(state: SnykIntelliJSettingsState) = snykIntelliJSettingsState = state
 
   def customEndpointUrl: String = snykIntelliJSettingsState.customEndpointUrl
 
-  def setCustomEndpointUrl(newEndpoint: String): Unit = snykIntelliJSettingsState.customEndpointUrl = newEndpoint
+  def setCustomEndpointUrl(newEndpoint: String) = snykIntelliJSettingsState.customEndpointUrl = newEndpoint
 
   def organization: String = snykIntelliJSettingsState.organization
 
-  def setOrganization(newOrganization: String): Unit = snykIntelliJSettingsState.organization = newOrganization
+  def setOrganization(newOrganization: String) = snykIntelliJSettingsState.organization = newOrganization
 
   def isIgnoreUnknownCA: Boolean = snykIntelliJSettingsState.ignoreUnknownCA
 
-  def setIgnoreUnknownCA(newIgnoreUnknownCA: Boolean): Unit = snykIntelliJSettingsState.ignoreUnknownCA = newIgnoreUnknownCA
+  def setIgnoreUnknownCA(newIgnoreUnknownCA: Boolean) = snykIntelliJSettingsState.ignoreUnknownCA = newIgnoreUnknownCA
 
   def cliVersion: String = snykIntelliJSettingsState.cliVersion
 
@@ -35,6 +35,10 @@ class SnykPersistentStateComponent
   def lastCheckDate: LocalDate = snykIntelliJSettingsState.lastCheckDate
 
   def setLastCheckDate(lastCheckDate: LocalDate) = snykIntelliJSettingsState.lastCheckDate = lastCheckDate
+
+  def setAdditionalParameters(text: String) = snykIntelliJSettingsState.additionalParameters = text
+
+  def additionalParameters: String = snykIntelliJSettingsState.additionalParameters
 }
 
 object SnykPersistentStateComponent {
@@ -52,7 +56,8 @@ object SnykPersistentStateComponent {
     organization: String = "",
     isIgnoreUnknownCA: Boolean = false,
     cliVersion: String = "",
-    lastCheckDate: LocalDate = null): SnykPersistentStateComponent = {
+    lastCheckDate: LocalDate = null,
+    additionalParameters: String = ""): SnykPersistentStateComponent = {
 
     val stateComponent = SnykPersistentStateComponent()
 
@@ -61,6 +66,7 @@ object SnykPersistentStateComponent {
     stateComponent.setIgnoreUnknownCA(isIgnoreUnknownCA)
     stateComponent.setCliVersion(cliVersion)
     stateComponent.setLastCheckDate(lastCheckDate)
+    stateComponent.setAdditionalParameters(additionalParameters)
 
     stateComponent
   }

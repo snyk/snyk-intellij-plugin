@@ -9,7 +9,6 @@ import java.util.UUID
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.application.ApplicationInfo
-import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.datamodel.{ProjectDependency, SnykVulnResponse}
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
 import com.softwaremill.sttp._
@@ -22,6 +21,7 @@ import java.util.regex.Pattern
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
+import io.snyk.plugin.IntellijLogging
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
 import monix.execution.atomic.Atomic
@@ -94,9 +94,7 @@ sealed trait CliClient {
 private final class StandardCliClient(
   tryConfig: => Try[SnykConfig],
   aConsoleCommandRunner: ConsoleCommandRunner,
-  pluginPath: String) extends CliClient {
-
-  val log = Logger.getInstance(this.getClass)
+  pluginPath: String) extends CliClient with IntellijLogging {
 
   val consoleCommandRunner: Atomic[ConsoleCommandRunner] = Atomic(aConsoleCommandRunner)
 
@@ -141,30 +139,38 @@ private final class StandardCliClient(
     settings: SnykPersistentStateComponent,
     projectDependency: ProjectDependency): Try[String] = tryConfig flatMap { config =>
 
-    log.debug("ApiClient: run Snyk CLI")
+    log.info("Enter runSnykCli()")
 
     prepareProjectBeforeCliCall(project, projectDependency)
 
     try {
       val projectPath = project.getBasePath
 
+      log.info(s"Project path: $projectPath")
+
       val snykResultJsonStr = requestCli(projectPath, buildCliCommandsList(settings, projectDependency))
+
+      log.info("Parse cli result.")
 
       // Description: if project is one module project Snyk CLI will return JSON object.
       // If project is multi-module project Snyk CLI will return array of JSON objects.
       // If project is one module project and Snyk CLI return an error it will return it as JSON object with error
       // property. But if it's multi-module project and Snyk CLI return an error it will return it as plain text without
       // JSON.
-      snykResultJsonStr.charAt(0) match {
+      val firstJsonChar = snykResultJsonStr.charAt(0)
+
+      log.info(s"First json char: $firstJsonChar")
+
+      firstJsonChar match {
         case '{' => Success(s"[$snykResultJsonStr]")
         case '[' => Success(snykResultJsonStr)
         case _ => Success(s"[${requestCliForError(projectPath)}]")
       }
     } catch {
-      case e: Exception => {
-        println(e.getMessage)
+      case exception: Exception => {
+        log.error(exception)
 
-        Failure(e)
+        Failure(exception)
       }
     }
   }
@@ -172,7 +178,11 @@ private final class StandardCliClient(
   override def setConsoleCommandRunner(newRunner: ConsoleCommandRunner): Unit = consoleCommandRunner := newRunner
 
   override def prepareProjectBeforeCliCall(project: Project, projectDependency: ProjectDependency): String = {
+    log.info("Enter prepareProjectBeforeCliCall()")
+
     if (projectDependency.projectType == ProjectType.MAVEN && projectDependency.isMultiModuleProject) {
+      log.info("Call maven install goal()")
+
       consoleCommandRunner().runMavenInstallGoal(project)
 
       PrepareProjectStatus.MAVEN_INSTALL_STEP_FINISHED
@@ -182,27 +192,35 @@ private final class StandardCliClient(
   }
 
   private def requestCliForError(projectPath: String): String = {
+    log.info("Enter requestCliForError()")
+
     val commands: util.ArrayList[String] = new util.ArrayList[String]
 
     commands.add(snykCliCommandPath)
     commands.add("--json")
     commands.add("test")
 
+    log.info(s"Call requestCli() with parameters $commands")
+
     requestCli(projectPath, commands)
   }
 
   private def requestCli(projectPath: String, commands: util.ArrayList[String]): String = {
-    log.debug("ApiClient: run Snyk CLI")
+    log.info("Enter requestCli()")
 
     if (Files.notExists(Paths.get(projectPath))) {
+      log.info(s"Project path not found: $projectPath/pom.xml")
+
       throw new FileNotFoundException("pom.xml")
     }
+
+    log.info("Try execute console command runner.")
 
     consoleCommandRunner().execute(commands, projectPath)
   }
 
   def isCliInstalled(): Boolean = {
-    log.debug("Check whether Snyk CLI is installed")
+    log.info("Check whether Snyk CLI is installed")
 
     checkIsCliInstalledManuallyByUser() || checkIsCliInstalledAutomaticallyByPlugin()
   }
@@ -278,6 +296,8 @@ private final class StandardCliClient(
   } yield json.user
 
   override def buildCliCommandsList(settings: SnykPersistentStateComponent, projectDependency: ProjectDependency): util.ArrayList[String] = {
+    log.info("Enter buildCliCommandsList")
+
     val commands: util.ArrayList[String] = new util.ArrayList[String]
     commands.add(snykCliCommandPath)
     commands.add("--json")
@@ -298,12 +318,26 @@ private final class StandardCliClient(
       commands.add(s"--org=${organization}")
     }
 
-    projectDependency.projectType match {
-      case ProjectType.MAVEN => commands.add("--all-projects")
-      case ProjectType.GRADLE => commands.add("--all-sub-projects")
+    val additionalParameters = settings.additionalParameters
+
+    if (additionalParameters != null && additionalParameters.nonEmpty) {
+      commands.add(additionalParameters)
+    }
+
+    if (ProjectType.MAVEN == projectDependency.projectType) {
+      // Add --all-projects parameter only if no --file parameter. For now CLI not support use both at same time for Maven projects.
+      if (additionalParameters == null || additionalParameters.isEmpty && !additionalParameters.contains("--file")) {
+        commands.add("--all-projects")
+      }
+    }
+
+    if (ProjectType.GRADLE == projectDependency.projectType) {
+      commands.add("--all-sub-projects")
     }
 
     commands.add("test")
+
+    log.info(s"Snyk commands: $commands")
 
     commands
   }
