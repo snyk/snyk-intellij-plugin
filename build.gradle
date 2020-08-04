@@ -88,6 +88,7 @@ dependencies {
 test {
     useJUnit()
     testLogging {
+        events "failed", "passed"
         exceptionFormat = 'full'
     }
 }

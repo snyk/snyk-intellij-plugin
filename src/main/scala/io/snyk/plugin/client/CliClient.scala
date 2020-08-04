@@ -29,7 +29,7 @@ import monix.execution.atomic.Atomic
 /**
   * Represents the connection to the Snyk servers for the security scan.
   */
-sealed trait CliClient {
+sealed trait CliClient extends IntellijLogging {
   /** Run a scan on the supplied artifact tree */
   def runScan(
     project: Project,
@@ -141,16 +141,44 @@ private final class StandardCliClient(
 
     log.info("Enter runSnykCli()")
 
+    log.info("Execute prepareProjectBeforeCliCall(...)")
+
     prepareProjectBeforeCliCall(project, projectDependency)
+
+    log.info("After prepareProjectBeforeCliCall(...)")
 
     try {
       val projectPath = project.getBasePath
 
-      log.info(s"Project path: $projectPath")
+      log.info(s"Project path $projectPath")
+
+      log.info("Execute requestCli()")
 
       val snykResultJsonStr = requestCli(projectPath, buildCliCommandsList(settings, projectDependency))
 
       log.info("Parse cli result.")
+
+      log.info("Check result string.")
+
+      // Check CLI result string for not empty and not empty json array.
+      // Check is termination message available.
+      if (snykResultJsonStr.isEmpty || snykResultJsonStr.startsWith("[]")) {
+        log.info(s"Result string is empty: $snykResultJsonStr")
+
+        val terminationMessage = consoleCommandRunner().terminationMessage()
+
+        log.info(s"Termination message: $terminationMessage")
+
+        if (terminationMessage.nonEmpty) {
+          log.info("Return Failure with termination message.")
+
+          return Failure(new Exception(terminationMessage))
+        } else {
+          log.info("Return Failure with 'Empty CLI result' message.")
+
+          return Failure(new Exception("Empty CLI result"))
+        }
+      }
 
       // Description: if project is one module project Snyk CLI will return JSON object.
       // If project is multi-module project Snyk CLI will return array of JSON objects.
@@ -160,6 +188,7 @@ private final class StandardCliClient(
       val firstJsonChar = snykResultJsonStr.charAt(0)
 
       log.info(s"First json char: $firstJsonChar")
+      log.info("Recognize result json type by first char.")
 
       firstJsonChar match {
         case '{' => Success(s"[$snykResultJsonStr]")
@@ -183,7 +212,7 @@ private final class StandardCliClient(
     if (projectDependency.projectType == ProjectType.MAVEN && projectDependency.isMultiModuleProject) {
       log.info("Call maven install goal()")
 
-      consoleCommandRunner().runMavenInstallGoal(project)
+      consoleCommandRunner().runMavenInstall(project)
 
       PrepareProjectStatus.MAVEN_INSTALL_STEP_FINISHED
     } else {
@@ -214,7 +243,7 @@ private final class StandardCliClient(
       throw new FileNotFoundException("pom.xml")
     }
 
-    log.info("Try execute console command runner.")
+    log.info("Execute consoleCommandRunner.execute(...)")
 
     consoleCommandRunner().execute(commands, projectPath)
   }

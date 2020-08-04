@@ -75,35 +75,33 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
 
     assertEquals(3, snykVulnResponseSeq.size)
 
-    assertEquals("SNYK-JAVA-COMGOOGLEGUAVA-32236",
-                 snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
+    val vulnerabilityModuleNames = snykVulnResponseSeq
+      .map(vulnerabilityObj => vulnerabilityObj.vulnerabilities.get
+        .map {
+          case vuln: SecurityVuln => vuln.id
+          case _ =>
+        })
+      .flatMap(array => array.seq.map(item => item))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-COMGOOGLEGUAVA-32236"))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(1).vulnerabilities.get(2).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
-                 snykVulnResponseSeq(1).vulnerabilities.get(3).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-COMGOOGLEGUAVA-32236",
-                 snykVulnResponseSeq(2).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGCODEHAUSJACKSON-534878"))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(2).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-COMGOOGLEGUAVA-32236"))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(2).vulnerabilities.get(2).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-ORGJOLOKIA-32136",
-                 snykVulnResponseSeq(2).vulnerabilities.get(3).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-ORGJOLOKIA-32137",
-                 snykVulnResponseSeq(2).vulnerabilities.get(4).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGJOLOKIA-32136"))
 
-    assertEquals("SNYK-JAVA-ORGJOLOKIA-540501",
-                 snykVulnResponseSeq(2).vulnerabilities.get(5).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGJOLOKIA-32137"))
+
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGJOLOKIA-540501"))
   }
 
   @Test
@@ -126,35 +124,33 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
 
     assertEquals(3, snykVulnResponseSeq.size)
 
-    assertEquals("SNYK-JAVA-COMGOOGLEGUAVA-32236",
-                 snykVulnResponseSeq(1).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
+    val vulnerabilityModuleNames = snykVulnResponseSeq
+      .map(vulnerabilityObj => vulnerabilityObj.vulnerabilities.get
+        .map {
+          case vuln: SecurityVuln => vuln.id
+          case _ =>
+        })
+      .flatMap(array => array.seq.map(item => item))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(1).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-COMGOOGLEGUAVA-32236"))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(1).vulnerabilities.get(2).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-ORGCODEHAUSJACKSON-534878",
-                 snykVulnResponseSeq(1).vulnerabilities.get(3).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-COMGOOGLEGUAVA-32236",
-                 snykVulnResponseSeq(2).vulnerabilities.get(0).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGCODEHAUSJACKSON-534878"))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(2).vulnerabilities.get(1).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-COMGOOGLEGUAVA-32236"))
 
-    assertEquals("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761",
-                 snykVulnResponseSeq(2).vulnerabilities.get(2).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-ORGJOLOKIA-32136",
-                 snykVulnResponseSeq(2).vulnerabilities.get(3).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGAPACHELOGGINGLOG4J-567761"))
 
-    assertEquals("SNYK-JAVA-ORGJOLOKIA-32137",
-                 snykVulnResponseSeq(2).vulnerabilities.get(4).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGJOLOKIA-32136"))
 
-    assertEquals("SNYK-JAVA-ORGJOLOKIA-540501",
-                 snykVulnResponseSeq(2).vulnerabilities.get(5).asInstanceOf[SecurityVuln].id)
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGJOLOKIA-32137"))
+
+    assertTrue(vulnerabilityModuleNames.contains("SNYK-JAVA-ORGJOLOKIA-540501"))
   }
 
   private def createModule(moduleName: String, buildGradleStr: String): Unit = {

@@ -46,21 +46,30 @@ class SnykGradleProjectPluginTest extends AbstractGradleTestCase() {
 
     assertEquals("gradle", snykPluginState.latestScanForSelectedProject.get.head.packageManager.get)
 
-    val vulnerabilities = snykPluginState.latestScanForSelectedProject.get.head.vulnerabilities.get
+    val snykVulnResponseSeq = snykPluginState.latestScanForSelectedProject.get
 
-    assertEquals("One vulnerability expected", 4, vulnerabilities.size)
+    val vulnerabilityTitles = snykVulnResponseSeq
+      .map(vulnerabilityObj => vulnerabilityObj.vulnerabilities.get
+        .map {
+          case vuln: SecurityVuln => vuln.title
+          case _ =>
+        })
+      .flatMap(array => array.seq.map(item => item))
 
-    val expectedVulnerabilityTitles = Seq("Cross-site Scripting (XSS)",
-      "Arbitrary Code Execution",
-      "Cross-Site Request Forgery (CSRF)",
-      "XML External Entity (XXE) Injection")
+    assertTrue(vulnerabilityTitles.contains("Cross-site Scripting (XSS)"))
+    assertTrue(vulnerabilityTitles.contains("Arbitrary Code Execution"))
+    assertTrue(vulnerabilityTitles.contains("Cross-Site Request Forgery (CSRF)"))
+    assertTrue(vulnerabilityTitles.contains("XML External Entity (XXE) Injection"))
 
-    val expectedVulnerabilityModuleNames = Seq("org.jolokia:jolokia-core", "org.codehaus.jackson:jackson-mapper-asl")
+    val vulnerabilityModuleNames = snykVulnResponseSeq
+      .map(vulnerabilityObj => vulnerabilityObj.vulnerabilities.get
+        .map {
+          case vuln: SecurityVuln => vuln.moduleName
+          case _ =>
+        })
+      .flatMap(array => array.seq.map(item => item))
 
-    vulnerabilities.foreach(vulnerability => {
-      assertTrue(expectedVulnerabilityTitles.contains(vulnerability.asInstanceOf[SecurityVuln].title))
-
-      assertTrue(expectedVulnerabilityModuleNames.contains(vulnerability.asInstanceOf[SecurityVuln].moduleName))
-    })
+    assertTrue(vulnerabilityModuleNames.contains("org.jolokia:jolokia-core"))
+    assertTrue(vulnerabilityModuleNames.contains("org.codehaus.jackson:jackson-mapper-asl"))
   }
 }
