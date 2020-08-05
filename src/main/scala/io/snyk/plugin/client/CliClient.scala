@@ -366,7 +366,7 @@ private final class StandardCliClient(
 
     commands.add("test")
 
-    log.info(s"Snyk commands: $commands")
+    log.info(s"Cli parameters: $commands")
 
     commands
   }
