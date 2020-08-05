@@ -5,6 +5,8 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util
 import java.util.UUID
+import java.util.Objects.nonNull
+import java.util.Objects.isNull
 
 import com.intellij.ide.plugins.cl.PluginClassLoader
 import com.intellij.ide.plugins.PluginManager
@@ -333,8 +335,8 @@ private final class StandardCliClient(
 
     val customEndpoint = settings.customEndpointUrl
 
-    if (customEndpoint != null && customEndpoint.nonEmpty) {
-      commands.add(s"--api=${customEndpoint}")
+    if (nonNull(customEndpoint) && customEndpoint.nonEmpty) {
+      commands.add(s"--api=$customEndpoint")
     }
 
     if (settings.isIgnoreUnknownCA) {
@@ -343,26 +345,25 @@ private final class StandardCliClient(
 
     val organization = settings.organization
 
-    if (organization != null && organization.nonEmpty) {
-      commands.add(s"--org=${organization}")
+    if (nonNull(organization) && organization.nonEmpty) {
+      commands.add(s"--org=$organization")
     }
 
     val additionalParameters = settings.additionalParameters
 
-    if (additionalParameters != null && additionalParameters.nonEmpty) {
+    if (nonNull(additionalParameters) && additionalParameters.nonEmpty) {
       commands.add(additionalParameters)
     }
 
-    if (ProjectType.MAVEN == projectDependency.projectType) {
-      // Add --all-projects parameter only if no --file parameter. For now CLI not support use both at same time for Maven projects.
-      if (additionalParameters == null || additionalParameters.isEmpty && !additionalParameters.contains("--file")) {
-        commands.add("--all-projects")
+    // Add --all-projects or --all-sub-projects parameter only if no --file parameter.
+    // For now CLI not support use both at same time.
+    if (checkNotContainsFileParameter(additionalParameters)) {
+      projectDependency.projectType match {
+        case ProjectType.MAVEN => commands.add("--all-projects")
+        case ProjectType.GRADLE => commands.add("--all-sub-projects")
       }
     }
 
-    if (ProjectType.GRADLE == projectDependency.projectType) {
-      commands.add("--all-sub-projects")
-    }
 
     commands.add("test")
 
@@ -370,6 +371,9 @@ private final class StandardCliClient(
 
     commands
   }
+
+  private def checkNotContainsFileParameter(additionalParameters: String): Boolean =
+    isNull(additionalParameters) || additionalParameters.isEmpty && !additionalParameters.contains("--file")
 
   private def snykCliCommandName: String = if (SystemInfo.isWindows) "snyk.cmd" else "snyk"
 
