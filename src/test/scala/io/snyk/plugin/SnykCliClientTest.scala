@@ -333,8 +333,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
     assertEquals("--file=build.gradle", defaultCommands.get(2))
-    assertEquals("--all-sub-projects", defaultCommands.get(3))
-    assertEquals("test", defaultCommands.get(4))
+    assertEquals("test", defaultCommands.get(3))
   }
 
   @Test
@@ -392,8 +391,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     assertEquals("--insecure", defaultCommands.get(3))
     assertEquals("--org=test-org", defaultCommands.get(4))
     assertEquals("--file=build.gradle", defaultCommands.get(5))
-    assertEquals("--all-sub-projects", defaultCommands.get(6))
-    assertEquals("test", defaultCommands.get(7))
+    assertEquals("test", defaultCommands.get(6))
   }
 
   @Test
