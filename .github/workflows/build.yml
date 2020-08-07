@@ -25,14 +25,14 @@ jobs:
         with:
           java-version: 1.8
 
-      - name: Setup Cache
-        uses: actions/cache@v1
+      - name: Setup Gradle Cache
+        uses: actions/cache@v2
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          restore-keys: ${{ runner.os }}-gradle
 
       - name: Verify Plugin
         run: ./gradlew verifyPlugin
