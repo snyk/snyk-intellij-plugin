@@ -1,0 +1,39 @@
+name: Build
+on: [push, pull_request]
+
+jobs:
+  gradleValidation:
+    name: Gradle Wrapper
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Sources
+        uses: actions/checkout@v2
+
+      - name: Gradle Wrapper Validation
+        uses: gradle/wrapper-validation-action@v1
+
+  test:
+    name: Test
+    needs: gradleValidation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Sources
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Setup Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Verify Plugin
+        run: ./gradlew verifyPlugin
+
+      - name: Run Tests
+        run: ./gradlew test
