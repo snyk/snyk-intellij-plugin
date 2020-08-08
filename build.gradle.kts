@@ -10,6 +10,8 @@ plugins {
 
 // variables from gradle.properties file
 val pluginVersion: String by project
+val pluginSinceBuild: String by project
+val pluginUntilBuild: String by project
 
 group = "io.snyk.intellij"
 description = "Snyk Vulnerability Scanner"
@@ -35,6 +37,8 @@ tasks {
 
   patchPluginXml {
     version(pluginVersion)
+    sinceBuild(pluginSinceBuild)
+    untilBuild(pluginUntilBuild)
 
     pluginDescription(closure {
       File("./README.md").readText().lines().run {
