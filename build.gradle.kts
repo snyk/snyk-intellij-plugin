@@ -12,6 +12,7 @@ plugins {
 val pluginVersion: String by project
 val pluginSinceBuild: String by project
 val pluginUntilBuild: String by project
+val platformVersion: String by project
 
 group = "io.snyk.intellij"
 description = "Snyk Vulnerability Scanner"
@@ -19,6 +20,10 @@ version = pluginVersion
 
 dependencies {
   implementation("org.jetbrains.kotlin:kotlin-stdlib")
+}
+
+intellij {
+  version = platformVersion
 }
 
 repositories {
