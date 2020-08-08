@@ -48,4 +48,8 @@ tasks {
       }.joinToString("\n").run { markdownToHTML(this) }
     })
   }
+
+  publishPlugin {
+    channels(pluginVersion.split('-').getOrElse(1) { "default" }.split('.').first())
+  }
 }
