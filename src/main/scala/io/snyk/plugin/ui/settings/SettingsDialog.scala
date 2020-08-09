@@ -1,22 +1,24 @@
 package io.snyk.plugin.ui.settings
 
-import java.net.URL
+import io.snyk.plugin.Utils.isUrlValid
 
-import com.intellij.openapi.ui.{ComponentValidator, ValidationInfo}
-import javax.swing.{JCheckBox, JComponent, JLabel, JPanel, JTextField}
+import java.util.Objects.nonNull
 import java.awt.{Dimension, Insets}
 
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.ui.{ComponentValidator, ValidationInfo}
 import com.intellij.ui.DocumentAdapter
-import com.intellij.uiDesigner.core.{GridConstraints => UIGridConstraints, GridLayoutManager => UIGridLayoutManager}
-import com.intellij.uiDesigner.core.Spacer
+import com.intellij.uiDesigner.core.{Spacer, GridConstraints => UIGridConstraints, GridLayoutManager => UIGridLayoutManager}
+import javax.swing._
 import javax.swing.event.DocumentEvent
 
-class SettingsDialog(project: Project) {
+class SettingsDialog(applicationSettings: SnykApplicationSettingsStateService,
+  projectSettings: Option[SnykProjectSettingsStateService]) {
 
-  private val persistentState: SnykPersistentStateComponent = SnykPersistentStateComponent.getInstance(project)
+  private val customEndpointTextField = new JTextField() with Disposable {
+    override def dispose(): Unit = {}
+  }
 
-  private val customEndpointTextField: JTextField = new JTextField()
   private val organizationTextField: JTextField = new JTextField()
   private val ignoreUnknownCACheckBox: JCheckBox = new JCheckBox()
   private val additionalParametersTextField: JTextField = new JTextField("")
@@ -26,46 +28,21 @@ class SettingsDialog(project: Project) {
   setupUI()
   setupValidation()
 
-  if (persistentState != null) {
+  if (nonNull(applicationSettings)) {
     reset()
   }
 
   def getRootPanel: JComponent = rootPanel
 
-  def apply(): Unit = {
-    val customEndpoint = customEndpointTextField.getText
-
-    if (!isUrlValid(customEndpoint)) {
-      return
-    }
-
-    persistentState.setCustomEndpointUrl(customEndpoint)
-    persistentState.setOrganization(organizationTextField.getText)
-    persistentState.setIgnoreUnknownCA(ignoreUnknownCACheckBox.isSelected)
-    persistentState.setAdditionalParameters(additionalParametersTextField.getText)
-  }
-
   def reset(): Unit = {
-    customEndpointTextField.setText(persistentState.customEndpointUrl)
-    organizationTextField.setText(persistentState.organization)
-    ignoreUnknownCACheckBox.setSelected(persistentState.isIgnoreUnknownCA)
-    additionalParametersTextField.setText(persistentState.additionalParameters)
+    customEndpointTextField.setText(applicationSettings.getCustomEndpointUrl)
+    organizationTextField.setText(applicationSettings.getOrganization)
+    ignoreUnknownCACheckBox.setSelected(applicationSettings.isIgnoreUnknownCA)
+
+    if (projectSettings.nonEmpty) {
+      additionalParametersTextField.setText(projectSettings.get.getAdditionalParameters)
+    }
   }
-
-  def isModified: Boolean =
-     isCustomEndpointModified || isOrganizationModified || isIgnoreUnknownCAModified || isAdditionalParametersModified
-
-  private def isCustomEndpointModified =
-    customEndpointTextField.getText != persistentState.customEndpointUrl
-
-  private def isOrganizationModified =
-    organizationTextField.getText() != persistentState.organization
-
-  private def isIgnoreUnknownCAModified =
-    ignoreUnknownCACheckBox.isSelected != persistentState.isIgnoreUnknownCA
-
-  private def isAdditionalParametersModified =
-    additionalParametersTextField.getText() != persistentState.additionalParameters
 
   private def setupUI(): Unit = {
     val gridLayoutManager = new UIGridLayoutManager(6, 2, new Insets(0, 0, 0, 0), -1, -1)
@@ -171,42 +148,44 @@ class SettingsDialog(project: Project) {
       0,
       false))
 
-    val additionalParametersLabel = new JLabel
-    additionalParametersLabel.setText("Additional parameters:")
+    if (projectSettings.nonEmpty) {
+      val additionalParametersLabel = new JLabel
+      additionalParametersLabel.setText("Additional parameters:")
 
-    rootPanel.add(additionalParametersLabel, new UIGridConstraints(
-      3,
-      0,
-      1,
-      1,
-      UIGridConstraints.ANCHOR_WEST,
-      UIGridConstraints.FILL_NONE,
-      UIGridConstraints.SIZEPOLICY_FIXED,
-      UIGridConstraints.SIZEPOLICY_FIXED,
-      null,
-      null,
-      null,
-      0,
-      false))
+      rootPanel.add(additionalParametersLabel, new UIGridConstraints(
+        3,
+        0,
+        1,
+        1,
+        UIGridConstraints.ANCHOR_WEST,
+        UIGridConstraints.FILL_NONE,
+        UIGridConstraints.SIZEPOLICY_FIXED,
+        UIGridConstraints.SIZEPOLICY_FIXED,
+        null,
+        null,
+        null,
+        0,
+        false))
 
-    rootPanel.add(additionalParametersTextField, new UIGridConstraints(
-      3,
-      1,
-      1,
-      1,
-      UIGridConstraints.ANCHOR_WEST,
-      UIGridConstraints.FILL_HORIZONTAL,
-      UIGridConstraints.SIZEPOLICY_WANT_GROW,
-      UIGridConstraints.SIZEPOLICY_FIXED,
-      null,
-      new Dimension(150, -1),
-      null,
-      0,
-      false))
+      rootPanel.add(additionalParametersTextField, new UIGridConstraints(
+        3,
+        1,
+        1,
+        1,
+        UIGridConstraints.ANCHOR_WEST,
+        UIGridConstraints.FILL_HORIZONTAL,
+        UIGridConstraints.SIZEPOLICY_WANT_GROW,
+        UIGridConstraints.SIZEPOLICY_FIXED,
+        null,
+        new Dimension(150, -1),
+        null,
+        0,
+        false))
+    }
   }
 
   private def setupValidation(): Unit = {
-    new ComponentValidator(project).withValidator(() => {
+    new ComponentValidator(customEndpointTextField).withValidator(() => {
 
       if (isUrlValid(customEndpointTextField.getText)) {
         null
@@ -223,15 +202,11 @@ class SettingsDialog(project: Project) {
     })
   }
 
-  private def isUrlValid(url: String): Boolean = try {
-    if (url.nonEmpty) {
-      new URL(url).toURI
+  def organization: String = organizationTextField.getText
 
-      true
-    } else {
-      true
-    }
-  } catch {
-    case _: Throwable => false
-  }
+  def customEndpoint: String = customEndpointTextField.getText
+
+  def isIgnoreUnknownCA: Boolean = ignoreUnknownCACheckBox.isSelected
+
+  def additionalParameters: String = additionalParametersTextField.getText
 }

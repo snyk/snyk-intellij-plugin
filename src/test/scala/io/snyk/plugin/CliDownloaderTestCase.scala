@@ -9,7 +9,7 @@ import io.snyk.plugin.client.{CliClient, CliDownloader, ConsoleCommandRunner, Pl
 import io.snyk.plugin.depsource.DepTreeProvider
 import io.snyk.plugin.depsource.externalproject.ExternProj
 import io.snyk.plugin.metrics.SegmentApi
-import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
+import io.snyk.plugin.ui.settings.SnykApplicationSettingsService
 import io.snyk.plugin.ui.state.SnykPluginState
 import monix.reactive.Observable
 import org.junit.Test
@@ -57,9 +57,9 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     cliDownloader.cliSilentAutoUpdate()
 
     assertTrue(cliDownloader.cliFile.exists())
-    assertEquals(currentDate, mockPluginState.intelliJSettingsState.lastCheckDate)
+    assertEquals(currentDate, mockPluginState.allIdeSettings.lastCheckDate)
     assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
-                 "v" + mockPluginState.intelliJSettingsState.cliVersion)
+                 "v" + mockPluginState.allIdeSettings.cliVersion)
 
     cliFile.delete()
   }
@@ -92,9 +92,9 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     cliDownloader.cliSilentAutoUpdate()
 
     assertTrue(cliDownloader.cliFile.exists())
-    assertEquals(currentDate, mockPluginState.intelliJSettingsState.lastCheckDate)
+    assertEquals(currentDate, mockPluginState.allIdeSettings.lastCheckDate)
     assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
-      "v" + mockPluginState.intelliJSettingsState.cliVersion)
+      "v" + mockPluginState.allIdeSettings.cliVersion)
 
     cliFile.delete()
   }
@@ -196,7 +196,7 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
 
     assertTrue(downloadedFile.exists())
     assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
-                 "v" + snykPluginState.intelliJSettingsState.cliVersion)
+                 "v" + snykPluginState.allIdeSettings.cliVersion)
 
     downloadedFile.delete()
   }
@@ -208,7 +208,7 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   ): SnykPluginState = new SnykPluginState() {
 
     private val persistentStateComponent =
-      SnykPersistentStateComponent(cliVersion = cliVersion, lastCheckDate = lastCheckDate)
+      SnykApplicationSettingsService(cliVersion = cliVersion, lastCheckDate = lastCheckDate)
 
     override def getProject: Project = currentProject
 
@@ -224,6 +224,6 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
 
     override def gradleProjectsObservable: Observable[Seq[String]] = ???
 
-    override def intelliJSettingsState: SnykPersistentStateComponent = persistentStateComponent
+    override def allIdeSettings: SnykApplicationSettingsService = persistentStateComponent
   }
 }

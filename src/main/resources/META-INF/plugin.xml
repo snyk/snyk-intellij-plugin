@@ -72,21 +72,26 @@
         <externalAnnotator language="XML" implementationClass="io.snyk.plugin.ui.annotators.SnykMavenRedUnderlineAnnotator"/>
         <externalAnnotator language="Groovy" implementationClass="io.snyk.plugin.ui.annotators.SnykGradleRedUnderlineAnnotator"/>
 
-        <projectConfigurable id="preference.SnykConfigurable" instance="io.snyk.plugin.ui.settings.SnykConfigurable" groupId="tools" displayName="Snyk"/>
-        <projectService serviceImplementation="io.snyk.plugin.ui.settings.SnykPersistentStateComponent"/>
+        <projectConfigurable id="io.snyk.plugin.ui.settings.SnykProjectSettingsConfigurable"
+                             instance="io.snyk.plugin.ui.settings.SnykProjectSettingsConfigurable"
+                             groupId="tools"
+                             displayName="Snyk"/>
+        <projectService serviceImplementation="io.snyk.plugin.ui.settings.SnykProjectSettingsStateService"/>
+        <applicationService serviceImplementation="io.snyk.plugin.ui.settings.SnykApplicationSettingsStateService"/>
 
         <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
     </extensions>
 
     <actions>
         <group id="io.snyk.plugin.ActionBar">
-            <action id="io.snyk.plugin.RescanAction" class="io.snyk.plugin.ui.actions.SnykRescanAction" text="Re-Scan project with Snyk" />
-            <action id="io.snyk.plugin.ToggleGroupDisplayAction" class="io.snyk.plugin.ui.actions.SnykToggleGroupDisplayAction" text="Toggle display of Maven Groups" />
+            <action id="io.snyk.plugin.RescanAction"
+                    class="io.snyk.plugin.ui.actions.SnykRescanAction"
+                    text="Re-Scan project with Snyk" />
+
+            <action id="io.snyk.plugin.ToggleGroupDisplayAction"
+                    class="io.snyk.plugin.ui.actions.SnykToggleGroupDisplayAction"
+                    text="Toggle display of Maven Groups" />
         </group>
-        <!--group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
-            <add-to-group group-id="MainMenu" anchor="last"  />
-            <action id="io.snyk.plugin.Textboxes" class="io.snyk.plugin.TextBoxes" text="Text _Boxes" description="A test menu item" />
-        </group-->
     </actions>
 
     <depends>com.intellij.modules.java</depends>

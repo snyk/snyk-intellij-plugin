@@ -25,7 +25,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import io.snyk.plugin.IntellijLogging
 import io.snyk.plugin.depsource.ProjectType
-import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
+import io.snyk.plugin.ui.settings.SnykIdeSettings
 import monix.execution.atomic.Atomic
 
 /**
@@ -35,7 +35,7 @@ sealed trait CliClient extends IntellijLogging {
   /** Run a scan on the supplied artifact tree */
   def runScan(
     project: Project,
-    settings: SnykPersistentStateComponent,
+    settings: SnykIdeSettings,
     projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]]
 
   def userInfo(): Try[SnykUserInfo]
@@ -71,7 +71,7 @@ sealed trait CliClient extends IntellijLogging {
    * @param projectDependency  - Information about project dependencies.
    * @return
    */
-  def buildCliCommandsList(settings: SnykPersistentStateComponent, projectDependency: ProjectDependency): util.ArrayList[String]
+  def buildCliCommandsList(settings: SnykIdeSettings, projectDependency: ProjectDependency): util.ArrayList[String]
 
   /**
     * Check is CLI installed by plugin: if CLI file exists in plugin directory.
@@ -138,7 +138,7 @@ private final class StandardCliClient(
 
   private def runSnykCli(
     project: Project,
-    settings: SnykPersistentStateComponent,
+    settings: SnykIdeSettings,
     projectDependency: ProjectDependency): Try[String] = tryConfig flatMap { config =>
 
     log.info("Enter runSnykCli()")
@@ -316,7 +316,7 @@ private final class StandardCliClient(
      }
   }
 
-  def runScan(project: Project, settings: SnykPersistentStateComponent, projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
+  def runScan(project: Project, settings: SnykIdeSettings, projectDependency: ProjectDependency): Try[Seq[SnykVulnResponse]] = for {
     jsonStr <- runSnykCli(project, settings, projectDependency)
     json <- decode[Seq[SnykVulnResponse]](jsonStr).toTry
   } yield json
@@ -326,7 +326,7 @@ private final class StandardCliClient(
     json <- decode[SnykUserResponse](jsonStr).toTry
   } yield json.user
 
-  override def buildCliCommandsList(settings: SnykPersistentStateComponent, projectDependency: ProjectDependency): util.ArrayList[String] = {
+  override def buildCliCommandsList(settings: SnykIdeSettings, projectDependency: ProjectDependency): util.ArrayList[String] = {
     log.info("Enter buildCliCommandsList")
 
     val commands: util.ArrayList[String] = new util.ArrayList[String]
@@ -393,7 +393,7 @@ private final class MockCliClient(
 
   val isAvailable: Boolean = true
 
-  def runScan(project: Project, settings: SnykPersistentStateComponent, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
+  def runScan(project: Project, settings: SnykIdeSettings, treeRoot: ProjectDependency): Try[Seq[SnykVulnResponse]] =
     mockResponder(treeRoot) flatMap { str => decode[Seq[SnykVulnResponse]](str).toTry }
 
   def userInfo(): Try[SnykUserInfo] = Success {
@@ -421,7 +421,7 @@ private final class MockCliClient(
    * @return
    */
   override def buildCliCommandsList(
-    settings: SnykPersistentStateComponent,
+    settings: SnykIdeSettings,
     projectDependency: ProjectDependency): util.ArrayList[String] = new util.ArrayList[String]()
 
   /**

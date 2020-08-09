@@ -6,7 +6,7 @@ import java.util
 import io.snyk.plugin.client.{CliClient, ConsoleCommandRunner, Platform, PrepareProjectStatus, SnykConfig}
 import io.snyk.plugin.datamodel.ProjectDependency
 import io.snyk.plugin.depsource.ProjectType
-import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
+import io.snyk.plugin.ui.settings.SnykApplicationSettingsService
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.junit.Assert.{assertEquals, assertFalse, assertNotNull, assertTrue}
 import org.junit.Test
@@ -50,7 +50,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val snykVulnResponse = snykPluginState.cliClient.runScan(currentProject, SnykPersistentStateComponent(), projectDependency)
+    val snykVulnResponse = snykPluginState.cliClient.runScan(currentProject, SnykApplicationSettingsService(), projectDependency)
 
     assertTrue(snykVulnResponse.isSuccess)
 
@@ -201,7 +201,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val defaultCommands = cliClient.buildCliCommandsList(SnykPersistentStateComponent(), mavenDependency)
+    val defaultCommands = cliClient.buildCliCommandsList(SnykApplicationSettingsService(), mavenDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -225,7 +225,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val defaultCommands = cliClient.buildCliCommandsList(SnykPersistentStateComponent(), gradleDependency)
+    val defaultCommands = cliClient.buildCliCommandsList(SnykApplicationSettingsService(), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -250,7 +250,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       )
 
     val defaultCommands = cliClient
-      .buildCliCommandsList(SnykPersistentStateComponent(customEndpointUrl = "https://app.snyk.io/api"), gradleDependency)
+      .buildCliCommandsList(SnykApplicationSettingsService(customEndpointUrl = "https://app.snyk.io/api"), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -276,7 +276,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       )
 
     val defaultCommands = cliClient
-      .buildCliCommandsList(SnykPersistentStateComponent(isIgnoreUnknownCA = true), gradleDependency)
+      .buildCliCommandsList(SnykApplicationSettingsService(isIgnoreUnknownCA = true), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -302,7 +302,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       )
 
     val defaultCommands = cliClient
-      .buildCliCommandsList(SnykPersistentStateComponent(organization = "test-org"), gradleDependency)
+      .buildCliCommandsList(SnykApplicationSettingsService(organization = "test-org"), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -328,7 +328,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     )
 
     val defaultCommands = cliClient
-      .buildCliCommandsList(SnykPersistentStateComponent(additionalParameters = "--file=build.gradle"), gradleDependency)
+      .buildCliCommandsList(SnykApplicationSettingsService(additionalParameters = "--file=build.gradle"), gradleDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -353,7 +353,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
     )
 
     val defaultCommands = cliClient
-      .buildCliCommandsList(SnykPersistentStateComponent(additionalParameters = "--file=pom.xml"), mavenDependency)
+      .buildCliCommandsList(SnykApplicationSettingsService(additionalParameters = "--file=pom.xml"), mavenDependency)
 
     assertEquals("snyk", defaultCommands.get(0))
     assertEquals("--json", defaultCommands.get(1))
@@ -377,7 +377,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
       isMultiModuleProject = false
       )
 
-    val allSettings = SnykPersistentStateComponent(
+    val allSettings = SnykApplicationSettingsService(
       customEndpointUrl = "https://app.snyk.io/api",
       organization = "test-org",
       isIgnoreUnknownCA = true,
@@ -412,7 +412,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
     val snykVulnResponse = snykPluginState
       .cliClient
-      .runScan(currentProject, SnykPersistentStateComponent(isIgnoreUnknownCA = true), projectDependency)
+      .runScan(currentProject, SnykApplicationSettingsService(isIgnoreUnknownCA = true), projectDependency)
 
     assertTrue(snykVulnResponse.isSuccess)
 
@@ -448,7 +448,7 @@ class SnykCliClientTest extends AbstractMavenTestCase() {
 
     val snykVulnResponse = snykPluginState
       .cliClient
-      .runScan(currentProject, SnykPersistentStateComponent(additionalParameters = "--file=pom.xml"), projectDependency)
+      .runScan(currentProject, SnykApplicationSettingsService(additionalParameters = "--file=pom.xml"), projectDependency)
 
     assertTrue(snykVulnResponse.isSuccess)
 

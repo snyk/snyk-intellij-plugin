@@ -11,6 +11,7 @@ import com.intellij.openapi.progress.{ProgressIndicator, ProgressManager, Task}
 import com.intellij.util.io.HttpRequests
 import io.circe.{Decoder, Encoder}
 import io.circe.parser.decode
+import io.snyk.plugin.ui.settings.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.state.SnykPluginState
 import monix.execution.atomic.Atomic
 
@@ -66,7 +67,7 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
     if (isCliInstalledByPlugin && isFourDaysPassedSinceLastCheck) {
       val releaseInfo = requestLatestReleasesInformation
 
-      val intelliJSettingsState = pluginState.intelliJSettingsState
+      val intelliJSettingsState = pluginState.allIdeSettings
 
       if (releaseInfo.isDefined
         && releaseInfo.get.tagName.isDefined
@@ -74,12 +75,12 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
 
         downloadLatestRelease()
 
-        intelliJSettingsState.setLastCheckDate(LocalDate.now())
+        applicationSettingsStateService.setLastCheckDate(LocalDate.now())
       }
     }
   }
 
-  def lastCheckDate: LocalDate = pluginState.intelliJSettingsState.lastCheckDate
+  def lastCheckDate: LocalDate = pluginState.allIdeSettings.lastCheckDate
 
   def requestLatestReleasesInformation: Option[LatestReleaseInfo] = {
     val jsonResponseStr = Try(Source.fromURL(CliDownloader.LatestReleasesUrl)(Codec.UTF8)) match {
@@ -127,8 +128,8 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
 
               cliFile.setExecutable(true)
 
-              pluginState.intelliJSettingsState.setCliVersion(cliVersionNumbers(cliVersion))
-              pluginState.intelliJSettingsState.setLastCheckDate(LocalDate.now())
+              applicationSettingsStateService.setCliVersion(cliVersionNumbers(cliVersion))
+              applicationSettingsStateService.setLastCheckDate(LocalDate.now())
             case _ =>
           }
         } finally {
@@ -141,6 +142,9 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
   def cliFile: File = new File(pluginState.pluginPath, Platform.current.snykWrapperFileName)
 
   def latestReleaseInfo: Option[LatestReleaseInfo] = latestReleaseInfoAtomic.get
+
+  private def applicationSettingsStateService: SnykApplicationSettingsStateService =
+    SnykApplicationSettingsStateService.getInstance()
 
   /**
     * Clear version number: v1.143.1 => 1.143.1

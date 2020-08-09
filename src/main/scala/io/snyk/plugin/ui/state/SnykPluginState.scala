@@ -21,7 +21,7 @@ import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
 import io.circe.parser.decode
 import io.snyk.plugin.datamodel.SnykVulnResponse.JsonCodecs._
-import io.snyk.plugin.ui.settings.SnykPersistentStateComponent
+import io.snyk.plugin.ui.settings.{SnykApplicationSettingsStateService, SnykIdeSettings}
 
 /**
   * Central abstraction to the plugin, exposes `Atomic` instances of the relevant bits of
@@ -52,7 +52,8 @@ trait SnykPluginState extends IntellijLogging {
 
   def pluginPath: String = PathManager.getPluginsPath + "/snyk-intellij-plugin"
 
-  def intelliJSettingsState = SnykPersistentStateComponent.getInstance(getProject)
+  def allIdeSettings: SnykIdeSettings = SnykApplicationSettingsStateService.getInstance().allSettings(getProject)
+
   /**
     * Ensure that we have a valid `selectedProjectId`.  If it's empty, or not in `rootProjectIds`
     * (e.g. because source code has changed) then we auto-select the first valid project.
@@ -120,7 +121,7 @@ trait SnykPluginState extends IntellijLogging {
       val task = Task.eval{
         val project = getProject
 
-        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (cliClient.runScan(project, intelliJSettingsState, _))
+        val result: Try[Seq[SnykVulnResponse]] = deps flatMap (cliClient.runScan(project, allIdeSettings, _))
         val statePair = projectId -> PerProjectState(deps.toOption, result.toOption)
         projects.transform{ _ + statePair}
         segmentApi.track("IntelliJ user ran scan", Map("projectid" -> projectId))
