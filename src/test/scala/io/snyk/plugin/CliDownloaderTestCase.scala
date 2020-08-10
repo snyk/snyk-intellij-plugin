@@ -4,14 +4,10 @@ import java.io.File
 import java.time.LocalDate
 import java.util
 
-import com.intellij.openapi.project.Project
-import io.snyk.plugin.client.{CliClient, CliDownloader, ConsoleCommandRunner, Platform}
-import io.snyk.plugin.depsource.DepTreeProvider
-import io.snyk.plugin.depsource.externalproject.ExternProj
-import io.snyk.plugin.metrics.SegmentApi
-import io.snyk.plugin.ui.settings.SnykApplicationSettingsService
+import io.snyk.plugin.client.{CliDownloader, ConsoleCommandRunner, Platform}
+import io.snyk.plugin.ui.settings.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.state.SnykPluginState
-import monix.reactive.Observable
+
 import org.junit.Test
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
@@ -27,26 +23,24 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     val projectXmlStr = Source.fromResource("sample-pom.xml", getClass.getClassLoader)(Codec.UTF8).mkString
 
     importProject(projectXmlStr)
+
+    resetSettings()
   }
 
   @Test
   def testCliSilentAutoUpdate(): Unit = {
-    val consoleCommandRunner = new ConsoleCommandRunner() {
+    snykPluginState.cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
       override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
         "command not found"
       }
-    }
+    })
 
     val currentDate = LocalDate.now()
 
-    val mockPluginState = mockSnykPluginState(
-      cliVersion = "1.342.2",
-      lastCheckDate = currentDate.minusDays(5),
-      consoleCommandRunner = consoleCommandRunner)
+    applicationSettingsStateService.setCliVersion("1.342.2")
+    applicationSettingsStateService.setLastCheckDate(currentDate.minusDays(5))
 
-    SnykPluginState.mockForProject(currentProject, mockPluginState)
-
-    val cliDownloader = CliDownloader(mockPluginState)
+    val cliDownloader = CliDownloader(snykPluginState)
 
     val cliFile = cliDownloader.cliFile
 
@@ -56,32 +50,30 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
 
     cliDownloader.cliSilentAutoUpdate()
 
+    val settingsStateService = applicationSettingsStateService
+
     assertTrue(cliDownloader.cliFile.exists())
-    assertEquals(currentDate, mockPluginState.allIdeSettings.lastCheckDate)
+    assertEquals(currentDate, settingsStateService.getLastCheckDate)
     assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
-                 "v" + mockPluginState.allIdeSettings.cliVersion)
+                 "v" + settingsStateService.getCliVersion)
 
     cliFile.delete()
   }
 
   @Test
   def testCliSilentAutoUpdateWhenPreviousUpdateInfoIsNull(): Unit = {
-    val consoleCommandRunner = new ConsoleCommandRunner() {
+    snykPluginState.cliClient.setConsoleCommandRunner(new ConsoleCommandRunner() {
       override def execute(commands: util.ArrayList[String], workDirectory: String): String = {
         "command not found"
       }
-    }
+    })
 
     val currentDate = LocalDate.now()
 
-    val mockPluginState = mockSnykPluginState(
-      cliVersion = null,
-      lastCheckDate = null,
-      consoleCommandRunner = consoleCommandRunner)
+    applicationSettingsStateService.setCliVersion(null)
+    applicationSettingsStateService.setLastCheckDate(null)
 
-    SnykPluginState.mockForProject(currentProject, mockPluginState)
-
-    val cliDownloader = CliDownloader(mockPluginState)
+    val cliDownloader = CliDownloader(snykPluginState)
 
     val cliFile = cliDownloader.cliFile
 
@@ -92,28 +84,29 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     cliDownloader.cliSilentAutoUpdate()
 
     assertTrue(cliDownloader.cliFile.exists())
-    assertEquals(currentDate, mockPluginState.allIdeSettings.lastCheckDate)
+
+    assertEquals(currentDate, applicationSettingsStateService.getLastCheckDate)
     assertEquals(cliDownloader.latestReleaseInfo.get.tagName.get,
-      "v" + mockPluginState.allIdeSettings.cliVersion)
+      "v" + applicationSettingsStateService.getCliVersion)
 
     cliFile.delete()
   }
 
   @Test
   def testIsNewVersionAvailable(): Unit = {
-    val mockPluginState = mockSnykPluginState(lastCheckDate = LocalDate.now())
+    applicationSettingsStateService.setLastCheckDate(LocalDate.now())
 
-    SnykPluginState.mockForProject(currentProject, mockPluginState)
+    SnykPluginState.mockForProject(currentProject, snykPluginState)
 
-    assertTrue(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "1.345.1"))
-    assertTrue(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "2.345.1"))
-    assertTrue(CliDownloader(mockPluginState).isNewVersionAvailable("1.345.2", "2.342.9"))
+    assertTrue(CliDownloader(snykPluginState).isNewVersionAvailable("1.342.2", "1.345.1"))
+    assertTrue(CliDownloader(snykPluginState).isNewVersionAvailable("1.342.2", "2.345.1"))
+    assertTrue(CliDownloader(snykPluginState).isNewVersionAvailable("1.345.2", "2.342.9"))
 
-    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("2.342.2", "1.342.1"))
-    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("1.343.1", "1.342.2"))
-    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "1.342.1"))
+    assertFalse(CliDownloader(snykPluginState).isNewVersionAvailable("2.342.2", "1.342.1"))
+    assertFalse(CliDownloader(snykPluginState).isNewVersionAvailable("1.343.1", "1.342.2"))
+    assertFalse(CliDownloader(snykPluginState).isNewVersionAvailable("1.342.2", "1.342.1"))
 
-    assertFalse(CliDownloader(mockPluginState).isNewVersionAvailable("1.342.2", "1.342.2"))
+    assertFalse(CliDownloader(snykPluginState).isNewVersionAvailable("1.342.2", "1.342.2"))
   }
 
   @Test
@@ -121,11 +114,9 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     val todayDate = LocalDate.now()
     val lastCheckDate = todayDate.minusDays(4)
 
-    val mockPluginState = mockSnykPluginState(lastCheckDate = lastCheckDate)
+    applicationSettingsStateService.setLastCheckDate(lastCheckDate)
 
-    SnykPluginState.mockForProject(currentProject, mockPluginState)
-
-    assertTrue(CliDownloader(mockPluginState).isFourDaysPassedSinceLastCheck)
+    assertTrue(CliDownloader(snykPluginState).isFourDaysPassedSinceLastCheck)
   }
 
   @Test
@@ -151,9 +142,7 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
   def testGetLastCheckDateFromSettings(): Unit = {
     val lastCheckDate = LocalDate.of(2020, 6, 19)
 
-    SnykPluginState.mockForProject(currentProject, mockSnykPluginState(lastCheckDate = lastCheckDate))
-
-    val snykPluginState = SnykPluginState.newInstance(currentProject)
+    applicationSettingsStateService.setLastCheckDate(lastCheckDate)
 
     val cliDownloader = CliDownloader(snykPluginState)
 
@@ -201,29 +190,14 @@ class CliDownloaderTestCase extends AbstractMavenTestCase() {
     downloadedFile.delete()
   }
 
-  private def mockSnykPluginState(
-    cliVersion: String = "",
-    lastCheckDate: LocalDate = null,
-    consoleCommandRunner: ConsoleCommandRunner = new ConsoleCommandRunner
-  ): SnykPluginState = new SnykPluginState() {
-
-    private val persistentStateComponent =
-      SnykApplicationSettingsService(cliVersion = cliVersion, lastCheckDate = lastCheckDate)
-
-    override def getProject: Project = currentProject
-
-    override def cliClient: CliClient = CliClient.newInstance(config(), consoleCommandRunner, pluginPath)
-
-    override def segmentApi: SegmentApi = ???
-
-    override def externProj: ExternProj = ???
-
-    override protected def depTreeProvider: DepTreeProvider = ???
-
-    override def mavenProjectsObservable: Observable[Seq[String]] = ???
-
-    override def gradleProjectsObservable: Observable[Seq[String]] = ???
-
-    override def allIdeSettings: SnykApplicationSettingsService = persistentStateComponent
+  private def applicationSettingsStateService = {
+    SnykApplicationSettingsStateService.getInstance()
   }
+
+  private def resetSettings(): Unit = {
+    applicationSettingsStateService.setCliVersion(null)
+    applicationSettingsStateService.setLastCheckDate(null)
+  }
+
+  private def snykPluginState: SnykPluginState = SnykPluginState.getInstance(currentProject)
 }

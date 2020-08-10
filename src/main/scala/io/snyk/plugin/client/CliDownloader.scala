@@ -80,7 +80,7 @@ sealed class CliDownloader(pluginState: SnykPluginState) {
     }
   }
 
-  def lastCheckDate: LocalDate = pluginState.allIdeSettings.lastCheckDate
+  def lastCheckDate: LocalDate = SnykApplicationSettingsStateService.getInstance().getLastCheckDate
 
   def requestLatestReleasesInformation: Option[LatestReleaseInfo] = {
     val jsonResponseStr = Try(Source.fromURL(CliDownloader.LatestReleasesUrl)(Codec.UTF8)) match {

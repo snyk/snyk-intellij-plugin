@@ -28,7 +28,7 @@ class SnykApplicationSettingsStateService
     * @return SnykIdeSettings
     */
   def allSettings(project: Project = null): SnykIdeSettings = {
-    val allSettings = new SnykIdeSettings(
+    val allSettings = SnykIdeSettings(
       customEndpointUrl,
       organization,
       ignoreUnknownCA,
@@ -76,6 +76,8 @@ class SnykApplicationSettingsStateService
 }
 
 object SnykApplicationSettingsStateService {
+
+  def apply(): SnykApplicationSettingsStateService = new SnykApplicationSettingsStateService()
 
   def getInstance(): SnykApplicationSettingsStateService =
     ServiceManager.getService(classOf[SnykApplicationSettingsStateService])

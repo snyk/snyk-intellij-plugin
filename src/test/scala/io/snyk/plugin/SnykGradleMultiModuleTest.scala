@@ -12,7 +12,7 @@ import io.snyk.plugin.client.{CliClient, SnykConfig}
 import io.snyk.plugin.datamodel.{ProjectDependency, SecurityVuln}
 import io.snyk.plugin.depsource.ProjectType
 import io.snyk.plugin.ui.MockSnykToolWindowFactory
-import io.snyk.plugin.ui.settings.SnykApplicationSettingsService
+import io.snyk.plugin.ui.settings.SnykIdeSettings
 import io.snyk.plugin.ui.state.SnykPluginState
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert._
@@ -64,10 +64,10 @@ class SnykGradleMultiModuleTest extends AbstractGradleTestCase() {
       None,
       Nil,
       ProjectType.GRADLE,
-      false
+      isMultiModuleProject = false
     )
 
-    val snykVulnResponseSeqTry = apiClient.runScan(currentProject, SnykApplicationSettingsService(), projectDependency)
+    val snykVulnResponseSeqTry = apiClient.runScan(currentProject, SnykIdeSettings(), projectDependency)
 
     assertTrue(snykVulnResponseSeqTry.isSuccess)
 
