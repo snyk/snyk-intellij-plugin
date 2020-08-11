@@ -20,9 +20,12 @@ version = pluginVersion
 
 dependencies {
   implementation("org.jetbrains.kotlin:kotlin-stdlib")
+
+  implementation("com.google.code.gson:gson:2.8.6")
 }
 
 intellij {
+  type = "PC"
   version = platformVersion
 }
 
