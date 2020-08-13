@@ -9,11 +9,15 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.getPluginPath
-import java.io.File
+import io.snyk.plugin.getCli
+import io.snyk.plugin.getCliFile
+import io.snyk.plugin.tail
 import java.lang.String.format
 import java.net.URL
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.util.Objects.isNull
+import java.util.Objects.nonNull
 
 @Service
 class CliDownloaderService(val project: Project) {
@@ -75,7 +79,60 @@ class CliDownloaderService(val project: Project) {
         })
     }
 
-    fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
+    fun cliSilentAutoUpdate() {
+        if (isCliInstalledByPlugin() && isFourDaysPassedSinceLastCheck()) {
+            val latestReleaseInfo = requestLatestReleasesInformation()
+
+            val applicationSettingsStateService = getApplicationSettingsStateService()
+
+            if (nonNull(latestReleaseInfo)
+                && latestReleaseInfo?.tagName != null && latestReleaseInfo.tagName.isNotEmpty()
+                && isNewVersionAvailable(applicationSettingsStateService.getCliVersion(), cliVersionNumbers(latestReleaseInfo.tagName))) {
+
+                downloadLatestRelease()
+
+                applicationSettingsStateService.setLastCheckDate(LocalDate.now())
+            }
+        }
+    }
+
+    fun isCliInstalledByPlugin(): Boolean {
+        val cli = getCli(project)
+
+        return !cli.checkIsCliInstalledManuallyByUser() && cli.checkIsCliInstalledAutomaticallyByPlugin()
+    }
+
+    fun isFourDaysPassedSinceLastCheck(): Boolean {
+        val previousDate = getApplicationSettingsStateService().getLastCheckDate()
+
+        if (isNull(previousDate)) {
+            return true
+        }
+
+        return ChronoUnit.DAYS.between(previousDate, LocalDate.now()) >= NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK
+    }
+
+    fun isNewVersionAvailable(currentCliVersion: String, newCliVersion: String): Boolean {
+        if (isNull(currentCliVersion) || currentCliVersion.isEmpty()) {
+            return true
+        }
+
+        tailrec fun checkIsNewVersionAvailable(currentCliVersionNumbers: List<String>, newCliVersionNumbers: List<String>): Boolean {
+            return if (currentCliVersionNumbers.isNotEmpty() && newCliVersionNumbers.isNotEmpty()) {
+                val newVersionNumber = newCliVersionNumbers[0].toInt()
+                val currentVersionNumber = currentCliVersionNumbers[0].toInt()
+
+                when (val compareResult = newVersionNumber.compareTo(currentVersionNumber)) {
+                    0 -> checkIsNewVersionAvailable(currentCliVersionNumbers.tail, newCliVersionNumbers.tail)
+                    else -> compareResult > 0
+                }
+            } else {
+                false
+            }
+        }
+
+        return checkIsNewVersionAvailable(currentCliVersion.split('.'), newCliVersion.split('.'))
+    }
 
     fun getLatestReleaseInfo(): LatestReleaseInfo? = this.latestReleaseInfo
 
