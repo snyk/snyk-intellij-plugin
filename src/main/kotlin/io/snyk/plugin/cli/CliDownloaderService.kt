@@ -3,14 +3,13 @@ package io.snyk.plugin.cli
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
-import io.snyk.plugin.services.SnykPluginService
-import io.snyk.plugin.settings.SnykApplicationSettingsStateService
+import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getPluginPath
 import java.io.File
 import java.lang.String.format
 import java.net.URL
@@ -67,8 +66,8 @@ class CliDownloaderService(val project: Project) {
                     cliFile.setExecutable(true)
 
 
-                    service<SnykApplicationSettingsStateService>().setCliVersion(cliVersionNumbers(cliVersion))
-                    service<SnykApplicationSettingsStateService>().setLastCheckDate(LocalDate.now())
+                    getApplicationSettingsStateService().setCliVersion(cliVersionNumbers(cliVersion))
+                    getApplicationSettingsStateService().setLastCheckDate(LocalDate.now())
                 } finally {
                     indicator.popState()
                 }
@@ -76,7 +75,7 @@ class CliDownloaderService(val project: Project) {
         })
     }
 
-    fun getCliFile() = File(project.service<SnykPluginService>().getPluginPath(), Platform.current().snykWrapperFileName)
+    fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
     fun getLatestReleaseInfo(): LatestReleaseInfo? = this.latestReleaseInfo
 

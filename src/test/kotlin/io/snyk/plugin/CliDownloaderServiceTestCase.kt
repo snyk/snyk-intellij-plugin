@@ -4,8 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.snyk.plugin.cli.CliDownloaderService
 import io.snyk.plugin.cli.Platform
-import io.snyk.plugin.services.SnykPluginService
-import io.snyk.plugin.settings.SnykApplicationSettingsStateService
 import org.junit.Test
 import java.io.File
 
@@ -25,7 +23,6 @@ class CliDownloaderServiceTestCase : LightPlatformTestCase() {
 
     @Test
     fun testDownloadLatestCliRelease() {
-        val snykPluginService = project.service<SnykPluginService>()
         val cliDownloaderService = project.service<CliDownloaderService>()
 
         val cliFile = cliDownloaderService.getCliFile()
@@ -36,12 +33,17 @@ class CliDownloaderServiceTestCase : LightPlatformTestCase() {
 
         project.service<CliDownloaderService>().downloadLatestRelease()
 
-        val downloadedFile = File(snykPluginService.getPluginPath(), Platform.current().snykWrapperFileName)
+        val downloadedFile = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
         assertTrue(downloadedFile.exists())
         assertEquals(cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + service<SnykApplicationSettingsStateService>().getCliVersion())
+            "v" + getApplicationSettingsStateService().getCliVersion())
 
         downloadedFile.delete()
+    }
+
+    private fun resetSettings() {
+        getApplicationSettingsStateService().setCliVersion("")
+        getApplicationSettingsStateService().setLastCheckDate(null)
     }
 }

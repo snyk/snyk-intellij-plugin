@@ -17,7 +17,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     private var organization = ""
     private var ignoreUnknownCA = false
     private var cliVersion = ""
-    private var lastCheckDate: LocalDate = LocalDate.now()
+    private var lastCheckDate: LocalDate? = null
 
     override fun getState(): SnykApplicationSettingsStateService = this
 
@@ -49,9 +49,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         this.cliVersion = newCliVersion
     }
 
-    fun getLastCheckDate(): LocalDate = lastCheckDate
+    fun getLastCheckDate(): LocalDate? = lastCheckDate
 
-    fun setLastCheckDate(newDate: LocalDate) {
+    fun setLastCheckDate(newDate: LocalDate?) {
         lastCheckDate = newDate
     }
 
