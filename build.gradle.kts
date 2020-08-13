@@ -22,6 +22,8 @@ dependencies {
   implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
   implementation("com.google.code.gson:gson:2.8.6")
+
+  testImplementation("junit:junit:4.12")
 }
 
 intellij {

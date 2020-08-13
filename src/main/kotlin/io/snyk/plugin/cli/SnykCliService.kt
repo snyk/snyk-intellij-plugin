@@ -3,18 +3,15 @@ package io.snyk.plugin.cli
 import com.google.gson.Gson
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ScriptRunnerUtil
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import java.nio.charset.Charset
 
 /**
  * Wrap work with Snyk CLI.
  */
-class CliClient(currentProject: Project) {
-    private var project: Project? = null
-
-    init {
-        this.project = currentProject
-    }
+@Service
+class SnykCliService(val project: Project) {
 
     fun scan(): CliResult {
         val projectPath = project?.basePath
