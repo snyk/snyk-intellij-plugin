@@ -1,15 +1,12 @@
 package io.snyk.plugin.cli
 
 import com.google.gson.Gson
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
 import io.snyk.plugin.getCliFile
 import org.apache.log4j.Logger
 import org.jetbrains.annotations.CalledInAwt
-import java.nio.charset.Charset
 import java.util.Objects.nonNull
 import java.util.regex.Pattern
 
@@ -56,21 +53,9 @@ class SnykCliService(val project: Project) {
 
     @CalledInAwt
     fun scan(): CliResult {
-        val projectPath = project.basePath
+        val commands = listOf("snyk", "--json", "test")
 
-        val commands = mutableListOf<String>()
-
-        commands.add("snyk")
-        commands.add("--json")
-        commands.add("test")
-
-        val generalCommandLine = GeneralCommandLine(commands)
-
-        generalCommandLine.charset = Charset.forName("UTF-8")
-        generalCommandLine.setWorkDirectory(projectPath)
-
-        val snykResultJsonStr = ScriptRunnerUtil
-            .getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
+        val snykResultJsonStr = getConsoleCommandRunner().execute(commands, project.basePath!!)
 
         return Gson().fromJson(snykResultJsonStr, CliResult::class.java)
     }

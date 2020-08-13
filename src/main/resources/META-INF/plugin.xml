@@ -64,6 +64,8 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
+
+    <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
   </extensions>
 
   <actions>
