@@ -57,14 +57,7 @@
     </ul>
     ]]></change-notes>
 
-    <!--see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html-->
     <idea-version since-build="191" until-build="202"/>
-
-    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
-         on how to target different products -->
-    <depends>com.intellij.modules.lang</depends>
-    <depends>com.intellij.modules.platform</depends>
-    <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
@@ -94,7 +87,10 @@
         </group>
     </actions>
 
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+
     <depends>org.jetbrains.idea.maven</depends>
     <depends>org.jetbrains.plugins.gradle</depends>
 </idea-plugin>

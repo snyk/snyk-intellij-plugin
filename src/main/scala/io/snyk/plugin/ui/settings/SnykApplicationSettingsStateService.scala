@@ -8,7 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
 
 @State(
-  name = "io.snyk.plugin.ui.settings.SnykApplicationSettingsState",
+  name = "SnykApplicationSettingsState",
   storages = Array(new Storage("snyk.settings.xml"))
 )
 class SnykApplicationSettingsStateService
