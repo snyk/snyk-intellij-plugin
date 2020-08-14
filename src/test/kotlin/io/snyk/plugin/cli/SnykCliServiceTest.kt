@@ -108,7 +108,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
-        assertEquals("snyk", defaultCommands[0])
+        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
         assertEquals("--json", defaultCommands[1])
         assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -122,7 +122,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(settings)
 
-        assertEquals("snyk", defaultCommands[0])
+        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
         assertEquals("--json", defaultCommands[1])
         assertEquals("--insecure", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -135,7 +135,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
-        assertEquals("snyk", defaultCommands[0])
+        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
         assertEquals("--json", defaultCommands[1])
         assertEquals("--org=test-org", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -147,7 +147,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
 
-        assertEquals("snyk", defaultCommands[0])
+        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
         assertEquals("--json", defaultCommands[1])
         assertEquals("--file=package.json", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -165,7 +165,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
-        assertEquals("snyk", defaultCommands[0])
+        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
         assertEquals("--json", defaultCommands[1])
         assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
         assertEquals("--insecure", defaultCommands[3])
