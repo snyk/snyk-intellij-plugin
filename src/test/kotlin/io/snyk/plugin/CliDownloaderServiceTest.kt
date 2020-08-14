@@ -12,6 +12,8 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
 
     @Throws(Exception::class)
     override fun setUp() {
+        super.setUp()
+
         getCli(project).setConsoleCommandRunner(null)
     }
 
