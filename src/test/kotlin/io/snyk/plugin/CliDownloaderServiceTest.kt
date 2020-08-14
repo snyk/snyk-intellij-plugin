@@ -4,15 +4,14 @@ import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.snyk.plugin.cli.CliDownloaderService
 import io.snyk.plugin.cli.Platform
-import org.junit.After
 import org.junit.Test
 import java.io.File
 import java.time.LocalDate
 
 class CliDownloaderServiceTest : LightPlatformTestCase() {
 
-    @After
-    fun afterTest() {
+    @Throws(Exception::class)
+    override fun setUp() {
         getCli(project).setConsoleCommandRunner(null)
     }
 

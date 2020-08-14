@@ -4,9 +4,12 @@ import com.google.gson.Gson
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
+import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.settings.SnykApplicationSettingsStateService
 import org.apache.log4j.Logger
 import org.jetbrains.annotations.CalledInAwt
+import java.io.File
 import java.util.Objects.nonNull
 import java.util.regex.Pattern
 
@@ -53,11 +56,54 @@ class SnykCliService(val project: Project) {
 
     @CalledInAwt
     fun scan(): CliResult {
-        val commands = listOf("snyk", "--json", "test")
+        val commands = buildCliCommandsList(getApplicationSettingsStateService())
 
         val snykResultJsonStr = getConsoleCommandRunner().execute(commands, project.basePath!!)
 
         return Gson().fromJson(snykResultJsonStr, CliResult::class.java)
+    }
+
+    /**
+     * Build list of commands for run Snyk CLI command.
+     *
+     * @param settings           - Snyk Application (and project) settings
+     *
+     * @return List<String>
+     */
+    fun buildCliCommandsList(settings: SnykApplicationSettingsStateService): List<String> {
+        logger.info("Enter buildCliCommandsList")
+
+        val commands: MutableList<String> = mutableListOf()
+        commands.add(getCliCommandName())
+        commands.add("--json")
+
+        val customEndpoint = settings.getCustomEndpointUrl()
+
+        if (nonNull(customEndpoint) && customEndpoint.isNotEmpty()) {
+            commands.add("--api=$customEndpoint")
+        }
+
+        if (settings.isIgnoreUnknownCA()) {
+            commands.add("--insecure")
+        }
+
+        val organization = settings.getOrganization()
+
+        if (nonNull(organization) && organization.isNotEmpty()) {
+            commands.add("--org=$organization")
+        }
+
+        val additionalParameters = settings.getAdditionalParameters(project)
+
+        if (nonNull(additionalParameters) && additionalParameters.isNotEmpty()) {
+            commands.add(additionalParameters)
+        }
+
+        commands.add("test")
+
+        logger.info("Cli parameters: $commands")
+
+        return commands.toList()
     }
 
     fun setConsoleCommandRunner(newRunner: ConsoleCommandRunner?) {
@@ -73,4 +119,6 @@ class SnykCliService(val project: Project) {
 
         return ConsoleCommandRunner()
     }
+
+    fun isPackageJsonExists(): Boolean = File(project.basePath!!).exists()
 }
