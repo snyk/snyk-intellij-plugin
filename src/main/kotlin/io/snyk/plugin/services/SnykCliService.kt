@@ -1,12 +1,14 @@
-package io.snyk.plugin.cli
+package io.snyk.plugin.services
 
 import com.google.gson.Gson
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
+import io.snyk.plugin.cli.CliError
+import io.snyk.plugin.cli.CliResult
+import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.settings.SnykApplicationSettingsStateService
 import org.apache.log4j.Logger
 import org.jetbrains.annotations.CalledInAwt
 import java.io.File

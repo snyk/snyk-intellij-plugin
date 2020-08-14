@@ -4,7 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
-import io.snyk.plugin.cli.CliDownloaderService
+import io.snyk.plugin.services.CliDownloaderService
 
 class SnykPostStartupActivity : StartupActivity {
 

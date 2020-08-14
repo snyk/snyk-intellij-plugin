@@ -6,7 +6,7 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getCliNotInstalledRunner
-import io.snyk.plugin.settings.SnykProjectSettingsStateService
+import io.snyk.plugin.services.SnykProjectSettingsStateService
 import org.junit.Test
 import java.io.File
 

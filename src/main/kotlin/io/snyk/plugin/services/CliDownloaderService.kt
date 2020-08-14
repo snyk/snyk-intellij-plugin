@@ -1,4 +1,4 @@
-package io.snyk.plugin.cli
+package io.snyk.plugin.services
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
@@ -8,6 +8,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
+import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile

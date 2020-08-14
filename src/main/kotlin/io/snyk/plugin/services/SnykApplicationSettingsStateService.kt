@@ -1,4 +1,4 @@
-package io.snyk.plugin.settings
+package io.snyk.plugin.services
 
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project

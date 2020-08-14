@@ -2,7 +2,7 @@ package io.snyk.plugin
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.cli.CliDownloaderService
+import io.snyk.plugin.services.CliDownloaderService
 import io.snyk.plugin.cli.Platform
 import org.junit.Test
 import java.io.File

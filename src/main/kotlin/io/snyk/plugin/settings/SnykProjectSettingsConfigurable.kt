@@ -6,6 +6,9 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykProjectSettingsStateService
+import io.snyk.plugin.ui.SettingsDialog
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {

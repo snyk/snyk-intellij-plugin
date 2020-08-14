@@ -4,11 +4,10 @@ import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.Platform
-import io.snyk.plugin.cli.SnykCliService
-import io.snyk.plugin.settings.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykCliService
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import java.io.File
 import java.net.URL
-import java.util.Objects.isNull
 import java.util.Objects.nonNull
 
 fun getCli(project: Project): SnykCliService = project.service()

@@ -1,4 +1,4 @@
-package io.snyk.plugin.settings
+package io.snyk.plugin.ui
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
@@ -11,6 +11,8 @@ import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykProjectSettingsStateService
 import java.awt.Dimension
 import java.awt.Insets
 import java.util.Objects.nonNull
