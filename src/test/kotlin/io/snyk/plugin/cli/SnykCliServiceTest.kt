@@ -8,6 +8,7 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getCliNotInstalledRunner
 import io.snyk.plugin.settings.SnykProjectSettingsStateService
 import org.junit.Test
+import java.io.File
 
 class SnykCliServiceTest : LightPlatformTestCase() {
 
@@ -27,6 +28,86 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().setAdditionalParameters("")
     }
+
+    @Test
+    fun testIsPackageJsonExists() {
+        val projectDirectory = File(project.basePath!!)
+
+        if (!projectDirectory.exists()) {
+            projectDirectory.mkdir()
+        }
+
+        val packageJsonFile = File(projectDirectory, "package.json")
+
+        packageJsonFile.createNewFile()
+
+        assertTrue(getCli(project).isPackageJsonExists())
+
+        packageJsonFile.delete()
+    }
+
+    @Test
+    fun testScanWithErrorResult() {
+        val projectDirectory = File(project.basePath!!)
+
+        if (!projectDirectory.exists()) {
+            projectDirectory.mkdir()
+        }
+
+        val packageJsonFile = File(projectDirectory, "package.json")
+
+        packageJsonFile.writeText(
+            """
+                {
+                  "name": "test1-app",
+                  "version": "1.0.0",
+                  "description": "",
+                  "keywords": [],
+                  "author": "Test dev",
+                  "license": "MIT",
+                  "dependencies": {
+                    "mock2easy": "0.0.24"
+                  }
+                }
+            """.trimIndent())
+
+        val cliResult = getCli(project).scan()
+
+        assertFalse(cliResult.isSuccessful())
+
+        packageJsonFile.delete()
+    }
+
+    /*@Test
+    fun testPrepareProjectBeforeCliCall() {
+        val projectDirectory = File(project.basePath!!)
+        val packageJsonFile = File(projectDirectory, "package.json")
+
+        packageJsonFile.writeText(
+            """
+                {
+                  "name": "test1-app",
+                  "version": "1.0.0",
+                  "description": "",
+                  "keywords": [],
+                  "author": "Test dev",
+                  "license": "MIT",
+                  "dependencies": {
+                    "mock2easy": "0.0.24"
+                  }
+                }
+            """.trimIndent())
+
+        val cliResult = getCli(project).scan()
+
+        assertTrue(cliResult.isSuccessful())
+
+        val vulnerabilityIds: List<String> = cliResult.vulnerabilities.map { it.id }
+
+        assertNotNull(vulnerabilityIds.contains(""))
+
+        packageJsonFile.delete()
+    }*/
 
     @Test
     fun testIsCliInstalledFailed() {

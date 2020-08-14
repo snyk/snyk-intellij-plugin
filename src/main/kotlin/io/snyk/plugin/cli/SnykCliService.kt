@@ -58,10 +58,36 @@ class SnykCliService(val project: Project) {
     fun scan(): CliResult {
         val commands = buildCliCommandsList(getApplicationSettingsStateService())
 
-        val snykResultJsonStr = getConsoleCommandRunner().execute(commands, project.basePath!!)
+        val projectPath = project.basePath!!
 
-        return Gson().fromJson(snykResultJsonStr, CliResult::class.java)
+        val snykResultJsonStr = getConsoleCommandRunner().execute(commands, projectPath)
+
+        /*if (snykResultJsonStr.contains("\"vulnerabilities\":") && !snykResultJsonStr.contains("\"error\":")) {
+            logger.info("Execute prepareProjectBeforeCliCall(...)")
+
+            prepareProjectBeforeCliCall(projectPath)
+
+            logger.info("After prepareProjectBeforeCliCall(...)")
+        }*/
+
+        return if (snykResultJsonStr.contains("\"vulnerabilities\":") && !snykResultJsonStr.contains("\"error\":")) {
+            Gson().fromJson(snykResultJsonStr, CliResult::class.java)
+        } else {
+            val cliResult = CliResult()
+
+            cliResult.error = Gson().fromJson(snykResultJsonStr, CliError::class.java)
+
+            cliResult
+        }
     }
+
+    /*fun prepareProjectBeforeCliCall(projectPath: String) {
+        logger.info("Enter prepareProjectBeforeCliCall()")
+
+        getConsoleCommandRunner().runNpmInstall(projectPath)
+
+        logger.info("Exit prepareProjectBeforeCliCall()")
+    }*/
 
     /**
      * Build list of commands for run Snyk CLI command.
@@ -120,5 +146,5 @@ class SnykCliService(val project: Project) {
         return ConsoleCommandRunner()
     }
 
-    fun isPackageJsonExists(): Boolean = File(project.basePath!!).exists()
+    fun isPackageJsonExists(): Boolean = File(project.basePath!!, "package.json").exists()
 }

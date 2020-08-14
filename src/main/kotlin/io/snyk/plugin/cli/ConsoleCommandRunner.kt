@@ -2,6 +2,7 @@ package io.snyk.plugin.cli
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ScriptRunnerUtil
+import com.intellij.openapi.project.Project
 import org.apache.log4j.Logger
 import java.nio.charset.Charset
 
@@ -14,12 +15,20 @@ open class ConsoleCommandRunner {
 
         val generalCommandLine = GeneralCommandLine(commands)
 
-        generalCommandLine.setCharset(Charset.forName("UTF-8"))
+        generalCommandLine.charset = Charset.forName("UTF-8")
         generalCommandLine.setWorkDirectory(workDirectory)
 
         logger.info("GeneralCommandLine instance created.")
         logger.info("Execute ScriptRunnerUtil.getProcessOutput(...)")
 
         return ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
+    }
+
+    fun runNpmInstall(projectPath: String): String {
+        logger.info("Enter runNpmInstall()")
+
+        logger.info("Execute 'npm install'")
+
+        return execute(listOf("npm", "install"), projectPath)
     }
 }
