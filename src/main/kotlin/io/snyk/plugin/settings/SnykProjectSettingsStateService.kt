@@ -12,9 +12,7 @@ class SnykProjectSettingsStateService : PersistentStateComponent<SnykProjectSett
 
     private var additionalParameters = ""
 
-    override fun getState(): SnykProjectSettingsStateService? {
-        TODO("Not yet implemented")
-    }
+    override fun getState(): SnykProjectSettingsStateService = this
 
     override fun loadState(state: SnykProjectSettingsStateService) {
         XmlSerializerUtil.copyBean(state, this)

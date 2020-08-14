@@ -3,8 +3,8 @@ package io.snyk.plugin.settings
 import com.intellij.openapi.components.*
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
+import io.snyk.plugin.isProjectSettingsAvailable
 import java.time.LocalDate
-import java.util.Objects.nonNull
 
 @Service
 @State(
@@ -56,8 +56,8 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     }
 
     fun getAdditionalParameters(project: Project? = null): String {
-        return if (nonNull(project) && !project!!.isDisposed) {
-            project.service<SnykProjectSettingsStateService>().getAdditionalParameters()
+        return if (isProjectSettingsAvailable(project)) {
+            project!!.service<SnykProjectSettingsStateService>().getAdditionalParameters()
         } else {
             ""
         }

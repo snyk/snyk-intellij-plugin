@@ -7,6 +7,9 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.cli.SnykCliService
 import io.snyk.plugin.settings.SnykApplicationSettingsStateService
 import java.io.File
+import java.net.URL
+import java.util.Objects.isNull
+import java.util.Objects.nonNull
 
 fun getCli(project: Project): SnykCliService = project.service()
 
@@ -16,8 +19,20 @@ fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = 
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
+fun isProjectSettingsAvailable(project: Project?) = nonNull(project) && !project!!.isDefault
+
 val <T> List<T>.tail: List<T>
     get() = drop(1)
 
 val <T> List<T>.head: T
     get() = first()
+
+fun isUrlValid(url: String): Boolean {
+    return try {
+        URL(url).toURI()
+
+        true
+    } catch(throwable: Throwable) {
+        false
+    }
+}
