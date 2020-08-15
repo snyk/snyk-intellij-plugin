@@ -3,6 +3,7 @@ package io.snyk.plugin.ui
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 
@@ -12,7 +13,7 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 class SnykToolWindow(project: Project) : SimpleToolWindowPanel(true, true), Disposable {
 
     init {
-        val toolWindowPanel = SnykToolWindowPanel(project)
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
         initialiseToolbar()
         setContent(toolWindowPanel)

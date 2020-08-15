@@ -56,7 +56,6 @@ class SnykCliService(val project: Project) {
         return getCliFile().exists()
     }
 
-    @CalledInAwt
     fun scan(): CliResult {
         val commands = buildCliCommandsList(getApplicationSettingsStateService())
 

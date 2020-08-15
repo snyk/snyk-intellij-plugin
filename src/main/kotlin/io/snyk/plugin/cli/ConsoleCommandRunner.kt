@@ -2,7 +2,6 @@ package io.snyk.plugin.cli
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.ScriptRunnerUtil
-import com.intellij.openapi.project.Project
 import org.apache.log4j.Logger
 import java.nio.charset.Charset
 
@@ -24,11 +23,11 @@ open class ConsoleCommandRunner {
         return ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
     }
 
-    fun runNpmInstall(projectPath: String): String {
+    /*fun runNpmInstall(projectPath: String): String {
         logger.info("Enter runNpmInstall()")
 
         logger.info("Execute 'npm install'")
 
         return execute(listOf("npm", "install"), projectPath)
-    }
+    }*/
 }

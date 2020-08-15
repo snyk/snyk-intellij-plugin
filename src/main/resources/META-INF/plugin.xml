@@ -7,7 +7,7 @@
   <depends>com.intellij.modules.platform</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="right" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
+    <toolWindow id="Snyk" secondary="true" icon="/icons/plus.png" anchor="bottom" factoryClass="io.snyk.plugin.ui.SnykToolWindowFactory"/>
 
     <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
 
@@ -19,9 +19,9 @@
 
   <actions>
     <group id="io.snyk.plugin.ActionBar">
-      <action id="io.snyk.plugin.RescanAction"
-              class="io.snyk.plugin.ui.actions.SnykRescanAction"
-              text="Re-Scan" />
+      <action id="io.snyk.plugin.ui.actions.SnykRunScanAction"
+              class="io.snyk.plugin.ui.actions.SnykRunScanAction"
+              text="Run" />
     </group>
   </actions>
 </idea-plugin>
