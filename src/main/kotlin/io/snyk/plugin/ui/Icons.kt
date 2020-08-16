@@ -4,7 +4,7 @@ import javax.swing.ImageIcon
 
 class Icons {
     companion object {
-        private fun getIconFromResources(name: String): ImageIcon = ImageIcon(this.javaClass.getResource(name))
+        private fun getIconFromResources(name: String): ImageIcon = ImageIcon(this::class.java.getResource(name))
 
         val VULNERABILITY_24 = getIconFromResources("/icons/vulnerability.png")
         val VULNERABILITY_16 = getIconFromResources("/icons/vulnerability_16.png")

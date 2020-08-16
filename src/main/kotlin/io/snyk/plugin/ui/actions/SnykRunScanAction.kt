@@ -22,6 +22,8 @@ class SnykRunScanAction : AnAction(AllIcons.Toolwindows.ToolWindowRun), DumbAwar
 
         ProgressManager.getInstance().run(object: Task.Backgroundable(project, "Snyk scanning", true) {
             override fun run(indicator: ProgressIndicator) {
+                project.service<SnykToolWindowPanel>().clean()
+
                 val cliResult: CliResult = getCli(project).scan()
 
                 project.service<SnykToolWindowPanel>().vulnerabilities(cliResult.vulnerabilities.toList())

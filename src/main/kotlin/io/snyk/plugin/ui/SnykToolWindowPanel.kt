@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui
 
-import com.intellij.ide.plugins.newui.TwoLineProgressIndicator
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.ui.ColoredTreeCellRenderer
@@ -14,6 +13,7 @@ import com.intellij.uiDesigner.core.GridConstraints as IntelliJGridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager as IntelliJGridLayoutManager
 import io.snyk.plugin.cli.Vulnerability
 import java.awt.*
+import java.util.Objects.nonNull
 import javax.swing.*
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
@@ -22,7 +22,7 @@ import javax.swing.tree.DefaultTreeModel
  * Main panel for Snyk tool window.
  */
 @Service
-class SnykToolWindowPanel : JPanel(), VulnerabilitiesView {
+class SnykToolWindowPanel : JPanel() {
 
     private val descriptionPanel = FullDescriptionPanel()
 
@@ -37,22 +37,11 @@ class SnykToolWindowPanel : JPanel(), VulnerabilitiesView {
         initializeUI()
     }
 
-    override fun error(error: String) {
-        vulnerabilitiesSplitter.firstComponent = TextPanel(error)
+    fun clean() {
+        rootTreeNode.removeAllChildren()
     }
 
-    override fun scanning() {
-        ApplicationManager.getApplication().invokeLater {
-            removeAll()
-
-            val indicator = TwoLineProgressIndicator()
-            indicator.text = "Scanning..."
-
-            add(CenterOneComponentPanel(indicator.createBaselineWrapper()), BorderLayout.CENTER)
-        }
-    }
-
-    override fun vulnerabilities(vulnerabilitis: List<Vulnerability>) {
+    fun vulnerabilities(vulnerabilities: List<Vulnerability>) {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
 
@@ -64,8 +53,8 @@ class SnykToolWindowPanel : JPanel(), VulnerabilitiesView {
 
                     val selectionPath = vulnerabilitiesTree.selectionPath
 
-                    if (selectionPath != null) {
-                        val node: DefaultMutableTreeNode = selectionPath.lastPathComponent as DefaultMutableTreeNode
+                    if (nonNull(selectionPath)) {
+                        val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode
 
                         if (node.userObject is Vulnerability) {
                             descriptionPanel.displayDescription(node.userObject as Vulnerability)
@@ -77,9 +66,7 @@ class SnykToolWindowPanel : JPanel(), VulnerabilitiesView {
             vulnerabilitiesSplitter.firstComponent = ScrollPaneFactory.createScrollPane(vulnerabilitiesTree)
             vulnerabilitiesSplitter.secondComponent = descriptionPanel
 
-            rootTreeNode.removeAllChildren()
-
-            vulnerabilitis.forEach {
+            vulnerabilities.forEach {
                 rootTreeNode.add(VulnerabilityTreeNode(it))
             }
 
@@ -142,7 +129,7 @@ class ShortDescriptionPanel(private val vulnerability: Vulnerability) : JPanel()
 
         val colorPanel = ColorPanel()
 
-        //colorPanel.add(LabelFactory.icon(Icons.vulnerability24))
+        colorPanel.add(iconLabel(Icons.VULNERABILITY_24))
 
         informationPanel.add(colorPanel, BorderLayout.WEST)
 
@@ -154,7 +141,7 @@ class ShortDescriptionPanel(private val vulnerability: Vulnerability) : JPanel()
         -1,
         -1))
 
-        val titleLabel = LabelFactory.bold(vulnerability.title)
+        val titleLabel = boldLabel(vulnerability.title)
         titlePanel.add(titleLabel,
             IntelliJGridConstraints(
                 0,
@@ -247,20 +234,26 @@ private class ColorPanel : JPanel() {
     override fun paintComponent(graphics: Graphics) {
         super.paintComponent(graphics)
 
-//        graphics.setColor(Color(-5148144))
-//        graphics.fillRect(0, 0, this.getWidth() - 3, this.getHeight())
-//        graphics.setColor(ColorProvider.intellij.bgColor)
-//        graphics.fillRect(4, 0, this.getWidth, this.getHeight)
+        graphics.color = Color(-5148144)
+        graphics.fillRect(0, 0, this.width - 3, this.height)
+        graphics.color = UIUtil.getPanelBackground()
+        graphics.fillRect(4, 0, this.width, this.height)
     }
 }
 
 private class VulnerabilityTreeCellRenderer : ColoredTreeCellRenderer() {
-    override fun customizeCellRenderer(tree: JTree, value: Any, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean) {
-        if (value is VulnerabilityTreeNode) {
-            val vulnerabilityTreeNode = value as VulnerabilityTreeNode
+    override fun customizeCellRenderer(
+        tree: JTree,
+        value: Any,
+        selected: Boolean,
+        expanded: Boolean,
+        leaf: Boolean,
+        row: Int,
+        hasFocus: Boolean) {
 
-            if (vulnerabilityTreeNode.userObject is Vulnerability) {
-                val vulnerability = vulnerabilityTreeNode.userObject as Vulnerability
+        if (value is VulnerabilityTreeNode) {
+            if (value.userObject is Vulnerability) {
+                val vulnerability = value.userObject as Vulnerability
 
                 val severityIcon = when (vulnerability.severity) {
                     "high" -> Icons.HIGH_SEVERITY
@@ -273,52 +266,12 @@ private class VulnerabilityTreeCellRenderer : ColoredTreeCellRenderer() {
                 font = UIUtil.getTreeFont()
 
                 append(vulnerability.title)
-            } else if (vulnerabilityTreeNode.userObject is DefaultMutableTreeNode) {
-                val rootNode = vulnerabilityTreeNode.userObject as DefaultMutableTreeNode
-
-                icon = Icons.VULNERABILITY_16
-                font = UIUtil.getTreeFont()
-
-                append(rootNode.userObject.toString())
             }
+        } else if (value is DefaultMutableTreeNode) {
+            icon = Icons.VULNERABILITY_16
+            font = UIUtil.getTreeFont()
+
+            append(value.userObject.toString())
         }
     }
-}
-
-object LabelFactory {
-    fun bold(title: String): JLabel {
-        val label = JLabel(title)
-        val labelFont = label.font
-        label.font = labelFont.deriveFont(labelFont.style or Font.BOLD)
-
-        return label
-    }
-
-    fun icon(imageIcon: ImageIcon): JLabel {
-        val label = JLabel()
-        label.horizontalAlignment = 0
-        label.icon = imageIcon
-        label.text = ""
-
-        return label
-    }
-}
-
-interface VulnerabilitiesView {
-    companion object {
-        val EMPTY: VulnerabilitiesView = object: VulnerabilitiesView {
-            override fun error(error: String) {
-            }
-
-            override fun scanning() {
-            }
-
-            override fun vulnerabilities(vulnerabilitis: List<Vulnerability>) {
-            }
-        }
-    }
-
-    fun error(error: String)
-    fun scanning()
-    fun vulnerabilities(vulnerabilitis: List<Vulnerability>)
 }
