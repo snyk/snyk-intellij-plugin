@@ -4,13 +4,10 @@ import com.google.gson.Gson
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
-import io.snyk.plugin.cli.CliError
-import io.snyk.plugin.cli.CliResult
-import io.snyk.plugin.cli.ConsoleCommandRunner
+import io.snyk.plugin.cli.*
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import org.apache.log4j.Logger
-import org.jetbrains.annotations.CalledInAwt
 import java.io.File
 import java.util.Objects.nonNull
 import java.util.regex.Pattern
@@ -63,32 +60,22 @@ class SnykCliService(val project: Project) {
 
         val snykResultJsonStr = getConsoleCommandRunner().execute(commands, projectPath)
 
-        /*if (snykResultJsonStr.contains("\"vulnerabilities\":") && !snykResultJsonStr.contains("\"error\":")) {
-            logger.info("Execute prepareProjectBeforeCliCall(...)")
-
-            prepareProjectBeforeCliCall(projectPath)
-
-            logger.info("After prepareProjectBeforeCliCall(...)")
-        }*/
-
         return if (snykResultJsonStr.contains("\"vulnerabilities\":") && !snykResultJsonStr.contains("\"error\":")) {
-            Gson().fromJson(snykResultJsonStr, CliResult::class.java)
+            jsonToCliResult(snykResultJsonStr)
         } else {
             val cliResult = CliResult()
 
-            cliResult.error = Gson().fromJson(snykResultJsonStr, CliError::class.java)
+            cliResult.error = jsonToCliError(snykResultJsonStr)
 
             cliResult
         }
     }
 
-    /*fun prepareProjectBeforeCliCall(projectPath: String) {
-        logger.info("Enter prepareProjectBeforeCliCall()")
+    fun jsonToCliResult(snykResultJsonStr: String): CliResult =
+        Gson().fromJson(snykResultJsonStr, CliResult::class.java)
 
-        getConsoleCommandRunner().runNpmInstall(projectPath)
-
-        logger.info("Exit prepareProjectBeforeCliCall()")
-    }*/
+    fun jsonToCliError(snykResultJsonStr: String): CliError =
+        Gson().fromJson(snykResultJsonStr, CliError::class.java)
 
     /**
      * Build list of commands for run Snyk CLI command.

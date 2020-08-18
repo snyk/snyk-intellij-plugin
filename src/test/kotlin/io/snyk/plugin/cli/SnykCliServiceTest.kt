@@ -30,6 +30,22 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun testGroupVulnerabilities() {
+        val cli = getCli(project)
+
+        val jsonStr: String = javaClass.classLoader
+            .getResource("group-vulnerabilities-test.json")
+            .readText(Charsets.UTF_8)
+
+        val cliResult = cli.jsonToCliResult(jsonStr)
+
+        val cliGroupedResult = cliResult.toCliGroupedResult()
+
+        assertEquals(21, cliGroupedResult.uniqueCount)
+        assertEquals(36, cliGroupedResult.pathsCount)
+    }
+
+    @Test
     fun testIsPackageJsonExists() {
         val projectDirectory = File(project.basePath!!)
 
@@ -77,37 +93,6 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         packageJsonFile.delete()
     }
-
-    /*@Test
-    fun testPrepareProjectBeforeCliCall() {
-        val projectDirectory = File(project.basePath!!)
-        val packageJsonFile = File(projectDirectory, "package.json")
-
-        packageJsonFile.writeText(
-            """
-                {
-                  "name": "test1-app",
-                  "version": "1.0.0",
-                  "description": "",
-                  "keywords": [],
-                  "author": "Test dev",
-                  "license": "MIT",
-                  "dependencies": {
-                    "mock2easy": "0.0.24"
-                  }
-                }
-            """.trimIndent())
-
-        val cliResult = getCli(project).scan()
-
-        assertTrue(cliResult.isSuccessful())
-
-        val vulnerabilityIds: List<String> = cliResult.vulnerabilities.map { it.id }
-
-        assertNotNull(vulnerabilityIds.contains(""))
-
-        packageJsonFile.delete()
-    }*/
 
     @Test
     fun testIsCliInstalledFailed() {
