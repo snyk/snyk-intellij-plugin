@@ -35,13 +35,15 @@ class SnykToolWindowPanel : JPanel() {
         vulnerabilitiesTree.cellRenderer = VulnerabilityTreeCellRenderer()
 
         initializeUI()
+
+        displayInitialMessage()
     }
 
     fun clean() {
         rootTreeNode.removeAllChildren()
     }
 
-    fun vulnerabilities(vulnerabilities: List<Vulnerability>) {
+    fun displayVulnerabilities(vulnerabilities: List<Vulnerability>) {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
 
@@ -79,6 +81,12 @@ class SnykToolWindowPanel : JPanel() {
         layout = BorderLayout()
 
         TreeSpeedSearch(vulnerabilitiesTree, TreeSpeedSearch.NODE_DESCRIPTOR_TOSTRING, true)
+    }
+
+    private fun displayInitialMessage() {
+        ApplicationManager.getApplication().invokeLater {
+            add(CenterOneComponentPanel(JLabel("Please, run scan")), BorderLayout.CENTER)
+        }
     }
 }
 
