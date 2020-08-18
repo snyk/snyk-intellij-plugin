@@ -34,6 +34,8 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 project.service<SnykToolWindowPanel>().displayVulnerabilities(cliResult.vulnerabilities.toList())
+
+                currentProgressIndicator = null
             }
         }
 
@@ -54,6 +56,8 @@ class SnykTaskQueueService(val project: Project) {
                 } else {
                     cliDownloader.cliSilentAutoUpdate(indicator)
                 }
+
+                currentProgressIndicator = null
             }
         })
     }
