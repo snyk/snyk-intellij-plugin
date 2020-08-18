@@ -1,14 +1,15 @@
 package io.snyk.plugin
 
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.services.CliDownloaderService
+import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.cli.Platform
 import org.junit.Test
 import java.io.File
 import java.time.LocalDate
 
-class CliDownloaderServiceTest : LightPlatformTestCase() {
+class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
     @Throws(Exception::class)
     override fun setUp() {
@@ -19,7 +20,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testGetLatestReleasesInformation() {
-        val latestReleaseInfo = project.service<CliDownloaderService>().requestLatestReleasesInformation()
+        val latestReleaseInfo = project.service<SnykCliDownloaderService>().requestLatestReleasesInformation()
 
         assertNotNull(latestReleaseInfo)
 
@@ -31,7 +32,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testDownloadLatestCliRelease() {
-        val cliDownloaderService = project.service<CliDownloaderService>()
+        val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
         val cliFile = getCliFile()
 
@@ -39,7 +40,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
             cliFile.createNewFile()
         }
 
-        project.service<CliDownloaderService>().downloadLatestRelease()
+        project.service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator())
 
         val downloadedFile = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
@@ -59,7 +60,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
 
         getCli(project).setConsoleCommandRunner(getCliNotInstalledRunner())
 
-        val cliDownloaderService = project.service<CliDownloaderService>()
+        val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
         val cliFile = getCliFile()
 
@@ -67,7 +68,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
             cliFile.createNewFile()
         }
 
-        cliDownloaderService.cliSilentAutoUpdate()
+        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator())
 
         assertTrue(getCliFile().exists())
         assertEquals(currentDate, getApplicationSettingsStateService().getLastCheckDate())
@@ -88,7 +89,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
         applicationSettingsStateService.setCliVersion("")
         applicationSettingsStateService.setLastCheckDate(null)
 
-        val cliDownloaderService = project.service<CliDownloaderService>()
+        val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
         val cliFile = getCliFile()
 
@@ -96,7 +97,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
             cliFile.createNewFile()
         }
 
-        cliDownloaderService.cliSilentAutoUpdate()
+        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator())
 
         assertTrue(getCliFile().exists())
 
@@ -111,7 +112,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
     fun testIsNewVersionAvailable() {
         getApplicationSettingsStateService().setLastCheckDate(LocalDate.now())
 
-        val cliDownloaderService = project.service<CliDownloaderService>()
+        val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
         assertTrue(cliDownloaderService.isNewVersionAvailable("1.342.2", "1.345.1"))
         assertTrue(cliDownloaderService.isNewVersionAvailable("1.342.2", "2.345.1"))
@@ -131,7 +132,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
 
         getApplicationSettingsStateService().setLastCheckDate(lastCheckDate)
 
-        assertTrue(project.service<CliDownloaderService>().isFourDaysPassedSinceLastCheck())
+        assertTrue(project.service<SnykCliDownloaderService>().isFourDaysPassedSinceLastCheck())
     }
 
     @Test
@@ -144,7 +145,7 @@ class CliDownloaderServiceTest : LightPlatformTestCase() {
             cliFile.createNewFile()
         }
 
-        assertTrue(project.service<CliDownloaderService>().isCliInstalledByPlugin())
+        assertTrue(project.service<SnykCliDownloaderService>().isCliInstalledByPlugin())
 
         cliFile.delete()
     }

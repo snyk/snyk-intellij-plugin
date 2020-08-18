@@ -22,6 +22,9 @@
       <action id="io.snyk.plugin.ui.actions.SnykRunScanAction"
               class="io.snyk.plugin.ui.actions.SnykRunScanAction"
               text="Run" />
+      <action id="io.snyk.plugin.ui.actions.SnykStopScanAction"
+              class="io.snyk.plugin.ui.actions.SnykStopScanAction"
+              text="Stop" />
     </group>
   </actions>
 </idea-plugin>

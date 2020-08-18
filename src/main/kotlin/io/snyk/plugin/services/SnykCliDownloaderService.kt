@@ -4,8 +4,6 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
@@ -21,13 +19,13 @@ import java.util.Objects.isNull
 import java.util.Objects.nonNull
 
 @Service
-class CliDownloaderService(val project: Project) {
+class SnykCliDownloaderService(val project: Project) {
 
     companion object {
-        val LATEST_RELEASES_URL = "https://api.github.com/repos/snyk/snyk/releases/latest"
-        val LATEST_RELEASE_DOWNLOAD_URL = "https://github.com/snyk/snyk/releases/download/%s/%s"
+        const val LATEST_RELEASES_URL = "https://api.github.com/repos/snyk/snyk/releases/latest"
+        const val LATEST_RELEASE_DOWNLOAD_URL = "https://github.com/snyk/snyk/releases/download/%s/%s"
 
-        val NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK = 4
+        const val NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK = 4
     }
 
     private var latestReleaseInfo: LatestReleaseInfo? = null
@@ -40,49 +38,52 @@ class CliDownloaderService(val project: Project) {
         return latestReleaseInfo
     }
 
-    fun downloadLatestRelease() {
+    fun downloadLatestRelease(indicator: ProgressIndicator) {
         val latestReleasesInfo = requestLatestReleasesInformation()
 
-        ProgressManager.getInstance().run(object: Task.Backgroundable(project, "Download", true) {
-            override fun run(indicator: ProgressIndicator) {
-                indicator.isIndeterminate = true
-                indicator.pushState()
+        indicator.isIndeterminate = true
+        indicator.pushState()
 
-                try {
-                    indicator.setText("Downloading latest Snyk CLI release...")
+        try {
+            indicator.checkCanceled()
 
-                    val snykWrapperFileName = Platform.current().snykWrapperFileName
+            indicator.text = "Downloading latest Snyk CLI release..."
 
-                    val cliVersion = latestReleasesInfo!!.tagName
+            val snykWrapperFileName = Platform.current().snykWrapperFileName
 
-                    val url = URL(format(LATEST_RELEASE_DOWNLOAD_URL, cliVersion, snykWrapperFileName)).toString()
+            indicator.checkCanceled()
 
-                    val cliFile = getCliFile()
+            val cliVersion = latestReleasesInfo!!.tagName
 
-                    if (cliFile.exists()) {
-                        cliFile.delete()
-                    }
+            val url = URL(format(LATEST_RELEASE_DOWNLOAD_URL, cliVersion, snykWrapperFileName)).toString()
 
-                    HttpRequests
-                        .request(url)
-                        .productNameAsUserAgent()
-                        .saveToFile(cliFile, indicator)
+            val cliFile = getCliFile()
 
-                    cliFile.setExecutable(true)
-
-
-                    getApplicationSettingsStateService().setCliVersion(cliVersionNumbers(cliVersion))
-                    getApplicationSettingsStateService().setLastCheckDate(LocalDate.now())
-                } finally {
-                    indicator.popState()
-                }
+            if (cliFile.exists()) {
+                cliFile.delete()
             }
-        })
+
+            HttpRequests
+                .request(url)
+                .productNameAsUserAgent()
+                .saveToFile(cliFile, indicator)
+
+            cliFile.setExecutable(true)
+
+            getApplicationSettingsStateService().setCliVersion(cliVersionNumbers(cliVersion))
+            getApplicationSettingsStateService().setLastCheckDate(LocalDate.now())
+
+            indicator.checkCanceled()
+        } finally {
+            indicator.popState()
+        }
     }
 
-    fun cliSilentAutoUpdate() {
+    fun cliSilentAutoUpdate(indicator: ProgressIndicator) {
         if (isCliInstalledByPlugin() && isFourDaysPassedSinceLastCheck()) {
             val latestReleaseInfo = requestLatestReleasesInformation()
+
+            indicator.checkCanceled()
 
             val applicationSettingsStateService = getApplicationSettingsStateService()
 
@@ -90,7 +91,7 @@ class CliDownloaderService(val project: Project) {
                 && latestReleaseInfo?.tagName != null && latestReleaseInfo.tagName.isNotEmpty()
                 && isNewVersionAvailable(applicationSettingsStateService.getCliVersion(), cliVersionNumbers(latestReleaseInfo.tagName))) {
 
-                downloadLatestRelease()
+                downloadLatestRelease(indicator)
 
                 applicationSettingsStateService.setLastCheckDate(LocalDate.now())
             }

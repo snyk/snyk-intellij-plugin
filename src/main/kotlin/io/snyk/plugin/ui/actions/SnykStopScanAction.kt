@@ -8,21 +8,19 @@ import com.intellij.openapi.project.DumbAware
 import io.snyk.plugin.services.SnykTaskQueueService
 
 /**
- * Run scan project with Snyk action.
+ * Stop scan project with Snyk action.
  */
-class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
+class SnykStopScanAction : AnAction(AllIcons.Actions.Suspend), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
-        actionEvent.presentation.isEnabled = false
-
-        actionEvent.project!!.service<SnykTaskQueueService>().scan()
-
-        actionEvent.presentation.isEnabled = true
+        actionEvent.project!!.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
     }
 
     override fun update(actionEvent: AnActionEvent) {
         val indicator = actionEvent.project!!.service<SnykTaskQueueService>().getCurrentProgressIndicator()
 
-        actionEvent.presentation.isEnabled = indicator == null || indicator.isCanceled
+        if (indicator != null) {
+            actionEvent.presentation.isEnabled = indicator.isRunning
+        }
     }
 }
