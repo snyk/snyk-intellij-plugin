@@ -33,7 +33,7 @@ class SnykTaskQueueService(val project: Project) {
 
                 indicator.checkCanceled()
 
-                project.service<SnykToolWindowPanel>().displayVulnerabilities(cliResult.vulnerabilities.toList())
+                project.service<SnykToolWindowPanel>().displayVulnerabilities(cliResult.toCliGroupedResult())
 
                 currentProgressIndicator = null
             }

@@ -1,7 +1,13 @@
 package io.snyk.plugin.cli
 
-open class CliResult() {
+open class CliResult {
     lateinit var vulnerabilities: Array<Vulnerability>
+
+    var uniqueCount: Int = 0
+    lateinit var projectName: String
+    var foundProjectCount: Int = 0
+    lateinit var displayTargetFile: String
+    lateinit var path: String
 
     var error: CliError? = null
 
@@ -27,6 +33,6 @@ open class CliResult() {
             }
         }
 
-        return CliGroupedResult(vulnerabilitiesMap, uniqueCount, pathsCount)
+        return CliGroupedResult(vulnerabilitiesMap, uniqueCount, pathsCount, projectName, displayTargetFile, path)
     }
 }

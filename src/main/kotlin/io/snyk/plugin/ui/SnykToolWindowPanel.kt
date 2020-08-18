@@ -9,6 +9,7 @@ import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.tree.TreeUtil
+import io.snyk.plugin.cli.CliGroupedResult
 import com.intellij.uiDesigner.core.GridConstraints as IntelliJGridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager as IntelliJGridLayoutManager
 import io.snyk.plugin.cli.Vulnerability
@@ -26,7 +27,7 @@ class SnykToolWindowPanel : JPanel() {
 
     private val descriptionPanel = FullDescriptionPanel()
 
-    private val rootTreeNode = DefaultMutableTreeNode("package.json")
+    private val rootTreeNode = DefaultMutableTreeNode("")
     private val vulnerabilitiesTree = Tree(rootTreeNode)
 
     private val vulnerabilitiesSplitter = OnePixelSplitter(false, 0.4f, 0.1f, 0.9f)
@@ -43,9 +44,11 @@ class SnykToolWindowPanel : JPanel() {
         rootTreeNode.removeAllChildren()
     }
 
-    fun displayVulnerabilities(vulnerabilities: List<Vulnerability>) {
+    fun displayVulnerabilities(cliGroupedResult: CliGroupedResult) {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
+
+            rootTreeNode.userObject = "Found ${cliGroupedResult.uniqueCount} issues, ${cliGroupedResult.pathsCount} vulnerable paths."
 
             add(vulnerabilitiesSplitter, BorderLayout.CENTER)
 
@@ -68,8 +71,17 @@ class SnykToolWindowPanel : JPanel() {
             vulnerabilitiesSplitter.firstComponent = ScrollPaneFactory.createScrollPane(vulnerabilitiesTree)
             vulnerabilitiesSplitter.secondComponent = descriptionPanel
 
-            vulnerabilities.forEach {
-                rootTreeNode.add(VulnerabilityTreeNode(it))
+            val fileTreeNode = DefaultMutableTreeNode(cliGroupedResult.displayTargetFile)
+            rootTreeNode.add(fileTreeNode)
+
+            cliGroupedResult.vulnerabilitiesMap.keys.forEach {
+                val vulnerabilityIdTreeNode = DefaultMutableTreeNode(it)
+
+                fileTreeNode.add(vulnerabilityIdTreeNode)
+
+                cliGroupedResult.vulnerabilitiesMap[it]?.forEach {
+                    vulnerabilityIdTreeNode.add(VulnerabilityTreeNode(it))
+                }
             }
 
             (vulnerabilitiesTree.model as DefaultTreeModel).reload()
