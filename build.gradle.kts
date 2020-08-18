@@ -13,6 +13,7 @@ val pluginVersion: String by project
 val pluginSinceBuild: String by project
 val pluginUntilBuild: String by project
 val platformVersion: String by project
+val localIdeDirectory: String by project
 
 group = "io.snyk.intellij"
 description = "Snyk Vulnerability Scanner"
@@ -27,7 +28,6 @@ dependencies {
 }
 
 intellij {
-  type = "PC"
   version = platformVersion
 }
 
@@ -65,5 +65,11 @@ tasks {
 
   publishPlugin {
     channels(pluginVersion.split('-').getOrElse(1) { "default" }.split('.').first())
+  }
+
+  runIde {
+    if (localIdeDirectory.isNotEmpty()) {
+      ideDirectory(localIdeDirectory)
+    }
   }
 }
