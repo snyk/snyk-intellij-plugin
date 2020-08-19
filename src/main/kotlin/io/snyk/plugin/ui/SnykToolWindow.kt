@@ -10,7 +10,7 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 /**
  * IntelliJ ToolWindow for Snyk plugin.
  */
-class SnykToolWindow(project: Project) : SimpleToolWindowPanel(true, true), Disposable {
+class SnykToolWindow(project: Project) : SimpleToolWindowPanel(false, true), Disposable {
 
     init {
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
@@ -22,7 +22,7 @@ class SnykToolWindow(project: Project) : SimpleToolWindowPanel(true, true), Disp
     private fun initialiseToolbar() {
         val actionManager = ActionManager.getInstance()
         val actionGroup = actionManager.getAction("io.snyk.plugin.ActionBar") as ActionGroup
-        val actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, true)
+        val actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, false)
 
         toolbar = actionToolbar.component
     }

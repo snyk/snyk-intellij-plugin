@@ -41,8 +41,21 @@ class SnykToolWindowPanel : JPanel() {
     }
 
     fun clean() {
-        rootTreeNode.removeAllChildren()
+        ApplicationManager.getApplication().invokeLater {
+            removeAll()
+
+            rootTreeNode.userObject = ""
+            rootTreeNode.removeAllChildren()
+
+            reloadTree()
+
+            displayInitialMessage()
+
+            revalidate()
+        }
     }
+
+    fun isEmpty(): Boolean = rootTreeNode.childCount == 0
 
     fun displayVulnerabilities(cliGroupedResult: CliGroupedResult) {
         ApplicationManager.getApplication().invokeLater {
@@ -74,17 +87,18 @@ class SnykToolWindowPanel : JPanel() {
             val fileTreeNode = DefaultMutableTreeNode(cliGroupedResult.displayTargetFile)
             rootTreeNode.add(fileTreeNode)
 
-            cliGroupedResult.vulnerabilitiesMap.keys.forEach {
-                val vulnerabilityIdTreeNode = DefaultMutableTreeNode(it)
+            cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
+                val vulnerabilityIdTreeNode = DefaultMutableTreeNode(id)
 
                 fileTreeNode.add(vulnerabilityIdTreeNode)
 
-                cliGroupedResult.vulnerabilitiesMap[it]?.forEach {
-                    vulnerabilityIdTreeNode.add(VulnerabilityTreeNode(it))
+                cliGroupedResult.vulnerabilitiesMap[id]?.forEach { vulnerability ->
+                    vulnerabilityIdTreeNode.add(VulnerabilityTreeNode(vulnerability))
                 }
             }
 
-            (vulnerabilitiesTree.model as DefaultTreeModel).reload()
+            reloadTree()
+
             TreeUtil.expandAll(vulnerabilitiesTree)
         }
     }
@@ -96,9 +110,11 @@ class SnykToolWindowPanel : JPanel() {
     }
 
     private fun displayInitialMessage() {
-        ApplicationManager.getApplication().invokeLater {
-            add(CenterOneComponentPanel(JLabel("Please, run scan")), BorderLayout.CENTER)
-        }
+        add(CenterOneComponentPanel(JLabel("Please, run scan")), BorderLayout.CENTER)
+    }
+
+    private fun reloadTree() {
+        (vulnerabilitiesTree.model as DefaultTreeModel).reload()
     }
 }
 

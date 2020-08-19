@@ -25,6 +25,9 @@
       <action id="io.snyk.plugin.ui.actions.SnykStopScanAction"
               class="io.snyk.plugin.ui.actions.SnykStopScanAction"
               text="Stop" />
+      <action id="io.snyk.plugin.ui.actions.SnykCleanScanAction"
+              class="io.snyk.plugin.ui.actions.SnykCleanScanAction"
+              text="Clean Issues" />
     </group>
   </actions>
 </idea-plugin>
