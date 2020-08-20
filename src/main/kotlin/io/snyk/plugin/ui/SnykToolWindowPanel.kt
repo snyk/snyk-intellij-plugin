@@ -131,23 +131,21 @@ open class CenterOneComponentPanel(component: JComponent) : JPanel() {
 
 class FullDescriptionPanel : JPanel() {
     init {
+        layout = BorderLayout()
+
         displayNoAnalysisLabel()
     }
 
     fun displayDescription(vulnerability: Vulnerability) {
         removeAll()
 
-        layout = BorderLayout()
-
-        add(VulnerabilityDescriptionPanel(vulnerability), BorderLayout.NORTH)
+        add(ScrollPaneFactory.createScrollPane(VulnerabilityDescriptionPanel(vulnerability)), BorderLayout.CENTER)
 
         revalidate()
     }
 
     private fun displayNoAnalysisLabel() {
         removeAll()
-
-        layout = GridBagLayout()
 
         add(JLabel("Please, select vulnerability..."))
 
@@ -552,7 +550,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 0,
                 false))
 
-        val descriptionTextArea = JTextArea(vulnerability.description)
+        val descriptionTextArea = JTextArea(vulnerability.getOverview())
         descriptionTextArea.lineWrap = true
         descriptionTextArea.wrapStyleWord = true
         descriptionTextArea.isOpaque = false
@@ -630,7 +628,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 false))
 
         val severityPanel = SeverityColorPanel(vulnerability.severity)
-        severityPanel.layout = IJGridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, -1)
+        severityPanel.layout = IJGridLayoutManager(2, 2, Insets(10, 10, 10, 10), -1, -1)
 
         this.add(severityPanel,
             IJGridConstraints(
