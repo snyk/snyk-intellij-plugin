@@ -79,6 +79,8 @@ class SnykToolWindowPanel : JPanel() {
 
                         if (node.userObject is Vulnerability) {
                             descriptionPanel.displayDescription(node.userObject as Vulnerability)
+                        } else {
+                            descriptionPanel.displaySelectVulnerabilityMessage()
                         }
                     }
                 }
@@ -119,9 +121,7 @@ class SnykToolWindowPanel : JPanel() {
 
 class VulnerabilityTreeNode(vulnerability: Vulnerability) : DefaultMutableTreeNode(vulnerability)
 
-class TextPanel(text: String) : CenterOneComponentPanel(JLabel(text))
-
-open class CenterOneComponentPanel(component: JComponent) : JPanel() {
+class CenterOneComponentPanel(component: JComponent) : JPanel() {
     init {
         layout = GridBagLayout()
 
@@ -133,7 +133,7 @@ class FullDescriptionPanel : JPanel() {
     init {
         layout = BorderLayout()
 
-        displayNoAnalysisLabel()
+        displaySelectVulnerabilityMessage()
     }
 
     fun displayDescription(vulnerability: Vulnerability) {
@@ -144,10 +144,10 @@ class FullDescriptionPanel : JPanel() {
         revalidate()
     }
 
-    private fun displayNoAnalysisLabel() {
+    fun displaySelectVulnerabilityMessage() {
         removeAll()
 
-        add(JLabel("Please, select vulnerability..."))
+        add(CenterOneComponentPanel(JLabel("Please, select vulnerability")), BorderLayout.CENTER)
 
         revalidate()
     }
@@ -191,7 +191,7 @@ private class VulnerabilityTreeCellRenderer : ColoredTreeCellRenderer() {
 class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : JPanel() {
 
     init {
-        this.layout = IJGridLayoutManager(11, 1, Insets(0, 0, 0, 0), -1, 10)
+        this.layout = IJGridLayoutManager(11, 1, Insets(20, 0, 0, 0), -1, 10)
 
         this.add(Spacer(),
             IJGridConstraints(
@@ -232,15 +232,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 1,
                 false))
 
-        val vulnerableModuleLabel = JLabel()
-        val vulnerableModuleLabelFont: Font? = getFont(null, Font.BOLD, -1, vulnerableModuleLabel.font)
-
-        if (vulnerableModuleLabelFont != null) {
-            vulnerableModuleLabel.font = vulnerableModuleLabelFont
-        }
-
-        vulnerableModuleLabel.text = "Vulnerable module: " + vulnerability.moduleName
-        this.add(vulnerableModuleLabel,
+        this.add(buildTwoLabelsPanel("Vulnerable module:", vulnerability.moduleName),
             IJGridConstraints(
                 2,
                 0,
@@ -256,15 +248,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 1,
                 false))
 
-        val introducedThroughLabel = JLabel()
-        val introducedThroughLabelFont: Font? = getFont(null, Font.BOLD, -1, introducedThroughLabel.font)
-
-        if (introducedThroughLabelFont != null) {
-            introducedThroughLabel.font = introducedThroughLabelFont
-        }
-
-        introducedThroughLabel.text = "Introduced through: "
-        this.add(introducedThroughLabel,
+        this.add(buildTwoLabelsPanel("Introduced through:", "Unknown"),
             IJGridConstraints(
                 3,
                 0,
@@ -280,15 +264,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 1,
                 false))
 
-        val exploitMaturityLabel = JLabel()
-        val exploitMaturityLabelFont: Font? = getFont(null, Font.BOLD, -1, exploitMaturityLabel.font)
-
-        if (exploitMaturityLabelFont != null) {
-            exploitMaturityLabel.font = exploitMaturityLabelFont
-        }
-
-        exploitMaturityLabel.text = "Exploit maturity: " + vulnerability.exploit
-        this.add(exploitMaturityLabel,
+        this.add(buildTwoLabelsPanel("Exploit maturity:", vulnerability.exploit),
             IJGridConstraints(
                 4,
                 0,
@@ -304,15 +280,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 1,
                 false))
 
-        val fixedInLabel = JLabel()
-
-        val fixedInLabelFont: Font? = getFont(null, Font.BOLD, -1, fixedInLabel.font)
-        if (fixedInLabelFont != null) {
-            fixedInLabel.font = fixedInLabelFont
-        }
-
-        fixedInLabel.text = "Fixed in: " + vulnerability.fixedIn.joinToString()
-        this.add(fixedInLabel,
+        this.add(buildTwoLabelsPanel("Fixed in:", vulnerability.fixedIn.joinToString()),
             IJGridConstraints(
                 5,
                 0,
@@ -401,15 +369,8 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 1,
                 false))
 
-        val detailedPathsAndRemediationLabel = JLabel()
-        val detailedPathsAndRemediationLabelFont: Font? = getFont(null, Font.BOLD, 16, detailedPathsAndRemediationLabel.font)
 
-        if (detailedPathsAndRemediationLabelFont != null) {
-            detailedPathsAndRemediationLabel.font = detailedPathsAndRemediationLabelFont
-        }
-
-        detailedPathsAndRemediationLabel.text = "Detailed paths and remediation"
-        detailsPanel.add(detailedPathsAndRemediationLabel,
+        detailsPanel.add(buildBoldTitleLabel("Detailed paths and remediation"),
             IJGridConstraints(
                 0,
                 0,
@@ -457,16 +418,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 0,
                 false))
 
-        val detailedPathIntroducedThroughLabel = JLabel()
-
-        val detailedPathIntroducedThroughLabelFont: Font? = getFont(null, Font.BOLD, -1, detailedPathIntroducedThroughLabel.font)
-
-        if (detailedPathIntroducedThroughLabelFont != null) {
-            detailedPathIntroducedThroughLabel.font = detailedPathIntroducedThroughLabelFont
-        }
-
-        detailedPathIntroducedThroughLabel.text = "Introduced through: " + vulnerability.from.joinToString()
-        detailsPanel.add(detailedPathIntroducedThroughLabel,
+        detailsPanel.add(buildTwoLabelsPanel("Introduced through:", vulnerability.from.joinToString()),
             IJGridConstraints(
                 1,
                 0,
@@ -479,18 +431,10 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 null,
                 null,
                 null,
-                1,
+                0,
                 false))
 
-        val remediationLabel = JLabel()
-        val remediationLabelFont: Font? = getFont(null, Font.BOLD, -1, remediationLabel.font)
-
-        if (remediationLabelFont != null) {
-            remediationLabel.font = remediationLabelFont
-        }
-
-        remediationLabel.text = "Remediation: " + "Upgrade to " + vulnerability.fixedIn.joinToString()
-        detailsPanel.add(remediationLabel,
+        detailsPanel.add(buildTwoLabelsPanel("Remediation:", "Upgrade to " + vulnerability.fixedIn.joinToString()),
             IJGridConstraints(
                 2,
                 0,
@@ -503,7 +447,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 null,
                 null,
                 null,
-                1,
+                0,
                 false))
 
         val overviewPanel = JPanel()
@@ -525,16 +469,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 1,
                 false))
 
-        val overviewTitleLabel = JLabel()
-
-        val overviewTitleLabelFont: Font? = getFont(null, Font.BOLD, 16, overviewTitleLabel.font)
-
-        if (overviewTitleLabelFont != null) {
-            overviewTitleLabel.font = overviewTitleLabelFont
-        }
-
-        overviewTitleLabel.text = "Overview"
-        overviewPanel.add(overviewTitleLabel,
+        overviewPanel.add(buildBoldTitleLabel("Overview"),
             IJGridConstraints(
                 0,
                 0,
@@ -712,11 +647,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 false))
     }
 
-    private fun getFont(
-        fontName: String?,
-        style: Int,
-        size: Int,
-        currentFont: Font?): Font? {
+    private fun getFont(fontName: String?, style: Int, size: Int, currentFont: Font?): Font? {
         if (currentFont == null) {
             return null
         }
@@ -734,6 +665,35 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
         }
 
         return Font(resultName, if (style >= 0) style else currentFont.style, if (size >= 0) size else currentFont.size)
+    }
+
+    private fun buildBoldTitleLabel(title: String): JLabel {
+        val bold16pxLabel = JLabel(title)
+        val detailedPathsAndRemediationLabelFont: Font? = getFont(null, Font.BOLD, 16, bold16pxLabel.font)
+
+        if (detailedPathsAndRemediationLabelFont != null) {
+            bold16pxLabel.font = detailedPathsAndRemediationLabelFont
+        }
+
+        return bold16pxLabel
+    }
+
+    private fun buildTwoLabelsPanel(title: String, text: String): JPanel {
+        val titleLabel = JLabel()
+        val vulnerableModuleLabelFont: Font? = getFont(null, Font.BOLD, -1, titleLabel.font)
+
+        if (vulnerableModuleLabelFont != null) {
+            titleLabel.font = vulnerableModuleLabelFont
+        }
+
+        titleLabel.text = title
+
+        val wrapPanel = JPanel()
+
+        wrapPanel.add(titleLabel)
+        wrapPanel.add(JLabel(text))
+
+        return wrapPanel
     }
 }
 
