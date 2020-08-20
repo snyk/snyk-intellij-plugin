@@ -22,12 +22,4 @@ open class ConsoleCommandRunner {
 
         return ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
     }
-
-    /*fun runNpmInstall(projectPath: String): String {
-        logger.info("Enter runNpmInstall()")
-
-        logger.info("Execute 'npm install'")
-
-        return execute(listOf("npm", "install"), projectPath)
-    }*/
 }

@@ -1,17 +1,20 @@
 package io.snyk.plugin.ui
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeSpeedSearch
+import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.cli.CliGroupedResult
-import com.intellij.uiDesigner.core.GridConstraints as IntelliJGridConstraints
-import com.intellij.uiDesigner.core.GridLayoutManager as IntelliJGridLayoutManager
+import com.intellij.uiDesigner.core.GridConstraints as IJGridConstraints
+import com.intellij.uiDesigner.core.GridLayoutManager as IJGridLayoutManager
+import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.cli.Vulnerability
 import java.awt.*
 import java.util.Objects.nonNull
@@ -88,12 +91,8 @@ class SnykToolWindowPanel : JPanel() {
             rootTreeNode.add(fileTreeNode)
 
             cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
-                val vulnerabilityIdTreeNode = DefaultMutableTreeNode(id)
-
-                fileTreeNode.add(vulnerabilityIdTreeNode)
-
                 cliGroupedResult.vulnerabilitiesMap[id]?.forEach { vulnerability ->
-                    vulnerabilityIdTreeNode.add(VulnerabilityTreeNode(vulnerability))
+                    fileTreeNode.add(VulnerabilityTreeNode(vulnerability))
                 }
             }
 
@@ -140,7 +139,9 @@ class FullDescriptionPanel : JPanel() {
 
         layout = BorderLayout()
 
-        add(ShortDescriptionPanel(vulnerability), BorderLayout.NORTH)
+        add(VulnerabilityDescriptionPanel(vulnerability), BorderLayout.NORTH)
+
+        revalidate()
     }
 
     private fun displayNoAnalysisLabel() {
@@ -149,131 +150,8 @@ class FullDescriptionPanel : JPanel() {
         layout = GridBagLayout()
 
         add(JLabel("Please, select vulnerability..."))
-    }
-}
 
-class ShortDescriptionPanel(private val vulnerability: Vulnerability) : JPanel() {
-
-    init {
-        initializeUI()
-    }
-
-    private fun initializeUI() {
-        layout = BorderLayout()
-
-        val informationPanel = JPanel(BorderLayout())
-
-        val colorPanel = ColorPanel()
-
-        colorPanel.add(iconLabel(Icons.VULNERABILITY_24))
-
-        informationPanel.add(colorPanel, BorderLayout.WEST)
-
-        val titlePanel = JPanel()
-        titlePanel.setLayout(IntelliJGridLayoutManager(
-            3,
-            1,
-            Insets(0, 0, 0, 0),
-        -1,
-        -1))
-
-        val titleLabel = boldLabel(vulnerability.title)
-        titlePanel.add(titleLabel,
-            IntelliJGridConstraints(
-                0,
-            0,
-            1,
-            1,
-            IntelliJGridConstraints.ANCHOR_WEST,
-            IntelliJGridConstraints.FILL_NONE,
-            IntelliJGridConstraints.SIZEPOLICY_FIXED,
-            IntelliJGridConstraints.SIZEPOLICY_FIXED,
-            null,
-            null,
-            null,
-            0,
-            false
-        ))
-
-        val onDependencyLabel = JLabel()
-        onDependencyLabel.horizontalAlignment = 0
-        onDependencyLabel.horizontalTextPosition = 0
-        onDependencyLabel.text = "on " + vulnerability.moduleName
-
-        titlePanel.add(onDependencyLabel,
-            IntelliJGridConstraints(
-                1,
-            0,
-            1,
-            1,
-            IntelliJGridConstraints.ANCHOR_CENTER,
-            IntelliJGridConstraints.FILL_NONE,
-            IntelliJGridConstraints.SIZEPOLICY_FIXED,
-            IntelliJGridConstraints.SIZEPOLICY_FIXED,
-            null,
-            null,
-            null,
-            0,
-            false
-        ))
-
-        /*tailrec fun fillViaDependenciesTree(derivations: Seq[MiniTree[VulnDerivation]], parentTreeNode: DefaultMutableTreeNode) {
-            if (derivations.nonEmpty) {
-                val dependencyTreeNode = new DefaultMutableTreeNode (derivations.head.content.module.toString)
-
-                parentTreeNode.add(dependencyTreeNode)
-
-                fillViaDependenciesTree(derivations.head.nested, dependencyTreeNode)
-            }
-        }*/
-
-        val dependencyRootTreeNode = DefaultMutableTreeNode("Via:")
-
-        //fillViaDependenciesTree(miniVulnerability.derivations, dependencyRootTreeNode)
-
-        val viaDependencyTree = Tree(dependencyRootTreeNode)
-        titlePanel.add(viaDependencyTree,
-            IntelliJGridConstraints(
-                2,
-            0,
-            1,
-            1,
-            IntelliJGridConstraints.ANCHOR_CENTER,
-            IntelliJGridConstraints.FILL_BOTH,
-            IntelliJGridConstraints.SIZEPOLICY_WANT_GROW,
-            IntelliJGridConstraints.SIZEPOLICY_WANT_GROW,
-            null,
-            Dimension(150, 50),
-        null,
-        0,
-        false
-        ))
-
-        informationPanel.add(titlePanel, BorderLayout.CENTER)
-
-        val descriptionTextArea = JTextArea(vulnerability.description)
-        descriptionTextArea.lineWrap = true
-        descriptionTextArea.wrapStyleWord = true
-        descriptionTextArea.isOpaque = false
-        descriptionTextArea.isEditable = false
-
-        val verticalSplitter = OnePixelSplitter(true, 0.2f)
-
-        verticalSplitter.firstComponent = informationPanel
-        verticalSplitter.secondComponent = ScrollPaneFactory.createScrollPane(descriptionTextArea, true)
-
-        add(verticalSplitter, BorderLayout.CENTER)
-    }
-}
-
-private class ColorPanel : JPanel() {
-    override fun paintComponent(graphics: Graphics) {
-        super.paintComponent(graphics)
-
-        graphics.color = Color(-5148144)
-        graphics.fillRect(0, 0, this.width - 3, this.height)
-        graphics.color = UIUtil.getPanelBackground()
-        graphics.fillRect(4, 0, this.width, this.height)
+        revalidate()
     }
 }
 
@@ -309,5 +187,570 @@ private class VulnerabilityTreeCellRenderer : ColoredTreeCellRenderer() {
 
             append(value.userObject.toString())
         }
+    }
+}
+
+class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : JPanel() {
+
+    init {
+        this.layout = IJGridLayoutManager(11, 1, Insets(0, 0, 0, 0), -1, 10)
+
+        this.add(Spacer(),
+            IJGridConstraints(
+                10,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_VERTICAL,
+                1,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                null,
+                null,
+                null,
+                0, false))
+
+        val titleLabel = JLabel()
+        val titleLabelFont: Font? = getFont(null, -1, 18, titleLabel.font)
+
+        if (titleLabelFont != null) {
+            titleLabel.font = titleLabelFont
+        }
+
+        titleLabel.text = vulnerability.title
+        this.add(titleLabel,
+            IJGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val vulnerableModuleLabel = JLabel()
+        val vulnerableModuleLabelFont: Font? = getFont(null, Font.BOLD, -1, vulnerableModuleLabel.font)
+
+        if (vulnerableModuleLabelFont != null) {
+            vulnerableModuleLabel.font = vulnerableModuleLabelFont
+        }
+
+        vulnerableModuleLabel.text = "Vulnerable module: " + vulnerability.moduleName
+        this.add(vulnerableModuleLabel,
+            IJGridConstraints(
+                2,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val introducedThroughLabel = JLabel()
+        val introducedThroughLabelFont: Font? = getFont(null, Font.BOLD, -1, introducedThroughLabel.font)
+
+        if (introducedThroughLabelFont != null) {
+            introducedThroughLabel.font = introducedThroughLabelFont
+        }
+
+        introducedThroughLabel.text = "Introduced through: "
+        this.add(introducedThroughLabel,
+            IJGridConstraints(
+                3,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val exploitMaturityLabel = JLabel()
+        val exploitMaturityLabelFont: Font? = getFont(null, Font.BOLD, -1, exploitMaturityLabel.font)
+
+        if (exploitMaturityLabelFont != null) {
+            exploitMaturityLabel.font = exploitMaturityLabelFont
+        }
+
+        exploitMaturityLabel.text = "Exploit maturity: " + vulnerability.exploit
+        this.add(exploitMaturityLabel,
+            IJGridConstraints(
+                4,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val fixedInLabel = JLabel()
+
+        val fixedInLabelFont: Font? = getFont(null, Font.BOLD, -1, fixedInLabel.font)
+        if (fixedInLabelFont != null) {
+            fixedInLabel.font = fixedInLabelFont
+        }
+
+        fixedInLabel.text = "Fixed in: " + vulnerability.fixedIn.joinToString()
+        this.add(fixedInLabel,
+            IJGridConstraints(
+                5,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val fixPanel = JPanel()
+        fixPanel.isVisible = false
+        fixPanel.layout = IJGridLayoutManager(1, 2, Insets(0, 0, 0, 0), -1, -1)
+
+        this.add(fixPanel,
+            IJGridConstraints(
+                6,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val fixIssueButton = JButton()
+        fixIssueButton.text = "Fix this vulnerability"
+
+        fixPanel.add(fixIssueButton,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_HORIZONTAL,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        fixPanel.add(Spacer(),
+            IJGridConstraints(
+                0,
+                1,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_HORIZONTAL,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                1,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val detailsPanel = JPanel()
+        detailsPanel.layout = IJGridLayoutManager(4, 2, Insets(0, 0, 0, 0), -1, -1)
+        this.add(detailsPanel,
+            IJGridConstraints(
+                7,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val detailedPathsAndRemediationLabel = JLabel()
+        val detailedPathsAndRemediationLabelFont: Font? = getFont(null, Font.BOLD, 16, detailedPathsAndRemediationLabel.font)
+
+        if (detailedPathsAndRemediationLabelFont != null) {
+            detailedPathsAndRemediationLabel.font = detailedPathsAndRemediationLabelFont
+        }
+
+        detailedPathsAndRemediationLabel.text = "Detailed paths and remediation"
+        detailsPanel.add(detailedPathsAndRemediationLabel,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        detailsPanel.add(Spacer(),
+            IJGridConstraints(
+                0,
+                1,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_HORIZONTAL,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                1,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        detailsPanel.add(Spacer(),
+            IJGridConstraints(
+                3,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_VERTICAL,
+                1,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val detailedPathIntroducedThroughLabel = JLabel()
+
+        val detailedPathIntroducedThroughLabelFont: Font? = getFont(null, Font.BOLD, -1, detailedPathIntroducedThroughLabel.font)
+
+        if (detailedPathIntroducedThroughLabelFont != null) {
+            detailedPathIntroducedThroughLabel.font = detailedPathIntroducedThroughLabelFont
+        }
+
+        detailedPathIntroducedThroughLabel.text = "Introduced through: " + vulnerability.from.joinToString()
+        detailsPanel.add(detailedPathIntroducedThroughLabel,
+            IJGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val remediationLabel = JLabel()
+        val remediationLabelFont: Font? = getFont(null, Font.BOLD, -1, remediationLabel.font)
+
+        if (remediationLabelFont != null) {
+            remediationLabel.font = remediationLabelFont
+        }
+
+        remediationLabel.text = "Remediation: " + "Upgrade to " + vulnerability.fixedIn.joinToString()
+        detailsPanel.add(remediationLabel,
+            IJGridConstraints(
+                2,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val overviewPanel = JPanel()
+        overviewPanel.layout = IJGridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
+
+        this.add(overviewPanel,
+            IJGridConstraints(
+                8,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val overviewTitleLabel = JLabel()
+
+        val overviewTitleLabelFont: Font? = getFont(null, Font.BOLD, 16, overviewTitleLabel.font)
+
+        if (overviewTitleLabelFont != null) {
+            overviewTitleLabel.font = overviewTitleLabelFont
+        }
+
+        overviewTitleLabel.text = "Overview"
+        overviewPanel.add(overviewTitleLabel,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val descriptionTextArea = JTextArea(vulnerability.description)
+        descriptionTextArea.lineWrap = true
+        descriptionTextArea.wrapStyleWord = true
+        descriptionTextArea.isOpaque = false
+        descriptionTextArea.isEditable = false
+        descriptionTextArea.background = UIUtil.getPanelBackground()
+
+        overviewPanel.add(ScrollPaneFactory.createScrollPane(descriptionTextArea, true),
+            IJGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_GROW or IJGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                IJGridConstraints.SIZEPOLICY_CAN_GROW or IJGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val moreInfoPanel = JPanel()
+        moreInfoPanel.layout = IJGridLayoutManager(1, 2, Insets(0, 0, 0, 0), -1, -1)
+        this.add(moreInfoPanel,
+            IJGridConstraints(
+                9,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val moreInfoLabel = LinkLabel.create("More about this issue") {
+            BrowserUtil.open("https://snyk.io/vuln/" + vulnerability.id)
+        }
+
+        moreInfoPanel.add(moreInfoLabel,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_HORIZONTAL,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        moreInfoPanel.add(Spacer(),
+            IJGridConstraints(
+                0,
+                1,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_HORIZONTAL,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                1,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val severityPanel = SeverityColorPanel(vulnerability.severity)
+        severityPanel.layout = IJGridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, -1)
+
+        this.add(severityPanel,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val severityLabel = JLabel()
+
+        val severityLabelFont: Font? = getFont(null, -1, 14, severityLabel.font)
+
+        if (severityLabelFont != null) {
+            severityLabel.font = severityLabelFont
+        }
+
+        severityLabel.text = when (vulnerability.severity) {
+            "high" -> "HIGH SEVERITY"
+            "medium" -> "MEDIUM SEVERITY"
+            "low" -> "LOW SEVERITY"
+            else -> "UNKNOWN SEVERITY"
+        }
+
+        severityLabel.foreground = Color(-1)
+
+        severityPanel.add(severityLabel,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        severityPanel.add(Spacer(),
+            IJGridConstraints(
+                0,
+                1,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_HORIZONTAL,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                1,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        severityPanel.add(Spacer(),
+            IJGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_VERTICAL,
+                1,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                null,
+                null,
+                null,
+                0,
+                false))
+    }
+
+    private fun getFont(
+        fontName: String?,
+        style: Int,
+        size: Int,
+        currentFont: Font?): Font? {
+        if (currentFont == null) {
+            return null
+        }
+
+        val resultName: String = if (fontName == null) {
+            currentFont.name
+        } else {
+            val testFont = Font(fontName, Font.PLAIN, 10)
+
+            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
+                fontName
+            } else {
+                currentFont.name
+            }
+        }
+
+        return Font(resultName, if (style >= 0) style else currentFont.style, if (size >= 0) size else currentFont.size)
+    }
+}
+
+class SeverityColorPanel(private val severity: String) : JPanel() {
+    override fun paintComponent(graphics: Graphics) {
+        super.paintComponent(graphics)
+
+        graphics.color = when (severity) {
+            "high" -> Color.decode("#B31B6B")
+            "medium" -> Color.decode("#DF8620")
+            "low" -> Color.decode("#595775")
+            else -> UIUtil.getPanelBackground()
+        }
+
+        graphics.fillRoundRect(0, 0, 150, this.height, 5, 5)
+        graphics.fillRect(0, 0, 20, this.height)
     }
 }
