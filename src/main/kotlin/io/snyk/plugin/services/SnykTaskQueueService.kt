@@ -18,8 +18,10 @@ class SnykTaskQueueService(val project: Project) {
 
     fun getCurrentProgressIndicator(): ProgressIndicator? = currentProgressIndicator
 
+    fun getTaskQueue() = taskQueue
+
     fun scan() {
-        val scanTask = object : Task.Backgroundable(project, "Snyk scanning", true) {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 currentProgressIndicator = indicator
 
@@ -37,9 +39,7 @@ class SnykTaskQueueService(val project: Project) {
 
                 currentProgressIndicator = null
             }
-        }
-
-        taskQueue.run(scanTask)
+        })
     }
 
     fun downloadLatestRelease() {

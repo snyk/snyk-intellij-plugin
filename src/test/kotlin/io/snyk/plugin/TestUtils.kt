@@ -7,3 +7,5 @@ fun getCliNotInstalledRunner(): ConsoleCommandRunner = object: ConsoleCommandRun
         return "command not found"
     }
 }
+
+fun waitFor(timeoutSeconds: Long) = Thread.sleep(timeoutSeconds * 1000)

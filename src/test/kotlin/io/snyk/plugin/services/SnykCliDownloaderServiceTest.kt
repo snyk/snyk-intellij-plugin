@@ -1,9 +1,9 @@
-package io.snyk.plugin
+package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.services.SnykCliDownloaderService
+import io.snyk.plugin.*
 import io.snyk.plugin.cli.Platform
 import org.junit.Test
 import java.io.File

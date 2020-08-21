@@ -25,6 +25,7 @@ dependencies {
   implementation("com.google.code.gson:gson:2.8.6")
 
   testImplementation("junit:junit:4.12")
+  testCompile("org.mockito:mockito-core:3.5.2")
 }
 
 intellij {

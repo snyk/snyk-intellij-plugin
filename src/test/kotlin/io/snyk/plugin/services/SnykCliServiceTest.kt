@@ -1,12 +1,12 @@
-package io.snyk.plugin.cli
+package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
+import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getCliNotInstalledRunner
-import io.snyk.plugin.services.SnykProjectSettingsStateService
 import org.junit.Test
 import java.io.File
 
