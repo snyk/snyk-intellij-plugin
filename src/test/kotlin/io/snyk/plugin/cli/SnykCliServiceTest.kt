@@ -64,6 +64,18 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testScanWithErrorResult() {
+        getCli(project).setConsoleCommandRunner(object : ConsoleCommandRunner() {
+            override fun execute(commands: List<String>, workDirectory: String): String {
+                return """
+                    {
+                      "ok": false,
+                      "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
+                      "path": "/Users/user/Desktop/example-npm-project"
+                    }
+                """.trimIndent()
+            }
+        })
+
         val projectDirectory = File(project.basePath!!)
 
         if (!projectDirectory.exists()) {
@@ -90,12 +102,22 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val cliResult = getCli(project).scan()
 
         assertFalse(cliResult.isSuccessful())
+        assertEquals(
+            "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
+            cliResult.error!!.error)
+        assertEquals("/Users/user/Desktop/example-npm-project", cliResult.error!!.path)
 
         packageJsonFile.delete()
     }
 
     @Test
     fun testIsCliInstalledFailed() {
+        val cliFile = getCliFile()
+
+        if (cliFile.exists()) {
+            cliFile.delete()
+        }
+
         val cli = getCli(project)
 
         cli.setConsoleCommandRunner(getCliNotInstalledRunner())
