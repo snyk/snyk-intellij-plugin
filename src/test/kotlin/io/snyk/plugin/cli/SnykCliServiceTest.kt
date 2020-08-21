@@ -33,11 +33,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testGroupVulnerabilities() {
         val cli = getCli(project)
 
-        val jsonStr: String = javaClass.classLoader
-            .getResource("group-vulnerabilities-test.json")
-            .readText(Charsets.UTF_8)
-
-        val cliResult = cli.jsonToCliResult(jsonStr)
+        val cliResult = cli.jsonToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
 
         val cliGroupedResult = cliResult.toCliGroupedResult()
 
@@ -76,29 +72,6 @@ class SnykCliServiceTest : LightPlatformTestCase() {
             }
         })
 
-        val projectDirectory = File(project.basePath!!)
-
-        if (!projectDirectory.exists()) {
-            projectDirectory.mkdir()
-        }
-
-        val packageJsonFile = File(projectDirectory, "package.json")
-
-        packageJsonFile.writeText(
-            """
-                {
-                  "name": "test1-app",
-                  "version": "1.0.0",
-                  "description": "",
-                  "keywords": [],
-                  "author": "Test dev",
-                  "license": "MIT",
-                  "dependencies": {
-                    "mock2easy": "0.0.24"
-                  }
-                }
-            """.trimIndent())
-
         val cliResult = getCli(project).scan()
 
         assertFalse(cliResult.isSuccessful())
@@ -106,8 +79,26 @@ class SnykCliServiceTest : LightPlatformTestCase() {
             "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
             cliResult.error!!.error)
         assertEquals("/Users/user/Desktop/example-npm-project", cliResult.error!!.path)
+    }
 
-        packageJsonFile.delete()
+    @Test
+    fun testScanWithSuccessfulCliResult() {
+        getCli(project).setConsoleCommandRunner(object : ConsoleCommandRunner() {
+            override fun execute(commands: List<String>, workDirectory: String): String {
+                return getResourceAsString("group-vulnerabilities-test.json")
+            }
+        })
+
+        val cliResult = getCli(project).scan()
+
+        assertTrue(cliResult.isSuccessful())
+
+
+        val vulnerabilityIds = cliResult.vulnerabilities.map { it.id }
+
+        assertTrue(vulnerabilityIds.contains("SNYK-JS-DOTPROP-543489"))
+        assertTrue(vulnerabilityIds.contains("SNYK-JS-OPEN-174041"))
+        assertTrue(vulnerabilityIds.contains("npm:qs:20140806-1"))
     }
 
     @Test
@@ -261,4 +252,53 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals("--file=package.json", defaultCommands[5])
         assertEquals("test", defaultCommands[6])
     }
+
+    @Test
+    fun testCheckIsCliInstalledManuallyByUserSuccessful() {
+        val cli = getCli(project)
+
+        cli.setConsoleCommandRunner(object: ConsoleCommandRunner() {
+            override fun execute(commands: List<String>, workDirectory: String): String {
+                return "1.381.1"
+            }
+        })
+
+        assertTrue(cli.checkIsCliInstalledManuallyByUser())
+    }
+
+    @Test
+    fun testCheckIsCliInstalledManuallyByUserFailed() {
+        val cli = getCli(project)
+
+        cli.setConsoleCommandRunner(getCliNotInstalledRunner())
+
+        assertFalse(cli.checkIsCliInstalledManuallyByUser())
+    }
+
+    @Test
+    fun testCheckIsCliInstalledAutomaticallyByPluginSuccessful() {
+        val cliFile = getCliFile()
+
+        if (!cliFile.exists()) {
+            cliFile.createNewFile()
+        }
+
+        assertTrue(getCli(project).checkIsCliInstalledAutomaticallyByPlugin())
+
+        cliFile.delete()
+    }
+
+    @Test
+    fun testCheckIsCliInstalledAutomaticallyByPluginFailed() {
+        val cliFile = getCliFile()
+
+        if (cliFile.exists()) {
+            cliFile.delete()
+        }
+
+        assertFalse(getCli(project).checkIsCliInstalledAutomaticallyByPlugin())
+    }
+
+    private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
+        .getResource(resourceName)!!.readText(Charsets.UTF_8)
 }
