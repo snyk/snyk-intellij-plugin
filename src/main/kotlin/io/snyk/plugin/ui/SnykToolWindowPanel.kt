@@ -16,6 +16,7 @@ import com.intellij.uiDesigner.core.GridConstraints as IJGridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager as IJGridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.cli.Vulnerability
+import io.snyk.plugin.head
 import java.awt.*
 import java.util.Objects.nonNull
 import javax.swing.*
@@ -64,7 +65,7 @@ class SnykToolWindowPanel : JPanel() {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
 
-            rootTreeNode.userObject = "Found ${cliGroupedResult.uniqueCount} issues, ${cliGroupedResult.pathsCount} vulnerable paths."
+            rootTreeNode.userObject = "Found ${cliGroupedResult.uniqueCount} issues."
 
             add(vulnerabilitiesSplitter, BorderLayout.CENTER)
 
@@ -93,9 +94,7 @@ class SnykToolWindowPanel : JPanel() {
             rootTreeNode.add(fileTreeNode)
 
             cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
-                cliGroupedResult.vulnerabilitiesMap[id]?.forEach { vulnerability ->
-                    fileTreeNode.add(VulnerabilityTreeNode(vulnerability))
-                }
+                fileTreeNode.add(VulnerabilityTreeNode(cliGroupedResult.vulnerabilitiesMap.getValue(id).head))
             }
 
             reloadTree()
@@ -209,7 +208,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 0, false))
 
         val titleLabel = JLabel()
-        val titleLabelFont: Font? = getFont(null, -1, 18, titleLabel.font)
+        val titleLabelFont: Font? = getFont(-1, 18, titleLabel.font)
 
         if (titleLabelFont != null) {
             titleLabel.font = titleLabelFont
@@ -583,7 +582,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
 
         val severityLabel = JLabel()
 
-        val severityLabelFont: Font? = getFont(null, -1, 14, severityLabel.font)
+        val severityLabelFont: Font? = getFont(-1, 14, severityLabel.font)
 
         if (severityLabelFont != null) {
             severityLabel.font = severityLabelFont
@@ -647,29 +646,17 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 false))
     }
 
-    private fun getFont(fontName: String?, style: Int, size: Int, currentFont: Font?): Font? {
+    private fun getFont(style: Int, size: Int, currentFont: Font?): Font? {
         if (currentFont == null) {
             return null
         }
 
-        val resultName: String = if (fontName == null) {
-            currentFont.name
-        } else {
-            val testFont = Font(fontName, Font.PLAIN, 10)
-
-            if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
-                fontName
-            } else {
-                currentFont.name
-            }
-        }
-
-        return Font(resultName, if (style >= 0) style else currentFont.style, if (size >= 0) size else currentFont.size)
+        return Font(currentFont.name, if (style >= 0) style else currentFont.style, if (size >= 0) size else currentFont.size)
     }
 
     private fun buildBoldTitleLabel(title: String): JLabel {
         val bold16pxLabel = JLabel(title)
-        val detailedPathsAndRemediationLabelFont: Font? = getFont(null, Font.BOLD, 16, bold16pxLabel.font)
+        val detailedPathsAndRemediationLabelFont: Font? = getFont(Font.BOLD, 16, bold16pxLabel.font)
 
         if (detailedPathsAndRemediationLabelFont != null) {
             bold16pxLabel.font = detailedPathsAndRemediationLabelFont
@@ -680,7 +667,7 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
 
     private fun buildTwoLabelsPanel(title: String, text: String): JPanel {
         val titleLabel = JLabel()
-        val vulnerableModuleLabelFont: Font? = getFont(null, Font.BOLD, -1, titleLabel.font)
+        val vulnerableModuleLabelFont: Font? = getFont(Font.BOLD, -1, titleLabel.font)
 
         if (vulnerableModuleLabelFont != null) {
             titleLabel.font = vulnerableModuleLabelFont
