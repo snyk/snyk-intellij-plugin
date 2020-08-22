@@ -77,7 +77,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertFalse(cliResult.isSuccessful())
         assertEquals(
             "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
-            cliResult.error!!.error)
+            cliResult.error!!.message)
         assertEquals("/Users/user/Desktop/example-npm-project", cliResult.error!!.path)
     }
 

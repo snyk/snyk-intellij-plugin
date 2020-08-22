@@ -15,6 +15,7 @@ import io.snyk.plugin.cli.CliGroupedResult
 import com.intellij.uiDesigner.core.GridConstraints as IJGridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager as IJGridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
+import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.Vulnerability
 import io.snyk.plugin.head
 import java.awt.*
@@ -115,6 +116,14 @@ class SnykToolWindowPanel : JPanel() {
 
     private fun reloadTree() {
         (vulnerabilitiesTree.model as DefaultTreeModel).reload()
+    }
+
+    fun displayError(cliError: CliError) {
+        removeAll()
+
+        add(CliErrorPanel(cliError), BorderLayout.CENTER)
+
+        revalidate()
     }
 }
 
@@ -645,43 +654,6 @@ class VulnerabilityDescriptionPanel(private val vulnerability: Vulnerability) : 
                 0,
                 false))
     }
-
-    private fun getFont(style: Int, size: Int, currentFont: Font?): Font? {
-        if (currentFont == null) {
-            return null
-        }
-
-        return Font(currentFont.name, if (style >= 0) style else currentFont.style, if (size >= 0) size else currentFont.size)
-    }
-
-    private fun buildBoldTitleLabel(title: String): JLabel {
-        val bold16pxLabel = JLabel(title)
-        val detailedPathsAndRemediationLabelFont: Font? = getFont(Font.BOLD, 16, bold16pxLabel.font)
-
-        if (detailedPathsAndRemediationLabelFont != null) {
-            bold16pxLabel.font = detailedPathsAndRemediationLabelFont
-        }
-
-        return bold16pxLabel
-    }
-
-    private fun buildTwoLabelsPanel(title: String, text: String): JPanel {
-        val titleLabel = JLabel()
-        val vulnerableModuleLabelFont: Font? = getFont(Font.BOLD, -1, titleLabel.font)
-
-        if (vulnerableModuleLabelFont != null) {
-            titleLabel.font = vulnerableModuleLabelFont
-        }
-
-        titleLabel.text = title
-
-        val wrapPanel = JPanel()
-
-        wrapPanel.add(titleLabel)
-        wrapPanel.add(JLabel(text))
-
-        return wrapPanel
-    }
 }
 
 class SeverityColorPanel(private val severity: String) : JPanel() {
@@ -697,5 +669,222 @@ class SeverityColorPanel(private val severity: String) : JPanel() {
 
         graphics.fillRoundRect(0, 0, 150, this.height, 5, 5)
         graphics.fillRect(0, 0, 20, this.height)
+    }
+}
+
+class CliErrorPanel(private val cliError: CliError) : JPanel() {
+
+    init {
+        this.layout = IJGridLayoutManager(11, 1, Insets(20, 0, 0, 0), -1, 10)
+
+        this.add(Spacer(),
+            IJGridConstraints(
+                10,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_VERTICAL,
+                1,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                null,
+                null,
+                null,
+                0, false))
+
+        val pathPanel = JPanel()
+        pathPanel.layout = IJGridLayoutManager(4, 2, Insets(0, 0, 0, 0), -1, -1)
+        this.add(pathPanel,
+            IJGridConstraints(
+                7,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+
+        pathPanel.add(buildBoldTitleLabel("Path"),
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val pathTextArea = JTextArea(cliError.path)
+        pathTextArea.lineWrap = true
+        pathTextArea.wrapStyleWord = true
+        pathTextArea.isOpaque = false
+        pathTextArea.isEditable = false
+        pathTextArea.background = UIUtil.getPanelBackground()
+
+        pathPanel.add(ScrollPaneFactory.createScrollPane(pathTextArea, true),
+            IJGridConstraints(
+                2,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_GROW or IJGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                IJGridConstraints.SIZEPOLICY_CAN_GROW or IJGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val messagePanel = JPanel()
+        messagePanel.layout = IJGridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
+
+        this.add(messagePanel,
+            IJGridConstraints(
+                8,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        messagePanel.add(buildBoldTitleLabel("Message"),
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val errorMessageTextArea = JTextArea(cliError.message)
+        errorMessageTextArea.lineWrap = true
+        errorMessageTextArea.wrapStyleWord = true
+        errorMessageTextArea.isOpaque = false
+        errorMessageTextArea.isEditable = false
+        errorMessageTextArea.background = UIUtil.getPanelBackground()
+
+        messagePanel.add(ScrollPaneFactory.createScrollPane(errorMessageTextArea, true),
+            IJGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_GROW or IJGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                IJGridConstraints.SIZEPOLICY_CAN_GROW or IJGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                null,
+                null,
+                null,
+                1,
+                false))
+
+        val errorLabelPanel = SeverityColorPanel("high")
+        errorLabelPanel.layout = IJGridLayoutManager(2, 2, Insets(10, 10, 10, 10), -1, -1)
+
+        this.add(errorLabelPanel,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_BOTH,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                IJGridConstraints.SIZEPOLICY_CAN_SHRINK or IJGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        val errorLabel = JLabel()
+
+        val severityLabelFont: Font? = getFont(-1, 14, errorLabel.font)
+
+        if (severityLabelFont != null) {
+            errorLabel.font = severityLabelFont
+        }
+
+        errorLabel.text = "Error"
+
+        errorLabel.foreground = Color(-1)
+
+        errorLabelPanel.add(errorLabel,
+            IJGridConstraints(
+                0,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_WEST,
+                IJGridConstraints.FILL_NONE,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                IJGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        errorLabelPanel.add(Spacer(),
+            IJGridConstraints(
+                0,
+                1,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_HORIZONTAL,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                1,
+                null,
+                null,
+                null,
+                0,
+                false))
+
+        errorLabelPanel.add(Spacer(),
+            IJGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                IJGridConstraints.ANCHOR_CENTER,
+                IJGridConstraints.FILL_VERTICAL,
+                1,
+                IJGridConstraints.SIZEPOLICY_WANT_GROW,
+                null,
+                null,
+                null,
+                0,
+                false))
     }
 }

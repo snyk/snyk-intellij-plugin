@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 class CliError(
     @SerializedName("ok") val isSuccess: Boolean,
-    val error: String,
+    @SerializedName("error") val message: String,
     val path: String) {
 
 }

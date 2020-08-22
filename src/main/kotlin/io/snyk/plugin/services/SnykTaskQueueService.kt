@@ -35,7 +35,11 @@ class SnykTaskQueueService(val project: Project) {
 
                 indicator.checkCanceled()
 
-                project.service<SnykToolWindowPanel>().displayVulnerabilities(cliResult.toCliGroupedResult())
+                if (cliResult.isSuccessful()) {
+                    project.service<SnykToolWindowPanel>().displayVulnerabilities(cliResult.toCliGroupedResult())
+                } else {
+                    project.service<SnykToolWindowPanel>().displayError(cliResult.error!!)
+                }
 
                 currentProgressIndicator = null
             }
