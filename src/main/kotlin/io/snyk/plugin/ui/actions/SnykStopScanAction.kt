@@ -17,8 +17,10 @@ class SnykStopScanAction : AnAction(AllIcons.Actions.Suspend), DumbAware {
     }
 
     override fun update(actionEvent: AnActionEvent) {
-        val indicator = actionEvent.project!!.service<SnykTaskQueueService>().getCurrentProgressIndicator()
+        if (actionEvent.project != null && !actionEvent.project!!.isDisposed) {
+            val indicator = actionEvent.project!!.service<SnykTaskQueueService>().getCurrentProgressIndicator()
 
-        actionEvent.presentation.isEnabled = indicator != null && indicator.isRunning
+            actionEvent.presentation.isEnabled = indicator != null && indicator.isRunning
+        }
     }
 }
