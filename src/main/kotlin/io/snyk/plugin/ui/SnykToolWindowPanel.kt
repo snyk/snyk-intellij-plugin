@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui
 
+import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -91,7 +92,7 @@ class SnykToolWindowPanel : JPanel() {
             vulnerabilitiesSplitter.firstComponent = ScrollPaneFactory.createScrollPane(vulnerabilitiesTree)
             vulnerabilitiesSplitter.secondComponent = descriptionPanel
 
-            val fileTreeNode = DefaultMutableTreeNode(cliGroupedResult.displayTargetFile)
+            val fileTreeNode = TargetFileTreeNode(cliGroupedResult.displayTargetFile)
             rootTreeNode.add(fileTreeNode)
 
             cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
@@ -128,6 +129,8 @@ class SnykToolWindowPanel : JPanel() {
 }
 
 class VulnerabilityTreeNode(vulnerability: Vulnerability) : DefaultMutableTreeNode(vulnerability)
+
+class TargetFileTreeNode(targetFileName: String) : DefaultMutableTreeNode(targetFileName)
 
 class CenterOneComponentPanel(component: JComponent) : JPanel() {
     init {
@@ -187,6 +190,20 @@ private class VulnerabilityTreeCellRenderer : ColoredTreeCellRenderer() {
 
                 append(vulnerability.title)
             }
+        } else if (value is TargetFileTreeNode) {
+            val nodeText = value.userObject.toString()
+
+            icon = when (nodeText.toLowerCase()) {
+                "pom.xml" -> Icons.MAVEN
+                "build.gradle", "build.gradle.kts"-> Icons.GRADLE
+                "package.json", "package-lock.json"-> Icons.NPM
+                "requirements.txt"-> Icons.PYTHON
+                else -> AllIcons.FileTypes.Text
+            }
+
+            font = UIUtil.getTreeFont()
+
+            append(nodeText)
         } else if (value is DefaultMutableTreeNode) {
             icon = Icons.VULNERABILITY_16
             font = UIUtil.getTreeFont()
