@@ -23,9 +23,10 @@ dependencies {
   implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
   implementation("com.google.code.gson:gson:2.8.6")
+  implementation("com.atlassian.commonmark:commonmark:0.15.2")
 
   testImplementation("junit:junit:4.12")
-  testCompile("org.mockito:mockito-core:3.5.2")
+  testImplementation("org.mockito:mockito-core:3.5.2")
 }
 
 intellij {
