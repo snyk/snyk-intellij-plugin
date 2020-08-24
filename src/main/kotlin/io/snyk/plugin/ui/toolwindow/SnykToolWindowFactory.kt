@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui
+package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project

@@ -8,7 +8,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.getCli
-import io.snyk.plugin.ui.SnykToolWindowPanel
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 
 @Service
 class SnykTaskQueueService(val project: Project) {

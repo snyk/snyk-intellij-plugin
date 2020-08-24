@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui
+package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup

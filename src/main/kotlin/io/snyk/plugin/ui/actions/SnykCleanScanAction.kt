@@ -5,7 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
-import io.snyk.plugin.ui.SnykToolWindowPanel
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 
 /**
  * Run scan project with Snyk action.
