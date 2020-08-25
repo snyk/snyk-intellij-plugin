@@ -1,9 +1,13 @@
 package io.snyk.plugin.ui
 
+import com.intellij.ui.ScrollPaneFactory
+import com.intellij.util.ui.UIUtil
+import java.awt.BorderLayout
 import java.awt.Font
 import javax.swing.ImageIcon
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JTextArea
 
 fun boldLabel(title: String): JLabel {
     val label = JLabel(title)
@@ -55,6 +59,32 @@ fun buildTwoLabelsPanel(title: String, text: String): JPanel {
 
     wrapPanel.add(titleLabel)
     wrapPanel.add(JLabel(text))
+
+    return wrapPanel
+}
+
+fun buildTextAreaWithLabelPanel(title: String, text: String): JPanel {
+    val titleLabel = JLabel()
+    val vulnerableModuleLabelFont: Font? = getFont(Font.BOLD, -1, titleLabel.font)
+
+    if (vulnerableModuleLabelFont != null) {
+        titleLabel.font = vulnerableModuleLabelFont
+    }
+
+    titleLabel.text = title
+
+    val wrapPanel = JPanel(BorderLayout())
+
+    wrapPanel.add(titleLabel, BorderLayout.WEST)
+
+    val textArea = JTextArea(text)
+    textArea.lineWrap = true
+    textArea.wrapStyleWord = true
+    textArea.isOpaque = false
+    textArea.isEditable = false
+    textArea.background = UIUtil.getPanelBackground()
+
+    wrapPanel.add(ScrollPaneFactory.createScrollPane(textArea, true), BorderLayout.CENTER)
 
     return wrapPanel
 }
