@@ -40,7 +40,7 @@ class SnykCliService(val project: Project) {
             val matcher = pattern.matcher(consoleResultStr.trim())
 
             matcher.matches()
-        } catch(exception: Exception) {
+        } catch (exception: Exception) {
             logger.error(exception.message)
 
             false
@@ -88,7 +88,7 @@ class SnykCliService(val project: Project) {
         logger.info("Enter buildCliCommandsList")
 
         val commands: MutableList<String> = mutableListOf()
-        commands.add(getCliCommandName())
+        commands.add(getCliCommandPath())
         commands.add("--json")
 
         val customEndpoint = settings.getCustomEndpointUrl()
@@ -122,6 +122,16 @@ class SnykCliService(val project: Project) {
 
     fun setConsoleCommandRunner(newRunner: ConsoleCommandRunner?) {
         this.consoleCommandRunner = newRunner
+    }
+
+    private fun getCliCommandPath(): String {
+        return when {
+            checkIsCliInstalledManuallyByUser() -> getCliCommandName()
+            checkIsCliInstalledAutomaticallyByPlugin() -> getCliFile().absolutePath
+            else -> {
+                throw RuntimeException("Snyk CLI not installed.")
+            }
+        }
     }
 
     private fun getCliCommandName(): String = if (SystemInfo.isWindows) "snyk.cmd" else "snyk"

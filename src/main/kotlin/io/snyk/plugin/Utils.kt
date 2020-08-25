@@ -14,7 +14,7 @@ fun getCli(project: Project): SnykCliService = project.service()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
-fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = service()
+fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = service<SnykApplicationSettingsStateService>()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
