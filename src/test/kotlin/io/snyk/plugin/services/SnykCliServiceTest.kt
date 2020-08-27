@@ -20,13 +20,13 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val settingsStateService = getApplicationSettingsStateService()
 
-        settingsStateService.setIgnoreUnknownCA(false)
-        settingsStateService.setCustomEndpointUrl("")
-        settingsStateService.setCliVersion("")
-        settingsStateService.setLastCheckDate(null)
-        settingsStateService.setOrganization("")
+        settingsStateService.ignoreUnknownCA = false
+        settingsStateService.customEndpointUrl = ""
+        settingsStateService.cliVersion = ""
+        settingsStateService.lastCheckDate = null
+        settingsStateService.organization = ""
 
-        project.service<SnykProjectSettingsStateService>().setAdditionalParameters("")
+        project.service<SnykProjectSettingsStateService>().additionalParameters = ""
     }
 
     @Test
@@ -183,7 +183,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithCustomEndpointParameter() {
         val settingsStateService = getApplicationSettingsStateService()
 
-        settingsStateService.setCustomEndpointUrl("https://app.snyk.io/api")
+        settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
@@ -197,7 +197,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithInsecureParameter() {
         val settings = getApplicationSettingsStateService()
 
-        settings.setIgnoreUnknownCA(true)
+        settings.ignoreUnknownCA = true
 
         val defaultCommands = getCli(project).buildCliCommandsList(settings)
 
@@ -210,7 +210,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     @Test
     fun testBuildCliCommandsListWithOrganizationParameter() {
         val settingsStateService = getApplicationSettingsStateService()
-        settingsStateService.setOrganization("test-org")
+        settingsStateService.organization = "test-org"
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
@@ -222,7 +222,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithFileParameter() {
-        project.service<SnykProjectSettingsStateService>().setAdditionalParameters("--file=package.json")
+        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
         val defaultCommands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
 
@@ -236,11 +236,11 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithAllParameter() {
         val settingsStateService = getApplicationSettingsStateService()
 
-        settingsStateService.setCustomEndpointUrl("https://app.snyk.io/api")
-        settingsStateService.setOrganization("test-org")
-        settingsStateService.setIgnoreUnknownCA(true)
+        settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
+        settingsStateService.organization = "test-org"
+        settingsStateService.ignoreUnknownCA = true
 
-        project.service<SnykProjectSettingsStateService>().setAdditionalParameters("--file=package.json")
+        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 

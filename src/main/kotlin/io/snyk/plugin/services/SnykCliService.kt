@@ -91,25 +91,25 @@ class SnykCliService(val project: Project) {
         commands.add(getCliCommandPath())
         commands.add("--json")
 
-        val customEndpoint = settings.getCustomEndpointUrl()
+        val customEndpoint = settings.customEndpointUrl
 
-        if (nonNull(customEndpoint) && customEndpoint.isNotEmpty()) {
+        if (customEndpoint != null && customEndpoint.isNotEmpty()) {
             commands.add("--api=$customEndpoint")
         }
 
-        if (settings.isIgnoreUnknownCA()) {
+        if (settings.ignoreUnknownCA) {
             commands.add("--insecure")
         }
 
-        val organization = settings.getOrganization()
+        val organization = settings.organization
 
-        if (nonNull(organization) && organization.isNotEmpty()) {
+        if (organization != null && organization.isNotEmpty()) {
             commands.add("--org=$organization")
         }
 
         val additionalParameters = settings.getAdditionalParameters(project)
 
-        if (nonNull(additionalParameters) && additionalParameters.isNotEmpty()) {
+        if (additionalParameters != null && additionalParameters.isNotEmpty()) {
             commands.add(additionalParameters)
         }
 

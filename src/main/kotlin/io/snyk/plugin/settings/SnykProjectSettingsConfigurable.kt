@@ -8,7 +8,7 @@ import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
-import io.snyk.plugin.ui.SettingsDialog
+import io.snyk.plugin.ui.SnykSettingsDialog
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
@@ -16,14 +16,14 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     private val applicationSettingsStateService: SnykApplicationSettingsStateService =
         getApplicationSettingsStateService()
 
-    private val settingsDialog: SettingsDialog =
-        SettingsDialog(project, applicationSettingsStateService)
+    private val snykSettingsDialog: SnykSettingsDialog =
+        SnykSettingsDialog(project, applicationSettingsStateService)
 
     override fun getId(): String = "io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
 
     override fun getDisplayName(): String = "Snyk"
 
-    override fun createComponent(): JComponent = settingsDialog.getRootPanel()
+    override fun createComponent(): JComponent = snykSettingsDialog.getRootPanel()
 
     override fun isModified(): Boolean = isCustomEndpointModified()
         || isOrganizationModified()
@@ -31,31 +31,31 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         || isAdditionalParametersModified()
 
     override fun apply() {
-        val customEndpoint = settingsDialog.getCustomEndpoint()
+        val customEndpoint = snykSettingsDialog.getCustomEndpoint()
 
         if (!isUrlValid(customEndpoint)) {
             return
         }
 
-        applicationSettingsStateService.setCustomEndpointUrl(customEndpoint)
-        applicationSettingsStateService.setOrganization(settingsDialog.getOrganization())
-        applicationSettingsStateService.setIgnoreUnknownCA(settingsDialog.isIgnoreUnknownCA())
+        applicationSettingsStateService.customEndpointUrl = customEndpoint
+        applicationSettingsStateService.organization = snykSettingsDialog.getOrganization()
+        applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
         if (isProjectSettingsAvailable(project)) {
-            project.service<SnykProjectSettingsStateService>().setAdditionalParameters(settingsDialog.getAdditionalParameters())
+            project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
     }
 
     private fun isCustomEndpointModified(): Boolean =
-        settingsDialog.getCustomEndpoint() != applicationSettingsStateService.getCustomEndpointUrl()
+        snykSettingsDialog.getCustomEndpoint() != applicationSettingsStateService.customEndpointUrl
 
     private fun isOrganizationModified(): Boolean =
-        settingsDialog.getOrganization() != applicationSettingsStateService.getOrganization()
+        snykSettingsDialog.getOrganization() != applicationSettingsStateService.organization
 
     private fun isIgnoreUnknownCAModified(): Boolean =
-        settingsDialog.isIgnoreUnknownCA() != applicationSettingsStateService.isIgnoreUnknownCA()
+        snykSettingsDialog.isIgnoreUnknownCA() != applicationSettingsStateService.ignoreUnknownCA
 
     private fun isAdditionalParametersModified(): Boolean =
         isProjectSettingsAvailable(project)
-            && settingsDialog.getAdditionalParameters() != project.service<SnykProjectSettingsStateService>().getAdditionalParameters()
+            && snykSettingsDialog.getAdditionalParameters() != project.service<SnykProjectSettingsStateService>().additionalParameters
 }

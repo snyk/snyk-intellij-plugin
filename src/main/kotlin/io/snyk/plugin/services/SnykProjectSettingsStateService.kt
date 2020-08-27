@@ -10,17 +10,11 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 )
 class SnykProjectSettingsStateService : PersistentStateComponent<SnykProjectSettingsStateService> {
 
-    private var additionalParameters = ""
+    var additionalParameters: String? = null
 
     override fun getState(): SnykProjectSettingsStateService = this
 
     override fun loadState(state: SnykProjectSettingsStateService) {
         XmlSerializerUtil.copyBean(state, this)
-    }
-
-    fun getAdditionalParameters(): String = additionalParameters
-
-    fun setAdditionalParameters(newParameters: String) {
-        this.additionalParameters = newParameters
     }
 }

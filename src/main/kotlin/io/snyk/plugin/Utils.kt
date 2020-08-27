@@ -27,6 +27,10 @@ val <T> List<T>.head: T
     get() = first()
 
 fun isUrlValid(url: String): Boolean {
+    if (url.isEmpty()) {
+        return true
+    }
+
     return try {
         URL(url).toURI()
 

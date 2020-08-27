@@ -5,6 +5,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
 import io.snyk.plugin.isProjectSettingsAvailable
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.*
 
 @Service
 @State(
@@ -13,11 +16,11 @@ import java.time.LocalDate
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
-    private var customEndpointUrl = ""
-    private var organization = ""
-    private var ignoreUnknownCA = false
-    private var cliVersion = ""
-    private var lastCheckDate: LocalDate? = null
+    var customEndpointUrl: String? = null
+    var organization: String? = null
+    var ignoreUnknownCA = false
+    var cliVersion: String? = null
+    var lastCheckDate: Date? = null
 
     override fun getState(): SnykApplicationSettingsStateService = this
 
@@ -25,41 +28,21 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         XmlSerializerUtil.copyBean(state, this)
     }
 
-    fun getCustomEndpointUrl(): String = customEndpointUrl
-
-    fun setCustomEndpointUrl(newCustomEndpoint: String) {
-        this.customEndpointUrl = newCustomEndpoint
-    }
-
-    fun getOrganization(): String = organization
-
-    fun setOrganization(newOrganization: String) {
-        this.organization = newOrganization
-    }
-
-    fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCA
-
-    fun setIgnoreUnknownCA(newIgnoreUnknownCA: Boolean) {
-        this.ignoreUnknownCA = newIgnoreUnknownCA
-    }
-
-    fun getCliVersion(): String = cliVersion
-
-    fun setCliVersion(newCliVersion: String) {
-        this.cliVersion = newCliVersion
-    }
-
-    fun getLastCheckDate(): LocalDate? = lastCheckDate
-
-    fun setLastCheckDate(newDate: LocalDate?) {
-        lastCheckDate = newDate
-    }
-
-    fun getAdditionalParameters(project: Project? = null): String {
+    fun getAdditionalParameters(project: Project? = null): String? {
         return if (isProjectSettingsAvailable(project)) {
-            project!!.service<SnykProjectSettingsStateService>().getAdditionalParameters()
+            project!!.service<SnykProjectSettingsStateService>().additionalParameters
         } else {
             ""
         }
+    }
+
+    fun getLastCheckDate(): LocalDate? = if (lastCheckDate != null) {
+        lastCheckDate!!.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+    } else {
+        null
+    }
+
+    fun setLastCheckDate(localDate: LocalDateTime) {
+        this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant());
     }
 }

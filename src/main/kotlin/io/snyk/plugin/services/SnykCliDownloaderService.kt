@@ -15,7 +15,7 @@ import java.lang.String.format
 import java.net.URL
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.util.Objects.isNull
+import java.util.*
 import java.util.Objects.nonNull
 
 @Service
@@ -70,8 +70,8 @@ class SnykCliDownloaderService(val project: Project) {
 
             cliFile.setExecutable(true)
 
-            getApplicationSettingsStateService().setCliVersion(cliVersionNumbers(cliVersion))
-            getApplicationSettingsStateService().setLastCheckDate(LocalDate.now())
+            getApplicationSettingsStateService().cliVersion = cliVersionNumbers(cliVersion)
+            getApplicationSettingsStateService().lastCheckDate = Date()
 
             indicator.checkCanceled()
         } finally {
@@ -89,11 +89,11 @@ class SnykCliDownloaderService(val project: Project) {
 
             if (nonNull(latestReleaseInfo)
                 && latestReleaseInfo?.tagName != null && latestReleaseInfo.tagName.isNotEmpty()
-                && isNewVersionAvailable(applicationSettingsStateService.getCliVersion(), cliVersionNumbers(latestReleaseInfo.tagName))) {
+                && isNewVersionAvailable(applicationSettingsStateService.cliVersion, cliVersionNumbers(latestReleaseInfo.tagName))) {
 
                 downloadLatestRelease(indicator)
 
-                applicationSettingsStateService.setLastCheckDate(LocalDate.now())
+                applicationSettingsStateService.lastCheckDate = Date()
             }
         }
     }
@@ -105,17 +105,14 @@ class SnykCliDownloaderService(val project: Project) {
     }
 
     fun isFourDaysPassedSinceLastCheck(): Boolean {
-        val previousDate = getApplicationSettingsStateService().getLastCheckDate()
-
-        if (isNull(previousDate)) {
-            return true
-        }
+        val previousDate = getApplicationSettingsStateService().getLastCheckDate() ?: return true
 
         return ChronoUnit.DAYS.between(previousDate, LocalDate.now()) >= NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK
     }
 
-    fun isNewVersionAvailable(currentCliVersion: String, newCliVersion: String): Boolean {
-        if (isNull(currentCliVersion) || currentCliVersion.isEmpty()) {
+    fun isNewVersionAvailable(currentCliVersion: String?, newCliVersion: String?): Boolean {
+        if (currentCliVersion == null || newCliVersion == null
+            || currentCliVersion.isEmpty() || currentCliVersion.isEmpty()) {
             return true
         }
 

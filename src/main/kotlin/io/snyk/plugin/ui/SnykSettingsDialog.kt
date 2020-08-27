@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
@@ -12,7 +11,6 @@ import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.SnykProjectSettingsStateService
 import java.awt.Dimension
 import java.awt.Insets
 import java.util.Objects.nonNull
@@ -22,7 +20,9 @@ import javax.swing.event.DocumentEvent
 import com.intellij.uiDesigner.core.GridConstraints as UIGridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager as UIGridLayoutManager
 
-class SettingsDialog(private val project: Project, private val applicationSettings: SnykApplicationSettingsStateService) {
+class SnykSettingsDialog(
+    private val project: Project,
+    applicationSettings: SnykApplicationSettingsStateService) {
 
     private val customEndpointTextField = UrlValidationTextField()
     private val organizationTextField: JTextField = JTextField()
@@ -32,27 +32,20 @@ class SettingsDialog(private val project: Project, private val applicationSettin
     private val rootPanel: JPanel = JPanel()
 
     init {
-        setupUI()
+        initializeUiComponents()
 
         if (nonNull(applicationSettings)) {
-            reset()
+            customEndpointTextField.text = applicationSettings.customEndpointUrl
+            organizationTextField.text = applicationSettings.organization
+            ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
+
+            additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
         }
     }
 
     fun getRootPanel(): JComponent = rootPanel
 
-    fun reset() {
-        customEndpointTextField.text = applicationSettings.getCustomEndpointUrl()
-        organizationTextField.text = applicationSettings.getOrganization()
-        ignoreUnknownCACheckBox.isSelected = applicationSettings.isIgnoreUnknownCA()
-
-        if (isProjectSettingsAvailable(project)) {
-            additionalParametersTextField.text =
-                project.service<SnykProjectSettingsStateService>().getAdditionalParameters()
-        }
-    }
-
-    private fun setupUI() {
+    private fun initializeUiComponents() {
         val defaultTextFieldWidth = 500
 
         rootPanel.layout = UIGridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, -1)
@@ -64,112 +57,112 @@ class SettingsDialog(private val project: Project, private val applicationSettin
             generalSettingsPanel,
             UIGridConstraints(
                 0,
-            0,
-            1,
-            1,
-            UIGridConstraints.ANCHOR_CENTER,
-            UIGridConstraints.FILL_BOTH,
-            UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-        UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-        null,
-        Dimension(200, 200),
-        null,
-        0,
-        false
-        ))
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_CENTER,
+                UIGridConstraints.FILL_BOTH,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                Dimension(200, 200),
+                null,
+                0,
+                false
+            ))
 
         val customEndpointLabel = JLabel("Custom endpoint:")
         generalSettingsPanel.add(
             customEndpointLabel,
             UIGridConstraints(
                 0,
-            0,
-            1,
-            1,
-            UIGridConstraints.ANCHOR_WEST,
-            UIGridConstraints.FILL_NONE,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            null,
-            Dimension(120, 16),
-        null,
-        0,
-        false
-        ))
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                Dimension(120, 16),
+                null,
+                0,
+                false
+            ))
 
         generalSettingsPanel.add(
             customEndpointTextField,
             UIGridConstraints(
                 0,
-            1,
-            1,
-            1,
-            UIGridConstraints.ANCHOR_WEST,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            null,
-            Dimension(defaultTextFieldWidth, -1),
-        null,
-        0,
-        false
-        ))
+                1,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                Dimension(defaultTextFieldWidth, -1),
+                null,
+                0,
+                false
+            ))
 
         ignoreUnknownCACheckBox.text = "Ignore unknown CA"
         generalSettingsPanel.add(
             ignoreUnknownCACheckBox,
             UIGridConstraints(
                 1,
-            1,
-            1,
-            1,
-            UIGridConstraints.ANCHOR_WEST,
-            UIGridConstraints.FILL_NONE,
-            UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-        null,
-        null,
-        null,
-        0,
-        false
-        ))
+                1,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            ))
 
         val organizationLabel = JLabel("Organization:")
         generalSettingsPanel.add(
             organizationLabel,
             UIGridConstraints(
                 2,
-            0,
-            1,
-            1,
-            UIGridConstraints.ANCHOR_WEST,
-            UIGridConstraints.FILL_NONE,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            null,
-            null,
-            null,
-            0,
-            false
-        ))
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            ))
 
         generalSettingsPanel.add(
             organizationTextField,
             UIGridConstraints(
                 2,
-            1,
-            1,
-            1,
-            UIGridConstraints.ANCHOR_WEST,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            UIGridConstraints.SIZEPOLICY_FIXED,
-            null,
-            Dimension(defaultTextFieldWidth, -1),
-        null,
-        0,
-        false
-        ))
+                1,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                Dimension(defaultTextFieldWidth, -1),
+                null,
+                0,
+                false
+            ))
 
         val generalSettingsSpacer = Spacer()
         generalSettingsPanel.add(
@@ -238,19 +231,19 @@ class SettingsDialog(private val project: Project, private val applicationSettin
                 additionalParametersTextField,
                 UIGridConstraints(
                     0,
-                1,
-                1,
-                1,
-                UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                null,
-                Dimension(defaultTextFieldWidth, -1),
-            null,
-            0,
-            false
-            ))
+                    1,
+                    1,
+                    1,
+                    UIGridConstraints.ANCHOR_WEST,
+                    UIGridConstraints.SIZEPOLICY_FIXED,
+                    UIGridConstraints.SIZEPOLICY_FIXED,
+                    UIGridConstraints.SIZEPOLICY_FIXED,
+                    null,
+                    Dimension(defaultTextFieldWidth, -1),
+                    null,
+                    0,
+                    false
+                ))
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
@@ -307,18 +300,18 @@ class SettingsDialog(private val project: Project, private val applicationSettin
 class UrlValidationTextField : JTextField(""), Disposable {
 
     init {
-        ComponentValidator(this).withValidator(Supplier {
+        ComponentValidator(this).withValidator(Supplier<ValidationInfo?> {
             val validationInfo: ValidationInfo = if (!isUrlValid(text)) {
-                ValidationInfo("Invalid custom enpoint URL.", this@UrlValidationTextField)
+                ValidationInfo("Invalid custom enpoint URL", this@UrlValidationTextField)
             } else {
                 ValidationInfo("")
             }
 
             validationInfo
-        })
+        }).installOn(this)
 
         this.document.addDocumentListener(object : DocumentAdapter() {
-            override fun textChanged(e: DocumentEvent) {
+            override fun textChanged(event: DocumentEvent) {
                 ComponentValidator.getInstance(this@UrlValidationTextField).ifPresent {
                     it.revalidate()
                 }

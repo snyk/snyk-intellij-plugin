@@ -8,6 +8,7 @@ import io.snyk.plugin.cli.Platform
 import org.junit.Test
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
@@ -46,16 +47,16 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
         assertTrue(downloadedFile.exists())
         assertEquals(cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + getApplicationSettingsStateService().getCliVersion())
+            "v" + getApplicationSettingsStateService().cliVersion)
 
         downloadedFile.delete()
     }
 
     @Test
     fun testCliSilentAutoUpdate() {
-        val currentDate = LocalDate.now()
+        val currentDate = LocalDateTime.now()
 
-        getApplicationSettingsStateService().setCliVersion("1.342.2")
+        getApplicationSettingsStateService().cliVersion = "1.342.2"
         getApplicationSettingsStateService().setLastCheckDate(currentDate.minusDays(5))
 
         getCli(project).setConsoleCommandRunner(getCliNotInstalledRunner())
@@ -71,9 +72,9 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
         cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator())
 
         assertTrue(getCliFile().exists())
-        assertEquals(currentDate, getApplicationSettingsStateService().getLastCheckDate())
+        assertEquals(currentDate.toLocalDate(), getApplicationSettingsStateService().getLastCheckDate())
         assertEquals(cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + getApplicationSettingsStateService().getCliVersion())
+            "v" + getApplicationSettingsStateService().cliVersion)
 
         cliFile.delete()
     }
@@ -86,8 +87,8 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
         val applicationSettingsStateService = getApplicationSettingsStateService()
 
-        applicationSettingsStateService.setCliVersion("")
-        applicationSettingsStateService.setLastCheckDate(null)
+        applicationSettingsStateService.cliVersion = ""
+        applicationSettingsStateService.lastCheckDate = null
 
         val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
@@ -103,14 +104,14 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
         assertEquals(currentDate, applicationSettingsStateService.getLastCheckDate())
         assertEquals(cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + applicationSettingsStateService.getCliVersion())
+            "v" + applicationSettingsStateService.cliVersion)
 
         cliFile.delete()
     }
 
     @Test
     fun testIsNewVersionAvailable() {
-        getApplicationSettingsStateService().setLastCheckDate(LocalDate.now())
+        getApplicationSettingsStateService().lastCheckDate = null
 
         val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
@@ -127,7 +128,7 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testCheckIsFourDaysPassedSinceLastCheck() {
-        val todayDate = LocalDate.now()
+        val todayDate = LocalDateTime.now()
         val lastCheckDate = todayDate.minusDays(4)
 
         getApplicationSettingsStateService().setLastCheckDate(lastCheckDate)
