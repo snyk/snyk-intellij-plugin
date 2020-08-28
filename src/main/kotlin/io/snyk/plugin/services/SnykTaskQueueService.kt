@@ -23,11 +23,13 @@ class SnykTaskQueueService(val project: Project) {
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk scanning", true) {
             override fun run(indicator: ProgressIndicator) {
-                currentProgressIndicator = indicator
+                val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
                 indicator.checkCanceled()
 
-                project.service<SnykToolWindowPanel>().clean()
+                toolWindowPanel.displayScanningMessage()
+
+                currentProgressIndicator = indicator
 
                 indicator.checkCanceled()
 
@@ -36,9 +38,9 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (cliResult.isSuccessful()) {
-                    project.service<SnykToolWindowPanel>().displayVulnerabilities(cliResult.toCliGroupedResult())
+                    toolWindowPanel.displayVulnerabilities(cliResult.toCliGroupedResult())
                 } else {
-                    project.service<SnykToolWindowPanel>().displayError(cliResult.error!!)
+                    toolWindowPanel.displayError(cliResult.error!!)
                 }
 
                 currentProgressIndicator = null
@@ -49,6 +51,10 @@ class SnykTaskQueueService(val project: Project) {
     fun downloadLatestRelease() {
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI", true) {
             override fun run(indicator: ProgressIndicator) {
+                val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+                toolWindowPanel.displayCliCheckMessage()
+
                 currentProgressIndicator = indicator
 
                 val cliDownloader = project.service<SnykCliDownloaderService>()
@@ -56,12 +62,16 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (!getCli(project).isCliInstalled()) {
+                    toolWindowPanel.displayDownloadMessage()
+
                     cliDownloader.downloadLatestRelease(indicator)
                 } else {
                     cliDownloader.cliSilentAutoUpdate(indicator)
                 }
 
                 currentProgressIndicator = null
+
+                toolWindowPanel.displayNoVulnerabilitiesMessage()
             }
         })
     }
