@@ -81,65 +81,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel() {
     fun displayScanningMessage() {
         removeAll()
 
-        val scanningPanel = JPanel()
-
-        scanningPanel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        scanningPanel.add(JLabel("Scanning project for vulnerabilities..."),
-            GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_FIXED,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false))
-
-        scanningPanel.add(JLabel(""),
-            GridConstraints(
-                1,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_VERTICAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                GridConstraints.SIZEPOLICY_WANT_GROW,
-                null,
-                null,
-                null,
-                0,
-                false))
-
-        val stopScanningLinkLabel = LinkLabel.create("Stop Scanning") {
+        val statePanel = StatePanel("Scanning project for vulnerabilities...", "Stop Scanning", Runnable {
             project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
 
             displayNoVulnerabilitiesMessage()
-        }
+        })
 
-        scanningPanel.add(stopScanningLinkLabel,
-            GridConstraints(
-                2,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_BOTH,
-                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                null,
-                null,
-                null,
-                0,
-                false))
-
-        add(CenterOneComponentPanel(scanningPanel), BorderLayout.CENTER)
+        add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)
 
         revalidate()
     }
@@ -147,65 +95,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel() {
     fun displayDownloadMessage() {
         removeAll()
 
-        val downloadingPanel = JPanel()
-
-        downloadingPanel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        downloadingPanel.add(JLabel("Downloading Snyk CLI..."),
-            GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_FIXED,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false))
-
-        downloadingPanel.add(JLabel(""),
-            GridConstraints(
-                1,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_VERTICAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                GridConstraints.SIZEPOLICY_WANT_GROW,
-                null,
-                null,
-                null,
-                0,
-                false))
-
-        val stopScanningLinkLabel = LinkLabel.create("Stop Downloading") {
+        val statePanel = StatePanel("Downloading Snyk CLI...", "Stop Downloading", Runnable {
             project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
 
             displayNoVulnerabilitiesMessage()
-        }
+        })
 
-        downloadingPanel.add(stopScanningLinkLabel,
-            GridConstraints(
-                2,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_BOTH,
-                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                null,
-                null,
-                null,
-                0,
-                false))
-
-        add(CenterOneComponentPanel(downloadingPanel), BorderLayout.CENTER)
+        add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)
 
         revalidate()
     }
