@@ -7,12 +7,19 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliResult
+import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykCliScanListener
 import io.snyk.plugin.getCli
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 
 @Service
 class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
+
+    private val cliScanPublisher =
+        project.messageBus.syncPublisher(SnykCliScanListener.CLI_SCAN_TOPIC)
+
+    private val cliDownloadPublisher =
+        project.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
@@ -23,11 +30,9 @@ class SnykTaskQueueService(val project: Project) {
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk scanning", true) {
             override fun run(indicator: ProgressIndicator) {
-                val toolWindowPanel = project.service<SnykToolWindowPanel>()
+                cliScanPublisher.scanningStarted()
 
                 indicator.checkCanceled()
-
-                toolWindowPanel.displayScanningMessage()
 
                 currentProgressIndicator = indicator
 
@@ -38,9 +43,9 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (cliResult.isSuccessful()) {
-                    toolWindowPanel.displayVulnerabilities(cliResult.toCliGroupedResult())
+                    cliScanPublisher.scanningFinished(cliResult)
                 } else {
-                    toolWindowPanel.displayError(cliResult.error!!)
+                    cliScanPublisher.scanError(cliResult.error!!)
                 }
 
                 currentProgressIndicator = null
@@ -51,9 +56,7 @@ class SnykTaskQueueService(val project: Project) {
     fun downloadLatestRelease() {
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI", true) {
             override fun run(indicator: ProgressIndicator) {
-                val toolWindowPanel = project.service<SnykToolWindowPanel>()
-
-                toolWindowPanel.displayCliCheckMessage()
+                cliDownloadPublisher.checkCliExistsStarted()
 
                 currentProgressIndicator = indicator
 
@@ -62,7 +65,7 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (!getCli(project).isCliInstalled()) {
-                    toolWindowPanel.displayDownloadMessage()
+                    cliDownloadPublisher.cliDownloadStarted()
 
                     cliDownloader.downloadLatestRelease(indicator)
                 } else {
@@ -71,7 +74,7 @@ class SnykTaskQueueService(val project: Project) {
 
                 currentProgressIndicator = null
 
-                toolWindowPanel.displayNoVulnerabilitiesMessage()
+                cliDownloadPublisher.checkCliExistsFinished()
             }
         })
     }

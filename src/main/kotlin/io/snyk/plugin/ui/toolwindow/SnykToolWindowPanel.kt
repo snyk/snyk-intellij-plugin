@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -14,7 +15,10 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliGroupedResult
+import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
+import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykCliScanListener
 import io.snyk.plugin.head
 import io.snyk.plugin.services.SnykTaskQueueService
 import java.awt.BorderLayout
@@ -30,7 +34,7 @@ import javax.swing.tree.DefaultTreeModel
  * Main panel for Snyk tool window.
  */
 @Service
-class SnykToolWindowPanel(val project: Project) : JPanel() {
+class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private val descriptionPanel = FullDescriptionPanel()
 
@@ -45,6 +49,35 @@ class SnykToolWindowPanel(val project: Project) : JPanel() {
         initializeUiComponents()
 
         displayNoVulnerabilitiesMessage()
+
+        project.messageBus.connect(this)
+            .subscribe(SnykCliScanListener.CLI_SCAN_TOPIC, object: SnykCliScanListener {
+
+            override fun scanningStarted() =
+                ApplicationManager.getApplication().invokeLater { displayScanningMessage() }
+
+            override fun scanningFinished(cliResult: CliResult) =
+                ApplicationManager.getApplication().invokeLater { displayVulnerabilities(cliResult.toCliGroupedResult()) }
+
+            override fun scanError(cliError: CliError) =
+                ApplicationManager.getApplication().invokeLater { displayError(cliError) }
+        })
+
+        project.messageBus.connect(this)
+            .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object: SnykCliDownloadListener {
+
+            override fun checkCliExistsStarted() =
+                ApplicationManager.getApplication().invokeLater { displayCliCheckMessage() }
+
+            override fun checkCliExistsFinished() =
+                ApplicationManager.getApplication().invokeLater { displayNoVulnerabilitiesMessage() }
+
+            override fun cliDownloadStarted() =
+                ApplicationManager.getApplication().invokeLater { displayDownloadMessage() }
+        })
+    }
+
+    override fun dispose() {
     }
 
     fun cleanAll() {
