@@ -9,7 +9,6 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import org.apache.log4j.Logger
 import java.io.File
-import java.util.Objects.nonNull
 import java.util.regex.Pattern
 
 /**
@@ -137,7 +136,7 @@ class SnykCliService(val project: Project) {
     private fun getCliCommandName(): String = if (SystemInfo.isWindows) "snyk.cmd" else "snyk"
 
     private fun getConsoleCommandRunner(): ConsoleCommandRunner {
-        if (nonNull(consoleCommandRunner)) {
+        if (consoleCommandRunner != null) {
             return consoleCommandRunner!!
         }
 
