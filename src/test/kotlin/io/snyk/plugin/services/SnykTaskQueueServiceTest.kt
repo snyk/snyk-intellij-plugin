@@ -14,7 +14,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf("snyk", "--version"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf("snyk", "--version")))
             .thenReturn("1.381.1")
 
         Mockito

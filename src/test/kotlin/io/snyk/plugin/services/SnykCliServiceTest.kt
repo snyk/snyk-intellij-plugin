@@ -8,6 +8,7 @@ import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getCliNotInstalledRunner
 import org.junit.Test
+import org.mockito.Mockito
 import java.io.File
 
 class SnykCliServiceTest : LightPlatformTestCase() {
@@ -60,17 +61,17 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testScanWithErrorResult() {
-        getCli(project).setConsoleCommandRunner(object : ConsoleCommandRunner() {
-            override fun execute(commands: List<String>, workDirectory: String): String {
-                return """
+        val mockRunner = setupMockConsoleCommandRunnerForCliExists()
+
+        Mockito
+            .`when`(mockRunner.execute(listOf("snyk", "--json", "test"), project.basePath!!))
+            .thenReturn("""
                     {
                       "ok": false,
                       "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
                       "path": "/Users/user/Desktop/example-npm-project"
                     }
-                """.trimIndent()
-            }
-        })
+                """.trimIndent())
 
         val cliResult = getCli(project).scan()
 
@@ -83,11 +84,11 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testScanWithSuccessfulCliResult() {
-        getCli(project).setConsoleCommandRunner(object : ConsoleCommandRunner() {
-            override fun execute(commands: List<String>, workDirectory: String): String {
-                return getResourceAsString("group-vulnerabilities-test.json")
-            }
-        })
+        val mockRunner = setupMockConsoleCommandRunnerForCliExists()
+
+        Mockito
+            .`when`(mockRunner.execute(listOf("snyk", "--json", "test"), project.basePath!!))
+            .thenReturn(getResourceAsString("group-vulnerabilities-test.json"))
 
         val cliResult = getCli(project).scan()
 
@@ -171,6 +172,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListForMaven() {
+        setupMockConsoleCommandRunnerForCliExists()
+
         val defaultCommands =  getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
 
         assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
@@ -181,6 +184,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithCustomEndpointParameter() {
+        setupMockConsoleCommandRunnerForCliExists()
+
         val settingsStateService = getApplicationSettingsStateService()
 
         settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
@@ -195,6 +200,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithInsecureParameter() {
+        setupMockConsoleCommandRunnerForCliExists()
+
         val settings = getApplicationSettingsStateService()
 
         settings.ignoreUnknownCA = true
@@ -209,6 +216,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithOrganizationParameter() {
+        setupMockConsoleCommandRunnerForCliExists()
+
         val settingsStateService = getApplicationSettingsStateService()
         settingsStateService.organization = "test-org"
 
@@ -222,6 +231,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithFileParameter() {
+        setupMockConsoleCommandRunnerForCliExists()
+
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
         val defaultCommands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
@@ -234,6 +245,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithAllParameter() {
+        setupMockConsoleCommandRunnerForCliExists()
+
         val settingsStateService = getApplicationSettingsStateService()
 
         settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
@@ -301,4 +314,16 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
         .getResource(resourceName)!!.readText(Charsets.UTF_8)
+
+    private fun setupMockConsoleCommandRunnerForCliExists(): ConsoleCommandRunner {
+        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+
+        Mockito
+            .`when`(mockRunner.execute(listOf("snyk", "--version")))
+            .thenReturn("1.381.1")
+
+        getCli(project).setConsoleCommandRunner(mockRunner)
+
+        return mockRunner
+    }
 }
