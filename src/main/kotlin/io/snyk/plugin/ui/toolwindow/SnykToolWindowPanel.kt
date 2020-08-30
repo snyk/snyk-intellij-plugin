@@ -145,6 +145,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
 
+            rootTreeNode.removeAllChildren()
+
             rootTreeNode.userObject = "Found ${cliGroupedResult.uniqueCount} issues."
 
             add(vulnerabilitiesSplitter, BorderLayout.CENTER)
