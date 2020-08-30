@@ -13,7 +13,10 @@ import io.snyk.plugin.services.SnykTaskQueueService
 class SnykStopScanAction : AnAction(AllIcons.Actions.Suspend), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
-        actionEvent.project!!.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
+        val taskQueueService = actionEvent.project!!.service<SnykTaskQueueService>()
+
+        taskQueueService.getCurrentProgressIndicator()?.cancel()
+        taskQueueService.publishStoppedEvent()
     }
 
     override fun update(actionEvent: AnActionEvent) {

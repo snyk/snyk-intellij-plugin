@@ -19,6 +19,7 @@ import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykCliScanListener
+import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.head
 import io.snyk.plugin.services.SnykTaskQueueService
 import java.awt.BorderLayout
@@ -75,6 +76,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             override fun cliDownloadStarted() =
                 ApplicationManager.getApplication().invokeLater { displayDownloadMessage() }
         })
+
+        project.messageBus.connect(this)
+            .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
+                override fun stopped() =
+                    ApplicationManager.getApplication().invokeLater { displayNoVulnerabilitiesMessage() }
+            })
     }
 
     override fun dispose() {

@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykCliScanListener
+import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getCli
 
 @Service
@@ -20,6 +21,9 @@ class SnykTaskQueueService(val project: Project) {
 
     private val cliDownloadPublisher =
         project.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+
+    private val taskQueuePublisher =
+        project.messageBus.syncPublisher(SnykTaskQueueListener.TASK_QUEUE_TOPIC)
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
@@ -78,4 +82,6 @@ class SnykTaskQueueService(val project: Project) {
             }
         })
     }
+
+    fun publishStoppedEvent() = taskQueuePublisher.stopped()
 }
