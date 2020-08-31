@@ -3,13 +3,11 @@ package io.snyk.plugin.services
 import com.google.gson.Gson
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.SystemInfo
 import io.snyk.plugin.cli.*
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import org.apache.log4j.Logger
 import java.io.File
-import java.util.regex.Pattern
 
 /**
  * Wrap work with Snyk CLI.
@@ -24,26 +22,7 @@ class SnykCliService(val project: Project) {
     fun isCliInstalled(): Boolean {
         logger.info("Check whether Snyk CLI is installed")
 
-        return checkIsCliInstalledManuallyByUser() || checkIsCliInstalledAutomaticallyByPlugin()
-    }
-
-    fun checkIsCliInstalledManuallyByUser(): Boolean {
-        logger.debug("Check whether Snyk CLI is installed by user.")
-
-        val commands: List<String> = listOf(getCliCommandName(), "--version")
-
-        return try {
-            val consoleResultStr = getConsoleCommandRunner().execute(commands)
-
-            val pattern = Pattern.compile("^\\d+\\.\\d+\\.\\d+")
-            val matcher = pattern.matcher(consoleResultStr.trim())
-
-            matcher.matches()
-        } catch (exception: Exception) {
-            logger.error(exception.message)
-
-            false
-        }
+        return checkIsCliInstalledAutomaticallyByPlugin()
     }
 
     fun checkIsCliInstalledAutomaticallyByPlugin(): Boolean {
@@ -125,15 +104,12 @@ class SnykCliService(val project: Project) {
 
     private fun getCliCommandPath(): String {
         return when {
-            checkIsCliInstalledManuallyByUser() -> getCliCommandName()
             checkIsCliInstalledAutomaticallyByPlugin() -> getCliFile().absolutePath
             else -> {
                 throw RuntimeException("Snyk CLI not installed.")
             }
         }
     }
-
-    private fun getCliCommandName(): String = if (SystemInfo.isWindows) "snyk.cmd" else "snyk"
 
     private fun getConsoleCommandRunner(): ConsoleCommandRunner {
         if (consoleCommandRunner != null) {

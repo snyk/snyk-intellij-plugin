@@ -1,11 +1,9 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.cli.ConsoleCommandRunner
+fun setupDummyCliFile() {
+    val cliFile = getCliFile()
 
-fun getCliNotInstalledRunner(): ConsoleCommandRunner = object: ConsoleCommandRunner() {
-    override fun execute(commands: List<String>, workDirectory: String): String {
-        return "command not found"
+    if (!cliFile.exists()) {
+        cliFile.createNewFile()
     }
 }
-
-fun waitFor(timeoutSeconds: Long) = Thread.sleep(timeoutSeconds * 1000)

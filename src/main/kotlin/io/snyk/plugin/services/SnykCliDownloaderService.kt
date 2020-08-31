@@ -8,7 +8,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.tail
 import java.lang.String.format
@@ -80,7 +79,7 @@ class SnykCliDownloaderService(val project: Project) {
     }
 
     fun cliSilentAutoUpdate(indicator: ProgressIndicator) {
-        if (isCliInstalledByPlugin() && isFourDaysPassedSinceLastCheck()) {
+        if (isFourDaysPassedSinceLastCheck()) {
             val latestReleaseInfo = requestLatestReleasesInformation()
 
             indicator.checkCanceled()
@@ -96,12 +95,6 @@ class SnykCliDownloaderService(val project: Project) {
                 applicationSettingsStateService.lastCheckDate = Date()
             }
         }
-    }
-
-    fun isCliInstalledByPlugin(): Boolean {
-        val cli = getCli(project)
-
-        return !cli.checkIsCliInstalledManuallyByUser() && cli.checkIsCliInstalledAutomaticallyByPlugin()
     }
 
     fun isFourDaysPassedSinceLastCheck(): Boolean {

@@ -6,7 +6,7 @@ import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getCliNotInstalledRunner
+import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
 import org.mockito.Mockito
 import java.io.File
@@ -61,10 +61,12 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testScanWithErrorResult() {
-        val mockRunner = setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
+
+        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf("snyk", "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
             .thenReturn("""
                     {
                       "ok": false,
@@ -72,6 +74,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
                       "path": "/Users/user/Desktop/example-npm-project"
                     }
                 """.trimIndent())
+
+        getCli(project).setConsoleCommandRunner(mockRunner)
 
         val cliResult = getCli(project).scan()
 
@@ -84,11 +88,15 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testScanWithSuccessfulCliResult() {
-        val mockRunner = setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
+
+        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf("snyk", "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
             .thenReturn(getResourceAsString("group-vulnerabilities-test.json"))
+
+        getCli(project).setConsoleCommandRunner(mockRunner)
 
         val cliResult = getCli(project).scan()
 
@@ -110,45 +118,33 @@ class SnykCliServiceTest : LightPlatformTestCase() {
             cliFile.delete()
         }
 
-        val cli = getCli(project)
-
-        cli.setConsoleCommandRunner(getCliNotInstalledRunner())
-
-        val isCliInstalled = cli.isCliInstalled()
+        val isCliInstalled = getCli(project).isCliInstalled()
 
         assertFalse(isCliInstalled)
     }
 
     @Test
     fun testIsCliInstalledAutomaticallyByPluginFailed() {
-        val cli = getCli(project)
-
-        cli.setConsoleCommandRunner(getCliNotInstalledRunner())
-
         val cliFile = getCliFile()
 
         if (cliFile.exists()) {
             cliFile.delete()
         }
 
-        val isCliInstalled = cli.isCliInstalled()
+        val isCliInstalled = getCli(project).isCliInstalled()
 
         assertFalse(isCliInstalled)
     }
 
     @Test
     fun testIsCliInstalledAutomaticallyByPluginSuccess() {
-        val cli = getCli(project)
-
-        cli.setConsoleCommandRunner(getCliNotInstalledRunner())
-
         val cliFile = getCliFile()
 
         if (!cliFile.exists()) {
             cliFile.createNewFile()
         }
 
-        val isCliInstalled = cli.isCliInstalled()
+        val isCliInstalled = getCli(project).isCliInstalled()
 
         assertTrue(isCliInstalled)
 
@@ -157,34 +153,27 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testIsCliInstalledSuccess() {
-        val cli = getCli(project)
+        setupDummyCliFile()
 
-        cli.setConsoleCommandRunner(object: ConsoleCommandRunner() {
-            override fun execute(commands: List<String>, workDirectory: String): String {
-                return "1.290.2"
-            }
-        })
-
-        val isCliInstalled = cli.isCliInstalled()
+        val isCliInstalled = getCli(project).isCliInstalled()
 
         assertTrue(isCliInstalled)
     }
 
     @Test
     fun testBuildCliCommandsListForMaven() {
-        setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
 
         val defaultCommands =  getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
 
-        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
-
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("test", defaultCommands[2])
     }
 
     @Test
     fun testBuildCliCommandsListWithCustomEndpointParameter() {
-        setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
 
         val settingsStateService = getApplicationSettingsStateService()
 
@@ -192,7 +181,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
-        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -200,7 +189,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithInsecureParameter() {
-        setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
 
         val settings = getApplicationSettingsStateService()
 
@@ -208,7 +197,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(settings)
 
-        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--insecure", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -216,14 +205,14 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithOrganizationParameter() {
-        setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
 
         val settingsStateService = getApplicationSettingsStateService()
         settingsStateService.organization = "test-org"
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
-        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--org=test-org", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -231,13 +220,13 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithFileParameter() {
-        setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
         val defaultCommands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
 
-        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--file=package.json", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
@@ -245,7 +234,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testBuildCliCommandsListWithAllParameter() {
-        setupMockConsoleCommandRunnerForCliExists()
+        setupDummyCliFile()
 
         val settingsStateService = getApplicationSettingsStateService()
 
@@ -257,35 +246,13 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
-        assertTrue(defaultCommands[0] == "snyk" || defaultCommands[0] == "snyk.cmd")
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
         assertEquals("--insecure", defaultCommands[3])
         assertEquals("--org=test-org", defaultCommands[4])
         assertEquals("--file=package.json", defaultCommands[5])
         assertEquals("test", defaultCommands[6])
-    }
-
-    @Test
-    fun testCheckIsCliInstalledManuallyByUserSuccessful() {
-        val cli = getCli(project)
-
-        cli.setConsoleCommandRunner(object: ConsoleCommandRunner() {
-            override fun execute(commands: List<String>, workDirectory: String): String {
-                return "1.381.1"
-            }
-        })
-
-        assertTrue(cli.checkIsCliInstalledManuallyByUser())
-    }
-
-    @Test
-    fun testCheckIsCliInstalledManuallyByUserFailed() {
-        val cli = getCli(project)
-
-        cli.setConsoleCommandRunner(getCliNotInstalledRunner())
-
-        assertFalse(cli.checkIsCliInstalledManuallyByUser())
     }
 
     @Test
@@ -314,16 +281,4 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
         .getResource(resourceName)!!.readText(Charsets.UTF_8)
-
-    private fun setupMockConsoleCommandRunnerForCliExists(): ConsoleCommandRunner {
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
-
-        Mockito
-            .`when`(mockRunner.execute(listOf("snyk", "--version")))
-            .thenReturn("1.381.1")
-
-        getCli(project).setConsoleCommandRunner(mockRunner)
-
-        return mockRunner
-    }
 }

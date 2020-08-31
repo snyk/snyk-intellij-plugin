@@ -4,6 +4,8 @@ import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCli
+import io.snyk.plugin.getCliFile
+import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
 import org.mockito.Mockito
 
@@ -11,14 +13,12 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testSnykTaskQueueService() {
+        setupDummyCliFile()
+
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf("snyk", "--version")))
-            .thenReturn("1.381.1")
-
-        Mockito
-            .`when`(mockRunner.execute(listOf("snyk", "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
             .thenReturn(javaClass.classLoader.getResource("group-vulnerabilities-test.json")!!.readText(Charsets.UTF_8))
 
         getCli(project).setConsoleCommandRunner(mockRunner)
