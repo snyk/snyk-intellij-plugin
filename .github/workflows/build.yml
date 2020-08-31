@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   gradleValidation:
-    name: Gradle Wrapper
+    name: Validate Gradle Wrapper
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
@@ -16,6 +16,7 @@ jobs:
     name: Test
     needs: gradleValidation
     runs-on: ubuntu-latest
+    container: gradle:jdk8
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
