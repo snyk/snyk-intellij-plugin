@@ -32,11 +32,19 @@ class SnykCliService(val project: Project) {
     }
 
     fun scan(): CliResult {
-        val commands = buildCliCommandsList(getApplicationSettingsStateService())
+        val applicationSettings = getApplicationSettingsStateService()
+
+        val commands = buildCliCommandsList(applicationSettings)
 
         val projectPath = project.basePath!!
 
-        val snykResultJsonStr = getConsoleCommandRunner().execute(commands, projectPath)
+        val apiToken = if (applicationSettings.token != null) {
+            applicationSettings.token!!
+        } else {
+            ""
+        }
+
+        val snykResultJsonStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
 
         return if (snykResultJsonStr.contains("\"vulnerabilities\":") && !snykResultJsonStr.contains("\"error\":")) {
             jsonToCliResult(snykResultJsonStr)

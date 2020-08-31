@@ -22,6 +22,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val settingsStateService = getApplicationSettingsStateService()
 
         settingsStateService.ignoreUnknownCA = false
+        settingsStateService.token = ""
         settingsStateService.customEndpointUrl = ""
         settingsStateService.cliVersion = ""
         settingsStateService.lastCheckDate = null
@@ -238,6 +239,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val settingsStateService = getApplicationSettingsStateService()
 
+        settingsStateService.token = "0000-1111-2222-3333"
         settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
         settingsStateService.organization = "test-org"
         settingsStateService.ignoreUnknownCA = true

@@ -8,7 +8,7 @@ import java.nio.charset.Charset
 open class ConsoleCommandRunner {
     private val logger: Logger = Logger.getLogger(ConsoleCommandRunner::class.java)
 
-    open fun execute(commands: List<String>, workDirectory: String = "/"): String {
+    open fun execute(commands: List<String>, workDirectory: String = "/", apiToken: String = ""): String {
         logger.info("Enter ConsoleCommandRunner.execute()")
         logger.info("Commands: $commands")
 
@@ -16,6 +16,10 @@ open class ConsoleCommandRunner {
 
         generalCommandLine.charset = Charset.forName("UTF-8")
         generalCommandLine.setWorkDirectory(workDirectory)
+
+        if (apiToken.isNotEmpty()) {
+            generalCommandLine.environment.put("SNYK_TOKEN", apiToken)
+        }
 
         logger.info("GeneralCommandLine instance created.")
         logger.info("Execute ScriptRunnerUtil.getProcessOutput(...)")

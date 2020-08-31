@@ -14,7 +14,7 @@ fun getCli(project: Project): SnykCliService = project.service()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
-fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = service<SnykApplicationSettingsStateService>()
+fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = service()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
@@ -26,8 +26,8 @@ val <T> List<T>.tail: List<T>
 val <T> List<T>.head: T
     get() = first()
 
-fun isUrlValid(url: String): Boolean {
-    if (url.isEmpty()) {
+fun isUrlValid(url: String?): Boolean {
+    if (url == null || url.isEmpty()) {
         return true
     }
 

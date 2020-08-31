@@ -25,7 +25,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
     override fun createComponent(): JComponent = snykSettingsDialog.getRootPanel()
 
-    override fun isModified(): Boolean = isCustomEndpointModified()
+    override fun isModified(): Boolean = isTokenModified()
+        || isCustomEndpointModified()
         || isOrganizationModified()
         || isIgnoreUnknownCAModified()
         || isAdditionalParametersModified()
@@ -38,6 +39,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         }
 
         applicationSettingsStateService.customEndpointUrl = customEndpoint
+        applicationSettingsStateService.token = snykSettingsDialog.getToken()
         applicationSettingsStateService.organization = snykSettingsDialog.getOrganization()
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
@@ -45,6 +47,9 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
     }
+
+    private fun isTokenModified(): Boolean =
+        snykSettingsDialog.getToken() != applicationSettingsStateService.token
 
     private fun isCustomEndpointModified(): Boolean =
         snykSettingsDialog.getCustomEndpoint() != applicationSettingsStateService.customEndpointUrl
