@@ -32,21 +32,29 @@ class SnykCliService(val project: Project) {
     }
 
     fun scan(): CliResult {
-        val applicationSettings = getApplicationSettingsStateService()
+        try {
+            val applicationSettings = getApplicationSettingsStateService()
 
-        val commands = buildCliCommandsList(applicationSettings)
+            val commands = buildCliCommandsList(applicationSettings)
 
-        val projectPath = project.basePath!!
+            val projectPath = project.basePath!!
 
-        val apiToken = if (applicationSettings.token != null) {
-            applicationSettings.token!!
-        } else {
-            ""
+            val apiToken = if (applicationSettings.token != null) {
+                applicationSettings.token!!
+            } else {
+                ""
+            }
+
+            val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
+
+            return convertRawCliStringToCliResult(rawResultStr, projectPath)
+        } catch (exception: CliNotExistsException) {
+            val cliResult = CliResult()
+
+            cliResult.error = CliError(false, exception.message ?: "", project.basePath ?: "")
+
+            return cliResult
         }
-
-        val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
-
-        return convertRawCliStringToCliResult(rawResultStr, projectPath)
     }
 
     /**
@@ -130,7 +138,7 @@ class SnykCliService(val project: Project) {
         return when {
             checkIsCliInstalledAutomaticallyByPlugin() -> getCliFile().absolutePath
             else -> {
-                throw RuntimeException("Snyk CLI not installed.")
+                throw CliNotExistsException()
             }
         }
     }
