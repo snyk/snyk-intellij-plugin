@@ -44,18 +44,34 @@ class SnykCliService(val project: Project) {
             ""
         }
 
-        val snykResultJsonStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
+        val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
 
-        return if (snykResultJsonStr.contains("\"vulnerabilities\":") && !snykResultJsonStr.contains("\"error\":")) {
-            jsonToCliResult(snykResultJsonStr)
+        return convertRawCliStringToCliResult(rawResultStr, projectPath)
+    }
+
+    /**
+     * If result string not contains 'error' string and contain 'vulnerabilities' it says that everything is correct.
+     * If result string not contains '{' it means CLI return an error.
+     * And if result string contains 'error' and not contain 'vulnerabilities' it means CLI return error in JSON format.
+     */
+    fun convertRawCliStringToCliResult(rawStr: String, projectPath: String): CliResult =
+        if (rawStr.contains("\"vulnerabilities\":")
+            && !rawStr.contains("\"error\":")) {
+
+            jsonToCliResult(rawStr)
+        } else if (rawStr.first() != '{') {
+            val cliResult = CliResult()
+
+            cliResult.error = CliError(false, rawStr, projectPath)
+
+            cliResult
         } else {
             val cliResult = CliResult()
 
-            cliResult.error = jsonToCliError(snykResultJsonStr)
+            cliResult.error = jsonToCliError(rawStr)
 
             cliResult
         }
-    }
 
     fun jsonToCliResult(snykResultJsonStr: String): CliResult =
         Gson().fromJson(snykResultJsonStr, CliResult::class.java)
