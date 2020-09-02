@@ -49,11 +49,9 @@ class SnykCliService(val project: Project) {
 
             return convertRawCliStringToCliResult(rawResultStr, projectPath)
         } catch (exception: CliNotExistsException) {
-            val cliResult = CliResult()
-
-            cliResult.error = CliError(false, exception.message ?: "", project.basePath ?: "")
-
-            return cliResult
+            return CliResult(
+                null,
+                CliError(false, exception.message ?: "", project.basePath ?: ""))
         }
     }
 
@@ -63,29 +61,24 @@ class SnykCliService(val project: Project) {
      * And if result string contains 'error' and not contain 'vulnerabilities' it means CLI return error in JSON format.
      */
     fun convertRawCliStringToCliResult(rawStr: String, projectPath: String): CliResult =
-        if (rawStr.contains("\"vulnerabilities\":")
-            && !rawStr.contains("\"error\":")) {
-
-            jsonToCliResult(rawStr)
-        } else if (rawStr.first() != '{') {
-            val cliResult = CliResult()
-
-            cliResult.error = CliError(false, rawStr, projectPath)
-
-            cliResult
-        } else {
-            val cliResult = CliResult()
-
-            cliResult.error = jsonToCliError(rawStr)
-
-            cliResult
+        when {
+            rawStr.first() == '[' -> {
+                CliResult(Gson().fromJson(rawStr, Array<CliVulnerabilities>::class.java), null)
+            }
+            rawStr.first() == '{' -> {
+                if (isSuccessCliJsonString(rawStr)) {
+                    CliResult(arrayOf(Gson().fromJson(rawStr, CliVulnerabilities::class.java)), null)
+                } else {
+                    CliResult(null, Gson().fromJson(rawStr, CliError::class.java))
+                }
+            }
+            else -> {
+                CliResult(null, CliError(false, rawStr, projectPath))
+            }
         }
 
-    fun jsonToCliResult(snykResultJsonStr: String): CliResult =
-        Gson().fromJson(snykResultJsonStr, CliResult::class.java)
-
-    fun jsonToCliError(snykResultJsonStr: String): CliError =
-        Gson().fromJson(snykResultJsonStr, CliError::class.java)
+    fun isSuccessCliJsonString(jsonStr: String): Boolean = jsonStr.contains("\"vulnerabilities\":")
+                                                            && !jsonStr.contains("\"error\":")
 
     /**
      * Build list of commands for run Snyk CLI command.

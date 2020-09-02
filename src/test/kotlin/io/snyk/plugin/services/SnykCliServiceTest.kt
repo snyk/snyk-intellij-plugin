@@ -35,9 +35,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testGroupVulnerabilities() {
         val cli = getCli(project)
 
-        val cliResult = cli.jsonToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
+        val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"), "")
 
-        val cliGroupedResult = cliResult.toCliGroupedResult()
+        val cliGroupedResult = cliResult.vulnerabilities!!.first().toCliGroupedResult()
 
         assertEquals(21, cliGroupedResult.uniqueCount)
         assertEquals(36, cliGroupedResult.pathsCount)
@@ -104,7 +104,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertTrue(cliResult.isSuccessful())
 
 
-        val vulnerabilityIds = cliResult.vulnerabilities.map { it.id }
+        val vulnerabilityIds = cliResult.vulnerabilities!!.first().vulnerabilities.map { it.id }
 
         assertTrue(vulnerabilityIds.contains("SNYK-JS-DOTPROP-543489"))
         assertTrue(vulnerabilityIds.contains("SNYK-JS-OPEN-174041"))
@@ -279,6 +279,39 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         }
 
         assertFalse(getCli(project).checkIsCliInstalledAutomaticallyByPlugin())
+    }
+
+    @Test
+    fun testConvertRawCliStringToCliResult() {
+        val cli = getCli(project)
+
+        val sigleObjectCliResult = cli
+            .convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"), "")
+        assertTrue(sigleObjectCliResult.isSuccessful())
+
+        val arrayObjectCliResult = cli
+            .convertRawCliStringToCliResult(getResourceAsString("vulnerabilities-array-cli-result.json"), "")
+        assertTrue(arrayObjectCliResult.isSuccessful())
+
+        val jsonErrorCliResult = cli.convertRawCliStringToCliResult("""
+                    {
+                      "ok": false,
+                      "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
+                      "path": "/Users/user/Desktop/example-npm-project"
+                    }
+                """.trimIndent(), "")
+        assertFalse(jsonErrorCliResult.isSuccessful())
+        assertEquals("Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
+            jsonErrorCliResult.error!!.message)
+        assertEquals("/Users/user/Desktop/example-npm-project", jsonErrorCliResult.error!!.path)
+
+        val rawErrorCliResult = cli.convertRawCliStringToCliResult("""
+                    Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.
+                """.trimIndent(), "")
+        assertFalse(rawErrorCliResult.isSuccessful())
+        assertEquals("Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.",
+            rawErrorCliResult.error!!.message)
+        assertEquals("", rawErrorCliResult.error!!.path)
     }
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader

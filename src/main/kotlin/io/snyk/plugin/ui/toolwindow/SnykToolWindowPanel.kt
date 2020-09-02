@@ -14,7 +14,6 @@ import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.cli.CliError
-import io.snyk.plugin.cli.CliGroupedResult
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
@@ -58,7 +57,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 ApplicationManager.getApplication().invokeLater { displayScanningMessage() }
 
             override fun scanningFinished(cliResult: CliResult) =
-                ApplicationManager.getApplication().invokeLater { displayVulnerabilities(cliResult.toCliGroupedResult()) }
+                ApplicationManager.getApplication().invokeLater { displayVulnerabilities(cliResult) }
 
             override fun scanError(cliError: CliError) =
                 ApplicationManager.getApplication().invokeLater { displayError(cliError) }
@@ -148,13 +147,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun isEmpty(): Boolean = rootTreeNode.childCount == 0
 
-    fun displayVulnerabilities(cliGroupedResult: CliGroupedResult) {
+    fun displayVulnerabilities(cliResult: CliResult) {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
 
             rootTreeNode.removeAllChildren()
 
-            rootTreeNode.userObject = "Found ${cliGroupedResult.uniqueCount} issues."
+            rootTreeNode.userObject = "Found ${cliResult.issuesCount()} issues."
 
             add(vulnerabilitiesSplitter, BorderLayout.CENTER)
 
@@ -179,11 +178,19 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             vulnerabilitiesSplitter.firstComponent = ScrollPaneFactory.createScrollPane(vulnerabilitiesTree)
             vulnerabilitiesSplitter.secondComponent = descriptionPanel
 
-            val fileTreeNode = TargetFileTreeNode(cliGroupedResult.displayTargetFile)
-            rootTreeNode.add(fileTreeNode)
+            if (cliResult.vulnerabilities != null) {
+                cliResult.vulnerabilities!!.forEach { vulnerability ->
+                    if (vulnerability.vulnerabilities.isNotEmpty()) {
+                        val cliGroupedResult = vulnerability.toCliGroupedResult()
 
-            cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
-                fileTreeNode.add(VulnerabilityTreeNode(cliGroupedResult.vulnerabilitiesMap.getValue(id).head))
+                        val fileTreeNode = TargetFileTreeNode(cliGroupedResult.displayTargetFile)
+                        rootTreeNode.add(fileTreeNode)
+
+                        cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
+                            fileTreeNode.add(VulnerabilityTreeNode(cliGroupedResult.vulnerabilitiesMap.getValue(id).head))
+                        }
+                    }
+                }
             }
 
             reloadTree()
