@@ -103,12 +103,33 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         assertTrue(cliResult.isSuccessful())
 
-
         val vulnerabilityIds = cliResult.vulnerabilities!!.first().vulnerabilities.map { it.id }
 
         assertTrue(vulnerabilityIds.contains("SNYK-JS-DOTPROP-543489"))
         assertTrue(vulnerabilityIds.contains("SNYK-JS-OPEN-174041"))
         assertTrue(vulnerabilityIds.contains("npm:qs:20140806-1"))
+    }
+
+    @Test
+    fun testScanWithLicenseVulnerabilities() {
+        setupDummyCliFile()
+
+        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+
+        Mockito
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .thenReturn(getResourceAsString("licence-vulnerabilities.json"))
+
+        getCli(project).setConsoleCommandRunner(mockRunner)
+
+        val cliResult = getCli(project).scan()
+
+        assertTrue(cliResult.isSuccessful())
+
+        val vulnerabilityIds = cliResult.vulnerabilities!!.first().vulnerabilities.map { it.id }
+
+        assertTrue(vulnerabilityIds.contains("snyk:lic:pip:nltk:Apache-2.0"))
+        assertTrue(vulnerabilityIds.contains("snyk:lic:pip:six:MIT"))
     }
 
     @Test
