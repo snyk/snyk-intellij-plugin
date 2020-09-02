@@ -15,7 +15,6 @@ import java.net.URL
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.*
-import java.util.Objects.nonNull
 
 @Service
 class SnykCliDownloaderService(val project: Project) {
@@ -86,8 +85,7 @@ class SnykCliDownloaderService(val project: Project) {
 
             val applicationSettingsStateService = getApplicationSettingsStateService()
 
-            if (nonNull(latestReleaseInfo)
-                && latestReleaseInfo?.tagName != null && latestReleaseInfo.tagName.isNotEmpty()
+            if (latestReleaseInfo?.tagName != null && latestReleaseInfo.tagName.isNotEmpty()
                 && isNewVersionAvailable(applicationSettingsStateService.cliVersion, cliVersionNumbers(latestReleaseInfo.tagName))) {
 
                 downloadLatestRelease(indicator)
