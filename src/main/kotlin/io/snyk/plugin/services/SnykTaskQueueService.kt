@@ -1,7 +1,9 @@
 package io.snyk.plugin.services
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
@@ -11,6 +13,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykCliScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getCli
+
 
 @Service
 class SnykTaskQueueService(val project: Project) {
@@ -35,6 +38,10 @@ class SnykTaskQueueService(val project: Project) {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 cliScanPublisher.scanningStarted()
+
+                ApplicationManager.getApplication().invokeAndWait {
+                    FileDocumentManager.getInstance().saveAllDocuments()
+                }
 
                 indicator.checkCanceled()
 
