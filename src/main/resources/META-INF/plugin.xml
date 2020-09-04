@@ -1,13 +1,16 @@
 <idea-plugin url="snyk.io">
   <id>io.snyk.snyk-intellij-plugin</id>
-  <name>Snyk Vulnerability Scanning</name>
+  <name>Snyk Vulnerability Scanner</name>
   <vendor url="https://snyk.io">Snyk Ltd.</vendor>
 
   <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.modules.platform</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="Snyk" anchor="bottom" factoryClass="io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory"/>
+    <toolWindow id="Snyk"
+                anchor="bottom"
+                icon="/icons/toolWindowSnyk.svg"
+                factoryClass="io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory"/>
 
     <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
 
