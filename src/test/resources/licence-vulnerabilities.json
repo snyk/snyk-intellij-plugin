@@ -1,0 +1,414 @@
+{
+  "vulnerabilities": [
+    {
+      "CVSSv3": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:N/E:F/RL:O/RC:C",
+      "alternativeIds": [],
+      "creationTime": "2019-08-23T13:31:37.204797Z",
+      "credit": [
+        "Mike Salvatore"
+      ],
+      "cvssScore": 5.5,
+      "description": "## Overview\n\n[nltk](http://www.nltk.org) is a Natural Language Toolkit (NLTK) is a Python package for natural language processing.\n\n\nAffected versions of this package are vulnerable to Arbitrary File Write via Archive Extraction (Zip Slip).\nIt allows attackers to write arbitrary files via a `../` (dot dot slash) in an NLTK package (ZIP archive) that is mishandled during extraction.\n\n## Details\nIt is exploited using a specially crafted zip archive, that holds path traversal filenames. When exploited, a filename in a malicious archive is concatenated to the target extraction directory, which results in the final path ending up outside of the target folder. For instance, a zip may hold a file with a \"../../file.exe\" location and thus break out of the target folder. If an executable or a configuration file is overwritten with a file containing malicious code, the problem can turn into an arbitrary code execution issue quite easily.\r\n\r\nThe following is an example of a zip archive with one benign file and one malicious file. Extracting the malicous file will result in traversing out of the target folder, ending up in `/root/.ssh/` overwriting the `authorized_keys` file:\r\n\r\n```\r\n\r\n+2018-04-15 22:04:29 ..... 19 19 good.txt\r\n\r\n+2018-04-15 22:04:42 ..... 20 20 ../../../../../../root/.ssh/authorized_keys\r\n\r\n```\n\n## Remediation\n\nUpgrade `nltk` to version 3.4.5 or higher.\n\n\n## References\n\n- [GitHub Commit](https://github.com/nltk/nltk/commit/f59d7ed8df2e0e957f7f247fe218032abdbe9a10)\n\n- [Mike Salvatore's Article on Zip-slip](https://salvatoresecurity.com/zip-slip-in-nltk-cve-2019-14751/)\n\n- [NLTK Changelog](https://github.com/nltk/nltk/blob/3.4.5/ChangeLog)\n\n- [Proof of Concept (Mike Salvatore)](https://github.com/mssalvatore/CVE-2019-14751_PoC)\n",
+      "disclosureTime": "2019-08-22T16:47:40Z",
+      "exploit": "Functional",
+      "fixedIn": [
+        "3.4.5"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-PYTHON-NLTK-460224",
+      "identifiers": {
+        "CVE": [
+          "CVE-2019-14751"
+        ],
+        "CWE": [
+          "CWE-29"
+        ],
+        "GHSA": [
+          "GHSA-mr7p-25v2-35wr"
+        ]
+      },
+      "language": "python",
+      "modificationTime": "2019-08-23T17:30:48.542575Z",
+      "moduleName": "nltk",
+      "packageManager": "pip",
+      "packageName": "nltk",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2019-08-22T16:47:40Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/nltk/nltk/commit/f59d7ed8df2e0e957f7f247fe218032abdbe9a10"
+        },
+        {
+          "title": "Mike Salvatore's Article on Zip-slip",
+          "url": "https://salvatoresecurity.com/zip-slip-in-nltk-cve-2019-14751/"
+        },
+        {
+          "title": "NLTK Changelog",
+          "url": "https://github.com/nltk/nltk/blob/3.4.5/ChangeLog"
+        },
+        {
+          "title": "Proof of Concept (Mike Salvatore)",
+          "url": "https://github.com/mssalvatore/CVE-2019-14751_PoC"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[,3.4.5)"
+        ]
+      },
+      "severity": "medium",
+      "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
+      "from": [
+        "Python-Sample-Application@0.0.0",
+        "nltk@3.3"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "nltk",
+      "version": "3.3"
+    },
+    {
+      "license": "Apache-2.0",
+      "semver": {
+        "vulnerable": [
+          "[2.0b4,)"
+        ]
+      },
+      "id": "snyk:lic:pip:nltk:Apache-2.0",
+      "type": "license",
+      "packageManager": "pip",
+      "language": "python",
+      "packageName": "nltk",
+      "title": "Apache-2.0 license",
+      "description": "Apache-2.0 license",
+      "publicationTime": "2020-08-30T21:45:09.683Z",
+      "creationTime": "2020-08-30T21:45:09.683Z",
+      "patches": [],
+      "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/Apache-2.0.txt",
+      "severity": "medium",
+      "from": [
+        "Python-Sample-Application@0.0.0",
+        "nltk@3.3"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "nltk",
+      "version": "3.3"
+    },
+    {
+      "license": "MIT",
+      "semver": {
+        "vulnerable": [
+          "[0,)"
+        ]
+      },
+      "id": "snyk:lic:pip:six:MIT",
+      "type": "license",
+      "packageManager": "pip",
+      "language": "python",
+      "packageName": "six",
+      "title": "MIT license",
+      "description": "MIT license",
+      "publicationTime": "2020-08-30T23:27:14.540Z",
+      "creationTime": "2020-08-30T23:27:14.540Z",
+      "patches": [],
+      "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/MIT.txt",
+      "severity": "low",
+      "from": [
+        "Python-Sample-Application@0.0.0",
+        "nltk@3.3",
+        "six@1.11.0"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "six",
+      "version": "1.11.0"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 2,
+  "org": "pavel-snyk-org-with-licenses",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.19.0\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": {
+    "severities": {},
+    "orgLicenseRules": {
+      "LGPL-3.0": {
+        "licenseType": "LGPL-3.0",
+        "severity": "medium"
+      },
+      "LGPL-2.0": {
+        "licenseType": "LGPL-2.0",
+        "severity": "medium"
+      },
+      "LGPL-2.1": {
+        "licenseType": "LGPL-2.1",
+        "severity": "medium"
+      },
+      "EPL-1.0": {
+        "licenseType": "EPL-1.0",
+        "severity": "medium"
+      },
+      "MIT": {
+        "licenseType": "MIT",
+        "severity": "low"
+      },
+      "Unknown": {
+        "licenseType": "Unknown",
+        "severity": "high",
+        "instructions": "Here be monsters!"
+      },
+      "AFL-3.0": {
+        "licenseType": "AFL-3.0",
+        "severity": "medium"
+      },
+      "AFL-2.1": {
+        "licenseType": "AFL-2.1",
+        "severity": "medium"
+      },
+      "AFL-2.0": {
+        "licenseType": "AFL-2.0",
+        "severity": "medium"
+      },
+      "AFL-1.2": {
+        "licenseType": "AFL-1.2",
+        "severity": "medium"
+      },
+      "ADSL": {
+        "licenseType": "ADSL",
+        "severity": "medium"
+      },
+      "Adobe-2006": {
+        "licenseType": "Adobe-2006",
+        "severity": "medium"
+      },
+      "Adobe-Glyph": {
+        "licenseType": "Adobe-Glyph",
+        "severity": "medium"
+      },
+      "Abstyles": {
+        "licenseType": "Abstyles",
+        "severity": "medium"
+      },
+      "AAL": {
+        "licenseType": "AAL",
+        "severity": "low"
+      },
+      "0BSD": {
+        "licenseType": "0BSD",
+        "severity": "medium"
+      },
+      "AGPL-1.0": {
+        "licenseType": "AGPL-1.0",
+        "severity": "medium"
+      },
+      "AGPL-3.0": {
+        "licenseType": "AGPL-3.0",
+        "severity": "medium"
+      },
+      "Apache-1.0": {
+        "licenseType": "Apache-1.0",
+        "severity": "medium"
+      },
+      "Aladdin": {
+        "licenseType": "Aladdin",
+        "severity": "medium"
+      },
+      "AMDPLPA": {
+        "licenseType": "AMDPLPA",
+        "severity": "medium"
+      },
+      "AML": {
+        "licenseType": "AML",
+        "severity": "medium"
+      },
+      "AMPAS": {
+        "licenseType": "AMPAS",
+        "severity": "medium"
+      },
+      "ANTLR-PD": {
+        "licenseType": "ANTLR-PD",
+        "severity": "medium"
+      },
+      "Apache-1.1": {
+        "licenseType": "Apache-1.1",
+        "severity": "medium"
+      },
+      "Apache-2.0": {
+        "licenseType": "Apache-2.0",
+        "severity": "medium"
+      },
+      "APAFML": {
+        "licenseType": "APAFML",
+        "severity": "medium"
+      }
+    }
+  },
+  "packageManager": "pip",
+  "ignoreSettings": null,
+  "summary": "3 vulnerable dependency paths",
+  "remediation": {
+    "unresolved": [
+      {
+        "CVSSv3": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:N/E:F/RL:O/RC:C",
+        "alternativeIds": [],
+        "creationTime": "2019-08-23T13:31:37.204797Z",
+        "credit": [
+          "Mike Salvatore"
+        ],
+        "cvssScore": 5.5,
+        "description": "## Overview\n\n[nltk](http://www.nltk.org) is a Natural Language Toolkit (NLTK) is a Python package for natural language processing.\n\n\nAffected versions of this package are vulnerable to Arbitrary File Write via Archive Extraction (Zip Slip).\nIt allows attackers to write arbitrary files via a `../` (dot dot slash) in an NLTK package (ZIP archive) that is mishandled during extraction.\n\n## Details\nIt is exploited using a specially crafted zip archive, that holds path traversal filenames. When exploited, a filename in a malicious archive is concatenated to the target extraction directory, which results in the final path ending up outside of the target folder. For instance, a zip may hold a file with a \"../../file.exe\" location and thus break out of the target folder. If an executable or a configuration file is overwritten with a file containing malicious code, the problem can turn into an arbitrary code execution issue quite easily.\r\n\r\nThe following is an example of a zip archive with one benign file and one malicious file. Extracting the malicous file will result in traversing out of the target folder, ending up in `/root/.ssh/` overwriting the `authorized_keys` file:\r\n\r\n```\r\n\r\n+2018-04-15 22:04:29 ..... 19 19 good.txt\r\n\r\n+2018-04-15 22:04:42 ..... 20 20 ../../../../../../root/.ssh/authorized_keys\r\n\r\n```\n\n## Remediation\n\nUpgrade `nltk` to version 3.4.5 or higher.\n\n\n## References\n\n- [GitHub Commit](https://github.com/nltk/nltk/commit/f59d7ed8df2e0e957f7f247fe218032abdbe9a10)\n\n- [Mike Salvatore's Article on Zip-slip](https://salvatoresecurity.com/zip-slip-in-nltk-cve-2019-14751/)\n\n- [NLTK Changelog](https://github.com/nltk/nltk/blob/3.4.5/ChangeLog)\n\n- [Proof of Concept (Mike Salvatore)](https://github.com/mssalvatore/CVE-2019-14751_PoC)\n",
+        "disclosureTime": "2019-08-22T16:47:40Z",
+        "exploit": "Functional",
+        "fixedIn": [
+          "3.4.5"
+        ],
+        "functions": [],
+        "functions_new": [],
+        "id": "SNYK-PYTHON-NLTK-460224",
+        "identifiers": {
+          "CVE": [
+            "CVE-2019-14751"
+          ],
+          "CWE": [
+            "CWE-29"
+          ],
+          "GHSA": [
+            "GHSA-mr7p-25v2-35wr"
+          ]
+        },
+        "language": "python",
+        "modificationTime": "2019-08-23T17:30:48.542575Z",
+        "moduleName": "nltk",
+        "packageManager": "pip",
+        "packageName": "nltk",
+        "patches": [],
+        "proprietary": false,
+        "publicationTime": "2019-08-22T16:47:40Z",
+        "references": [
+          {
+            "title": "GitHub Commit",
+            "url": "https://github.com/nltk/nltk/commit/f59d7ed8df2e0e957f7f247fe218032abdbe9a10"
+          },
+          {
+            "title": "Mike Salvatore's Article on Zip-slip",
+            "url": "https://salvatoresecurity.com/zip-slip-in-nltk-cve-2019-14751/"
+          },
+          {
+            "title": "NLTK Changelog",
+            "url": "https://github.com/nltk/nltk/blob/3.4.5/ChangeLog"
+          },
+          {
+            "title": "Proof of Concept (Mike Salvatore)",
+            "url": "https://github.com/mssalvatore/CVE-2019-14751_PoC"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[,3.4.5)"
+          ]
+        },
+        "severity": "medium",
+        "title": "Arbitrary File Write via Archive Extraction (Zip Slip)",
+        "from": [
+          "Python-Sample-Application@0.0.0",
+          "nltk@3.3"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": true,
+        "name": "nltk",
+        "version": "3.3"
+      },
+      {
+        "license": "Apache-2.0",
+        "semver": {
+          "vulnerable": [
+            "[2.0b4,)"
+          ]
+        },
+        "id": "snyk:lic:pip:nltk:Apache-2.0",
+        "type": "license",
+        "packageManager": "pip",
+        "language": "python",
+        "packageName": "nltk",
+        "title": "Apache-2.0 license",
+        "description": "Apache-2.0 license",
+        "publicationTime": "2020-08-30T21:45:09.683Z",
+        "creationTime": "2020-08-30T21:45:09.683Z",
+        "patches": [],
+        "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/Apache-2.0.txt",
+        "severity": "medium",
+        "from": [
+          "Python-Sample-Application@0.0.0",
+          "nltk@3.3"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "name": "nltk",
+        "version": "3.3"
+      },
+      {
+        "license": "MIT",
+        "semver": {
+          "vulnerable": [
+            "[0,)"
+          ]
+        },
+        "id": "snyk:lic:pip:six:MIT",
+        "type": "license",
+        "packageManager": "pip",
+        "language": "python",
+        "packageName": "six",
+        "title": "MIT license",
+        "description": "MIT license",
+        "publicationTime": "2020-08-30T23:27:14.540Z",
+        "creationTime": "2020-08-30T23:27:14.540Z",
+        "patches": [],
+        "licenseTemplateUrl": "https://raw.githubusercontent.com/spdx/license-list/master/MIT.txt",
+        "severity": "low",
+        "from": [
+          "Python-Sample-Application@0.0.0",
+          "nltk@3.3",
+          "six@1.11.0"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "name": "six",
+        "version": "1.11.0"
+      }
+    ],
+    "upgrade": {},
+    "patch": {},
+    "ignore": {},
+    "pin": {
+      "nltk@3.3": {
+        "upgradeTo": "nltk@3.4.5",
+        "vulns": [
+          "SNYK-PYTHON-NLTK-460224"
+        ],
+        "isTransitive": false
+      }
+    }
+  },
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 3,
+  "projectName": "Python-Sample-Application",
+  "displayTargetFile": "requirements.txt",
+  "path": "/Users/aleksandr/Temp/snyk-test-projects/python/Python-Sample-Application"
+}
