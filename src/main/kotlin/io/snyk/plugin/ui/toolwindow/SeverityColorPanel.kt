@@ -10,9 +10,9 @@ class SeverityColorPanel(private val severity: String) : JPanel() {
         super.paintComponent(graphics)
 
         graphics.color = when (severity) {
-            "high" -> Color.decode("#B31B6B")
-            "medium" -> Color.decode("#DF8620")
-            "low" -> Color.decode("#595775")
+            "high" -> Color.decode("#C75450")
+            "medium" -> Color.decode("#EDA200")
+            "low" -> Color.decode("#6E6E6E")
             else -> UIUtil.getPanelBackground()
         }
 
