@@ -18,7 +18,7 @@ open class ConsoleCommandRunner {
         generalCommandLine.setWorkDirectory(workDirectory)
 
         if (apiToken.isNotEmpty()) {
-            generalCommandLine.environment.put("SNYK_TOKEN", apiToken)
+            generalCommandLine.environment["SNYK_TOKEN"] = apiToken
         }
 
         logger.info("GeneralCommandLine instance created.")
