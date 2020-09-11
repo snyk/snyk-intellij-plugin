@@ -32,24 +32,18 @@ class SnykCliService(val project: Project) {
     }
 
     fun scan(): CliResult {
-        try {
+        return try {
             val applicationSettings = getApplicationSettingsStateService()
 
             val commands = buildCliCommandsList(applicationSettings)
-
             val projectPath = project.basePath!!
-
-            val apiToken = if (applicationSettings.token != null) {
-                applicationSettings.token!!
-            } else {
-                ""
-            }
+            val apiToken = applicationSettings.token ?: ""
 
             val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
 
-            return convertRawCliStringToCliResult(rawResultStr, projectPath)
+            convertRawCliStringToCliResult(rawResultStr, projectPath)
         } catch (exception: CliNotExistsException) {
-            return CliResult(
+            CliResult(
                 null,
                 CliError(false, exception.message ?: "", project.basePath ?: ""))
         }
@@ -78,7 +72,7 @@ class SnykCliService(val project: Project) {
         }
 
     fun isSuccessCliJsonString(jsonStr: String): Boolean = jsonStr.contains("\"vulnerabilities\":")
-                                                            && !jsonStr.contains("\"error\":")
+        && !jsonStr.contains("\"error\":")
 
     /**
      * Build list of commands for run Snyk CLI command.
@@ -116,6 +110,10 @@ class SnykCliService(val project: Project) {
             commands.add(additionalParameters)
         }
 
+        if (additionalParameters == null || !additionalParameters.contains("--file")) {
+            addAllProjectsOption(commands)
+        }
+
         commands.add("test")
 
         logger.info("Cli parameters: $commands")
@@ -126,6 +124,13 @@ class SnykCliService(val project: Project) {
     fun setConsoleCommandRunner(newRunner: ConsoleCommandRunner?) {
         this.consoleCommandRunner = newRunner
     }
+
+    private fun addAllProjectsOption(commands: MutableList<String>) = when {
+        isGradleProject() -> commands.add("--all-sub-projects")
+        else -> commands.add("--all-projects")
+    }
+
+    private fun isGradleProject(): Boolean = File(project.basePath!!, "build.gradle").exists()
 
     private fun getCliCommandPath(): String {
         return when {

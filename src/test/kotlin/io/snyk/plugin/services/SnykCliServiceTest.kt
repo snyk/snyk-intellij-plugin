@@ -67,7 +67,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "--all-projects", "test"), project.basePath!!))
             .thenReturn("""
                     {
                       "ok": false,
@@ -94,7 +94,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "--all-projects", "test"), project.basePath!!))
             .thenReturn(getResourceAsString("group-vulnerabilities-test.json"))
 
         getCli(project).setConsoleCommandRunner(mockRunner)
@@ -117,7 +117,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "--all-projects", "test"), project.basePath!!))
             .thenReturn(getResourceAsString("licence-vulnerabilities.json"))
 
         getCli(project).setConsoleCommandRunner(mockRunner)
@@ -190,7 +190,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
-        assertEquals("test", defaultCommands[2])
+        assertEquals("--all-projects", defaultCommands[2])
+        assertEquals("test", defaultCommands[3])
     }
 
     @Test
@@ -206,7 +207,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
-        assertEquals("test", defaultCommands[3])
+        assertEquals("--all-projects", defaultCommands[3])
+        assertEquals("test", defaultCommands[4])
     }
 
     @Test
@@ -222,7 +224,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--insecure", defaultCommands[2])
-        assertEquals("test", defaultCommands[3])
+        assertEquals("--all-projects", defaultCommands[3])
+        assertEquals("test", defaultCommands[4])
     }
 
     @Test
@@ -237,7 +240,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
         assertEquals("--org=test-org", defaultCommands[2])
-        assertEquals("test", defaultCommands[3])
+        assertEquals("--all-projects", defaultCommands[3])
+        assertEquals("test", defaultCommands[4])
     }
 
     @Test
@@ -252,6 +256,24 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals("--json", defaultCommands[1])
         assertEquals("--file=package.json", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
+    }
+
+    @Test
+    fun `test build CLI commands for Gradle project`() {
+        setupDummyCliFile()
+
+        val buildGradleFile = File(project.basePath!!, "build.gradle")
+
+        buildGradleFile.createNewFile()
+
+        val defaultCommands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
+
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
+        assertEquals("--json", defaultCommands[1])
+        assertEquals("--all-sub-projects", defaultCommands[2])
+        assertEquals("test", defaultCommands[3])
+
+        buildGradleFile.delete()
     }
 
     @Test
