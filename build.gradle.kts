@@ -63,9 +63,16 @@ tasks {
         subList(indexOf(start) + 1, indexOf(end))
       }.joinToString("\n").run { markdownToHTML(this) }
     })
+
+    changeNotes(
+      closure {
+        changelog.getLatest().toHTML()
+      }
+    )
   }
 
   publishPlugin {
+    dependsOn("patchChangelog")
     token(System.getenv("PUBLISH_TOKEN"))
     channels(pluginVersion.split('-').getOrElse(1) { "default" }.split('.').first())
   }
