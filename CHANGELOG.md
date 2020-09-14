@@ -1,6 +1,8 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.0.1]
+### Added
+- Propagate integration name for JetBrain IDEs
 
 ## [2.0.0]
 ### Added
