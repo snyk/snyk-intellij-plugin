@@ -6,6 +6,7 @@ import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.isProjectSettingsAvailable
@@ -18,6 +19,7 @@ import java.util.Objects.nonNull
 import java.util.function.Supplier
 import javax.swing.*
 import javax.swing.event.DocumentEvent
+import javax.swing.text.BadLocationException
 import com.intellij.uiDesigner.core.GridConstraints as UIGridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager as UIGridLayoutManager
 
@@ -25,16 +27,19 @@ class SnykSettingsDialog(
     private val project: Project,
     applicationSettings: SnykApplicationSettingsStateService) {
 
-    private val tokenTextField = ValidationTextField("Invalid token", ::isTokenValid)
-    private val customEndpointTextField = ValidationTextField("Invalid custom enpoint URL", ::isUrlValid)
+    private val tokenTextField = JBPasswordField()
+    private val customEndpointTextField = JTextField()
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
 
-    private val rootPanel: JPanel = JPanel()
+    private val rootPanel = object: JPanel(), Disposable {
+        override fun dispose() = Unit
+    }
 
     init {
         initializeUiComponents()
+        initializeValidation()
 
         if (nonNull(applicationSettings)) {
             tokenTextField.text = applicationSettings.token
@@ -328,7 +333,11 @@ class SnykSettingsDialog(
         }
     }
 
-    fun getToken(): String = tokenTextField.text
+    fun getToken(): String = try {
+        tokenTextField.document.getText(0, tokenTextField.document.length)
+    } catch (exception: BadLocationException) {
+        ""
+    }
 
     fun getOrganization(): String = organizationTextField.text
 
@@ -337,6 +346,33 @@ class SnykSettingsDialog(
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
 
     fun getAdditionalParameters(): String = additionalParametersTextField.text
+
+    private fun initializeValidation() {
+        setupValidation(tokenTextField, "Invalid token", ::isTokenValid)
+        setupValidation(customEndpointTextField, "Invalid custom enpoint URL", ::isUrlValid)
+    }
+
+    private fun setupValidation(textField: JTextField, message: String, isValidText: (sourceStr: String?) -> Boolean) {
+        ComponentValidator(rootPanel).withValidator(Supplier<ValidationInfo?> {
+            val validationInfo: ValidationInfo = if (!isValidText(textField.text)) {
+                ValidationInfo(message, textField)
+            } else {
+                ValidationInfo("")
+            }
+
+
+            validationInfo
+        }).installOn(textField)
+
+
+        textField.document.addDocumentListener(object : DocumentAdapter() {
+            override fun textChanged(event: DocumentEvent) {
+                ComponentValidator.getInstance(textField).ifPresent {
+                    it.revalidate()
+                }
+            }
+        })
+    }
 
     private fun isTokenValid(token: String?): Boolean {
         if (token == null || token.isEmpty()) {
@@ -350,31 +386,5 @@ class SnykSettingsDialog(
         } catch (exception: IllegalArgumentException) {
             false
         }
-    }
-}
-
-class ValidationTextField(val message: String, isValidText: (sourceStr: String?) -> Boolean) : JTextField(""), Disposable {
-
-    init {
-        ComponentValidator(this).withValidator(Supplier<ValidationInfo?> {
-            val validationInfo: ValidationInfo = if (!isValidText(text)) {
-                ValidationInfo(message, this@ValidationTextField)
-            } else {
-                ValidationInfo("")
-            }
-
-            validationInfo
-        }).installOn(this)
-
-        this.document.addDocumentListener(object : DocumentAdapter() {
-            override fun textChanged(event: DocumentEvent) {
-                ComponentValidator.getInstance(this@ValidationTextField).ifPresent {
-                    it.revalidate()
-                }
-            }
-        })
-    }
-
-    override fun dispose() {
     }
 }
