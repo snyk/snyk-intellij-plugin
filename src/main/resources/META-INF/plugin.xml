@@ -9,7 +9,7 @@
   <extensions defaultExtensionNs="com.intellij">
     <toolWindow id="Snyk"
                 anchor="bottom"
-                icon="/icons/toolWindowSnyk.svg"
+                icon="SnykIcons.TOOL_WINDOW"
                 factoryClass="io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory"/>
 
     <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
