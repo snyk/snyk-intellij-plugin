@@ -1,10 +1,13 @@
-package io.snyk.plugin.ui
+package icons
 
 import com.intellij.openapi.util.IconLoader.getIcon
 import javax.swing.ImageIcon
 
-object Icons {
+object SnykIcons {
     private fun getIconFromResources(name: String): ImageIcon = ImageIcon(this::class.java.getResource(name))
+
+    @JvmField
+    val TOOL_WINDOW = getIcon("/icons/toolWindowSnyk.svg")
 
     val VULNERABILITY_16 = getIconFromResources("/icons/vulnerability_16.png")
     val VULNERABILITY_24 = getIconFromResources("/icons/vulnerability.png")

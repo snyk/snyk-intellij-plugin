@@ -27,6 +27,5 @@ class SnykToolWindow(project: Project) : SimpleToolWindowPanel(false, true), Dis
         toolbar = actionToolbar.component
     }
 
-    override fun dispose() {
-    }
+    override fun dispose() = Unit
 }
