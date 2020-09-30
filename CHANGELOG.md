@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.0.2]
+### Fixed
+- Hide API token in configuration settings
+
 ## [2.0.1]
 ### Added
 - Propagate integration name for JetBrain IDEs
