@@ -7,7 +7,6 @@ import io.snyk.plugin.cli.*
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import org.apache.log4j.Logger
-import java.io.File
 
 /**
  * Wrap work with Snyk CLI.
@@ -31,22 +30,20 @@ class SnykCliService(val project: Project) {
         return getCliFile().exists()
     }
 
-    fun scan(): CliResult {
-        return try {
-            val applicationSettings = getApplicationSettingsStateService()
+    fun scan(): CliResult = try {
+        val applicationSettings = getApplicationSettingsStateService()
 
-            val commands = buildCliCommandsList(applicationSettings)
-            val projectPath = project.basePath!!
-            val apiToken = applicationSettings.token ?: ""
+        val commands = buildCliCommandsList(applicationSettings)
+        val projectPath = project.basePath ?: ""
+        val apiToken = applicationSettings.token ?: ""
 
-            val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
+        val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
 
-            convertRawCliStringToCliResult(rawResultStr, projectPath)
-        } catch (exception: CliNotExistsException) {
-            CliResult(
-                null,
-                CliError(false, exception.message ?: "", project.basePath ?: ""))
-        }
+        convertRawCliStringToCliResult(rawResultStr, projectPath)
+    } catch (exception: CliNotExistsException) {
+        CliResult(
+            null,
+            CliError(false, exception.message ?: "", project.basePath ?: ""))
     }
 
     /**
@@ -111,7 +108,7 @@ class SnykCliService(val project: Project) {
         }
 
         if (additionalParameters == null || !additionalParameters.contains("--file")) {
-            addAllProjectsOption(commands)
+            commands.add("--all-projects")
         }
 
         commands.add("test")
@@ -125,29 +122,12 @@ class SnykCliService(val project: Project) {
         this.consoleCommandRunner = newRunner
     }
 
-    private fun addAllProjectsOption(commands: MutableList<String>) = when {
-        isGradleProject() -> commands.add("--all-sub-projects")
-        else -> commands.add("--all-projects")
-    }
-
-    private fun isGradleProject(): Boolean = File(project.basePath!!, "build.gradle").exists()
-
-    private fun getCliCommandPath(): String {
-        return when {
-            checkIsCliInstalledAutomaticallyByPlugin() -> getCliFile().absolutePath
-            else -> {
-                throw CliNotExistsException()
-            }
+    private fun getCliCommandPath(): String = when {
+        checkIsCliInstalledAutomaticallyByPlugin() -> getCliFile().absolutePath
+        else -> {
+            throw CliNotExistsException()
         }
     }
 
-    private fun getConsoleCommandRunner(): ConsoleCommandRunner {
-        if (consoleCommandRunner != null) {
-            return consoleCommandRunner!!
-        }
-
-        return ConsoleCommandRunner()
-    }
-
-    fun isPackageJsonExists(): Boolean = File(project.basePath!!, "package.json").exists()
+    private fun getConsoleCommandRunner(): ConsoleCommandRunner = consoleCommandRunner ?: ConsoleCommandRunner()
 }

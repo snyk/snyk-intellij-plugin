@@ -55,7 +55,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         packageJsonFile.createNewFile()
 
-        assertTrue(getCli(project).isPackageJsonExists())
+        assertTrue(isPackageJsonExists())
 
         packageJsonFile.delete()
     }
@@ -270,7 +270,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("--json", defaultCommands[1])
-        assertEquals("--all-sub-projects", defaultCommands[2])
+        assertEquals("--all-projects", defaultCommands[2])
         assertEquals("test", defaultCommands[3])
 
         buildGradleFile.delete()
@@ -359,4 +359,6 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
         .getResource(resourceName)!!.readText(Charsets.UTF_8)
+
+    fun isPackageJsonExists(): Boolean = File(project.basePath ?: "", "package.json").exists()
 }
