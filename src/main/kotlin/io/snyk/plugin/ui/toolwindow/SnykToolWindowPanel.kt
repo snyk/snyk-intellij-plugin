@@ -183,7 +183,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (vulnerability.vulnerabilities.isNotEmpty()) {
                         val cliGroupedResult = vulnerability.toCliGroupedResult()
 
-                        val fileTreeNode = TargetFileTreeNode(cliGroupedResult.displayTargetFile)
+                        val fileTreeNode = FileTreeNode(cliGroupedResult.displayTargetFile, vulnerability.packageManager)
                         rootTreeNode.add(fileTreeNode)
 
                         cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
