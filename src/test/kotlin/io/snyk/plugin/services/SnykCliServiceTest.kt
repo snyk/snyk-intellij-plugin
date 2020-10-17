@@ -103,6 +103,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         assertTrue(cliResult.isSuccessful())
 
+        assertEquals("npm", cliResult.vulnerabilities!!.first().packageManager)
+
         val vulnerabilityIds = cliResult.vulnerabilities!!.first().vulnerabilities.map { it.id }
 
         assertTrue(vulnerabilityIds.contains("SNYK-JS-DOTPROP-543489"))
