@@ -8,6 +8,7 @@ class CliVulnerabilities {
     var foundProjectCount: Int = 0
     lateinit var displayTargetFile: String
     lateinit var path: String
+    lateinit var packageManager: String
 
     fun toCliGroupedResult(): CliGroupedResult {
         val vulnerabilitiesMap: MutableMap<String, MutableList<Vulnerability>> = mutableMapOf()
