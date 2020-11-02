@@ -24,9 +24,11 @@ you fix issues as fast as possible.
 
 ## Supported package managers
 
-- Maven
-- Gradle
-- Pip
-- PyPI
-- Pipenv
+- NPM, Yarn, Yarn Workspaces
+- Maven, Gradle
+- NuGet, Paket
+- Pip, PyPI, Pipenv
+- Cocoapods
+- Composer
+
 <!-- Plugin description end -->
