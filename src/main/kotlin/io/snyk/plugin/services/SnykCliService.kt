@@ -7,7 +7,6 @@ import io.snyk.plugin.cli.*
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import org.apache.log4j.Logger
-import java.io.File
 
 /**
  * Wrap work with Snyk CLI.
@@ -31,28 +30,20 @@ class SnykCliService(val project: Project) {
         return getCliFile().exists()
     }
 
-    fun scan(): CliResult {
-        try {
-            val applicationSettings = getApplicationSettingsStateService()
+    fun scan(): CliResult = try {
+        val applicationSettings = getApplicationSettingsStateService()
 
-            val commands = buildCliCommandsList(applicationSettings)
+        val commands = buildCliCommandsList(applicationSettings)
+        val projectPath = project.basePath ?: ""
+        val apiToken = applicationSettings.token ?: ""
 
-            val projectPath = project.basePath!!
+        val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
 
-            val apiToken = if (applicationSettings.token != null) {
-                applicationSettings.token!!
-            } else {
-                ""
-            }
-
-            val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
-
-            return convertRawCliStringToCliResult(rawResultStr, projectPath)
-        } catch (exception: CliNotExistsException) {
-            return CliResult(
-                null,
-                CliError(false, exception.message ?: "", project.basePath ?: ""))
-        }
+        convertRawCliStringToCliResult(rawResultStr, projectPath)
+    } catch (exception: CliNotExistsException) {
+        CliResult(
+            null,
+            CliError(false, exception.message ?: "", project.basePath ?: ""))
     }
 
     /**
@@ -78,7 +69,7 @@ class SnykCliService(val project: Project) {
         }
 
     fun isSuccessCliJsonString(jsonStr: String): Boolean = jsonStr.contains("\"vulnerabilities\":")
-                                                            && !jsonStr.contains("\"error\":")
+        && !jsonStr.contains("\"error\":")
 
     /**
      * Build list of commands for run Snyk CLI command.
@@ -116,6 +107,10 @@ class SnykCliService(val project: Project) {
             commands.add(additionalParameters)
         }
 
+        if (additionalParameters == null || !additionalParameters.contains("--file")) {
+            commands.add("--all-projects")
+        }
+
         commands.add("test")
 
         logger.info("Cli parameters: $commands")
@@ -127,22 +122,12 @@ class SnykCliService(val project: Project) {
         this.consoleCommandRunner = newRunner
     }
 
-    private fun getCliCommandPath(): String {
-        return when {
-            checkIsCliInstalledAutomaticallyByPlugin() -> getCliFile().absolutePath
-            else -> {
-                throw CliNotExistsException()
-            }
+    private fun getCliCommandPath(): String = when {
+        checkIsCliInstalledAutomaticallyByPlugin() -> getCliFile().absolutePath
+        else -> {
+            throw CliNotExistsException()
         }
     }
 
-    private fun getConsoleCommandRunner(): ConsoleCommandRunner {
-        if (consoleCommandRunner != null) {
-            return consoleCommandRunner!!
-        }
-
-        return ConsoleCommandRunner()
-    }
-
-    fun isPackageJsonExists(): Boolean = File(project.basePath!!, "package.json").exists()
+    private fun getConsoleCommandRunner(): ConsoleCommandRunner = consoleCommandRunner ?: ConsoleCommandRunner()
 }
