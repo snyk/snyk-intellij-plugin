@@ -25,6 +25,18 @@ open class ConsoleCommandRunner {
         generalCommandLine.charset = Charset.forName("UTF-8")
         generalCommandLine.setWorkDirectory(workDirectory)
 
+        setupCliEnvironmentVariables(generalCommandLine, apiToken)
+
+        logger.info("GeneralCommandLine instance created.")
+        logger.info("Execute ScriptRunnerUtil.getProcessOutput(...)")
+
+        return ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
+    }
+
+    /**
+     * Setup environment variables for CLI.
+     */
+    fun setupCliEnvironmentVariables(generalCommandLine: GeneralCommandLine, apiToken: String) {
         if (apiToken.isNotEmpty()) {
             generalCommandLine.environment["SNYK_TOKEN"] = apiToken
         }
@@ -34,12 +46,12 @@ open class ConsoleCommandRunner {
 
         val applicationInfo = ApplicationInfo.getInstance()
 
-        generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = applicationInfo.versionName.toUpperCase()
+        val versionName = when (val name = applicationInfo.versionName) {
+            "IntelliJ IDEA", "PyCharm" -> "$name ${applicationInfo.apiVersion.substring(0, 2)}"
+            else -> name
+        }
+
+        generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = versionName.toUpperCase()
         generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"] = applicationInfo.fullVersion
-
-        logger.info("GeneralCommandLine instance created.")
-        logger.info("Execute ScriptRunnerUtil.getProcessOutput(...)")
-
-        return ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
     }
 }
