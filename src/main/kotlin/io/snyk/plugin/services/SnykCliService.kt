@@ -113,7 +113,10 @@ class SnykCliService(val project: Project) {
         val additionalParameters = settings.getAdditionalParameters(project)
 
         if (additionalParameters != null && additionalParameters.isNotEmpty()) {
-            commands.add(additionalParameters)
+
+            val additionalParamsArray = splitParameters(additionalParameters)
+            commands.addAll(additionalParamsArray)
+
         }
 
         commands.add("test")
@@ -145,4 +148,10 @@ class SnykCliService(val project: Project) {
     }
 
     fun isPackageJsonExists(): Boolean = File(project.basePath!!, "package.json").exists()
+
+    fun splitParameters(params: String) : List<String> {
+
+        return params.split(" ")
+
+    }
 }
