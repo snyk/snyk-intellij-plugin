@@ -5,14 +5,15 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.snykcode.core.AnalysisData
 
 class SnykPostStartupActivity : StartupActivity {
 
     override fun runActivity(project: Project) {
-        if (ApplicationManager.getApplication().isUnitTestMode) {
-            return
-        }
+        AnalysisData.instance.resetCachesAndTasks(project)
 
-        project.service<SnykTaskQueueService>().downloadLatestRelease()
+        if (!ApplicationManager.getApplication().isUnitTestMode) {
+            project.service<SnykTaskQueueService>().downloadLatestRelease()
+        }
     }
 }

@@ -24,6 +24,7 @@ dependencies {
 
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
+  implementation(fileTree("$projectDir/libs"))
 
   testImplementation("junit:junit:4.12")
   testImplementation("org.mockito:mockito-core:3.5.2")
@@ -69,6 +70,15 @@ tasks {
         changelog.getLatest().toHTML()
       }
     )
+  }
+
+  prepareSandbox {
+    doLast {
+      copy {
+        from ("$projectDir/downloaded_cli/")
+        into ("$projectDir/build/idea-sandbox/plugins/${rootProject.name}/")
+      }
+    }
   }
 
   publishPlugin {

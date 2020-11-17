@@ -1,10 +1,12 @@
 package io.snyk.plugin.ui.toolwindow
 
+import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeSpeedSearch
@@ -17,10 +19,11 @@ import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.events.SnykCliScanListener
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.head
 import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.snykcode.SnykCodeResults
 import java.awt.BorderLayout
 import java.awt.Insets
 import java.util.Objects.nonNull
@@ -51,13 +54,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         displayNoVulnerabilitiesMessage()
 
         project.messageBus.connect(this)
-            .subscribe(SnykCliScanListener.CLI_SCAN_TOPIC, object: SnykCliScanListener {
+            .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, object: SnykScanListener {
 
             override fun scanningStarted() =
                 ApplicationManager.getApplication().invokeLater { displayScanningMessage() }
 
             override fun scanningFinished(cliResult: CliResult) =
                 ApplicationManager.getApplication().invokeLater { displayVulnerabilities(cliResult) }
+
+            override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) =
+                ApplicationManager.getApplication().invokeLater { displaySnykCodeResults(snykCodeResults) }
 
             override fun scanError(cliError: CliError) =
                 ApplicationManager.getApplication().invokeLater { displayError(cliError) }
@@ -153,7 +159,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             rootTreeNode.removeAllChildren()
 
-            rootTreeNode.userObject = "Found ${cliResult.issuesCount()} issues."
+            rootTreeNode.userObject = "Found ${cliResult.issuesCount()} vulnerability issues"
 
             add(vulnerabilitiesSplitter, BorderLayout.CENTER)
 
@@ -166,10 +172,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (nonNull(selectionPath)) {
                         val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode
 
-                        if (node.userObject is Vulnerability) {
-                            descriptionPanel.displayDescription(node.userObject as Vulnerability)
-                        } else {
-                            descriptionPanel.displaySelectVulnerabilityMessage()
+                        when (node.userObject) {
+                            is Vulnerability -> {
+                                descriptionPanel.displayDescription(node.userObject as Vulnerability)
+                            }
+                            is SuggestionForFile -> {
+                                val psiFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? PsiFile
+                                    ?: throw IllegalArgumentException(node.toString())
+                                descriptionPanel.displayDescription(psiFile, node.userObject as SuggestionForFile)
+                            }
+                            else -> {
+                                descriptionPanel.displaySelectVulnerabilityMessage()
+                            }
                         }
                     }
                 }
@@ -197,6 +211,22 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             TreeUtil.expandAll(vulnerabilitiesTree)
         }
+    }
+
+    fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
+        rootTreeNode.userObject =
+            rootTreeNode.userObject as String + " and ${snykCodeResults.totalCount} code issues"
+
+        snykCodeResults.files.forEach {file ->
+            val fileTreeNode = SnykCodeFileTreeNode(file)
+            rootTreeNode.add(fileTreeNode)
+            snykCodeResults.suggestions(file).forEach {suggestion ->
+                fileTreeNode.add(SuggestionTreeNode(suggestion))
+            }
+        }
+
+        reloadTree()
+        TreeUtil.expandAll(vulnerabilitiesTree)
     }
 
     fun displayError(cliError: CliError) {

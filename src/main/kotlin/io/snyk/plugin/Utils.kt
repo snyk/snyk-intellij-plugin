@@ -6,11 +6,14 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykCliService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykCodeService
 import java.io.File
 import java.net.URL
 import java.util.Objects.nonNull
 
 fun getCli(project: Project): SnykCliService = project.service()
+
+fun getSnykCode(project: Project): SnykCodeService = project.service()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 

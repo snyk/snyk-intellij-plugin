@@ -35,3 +35,4 @@ gradle-app.setting
 Thumbs.db
 .directory
 .DS_Store
+/downloaded_cli/

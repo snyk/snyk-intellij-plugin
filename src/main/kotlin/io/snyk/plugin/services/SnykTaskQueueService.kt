@@ -10,9 +10,10 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.events.SnykCliScanListener
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getCli
+import io.snyk.plugin.getSnykCode
 
 
 @Service
@@ -20,7 +21,7 @@ class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
 
     private val cliScanPublisher =
-        project.messageBus.syncPublisher(SnykCliScanListener.CLI_SCAN_TOPIC)
+        project.messageBus.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC)
 
     private val cliDownloadPublisher =
         project.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
@@ -58,6 +59,10 @@ class SnykTaskQueueService(val project: Project) {
                 } else {
                     cliScanPublisher.scanError(cliResult.error!!)
                 }
+
+                indicator.checkCanceled()
+
+                getSnykCode(project).scan()
 
                 currentProgressIndicator = null
             }
