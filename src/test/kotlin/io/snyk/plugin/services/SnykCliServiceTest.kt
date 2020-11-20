@@ -281,6 +281,33 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun testBuildCliCommandsListWithMultiAdditionalParameters() {
+        setupDummyCliFile()
+
+        val settingsStateService = getApplicationSettingsStateService()
+
+        settingsStateService.token = "0000-1111-2222-3333"
+        settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
+        settingsStateService.organization = "test-org"
+        settingsStateService.ignoreUnknownCA = true
+
+        project.service<SnykProjectSettingsStateService>().additionalParameters =
+            "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
+
+        val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
+
+        assertEquals(getCliFile().absolutePath, defaultCommands[0])
+        assertEquals("--json", defaultCommands[1])
+        assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
+        assertEquals("--insecure", defaultCommands[3])
+        assertEquals("--org=test-org", defaultCommands[4])
+        assertEquals("--file=package.json", defaultCommands[5])
+        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[6])
+        assertEquals("--sub-project=snyk", defaultCommands[7])
+        assertEquals("test", defaultCommands[8])
+    }
+
+    @Test
     fun testCheckIsCliInstalledAutomaticallyByPluginSuccessful() {
         val cliFile = getCliFile()
 

@@ -112,8 +112,8 @@ class SnykCliService(val project: Project) {
 
         val additionalParameters = settings.getAdditionalParameters(project)
 
-        if (additionalParameters != null && additionalParameters.isNotEmpty()) {
-            commands.add(additionalParameters)
+        if (additionalParameters != null && additionalParameters.trim().isNotEmpty()) {
+            commands.addAll(additionalParameters.trim().split(" "))
         }
 
         commands.add("test")
