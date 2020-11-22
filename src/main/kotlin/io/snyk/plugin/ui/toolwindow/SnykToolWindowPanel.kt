@@ -221,7 +221,19 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             val fileTreeNode = SnykCodeFileTreeNode(file)
             rootTreeNode.add(fileTreeNode)
             snykCodeResults.suggestions(file).forEach {suggestion ->
-                fileTreeNode.add(SuggestionTreeNode(suggestion))
+                suggestion.ranges.forEach {rangeInFile ->
+                    fileTreeNode.add(SuggestionTreeNode(
+                        SuggestionForFile(
+                            suggestion.id,
+                            suggestion.rule,
+                            suggestion.message,
+                            suggestion.severity,
+                            suggestion.repoDatasetSize,
+                            suggestion.exampleCommitFixes,
+                            listOf(rangeInFile)
+                        )
+                    ))
+                }
             }
         }
 
