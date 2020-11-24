@@ -50,6 +50,6 @@ class FullDescriptionPanel : JPanel() {
             ApplicationManager.getApplication().invokeLater {
                 scrollPane.verticalScrollBar.value = 0
             }
-        }, 20)
+        }, 50)
     }
 }

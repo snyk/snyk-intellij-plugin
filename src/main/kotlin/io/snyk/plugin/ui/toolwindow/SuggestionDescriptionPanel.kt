@@ -12,10 +12,7 @@ import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.buildBoldTitleLabel
-import java.awt.Color
-import java.awt.Dimension
-import java.awt.Font
-import java.awt.Insets
+import java.awt.*
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
@@ -62,7 +59,7 @@ class SuggestionDescriptionPanel(
 
         val codeRange = suggestion.ranges.firstOrNull()
         codeRange?.let {
-            this.add(codeLineLabel(it), getGridConstraints(1))
+            this.add(codeLine(it, "(${it.startRow}:${it.startCol})  "), getGridConstraints(1))
         }
 
         this.add(overviewPanel(), getPanelGridConstraints(2))
@@ -156,8 +153,10 @@ class SuggestionDescriptionPanel(
         return overviewPanel
     }
 
-    private fun codeLineLabel(range: MyTextRange): JLabel {
-        return defaultFontLabel(getLineOfCode(range))
+    private fun codeLine(range: MyTextRange, prefix: String): Component {
+        val component = JTextArea(prefix + getLineOfCode(range))
+        component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
+        return component
     }
 
     private fun defaultFontLabel(labelText: String): JLabel {
@@ -185,7 +184,7 @@ class SuggestionDescriptionPanel(
         }
         val lineEndOffset = document.getLineEndOffset(lineNumber)
 
-        val lineColumnPrefix = "(${lineNumber + 1}, ${columnNumber + 1}) "
+        val lineColumnPrefix = ""//"(${lineNumber + 1}, ${columnNumber + 1}) "
         val codeInLine = chars.subSequence(lineStartOffset, min(lineEndOffset, chars.length)).toString()
 
         return lineColumnPrefix + codeInLine
@@ -195,13 +194,14 @@ class SuggestionDescriptionPanel(
         val panel = JPanel()
         panel.layout = GridLayoutManager(100, 1, Insets(0, 0, 0, 0), -1, -1)
 
-        panel.add(buildBoldTitleLabel("Data Flow (Markers for now)"),
+        panel.add(buildBoldTitleLabel("Data Flow"),
             getGridConstraints(0)
         )
 
-        suggestion.ranges.firstOrNull()?.let {
-            it.markers.values.flatten().forEachIndexed { index, range ->
-                panel.add(codeLineLabel(range), getGridConstraints(1 + index, indent = 2))
+        suggestion.ranges.firstOrNull()?.let { suggestionRange ->
+            suggestionRange.markers.values.flatten().forEachIndexed { index, markerRange ->
+                val prefix = "${index + 1}  ${psiFile.name}:${markerRange.startRow}  | "
+                panel.add(codeLine(markerRange, prefix), getGridConstraints(1 + index, indent = 2))
             }
         }
 
@@ -237,6 +237,8 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
 
         val commitURL = exampleCommitFix.commitURL
+            .replace("https://","")
+            .replace(Regex("/commit/.*"),"")
         val shortenURL = if (commitURL.length > 100) commitURL.take(100) + "..." else commitURL
 
         panel.add(defaultFontLabel(shortenURL), getGridConstraints(0))

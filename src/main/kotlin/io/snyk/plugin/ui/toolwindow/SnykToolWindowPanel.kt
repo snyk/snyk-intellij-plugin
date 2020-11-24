@@ -42,7 +42,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val descriptionPanel = FullDescriptionPanel()
 
     private val rootTreeNode = DefaultMutableTreeNode("")
-    private val vulnerabilitiesTree = Tree(rootTreeNode)
+    private val rootCliTreeNode = DefaultMutableTreeNode("OPEN SOURCE VULNERABILITIES")
+    private val rootSnykCodeTreeNode = DefaultMutableTreeNode("CODE ANALYSIS")
+    private val vulnerabilitiesTree by lazy {
+        rootTreeNode.add(rootCliTreeNode)
+        rootTreeNode.add(rootSnykCodeTreeNode)
+        Tree(rootTreeNode).apply {
+            this.isRootVisible = false
+        }
+    }
 
     private val vulnerabilitiesSplitter = OnePixelSplitter(false, 0.4f, 0.1f, 0.9f)
 
@@ -96,8 +104,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
 
-            rootTreeNode.userObject = ""
-            rootTreeNode.removeAllChildren()
+            rootCliTreeNode.userObject = ""
+            rootCliTreeNode.removeAllChildren()
+
+            rootSnykCodeTreeNode.userObject = ""
+            rootSnykCodeTreeNode.removeAllChildren()
 
             reloadTree()
 
@@ -151,15 +162,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    fun isEmpty(): Boolean = rootTreeNode.childCount == 0
+    fun isEmpty(): Boolean = rootCliTreeNode.childCount == 0 && rootSnykCodeTreeNode.childCount == 0
 
     fun displayVulnerabilities(cliResult: CliResult) {
         ApplicationManager.getApplication().invokeLater {
             removeAll()
 
-            rootTreeNode.removeAllChildren()
+            rootCliTreeNode.removeAllChildren()
 
-            rootTreeNode.userObject = "Found ${cliResult.issuesCount()} vulnerability issues"
+            rootCliTreeNode.userObject = rootCliTreeNode.userObject as String + " - ${cliResult.issuesCount()}"
 
             add(vulnerabilitiesSplitter, BorderLayout.CENTER)
 
@@ -198,7 +209,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         val cliGroupedResult = vulnerability.toCliGroupedResult()
 
                         val fileTreeNode = FileTreeNode(cliGroupedResult.displayTargetFile, vulnerability.packageManager)
-                        rootTreeNode.add(fileTreeNode)
+                        rootCliTreeNode.add(fileTreeNode)
 
                         cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
                             fileTreeNode.add(VulnerabilityTreeNode(cliGroupedResult.vulnerabilitiesMap.getValue(id).head))
@@ -214,12 +225,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
-        rootTreeNode.userObject =
-            rootTreeNode.userObject as String + " and ${snykCodeResults.totalCount} code issues"
+        rootSnykCodeTreeNode.userObject =
+            rootSnykCodeTreeNode.userObject as String + " - ${snykCodeResults.totalCount}"
 
         snykCodeResults.files.forEach {file ->
             val fileTreeNode = SnykCodeFileTreeNode(file)
-            rootTreeNode.add(fileTreeNode)
+            rootSnykCodeTreeNode.add(fileTreeNode)
             snykCodeResults.suggestions(file).forEach {suggestion ->
                 suggestion.ranges.forEach {rangeInFile ->
                     fileTreeNode.add(SuggestionTreeNode(
