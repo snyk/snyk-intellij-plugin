@@ -10,7 +10,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     1,
     System.getenv("DEEPCODE_API_KEY"),
     "",
-    "SnykCode-Jetbrains"
+    "${SCLogger.presentableName}-Jetbrains"
 ) {
 
     override fun consentGiven(project: Any): Boolean {

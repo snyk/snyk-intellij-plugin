@@ -9,7 +9,7 @@ class LoginUtils private constructor() : LoginUtilsBase(
     SCLogger.instance
 ) {
 
-    override fun getUserAgent(): String = "SnykCode-Jetbrains"
+    override fun getUserAgent(): String = "${SCLogger.presentableName}-Jetbrains"
 
     companion object {
         val instance = LoginUtils()

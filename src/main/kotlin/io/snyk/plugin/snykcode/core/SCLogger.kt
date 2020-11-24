@@ -6,11 +6,12 @@ import java.util.function.Consumer
 import java.util.function.Supplier
 
 class SCLogger private constructor() : DCLoggerBase(
-    Supplier { Consumer { message: String? -> Logger.getInstance("SnykCode").debug(message) } },
-    Supplier { Consumer { message: String? -> Logger.getInstance("SnykCode").warn(message) } },
-    Supplier { Logger.getInstance("SnykCode").isDebugEnabled },
+    Supplier { Consumer { message: String? -> Logger.getInstance(presentableName).debug(message) } },
+    Supplier { Consumer { message: String? -> Logger.getInstance(presentableName).warn(message) } },
+    Supplier { Logger.getInstance(presentableName).isDebugEnabled },
     Supplier { true },
-    "io.snyk.plugin"
+    "io.snyk.plugin",
+    presentableName
 ) {
     override fun getExtraInfo(): String {
         //TODO
@@ -19,5 +20,6 @@ class SCLogger private constructor() : DCLoggerBase(
 
     companion object {
         val instance = SCLogger()
+        const val presentableName = "SnykCode"
     }
 }
