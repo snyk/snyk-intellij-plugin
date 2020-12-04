@@ -92,6 +92,7 @@ class SnykCliService(val project: Project) {
 
         val commands: MutableList<String> = mutableListOf()
         commands.add(getCliCommandPath())
+        commands.add("test")
         commands.add("--json")
 
         val customEndpoint = settings.customEndpointUrl
@@ -115,8 +116,6 @@ class SnykCliService(val project: Project) {
         if (additionalParameters != null && additionalParameters.trim().isNotEmpty()) {
             commands.addAll(additionalParameters.trim().split(" "))
         }
-
-        commands.add("test")
 
         logger.info("Cli parameters: $commands")
 

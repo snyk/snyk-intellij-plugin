@@ -7,6 +7,7 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.setupDummyCliFile
+import junit.framework.TestCase
 import org.junit.Test
 import org.mockito.Mockito
 import java.io.File
@@ -67,7 +68,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!))
             .thenReturn("""
                     {
                       "ok": false,
@@ -94,7 +95,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!))
             .thenReturn(getResourceAsString("group-vulnerabilities-test.json"))
 
         getCli(project).setConsoleCommandRunner(mockRunner)
@@ -119,7 +120,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!))
             .thenReturn(getResourceAsString("licence-vulnerabilities.json"))
 
         getCli(project).setConsoleCommandRunner(mockRunner)
@@ -191,8 +192,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands =  getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("test", defaultCommands[2])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
     }
 
     @Test
@@ -206,9 +207,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
-        assertEquals("test", defaultCommands[3])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
+        assertEquals("--api=https://app.snyk.io/api", defaultCommands[3])
     }
 
     @Test
@@ -222,9 +223,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands = getCli(project).buildCliCommandsList(settings)
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("--insecure", defaultCommands[2])
-        assertEquals("test", defaultCommands[3])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
+        assertEquals("--insecure", defaultCommands[3])
     }
 
     @Test
@@ -237,9 +238,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("--org=test-org", defaultCommands[2])
-        assertEquals("test", defaultCommands[3])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
+        assertEquals("--org=test-org", defaultCommands[3])
     }
 
     @Test
@@ -251,9 +252,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("--file=package.json", defaultCommands[2])
-        assertEquals("test", defaultCommands[3])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
+        assertEquals("--file=package.json", defaultCommands[3])
     }
 
     @Test
@@ -272,12 +273,12 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
-        assertEquals("--insecure", defaultCommands[3])
-        assertEquals("--org=test-org", defaultCommands[4])
-        assertEquals("--file=package.json", defaultCommands[5])
-        assertEquals("test", defaultCommands[6])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
+        assertEquals("--api=https://app.snyk.io/api", defaultCommands[3])
+        assertEquals("--insecure", defaultCommands[4])
+        assertEquals("--org=test-org", defaultCommands[5])
+        assertEquals("--file=package.json", defaultCommands[6])
     }
 
     @Test
@@ -297,14 +298,14 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
-        assertEquals("--insecure", defaultCommands[3])
-        assertEquals("--org=test-org", defaultCommands[4])
-        assertEquals("--file=package.json", defaultCommands[5])
-        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[6])
-        assertEquals("--sub-project=snyk", defaultCommands[7])
-        assertEquals("test", defaultCommands[8])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
+        assertEquals("--api=https://app.snyk.io/api", defaultCommands[3])
+        assertEquals("--insecure", defaultCommands[4])
+        assertEquals("--org=test-org", defaultCommands[5])
+        assertEquals("--file=package.json", defaultCommands[6])
+        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[7])
+        assertEquals("--sub-project=snyk", defaultCommands[8])
     }
 
     @Test

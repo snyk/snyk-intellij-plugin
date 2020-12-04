@@ -18,7 +18,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "--json", "test"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!))
             .thenReturn(javaClass.classLoader.getResource("group-vulnerabilities-test.json")!!.readText(Charsets.UTF_8))
 
         getCli(project).setConsoleCommandRunner(mockRunner)
