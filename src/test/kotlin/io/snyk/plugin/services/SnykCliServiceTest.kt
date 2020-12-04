@@ -7,6 +7,7 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.setupDummyCliFile
+import junit.framework.TestCase
 import org.junit.Test
 import org.mockito.Mockito
 import java.io.File
@@ -297,14 +298,14 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("--json", defaultCommands[1])
-        assertEquals("--api=https://app.snyk.io/api", defaultCommands[2])
-        assertEquals("--insecure", defaultCommands[3])
-        assertEquals("--org=test-org", defaultCommands[4])
-        assertEquals("--file=package.json", defaultCommands[5])
-        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[6])
-        assertEquals("--sub-project=snyk", defaultCommands[7])
-        assertEquals("test", defaultCommands[8])
+        assertEquals("test", defaultCommands[1])
+        assertEquals("--json", defaultCommands[2])
+        assertEquals("--api=https://app.snyk.io/api", defaultCommands[3])
+        assertEquals("--insecure", defaultCommands[4])
+        assertEquals("--org=test-org", defaultCommands[5])
+        assertEquals("--file=package.json", defaultCommands[6])
+        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[7])
+        assertEquals("--sub-project=snyk", defaultCommands[8])
     }
 
     @Test

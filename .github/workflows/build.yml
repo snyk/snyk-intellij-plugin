@@ -16,7 +16,6 @@ jobs:
     name: Test
     needs: gradleValidation
     runs-on: ubuntu-latest
-    container: gradle:jdk8
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
@@ -39,4 +38,4 @@ jobs:
         run: ./gradlew verifyPlugin
 
       - name: Run Tests
-        run: ./gradlew test
+        run: ./gradlew clean test
