@@ -22,13 +22,9 @@ you fix issues as fast as possible.
 - Remediation advice
 - License compliance
 
-## Supported package managers
+## Useful links
 
-- NPM, Yarn, Yarn Workspaces
-- Maven, Gradle
-- NuGet, Paket
-- Pip, PyPI, Pipenv
-- Cocoapods
-- Composer
+- This plugin works with projects written in Java, JavaScript, .NET and many more languages. See the [full list of languages and package managers Snyk supports](https://snyk.co/ucWSd)
+- [Bug tracker](https://github.com/snyk/snyk-intellij-plugin/issues)
 
 <!-- Plugin description end -->
