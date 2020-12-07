@@ -12,10 +12,7 @@ class SnykCodeResults(
         get() = file2suggestions.keys
 
     val totalCount: Int
-        get() {
-            //TODO
-            return 5555
-        }
+        get() = file2suggestions.values.flatten().sumBy { it.ranges.size }
 }
 
 val SuggestionForFile.severityAsString: String

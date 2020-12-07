@@ -3,16 +3,20 @@ package io.snyk.plugin.ui.toolwindow
 import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
+import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.buildBoldTitleLabel
 import java.awt.*
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
@@ -40,27 +44,40 @@ class SuggestionDescriptionPanel(
     ): GridConstraints {
         return GridConstraints(
             row, column, rowSpan, colSpan, anchor, fill, HSizePolicy, VSizePolicy, minimumSize, preferredSize,
-            maximumSize, indent, useParentLayout)
+            maximumSize, indent, useParentLayout
+        )
     }
 
     private fun getPanelGridConstraints(row: Int): GridConstraints {
-        return getGridConstraints(row,
+        return getGridConstraints(
+            row,
             anchor = GridConstraints.ANCHOR_CENTER,
             fill = GridConstraints.FILL_BOTH,
             HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
             VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-            indent = 0)
+            indent = 0
+        )
     }
 
     init {
-        this.layout = GridLayoutManager(11, 1, Insets(20, 0, 0, 0), -1, 10)
+        this.layout = GridLayoutManager(6, 1, Insets(20, 0, 0, 0), -1, 10)
 
-        this.add(severityPanel(), getPanelGridConstraints(0))
+        this.add(
+            Spacer(),
+            getGridConstraints(
+                5,
+                anchor = GridConstraints.ANCHOR_CENTER,
+                fill = GridConstraints.FILL_VERTICAL,
+                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
+                indent = 0
+            )
+        )
 
-        val codeRange = suggestion.ranges.firstOrNull()
-        codeRange?.let {
-            this.add(codeLine(it, "(${it.startRow}:${it.startCol})  "), getGridConstraints(1))
-        }
+//        val codeRange = suggestion.ranges.firstOrNull()
+//        codeRange?.let {
+//            this.add(codeLine(it, "(${it.startRow}:${it.startCol})  "), getGridConstraints(1))
+//        }
 
         this.add(overviewPanel(), getPanelGridConstraints(2))
 
@@ -68,14 +85,7 @@ class SuggestionDescriptionPanel(
 
         this.add(fixExamplesPanel(), getPanelGridConstraints(4))
 
-        this.add(Spacer(),
-            getGridConstraints(10,
-                anchor = GridConstraints.ANCHOR_CENTER,
-                fill = GridConstraints.FILL_VERTICAL,
-                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0)
-        )
+        this.add(severityPanel(), getPanelGridConstraints(0))
     }
 
     private fun severityPanel(): SeverityColorPanel {
@@ -99,26 +109,33 @@ class SuggestionDescriptionPanel(
 
         severityLabel.foreground = Color(-1)
 
-        severityPanel.add(severityLabel,
+        severityPanel.add(
+            severityLabel,
             getGridConstraints(0, indent = 0)
         )
 
-        severityPanel.add(Spacer(),
-            getGridConstraints(0,
+        severityPanel.add(
+            Spacer(),
+            getGridConstraints(
+                0,
                 anchor = GridConstraints.ANCHOR_CENTER,
                 fill = GridConstraints.FILL_HORIZONTAL,
                 HSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
                 VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                indent = 0)
+                indent = 0
+            )
         )
 
-        severityPanel.add(Spacer(),
-            getGridConstraints(0,
+        severityPanel.add(
+            Spacer(),
+            getGridConstraints(
+                0,
                 anchor = GridConstraints.ANCHOR_CENTER,
                 fill = GridConstraints.FILL_VERTICAL,
                 HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
                 VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0)
+                indent = 0
+            )
         )
 
         return severityPanel
@@ -128,7 +145,8 @@ class SuggestionDescriptionPanel(
         val overviewPanel = JPanel()
         overviewPanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
 
-        overviewPanel.add(buildBoldTitleLabel("Overview"),
+        overviewPanel.add(
+            buildBoldTitleLabel("Overview"),
             getGridConstraints(0)
         )
 
@@ -141,13 +159,16 @@ class SuggestionDescriptionPanel(
             this.font = io.snyk.plugin.ui.getFont(-1, 16, overviewPanel.font)
         }
 
-        overviewPanel.add(ScrollPaneFactory.createScrollPane(descriptionTextArea, true),
-            getGridConstraints(1,
+        overviewPanel.add(
+            ScrollPaneFactory.createScrollPane(descriptionTextArea, true),
+            getGridConstraints(
+                1,
                 anchor = GridConstraints.ANCHOR_CENTER,
                 fill = GridConstraints.FILL_BOTH,
                 HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
                 VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 2)
+                indent = 2
+            )
         )
 
         return overviewPanel
@@ -156,6 +177,7 @@ class SuggestionDescriptionPanel(
     private fun codeLine(range: MyTextRange, prefix: String): Component {
         val component = JTextArea(prefix + getLineOfCode(range))
         component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
+        component.isEditable = false
         return component
     }
 
@@ -179,7 +201,8 @@ class SuggestionDescriptionPanel(
 
         // skip all white space characters
         while (lineStartOffset < document.textLength
-            && (chars[lineStartOffset] == '\t' || chars[lineStartOffset] == ' ')) {
+            && (chars[lineStartOffset] == '\t' || chars[lineStartOffset] == ' ')
+        ) {
             lineStartOffset++
         }
         val lineEndOffset = document.getLineEndOffset(lineNumber)
@@ -192,17 +215,45 @@ class SuggestionDescriptionPanel(
 
     private fun dataFlowPanel(): JPanel {
         val panel = JPanel()
-        panel.layout = GridLayoutManager(100, 1, Insets(0, 0, 0, 0), -1, -1)
+        val suggestionRange = suggestion.ranges.firstOrNull()
+        val markers = suggestionRange?.let { it.markers.values.flatten() } ?: emptyList()
 
-        panel.add(buildBoldTitleLabel("Data Flow"),
+        panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, -1)
+
+        panel.add(
+            buildBoldTitleLabel("Data Flow"),
             getGridConstraints(0)
         )
 
-        suggestion.ranges.firstOrNull()?.let { suggestionRange ->
-            suggestionRange.markers.values.flatten().forEachIndexed { index, markerRange ->
-                val prefix = "${index + 1}  ${psiFile.name}:${markerRange.startRow}  | "
-                panel.add(codeLine(markerRange, prefix), getGridConstraints(1 + index, indent = 2))
-            }
+        markers.forEachIndexed { index, markerRange ->
+            val prefix = "${index + 1}  ${psiFile.name}:${markerRange.startRow}  | "
+            val positionLabel = defaultFontLabel(prefix)
+
+            positionLabel.addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent?) {
+                    // jump to Source
+                    PsiNavigationSupport.getInstance().createNavigatable(
+                        psiFile.project,
+                        psiFile.virtualFile,
+                        markerRange.start
+                    ).navigate(true)
+                }
+
+                override fun mouseEntered(e: MouseEvent?) {
+                    positionLabel.foreground = JBUI.CurrentTheme.Link.linkColor()
+                }
+
+                override fun mouseExited(e: MouseEvent?) {
+                    positionLabel.foreground = UIUtil.getLabelForeground()
+                }
+            })
+
+            panel.add(positionLabel, getGridConstraints(1 + index, indent = 2))
+
+            panel.add(
+                codeLine(markerRange, ""),
+                getGridConstraints(1 + index, indent = prefix.length) // fixme
+            )
         }
 
         return panel
@@ -212,7 +263,8 @@ class SuggestionDescriptionPanel(
         val panel = JPanel()
         panel.layout = GridLayoutManager(6, 1, Insets(0, 0, 0, 0), -1, -1)
 
-        panel.add(buildBoldTitleLabel("External examples fixes"),
+        panel.add(
+            buildBoldTitleLabel("External examples fixes"),
             getGridConstraints(0)
         )
 
@@ -220,8 +272,10 @@ class SuggestionDescriptionPanel(
         val examplesCount = fixes.size.coerceAtMost(3)
 
         panel.add(
-            defaultFontLabel("This issue was fixed by ${suggestion.repoDatasetSize} projects." +
-                if (examplesCount > 0) " Here are $examplesCount example fixes." else ""),
+            defaultFontLabel(
+                "This issue was fixed by ${suggestion.repoDatasetSize} projects." +
+                    if (examplesCount > 0) " Here are $examplesCount example fixes." else ""
+            ),
             getGridConstraints(1, indent = 2)
         )
 
@@ -237,8 +291,8 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
 
         val commitURL = exampleCommitFix.commitURL
-            .replace("https://","")
-            .replace(Regex("/commit/.*"),"")
+            .replace("https://", "")
+            .replace(Regex("/commit/.*"), "")
         val shortenURL = if (commitURL.length > 100) commitURL.take(100) + "..." else commitURL
 
         panel.add(defaultFontLabel(shortenURL), getGridConstraints(0))
@@ -268,7 +322,7 @@ class SuggestionDescriptionPanel(
         )
 
         val panel = JPanel()
-        panel.layout = GridLayoutManager(100, 1, Insets(0, 0, 0, 0), -1, 0)
+        panel.layout = GridLayoutManager(exampleCommitFix.lines.size, 1, Insets(0, 0, 0, 0), -1, 0)
         panel.background = baseColor
 
         exampleCommitFix.lines.forEachIndexed { index, exampleLine ->
@@ -291,6 +345,7 @@ class SuggestionDescriptionPanel(
                 else -> baseColor
             }
             codeLine.isOpaque = true
+            codeLine.isEditable = false
             codeLine.font = io.snyk.plugin.ui.getFont(-1, 14, codeLine.font)
 
             panel.add(codeLine, getPanelGridConstraints(index))

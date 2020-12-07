@@ -62,11 +62,11 @@ class SnykTaskQueueService(val project: Project) {
 
                 indicator.checkCanceled()
 
-                getSnykCode(project).scan()
 
                 currentProgressIndicator = null
             }
         })
+        getSnykCode(project).scan()
     }
 
     fun downloadLatestRelease() {
