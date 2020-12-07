@@ -216,7 +216,9 @@ class SuggestionDescriptionPanel(
     private fun dataFlowPanel(): JPanel {
         val panel = JPanel()
         val suggestionRange = suggestion.ranges.firstOrNull()
-        val markers = suggestionRange?.let { it.markers.values.flatten() } ?: emptyList()
+        val markers = suggestionRange?.let { range ->
+            range.markers.values.flatten().distinctBy { it.startRow }
+        } ?: emptyList()
 
         panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, -1)
 
