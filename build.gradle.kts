@@ -42,8 +42,8 @@ repositories {
     credentials {
       // To download and install packages from a repository, your token must have the read:packages scope,
       // and your user account must have read permissions for the repository: https://github.com/ArtsiomCh/java-client-dev
-      username = System.getenv("GITHUB_USERNAME")
-      password = System.getenv("GITHUB_READ_TOKEN") ?: System.getenv("GITHUB_TOKEN") // for CI
+      username = System.getenv("USERNAME_GITHUB")
+      password = System.getenv("READ_TOKEN_GITHUB")
     }
   }
 }
