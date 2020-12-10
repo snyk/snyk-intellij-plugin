@@ -24,7 +24,8 @@ dependencies {
 
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
-  implementation(fileTree("$projectDir/libs"))
+  //implementation(fileTree("$projectDir/libs"))
+  implementation("ai.deepcode:java-client:2.1.2-dev1")
 
   testImplementation("junit:junit:4.12")
   testImplementation("org.mockito:mockito-core:3.5.2")
@@ -36,6 +37,15 @@ intellij {
 
 repositories {
   jcenter()
+  maven {
+    url = uri("https://maven.pkg.github.com/ArtsiomCh/java-client-dev")
+    credentials {
+      // To download and install packages from a repository, your token must have the read:packages scope,
+      // and your user account must have read permissions for the repository: https://github.com/ArtsiomCh/java-client-dev
+      username = System.getenv("GITHUB_USERNAME")
+      password = System.getenv("GITHUB_READ_TOKEN") ?: System.getenv("GITHUB_TOKEN") // for CI
+    }
+  }
 }
 
 tasks {
