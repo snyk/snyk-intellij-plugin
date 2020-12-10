@@ -16,6 +16,9 @@ jobs:
     name: Test
     needs: gradleValidation
     runs-on: ubuntu-latest
+    env:
+      GITHUB_USERNAME: ${{ env.GITHUB_ACTOR }}
+      GITHUB_READ_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
