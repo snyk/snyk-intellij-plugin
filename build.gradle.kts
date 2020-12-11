@@ -25,7 +25,7 @@ dependencies {
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
   //implementation(fileTree("$projectDir/libs"))
-  implementation("ai.deepcode:java-client:2.1.2-dev1")
+  implementation("ai.deepcode:java-client:2.1.2-dev2")
 
   testImplementation("junit:junit:4.12")
   testImplementation("org.mockito:mockito-core:3.5.2")
@@ -38,6 +38,8 @@ intellij {
 repositories {
   jcenter()
   maven {
+    url = uri("https://artsiomch.bintray.com/maven-releases")
+/*
     url = uri("https://maven.pkg.github.com/ArtsiomCh/java-client-dev")
     credentials {
       // To download and install packages from a repository, your token must have the read:packages scope,
@@ -45,6 +47,7 @@ repositories {
       username = System.getenv("USERNAME_GITHUB")
       password = System.getenv("READ_TOKEN_GITHUB")
     }
+*/
   }
 }
 
