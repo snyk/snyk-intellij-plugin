@@ -19,7 +19,7 @@ jobs:
     env:
       USERNAME_GITHUB: ${{ github.actor }}
       READ_TOKEN_GITHUB: ${{ github.token }}
-      DEEPCODE_API_KEY: fake_token
+      DEEPCODE_API_KEY: ${{ sectrets.DEEPCODE_API_KEY }}
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
