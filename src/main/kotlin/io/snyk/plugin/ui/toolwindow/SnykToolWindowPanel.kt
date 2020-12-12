@@ -23,6 +23,7 @@ import io.snyk.plugin.cli.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
@@ -59,13 +60,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         vulnerabilitiesTree.cellRenderer = VulnerabilityTreeCellRenderer()
 
         initializeUiComponents()
-
-        val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
-        add(vulnerabilitiesSplitter, BorderLayout.CENTER)
-        vulnerabilitiesSplitter.firstComponent = ScrollPaneFactory.createScrollPane(vulnerabilitiesTree)
-        vulnerabilitiesSplitter.secondComponent = descriptionPanel
-
-        displayNoVulnerabilitiesMessage()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
             ApplicationManager.getApplication().invokeLater {
@@ -133,7 +127,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater { displayCliCheckMessage() }
 
                 override fun checkCliExistsFinished() =
-                    ApplicationManager.getApplication().invokeLater { displayNoVulnerabilitiesMessage() }
+                    ApplicationManager.getApplication().invokeLater {
+                        if (getApplicationSettingsStateService().token.isNullOrEmpty()) {
+                            displayAuthPanel()
+                        } else {
+                            displayTreeAndDescriptionPanels()
+                        }
+                    }
 
                 override fun cliDownloadStarted() =
                     ApplicationManager.getApplication().invokeLater { displayDownloadMessage() }
@@ -165,6 +165,23 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             //revalidate()
         }
+    }
+
+    fun displayAuthPanel() {
+        removeAll()
+        add(CenterOneComponentPanel(SnykAuthPanel(project).root), BorderLayout.CENTER)
+        revalidate()
+    }
+
+    fun displayTreeAndDescriptionPanels() {
+        removeAll()
+
+        val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
+        add(vulnerabilitiesSplitter, BorderLayout.CENTER)
+        vulnerabilitiesSplitter.firstComponent = ScrollPaneFactory.createScrollPane(vulnerabilitiesTree)
+        vulnerabilitiesSplitter.secondComponent = descriptionPanel
+
+        displayNoVulnerabilitiesMessage()
     }
 
     fun displayNoVulnerabilitiesMessage() {
