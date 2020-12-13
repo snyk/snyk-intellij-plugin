@@ -131,9 +131,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         if (getApplicationSettingsStateService().token.isNullOrEmpty()) {
                             displayAuthPanel()
                         } else {
-                            displayTreeAndDescriptionPanels()
+                            displaySnykProjectFirstTimeOpenPanel()
                         }
                     }
+
+                override fun firstTimeProjectOpenSetupFinished() {
+                    displayTreeAndDescriptionPanels()
+                }
 
                 override fun cliDownloadStarted() =
                     ApplicationManager.getApplication().invokeLater { displayDownloadMessage() }
@@ -170,6 +174,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     fun displayAuthPanel() {
         removeAll()
         add(CenterOneComponentPanel(SnykAuthPanel(project).root), BorderLayout.CENTER)
+        revalidate()
+    }
+
+    fun displaySnykProjectFirstTimeOpenPanel() {
+        removeAll()
+        add(CenterOneComponentPanel(SnykProjectFirstTimeOpenPanel(project).root), BorderLayout.CENTER)
         revalidate()
     }
 

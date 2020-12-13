@@ -12,5 +12,7 @@ interface SnykCliDownloadListener {
 
     fun checkCliExistsFinished()
 
+    fun firstTimeProjectOpenSetupFinished()
+
     fun cliDownloadStarted()
 }
