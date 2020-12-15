@@ -28,6 +28,7 @@ class SnykSettingsDialog(
     applicationSettings: SnykApplicationSettingsStateService) {
 
     private val tokenTextField = JBPasswordField()
+    private val tokenAuthenticateButton = JButton("Authenticate")
     private val customEndpointTextField = JTextField()
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
@@ -54,11 +55,9 @@ class SnykSettingsDialog(
     fun getRootPanel(): JComponent = rootPanel
 
     private fun initializeUiComponents() {
-        val defaultTextFieldWidth = 500
-
         rootPanel.layout = UIGridLayoutManager(4, 1, Insets(0, 0, 0, 0), -1, -1)
 
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 3, Insets(0, 0, 0, 0), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -68,12 +67,12 @@ class SnykSettingsDialog(
                 0,
                 1,
                 1,
-                UIGridConstraints.ANCHOR_CENTER,
+                UIGridConstraints.ANCHOR_NORTHWEST,
                 UIGridConstraints.FILL_BOTH,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 null,
-                Dimension(200, 200),
+                Dimension(150, 200),
                 null,
                 0,
                 false
@@ -92,7 +91,7 @@ class SnykSettingsDialog(
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(120, 16),
+                null,
                 null,
                 0,
                 false
@@ -106,15 +105,34 @@ class SnykSettingsDialog(
                 1,
                 1,
                 UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(defaultTextFieldWidth, -1),
+                null,
                 null,
                 0,
                 false
             ))
+
+        generalSettingsPanel.add(
+            tokenAuthenticateButton,
+            UIGridConstraints(
+                0,
+                2,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_EAST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            )
+        )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
         generalSettingsPanel.add(
@@ -129,7 +147,7 @@ class SnykSettingsDialog(
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(120, 16),
+                null,
                 null,
                 0,
                 false
@@ -141,13 +159,13 @@ class SnykSettingsDialog(
                 1,
                 1,
                 1,
-                1,
+                2,
                 UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(defaultTextFieldWidth, -1),
+                null,
                 null,
                 0,
                 false
@@ -160,10 +178,10 @@ class SnykSettingsDialog(
                 2,
                 1,
                 1,
-                1,
+                2,
                 UIGridConstraints.ANCHOR_WEST,
                 UIGridConstraints.FILL_NONE,
-                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
                 null,
@@ -197,13 +215,13 @@ class SnykSettingsDialog(
                 3,
                 1,
                 1,
-                1,
+                2,
                 UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(defaultTextFieldWidth, -1),
+                null,
                 null,
                 0,
                 false
@@ -247,7 +265,7 @@ class SnykSettingsDialog(
                     UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                     UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                     null,
-                    Dimension(200, 200),
+                    Dimension(150, 200),
                     null,
                     0,
                     false
@@ -266,7 +284,7 @@ class SnykSettingsDialog(
                     UIGridConstraints.SIZEPOLICY_FIXED,
                     UIGridConstraints.SIZEPOLICY_FIXED,
                     null,
-                    Dimension(120, 16),
+                    null,
                     null,
                     0,
                     false
@@ -280,11 +298,11 @@ class SnykSettingsDialog(
                     1,
                     1,
                     UIGridConstraints.ANCHOR_WEST,
-                    UIGridConstraints.SIZEPOLICY_FIXED,
-                    UIGridConstraints.SIZEPOLICY_FIXED,
+                    UIGridConstraints.FILL_HORIZONTAL,
+                    UIGridConstraints.SIZEPOLICY_WANT_GROW,
                     UIGridConstraints.SIZEPOLICY_FIXED,
                     null,
-                    Dimension(defaultTextFieldWidth, -1),
+                    null,
                     null,
                     0,
                     false
