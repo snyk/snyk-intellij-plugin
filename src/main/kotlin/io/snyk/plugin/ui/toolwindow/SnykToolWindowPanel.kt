@@ -32,6 +32,7 @@ import java.awt.Insets
 import java.util.Objects.nonNull
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.ScrollPaneConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
@@ -82,7 +83,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                                 ?: throw IllegalArgumentException(node.toString())
                             val suggestion = node.userObject as SuggestionForFile
                             val scrollPane = ScrollPaneFactory.createScrollPane(
-                                SuggestionDescriptionPanel(psiFile, suggestion)
+                                SuggestionDescriptionPanel(psiFile, suggestion),
+                                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
                             )
                             descriptionPanel.add(scrollPane, BorderLayout.CENTER)
                             //descriptionPanel.add(DeepCodeConfigForm().root, BorderLayout.CENTER)

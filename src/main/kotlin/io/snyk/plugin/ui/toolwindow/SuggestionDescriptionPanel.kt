@@ -3,13 +3,16 @@ package io.snyk.plugin.ui.toolwindow
 import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
+import com.intellij.icons.AllIcons
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.components.JBTabbedPane
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
+import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.snykcode.severityAsString
@@ -17,9 +20,7 @@ import io.snyk.plugin.ui.buildBoldTitleLabel
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.JTextArea
+import javax.swing.*
 import kotlin.math.min
 
 class SuggestionDescriptionPanel(
@@ -263,7 +264,7 @@ class SuggestionDescriptionPanel(
 
     private fun fixExamplesPanel(): JPanel {
         val panel = JPanel()
-        panel.layout = GridLayoutManager(6, 1, Insets(0, 0, 0, 0), -1, -1)
+        panel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, -1)
 
         panel.add(
             buildBoldTitleLabel("External examples fixes"),
@@ -281,30 +282,35 @@ class SuggestionDescriptionPanel(
             getGridConstraints(1, indent = 2)
         )
 
-        fixes.take(examplesCount).forEachIndexed { index, exampleCommitFix ->
-            panel.add(fixExamplesPanelInner(exampleCommitFix), getPanelGridConstraints(2 + index))
+        val tabbedPane = JBTabbedPane()
+        tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
+        tabbedPane.tabComponentInsets = JBInsets.create(0, 0) // no inner borders for tab content
+
+        panel.add(tabbedPane, getPanelGridConstraints(2))
+
+        fixes.take(examplesCount).forEach { exampleCommitFix ->
+            val shortURL = exampleCommitFix.commitURL
+                .removePrefix("https://")
+                .replace(Regex("/commit/.*"), "")
+
+            val tabTitle = shortURL.removePrefix("github.com/").let {
+                if (it.length > 50) it.take(50) + "..." else it
+            }
+
+            val icon = if (shortURL.startsWith("github.com")) AllIcons.Vcs.Vendors.Github else null
+
+            tabbedPane.addTab(
+                tabTitle,
+                icon,
+                diffPanel(exampleCommitFix),
+                shortURL
+            )
         }
 
         return panel
     }
 
-    private fun fixExamplesPanelInner(exampleCommitFix: ExampleCommitFix): JPanel {
-        val panel = JPanel()
-        panel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        val commitURL = exampleCommitFix.commitURL
-            .replace("https://", "")
-            .replace(Regex("/commit/.*"), "")
-        val shortenURL = if (commitURL.length > 100) commitURL.take(100) + "..." else commitURL
-
-        panel.add(defaultFontLabel(shortenURL), getGridConstraints(0))
-
-        panel.add(diffPanel(exampleCommitFix), getGridConstraints(1, indent = 1))
-
-        return panel
-    }
-
-    private fun diffPanel(exampleCommitFix: ExampleCommitFix): JPanel {
+    private fun diffPanel(exampleCommitFix: ExampleCommitFix): JComponent {
 
         fun shift(colorComponent: Int, d: Double): Int {
             val n = (colorComponent * d).toInt()
@@ -350,10 +356,20 @@ class SuggestionDescriptionPanel(
             codeLine.isEditable = false
             codeLine.font = io.snyk.plugin.ui.getFont(-1, 14, codeLine.font)
 
-            panel.add(codeLine, getPanelGridConstraints(index))
+            panel.add(
+                codeLine, getGridConstraints(
+                    row = index,
+                    fill = GridConstraints.FILL_BOTH,
+                    indent = 0
+                )
+            )
         }
 
-        return panel
+        return ScrollPaneFactory.createScrollPane(
+            panel,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
+        )
     }
 
     private fun getOverviewText(): String {
