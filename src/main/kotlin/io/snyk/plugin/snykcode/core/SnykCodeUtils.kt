@@ -1,6 +1,7 @@
 package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeUtilsBase
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.vcs.changes.ChangeListManager
@@ -15,6 +16,8 @@ class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
     SCLogger.instance
 ) {
     private val scLogger: SCLogger = SCLogger.instance
+
+    fun allProjectFilesCount(project: Project): Int = allProjectFiles(project).size
 
     override fun allProjectFiles(projectO: Any): Collection<Any> {
         val project = PDU.toProject(projectO)

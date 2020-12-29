@@ -12,6 +12,7 @@ import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
 import java.awt.Insets
 import java.util.*
@@ -32,6 +33,7 @@ class SnykSettingsDialog(
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
+    private val scanTypesPanel = ScanTypesPanel().panel
 
     private val rootPanel = object: JPanel(), Disposable {
         override fun dispose() = Unit
@@ -53,10 +55,11 @@ class SnykSettingsDialog(
 
     fun getRootPanel(): JComponent = rootPanel
 
+
     private fun initializeUiComponents() {
         val defaultTextFieldWidth = 500
 
-        rootPanel.layout = UIGridLayoutManager(4, 1, Insets(0, 0, 0, 0), -1, -1)
+        rootPanel.layout = UIGridLayoutManager(5, 1, Insets(0, 0, 0, 0), -1, -1)
 
         val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 3, Insets(0, 0, 0, 0), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
@@ -231,6 +234,24 @@ class SnykSettingsDialog(
         customEndpointLabel.labelFor = customEndpointTextField
         organizationLabel.labelFor = organizationTextField
 
+        rootPanel.add(
+            scanTypesPanel,
+            UIGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_CENTER,
+                UIGridConstraints.FILL_BOTH,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                null,
+                null,
+                null,
+                0,
+                false
+            ))
+
         if (isProjectSettingsAvailable(project)) {
             val projectSettingsPanel = JPanel(UIGridLayoutManager(2, 3, Insets(0, 0, 0, 0), -1, -1))
             projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
@@ -238,7 +259,7 @@ class SnykSettingsDialog(
             rootPanel.add(
                 projectSettingsPanel,
                 UIGridConstraints(
-                    1,
+                    2,
                     0,
                     1,
                     1,
@@ -316,7 +337,7 @@ class SnykSettingsDialog(
             rootPanel.add(
                 emptyPanel,
                 UIGridConstraints(
-                    2,
+                    3,
                     0,
                     1,
                     1,
@@ -344,6 +365,10 @@ class SnykSettingsDialog(
     fun getCustomEndpoint(): String = customEndpointTextField.text
 
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
+
+    fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
+
+    fun saveScanTypeChanges() = scanTypesPanel.apply()
 
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 

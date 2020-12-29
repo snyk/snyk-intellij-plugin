@@ -8,7 +8,10 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     "https://www.deepcode.ai/",
     false,
     1,
-    System.getenv("DEEPCODE_API_KEY"),
+    System.getenv("DEEPCODE_API_KEY")
+        ?: throw IllegalArgumentException(
+            "Environmental variable DEEPCODE_API_KEY with valid deepcode.ai token should be created!"
+        ),
     "",
     "${SCLogger.presentableName}-Jetbrains"
 ) {
@@ -22,7 +25,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
         //TODO
     }
 
-    companion object{
+    companion object {
         val instance = SnykCodeParams()
     }
 }

@@ -9,6 +9,8 @@ object SnykIcons {
     @JvmField
     val TOOL_WINDOW = getIcon("/icons/toolWindowSnyk.svg")
 
+    val LOGO = getIcon("/icons/logo_snyk.png")
+
     val VULNERABILITY_16 = getIconFromResources("/icons/vulnerability_16.png")
     val VULNERABILITY_24 = getIconFromResources("/icons/vulnerability.png")
 

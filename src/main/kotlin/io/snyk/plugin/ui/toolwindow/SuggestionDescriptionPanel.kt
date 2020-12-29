@@ -283,7 +283,7 @@ class SuggestionDescriptionPanel(
         )
 
         val tabbedPane = JBTabbedPane()
-        tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
+        //tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
         tabbedPane.tabComponentInsets = JBInsets.create(0, 0) // no inner borders for tab content
 
         panel.add(tabbedPane, getPanelGridConstraints(2))

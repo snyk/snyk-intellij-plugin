@@ -127,20 +127,28 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
 
                 override fun checkCliExistsStarted() =
-                    ApplicationManager.getApplication().invokeLater { displayCliCheckMessage() }
+                    ApplicationManager.getApplication().invokeLater {
+
+                        // fixme !!!!!!!!!!!! uncomment below for debug only
+                        //getApplicationSettingsStateService().pluginFirstRun = true
+
+                        displayCliCheckMessage()
+                    }
 
                 override fun checkCliExistsFinished() =
                     ApplicationManager.getApplication().invokeLater {
-                        if (getApplicationSettingsStateService().token.isNullOrEmpty()) {
-                            displayAuthPanel()
-                        } else {
-                            displaySnykProjectFirstTimeOpenPanel()
+                        when {
+                            getApplicationSettingsStateService().token.isNullOrEmpty() -> {
+                                displayAuthPanel()
+                            }
+                            getApplicationSettingsStateService().pluginFirstRun -> {
+                                displayPluginFirstRunPanel()
+                            }
+                            else -> {
+                                displayTreeAndDescriptionPanels()
+                            }
                         }
                     }
-
-                override fun firstTimeProjectOpenSetupFinished() {
-                    displayTreeAndDescriptionPanels()
-                }
 
                 override fun cliDownloadStarted() =
                     ApplicationManager.getApplication().invokeLater { displayDownloadMessage() }
@@ -180,9 +188,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    fun displaySnykProjectFirstTimeOpenPanel() {
+    fun displayPluginFirstRunPanel() {
         removeAll()
-        add(CenterOneComponentPanel(SnykProjectFirstTimeOpenPanel(project).root), BorderLayout.CENTER)
+        add(CenterOneComponentPanel(OnboardPanel(project).panel), BorderLayout.CENTER)
         revalidate()
     }
 

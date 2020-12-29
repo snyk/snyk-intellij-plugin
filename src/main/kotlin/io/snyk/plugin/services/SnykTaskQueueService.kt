@@ -12,6 +12,7 @@ import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getSnykCode
 
@@ -36,6 +37,15 @@ class SnykTaskQueueService(val project: Project) {
     fun getTaskQueue() = taskQueue
 
     fun scan() {
+        if (getApplicationSettingsStateService().cliScanEnable) {
+            scheduleCliScan()
+        }
+        if (getApplicationSettingsStateService().snykCodeScanEnable) {
+            getSnykCode(project).scan()
+        }
+    }
+
+    private fun scheduleCliScan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 cliScanPublisher.scanningStarted()
@@ -66,7 +76,6 @@ class SnykTaskQueueService(val project: Project) {
                 currentProgressIndicator = null
             }
         })
-        getSnykCode(project).scan()
     }
 
     fun downloadLatestRelease() {

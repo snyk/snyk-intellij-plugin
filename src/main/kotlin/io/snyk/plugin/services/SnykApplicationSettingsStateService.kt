@@ -22,6 +22,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var ignoreUnknownCA = false
     var cliVersion: String? = null
     var lastCheckDate: Date? = null
+    var cliScanEnable: Boolean = true
+    var snykCodeScanEnable: Boolean = true
+    var pluginFirstRun = true
 
     override fun getState(): SnykApplicationSettingsStateService = this
 
