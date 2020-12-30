@@ -4,24 +4,24 @@ import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
 import com.intellij.icons.AllIcons
+import com.intellij.ide.BrowserUtil
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
+import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.JBInsets
-import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.buildBoldTitleLabel
 import java.awt.*
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
 import javax.swing.*
+import javax.swing.event.HyperlinkEvent
 import kotlin.math.min
 
 class SuggestionDescriptionPanel(
@@ -80,6 +80,8 @@ class SuggestionDescriptionPanel(
 //        codeRange?.let {
 //            this.add(codeLine(it, "(${it.startRow}:${it.startCol})  "), getGridConstraints(1))
 //        }
+
+        cwePanel()?.let { this.add(it, getGridConstraints(1, indent = 0)) }
 
         this.add(overviewPanel(), getPanelGridConstraints(2))
 
@@ -191,6 +193,16 @@ class SuggestionDescriptionPanel(
         }
     }
 
+    private fun linkLabel(linkText: String, toolTipText: String, onClick: (HyperlinkEvent) -> Unit): HyperlinkLabel {
+        return HyperlinkLabel(linkText).apply {
+            this.toolTipText = toolTipText
+            this.font = io.snyk.plugin.ui.getFont(-1, 14, font)
+            addHyperlinkListener {
+                onClick.invoke(it)
+            }
+        }
+    }
+
     private fun getLineOfCode(range: MyTextRange): String {
         val document = PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile)
             ?: throw IllegalStateException("No document found for $psiFile")
@@ -231,30 +243,18 @@ class SuggestionDescriptionPanel(
 
         markers.forEachIndexed { index, markerRange ->
             val prefix = "${index + 1}  ${psiFile.name}:${markerRange.startRow}  | "
-            val positionLabel = defaultFontLabel(prefix)
+            val positionLabel = linkLabel(prefix, "Click to show in the Editor") {
+                // jump to Source
+                PsiNavigationSupport.getInstance().createNavigatable(
+                    psiFile.project,
+                    psiFile.virtualFile,
+                    markerRange.start
+                ).navigate(false)
 
-            positionLabel.addMouseListener(object : MouseAdapter() {
-                override fun mouseClicked(e: MouseEvent?) {
-                    // jump to Source
-                    PsiNavigationSupport.getInstance().createNavigatable(
-                        psiFile.project,
-                        psiFile.virtualFile,
-                        markerRange.start
-                    ).navigate(false)
-
-                    // highlight(by selection) marker range in source file
-                    val editor = FileEditorManager.getInstance(psiFile.project).selectedTextEditor
-                    editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
-                }
-
-                override fun mouseEntered(e: MouseEvent?) {
-                    positionLabel.foreground = JBUI.CurrentTheme.Link.linkColor()
-                }
-
-                override fun mouseExited(e: MouseEvent?) {
-                    positionLabel.foreground = UIUtil.getLabelForeground()
-                }
-            })
+                // highlight(by selection) marker range in source file
+                val editor = FileEditorManager.getInstance(psiFile.project).selectedTextEditor
+                editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
+            }
 
             panel.add(positionLabel, getGridConstraints(1 + index, indent = 2))
 
@@ -375,6 +375,29 @@ class SuggestionDescriptionPanel(
             ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
         )
+    }
+
+
+    private fun cwePanel(): Component? {
+        val cwes = suggestion.cwe
+        if (cwes.isNullOrEmpty()) return null
+
+        val panel = JPanel()
+
+        panel.layout = GridLayoutManager(1, cwes.size, Insets(0, 0, 0, 0), -1, -1)
+
+        cwes.forEachIndexed() { index, cwe ->
+            if (!cwe.isNullOrEmpty()) {
+                val positionLabel = linkLabel(cwe, "Click to open description in the Browser") {
+                    val url = "https://cwe.mitre.org/data/definitions/${cwe.removePrefix("CWE-")}.html"
+                    BrowserUtil.open(url)
+                }
+
+                panel.add(positionLabel, getGridConstraints(0, column = index))
+            }
+        }
+
+        return panel
     }
 
     private fun getOverviewText(): String {
