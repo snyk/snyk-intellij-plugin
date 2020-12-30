@@ -5,6 +5,7 @@ import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
 import com.intellij.icons.AllIcons
 import com.intellij.ide.util.PsiNavigationSupport
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.ScrollPaneFactory
@@ -239,7 +240,11 @@ class SuggestionDescriptionPanel(
                         psiFile.project,
                         psiFile.virtualFile,
                         markerRange.start
-                    ).navigate(true)
+                    ).navigate(false)
+
+                    // highlight(by selection) marker range in source file
+                    val editor = FileEditorManager.getInstance(psiFile.project).selectedTextEditor
+                    editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
                 }
 
                 override fun mouseEntered(e: MouseEvent?) {

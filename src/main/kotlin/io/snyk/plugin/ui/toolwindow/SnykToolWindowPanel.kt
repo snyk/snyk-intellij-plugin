@@ -6,6 +6,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.psi.PsiFile
@@ -92,12 +93,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             descriptionPanel.add(scrollPane, BorderLayout.CENTER)
                             //descriptionPanel.add(DeepCodeConfigForm().root, BorderLayout.CENTER)
 
+                            val textRange = suggestion.ranges.firstOrNull()
+                                ?: throw IllegalArgumentException(suggestion.ranges.toString())
                             // jump to Source
                             PsiNavigationSupport.getInstance().createNavigatable(
                                 project,
                                 psiFile.virtualFile,
-                                suggestion.ranges.first().start
-                            ).navigate(true)
+                                textRange.start
+                            ).navigate(false)
+
+                            // highlight(by selection) suggestion range in source file
+                            val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                            editor?.selectionModel?.setSelection(textRange.start, textRange.end)
                         }
                         else -> {
                             displaySelectVulnerabilityMessage()
