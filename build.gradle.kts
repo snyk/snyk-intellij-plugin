@@ -25,7 +25,7 @@ dependencies {
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
   //implementation(fileTree("$projectDir/libs"))
-  implementation("ai.deepcode:java-client:2.1.2-dev2")
+  implementation("ai.deepcode:java-client:2.1.3")
 
   testImplementation("junit:junit:4.12")
   testImplementation("org.mockito:mockito-core:3.5.2")

@@ -13,6 +13,14 @@ class SnykCodeResults(
 
     val totalCount: Int
         get() = file2suggestions.values.flatten().sumBy { it.ranges.size }
+
+    fun cloneFiltered(filter: (SuggestionForFile) -> Boolean): SnykCodeResults {
+        return SnykCodeResults(
+            file2suggestions
+                .mapValues { (_, suggestions) -> suggestions.filter(filter) }
+                .filterValues { it.isNotEmpty() }
+        )
+    }
 }
 
 val SuggestionForFile.severityAsString: String

@@ -47,10 +47,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootCliTreeNode = DefaultMutableTreeNode(CLI_ROOT_TEXT)
-    private val rootSnykCodeTreeNode = DefaultMutableTreeNode(SNYKCODE_ROOT_TEXT)
+    private val rootSecurityIssuesTreeNode = DefaultMutableTreeNode(SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
+    private val rootQualityIssuesTreeNode = DefaultMutableTreeNode(SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
     private val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootCliTreeNode)
-        rootTreeNode.add(rootSnykCodeTreeNode)
+        rootTreeNode.add(rootSecurityIssuesTreeNode)
+        rootTreeNode.add(rootQualityIssuesTreeNode)
         Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -171,8 +173,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             rootCliTreeNode.userObject = CLI_ROOT_TEXT
             rootCliTreeNode.removeAllChildren()
 
-            rootSnykCodeTreeNode.userObject = SNYKCODE_ROOT_TEXT
-            rootSnykCodeTreeNode.removeAllChildren()
+            rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT
+            rootSecurityIssuesTreeNode.removeAllChildren()
+
+            rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
+            rootQualityIssuesTreeNode.removeAllChildren()
 
             reloadTree()
 
@@ -249,7 +254,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    fun isEmpty(): Boolean = rootCliTreeNode.childCount == 0 && rootSnykCodeTreeNode.childCount == 0
+    fun isEmpty(): Boolean =
+        rootCliTreeNode.childCount == 0
+            && rootSecurityIssuesTreeNode.childCount == 0
+            && rootQualityIssuesTreeNode.childCount == 0
 
     fun displayVulnerabilities(cliResult: CliResult) {
         displaySelectVulnerabilityMessage()
@@ -279,14 +287,34 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
         displaySelectVulnerabilityMessage()
 
-        rootSnykCodeTreeNode.removeAllChildren()
+        // display Security issues
+        val securityResults = snykCodeResults.cloneFiltered {
+            it.categories.contains("Security")
+        }
+        rootSecurityIssuesTreeNode.removeAllChildren()
+        rootSecurityIssuesTreeNode.userObject =
+            SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + " - ${securityResults.totalCount}"
 
-        rootSnykCodeTreeNode.userObject =
-            SNYKCODE_ROOT_TEXT + " - ${snykCodeResults.totalCount}"
+        displayResultsForRoot(rootSecurityIssuesTreeNode, securityResults)
 
+        // display Quality (non Security) issues
+        val qualityResults = snykCodeResults.cloneFiltered {
+            !it.categories.contains("Security")
+        }
+        rootQualityIssuesTreeNode.removeAllChildren()
+        rootQualityIssuesTreeNode.userObject =
+            SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + " - ${qualityResults.totalCount}"
+
+        displayResultsForRoot(rootQualityIssuesTreeNode, qualityResults)
+
+        reloadTree()
+        TreeUtil.expandAll(vulnerabilitiesTree)
+    }
+
+    private fun displayResultsForRoot(rootTreeNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
         snykCodeResults.files.forEach { file ->
             val fileTreeNode = SnykCodeFileTreeNode(file)
-            rootSnykCodeTreeNode.add(fileTreeNode)
+            rootTreeNode.add(fileTreeNode)
             snykCodeResults.suggestions(file).forEach { suggestion ->
                 suggestion.ranges.forEach { rangeInFile ->
                     fileTreeNode.add(
@@ -295,19 +323,22 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                                 suggestion.id,
                                 suggestion.rule,
                                 suggestion.message,
+                                suggestion.title,
+                                suggestion.text,
                                 suggestion.severity,
                                 suggestion.repoDatasetSize,
+                                suggestion.exampleCommitDescriptions,
                                 suggestion.exampleCommitFixes,
-                                listOf(rangeInFile)
+                                listOf(rangeInFile),
+                                suggestion.categories,
+                                suggestion.tags,
+                                suggestion.cwe
                             )
                         )
                     )
                 }
             }
         }
-
-        reloadTree()
-        TreeUtil.expandAll(vulnerabilitiesTree)
     }
 
     private fun displaySelectVulnerabilityMessage() {
@@ -411,7 +442,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     companion object {
         const val CLI_ROOT_TEXT = "OPEN SOURCE VULNERABILITIES"
-        const val SNYKCODE_ROOT_TEXT = "CODE ANALYSIS"
+        const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = "CODE ANALYSIS"
+        const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = "QUALITY_ISSUES"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY =
             "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }
