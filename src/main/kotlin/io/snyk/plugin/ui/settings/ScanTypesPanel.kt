@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.settings
 
 import com.intellij.ui.layout.panel
+import com.intellij.ui.layout.selected
 import io.snyk.plugin.getApplicationSettingsStateService
 
 class ScanTypesPanel(
@@ -11,19 +12,26 @@ class ScanTypesPanel(
     val panel = panel {
         row {
             checkBox(
-                "Snyk OpenSource",
+                "Snyk OpenSource vulnerabilities",
                 { getApplicationSettingsStateService().cliScanEnable },
                 { getApplicationSettingsStateService().cliScanEnable = it },
                 cliScanComments
             )
         }
         row {
-            checkBox(
-                "Snyk Code",
+            val snykCodeCheckbox = checkBox(
+                "Snyk Code Security issues",
                 { getApplicationSettingsStateService().snykCodeScanEnable },
                 { getApplicationSettingsStateService().snykCodeScanEnable = it },
                 snykCodeScanComments
+            ).component
+            checkBox(
+                "with Snyk Code Quality issues",
+                { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable },
+                { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable = it }
             )
+                .enableIf(snykCodeCheckbox.selected)
+                .withLargeLeftGap()
         }
     }
 }

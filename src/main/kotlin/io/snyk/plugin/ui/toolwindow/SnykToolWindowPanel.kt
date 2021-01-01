@@ -49,7 +49,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootCliTreeNode = DefaultMutableTreeNode(CLI_ROOT_TEXT)
     private val rootSecurityIssuesTreeNode = DefaultMutableTreeNode(SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
-    private val rootQualityIssuesTreeNode = DefaultMutableTreeNode(SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
+    private val rootQualityIssuesTreeNode = DefaultMutableTreeNode(SNYKCODE_QUALITY_ISSUES_ROOT_TEXT)
     private val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootCliTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
@@ -305,14 +305,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         displayResultsForRoot(rootSecurityIssuesTreeNode, securityResults)
 
         // display Quality (non Security) issues
-        val qualityResults = snykCodeResults.cloneFiltered {
-            !it.categories.contains("Security")
-        }
         rootQualityIssuesTreeNode.removeAllChildren()
-        rootQualityIssuesTreeNode.userObject =
-            SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + " - ${qualityResults.totalCount}"
+        if (getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable) {
+            val qualityResults = snykCodeResults.cloneFiltered {
+                !it.categories.contains("Security")
+            }
+            rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + " - ${qualityResults.totalCount}"
 
-        displayResultsForRoot(rootQualityIssuesTreeNode, qualityResults)
+            displayResultsForRoot(rootQualityIssuesTreeNode, qualityResults)
+
+        } else {
+            rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
+        }
 
         reloadTree()
         TreeUtil.expandAll(vulnerabilitiesTree)
@@ -449,8 +453,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     companion object {
         const val CLI_ROOT_TEXT = "OPEN SOURCE VULNERABILITIES"
-        const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = "CODE ANALYSIS"
-        const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = "QUALITY_ISSUES"
+        const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = "SECURITY ISSUES"
+        const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = "QUALITY ISSUES"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY =
             "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }
