@@ -31,6 +31,10 @@
       <action id="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               class="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               text="Clean Issues" />
+      <separator/>
+      <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
+              class="io.snyk.plugin.ui.actions.SnykSettingsAction"
+              text="Snyk Settings" />
     </group>
   </actions>
 </idea-plugin>
