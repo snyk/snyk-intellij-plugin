@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
+import ai.deepcode.javaclient.core.DeepCodeUtilsBase
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
@@ -28,6 +29,7 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import java.awt.BorderLayout
 import java.awt.Insets
 import java.util.Objects.nonNull
@@ -323,33 +325,46 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displayResultsForRoot(rootTreeNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
-        snykCodeResults.files.forEach { file ->
-            val fileTreeNode = SnykCodeFileTreeNode(file)
-            rootTreeNode.add(fileTreeNode)
-            snykCodeResults.suggestions(file).forEach { suggestion ->
-                suggestion.ranges.forEach { rangeInFile ->
-                    fileTreeNode.add(
-                        SuggestionTreeNode(
-                            SuggestionForFile(
-                                suggestion.id,
-                                suggestion.rule,
-                                suggestion.message,
-                                suggestion.title,
-                                suggestion.text,
-                                suggestion.severity,
-                                suggestion.repoDatasetSize,
-                                suggestion.exampleCommitDescriptions,
-                                suggestion.exampleCommitFixes,
-                                listOf(rangeInFile),
-                                suggestion.categories,
-                                suggestion.tags,
-                                suggestion.cwe
-                            )
-                        )
-                    )
+        snykCodeResults.files
+            // sort by Errors-Warnings-Infos
+            .sortedWith(Comparator { file1, file2 ->
+                val ewi1: DeepCodeUtilsBase.ErrorsWarningsInfos = SnykCodeUtils.instance.getEWI(setOf(file1))
+                val ewi2: DeepCodeUtilsBase.ErrorsWarningsInfos = SnykCodeUtils.instance.getEWI(setOf(file2))
+                return@Comparator when {
+                    ewi1.errors != ewi2.errors -> ewi2.errors - ewi1.errors
+                    ewi1.warnings != ewi2.warnings -> ewi2.warnings - ewi1.warnings
+                    else -> ewi2.infos - ewi1.infos
                 }
+            })
+            .forEach { file ->
+                val fileTreeNode = SnykCodeFileTreeNode(file)
+                rootTreeNode.add(fileTreeNode)
+                snykCodeResults.suggestions(file)
+                    .sortedWith(Comparator { o1, o2 -> o2.severity - o1.severity })
+                    .forEach { suggestion ->
+                        suggestion.ranges.forEach { rangeInFile ->
+                            fileTreeNode.add(
+                                SuggestionTreeNode(
+                                    SuggestionForFile(
+                                        suggestion.id,
+                                        suggestion.rule,
+                                        suggestion.message,
+                                        suggestion.title,
+                                        suggestion.text,
+                                        suggestion.severity,
+                                        suggestion.repoDatasetSize,
+                                        suggestion.exampleCommitDescriptions,
+                                        suggestion.exampleCommitFixes,
+                                        listOf(rangeInFile),
+                                        suggestion.categories,
+                                        suggestion.tags,
+                                        suggestion.cwe
+                                    )
+                                )
+                            )
+                        }
+                    }
             }
-        }
     }
 
     private fun displaySelectVulnerabilityMessage() {
