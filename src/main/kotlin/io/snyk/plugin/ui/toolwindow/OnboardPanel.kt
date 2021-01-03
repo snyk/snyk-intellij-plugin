@@ -9,6 +9,7 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.ui.settings.ScanTypesPanel
+import java.io.File
 import javax.swing.SwingConstants
 
 class OnboardPanel(project: Project) {
@@ -20,6 +21,10 @@ class OnboardPanel(project: Project) {
                 "(${(100.0 * allSupportedFilesCount / allFilesCount).toInt()}%)" +
                 " out of $allFilesCount files"
         ).panel
+    }
+
+    init {
+        File(project.basePath + "/.dcignore").createNewFile()
     }
 
     val panel = panel {
