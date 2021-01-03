@@ -9,12 +9,14 @@ import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
+import com.intellij.ui.layout.GrowPolicy
 import com.intellij.ui.layout.panel
 import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
 import java.awt.Insets
@@ -48,6 +50,19 @@ class SnykSettingsDialog(
                 { getApplicationSettingsStateService().filterMinimalSeverity = it!! },
                 renderer = SimpleListCellRenderer.create("low") { it }
             )
+        }
+    }
+
+    private val deepcodeTokenPanel = panel {
+        row {
+            label("Deepcode.ai token:")
+            textField(
+                { getApplicationSettingsStateService().deepcodeToken },
+                {
+                    getApplicationSettingsStateService().deepcodeToken = it
+                    SnykCodeParams.instance.sessionToken = it
+                }
+            ).growPolicy(GrowPolicy.MEDIUM_TEXT)
         }
     }
 
@@ -236,6 +251,25 @@ class SnykSettingsDialog(
             )
         )
 
+        rootPanel.add(
+            deepcodeTokenPanel,
+            UIGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                Dimension(120, 16),
+                null,
+                0,
+                false
+            )
+        )
+
 /*
         val generalSettingsSpacer = Spacer()
         generalSettingsPanel.add(
@@ -264,7 +298,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             scanTypesPanel,
             UIGridConstraints(
-                1,
+                2,
                 0,
                 1,
                 1,
@@ -283,7 +317,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             filteringPanel,
             UIGridConstraints(
-                2,
+                3,
                 0,
                 1,
                 1,
@@ -306,7 +340,7 @@ class SnykSettingsDialog(
             rootPanel.add(
                 projectSettingsPanel,
                 UIGridConstraints(
-                    3,
+                    4,
                     0,
                     1,
                     1,
@@ -426,6 +460,10 @@ class SnykSettingsDialog(
     fun isFilteringChanged(): Boolean = filteringPanel.isModified()
 
     fun saveFilteringChanges() = filteringPanel.apply()
+
+    fun isDeepcodeTokenChanged(): Boolean = deepcodeTokenPanel.isModified()
+
+    fun saveDeepcodeTokenChanges() = deepcodeTokenPanel.apply()
 
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 

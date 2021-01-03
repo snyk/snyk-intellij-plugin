@@ -33,6 +33,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         || isAdditionalParametersModified()
         || snykSettingsDialog.isScanTypeChanged()
         || snykSettingsDialog.isFilteringChanged()
+        || snykSettingsDialog.isDeepcodeTokenChanged()
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
@@ -47,6 +48,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
         snykSettingsDialog.saveScanTypeChanges()
         snykSettingsDialog.saveFilteringChanges()
+        snykSettingsDialog.saveDeepcodeTokenChanges()
 
         if (isProjectSettingsAvailable(project)) {
             project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()

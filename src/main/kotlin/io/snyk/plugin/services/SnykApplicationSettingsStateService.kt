@@ -17,6 +17,7 @@ import java.util.*
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
     var token: String? = null
+    var deepcodeToken: String = ""
     var customEndpointUrl: String? = null
     var organization: String? = null
     var ignoreUnknownCA = false

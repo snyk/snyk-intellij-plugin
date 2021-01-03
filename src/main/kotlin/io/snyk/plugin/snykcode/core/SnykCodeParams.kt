@@ -1,6 +1,7 @@
 package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeParamsBase
+import io.snyk.plugin.getApplicationSettingsStateService
 
 //TODO
 class SnykCodeParams private constructor() : DeepCodeParamsBase(
@@ -8,10 +9,11 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     "https://www.deepcode.ai/",
     false,
     1,
-    System.getenv("DEEPCODE_API_KEY")
-        ?: throw IllegalArgumentException(
-            "Environmental variable DEEPCODE_API_KEY with valid deepcode.ai token should be created!"
-        ),
+    if (getApplicationSettingsStateService().deepcodeToken.isNotEmpty()) {
+        getApplicationSettingsStateService().deepcodeToken
+    } else {
+        System.getenv("DEEPCODE_API_KEY") ?: "" // for CI tests only
+    },
     "",
     "${SCLogger.presentableName}-Jetbrains"
 ) {
