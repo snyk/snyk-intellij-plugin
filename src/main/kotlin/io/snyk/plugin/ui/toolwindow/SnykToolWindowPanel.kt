@@ -30,6 +30,7 @@ import io.snyk.plugin.head
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
+import io.snyk.plugin.snykcode.severityAsString
 import java.awt.BorderLayout
 import java.awt.Insets
 import java.util.Objects.nonNull
@@ -283,9 +284,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val fileTreeNode = FileTreeNode(cliGroupedResult.displayTargetFile, vulnerability.packageManager)
                     rootCliTreeNode.add(fileTreeNode)
 
-                    cliGroupedResult.vulnerabilitiesMap.keys.forEach { id ->
-                        fileTreeNode.add(VulnerabilityTreeNode(cliGroupedResult.vulnerabilitiesMap.getValue(id).head))
-                    }
+                    cliGroupedResult.vulnerabilitiesMap.values
+                        .filter { isSeverityFilterPassed(it.head.severity) }
+                        .forEach { fileTreeNode.add(VulnerabilityTreeNode(it.head)) }
                 }
             }
         }
@@ -298,7 +299,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         // display Security issues
         val securityResults = snykCodeResults.cloneFiltered {
-            it.categories.contains("Security")
+            isSeverityFilterPassed(it.severityAsString) && it.categories.contains("Security")
         }
         rootSecurityIssuesTreeNode.removeAllChildren()
         rootSecurityIssuesTreeNode.userObject =
@@ -310,7 +311,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootQualityIssuesTreeNode.removeAllChildren()
         if (getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable) {
             val qualityResults = snykCodeResults.cloneFiltered {
-                !it.categories.contains("Security")
+                isSeverityFilterPassed(it.severityAsString) && !it.categories.contains("Security")
             }
             rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + " - ${qualityResults.totalCount}"
 
@@ -322,6 +323,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         reloadTree()
         TreeUtil.expandAll(vulnerabilitiesTree)
+    }
+
+    private fun isSeverityFilterPassed(severity: String): Boolean {
+        return when (getApplicationSettingsStateService().filterMinimalSeverity) {
+            "high" -> severity == "high"
+            "medium" -> severity == "high" || severity == "medium"
+            else -> true
+        }
     }
 
     private fun displayResultsForRoot(rootTreeNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {

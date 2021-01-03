@@ -9,6 +9,7 @@ import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.ui.SnykSettingsDialog
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
@@ -31,6 +32,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         || isIgnoreUnknownCAModified()
         || isAdditionalParametersModified()
         || snykSettingsDialog.isScanTypeChanged()
+        || snykSettingsDialog.isFilteringChanged()
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
@@ -44,10 +46,13 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         applicationSettingsStateService.organization = snykSettingsDialog.getOrganization()
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
         snykSettingsDialog.saveScanTypeChanges()
+        snykSettingsDialog.saveFilteringChanges()
 
         if (isProjectSettingsAvailable(project)) {
             project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
+
+        project.service<SnykToolWindowPanel>().cleanAll()
     }
 
     private fun isTokenModified(): Boolean =

@@ -6,9 +6,12 @@ import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
+import com.intellij.ui.layout.panel
 import com.intellij.uiDesigner.core.Spacer
+import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -26,7 +29,8 @@ import com.intellij.uiDesigner.core.GridLayoutManager as UIGridLayoutManager
 
 class SnykSettingsDialog(
     private val project: Project,
-    applicationSettings: SnykApplicationSettingsStateService) {
+    applicationSettings: SnykApplicationSettingsStateService
+) {
 
     private val tokenTextField = JBPasswordField()
     private val customEndpointTextField = JTextField()
@@ -35,7 +39,19 @@ class SnykSettingsDialog(
     private val additionalParametersTextField: JTextField = ExpandableTextField()
     private val scanTypesPanel = ScanTypesPanel().panel
 
-    private val rootPanel = object: JPanel(), Disposable {
+    private val filteringPanel = panel {
+        row {
+            label("Filter by minimal Severity level:")
+            comboBox(
+                DefaultComboBoxModel(arrayOf("low", "medium", "high")),
+                { getApplicationSettingsStateService().filterMinimalSeverity },
+                { getApplicationSettingsStateService().filterMinimalSeverity = it!! },
+                renderer = SimpleListCellRenderer.create("low") { it }
+            )
+        }
+    }
+
+    private val rootPanel = object : JPanel(), Disposable {
         override fun dispose() = Unit
     }
 
@@ -80,7 +96,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         val tokenLabel = JLabel("Token:")
         generalSettingsPanel.add(
@@ -99,7 +116,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         generalSettingsPanel.add(
             tokenTextField,
@@ -117,7 +135,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
         generalSettingsPanel.add(
@@ -136,7 +155,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         generalSettingsPanel.add(
             customEndpointTextField,
@@ -154,7 +174,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         ignoreUnknownCACheckBox.text = "Ignore unknown CA"
         generalSettingsPanel.add(
@@ -173,7 +194,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         val organizationLabel = JLabel("Organization:")
         generalSettingsPanel.add(
@@ -192,7 +214,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         generalSettingsPanel.add(
             organizationTextField,
@@ -210,8 +233,10 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
+/*
         val generalSettingsSpacer = Spacer()
         generalSettingsPanel.add(
             generalSettingsSpacer,
@@ -229,7 +254,9 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
+*/
 
         customEndpointLabel.labelFor = customEndpointTextField
         organizationLabel.labelFor = organizationTextField
@@ -241,16 +268,36 @@ class SnykSettingsDialog(
                 0,
                 1,
                 1,
-                UIGridConstraints.ANCHOR_CENTER,
-                UIGridConstraints.FILL_BOTH,
-                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
                 null,
                 null,
                 0,
                 false
-            ))
+            )
+        )
+
+        rootPanel.add(
+            filteringPanel,
+            UIGridConstraints(
+                2,
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            )
+        )
 
         if (isProjectSettingsAvailable(project)) {
             val projectSettingsPanel = JPanel(UIGridLayoutManager(2, 3, Insets(0, 0, 0, 0), -1, -1))
@@ -259,7 +306,7 @@ class SnykSettingsDialog(
             rootPanel.add(
                 projectSettingsPanel,
                 UIGridConstraints(
-                    2,
+                    3,
                     0,
                     1,
                     1,
@@ -272,7 +319,8 @@ class SnykSettingsDialog(
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
             val additionalParametersLabel = JLabel("Additional parameters:")
             projectSettingsPanel.add(
@@ -291,7 +339,8 @@ class SnykSettingsDialog(
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
             projectSettingsPanel.add(
                 additionalParametersTextField,
@@ -309,7 +358,8 @@ class SnykSettingsDialog(
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
@@ -330,8 +380,10 @@ class SnykSettingsDialog(
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
+/*
             val emptyPanel = JPanel(UIGridLayoutManager(1, 1, Insets(0, 0, 0, 0), -1, -1))
 
             rootPanel.add(
@@ -351,6 +403,7 @@ class SnykSettingsDialog(
                     0,
                     false
                 ))
+*/
         }
     }
 
@@ -369,6 +422,10 @@ class SnykSettingsDialog(
     fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
 
     fun saveScanTypeChanges() = scanTypesPanel.apply()
+
+    fun isFilteringChanged(): Boolean = filteringPanel.isModified()
+
+    fun saveFilteringChanges() = filteringPanel.apply()
 
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 
