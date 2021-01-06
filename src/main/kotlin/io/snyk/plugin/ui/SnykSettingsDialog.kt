@@ -1,6 +1,8 @@
 package io.snyk.plugin.ui
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
@@ -12,6 +14,7 @@ import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykCliAuthenticationService
 import java.awt.Dimension
 import java.awt.Insets
 import java.util.*
@@ -34,13 +37,20 @@ class SnykSettingsDialog(
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
 
-    private val rootPanel = object: JPanel(), Disposable {
+    private val rootPanel = object : JPanel(), Disposable {
         override fun dispose() = Unit
     }
 
     init {
         initializeUiComponents()
         initializeValidation()
+
+        tokenAuthenticateButton.addActionListener {
+            ApplicationManager.getApplication().invokeLater {
+                val token = service<SnykCliAuthenticationService>().authenticate()
+                tokenTextField.text = token
+            }
+        }
 
         if (nonNull(applicationSettings)) {
             tokenTextField.text = applicationSettings.token
