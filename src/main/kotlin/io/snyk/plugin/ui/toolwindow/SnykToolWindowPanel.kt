@@ -36,6 +36,7 @@ import java.awt.Insets
 import java.util.Objects.nonNull
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JScrollPane
 import javax.swing.ScrollPaneConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
@@ -178,23 +179,27 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun cleanAll() {
         ApplicationManager.getApplication().invokeLater {
-            descriptionPanel.removeAll()
-
-            rootCliTreeNode.userObject = CLI_ROOT_TEXT
-            rootCliTreeNode.removeAllChildren()
-
-            rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT
-            rootSecurityIssuesTreeNode.removeAllChildren()
-
-            rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
-            rootQualityIssuesTreeNode.removeAllChildren()
-
-            reloadTree()
-
-            displayNoVulnerabilitiesMessage()
-
-            //revalidate()
+            doCleanAll()
         }
+    }
+
+    private fun doCleanAll() {
+        descriptionPanel.removeAll()
+
+        rootCliTreeNode.userObject = CLI_ROOT_TEXT
+        rootCliTreeNode.removeAllChildren()
+
+        rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT
+        rootSecurityIssuesTreeNode.removeAllChildren()
+
+        rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
+        rootQualityIssuesTreeNode.removeAllChildren()
+
+        reloadTree()
+
+        displayNoVulnerabilitiesMessage()
+
+        //revalidate()
     }
 
     fun displayAuthPanel() {
@@ -237,6 +242,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun displayScanningMessage() {
+        doCleanAll()
         descriptionPanel.removeAll()
 
         val statePanel = StatePanel("Scanning project for vulnerabilities...", "Stop Scanning", Runnable {
@@ -290,7 +296,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
             }
         }
-        reloadTree()
+        reloadTreeKeepingSelection()
         TreeUtil.expandAll(vulnerabilitiesTree)
     }
 
@@ -321,7 +327,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
         }
 
-        reloadTree()
+        reloadTreeKeepingSelection()
         TreeUtil.expandAll(vulnerabilitiesTree)
     }
 
@@ -377,6 +383,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displaySelectVulnerabilityMessage() {
+        if (descriptionPanel.components.firstOrNull() is JScrollPane) return // vulnerability/suggestion already selected
         descriptionPanel.removeAll()
         descriptionPanel.add(CenterOneComponentPanel(JLabel("Please, select vulnerability")), BorderLayout.CENTER)
         //revalidate()
@@ -469,6 +476,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         layout = BorderLayout()
 
         TreeSpeedSearch(vulnerabilitiesTree, TreeSpeedSearch.NODE_DESCRIPTOR_TOSTRING, true)
+    }
+
+    private fun reloadTreeKeepingSelection() {
+        val selectionPath = vulnerabilitiesTree.selectionPath
+        reloadTree()
+        vulnerabilitiesTree.selectionPath = selectionPath
+        ApplicationManager.getApplication().invokeLater {
+            vulnerabilitiesTree.scrollPathToVisible(selectionPath)
+        }
     }
 
     private fun reloadTree() {
