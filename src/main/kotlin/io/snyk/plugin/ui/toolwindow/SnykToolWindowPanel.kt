@@ -292,6 +292,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                     cliGroupedResult.vulnerabilitiesMap.values
                         .filter { isSeverityFilterPassed(it.head.severity) }
+                        .sortedByDescending { it.head.getSeverityIndex() }
                         .forEach { fileTreeNode.add(VulnerabilityTreeNode(it.head)) }
                 }
             }
