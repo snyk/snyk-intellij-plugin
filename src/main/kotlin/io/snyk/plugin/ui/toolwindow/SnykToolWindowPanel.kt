@@ -133,7 +133,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater { displaySnykCodeResults(snykCodeResults) }
 
                 override fun scanError(cliError: CliError) =
-                    ApplicationManager.getApplication().invokeLater { displayError(cliError) }
+                    ApplicationManager.getApplication().invokeLater {
+                        if (cliError.message == "Authentication failed. Please check the API token on https://snyk.io") {
+                            displayAuthPanel()
+                        } else {
+                            displayError(cliError)
+                        }
+                    }
             })
 
         project.messageBus.connect(this)

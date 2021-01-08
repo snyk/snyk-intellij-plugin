@@ -3,6 +3,8 @@ package io.snyk.plugin.snykcode.core
 import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.PlatformDependentUtilsBase
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -10,11 +12,11 @@ import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.snykcode.SnykCodeNotifications
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import java.util.function.Consumer
 
-class PDU private constructor() : PlatformDependentUtilsBase(
+class PDU private constructor() : PlatformDependentUtilsBase() {
 
-) {
     override fun getProject(file: Any): Any = toPsiFile(file).project
 
     override fun getProjectName(project: Any): String = toProject(project).name
@@ -91,8 +93,13 @@ class PDU private constructor() : PlatformDependentUtilsBase(
         BrowserUtil.open(SnykCodeParams.instance.loginUrl)
     }
 
-    override fun showLoginLink(project: Any?, message: String?) {
-        //TODO("Not yet implemented")
+    override fun showLoginLink(project: Any?, message: String) {
+        showError(message, project)
+        runForProject(project, Consumer { prj ->
+            ApplicationManager.getApplication().invokeLater {
+                prj.service<SnykToolWindowPanel>().displayAuthPanel()
+            }
+        })
     }
 
     override fun showConsentRequest(project: Any?, userActionNeeded: Boolean) {
@@ -100,22 +107,22 @@ class PDU private constructor() : PlatformDependentUtilsBase(
     }
 
     override fun showInfo(message: String, project: Any?) {
-        doShowMessage(project, Consumer { prj -> SnykCodeNotifications.showInfo(message, prj) })
+        runForProject(project, Consumer { prj -> SnykCodeNotifications.showInfo(message, prj) })
     }
 
     override fun showWarn(message: String, project: Any?) {
-        doShowMessage(project, Consumer { prj -> SnykCodeNotifications.showWarn(message, prj) })
+        runForProject(project, Consumer { prj -> SnykCodeNotifications.showWarn(message, prj) })
     }
 
     override fun showError(message: String, project: Any?) {
-        doShowMessage(project, Consumer { prj -> SnykCodeNotifications.showError(message, prj) })
+        runForProject(project, Consumer { prj -> SnykCodeNotifications.showError(message, prj) })
     }
 
-    private fun doShowMessage(project: Any?, showFunction: Consumer<Project>) {
+    private fun runForProject(project: Any?, function: Consumer<Project>) {
         if (project != null) {
-            showFunction.accept(toProject(project))
+            function.accept(toProject(project))
         } else for (prj in openProjects) {
-            showFunction.accept(toProject(prj))
+            function.accept(toProject(prj))
         }
     }
 
