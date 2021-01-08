@@ -209,7 +209,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
         assertEquals("--json", defaultCommands[2])
-        assertEquals("--api=https://app.snyk.io/api", defaultCommands[3])
+        assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
     }
 
     @Test
@@ -275,7 +275,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
         assertEquals("--json", defaultCommands[2])
-        assertEquals("--api=https://app.snyk.io/api", defaultCommands[3])
+        assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
         assertEquals("--insecure", defaultCommands[4])
         assertEquals("--org=test-org", defaultCommands[5])
         assertEquals("--file=package.json", defaultCommands[6])
@@ -300,7 +300,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
         assertEquals("--json", defaultCommands[2])
-        assertEquals("--api=https://app.snyk.io/api", defaultCommands[3])
+        assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
         assertEquals("--insecure", defaultCommands[4])
         assertEquals("--org=test-org", defaultCommands[5])
         assertEquals("--file=package.json", defaultCommands[6])
