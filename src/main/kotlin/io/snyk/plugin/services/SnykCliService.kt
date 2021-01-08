@@ -98,7 +98,7 @@ class SnykCliService(val project: Project) {
         val customEndpoint = settings.customEndpointUrl
 
         if (customEndpoint != null && customEndpoint.isNotEmpty()) {
-            commands.add("--api=$customEndpoint")
+            commands.add("--API=$customEndpoint")
         }
 
         if (settings.ignoreUnknownCA) {

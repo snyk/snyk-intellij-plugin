@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.0.4]
+### Fixed
+- Fix handling custom endpoint option
+
 ## [2.0.3]
 ### Added
 - Allow specifying CLI working directory for project submodules
