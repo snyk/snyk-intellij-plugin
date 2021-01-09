@@ -36,5 +36,15 @@
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"
               text="Snyk Settings" />
     </group>
+
+    <group id="io.snyk.plugin.TreeFilters">
+      <action id="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
+              class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
+              text="SnykTree Filter For Scan Type" />
+      <action id="io.snyk.plugin.ui.actions.SnykTreeSeverityFilterAction"
+              class="io.snyk.plugin.ui.actions.SnykTreeSeverityFilterAction"
+              text="SnykTree Filter For Severity" />
+    </group>
+
   </actions>
 </idea-plugin>

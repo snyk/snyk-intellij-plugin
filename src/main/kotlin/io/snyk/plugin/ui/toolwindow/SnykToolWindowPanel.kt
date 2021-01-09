@@ -51,9 +51,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private var descriptionPanel = SimpleToolWindowPanel(true, true)
 
     private val rootTreeNode = DefaultMutableTreeNode("")
-    private val rootCliTreeNode = DefaultMutableTreeNode(CLI_ROOT_TEXT)
-    private val rootSecurityIssuesTreeNode = DefaultMutableTreeNode(SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
-    private val rootQualityIssuesTreeNode = DefaultMutableTreeNode(SNYKCODE_QUALITY_ISSUES_ROOT_TEXT)
+    private val rootCliTreeNode = RootCliTreeNode()
+    private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode()
+    private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode()
     private val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootCliTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
@@ -62,7 +62,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             this.isRootVisible = false
         }
     }
-
 
     init {
         vulnerabilitiesTree.cellRenderer = VulnerabilityTreeCellRenderer()
@@ -225,7 +224,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
         add(vulnerabilitiesSplitter, BorderLayout.CENTER)
-        vulnerabilitiesSplitter.firstComponent = ScrollPaneFactory.createScrollPane(vulnerabilitiesTree)
+        vulnerabilitiesSplitter.firstComponent = TreePanel(vulnerabilitiesTree)
         vulnerabilitiesSplitter.secondComponent = descriptionPanel
 
         displayNoVulnerabilitiesMessage()
@@ -407,72 +406,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     fun displayCliCheckMessage() {
         descriptionPanel.removeAll()
 
-        val checkingPanel = JPanel()
-
-        checkingPanel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        checkingPanel.add(
-            JLabel("Checking Snyk CLI existence..."),
-            GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_FIXED,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        )
-
-        checkingPanel.add(
-            JLabel(""),
-            GridConstraints(
-                1,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_VERTICAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                GridConstraints.SIZEPOLICY_WANT_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        )
-
-        val stopCheckingLinkLabel = LinkLabel.create("Stop Checking") {
+        val checkingPanel = CliCheckingPanel(Runnable {
             project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
-
             displayNoVulnerabilitiesMessage()
-        }
-
-        checkingPanel.add(
-            stopCheckingLinkLabel,
-            GridConstraints(
-                2,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_BOTH,
-                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        )
+        })
 
         descriptionPanel.add(CenterOneComponentPanel(checkingPanel), BorderLayout.CENTER)
 
@@ -506,3 +443,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }
 }
+
+class RootCliTreeNode: DefaultMutableTreeNode(SnykToolWindowPanel.CLI_ROOT_TEXT)
+
+class RootSecurityIssuesTreeNode: DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
+
+class RootQualityIssuesTreeNode: DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT)
