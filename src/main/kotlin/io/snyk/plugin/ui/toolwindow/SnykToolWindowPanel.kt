@@ -310,14 +310,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         displaySelectVulnerabilityMessage()
 
         // display Security issues
-        val securityResults = snykCodeResults.cloneFiltered {
-            isSeverityFilterPassed(it.severityAsString) && it.categories.contains("Security")
-        }
         rootSecurityIssuesTreeNode.removeAllChildren()
-        rootSecurityIssuesTreeNode.userObject =
-            SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + " - ${securityResults.totalCount}"
-
-        displayResultsForRoot(rootSecurityIssuesTreeNode, securityResults)
+        if (getApplicationSettingsStateService().snykCodeScanEnable) {
+            val securityResults = snykCodeResults.cloneFiltered {
+                isSeverityFilterPassed(it.severityAsString) && it.categories.contains("Security")
+            }
+            rootSecurityIssuesTreeNode.userObject =
+                SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + " - ${securityResults.totalCount}"
+            displayResultsForRoot(rootSecurityIssuesTreeNode, securityResults)
+        } else {
+            rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT
+        }
 
         // display Quality (non Security) issues
         rootQualityIssuesTreeNode.removeAllChildren()
@@ -326,9 +329,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 isSeverityFilterPassed(it.severityAsString) && !it.categories.contains("Security")
             }
             rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + " - ${qualityResults.totalCount}"
-
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResults)
-
         } else {
             rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
         }
@@ -444,8 +445,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 }
 
-class RootCliTreeNode: DefaultMutableTreeNode(SnykToolWindowPanel.CLI_ROOT_TEXT)
+class RootCliTreeNode : DefaultMutableTreeNode(SnykToolWindowPanel.CLI_ROOT_TEXT)
 
-class RootSecurityIssuesTreeNode: DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
+class RootSecurityIssuesTreeNode : DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
 
-class RootQualityIssuesTreeNode: DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT)
+class RootQualityIssuesTreeNode : DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT)

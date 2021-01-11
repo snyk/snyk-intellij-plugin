@@ -26,11 +26,11 @@ class ScanTypesPanel(
                 snykCodeScanComments
             ).component
             checkBox(
-                "with Snyk Code Quality issues",
+                "Snyk Code Quality issues",
                 { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable },
                 { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable = it }
             )
-                .enableIf(snykCodeCheckbox.selected)
+                //.enableIf(snykCodeCheckbox.selected)
                 .withLargeLeftGap()
         }
     }

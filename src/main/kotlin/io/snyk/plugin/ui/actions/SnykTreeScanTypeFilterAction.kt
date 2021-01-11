@@ -62,11 +62,9 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
         val settings = getApplicationSettingsStateService()
 
         return object : ToggleAction("Quality Issues") {
-            override fun isSelected(e: AnActionEvent): Boolean =
-                settings.snykCodeQualityIssuesScanEnable && settings.snykCodeScanEnable
+            override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeQualityIssuesScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
-                if (!settings.snykCodeScanEnable) return
                 settings.snykCodeQualityIssuesScanEnable = state
                 e.project?.service<SnykToolWindowPanel>()?.cleanAll()
             }

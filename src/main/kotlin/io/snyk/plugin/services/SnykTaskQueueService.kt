@@ -37,10 +37,11 @@ class SnykTaskQueueService(val project: Project) {
     fun getTaskQueue() = taskQueue
 
     fun scan() {
-        if (getApplicationSettingsStateService().cliScanEnable) {
+        val settings = getApplicationSettingsStateService()
+        if (settings.cliScanEnable) {
             scheduleCliScan()
         }
-        if (getApplicationSettingsStateService().snykCodeScanEnable) {
+        if (settings.snykCodeScanEnable || settings.snykCodeQualityIssuesScanEnable) {
             getSnykCode(project).scan()
         }
     }
