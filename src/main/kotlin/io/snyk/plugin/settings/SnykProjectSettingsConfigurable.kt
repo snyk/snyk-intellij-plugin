@@ -17,7 +17,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         getApplicationSettingsStateService()
 
     private val snykSettingsDialog: SnykSettingsDialog =
-        SnykSettingsDialog(project, applicationSettingsStateService)
+        SnykSettingsDialog(project, applicationSettingsStateService, this)
 
     override fun getId(): String = "io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
 

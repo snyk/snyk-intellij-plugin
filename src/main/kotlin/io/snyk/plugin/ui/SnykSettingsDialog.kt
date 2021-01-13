@@ -15,6 +15,7 @@ import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
+import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import java.awt.Dimension
 import java.awt.Insets
 import java.util.*
@@ -28,7 +29,9 @@ import com.intellij.uiDesigner.core.GridLayoutManager as UIGridLayoutManager
 
 class SnykSettingsDialog(
     private val project: Project,
-    applicationSettings: SnykApplicationSettingsStateService) {
+    applicationSettings: SnykApplicationSettingsStateService,
+    snykProjectSettingsConfigurable: SnykProjectSettingsConfigurable
+) {
 
     private val tokenTextField = JBPasswordField()
     private val tokenAuthenticateButton = JButton("Authenticate")
@@ -47,6 +50,7 @@ class SnykSettingsDialog(
 
         tokenAuthenticateButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
+                snykProjectSettingsConfigurable.apply()
                 val token = service<SnykCliAuthenticationService>().authenticate()
                 tokenTextField.text = token
             }

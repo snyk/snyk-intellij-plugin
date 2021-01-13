@@ -12,13 +12,13 @@ import io.snyk.plugin.getPluginPath
 class SnykCliAuthenticationService {
     private val logger = logger<SnykCliAuthenticationService>()
 
-    private var consoleCommandRunner: ConsoleCommandRunner? = null
+    private var isAuthenticated = false
     private var token: String = ""
 
     fun authenticate(): String {
         downloadCliIfNeeded()
-        executeAuthCommand()
-        executeGetConfigApiCommand()
+        if (getCliFile().exists()) executeAuthCommand()
+        if (isAuthenticated) executeGetConfigApiCommand()
 
         return token
     }
@@ -33,46 +33,50 @@ class SnykCliAuthenticationService {
             }
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            downloadCliTask, "Download CLI latest release", true, null
+            downloadCliTask, "Download Snyk CLI latest release", true, null
         )
     }
 
     private fun executeAuthCommand() {
         val authTask: () -> Unit = {
-            val settings = service<SnykApplicationSettingsStateService>()
-            val commands = buildCliCommands(listOf("auth"), settings)
-            getConsoleCommandRunner().execute(commands, getPluginPath(), "")
+            val commands = buildCliCommands(listOf("auth"))
+            val output = getConsoleCommandRunner().execute(commands, getPluginPath(), "")
+            isAuthenticated = output.contains("Your account has been authenticated.")
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            authTask, "Authenticate CLI...", true, null
+            authTask, "Authenticate Snyk CLI...", true, null
         )
     }
 
     private fun executeGetConfigApiCommand() {
         val getConfigApiTask: () -> Unit = {
-            val settings = service<SnykApplicationSettingsStateService>()
-            val commands = buildCliCommands(listOf("config", "get", "api"), settings)
+            val commands = buildCliCommands(listOf("config", "get", "api"))
             val getConfigApiOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "")
             token = getConfigApiOutput.replace("\n", "").replace("\r", "")
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            getConfigApiTask, "Get API token", true, null
+            getConfigApiTask, "Get Snyk API token", true, null
         )
     }
 
-    private fun buildCliCommands(commands: List<String>, settings: SnykApplicationSettingsStateService): List<String> {
-        //TODO: handle custom api endpoint from settings
-        val cli: MutableList<String> = mutableListOf()
-        cli.add(getCliFile().absolutePath)
+    private fun buildCliCommands(commands: List<String>): List<String> {
+        val settings = service<SnykApplicationSettingsStateService>()
+        val cli: MutableList<String> = mutableListOf(getCliFile().absolutePath)
         cli.addAll(commands)
+
+        val customEndpoint = settings.customEndpointUrl
+        if (customEndpoint != null && customEndpoint.isNotEmpty()) {
+            cli.add("--API=$customEndpoint")
+        }
+
+        if (settings.ignoreUnknownCA) {
+            cli.add("--insecure")
+        }
 
         return cli.toList()
     }
 
     private fun getConsoleCommandRunner(): ConsoleCommandRunner {
-        if (consoleCommandRunner != null) {
-            return consoleCommandRunner!!
-        }
         return ConsoleCommandRunner()
     }
 }
