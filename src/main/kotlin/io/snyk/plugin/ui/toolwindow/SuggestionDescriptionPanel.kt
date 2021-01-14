@@ -293,6 +293,10 @@ class SuggestionDescriptionPanel(
 
         panel.add(tabbedPane, getPanelGridConstraints(2))
 
+        val maxRowCount = fixes.take(examplesCount)
+            .map { it.lines.size }
+            .max()
+            ?: 0
         fixes.take(examplesCount).forEach { exampleCommitFix ->
             val shortURL = exampleCommitFix.commitURL
                 .removePrefix("https://")
@@ -307,7 +311,7 @@ class SuggestionDescriptionPanel(
             tabbedPane.addTab(
                 tabTitle,
                 icon,
-                diffPanel(exampleCommitFix),
+                diffPanel(exampleCommitFix, maxRowCount),
                 shortURL
             )
         }
@@ -315,7 +319,7 @@ class SuggestionDescriptionPanel(
         return panel
     }
 
-    private fun diffPanel(exampleCommitFix: ExampleCommitFix): JComponent {
+    private fun diffPanel(exampleCommitFix: ExampleCommitFix, rowCount: Int): JComponent {
 
         fun shift(colorComponent: Int, d: Double): Int {
             val n = (colorComponent * d).toInt()
@@ -335,7 +339,7 @@ class SuggestionDescriptionPanel(
         )
 
         val panel = JPanel()
-        panel.layout = GridLayoutManager(exampleCommitFix.lines.size, 1, Insets(0, 0, 0, 0), -1, 0)
+        panel.layout = GridLayoutManager(rowCount, 1, Insets(0, 0, 0, 0), -1, 0)
         panel.background = baseColor
 
         exampleCommitFix.lines.forEachIndexed { index, exampleLine ->
@@ -364,6 +368,18 @@ class SuggestionDescriptionPanel(
             panel.add(
                 codeLine, getGridConstraints(
                     row = index,
+                    fill = GridConstraints.FILL_BOTH,
+                    indent = 0
+                )
+            )
+        }
+
+        // fill space with empty lines to avoid rows stretching
+        for (i in exampleCommitFix.lines.size..rowCount) {
+            val emptyLine = JTextArea("")
+            panel.add(
+                emptyLine, getGridConstraints(
+                    row = i - 1,
                     fill = GridConstraints.FILL_BOTH,
                     indent = 0
                 )
