@@ -86,7 +86,7 @@ class SnykTaskQueueService(val project: Project) {
 
                 currentProgressIndicator = indicator
 
-                val cliDownloader = project.service<SnykCliDownloaderService>()
+                val cliDownloader = service<SnykCliDownloaderService>()
 
                 indicator.checkCanceled()
 

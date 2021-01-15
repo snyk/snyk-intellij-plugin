@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getApplicationSettingsStateService
@@ -17,7 +16,7 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 @Service
-class SnykCliDownloaderService(val project: Project) {
+class SnykCliDownloaderService {
 
     companion object {
         const val LATEST_RELEASES_URL = "https://api.github.com/repos/snyk/snyk/releases/latest"
@@ -140,5 +139,4 @@ class LatestReleaseInfo(
     val id: Long,
     val url: String,
     val name: String,
-    @SerializedName("tag_name") val tagName: String) {
-}
+    @SerializedName("tag_name") val tagName: String)

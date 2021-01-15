@@ -1,14 +1,19 @@
 package io.snyk.plugin.cli
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.ApplicationInfo
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.util.Alarm
 import io.snyk.plugin.SnykPostStartupActivity
 import org.apache.log4j.Logger
 import java.nio.charset.Charset
 
 open class ConsoleCommandRunner {
+    private val alarm = Alarm()
+
     private val logger: Logger = Logger.getLogger(ConsoleCommandRunner::class.java)
 
     private val snykPluginVersion: String by lazy {
@@ -30,7 +35,22 @@ open class ConsoleCommandRunner {
         logger.info("GeneralCommandLine instance created.")
         logger.info("Execute ScriptRunnerUtil.getProcessOutput(...)")
 
-        return ScriptRunnerUtil.getProcessOutput(generalCommandLine, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
+        val processHandler = OSProcessHandler(generalCommandLine)
+        val parentIndicator = ProgressManager.getInstance().progressIndicator
+
+        lateinit var checkCancelled: () -> Unit
+        checkCancelled = {
+            if (!processHandler.isProcessTerminated) {
+                if (parentIndicator.isCanceled) {
+                    ScriptRunnerUtil.terminateProcessHandler(processHandler, 50, null)
+                } else {
+                    alarm.addRequest(checkCancelled, 100)
+                }
+            }
+        }
+        checkCancelled.invoke()
+
+        return ScriptRunnerUtil.getProcessOutput(processHandler, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
     }
 
     /**
