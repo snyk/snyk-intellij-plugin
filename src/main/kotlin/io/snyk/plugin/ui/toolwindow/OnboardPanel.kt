@@ -19,7 +19,8 @@ class OnboardPanel(project: Project) {
         return@lazy ScanTypesPanel(
             snykCodeScanComments = "We will upload and analyze $allSupportedFilesCount files " +
                 "(${(100.0 * allSupportedFilesCount / allFilesCount).toInt()}%)" +
-                " out of $allFilesCount files"
+                " out of $allFilesCount files",
+            snykCodeQualityIssueCheckboxVisible = false
         ).panel
     }
 

@@ -59,9 +59,11 @@ class SnykCliService(val project: Project) {
      * If result string not contains 'error' string and contain 'vulnerabilities' it says that everything is correct.
      * If result string not contains '{' it means CLI return an error.
      * And if result string contains 'error' and not contain 'vulnerabilities' it means CLI return error in JSON format.
+     * if result string is _empty_ - CLI scan process was intentionally terminated by user..
      */
     fun convertRawCliStringToCliResult(rawStr: String, projectPath: String): CliResult =
         when {
+            rawStr.isEmpty() -> CliResult(null, null)
             rawStr.first() == '[' -> {
                 CliResult(Gson().fromJson(rawStr, Array<CliVulnerabilities>::class.java), null)
             }

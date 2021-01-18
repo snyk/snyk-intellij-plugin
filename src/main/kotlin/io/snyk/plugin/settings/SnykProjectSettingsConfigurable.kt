@@ -32,7 +32,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         || isIgnoreUnknownCAModified()
         || isAdditionalParametersModified()
         || snykSettingsDialog.isScanTypeChanged()
-        || snykSettingsDialog.isFilteringChanged()
         || snykSettingsDialog.isDeepcodeTokenChanged()
 
     override fun apply() {
@@ -47,7 +46,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         applicationSettingsStateService.organization = snykSettingsDialog.getOrganization()
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
         snykSettingsDialog.saveScanTypeChanges()
-        snykSettingsDialog.saveFilteringChanges()
         snykSettingsDialog.saveDeepcodeTokenChanges()
 
         if (isProjectSettingsAvailable(project)) {

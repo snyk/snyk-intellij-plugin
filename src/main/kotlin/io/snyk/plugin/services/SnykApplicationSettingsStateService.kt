@@ -27,7 +27,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var snykCodeScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = false
     var pluginFirstRun = true
-    var filterMinimalSeverity = "low"
+    var lowSeverityEnabled = true
+    var mediumSeverityEnabled = true
+    var highSeverityEnabled = true
 
     override fun getState(): SnykApplicationSettingsStateService = this
 

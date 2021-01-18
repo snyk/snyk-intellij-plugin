@@ -47,18 +47,6 @@ class SnykSettingsDialog(
     private val additionalParametersTextField: JTextField = ExpandableTextField()
     private val scanTypesPanel = ScanTypesPanel().panel
 
-    private val filteringPanel = panel {
-        row {
-            label("Filter by minimal Severity level:")
-            comboBox(
-                DefaultComboBoxModel(arrayOf("low", "medium", "high")),
-                { getApplicationSettingsStateService().filterMinimalSeverity },
-                { getApplicationSettingsStateService().filterMinimalSeverity = it!! },
-                renderer = SimpleListCellRenderer.create("low") { it }
-            )
-        }
-    }
-
     private val deepcodeTokenPanel = panel {
         row {
             label("Deepcode.ai token:")
@@ -343,25 +331,6 @@ class SnykSettingsDialog(
             )
         )
 
-        rootPanel.add(
-            filteringPanel,
-            UIGridConstraints(
-                3,
-                0,
-                1,
-                1,
-                UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.FILL_NONE,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        )
-
         if (isProjectSettingsAvailable(project)) {
             val projectSettingsPanel = JPanel(UIGridLayoutManager(2, 3, Insets(0, 0, 0, 0), -1, -1))
             projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
@@ -485,10 +454,6 @@ class SnykSettingsDialog(
     fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
 
     fun saveScanTypeChanges() = scanTypesPanel.apply()
-
-    fun isFilteringChanged(): Boolean = filteringPanel.isModified()
-
-    fun saveFilteringChanges() = filteringPanel.apply()
 
     fun isDeepcodeTokenChanged(): Boolean = deepcodeTokenPanel.isModified()
 

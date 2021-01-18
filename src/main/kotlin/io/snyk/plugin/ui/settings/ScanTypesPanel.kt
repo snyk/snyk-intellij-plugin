@@ -6,7 +6,8 @@ import io.snyk.plugin.getApplicationSettingsStateService
 
 class ScanTypesPanel(
     private val cliScanComments: String? = null,
-    private val snykCodeScanComments: String? = null
+    private val snykCodeScanComments: String? = null,
+    private val snykCodeQualityIssueCheckboxVisible: Boolean = true
 ) {
 
     val panel = panel {
@@ -25,13 +26,15 @@ class ScanTypesPanel(
                 { getApplicationSettingsStateService().snykCodeScanEnable = it },
                 snykCodeScanComments
             ).component
-            checkBox(
-                "Snyk Code Quality issues",
-                { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable },
-                { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable = it }
-            )
-                //.enableIf(snykCodeCheckbox.selected)
-                .withLargeLeftGap()
+            if (snykCodeQualityIssueCheckboxVisible) {
+                checkBox(
+                    "Snyk Code Quality issues",
+                    { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable },
+                    { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable = it }
+                )
+                    //.enableIf(snykCodeCheckbox.selected)
+                    .withLargeLeftGap()
+            }
         }
     }
 }

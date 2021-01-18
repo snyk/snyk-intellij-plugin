@@ -13,7 +13,7 @@ interface SnykScanListener {
 
     fun scanningStarted()
 
-    fun scanningFinished(cliResult: CliResult)
+    fun scanningCliFinished(cliResult: CliResult)
 
     fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults)
 

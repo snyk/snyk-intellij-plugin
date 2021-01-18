@@ -237,7 +237,7 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, -1)
 
         panel.add(
-            buildBoldTitleLabel("Data Flow"),
+            buildBoldTitleLabel("Data Flow - ${markers.size} steps"),
             getGridConstraints(0)
         )
 

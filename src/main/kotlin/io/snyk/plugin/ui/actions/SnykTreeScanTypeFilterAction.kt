@@ -5,10 +5,10 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.Project
+import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import javax.swing.JComponent
 
 /**
@@ -19,7 +19,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
     override fun update(e: AnActionEvent) {
         val project = e.project
         e.presentation.isEnabled = project != null && !project.isDisposed
-        e.presentation.text = "Scan for issue types:"
+        e.presentation.text = "Scan For Issue Types:"
     }
 
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
@@ -40,7 +40,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 settings.cliScanEnable = state
-                e.project?.service<SnykToolWindowPanel>()?.cleanAll()
+                fireFiltersChangedEvent(e.project!!)
             }
         }
     }
@@ -53,7 +53,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 settings.snykCodeScanEnable = state
-                e.project?.service<SnykToolWindowPanel>()?.cleanAll()
+                fireFiltersChangedEvent(e.project!!)
             }
         }
     }
@@ -66,8 +66,14 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 settings.snykCodeQualityIssuesScanEnable = state
-                e.project?.service<SnykToolWindowPanel>()?.cleanAll()
+                fireFiltersChangedEvent(e.project!!)
             }
         }
+    }
+
+    private fun fireFiltersChangedEvent(project: Project) {
+        val filteringPublisher =
+            project.messageBus.syncPublisher(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)
+        filteringPublisher.filtersChanged()
     }
 }

@@ -47,7 +47,7 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     private fun scheduleCliScan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk scanning", true) {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk CLI is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 cliScanPublisher.scanningStarted()
 
@@ -66,7 +66,7 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (cliResult.isSuccessful()) {
-                    cliScanPublisher.scanningFinished(cliResult)
+                    cliScanPublisher.scanningCliFinished(cliResult)
                 } else {
                     cliScanPublisher.scanError(cliResult.error!!)
                 }
