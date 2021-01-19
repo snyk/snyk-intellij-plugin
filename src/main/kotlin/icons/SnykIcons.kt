@@ -14,6 +14,9 @@ object SnykIcons {
     val VULNERABILITY_16 = getIconFromResources("/icons/vulnerability_16.png")
     val VULNERABILITY_24 = getIconFromResources("/icons/vulnerability.png")
 
+    val OPEN_SOURCE_SECURITY =  getIcon("/icons/oss.svg")
+    val SNYK_CODE =  getIcon("/icons/code.svg")
+
     val HIGH_SEVERITY = getIcon("/icons/severity_high.svg")
     val LOW_SEVERITY = getIcon("/icons/severity_low.svg")
     val MEDIUM_SEVERITY = getIcon("/icons/severity_medium.svg")

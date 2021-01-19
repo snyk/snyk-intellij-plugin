@@ -113,7 +113,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             editor?.selectionModel?.setSelection(textRange.start, textRange.end)
                         }
                         else -> {
-                            displaySelectVulnerabilityMessage()
+                            displayEmptyDescription()
                         }
                     }
                 }
@@ -194,7 +194,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
                 override fun stopped() =
-                    ApplicationManager.getApplication().invokeLater { displayNoVulnerabilitiesMessage() }
+                    ApplicationManager.getApplication().invokeLater { displayEmptyDescription() }
             })
     }
 
@@ -221,7 +221,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         reloadTree()
 
-        displayNoVulnerabilitiesMessage()
+        displayEmptyDescription()
 
         //revalidate()
     }
@@ -232,13 +232,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    fun displayPluginFirstRunPanel() {
+    private fun displayPluginFirstRunPanel() {
         removeAll()
         add(CenterOneComponentPanel(OnboardPanel(project).panel), BorderLayout.CENTER)
         revalidate()
     }
 
-    fun displayTreeAndDescriptionPanels() {
+    private fun displayTreeAndDescriptionPanels() {
         removeAll()
 
         val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
@@ -246,15 +246,25 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         vulnerabilitiesSplitter.firstComponent = TreePanel(vulnerabilitiesTree)
         vulnerabilitiesSplitter.secondComponent = descriptionPanel
 
-        displayNoVulnerabilitiesMessage()
+        displayEmptyDescription()
     }
 
-    fun displayNoVulnerabilitiesMessage() {
+    private fun displayEmptyDescription() {
+        if (rootCliTreeNode.childCount == 0
+            && rootSecurityIssuesTreeNode.childCount == 0
+            && rootQualityIssuesTreeNode.childCount == 0) {
+            displayNoVulnerabilitiesMessage()
+        } else {
+            displaySelectVulnerabilityMessage()
+        }
+    }
+
+    private fun displayNoVulnerabilitiesMessage() {
         descriptionPanel.removeAll()
 
         val emptyStatePanel = JPanel()
 
-        emptyStatePanel.add(JLabel("No vulnerabilities added. "))
+        emptyStatePanel.add(JLabel("No vulnerability to display. Adjust Filters or"))
 
         val runScanLinkLabel = LinkLabel.create("Run scan") {
             project.service<SnykTaskQueueService>().scan()
@@ -263,30 +273,31 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         emptyStatePanel.add(runScanLinkLabel)
 
         descriptionPanel.add(CenterOneComponentPanel(emptyStatePanel), BorderLayout.CENTER)
+        revalidate()
     }
 
-    fun displayScanningMessage() {
+    private fun displayScanningMessage() {
         doCleanAll()
         descriptionPanel.removeAll()
 
         val statePanel = StatePanel("Scanning project for vulnerabilities...", "Stop Scanning", Runnable {
             project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
 
-            displayNoVulnerabilitiesMessage()
+            displayEmptyDescription()
         })
 
         descriptionPanel.add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)
 
-        //revalidate()
+        revalidate()
     }
 
-    fun displayDownloadMessage() {
+    private fun displayDownloadMessage() {
         descriptionPanel.removeAll()
 
         val statePanel = StatePanel("Downloading Snyk CLI...", "Stop Downloading", Runnable {
             project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
 
-            displayNoVulnerabilitiesMessage()
+            displayEmptyDescription()
         })
 
         descriptionPanel.add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)
@@ -299,9 +310,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             && rootSecurityIssuesTreeNode.childCount == 0
             && rootQualityIssuesTreeNode.childCount == 0
 
-    fun displayVulnerabilities(cliResult: CliResult) {
-        displaySelectVulnerabilityMessage()
-
+    private fun displayVulnerabilities(cliResult: CliResult) {
         rootCliTreeNode.removeAllChildren()
 
         if (getApplicationSettingsStateService().cliScanEnable && cliResult.vulnerabilities != null) {
@@ -318,30 +327,37 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .filter { isSeverityFilterPassed(it.head.severity) }
                         .sortedByDescending { it.head.getSeverityIndex() }
                         .forEach {
-                        issuesCount++
+                            issuesCount++
                             fileTreeNode.add(VulnerabilityTreeNode(it.head))
                         }
                 }
             }
-            rootCliTreeNode.userObject = CLI_ROOT_TEXT +
-                " - ${if (issuesCount == 0) NO_ISSUES_FOUND_TEXT else issuesCount.toString()}"
+            rootCliTreeNode.userObject = CLI_ROOT_TEXT + " - ${
+                if (issuesCount == 0)
+                    NO_ISSUES_FOUND_TEXT
+                else "$issuesCount vulnerabilit${if (issuesCount > 1) "ies" else "y"}"
+            }"
         } else {
             rootCliTreeNode.userObject = CLI_ROOT_TEXT
         }
+
+        displayEmptyDescription()
         reloadTreeKeepingSelection(listOf(rootCliTreeNode))
     }
 
     fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
-        displaySelectVulnerabilityMessage()
-
         // display Security issues
         rootSecurityIssuesTreeNode.removeAllChildren()
         if (getApplicationSettingsStateService().snykCodeScanEnable) {
             val securityResults = snykCodeResults.cloneFiltered {
                 isSeverityFilterPassed(it.severityAsString) && it.categories.contains("Security")
             }
-            rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT +
-                " - ${if (securityResults.totalCount == 0) NO_ISSUES_FOUND_TEXT else securityResults.totalCount.toString()}"
+            val issuesCount = securityResults.totalCount
+            rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + " - ${
+                if (issuesCount == 0)
+                    NO_ISSUES_FOUND_TEXT
+                else "$issuesCount vulnerabilit${if (issuesCount > 1) "ies" else "y"}"
+            }"
             displayResultsForRoot(rootSecurityIssuesTreeNode, securityResults)
         } else {
             rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT
@@ -353,13 +369,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             val qualityResults = snykCodeResults.cloneFiltered {
                 isSeverityFilterPassed(it.severityAsString) && !it.categories.contains("Security")
             }
-            rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT +
-                " - ${if (qualityResults.totalCount == 0) NO_ISSUES_FOUND_TEXT else qualityResults.totalCount.toString()}"
+            val issuesCount = qualityResults.totalCount
+            rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + " - ${
+                if (issuesCount == 0)
+                    NO_ISSUES_FOUND_TEXT
+                else "$issuesCount issue${if (issuesCount > 1) "s" else ""}"
+            }"
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResults)
         } else {
             rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
         }
 
+        displayEmptyDescription()
         reloadTreeKeepingSelection(listOf(rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode))
     }
 
@@ -419,11 +440,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displaySelectVulnerabilityMessage() {
         if (descriptionPanel.components.firstOrNull() is JScrollPane) return // vulnerability/suggestion already selected
         descriptionPanel.removeAll()
-        descriptionPanel.add(CenterOneComponentPanel(JLabel("Please, select vulnerability")), BorderLayout.CENTER)
-        //revalidate()
+        descriptionPanel.add(
+            CenterOneComponentPanel(JLabel("Select an issue and start improving your project.")),
+            BorderLayout.CENTER
+        )
+        revalidate()
     }
 
-    fun displayError(cliError: CliError) {
+    private fun displayError(cliError: CliError) {
         descriptionPanel.removeAll()
 
         descriptionPanel.add(CliErrorPanel(cliError), BorderLayout.CENTER)
@@ -431,12 +455,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    fun displayCliCheckMessage() {
+    private fun displayCliCheckMessage() {
         descriptionPanel.removeAll()
 
         val checkingPanel = CliCheckingPanel(Runnable {
             project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
-            displayNoVulnerabilitiesMessage()
+            displayEmptyDescription()
         })
 
         descriptionPanel.add(CenterOneComponentPanel(checkingPanel), BorderLayout.CENTER)
@@ -479,9 +503,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     companion object {
-        const val CLI_ROOT_TEXT = "Open Source Vulnerabilities"
-        const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = "Security Issues"
-        const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = "Quality Issues"
+        const val CLI_ROOT_TEXT = " Open Source Security"
+        const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
+        const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
         const val NO_ISSUES_FOUND_TEXT = "No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY =
             "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"

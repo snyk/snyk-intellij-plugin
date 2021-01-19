@@ -10,7 +10,7 @@ import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 /**
  * Show Snyk settings panel action.
  */
-class SnykSettingsAction : AnAction(AllIcons.General.GearPlain), DumbAware {
+class SnykSettingsAction : AnAction(AllIcons.General.Settings), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
         ShowSettingsUtil.getInstance()

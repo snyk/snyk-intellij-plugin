@@ -24,26 +24,30 @@
     <group id="io.snyk.plugin.ActionBar">
       <action id="io.snyk.plugin.ui.actions.SnykRunScanAction"
               class="io.snyk.plugin.ui.actions.SnykRunScanAction"
-              text="Run" />
+              text="Run"/>
       <action id="io.snyk.plugin.ui.actions.SnykStopScanAction"
               class="io.snyk.plugin.ui.actions.SnykStopScanAction"
-              text="Stop" />
+              text="Stop"/>
       <action id="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               class="io.snyk.plugin.ui.actions.SnykCleanScanAction"
-              text="Clean Issues" />
+              text="Clean Issues"/>
       <separator/>
       <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"
-              text="Snyk Settings" />
+              text="Snyk Settings"/>
     </group>
 
     <group id="io.snyk.plugin.TreeFilters">
       <action id="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
               class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
-              text="SnykTree Filter For Scan Type" />
+              text="Scan For Issue Types:"
+              description="Snyk: Choose Scan types to run/display"
+              icon="AllIcons.General.Filter"/>
       <action id="io.snyk.plugin.ui.actions.SnykTreeSeverityFilterAction"
               class="io.snyk.plugin.ui.actions.SnykTreeSeverityFilterAction"
-              text="SnykTree Filter For Severity" />
+              text="Show Severity:"
+              description="Snyk: Choose severity levels to display"
+              icon="AllIcons.General.Filter"/>
     </group>
 
   </actions>

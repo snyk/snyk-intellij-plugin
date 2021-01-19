@@ -19,7 +19,6 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
     override fun update(e: AnActionEvent) {
         val project = e.project
         e.presentation.isEnabled = project != null && !project.isDisposed
-        e.presentation.text = "Scan For Issue Types:"
     }
 
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
