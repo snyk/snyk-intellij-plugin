@@ -44,15 +44,18 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
         }
     }
 
+    private val hasNoCustomEndpoint: Boolean
+        get() = getApplicationSettingsStateService().customEndpointUrl?.isEmpty() == true
+
     private fun createSecurityIssuesScanAction(): AnAction {
         val settings = getApplicationSettingsStateService()
 
-        return object : ToggleAction("Security Issues") {
+        return object : ToggleAction("Security Issues${if (hasNoCustomEndpoint) "" else " (not available)"}") {
             override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
-                settings.snykCodeScanEnable = state
-                fireFiltersChangedEvent(e.project!!)
+                settings.snykCodeScanEnable = state && hasNoCustomEndpoint
+                    fireFiltersChangedEvent(e.project!!)
             }
         }
     }
@@ -60,11 +63,11 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
     private fun createQualityIssuesScanAction(): AnAction {
         val settings = getApplicationSettingsStateService()
 
-        return object : ToggleAction("Quality Issues") {
+        return object : ToggleAction("Quality Issues${if (hasNoCustomEndpoint) "" else " (not available)"}") {
             override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeQualityIssuesScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
-                settings.snykCodeQualityIssuesScanEnable = state
+                settings.snykCodeQualityIssuesScanEnable = state && hasNoCustomEndpoint
                 fireFiltersChangedEvent(e.project!!)
             }
         }

@@ -8,7 +8,7 @@ import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
-import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.ui.layout.GrowPolicy
@@ -45,7 +45,8 @@ class SnykSettingsDialog(
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
-    private val scanTypesPanel = ScanTypesPanel().panel
+    private val scanTypesPanelOuter = ScanTypesPanel()
+    private val scanTypesPanel = scanTypesPanelOuter.panel
 
     private val deepcodeTokenPanel = panel {
         row {
@@ -149,7 +150,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         generalSettingsPanel.add(
             tokenAuthenticateButton,
@@ -473,8 +475,26 @@ class SnykSettingsDialog(
             } else {
                 ValidationInfo("")
             }
-
-
+            // disable SnykCode if custom endpoint is used
+            if (textField == customEndpointTextField) {
+                val snykCodeEnabled = textField.text.isEmpty()
+                scanTypesPanelOuter.snykCodeCheckbox?.let {
+                    it.isEnabled = snykCodeEnabled
+                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeScanEnable
+                }
+                scanTypesPanelOuter.snykCodeQualityCheckbox?.let {
+                    it.isEnabled = snykCodeEnabled
+                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable
+                }
+                scanTypesPanelOuter.snykCodeComment?.let {
+                    if (snykCodeEnabled) {
+                        it.text = ""
+                    } else {
+                        it.text = "Snyk Code only works in SAAS mode for the time being."
+                        it.foreground = JBColor.RED
+                    }
+                }
+            }
             validationInfo
         }).installOn(textField)
 

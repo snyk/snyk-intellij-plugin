@@ -1,14 +1,19 @@
 package io.snyk.plugin.ui.settings
 
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.layout.panel
-import com.intellij.ui.layout.selected
 import io.snyk.plugin.getApplicationSettingsStateService
+import javax.swing.JLabel
 
 class ScanTypesPanel(
-    private val cliScanComments: String? = null,
-    private val snykCodeScanComments: String? = null,
-    private val snykCodeQualityIssueCheckboxVisible: Boolean = true
+    cliScanComments: String? = null,
+    snykCodeScanComments: String? = null,
+    snykCodeQualityIssueCheckboxVisible: Boolean = true
 ) {
+
+    var snykCodeCheckbox: JBCheckBox? = null
+    var snykCodeQualityCheckbox: JBCheckBox? = null
+    var snykCodeComment: JLabel? = null
 
     val panel = panel {
         row {
@@ -20,21 +25,25 @@ class ScanTypesPanel(
             )
         }
         row {
-            val snykCodeCheckbox = checkBox(
+            snykCodeCheckbox = checkBox(
                 "Snyk Code Security issues",
                 { getApplicationSettingsStateService().snykCodeScanEnable },
-                { getApplicationSettingsStateService().snykCodeScanEnable = it },
-                snykCodeScanComments
-            ).component
+                { getApplicationSettingsStateService().snykCodeScanEnable = it }
+            )
+                .component
+
             if (snykCodeQualityIssueCheckboxVisible) {
-                checkBox(
+                snykCodeQualityCheckbox = checkBox(
                     "Snyk Code Quality issues",
                     { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable },
                     { getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable = it }
                 )
-                    //.enableIf(snykCodeCheckbox.selected)
                     .withLargeLeftGap()
+                    .component
             }
+        }
+        row {
+            snykCodeComment = label(snykCodeScanComments ?: "").component
         }
     }
 }
