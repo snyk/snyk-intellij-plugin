@@ -490,7 +490,7 @@ class SnykSettingsDialog(
                     if (snykCodeEnabled) {
                         it.text = ""
                     } else {
-                        it.text = "Snyk Code only works in SAAS mode for the time being."
+                        it.text = "Snyk Code only works in SAAS mode for the time being (i.e. no Custom Endpoint usage)"
                         it.foreground = JBColor.RED
                     }
                 }

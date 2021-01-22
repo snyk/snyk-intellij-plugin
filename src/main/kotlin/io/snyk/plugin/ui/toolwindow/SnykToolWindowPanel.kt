@@ -71,6 +71,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         initializeUiComponents()
 
+        displayTreeAndDescriptionPanels()
+
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
             ApplicationManager.getApplication().invokeLater {
                 descriptionPanel.removeAll()

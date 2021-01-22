@@ -46,6 +46,10 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
             SCLogger.instance.logWarn("Document not found for file: $psiFile")
             return 0
         }
+        if (document.lineCount <= line) {
+            SCLogger.instance.logWarn("Line $line is out of Document.lineCount=${document.lineCount}")
+            return 0
+        }
         return document.getLineStartOffset(line)
     }
 
