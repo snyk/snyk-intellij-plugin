@@ -28,9 +28,11 @@
       <action id="io.snyk.plugin.ui.actions.SnykStopScanAction"
               class="io.snyk.plugin.ui.actions.SnykStopScanAction"
               text="Stop"/>
+<!-- Seems obsolete now
       <action id="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               class="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               text="Clean Issues"/>
+-->
       <separator/>
       <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"

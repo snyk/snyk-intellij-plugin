@@ -30,6 +30,7 @@ import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
+import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.snykcode.severityAsString
 import java.awt.BorderLayout
@@ -85,7 +86,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     when (node.userObject) {
                         is Vulnerability -> {
                             descriptionPanel.add(
-                                ScrollPaneFactory.createScrollPane(VulnerabilityDescriptionPanel(node.userObject as Vulnerability)),
+                                ScrollPaneFactory.createScrollPane(
+                                    VulnerabilityDescriptionPanel(node.userObject as Vulnerability),
+                                    ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+                                ),
                                 BorderLayout.CENTER
                             )
                         }
@@ -254,7 +259,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displayEmptyDescription() {
         if (rootCliTreeNode.childCount == 0
             && rootSecurityIssuesTreeNode.childCount == 0
-            && rootQualityIssuesTreeNode.childCount == 0) {
+            && rootQualityIssuesTreeNode.childCount == 0
+        ) {
             displayNoVulnerabilitiesMessage()
         } else {
             displaySelectVulnerabilityMessage()
@@ -282,8 +288,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         doCleanAll()
         descriptionPanel.removeAll()
 
+        val settings = getApplicationSettingsStateService()
+        if (settings.cliScanEnable) {
+            rootCliTreeNode.userObject = "$CLI_ROOT_TEXT (scanning...)"
+        }
+        if (settings.snykCodeScanEnable) {
+            rootSecurityIssuesTreeNode.userObject = "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (scanning...)"
+        }
+        if (settings.snykCodeQualityIssuesScanEnable) {
+            rootQualityIssuesTreeNode.userObject = "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"
+        }
+
         val statePanel = StatePanel("Scanning project for vulnerabilities...", "Stop Scanning", Runnable {
             project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
+            RunUtils.instance.cancelRunningIndicators(project)
 
             displayEmptyDescription()
         })

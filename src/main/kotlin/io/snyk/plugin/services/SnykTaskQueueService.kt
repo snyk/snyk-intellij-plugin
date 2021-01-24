@@ -21,7 +21,7 @@ import io.snyk.plugin.getSnykCode
 class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
 
-    private val cliScanPublisher =
+    private val scanPublisher =
         project.messageBus.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC)
 
     private val cliDownloadPublisher =
@@ -42,6 +42,7 @@ class SnykTaskQueueService(val project: Project) {
             scheduleCliScan()
         }
         if (settings.snykCodeScanEnable || settings.snykCodeQualityIssuesScanEnable) {
+            scanPublisher.scanningStarted()
             getSnykCode(project).scan()
         }
     }
@@ -49,7 +50,7 @@ class SnykTaskQueueService(val project: Project) {
     private fun scheduleCliScan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk CLI is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
-                cliScanPublisher.scanningStarted()
+                scanPublisher.scanningStarted()
 
                 ApplicationManager.getApplication().invokeAndWait {
                     FileDocumentManager.getInstance().saveAllDocuments()
@@ -66,9 +67,9 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (cliResult.isSuccessful()) {
-                    cliScanPublisher.scanningCliFinished(cliResult)
+                    scanPublisher.scanningCliFinished(cliResult)
                 } else {
-                    cliScanPublisher.scanError(cliResult.error!!)
+                    scanPublisher.scanError(cliResult.error!!)
                 }
 
                 indicator.checkCanceled()
