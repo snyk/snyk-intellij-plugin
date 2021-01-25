@@ -15,6 +15,7 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getSnykCode
+import io.snyk.plugin.snykcode.core.RunUtils
 
 
 @Service
@@ -106,5 +107,9 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun publishStoppedEvent() = taskQueuePublisher.stopped()
+    fun stopScan() {
+        currentProgressIndicator?.cancel()
+        RunUtils.instance.cancelRunningIndicators(project)
+        taskQueuePublisher.stopped()
+    }
 }

@@ -15,8 +15,7 @@ class SnykStopScanAction : AnAction(AllIcons.Actions.Suspend), DumbAware {
     override fun actionPerformed(actionEvent: AnActionEvent) {
         val taskQueueService = actionEvent.project!!.service<SnykTaskQueueService>()
 
-        taskQueueService.getCurrentProgressIndicator()?.cancel()
-        taskQueueService.publishStoppedEvent()
+        taskQueueService.stopScan()
     }
 
     override fun update(actionEvent: AnActionEvent) {

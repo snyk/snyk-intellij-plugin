@@ -201,7 +201,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
                 override fun stopped() =
-                    ApplicationManager.getApplication().invokeLater { displayEmptyDescription() }
+                    ApplicationManager.getApplication().invokeLater {
+                        updateTreePresentationAfterStop()
+                        displayEmptyDescription()
+                    }
             })
     }
 
@@ -267,6 +270,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
+    private fun updateTreePresentationAfterStop() {
+        if (rootCliTreeNode.childCount == 0) {
+            rootCliTreeNode.userObject = CLI_ROOT_TEXT
+        }
+        if (rootSecurityIssuesTreeNode.childCount == 0) {
+            rootSecurityIssuesTreeNode.userObject = SNYKCODE_SECURITY_ISSUES_ROOT_TEXT
+        }
+        if (rootQualityIssuesTreeNode.childCount == 0) {
+            rootQualityIssuesTreeNode.userObject = SNYKCODE_QUALITY_ISSUES_ROOT_TEXT
+        }
+    }
+
     private fun displayNoVulnerabilitiesMessage() {
         descriptionPanel.removeAll()
 
@@ -299,12 +314,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             rootQualityIssuesTreeNode.userObject = "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"
         }
 
-        val statePanel = StatePanel("Scanning project for vulnerabilities...", "Stop Scanning", Runnable {
-            project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
-            RunUtils.instance.cancelRunningIndicators(project)
-
-            displayEmptyDescription()
-        })
+        val statePanel = StatePanel(
+            "Scanning project for vulnerabilities...",
+            "Stop Scanning",
+            Runnable { project.service<SnykTaskQueueService>().stopScan() }
+        )
 
         descriptionPanel.add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)
 
