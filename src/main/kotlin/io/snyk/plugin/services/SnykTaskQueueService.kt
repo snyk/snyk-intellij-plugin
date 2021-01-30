@@ -16,6 +16,7 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getSnykCode
 import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 
 
 @Service
@@ -37,46 +38,63 @@ class SnykTaskQueueService(val project: Project) {
 
     fun getTaskQueue() = taskQueue
 
-    fun scan() {
-        val settings = getApplicationSettingsStateService()
-        if (settings.cliScanEnable) {
-            scheduleCliScan()
-        }
-        if (settings.snykCodeScanEnable || settings.snykCodeQualityIssuesScanEnable) {
-            scanPublisher.scanningStarted()
-            getSnykCode(project).scan()
-        }
+    fun scheduleRunnable (title: String, runnable: (indicator: ProgressIndicator) -> Unit) {
+        taskQueue.run(object : Task.Backgroundable(project, title, true) {
+            override fun run(indicator: ProgressIndicator) {
+                runnable.invoke(indicator)
+            }
+        })
     }
 
-    private fun scheduleCliScan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk CLI is scanning", true) {
+    fun scan() {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk wait for changed files to be saved on disk", true) {
             override fun run(indicator: ProgressIndicator) {
+
                 scanPublisher.scanningStarted()
+                currentProgressIndicator = indicator
 
                 ApplicationManager.getApplication().invokeAndWait {
                     FileDocumentManager.getInstance().saveAllDocuments()
                 }
 
+                currentProgressIndicator = null
                 indicator.checkCanceled()
+
+                val settings = getApplicationSettingsStateService()
+
+                if (settings.cliScanEnable) {
+                    scheduleCliScan()
+                }
+                if (settings.snykCodeScanEnable || settings.snykCodeQualityIssuesScanEnable) {
+                    getSnykCode(project).scan()
+                }
+
+            }
+        })
+    }
+
+    private fun scheduleCliScan() {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk CLI is scanning", true) {
+            override fun run(indicator: ProgressIndicator) {
 
                 currentProgressIndicator = indicator
 
-                indicator.checkCanceled()
+                val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
-                val cliResult: CliResult = getCli(project).scan()
-
-                indicator.checkCanceled()
-
-                if (cliResult.isSuccessful()) {
-                    scanPublisher.scanningCliFinished(cliResult)
-                } else {
-                    scanPublisher.scanError(cliResult.error!!)
-                }
-
-                indicator.checkCanceled()
-
+                val cliResult: CliResult = toolWindowPanel.currentCliResults ?: getCli(project).scan()
 
                 currentProgressIndicator = null
+                if (project.isDisposed) return
+
+                if (indicator.isCanceled) {
+                    taskQueuePublisher.stopped()
+                } else {
+                    if (cliResult.isSuccessful()) {
+                        scanPublisher.scanningCliFinished(cliResult)
+                    } else {
+                        scanPublisher.scanError(cliResult.error!!)
+                    }
+                }
             }
         })
     }
@@ -90,7 +108,9 @@ class SnykTaskQueueService(val project: Project) {
 
                 val cliDownloader = service<SnykCliDownloaderService>()
 
+                currentProgressIndicator = null
                 indicator.checkCanceled()
+                if (project.isDisposed) return
 
                 if (!getCli(project).isCliInstalled()) {
                     cliDownloadPublisher.cliDownloadStarted()
@@ -99,8 +119,6 @@ class SnykTaskQueueService(val project: Project) {
                 } else {
                     cliDownloader.cliSilentAutoUpdate(indicator)
                 }
-
-                currentProgressIndicator = null
 
                 cliDownloadPublisher.checkCliExistsFinished()
             }

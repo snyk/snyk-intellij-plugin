@@ -53,26 +53,18 @@ class RunUtils private constructor() : RunUtilsBase(
         // probably don't needed
     }
 
-    override fun updateAnalysisResultsUIPresentation(files: Collection<Any>) {
-        if (files.isEmpty()) return
-        val project = PDU.toPsiFile(files.first()).project
+    override fun updateAnalysisResultsUIPresentation(projectAsAny: Any, files: Collection<Any>) {
+        val project = PDU.toProject(projectAsAny)
+        if (project.isDisposed) return
         val cliScanPublisher =
             project.messageBus.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC)
-        val scanResults: SnykCodeResults = SnykCodeResults(
-            AnalysisData.instance.getAnalysis(files).mapKeys { PDU.toPsiFile(it.key) }
-        )
-/*
-        val psiManager = PsiManager.getInstance(project)
-        val psiFile = RunUtils.computeInReadActionInSmartMode(
-            project,
-            Computable { project.projectFile?.let { psiManager.findFile(it) }!! })
-            ?: return SnykCodeResults()
-        return SnykCodeResults(mapOf(
-            Pair(
-                psiFile,
-                listOf(SuggestionForFile("1", "", "Fake suggestion", 1, emptyList()))
-            )))
-*/
+        val scanResults = if (files.isEmpty()) {
+            SnykCodeResults()
+        } else {
+            SnykCodeResults(
+                AnalysisData.instance.getAnalysis(files).mapKeys { PDU.toPsiFile(it.key) }
+            )
+        }
         cliScanPublisher.scanningSnykCodeFinished(scanResults)
     }
 
@@ -89,7 +81,8 @@ class RunUtils private constructor() : RunUtilsBase(
         val instance = RunUtils()
 
         fun <T> computeInReadActionInSmartMode(
-            project: Project, computation: Computable<T>): T? {
+            project: Project, computation: Computable<T>
+        ): T? {
             val dumbService = ReadAction.compute<DumbService?, RuntimeException> {
                 if (project.isDisposed) null else DumbService.getInstance(project)
             }

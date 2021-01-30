@@ -26,14 +26,15 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
+import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
-import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.snykcode.severityAsString
 import java.awt.BorderLayout
+import java.time.Instant
 import java.util.Objects.nonNull
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -52,12 +53,19 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private var descriptionPanel = SimpleToolWindowPanel(true, true)
 
-    private var currentCliResults: CliResult? = null
+    var currentCliResults: CliResult? = null
+        get() {
+            val prevTimeStamp = field?.timeStamp ?: Instant.MIN
+            if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
+                field = null
+            }
+            return field
+        }
 
     private val rootTreeNode = DefaultMutableTreeNode("")
-    private val rootCliTreeNode = RootCliTreeNode()
-    private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode()
-    private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode()
+    private val rootCliTreeNode = RootCliTreeNode(project)
+    private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
+    private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     private val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootCliTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
@@ -108,16 +116,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                             val textRange = suggestion.ranges.firstOrNull()
                                 ?: throw IllegalArgumentException(suggestion.ranges.toString())
-                            // jump to Source
-                            PsiNavigationSupport.getInstance().createNavigatable(
-                                project,
-                                psiFile.virtualFile,
-                                textRange.start
-                            ).navigate(false)
+                            if (psiFile.virtualFile.isValid) {
+                                // jump to Source
+                                PsiNavigationSupport.getInstance().createNavigatable(
+                                    project,
+                                    psiFile.virtualFile,
+                                    textRange.start
+                                ).navigate(false)
 
-                            // highlight(by selection) suggestion range in source file
-                            val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                            editor?.selectionModel?.setSelection(textRange.start, textRange.end)
+                                // highlight(by selection) suggestion range in source file
+                                val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                                editor?.selectionModel?.setSelection(textRange.start, textRange.end)
+                            }
                         }
                         else -> {
                             displayEmptyDescription()
@@ -133,7 +143,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, object : SnykScanListener {
 
                 override fun scanningStarted() =
-                    ApplicationManager.getApplication().invokeLater { displayScanningMessage() }
+                    ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
 
                 override fun scanningCliFinished(cliResult: CliResult) {
                     currentCliResults = cliResult
@@ -156,6 +166,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         project.messageBus.connect(this)
             .subscribe(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC, object : SnykResultsFilteringListener {
                 override fun filtersChanged() {
+                    if (isScanRunning(project)) return
                     val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
                     val snykCodeResults: SnykCodeResults = SnykCodeResults(
                         AnalysisData.instance.getAnalysis(allProjectFiles).mapKeys { PDU.toPsiFile(it.key) }
@@ -211,13 +222,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     override fun dispose() {
     }
 
-    fun cleanAll() {
+    fun cleanUiAndCaches() {
+        currentCliResults = null
+        AnalysisData.instance.resetCachesAndTasks(project)
+
         ApplicationManager.getApplication().invokeLater {
-            doCleanAll()
+            doCleanUi()
         }
     }
 
-    private fun doCleanAll() {
+    private fun doCleanUi() {
         descriptionPanel.removeAll()
 
         rootCliTreeNode.userObject = CLI_ROOT_TEXT
@@ -260,7 +274,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displayEmptyDescription() {
-        if (rootCliTreeNode.childCount == 0
+        if (isScanRunning(project)) {
+            displayScanningMessage()
+        } else if (rootCliTreeNode.childCount == 0
             && rootSecurityIssuesTreeNode.childCount == 0
             && rootQualityIssuesTreeNode.childCount == 0
         ) {
@@ -268,6 +284,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         } else {
             displaySelectVulnerabilityMessage()
         }
+
     }
 
     private fun updateTreePresentationAfterStop() {
@@ -287,7 +304,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val emptyStatePanel = JPanel()
 
-        emptyStatePanel.add(JLabel("No vulnerability to display. Adjust Filters or"))
+        emptyStatePanel.add(JLabel("Scan your project for security vulnerabilities and code issues. "))
 
         val runScanLinkLabel = LinkLabel.create("Run scan") {
             project.service<SnykTaskQueueService>().scan()
@@ -299,9 +316,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    private fun displayScanningMessage() {
-        doCleanAll()
-        descriptionPanel.removeAll()
+    private fun displayScanningMessageAndUpdateTree() {
+        doCleanUi()
 
         val settings = getApplicationSettingsStateService()
         if (settings.cliScanEnable) {
@@ -313,6 +329,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         if (settings.snykCodeQualityIssuesScanEnable) {
             rootQualityIssuesTreeNode.userObject = "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"
         }
+
+        displayScanningMessage()
+    }
+
+    private fun displayScanningMessage() {
+        descriptionPanel.removeAll()
 
         val statePanel = StatePanel(
             "Scanning project for vulnerabilities...",
@@ -541,13 +563,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
         const val NO_ISSUES_FOUND_TEXT = "No issues found"
-        private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY =
-            "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
+        private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }
 }
 
-class RootCliTreeNode : DefaultMutableTreeNode(SnykToolWindowPanel.CLI_ROOT_TEXT)
+class RootCliTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CLI_ROOT_TEXT, project)
 
-class RootSecurityIssuesTreeNode : DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT)
+class RootSecurityIssuesTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT, project)
 
-class RootQualityIssuesTreeNode : DefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT)
+class RootQualityIssuesTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT, project)
+
+open class ProjectBasedDefaultMutableTreeNode(userObject: Any, val project: Project) :
+    DefaultMutableTreeNode(userObject)

@@ -244,6 +244,7 @@ class SuggestionDescriptionPanel(
         markers.forEachIndexed { index, markerRange ->
             val prefix = "${index + 1}  ${psiFile.name}:${markerRange.startRow}  | "
             val positionLabel = linkLabel(prefix, "Click to show in the Editor") {
+                if (!psiFile.virtualFile.isValid) return@linkLabel
                 // jump to Source
                 PsiNavigationSupport.getInstance().createNavigatable(
                     psiFile.project,

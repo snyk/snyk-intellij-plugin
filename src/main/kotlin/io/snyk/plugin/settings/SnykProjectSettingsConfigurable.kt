@@ -52,7 +52,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        project.service<SnykToolWindowPanel>().cleanAll()
+        project.service<SnykToolWindowPanel>().cleanUiAndCaches()
     }
 
     private fun isTokenModified(): Boolean =
