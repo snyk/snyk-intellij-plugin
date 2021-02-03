@@ -16,9 +16,7 @@ public class SnykAuthPanel {
 
   public SnykAuthPanel(@NotNull Project project) {
     connectIntelliJToSnykButton.addActionListener(e -> {
-      // todo
       project.getService(SnykToolWindowPanel.class).cleanUiAndCaches();
-//      ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable.class);
       getApplicationSettingsStateService().setToken(
         ApplicationManager.getApplication().getService(SnykCliAuthenticationService.class).authenticate()
       );

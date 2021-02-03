@@ -3,6 +3,7 @@ package io.snyk.plugin.settings
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
@@ -53,6 +54,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         }
 
         project.service<SnykToolWindowPanel>().cleanUiAndCaches()
+        project.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC).checkCliExistsFinished()
     }
 
     private fun isTokenModified(): Boolean =

@@ -72,8 +72,14 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         // not yet needed
     }
 
-    override fun isLogged(project: Any?, userActionNeeded: Boolean): Boolean = LoginUtils.instance
-        .isLogged(project, userActionNeeded)
+    /**
+     * _Is not doing Login (token validity) check_ due to lack of proxying `/session` api
+     * Instead will be called from AnalysisDataBase.isNotSucceed() only when 401 status code already happened
+     */
+    override fun isLogged(project: Any?, userActionNeeded: Boolean): Boolean {
+        showLoginLink(project, "<ignored>")
+        return false
+    }
 
     override fun progressSetText(progress: Any?, text: String?) {
         if (progress is ProgressIndicator) {
@@ -98,7 +104,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     override fun showLoginLink(project: Any?, message: String) {
-        showError(message, project)
+//        showError(message, project)
         runForProject(project, Consumer { prj ->
             ApplicationManager.getApplication().invokeLater {
                 prj.service<SnykToolWindowPanel>().displayAuthPanel()
