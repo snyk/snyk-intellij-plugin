@@ -1,6 +1,7 @@
 package icons
 
 import com.intellij.openapi.util.IconLoader.getIcon
+import javax.swing.Icon
 import javax.swing.ImageIcon
 
 object SnykIcons {
@@ -16,10 +17,6 @@ object SnykIcons {
 
     val OPEN_SOURCE_SECURITY =  getIcon("/icons/oss.svg")
     val SNYK_CODE =  getIcon("/icons/code.svg")
-
-    val HIGH_SEVERITY = getIcon("/icons/severity_high.svg")
-    val LOW_SEVERITY = getIcon("/icons/severity_low.svg")
-    val MEDIUM_SEVERITY = getIcon("/icons/severity_medium.svg")
 
     val GRADLE = getIcon("/icons/gradle.svg")
     val MAVEN = getIcon("/icons/maven.svg")
@@ -40,4 +37,36 @@ object SnykIcons {
     val COCOAPODS = getIcon("/icons/cocoapods.svg")
     val RPM = getIcon("/icons/rpm.svg")
     val DOCKER = getIcon("/icons/docker.svg")
+
+    private val HIGH_SEVERITY = getIcon("/icons/severity_high.svg")
+    private val HIGH_SEVERITY_24 = getIcon("/icons/severity_high_24.svg")
+    private val LOW_SEVERITY = getIcon("/icons/severity_low.svg")
+    private val LOW_SEVERITY_24 = getIcon("/icons/severity_low_24.svg")
+    private val MEDIUM_SEVERITY = getIcon("/icons/severity_medium.svg")
+    private val MEDIUM_SEVERITY_24 = getIcon("/icons/severity_medium_24.svg")
+
+    fun getSeverityIcon(severity: String, iconSize: IconSize = IconSize.SIZE16): Icon {
+        return when (severity) {
+            "high" -> when (iconSize) {
+                IconSize.SIZE16 -> HIGH_SEVERITY
+                IconSize.SIZE24 -> HIGH_SEVERITY_24
+            }
+            "medium" -> when (iconSize) {
+                IconSize.SIZE16 -> MEDIUM_SEVERITY
+                IconSize.SIZE24 -> MEDIUM_SEVERITY_24
+            }
+            "low" -> when (iconSize) {
+                IconSize.SIZE16 -> LOW_SEVERITY
+                IconSize.SIZE24 -> LOW_SEVERITY_24
+            }
+            else -> when (iconSize) {
+                IconSize.SIZE16 -> VULNERABILITY_16
+                IconSize.SIZE24 -> VULNERABILITY_24
+            }
+        }
+    }
+
+    enum class IconSize {
+        SIZE16, SIZE24
+    }
 }

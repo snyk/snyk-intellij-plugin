@@ -17,6 +17,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
+import icons.SnykIcons
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.buildBoldTitleLabel
 import java.awt.*
@@ -50,19 +51,19 @@ class SuggestionDescriptionPanel(
         )
     }
 
-    private fun getPanelGridConstraints(row: Int): GridConstraints {
+    private fun getPanelGridConstraints(row: Int, indent: Int = 0): GridConstraints {
         return getGridConstraints(
             row,
             anchor = GridConstraints.ANCHOR_CENTER,
             fill = GridConstraints.FILL_BOTH,
             HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
             VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-            indent = 0
+            indent = indent
         )
     }
 
     init {
-        this.layout = GridLayoutManager(6, 1, Insets(20, 0, 0, 0), -1, 10)
+        this.layout = GridLayoutManager(6, 1, Insets(20, 10, 0, 20), -1, 20)
 
         this.add(
             Spacer(),
@@ -76,83 +77,38 @@ class SuggestionDescriptionPanel(
             )
         )
 
-//        val codeRange = suggestion.ranges.firstOrNull()
-//        codeRange?.let {
-//            this.add(codeLine(it, "(${it.startRow}:${it.startCol})  "), getGridConstraints(1))
-//        }
-
-        cwePanel()?.let { this.add(it, getGridConstraints(1, indent = 0)) }
-
         this.add(overviewPanel(), getPanelGridConstraints(2))
 
-        this.add(dataFlowPanel(), getPanelGridConstraints(3))
+        dataFlowPanel()?.let { this.add(it, getPanelGridConstraints(3)) }
 
-        this.add(fixExamplesPanel(), getPanelGridConstraints(4))
+        fixExamplesPanel()?.let { this.add(it, getPanelGridConstraints(4)) }
 
-        this.add(severityPanel(), getPanelGridConstraints(0))
+        this.add(titlePanel(), getPanelGridConstraints(0))
     }
 
-    private fun severityPanel(): SeverityColorPanel {
-        val severityPanel = SeverityColorPanel(suggestion.severityAsString)
-        severityPanel.layout = GridLayoutManager(2, 2, Insets(10, 10, 10, 10), -1, -1)
+    private fun titlePanel(): JPanel {
+        val titlePanel = JPanel()
+        titlePanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, 5)
 
-        val severityLabel = JLabel()
-
-        val severityLabelFont: Font? = io.snyk.plugin.ui.getFont(-1, 14, severityLabel.font)
-
-        if (severityLabelFont != null) {
-            severityLabel.font = severityLabelFont
+        val titleLabel = JLabel().apply {
+            font = io.snyk.plugin.ui.getFont(Font.BOLD, 18, font)
+            text = " " + suggestion.title
+            icon = SnykIcons.getSeverityIcon(suggestion.severityAsString, SnykIcons.IconSize.SIZE24)
         }
 
-        severityLabel.text = when (suggestion.severityAsString) {
-            "high" -> "HIGH SEVERITY"
-            "medium" -> "MEDIUM SEVERITY"
-            "low" -> "LOW SEVERITY"
-            else -> "UNKNOWN SEVERITY"
-        }
-
-        severityLabel.foreground = Color(-1)
-
-        severityPanel.add(
-            severityLabel,
-            getGridConstraints(0, indent = 0)
+        titlePanel.add(
+            titleLabel,
+            getGridConstraints(0)
         )
 
-        severityPanel.add(
-            Spacer(),
-            getGridConstraints(
-                0,
-                anchor = GridConstraints.ANCHOR_CENTER,
-                fill = GridConstraints.FILL_HORIZONTAL,
-                HSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
-                VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                indent = 0
-            )
-        )
+        titlePanel.add(cwePanel(), getGridConstraints(1, indent = 0))
 
-        severityPanel.add(
-            Spacer(),
-            getGridConstraints(
-                0,
-                anchor = GridConstraints.ANCHOR_CENTER,
-                fill = GridConstraints.FILL_VERTICAL,
-                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0
-            )
-        )
-
-        return severityPanel
+        return titlePanel
     }
 
     private fun overviewPanel(): JPanel {
         val overviewPanel = JPanel()
         overviewPanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        overviewPanel.add(
-            buildBoldTitleLabel("Overview"),
-            getGridConstraints(0)
-        )
 
         val descriptionTextArea = JTextArea(getOverviewText()).apply {
             this.lineWrap = true
@@ -170,8 +126,7 @@ class SuggestionDescriptionPanel(
                 anchor = GridConstraints.ANCHOR_CENTER,
                 fill = GridConstraints.FILL_BOTH,
                 HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-                VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 2
+                VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW
             )
         )
 
@@ -227,23 +182,41 @@ class SuggestionDescriptionPanel(
         return lineColumnPrefix + codeInLine
     }
 
-    private fun dataFlowPanel(): JPanel {
-        val panel = JPanel()
+    private fun dataFlowPanel(): JPanel? {
         val suggestionRange = suggestion.ranges.firstOrNull()
         val markers = suggestionRange?.let { range ->
             range.markers.values.flatten().distinctBy { it.startRow }
         } ?: emptyList()
 
-        panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, -1)
+        if (markers.isEmpty()) return null
+
+        val panel = JPanel()
+        panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, 5)
 
         panel.add(
             buildBoldTitleLabel("Data Flow - ${markers.size} steps"),
             getGridConstraints(0)
         )
 
+        panel.add(
+            stepsPanel(markers),
+            getGridConstraints(1)
+        )
+
+        return panel
+    }
+
+    private fun stepsPanel(markers: List<MyTextRange>): JPanel {
+        val panel = JPanel()
+        panel.layout = GridLayoutManager(markers.size, 2, Insets(0, 0, 0, 0), 0, 4)
+        panel.background = UIUtil.getTextFieldBackground()
+
         markers.forEachIndexed { index, markerRange ->
-            val prefix = "${index + 1}  ${psiFile.name}:${markerRange.startRow}  | "
-            val positionLabel = linkLabel(prefix, "Click to show in the Editor") {
+            val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
+            val paddedRowNumber = markerRange.startRow.toString().padStart(4, ' ')
+            val positionLinkText = "$paddedStepNumber  ${psiFile.name}:$paddedRowNumber  |"
+
+            val positionLabel = linkLabel(positionLinkText, "Click to show in the Editor") {
                 if (!psiFile.virtualFile.isValid) return@linkLabel
                 // jump to Source
                 PsiNavigationSupport.getInstance().createNavigatable(
@@ -257,42 +230,43 @@ class SuggestionDescriptionPanel(
                 editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
             }
 
-            panel.add(positionLabel, getGridConstraints(1 + index, indent = 2))
+            panel.add(positionLabel, getGridConstraints(index, indent = 1))
 
             panel.add(
                 codeLine(markerRange, ""),
-                getGridConstraints(1 + index, indent = prefix.length) // fixme
+                getGridConstraints(index, column = 1)
             )
         }
 
         return panel
     }
 
-    private fun fixExamplesPanel(): JPanel {
-        val panel = JPanel()
-        panel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        panel.add(
-            buildBoldTitleLabel("External examples fixes"),
-            getGridConstraints(0)
-        )
-
+    private fun fixExamplesPanel(): JPanel? {
         val fixes = suggestion.exampleCommitFixes
         val examplesCount = fixes.size.coerceAtMost(3)
 
+        if (examplesCount == 0) return null
+
+        val panel = JPanel()
+        panel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, 5)
+
+        panel.add(
+            buildBoldTitleLabel("Fix examples"),
+            getGridConstraints(0)
+        )
+
         panel.add(
             defaultFontLabel(
-                "This issue was fixed by ${suggestion.repoDatasetSize} projects." +
-                    if (examplesCount > 0) " Here are $examplesCount example fixes." else ""
+                "This issue was fixed by ${suggestion.repoDatasetSize} projects. Here are $examplesCount example fixes."
             ),
-            getGridConstraints(1, indent = 2)
+            getGridConstraints(1)
         )
 
         val tabbedPane = JBTabbedPane()
         //tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
         tabbedPane.tabComponentInsets = JBInsets.create(0, 0) // no inner borders for tab content
 
-        panel.add(tabbedPane, getPanelGridConstraints(2))
+        panel.add(tabbedPane, getPanelGridConstraints(2, indent = 1))
 
         val maxRowCount = fixes.take(examplesCount)
             .map { it.lines.size }
@@ -395,13 +369,18 @@ class SuggestionDescriptionPanel(
     }
 
 
-    private fun cwePanel(): Component? {
-        val cwes = suggestion.cwe
-        if (cwes.isNullOrEmpty()) return null
-
+    private fun cwePanel(): Component {
         val panel = JPanel()
+        val cwes = suggestion.cwe
 
-        panel.layout = GridLayoutManager(1, cwes.size, Insets(0, 0, 0, 0), -1, -1)
+        panel.layout = GridLayoutManager(1, 1 + cwes.size, Insets(0, 0, 0, 0), 5, 0)
+
+        panel.add(
+            defaultFontLabel(
+                if (suggestion.categories.contains("Security")) "Vulnerability  |" else "Code quality issue"
+            ),
+            getGridConstraints(0)
+        )
 
         cwes.forEachIndexed() { index, cwe ->
             if (!cwe.isNullOrEmpty()) {
@@ -410,7 +389,7 @@ class SuggestionDescriptionPanel(
                     BrowserUtil.open(url)
                 }
 
-                panel.add(positionLabel, getGridConstraints(0, column = index))
+                panel.add(positionLabel, getGridConstraints(0, column = index + 1, indent = 0))
             }
         }
 
