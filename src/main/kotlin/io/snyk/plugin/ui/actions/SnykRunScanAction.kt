@@ -15,11 +15,7 @@ import io.snyk.plugin.services.SnykTaskQueueService
 class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
-        actionEvent.presentation.isEnabled = false
-
         actionEvent.project!!.service<SnykTaskQueueService>().scan()
-
-        actionEvent.presentation.isEnabled = true
     }
 
     override fun update(actionEvent: AnActionEvent) {
