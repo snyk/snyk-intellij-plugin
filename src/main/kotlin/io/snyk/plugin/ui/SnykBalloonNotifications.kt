@@ -1,20 +1,18 @@
-package io.snyk.plugin.snykcode
+package io.snyk.plugin.ui
 
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.snykcode.core.SCLogger
 
-class SnykCodeNotifications {
+class SnykBalloonNotifications {
 
     companion object {
-        const val title = SCLogger.presentableName
-        private const val groupNeedAction = "${SCLogger.presentableName}NeedAction"
-        private const val groupAutoHide = "${SCLogger.presentableName}AutoHide"
+        const val title = "Snyk"
+        private const val groupNeedAction = "SnykNeedAction"
+        private const val groupAutoHide = "SnykAutoHide"
         private val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
         fun showError(message: String, project: Project, action: AnAction? = null) {

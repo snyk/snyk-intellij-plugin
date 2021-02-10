@@ -27,8 +27,8 @@ class ScanTypesPanel(
         row {
             snykCodeCheckbox = checkBox(
                 "Snyk Code Security issues",
-                { getApplicationSettingsStateService().snykCodeScanEnable },
-                { getApplicationSettingsStateService().snykCodeScanEnable = it }
+                { getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable },
+                { getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable = it }
             )
                 .component
 

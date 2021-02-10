@@ -480,7 +480,7 @@ class SnykSettingsDialog(
                 val snykCodeEnabled = textField.text.isEmpty()
                 scanTypesPanelOuter.snykCodeCheckbox?.let {
                     it.isEnabled = snykCodeEnabled
-                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeScanEnable
+                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable
                 }
                 scanTypesPanelOuter.snykCodeQualityCheckbox?.let {
                     it.isEnabled = snykCodeEnabled

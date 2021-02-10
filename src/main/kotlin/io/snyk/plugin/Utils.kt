@@ -9,6 +9,7 @@ import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCodeService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
+import io.snyk.plugin.snykcode.core.RunUtils
 import java.io.File
 import java.net.URL
 import java.util.Objects.nonNull
@@ -45,10 +46,12 @@ fun isUrlValid(url: String?): Boolean {
     }
 }
 
-fun isScanRunning(project: Project): Boolean {
+fun isSnykCliRunning(project: Project): Boolean {
     val indicator = project.service<SnykTaskQueueService>().getCurrentProgressIndicator()
-    val isSnykCliRunning = indicator != null && indicator.isRunning
-    val isSnykCodeRunning = AnalysisData.instance.isUpdateAnalysisInProgress(project)
-
-    return isSnykCliRunning || isSnykCodeRunning
+    return indicator != null && indicator.isRunning
 }
+
+fun isSnykCodeRunning(project: Project): Boolean =
+    AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
+
+fun isScanRunning(project: Project): Boolean = isSnykCliRunning(project) || isSnykCodeRunning(project)

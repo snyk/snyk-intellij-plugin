@@ -28,9 +28,10 @@ class SnykCliDownloaderService {
     private var latestReleaseInfo: LatestReleaseInfo? = null
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
-        val jsonResponseStr = URL(LATEST_RELEASES_URL).readText()
-
-        latestReleaseInfo = Gson().fromJson(jsonResponseStr, LatestReleaseInfo::class.java)
+        try {
+            val jsonResponseStr = URL(LATEST_RELEASES_URL).readText()
+            latestReleaseInfo = Gson().fromJson(jsonResponseStr, LatestReleaseInfo::class.java)
+        } catch (ignore : Exception) {}
 
         return latestReleaseInfo
     }

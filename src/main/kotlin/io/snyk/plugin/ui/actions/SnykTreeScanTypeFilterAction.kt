@@ -51,10 +51,10 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
         val settings = getApplicationSettingsStateService()
 
         return object : ToggleAction("Security Issues${if (hasNoCustomEndpoint) "" else " (not available)"}") {
-            override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeScanEnable
+            override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeSecurityIssuesScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
-                settings.snykCodeScanEnable = state && hasNoCustomEndpoint
+                settings.snykCodeSecurityIssuesScanEnable = state && hasNoCustomEndpoint
                     fireFiltersChangedEvent(e.project!!)
             }
         }

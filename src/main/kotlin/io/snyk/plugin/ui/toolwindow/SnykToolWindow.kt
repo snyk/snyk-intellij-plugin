@@ -44,7 +44,9 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) = updateActionsPresentation()
 
-                override fun scanError(cliError: CliError) = updateActionsPresentation()
+                override fun scanningCliError(cliError: CliError) = updateActionsPresentation()
+
+                override fun scanningSnykCodeError(cliError: CliError) = updateActionsPresentation()
             })
 
         project.messageBus.connect(this)

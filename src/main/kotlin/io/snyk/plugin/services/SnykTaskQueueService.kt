@@ -51,7 +51,6 @@ class SnykTaskQueueService(val project: Project) {
             override fun run(indicator: ProgressIndicator) {
 
                 currentProgressIndicator = indicator
-                scanPublisher.scanningStarted()
 
                 ApplicationManager.getApplication().invokeAndWait {
                     FileDocumentManager.getInstance().saveAllDocuments()
@@ -65,7 +64,7 @@ class SnykTaskQueueService(val project: Project) {
                 if (settings.cliScanEnable) {
                     scheduleCliScan()
                 }
-                if (settings.snykCodeScanEnable || settings.snykCodeQualityIssuesScanEnable) {
+                if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
                     getSnykCode(project).scan()
                 }
 
@@ -78,6 +77,7 @@ class SnykTaskQueueService(val project: Project) {
             override fun run(indicator: ProgressIndicator) {
 
                 currentProgressIndicator = indicator
+                scanPublisher.scanningStarted()
 
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
@@ -92,7 +92,7 @@ class SnykTaskQueueService(val project: Project) {
                     if (cliResult.isSuccessful()) {
                         scanPublisher.scanningCliFinished(cliResult)
                     } else {
-                        scanPublisher.scanError(cliResult.error!!)
+                        scanPublisher.scanningCliError(cliResult.error!!)
                     }
                 }
             }

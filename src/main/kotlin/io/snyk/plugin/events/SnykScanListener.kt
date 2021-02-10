@@ -17,5 +17,7 @@ interface SnykScanListener {
 
     fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults)
 
-    fun scanError(cliError: CliError)
+    fun scanningCliError(cliError: CliError)
+
+    fun scanningSnykCodeError(cliError: CliError)
 }

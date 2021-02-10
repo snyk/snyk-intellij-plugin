@@ -17,8 +17,7 @@ class SnykCleanScanAction : AnAction(AllIcons.Actions.GC), DumbAware {
     }
 
     override fun update(actionEvent: AnActionEvent) {
-        if (actionEvent.project != null && !actionEvent.project!!.isDisposed) {
-            actionEvent.presentation.isEnabled = !actionEvent.project!!.service<SnykToolWindowPanel>().isEmpty()
-        }
+        val project = actionEvent.project
+        actionEvent.presentation.isEnabled = project != null && !project.isDisposed
     }
 }
