@@ -2,21 +2,21 @@ package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeParamsBase
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.toSnykCodeApiUrl
 
-//TODO
 class SnykCodeParams private constructor() : DeepCodeParamsBase(
     true,
-    "https://www.deepcode.ai/",
+    "ignored - will be set in init{}",
     false,
     1,
-    if (getApplicationSettingsStateService().deepcodeToken.isNotEmpty()) {
-        getApplicationSettingsStateService().deepcodeToken
-    } else {
-        System.getenv("DEEPCODE_API_KEY") ?: "" // for CI tests only
-    },
+    getApplicationSettingsStateService().token,
     "",
     "${SCLogger.presentableName}-Jetbrains"
 ) {
+
+    init {
+        apiUrl = toSnykCodeApiUrl(getApplicationSettingsStateService().customEndpointUrl)
+    }
 
     override fun consentGiven(project: Any): Boolean {
         //TODO

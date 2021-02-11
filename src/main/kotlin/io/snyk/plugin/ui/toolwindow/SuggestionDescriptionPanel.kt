@@ -91,8 +91,13 @@ class SuggestionDescriptionPanel(
         titlePanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, 5)
 
         val titleLabel = JLabel().apply {
-            font = io.snyk.plugin.ui.getFont(Font.BOLD, 18, font)
-            text = " " + suggestion.title
+            font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
+            text = " " + if (suggestion.title.isNotBlank()) suggestion.title else when (suggestion.severity) {
+                3 -> "High Severity"
+                2 -> "Medium Severity"
+                1 -> "Low Severity"
+                else -> ""
+            }
             icon = SnykIcons.getSeverityIcon(suggestion.severityAsString, SnykIcons.IconSize.SIZE24)
         }
 
@@ -194,7 +199,7 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, 5)
 
         panel.add(
-            buildBoldTitleLabel("Data Flow - ${markers.size} steps"),
+            buildBoldTitleLabel("Data Flow - ${markers.size} step${if (markers.size > 1) "s" else ""}"),
             getGridConstraints(0)
         )
 
@@ -251,7 +256,7 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, 5)
 
         panel.add(
-            buildBoldTitleLabel("Fix examples"),
+            buildBoldTitleLabel("External examples fixes"),
             getGridConstraints(0)
         )
 
@@ -377,7 +382,7 @@ class SuggestionDescriptionPanel(
 
         panel.add(
             defaultFontLabel(
-                if (suggestion.categories.contains("Security")) "Vulnerability  |" else "Code quality issue"
+                if (suggestion.categories.contains("Security")) "Vulnerability  |" else "Code Issue"
             ),
             getGridConstraints(0)
         )

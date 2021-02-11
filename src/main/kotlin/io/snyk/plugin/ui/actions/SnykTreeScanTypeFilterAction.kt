@@ -9,6 +9,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.isSnykCodeAvailable
 import javax.swing.JComponent
 
 /**
@@ -44,18 +45,18 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
         }
     }
 
-    private val hasNoCustomEndpoint: Boolean
-        get() = getApplicationSettingsStateService().customEndpointUrl?.isEmpty() == true
+    private val isSnykCodeAvailable: Boolean
+        get() = isSnykCodeAvailable(getApplicationSettingsStateService().customEndpointUrl)
 
     private fun createSecurityIssuesScanAction(): AnAction {
         val settings = getApplicationSettingsStateService()
 
-        return object : ToggleAction("Security Issues${if (hasNoCustomEndpoint) "" else " (not available)"}") {
+        return object : ToggleAction("Security Issues${if (isSnykCodeAvailable) "" else " (not available)"}") {
             override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeSecurityIssuesScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
-                settings.snykCodeSecurityIssuesScanEnable = state && hasNoCustomEndpoint
-                    fireFiltersChangedEvent(e.project!!)
+                settings.snykCodeSecurityIssuesScanEnable = state && isSnykCodeAvailable
+                fireFiltersChangedEvent(e.project!!)
             }
         }
     }
@@ -63,11 +64,11 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
     private fun createQualityIssuesScanAction(): AnAction {
         val settings = getApplicationSettingsStateService()
 
-        return object : ToggleAction("Quality Issues${if (hasNoCustomEndpoint) "" else " (not available)"}") {
+        return object : ToggleAction("Quality Issues${if (isSnykCodeAvailable) "" else " (not available)"}") {
             override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeQualityIssuesScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
-                settings.snykCodeQualityIssuesScanEnable = state && hasNoCustomEndpoint
+                settings.snykCodeQualityIssuesScanEnable = state && isSnykCodeAvailable
                 fireFiltersChangedEvent(e.project!!)
             }
         }

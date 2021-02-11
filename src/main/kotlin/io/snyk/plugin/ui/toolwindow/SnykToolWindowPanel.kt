@@ -267,7 +267,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun removeAllChildren(rootNodesToUpdate: List<DefaultMutableTreeNode> =
                                       listOf(rootCliTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode)
     ) {
-        rootNodesToUpdate.forEach { it.removeAllChildren() }
+        rootNodesToUpdate.forEach {
+            it.removeAllChildren()
+            (vulnerabilitiesTree.model as DefaultTreeModel).reload(it)
+        }
     }
 
     fun displayAuthPanel() {

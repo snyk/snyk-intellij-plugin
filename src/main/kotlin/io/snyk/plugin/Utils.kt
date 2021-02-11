@@ -55,3 +55,19 @@ fun isSnykCodeRunning(project: Project): Boolean =
     AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
 
 fun isScanRunning(project: Project): Boolean = isSnykCliRunning(project) || isSnykCodeRunning(project)
+
+fun isSnykCodeAvailable(customEndpointUrl: String?): Boolean =
+    customEndpointUrl.isNullOrEmpty() || isSnykCodeSupportedEndpoint(customEndpointUrl)
+
+fun toSnykCodeApiUrl(customEndpointUrl: String?): String =
+    if (customEndpointUrl != null && isSnykCodeSupportedEndpoint(customEndpointUrl)) {
+        customEndpointUrl
+            .replace("https://", "https://deeproxy.")
+            .removeSuffix("api")
+    } else {
+        "https://deeproxy.snyk.io/"
+    }
+
+private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
+    customEndpointUrl == "https://dev.snyk.io/api" ||
+    customEndpointUrl == "https://snyk.io/api"

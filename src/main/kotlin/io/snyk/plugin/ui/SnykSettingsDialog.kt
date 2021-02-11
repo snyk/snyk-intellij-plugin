@@ -11,16 +11,14 @@ import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
-import com.intellij.ui.layout.GrowPolicy
-import com.intellij.ui.layout.panel
 import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
+import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
-import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
 import java.awt.Insets
@@ -47,19 +45,6 @@ class SnykSettingsDialog(
     private val additionalParametersTextField: JTextField = ExpandableTextField()
     private val scanTypesPanelOuter = ScanTypesPanel()
     private val scanTypesPanel = scanTypesPanelOuter.panel
-
-    private val deepcodeTokenPanel = panel {
-        row {
-            label("Deepcode.ai token:")
-            textField(
-                { getApplicationSettingsStateService().deepcodeToken },
-                {
-                    getApplicationSettingsStateService().deepcodeToken = it
-                    SnykCodeParams.instance.sessionToken = it
-                }
-            ).growPolicy(GrowPolicy.MEDIUM_TEXT)
-        }
-    }
 
     private val rootPanel = object : JPanel(), Disposable {
         override fun dispose() = Unit
@@ -270,25 +255,6 @@ class SnykSettingsDialog(
             )
         )
 
-        rootPanel.add(
-            deepcodeTokenPanel,
-            UIGridConstraints(
-                1,
-                0,
-                1,
-                1,
-                UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.FILL_NONE,
-                UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                null,
-                Dimension(120, 16),
-                null,
-                0,
-                false
-            )
-        )
-
 /*
         val generalSettingsSpacer = Spacer()
         generalSettingsPanel.add(
@@ -457,10 +423,6 @@ class SnykSettingsDialog(
 
     fun saveScanTypeChanges() = scanTypesPanel.apply()
 
-    fun isDeepcodeTokenChanged(): Boolean = deepcodeTokenPanel.isModified()
-
-    fun saveDeepcodeTokenChanges() = deepcodeTokenPanel.apply()
-
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 
     private fun initializeValidation() {
@@ -477,7 +439,7 @@ class SnykSettingsDialog(
             }
             // disable SnykCode if custom endpoint is used
             if (textField == customEndpointTextField) {
-                val snykCodeEnabled = textField.text.isEmpty()
+                val snykCodeEnabled = isSnykCodeAvailable(textField.text)
                 scanTypesPanelOuter.snykCodeCheckbox?.let {
                     it.isEnabled = snykCodeEnabled
                     it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable

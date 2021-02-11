@@ -3,12 +3,11 @@ package io.snyk.plugin.settings
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.*
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.isProjectSettingsAvailable
-import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
+import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.SnykSettingsDialog
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import javax.swing.JComponent
@@ -33,7 +32,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         || isIgnoreUnknownCAModified()
         || isAdditionalParametersModified()
         || snykSettingsDialog.isScanTypeChanged()
-        || snykSettingsDialog.isDeepcodeTokenChanged()
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
@@ -43,11 +41,14 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         }
 
         applicationSettingsStateService.customEndpointUrl = customEndpoint
+        SnykCodeParams.instance.apiUrl = toSnykCodeApiUrl(customEndpoint)
+
         applicationSettingsStateService.token = snykSettingsDialog.getToken()
+        SnykCodeParams.instance.sessionToken = snykSettingsDialog.getToken()
+
         applicationSettingsStateService.organization = snykSettingsDialog.getOrganization()
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
         snykSettingsDialog.saveScanTypeChanges()
-        snykSettingsDialog.saveDeepcodeTokenChanges()
 
         if (isProjectSettingsAvailable(project)) {
             project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
