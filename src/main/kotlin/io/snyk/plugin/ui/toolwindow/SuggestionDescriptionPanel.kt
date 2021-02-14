@@ -138,7 +138,7 @@ class SuggestionDescriptionPanel(
         return overviewPanel
     }
 
-    private fun codeLine(range: MyTextRange, prefix: String): Component {
+    private fun codeLine(range: MyTextRange, prefix: String): JTextArea {
         val component = JTextArea(prefix + getLineOfCode(range))
         component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
         component.isEditable = false
@@ -153,8 +153,14 @@ class SuggestionDescriptionPanel(
         }
     }
 
-    private fun linkLabel(linkText: String, toolTipText: String, onClick: (HyperlinkEvent) -> Unit): HyperlinkLabel {
-        return HyperlinkLabel(linkText).apply {
+    private fun linkLabel(
+        beforeLinkText: String = "",
+        linkText: String,
+        afterLinkText: String = "",
+        toolTipText: String,
+        onClick: (HyperlinkEvent) -> Unit): HyperlinkLabel {
+        return HyperlinkLabel().apply {
+            this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
             this.toolTipText = toolTipText
             this.font = io.snyk.plugin.ui.getFont(-1, 14, font)
             addHyperlinkListener {
@@ -213,37 +219,73 @@ class SuggestionDescriptionPanel(
 
     private fun stepsPanel(markers: List<MyTextRange>): JPanel {
         val panel = JPanel()
-        panel.layout = GridLayoutManager(markers.size, 2, Insets(0, 0, 0, 0), 0, 4)
+        panel.layout = GridLayoutManager(markers.size, 1, Insets(0, 0, 0, 0), 0, 0)
         panel.background = UIUtil.getTextFieldBackground()
 
+        val allStepPanels = mutableListOf<JPanel>()
         markers.forEachIndexed { index, markerRange ->
-            val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
-            val paddedRowNumber = markerRange.startRow.toString().padStart(4, ' ')
-            val positionLinkText = "$paddedStepNumber  ${psiFile.name}:$paddedRowNumber  |"
-
-            val positionLabel = linkLabel(positionLinkText, "Click to show in the Editor") {
-                if (!psiFile.virtualFile.isValid) return@linkLabel
-                // jump to Source
-                PsiNavigationSupport.getInstance().createNavigatable(
-                    psiFile.project,
-                    psiFile.virtualFile,
-                    markerRange.start
-                ).navigate(false)
-
-                // highlight(by selection) marker range in source file
-                val editor = FileEditorManager.getInstance(psiFile.project).selectedTextEditor
-                editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
-            }
-
-            panel.add(positionLabel, getGridConstraints(index, indent = 1))
-
+            val stepPanel = stepPanel(index, markerRange, allStepPanels)
             panel.add(
-                codeLine(markerRange, ""),
-                getGridConstraints(index, column = 1)
+                stepPanel,
+                getGridConstraints(
+                    row = index,
+                    fill = GridConstraints.FILL_BOTH,
+                    indent = 0
+                )
             )
+            allStepPanels.add(stepPanel)
         }
 
         return panel
+    }
+
+    private fun stepPanel(index: Int, markerRange: MyTextRange, allStepPanels: MutableList<JPanel>): JPanel {
+        val stepPanel = JPanel()
+        stepPanel.layout = GridLayoutManager(1, 3, Insets(0, 0, 4, 0), 0, 0)
+        stepPanel.background = UIUtil.getTextFieldBackground()
+
+        val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
+        val paddedRowNumber = markerRange.startRow.toString().padStart(4, ' ')
+        val positionLinkText = "${psiFile.name}:$paddedRowNumber"
+
+        val positionLabel = linkLabel(
+            beforeLinkText = "$paddedStepNumber  ",
+            linkText = positionLinkText,
+            afterLinkText = "  |",
+            toolTipText = "Click to show in the Editor"
+        ) {
+            if (!psiFile.virtualFile.isValid) return@linkLabel
+            // jump to Source
+            PsiNavigationSupport.getInstance().createNavigatable(
+                psiFile.project,
+                psiFile.virtualFile,
+                markerRange.start
+            ).navigate(false)
+
+            // highlight(by selection) marker range in source file
+            val editor = FileEditorManager.getInstance(psiFile.project).selectedTextEditor
+            editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
+
+            allStepPanels.forEach {
+                it.background = UIUtil.getTextFieldBackground()
+            }
+            stepPanel.background = UIUtil.getTableSelectionBackground(false)
+        }
+        stepPanel.add(positionLabel, getGridConstraints(0, indent = 1))
+
+        val codeLine = codeLine(markerRange, "")
+        codeLine.isOpaque = false
+        stepPanel.add(
+            codeLine,
+            getGridConstraints(
+                row = 0,
+                // is needed to avoid center alignment when outer panel is filling horizontal space
+                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_GROW,
+                column = 1
+            )
+        )
+
+        return stepPanel
     }
 
     private fun fixExamplesPanel(): JPanel? {
@@ -270,6 +312,7 @@ class SuggestionDescriptionPanel(
         val tabbedPane = JBTabbedPane()
         //tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
         tabbedPane.tabComponentInsets = JBInsets.create(0, 0) // no inner borders for tab content
+        tabbedPane.font = io.snyk.plugin.ui.getFont(-1, 14, tabbedPane.font)
 
         panel.add(tabbedPane, getPanelGridConstraints(2, indent = 1))
 
@@ -346,7 +389,8 @@ class SuggestionDescriptionPanel(
             codeLine.font = io.snyk.plugin.ui.getFont(-1, 14, codeLine.font)
 
             panel.add(
-                codeLine, getGridConstraints(
+                codeLine,
+                getGridConstraints(
                     row = index,
                     fill = GridConstraints.FILL_BOTH,
                     indent = 0
@@ -358,7 +402,8 @@ class SuggestionDescriptionPanel(
         for (i in exampleCommitFix.lines.size..rowCount) {
             val emptyLine = JTextArea("")
             panel.add(
-                emptyLine, getGridConstraints(
+                emptyLine,
+                getGridConstraints(
                     row = i - 1,
                     fill = GridConstraints.FILL_BOTH,
                     indent = 0
@@ -389,7 +434,10 @@ class SuggestionDescriptionPanel(
 
         cwes.forEachIndexed() { index, cwe ->
             if (!cwe.isNullOrEmpty()) {
-                val positionLabel = linkLabel(cwe, "Click to open description in the Browser") {
+                val positionLabel = linkLabel(
+                    linkText = cwe,
+                    toolTipText = "Click to open description in the Browser"
+                ) {
                     val url = "https://cwe.mitre.org/data/definitions/${cwe.removePrefix("CWE-")}.html"
                     BrowserUtil.open(url)
                 }

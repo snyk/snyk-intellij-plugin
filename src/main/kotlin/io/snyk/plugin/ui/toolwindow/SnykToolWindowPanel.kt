@@ -191,13 +191,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         project.messageBus.connect(this)
             .subscribe(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC, object : SnykResultsFilteringListener {
                 override fun filtersChanged() {
-                    if (isScanRunning(project)) return
-                    val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
-                    val snykCodeResults: SnykCodeResults = SnykCodeResults(
-                        AnalysisData.instance.getAnalysis(allProjectFiles).mapKeys { PDU.toPsiFile(it.key) }
-                    )
+                    val snykCodeResults: SnykCodeResults? =
+                        if (AnalysisData.instance.isProjectNOTAnalysed(project)) {
+                            null
+                        } else {
+                            val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
+                            SnykCodeResults(
+                                AnalysisData.instance.getAnalysis(allProjectFiles).mapKeys { PDU.toPsiFile(it.key) }
+                            )
+                        }
                     ApplicationManager.getApplication().invokeLater {
-                        displaySnykCodeResults(snykCodeResults)
+                        snykCodeResults?.let { displaySnykCodeResults(it)}
                         currentCliResults?.let { displayVulnerabilities(it) }
                     }
                 }
