@@ -63,7 +63,7 @@ class SuggestionDescriptionPanel(
     }
 
     init {
-        this.layout = GridLayoutManager(6, 1, Insets(20, 10, 0, 20), -1, 20)
+        this.layout = GridLayoutManager(6, 1, Insets(20, 10, 20, 10), -1, 20)
 
         this.add(
             Spacer(),
@@ -81,7 +81,7 @@ class SuggestionDescriptionPanel(
 
         dataFlowPanel()?.let { this.add(it, getPanelGridConstraints(3)) }
 
-        fixExamplesPanel()?.let { this.add(it, getPanelGridConstraints(4)) }
+        this.add(fixExamplesPanel(), getPanelGridConstraints(4))
 
         this.add(titlePanel(), getPanelGridConstraints(0))
     }
@@ -145,9 +145,9 @@ class SuggestionDescriptionPanel(
         return component
     }
 
-    private fun defaultFontLabel(labelText: String): JLabel {
+    private fun defaultFontLabel(labelText: String, bold: Boolean = false): JLabel {
         return JLabel().apply {
-            val titleLabelFont: Font? = io.snyk.plugin.ui.getFont(-1, 14, font)
+            val titleLabelFont: Font? = io.snyk.plugin.ui.getFont(if (bold) Font.BOLD else -1, 14, font)
             titleLabelFont?.let { font = it }
             text = labelText
         }
@@ -158,11 +158,12 @@ class SuggestionDescriptionPanel(
         linkText: String,
         afterLinkText: String = "",
         toolTipText: String,
+        customFont: Font? = null,
         onClick: (HyperlinkEvent) -> Unit): HyperlinkLabel {
         return HyperlinkLabel().apply {
             this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
             this.toolTipText = toolTipText
-            this.font = io.snyk.plugin.ui.getFont(-1, 14, font)
+            this.font = io.snyk.plugin.ui.getFont(-1, 14, customFont ?: font)
             addHyperlinkListener {
                 onClick.invoke(it)
             }
@@ -252,7 +253,8 @@ class SuggestionDescriptionPanel(
             beforeLinkText = "$paddedStepNumber  ",
             linkText = positionLinkText,
             afterLinkText = "  |",
-            toolTipText = "Click to show in the Editor"
+            toolTipText = "Click to show in the Editor",
+            customFont = JTextArea().font
         ) {
             if (!psiFile.virtualFile.isValid) return@linkLabel
             // jump to Source
@@ -288,33 +290,38 @@ class SuggestionDescriptionPanel(
         return stepPanel
     }
 
-    private fun fixExamplesPanel(): JPanel? {
+    private fun fixExamplesPanel(): JPanel {
         val fixes = suggestion.exampleCommitFixes
         val examplesCount = fixes.size.coerceAtMost(3)
-
-        if (examplesCount == 0) return null
 
         val panel = JPanel()
         panel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, 5)
 
         panel.add(
-            buildBoldTitleLabel("External examples fixes"),
+            buildBoldTitleLabel("External example fixes"),
             getGridConstraints(0)
         )
 
+        val labelText =
+            if (examplesCount == 0) "No example fixes available."
+            else "This issue was fixed by ${suggestion.repoDatasetSize} projects. Here are $examplesCount example fixes."
         panel.add(
-            defaultFontLabel(
-                "This issue was fixed by ${suggestion.repoDatasetSize} projects. Here are $examplesCount example fixes."
-            ),
+            defaultFontLabel(labelText),
             getGridConstraints(1)
         )
+
+        if (examplesCount == 0) return panel
 
         val tabbedPane = JBTabbedPane()
         //tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
         tabbedPane.tabComponentInsets = JBInsets.create(0, 0) // no inner borders for tab content
         tabbedPane.font = io.snyk.plugin.ui.getFont(-1, 14, tabbedPane.font)
 
-        panel.add(tabbedPane, getPanelGridConstraints(2, indent = 1))
+        val tabbedPanel = JPanel()
+        tabbedPanel.layout = GridLayoutManager(1, 1, Insets(10, 0, 0, 0), -1, -1)
+        tabbedPanel.add(tabbedPane, getPanelGridConstraints(0))
+
+        panel.add(tabbedPanel, getPanelGridConstraints(2, indent = 1))
 
         val maxRowCount = fixes.take(examplesCount)
             .map { it.lines.size }
