@@ -36,7 +36,7 @@ intellij {
 }
 
 repositories {
-  jcenter()
+  mavenCentral()
   maven {
     url = uri("https://artsiomch.bintray.com/maven-releases")
 /*
@@ -85,22 +85,12 @@ tasks {
     )
   }
 
-  prepareSandbox {
-    doLast {
-      copy {
-        from ("$projectDir/downloaded_cli/")
-        into ("$projectDir/build/idea-sandbox/plugins/${rootProject.name}/")
-      }
-    }
-  }
-
   publishPlugin {
     token(System.getenv("PUBLISH_TOKEN"))
     channels(pluginVersion.split('-').getOrElse(1) { "default" }.split('.').first())
   }
 
   runIde {
-    maxHeapSize = "2g"
     if (localIdeDirectory.isNotEmpty()) {
       ideDirectory(localIdeDirectory)
     }
