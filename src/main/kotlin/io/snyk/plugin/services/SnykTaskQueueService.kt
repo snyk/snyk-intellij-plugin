@@ -15,6 +15,7 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getSnykCode
+import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 
@@ -76,18 +77,19 @@ class SnykTaskQueueService(val project: Project) {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk CLI is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
 
+                val toolWindowPanel = project.service<SnykToolWindowPanel>()
+                if (toolWindowPanel.currentCliResults != null) return
+
                 currentProgressIndicator = indicator
                 scanPublisher.scanningStarted()
 
-                val toolWindowPanel = project.service<SnykToolWindowPanel>()
-
-                val cliResult: CliResult = toolWindowPanel.currentCliResults ?: getCli(project).scan()
+                val cliResult: CliResult =  getCli(project).scan()
 
                 currentProgressIndicator = null
                 if (project.isDisposed) return
 
                 if (indicator.isCanceled) {
-                    taskQueuePublisher.stopped()
+                    taskQueuePublisher.stopped(wasCliRunning = true)
                 } else {
                     if (cliResult.isSuccessful()) {
                         scanPublisher.scanningCliFinished(cliResult)
@@ -126,8 +128,10 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun stopScan() {
+        val wasCliRunning = currentProgressIndicator?.isRunning == true
         currentProgressIndicator?.cancel()
+        val wasSnykCodeRunning = isSnykCodeRunning(project)
         RunUtils.instance.cancelRunningIndicators(project)
-        taskQueuePublisher.stopped()
+        taskQueuePublisher.stopped(wasCliRunning, wasSnykCodeRunning)
     }
 }

@@ -48,7 +48,7 @@ fun isUrlValid(url: String?): Boolean {
 
 fun isSnykCliRunning(project: Project): Boolean {
     val indicator = project.service<SnykTaskQueueService>().getCurrentProgressIndicator()
-    return indicator != null && indicator.isRunning
+    return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
 fun isSnykCodeRunning(project: Project): Boolean =

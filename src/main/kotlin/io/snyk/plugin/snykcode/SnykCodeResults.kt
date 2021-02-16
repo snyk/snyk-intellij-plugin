@@ -21,6 +21,11 @@ class SnykCodeResults(
                 .filterValues { it.isNotEmpty() }
         )
     }
+
+    override fun equals(other: Any?): Boolean {
+        return other is SnykCodeResults &&
+            file2suggestions == other.file2suggestions
+    }
 }
 
 val SuggestionForFile.severityAsString: String

@@ -51,7 +51,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped() = updateActionsPresentation()
+                override fun stopped(wasCliRunning: Boolean, wasSnykCodeRunning: Boolean) = updateActionsPresentation()
             })
     }
 
