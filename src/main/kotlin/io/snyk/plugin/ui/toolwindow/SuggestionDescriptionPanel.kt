@@ -27,7 +27,8 @@ import kotlin.math.min
 
 class SuggestionDescriptionPanel(
     private val psiFile: PsiFile,
-    private val suggestion: SuggestionForFile
+    private val suggestion: SuggestionForFile,
+    private val suggestionIndex : Int
 ) : JPanel() {
 
     private fun getGridConstraints(
@@ -195,7 +196,7 @@ class SuggestionDescriptionPanel(
     }
 
     private fun dataFlowPanel(): JPanel? {
-        val suggestionRange = suggestion.ranges.firstOrNull()
+        val suggestionRange = suggestion.ranges[suggestionIndex]
         val markers = suggestionRange?.let { range ->
             range.markers.values.flatten().distinctBy { it.startRow }
         } ?: emptyList()

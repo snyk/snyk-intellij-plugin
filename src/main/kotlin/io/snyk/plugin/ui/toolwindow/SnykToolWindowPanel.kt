@@ -87,63 +87,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
             ApplicationManager.getApplication().invokeLater {
-                descriptionPanel.removeAll()
-
-                val selectionPath = vulnerabilitiesTree.selectionPath
-
-                if (nonNull(selectionPath)) {
-                    val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode
-                    when (node) {
-                        is VulnerabilityTreeNode -> {
-                            descriptionPanel.add(
-                                ScrollPaneFactory.createScrollPane(
-                                    VulnerabilityDescriptionPanel(node.userObject as Vulnerability),
-                                    ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-                                ),
-                                BorderLayout.CENTER
-                            )
-                        }
-                        is SuggestionTreeNode -> {
-                            val psiFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? PsiFile
-                                ?: throw IllegalArgumentException(node.toString())
-                            val suggestion = node.userObject as SuggestionForFile
-                            val scrollPane = ScrollPaneFactory.createScrollPane(
-                                SuggestionDescriptionPanel(psiFile, suggestion),
-                                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-                            )
-                            descriptionPanel.add(scrollPane, BorderLayout.CENTER)
-                            //descriptionPanel.add(DeepCodeConfigForm().root, BorderLayout.CENTER)
-
-                            val textRange = suggestion.ranges.firstOrNull()
-                                ?: throw IllegalArgumentException(suggestion.ranges.toString())
-                            if (psiFile.virtualFile.isValid) {
-                                // jump to Source
-                                PsiNavigationSupport.getInstance().createNavigatable(
-                                    project,
-                                    psiFile.virtualFile,
-                                    textRange.start
-                                ).navigate(false)
-
-                                // highlight(by selection) suggestion range in source file
-                                val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                                editor?.selectionModel?.setSelection(textRange.start, textRange.end)
-                            }
-                        }
-                        is RootCliTreeNode -> {
-                            currentCliError?.let { displayCliError(it) } ?: displayEmptyDescription()
-                        }
-                        is RootSecurityIssuesTreeNode, is RootQualityIssuesTreeNode -> {
-                            currentSnykCodeError?.let { displayCliError(it) } ?: displayEmptyDescription()
-                        }
-                        else -> {
-                            displayEmptyDescription()
-                        }
-                    }
-                }
-                descriptionPanel.revalidate()
-                descriptionPanel.repaint()
+                updateDescriptionPanelBySelectedTreeNode()
             }
         }
 
@@ -246,6 +190,68 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         displayEmptyDescription()
                     }
             })
+    }
+
+    private fun updateDescriptionPanelBySelectedTreeNode() {
+        descriptionPanel.removeAll()
+
+        val selectionPath = vulnerabilitiesTree.selectionPath
+
+        if (nonNull(selectionPath)) {
+            val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode
+            when (node) {
+                is VulnerabilityTreeNode -> {
+                    descriptionPanel.add(
+                        ScrollPaneFactory.createScrollPane(
+                            VulnerabilityDescriptionPanel(node.userObject as Vulnerability),
+                            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+                        ),
+                        BorderLayout.CENTER
+                    )
+                }
+                is SuggestionTreeNode -> {
+                    val psiFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? PsiFile
+                        ?: throw IllegalArgumentException(node.toString())
+                    val (suggestion, index) = node.userObject as Pair<SuggestionForFile, Int>
+                    val scrollPane = ScrollPaneFactory.createScrollPane(
+                        SuggestionDescriptionPanel(psiFile, suggestion, index),
+                        ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+                    )
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
+                    val textRange = suggestion.ranges.firstOrNull()
+                        ?: throw IllegalArgumentException(suggestion.ranges.toString())
+                    if (psiFile.virtualFile.isValid) {
+                        // jump to Source
+                        PsiNavigationSupport.getInstance().createNavigatable(
+                            project,
+                            psiFile.virtualFile,
+                            textRange.start
+                        ).navigate(false)
+
+                        // highlight(by selection) suggestion range in source file
+                        val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                        editor?.selectionModel?.setSelection(textRange.start, textRange.end)
+                    }
+                }
+                is RootCliTreeNode -> {
+                    currentCliError?.let { displayCliError(it) } ?: displayEmptyDescription()
+                }
+                is RootSecurityIssuesTreeNode, is RootQualityIssuesTreeNode -> {
+                    currentSnykCodeError?.let { displayCliError(it) } ?: displayEmptyDescription()
+                }
+                else -> {
+                    displayEmptyDescription()
+                }
+            }
+        } else {
+            displayEmptyDescription()
+        }
+
+        descriptionPanel.revalidate()
+        descriptionPanel.repaint()
     }
 
     override fun dispose() {
@@ -438,7 +444,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displayVulnerabilities(cliResult: CliResult) {
-        val userObjectsForExpandedChildren =userObjectsForExpandedNodes(rootCliTreeNode)
+        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootCliTreeNode)
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         rootCliTreeNode.removeAllChildren()
 
@@ -465,7 +472,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
         updateTreeRootNodesPresentation(cliResultsCount = issuesCount)
 
-        smartReloadRootNode(rootCliTreeNode, userObjectsForExpandedChildren)
+        smartReloadRootNode(rootCliTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
     }
 
     private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
@@ -473,6 +480,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         // display Security issues
         val userObjectsForExpandedSecurityNodes = userObjectsForExpandedNodes(rootSecurityIssuesTreeNode)
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         rootSecurityIssuesTreeNode.removeAllChildren()
 
@@ -485,7 +493,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             displayResultsForRoot(rootSecurityIssuesTreeNode, securityResults)
         }
         updateTreeRootNodesPresentation(securityIssuesCount = securityIssuesCount)
-        smartReloadRootNode(rootSecurityIssuesTreeNode, userObjectsForExpandedSecurityNodes)
+        smartReloadRootNode(rootSecurityIssuesTreeNode, userObjectsForExpandedSecurityNodes, selectedNodeUserObject)
 
         // display Quality (non Security) issues
         val userObjectsForExpandedQualityNodes = userObjectsForExpandedNodes(rootQualityIssuesTreeNode)
@@ -501,7 +509,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResults)
         }
         updateTreeRootNodesPresentation(qualityIssuesCount = qualityIssuesCount)
-        smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes)
+        smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes, selectedNodeUserObject)
     }
 
     private fun userObjectsForExpandedNodes(rootNode: DefaultMutableTreeNode) =
@@ -518,7 +526,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
-    private fun displayResultsForRoot(rootTreeNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
+    private fun displayResultsForRoot(rootNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
         snykCodeResults.files
             // sort by Errors-Warnings-Infos
             .sortedWith(Comparator { file1, file2 ->
@@ -532,30 +540,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             })
             .forEach { file ->
                 val fileTreeNode = SnykCodeFileTreeNode(file)
-                rootTreeNode.add(fileTreeNode)
+                rootNode.add(fileTreeNode)
                 snykCodeResults.suggestions(file)
-                    .sortedWith(Comparator { o1, o2 -> o2.severity - o1.severity })
+                    .sortedBy { it.severity }
                     .forEach { suggestion ->
-                        suggestion.ranges.forEach { rangeInFile ->
-                            fileTreeNode.add(
-                                SuggestionTreeNode(
-                                    SuggestionForFile(
-                                        suggestion.id,
-                                        suggestion.rule,
-                                        suggestion.message,
-                                        suggestion.title,
-                                        suggestion.text,
-                                        suggestion.severity,
-                                        suggestion.repoDatasetSize,
-                                        suggestion.exampleCommitDescriptions,
-                                        suggestion.exampleCommitFixes,
-                                        listOf(rangeInFile),
-                                        suggestion.categories,
-                                        suggestion.tags,
-                                        suggestion.cwe
-                                    )
-                                )
-                            )
+                        for (index in 0 until suggestion.ranges.size) {
+                            fileTreeNode.add(SuggestionTreeNode(suggestion, index))
                         }
                     }
             }
@@ -599,11 +589,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     /**
-     * Keep selection in the Tree (if any)
      * Re-expand previously expanded children (if `null` then expand All children)
+     * Keep selection in the Tree (if any)
      */
-    private fun smartReloadRootNode(nodeToReload: DefaultMutableTreeNode, userObjectsForExpandedChildren: List<Any>?) {
-        val selectionPath = vulnerabilitiesTree.selectionPath
+    private fun smartReloadRootNode(
+        nodeToReload: DefaultMutableTreeNode,
+        userObjectsForExpandedChildren: List<Any>?,
+        selectedNodeUserObject: Any?
+    ) {
+        val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
 
         displayEmptyDescription()
         reloadTreeNode(nodeToReload)
@@ -616,9 +610,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         } ?: expandRecursively(nodeToReload)
 
-        vulnerabilitiesTree.selectionPath = selectionPath
-//        ApplicationManager.getApplication().invokeLater {
-        vulnerabilitiesTree.scrollPathToVisible(selectionPath)
+        selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
+        updateDescriptionPanelBySelectedTreeNode()
     }
 
     private fun reloadTreeNode(nodeToReload: DefaultMutableTreeNode) {
