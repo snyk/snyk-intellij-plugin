@@ -18,7 +18,7 @@ class ScanTypesPanel(
     val panel = panel {
         row {
             checkBox(
-                "Snyk OpenSource vulnerabilities",
+                "Snyk Open Source vulnerabilities",
                 { getApplicationSettingsStateService().cliScanEnable },
                 { getApplicationSettingsStateService().cliScanEnable = it },
                 cliScanComments

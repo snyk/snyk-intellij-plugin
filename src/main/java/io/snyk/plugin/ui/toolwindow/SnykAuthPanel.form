@@ -31,7 +31,7 @@
               <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Connect IntelliJ to Snyk"/>
+              <text value="Connect your IDE to Snyk"/>
             </properties>
           </component>
           <hspacer id="f7d3c">
@@ -58,7 +58,7 @@
             </constraints>
             <properties>
               <font size="14" style="1"/>
-              <text value="Welcome to Snyk for IntelliJ"/>
+              <text value="Welcome to Snyk for Jetbrains"/>
             </properties>
           </component>
           <component id="8f773" class="javax.swing.JLabel">

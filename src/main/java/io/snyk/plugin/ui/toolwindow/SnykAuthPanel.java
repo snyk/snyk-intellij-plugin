@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import io.snyk.plugin.events.SnykCliDownloadListener;
 import io.snyk.plugin.services.SnykCliAuthenticationService;
+import io.snyk.plugin.snykcode.core.SnykCodeParams;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -17,9 +18,9 @@ public class SnykAuthPanel {
   public SnykAuthPanel(@NotNull Project project) {
     connectIntelliJToSnykButton.addActionListener(e -> {
       project.getService(SnykToolWindowPanel.class).cleanUiAndCaches();
-      getApplicationSettingsStateService().setToken(
-        ApplicationManager.getApplication().getService(SnykCliAuthenticationService.class).authenticate()
-      );
+      final String token = ApplicationManager.getApplication().getService(SnykCliAuthenticationService.class).authenticate();
+      getApplicationSettingsStateService().setToken(token);
+      SnykCodeParams.Companion.getInstance().setSessionToken(token);
       project.getMessageBus().syncPublisher(SnykCliDownloadListener.Companion.getCLI_DOWNLOAD_TOPIC())
         .checkCliExistsFinished();
     });
