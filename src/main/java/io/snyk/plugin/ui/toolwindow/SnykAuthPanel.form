@@ -58,7 +58,7 @@
             </constraints>
             <properties>
               <font size="14" style="1"/>
-              <text value="Welcome to Snyk for Jetbrains"/>
+              <text value="Welcome to Snyk for JetBrains"/>
             </properties>
           </component>
           <component id="8f773" class="javax.swing.JLabel">

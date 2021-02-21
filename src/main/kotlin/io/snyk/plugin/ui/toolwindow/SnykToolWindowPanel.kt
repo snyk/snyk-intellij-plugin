@@ -221,7 +221,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
-                    val textRange = suggestion.ranges.firstOrNull()
+                    val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
                     if (psiFile.virtualFile.isValid) {
                         // jump to Source
