@@ -9,7 +9,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
 
-class SnykPostStartupActivity : StartupActivity {
+class SnykPostStartupActivity : StartupActivity.DumbAware {
 
     private var listenersActivated = false
 

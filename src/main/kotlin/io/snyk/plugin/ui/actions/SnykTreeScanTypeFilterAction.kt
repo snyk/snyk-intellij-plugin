@@ -15,7 +15,7 @@ import javax.swing.JComponent
 /**
  * Build Snyk tree Severity filter (combobox) action.
  */
-class SnykTreeScanTypeFilterAction : ComboBoxAction(), DumbAware {
+class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
     override fun update(e: AnActionEvent) {
         val project = e.project

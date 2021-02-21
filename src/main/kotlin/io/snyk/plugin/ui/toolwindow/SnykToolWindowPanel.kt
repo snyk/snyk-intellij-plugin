@@ -205,7 +205,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ScrollPaneFactory.createScrollPane(
                             VulnerabilityDescriptionPanel(node.userObject as Vulnerability),
                             ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+                            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
                         ),
                         BorderLayout.CENTER
                     )
@@ -217,7 +217,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val scrollPane = ScrollPaneFactory.createScrollPane(
                         SuggestionDescriptionPanel(psiFile, suggestion, index),
                         ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 

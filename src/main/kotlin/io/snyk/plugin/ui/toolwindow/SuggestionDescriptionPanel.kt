@@ -28,7 +28,7 @@ import kotlin.math.min
 class SuggestionDescriptionPanel(
     private val psiFile: PsiFile,
     private val suggestion: SuggestionForFile,
-    private val suggestionIndex : Int
+    private val suggestionIndex: Int
 ) : JPanel() {
 
     private fun getGridConstraints(
@@ -112,31 +112,18 @@ class SuggestionDescriptionPanel(
         return titlePanel
     }
 
-    private fun overviewPanel(): JPanel {
-        val overviewPanel = JPanel()
-        overviewPanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        val descriptionTextArea = JTextArea(getOverviewText()).apply {
-            this.lineWrap = true
-            this.wrapStyleWord = true
+    private fun overviewPanel(): JComponent {
+        val panel = JPanel()
+        panel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
+        val label = JLabel("<html>" + getOverviewText() + "</html>").apply {
             this.isOpaque = false
-            this.isEditable = false
             this.background = UIUtil.getPanelBackground()
-            this.font = io.snyk.plugin.ui.getFont(-1, 16, overviewPanel.font)
+            this.font = io.snyk.plugin.ui.getFont(-1, 16, panel.font)
+            this.preferredSize = Dimension() // this is the key part for shrink/grow.
         }
+        panel.add(label, getPanelGridConstraints(1, 1))
 
-        overviewPanel.add(
-            ScrollPaneFactory.createScrollPane(descriptionTextArea, true),
-            getGridConstraints(
-                1,
-                anchor = GridConstraints.ANCHOR_CENTER,
-                fill = GridConstraints.FILL_BOTH,
-                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-                VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW
-            )
-        )
-
-        return overviewPanel
+        return panel
     }
 
     private fun codeLine(range: MyTextRange, prefix: String): JTextArea {
