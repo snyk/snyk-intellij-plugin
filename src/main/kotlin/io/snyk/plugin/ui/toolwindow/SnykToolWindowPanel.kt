@@ -542,7 +542,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 val fileTreeNode = SnykCodeFileTreeNode(file)
                 rootNode.add(fileTreeNode)
                 snykCodeResults.suggestions(file)
-                    .sortedBy { it.severity }
+                    .sortedByDescending { it.severity }
                     .forEach { suggestion ->
                         for (index in 0 until suggestion.ranges.size) {
                             fileTreeNode.add(SuggestionTreeNode(suggestion, index))
