@@ -10,7 +10,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -34,6 +36,20 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
             absolutePath = absolutePath.replace(projectPath, "")
         }
         return absolutePath
+    }
+
+    override fun getFileByDeepcodedPath(path: String, project: Any): Any? {
+        val prj = toProject(project)
+        val absolutePath = prj.basePath + if (path.startsWith("/")) path else "/$path"
+        val virtualFile = LocalFileSystem.getInstance().findFileByPath(absolutePath)
+        if (virtualFile == null) {
+            SCLogger.instance.logWarn("VirtualFile not found for: $absolutePath")
+            return null
+        }
+        return RunUtils.computeInReadActionInSmartMode(
+            prj,
+            Computable { PsiManager.getInstance(prj).findFile(virtualFile) }
+        )
     }
 
     override fun getOpenProjects(): Array<Any> = ProjectManager.getInstance().openProjects as Array<Any>

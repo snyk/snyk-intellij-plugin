@@ -44,7 +44,7 @@ class SnykCliAuthenticationService {
             isAuthenticated = output.contains("Your account has been authenticated.")
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            authTask, "Authenticate Snyk CLI...", true, null
+            authTask, "Authenticating Snyk plugin...", true, null
         )
     }
 

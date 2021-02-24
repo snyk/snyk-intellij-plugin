@@ -18,11 +18,12 @@ import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
+import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.severityAsString
-import io.snyk.plugin.ui.buildBoldTitleLabel
 import java.awt.*
 import javax.swing.*
 import javax.swing.event.HyperlinkEvent
+import kotlin.math.max
 import kotlin.math.min
 
 class SuggestionDescriptionPanel(
@@ -126,8 +127,8 @@ class SuggestionDescriptionPanel(
         return panel
     }
 
-    private fun codeLine(range: MyTextRange, prefix: String): JTextArea {
-        val component = JTextArea(prefix + getLineOfCode(range))
+    private fun codeLine(range: MyTextRange, file: PsiFile?): JTextArea {
+        val component = JTextArea(getLineOfCode(range, file))
         component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
         component.isEditable = false
         return component
@@ -158,9 +159,10 @@ class SuggestionDescriptionPanel(
         }
     }
 
-    private fun getLineOfCode(range: MyTextRange): String {
-        val document = PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile)
-            ?: throw IllegalStateException("No document found for $psiFile")
+    private fun getLineOfCode(range: MyTextRange, file: PsiFile?): String {
+        if (file == null) return "<File Not Found>"
+        val document = PsiDocumentManager.getInstance(file.project).getDocument(file)
+            ?: throw IllegalStateException("No document found for ${file.virtualFile.path}")
         val chars = document.charsSequence
         val startOffset = range.start
         val endOffset = range.end
@@ -194,7 +196,7 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, 5)
 
         panel.add(
-            buildBoldTitleLabel("Data Flow - ${markers.size} step${if (markers.size > 1) "s" else ""}"),
+            defaultFontLabel("Data Flow - ${markers.size} step${if (markers.size > 1) "s" else ""}", true),
             getGridConstraints(0)
         )
 
@@ -211,9 +213,19 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(markers.size, 1, Insets(0, 0, 0, 0), 0, 0)
         panel.background = UIUtil.getTextFieldBackground()
 
+        val maxFilenameLength = markers.asSequence()
+            .filter { it.file.isNotEmpty() }
+            .map { it.file.substringAfterLast('/', "").length }
+            .max()
+
         val allStepPanels = mutableListOf<JPanel>()
         markers.forEachIndexed { index, markerRange ->
-            val stepPanel = stepPanel(index, markerRange, allStepPanels)
+            val stepPanel = stepPanel(
+                index = index,
+                markerRange = markerRange,
+                maxFilenameLength = max(psiFile.name.length, maxFilenameLength ?: 0),
+                allStepPanels = allStepPanels)
+
             panel.add(
                 stepPanel,
                 getGridConstraints(
@@ -228,32 +240,42 @@ class SuggestionDescriptionPanel(
         return panel
     }
 
-    private fun stepPanel(index: Int, markerRange: MyTextRange, allStepPanels: MutableList<JPanel>): JPanel {
+    private fun stepPanel(
+        index: Int,
+        markerRange: MyTextRange,
+        maxFilenameLength: Int,
+        allStepPanels: MutableList<JPanel>
+    ): JPanel {
         val stepPanel = JPanel()
         stepPanel.layout = GridLayoutManager(1, 3, Insets(0, 0, 4, 0), 0, 0)
         stepPanel.background = UIUtil.getTextFieldBackground()
 
         val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
-        val paddedRowNumber = markerRange.startRow.toString().padStart(4, ' ')
-        val positionLinkText = "${psiFile.name}:$paddedRowNumber"
+
+        val fileToNavigate = if (markerRange.file.isNullOrEmpty()) psiFile else {
+            PDU.instance.getFileByDeepcodedPath(markerRange.file, psiFile.project)?.let { PDU.toPsiFile(it) }
+        }
+        val fileName = fileToNavigate?.name ?: markerRange.file
+
+        val positionLinkText = "$fileName:${markerRange.startRow}".padEnd(maxFilenameLength + 5, ' ')
 
         val positionLabel = linkLabel(
             beforeLinkText = "$paddedStepNumber  ",
             linkText = positionLinkText,
-            afterLinkText = "  |",
+            afterLinkText = " |",
             toolTipText = "Click to show in the Editor",
             customFont = JTextArea().font
         ) {
-            if (!psiFile.virtualFile.isValid) return@linkLabel
+            if (fileToNavigate == null || !fileToNavigate.virtualFile.isValid) return@linkLabel
             // jump to Source
             PsiNavigationSupport.getInstance().createNavigatable(
-                psiFile.project,
-                psiFile.virtualFile,
+                fileToNavigate.project,
+                fileToNavigate.virtualFile,
                 markerRange.start
             ).navigate(false)
 
             // highlight(by selection) marker range in source file
-            val editor = FileEditorManager.getInstance(psiFile.project).selectedTextEditor
+            val editor = FileEditorManager.getInstance(fileToNavigate.project).selectedTextEditor
             editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
 
             allStepPanels.forEach {
@@ -263,7 +285,7 @@ class SuggestionDescriptionPanel(
         }
         stepPanel.add(positionLabel, getGridConstraints(0, indent = 1))
 
-        val codeLine = codeLine(markerRange, "")
+        val codeLine = codeLine(markerRange, fileToNavigate)
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,
@@ -286,7 +308,7 @@ class SuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, 5)
 
         panel.add(
-            buildBoldTitleLabel("External example fixes"),
+            defaultFontLabel("External example fixes", true),
             getGridConstraints(0)
         )
 
@@ -418,11 +440,11 @@ class SuggestionDescriptionPanel(
         val panel = JPanel()
         val cwes = suggestion.cwe
 
-        panel.layout = GridLayoutManager(1, 1 + cwes.size, Insets(0, 0, 0, 0), 5, 0)
+        panel.layout = GridLayoutManager(1, 1 + cwes.size * 2, Insets(0, 0, 0, 0), 5, 0)
 
         panel.add(
             defaultFontLabel(
-                if (suggestion.categories.contains("Security")) "Vulnerability  |" else "Code Issue"
+                if (suggestion.categories.contains("Security")) "Vulnerability" else "Code Issue"
             ),
             getGridConstraints(0)
         )
@@ -437,7 +459,13 @@ class SuggestionDescriptionPanel(
                     BrowserUtil.open(url)
                 }
 
-                panel.add(positionLabel, getGridConstraints(0, column = index + 1, indent = 0))
+                panel.add(
+                    defaultFontLabel(" | ").apply {
+                        this.foreground = Color(this.foreground.red, this.foreground.green, this.foreground.blue, 50)
+                    },
+                    getGridConstraints(0, column = index * 2 + 1, indent = 0)
+                )
+                panel.add(positionLabel, getGridConstraints(0, column = index * 2 + 2, indent = 0))
             }
         }
 
