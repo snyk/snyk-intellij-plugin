@@ -16,23 +16,10 @@ import java.util.function.Predicate
 
 class SnykBulkFileListener() : BulkFileListener {
 
-    // proceed added and changed files
-    override fun after(events: MutableList<out VFileEvent>) {
-//        cleanCaches(
-//            events, listOf(
-//                VFileContentChangeEvent::class.java,
-//                VFileMoveEvent::class.java,
-//                VFileCopyEvent::class.java,
-//                VFileCreateEvent::class.java
-//            )
-//        )
-    }
-
-    // proceed removed files
+    // proceed removed, added and changed files
     override fun before(events: MutableList<out VFileEvent>) {
         cleanCaches(
             events, listOf(
-//                VFileEvent::class.java
                 VFileDeleteEvent::class.java,
                 VFileContentChangeEvent::class.java,
                 VFileMoveEvent::class.java,
@@ -90,19 +77,7 @@ class SnykBulkFileListener() : BulkFileListener {
                         AnalysisData.instance.removeProjectFromCaches(project)
                     } else {
                         AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
-                        // update Bundle files on server
-/*
-                        RunUtils.instance.runInBackground(
-                            project,
-                            "Updating cache on server (for ${filesToRemoveFromCache.size} locally changed files)..."
-                        ) { progress ->
-                            AnalysisData.instance.updateCachedResultsForFiles(
-                                project,
-                                Collections.emptyList(),
-                                filesToRemoveFromCache,
-                                progress);
-                        }
-*/
+                        // todo: possibly we'll need to update Bundle files on server
                     }
                 }
         }
@@ -114,7 +89,6 @@ class SnykBulkFileListener() : BulkFileListener {
         classesOfEventsToFilter: Collection<Class<*>>
     ): Set<VirtualFile> {
         return events.asSequence()
-//            .filter(getUpdateModeFilter())
             .filter { event -> instanceOf(event, classesOfEventsToFilter) }
             .mapNotNull(VFileEvent::getFile)
             .filter(fileFilter::test)
