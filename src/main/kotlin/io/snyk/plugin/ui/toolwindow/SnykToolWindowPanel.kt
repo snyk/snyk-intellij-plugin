@@ -111,7 +111,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningCliError(cliError: CliError) {
                     currentCliResults = null
                     ApplicationManager.getApplication().invokeLater {
-                        if (cliError.message == "Authentication failed. Please check the API token on https://snyk.io") {
+                        if (cliError.message.startsWith("Authentication failed. Please check the API token on ")) {
                             displayAuthPanel()
                         } else {
                             currentCliError = cliError
@@ -403,13 +403,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displayScanningMessageAndUpdateTree() {
-//        val settings = getApplicationSettingsStateService()
-//        removeAllChildren(listOfNotNull(
-//            if (isSnykCliRunning(project) && settings.cliScanEnable) rootCliTreeNode else null,
-//            if (isSnykCodeRunning(project) && settings.snykCodeSecurityIssuesScanEnable) rootSecurityIssuesTreeNode else null,
-//            if (isSnykCodeRunning(project) && settings.snykCodeQualityIssuesScanEnable) rootQualityIssuesTreeNode else null
-//        ))
-
         updateTreeRootNodesPresentation()
 
         displayScanningMessage()

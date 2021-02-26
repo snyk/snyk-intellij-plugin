@@ -16,10 +16,6 @@ jobs:
     name: Test
     needs: gradleValidation
     runs-on: ubuntu-latest
-    env:
-      USERNAME_GITHUB: ${{ github.actor }}
-      READ_TOKEN_GITHUB: ${{ github.token }}
-      DEEPCODE_API_KEY: ${{ secrets.DEEPCODE_API_KEY }}
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
