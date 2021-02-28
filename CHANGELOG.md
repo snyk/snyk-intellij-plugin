@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.0]
+### Added
+- Snyk Code scan for Security and Code Quality issues.
+
 ## [2.0.4]
 ### Fixed
 - Fix handling custom endpoint option

@@ -1,3 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <path fill="#DB5860" d="M 2,2 V 14 H 14 V 2 Z M 5,4 H 7 V 7 H 9 V 4 h 2 v 8 H 9 V 9 H 7 v 3 H 5 Z"/>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="16" height="16" rx="3" fill="#CE5019"/>
+<path d="M9.44727 12V8.86523H6.54102V12H4.00977V3.59766H6.54102V6.70898H9.44727V3.59766H11.9785V12H9.44727Z" fill="white"/>
 </svg>

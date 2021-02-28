@@ -1,7 +1,7 @@
 package io.snyk.plugin.cli
 
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import tlschannel.util.Util.assertTrue
 import java.util.*
 
 class PlatformTest {

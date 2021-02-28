@@ -24,6 +24,7 @@ dependencies {
 
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
+  implementation("io.snyk.code.sdk:snyk-code-client:2.1.7")
 
   testImplementation("junit:junit:4.12")
   testImplementation("org.mockito:mockito-core:3.5.2")
@@ -34,7 +35,13 @@ intellij {
 }
 
 repositories {
-  jcenter()
+  mavenCentral()
+  maven {
+    url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+    mavenContent {
+      snapshotsOnly()
+    }
+  }
 }
 
 tasks {
@@ -77,6 +84,7 @@ tasks {
   }
 
   runIde {
+    maxHeapSize = "2g"
     if (localIdeDirectory.isNotEmpty()) {
       ideDirectory(localIdeDirectory)
     }

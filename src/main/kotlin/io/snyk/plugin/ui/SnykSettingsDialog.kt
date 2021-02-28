@@ -1,17 +1,25 @@
 package io.snyk.plugin.ui
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
+import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
+import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykCliAuthenticationService
+import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
+import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
 import java.awt.Insets
 import java.util.*
@@ -25,21 +33,34 @@ import com.intellij.uiDesigner.core.GridLayoutManager as UIGridLayoutManager
 
 class SnykSettingsDialog(
     private val project: Project,
-    applicationSettings: SnykApplicationSettingsStateService) {
+    applicationSettings: SnykApplicationSettingsStateService,
+    snykProjectSettingsConfigurable: SnykProjectSettingsConfigurable
+) {
 
     private val tokenTextField = JBPasswordField()
+    private val tokenAuthenticateButton = JButton("Authenticate")
     private val customEndpointTextField = JTextField()
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
+    private val scanTypesPanelOuter = ScanTypesPanel()
+    private val scanTypesPanel = scanTypesPanelOuter.panel
 
-    private val rootPanel = object: JPanel(), Disposable {
+    private val rootPanel = object : JPanel(), Disposable {
         override fun dispose() = Unit
     }
 
     init {
         initializeUiComponents()
         initializeValidation()
+
+        tokenAuthenticateButton.addActionListener {
+            ApplicationManager.getApplication().invokeLater {
+                snykProjectSettingsConfigurable.apply()
+                val token = service<SnykCliAuthenticationService>().authenticate()
+                tokenTextField.text = token
+            }
+        }
 
         if (nonNull(applicationSettings)) {
             tokenTextField.text = applicationSettings.token
@@ -54,11 +75,9 @@ class SnykSettingsDialog(
     fun getRootPanel(): JComponent = rootPanel
 
     private fun initializeUiComponents() {
-        val defaultTextFieldWidth = 500
+        rootPanel.layout = UIGridLayoutManager(5, 1, Insets(0, 0, 0, 0), -1, -1)
 
-        rootPanel.layout = UIGridLayoutManager(4, 1, Insets(0, 0, 0, 0), -1, -1)
-
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 3, Insets(0, 0, 0, 0), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -68,16 +87,17 @@ class SnykSettingsDialog(
                 0,
                 1,
                 1,
-                UIGridConstraints.ANCHOR_CENTER,
+                UIGridConstraints.ANCHOR_NORTHWEST,
                 UIGridConstraints.FILL_BOTH,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 null,
-                Dimension(200, 200),
+                Dimension(150, 200),
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         val tokenLabel = JLabel("Token:")
         generalSettingsPanel.add(
@@ -92,11 +112,12 @@ class SnykSettingsDialog(
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(120, 16),
+                null,
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         generalSettingsPanel.add(
             tokenTextField,
@@ -106,15 +127,35 @@ class SnykSettingsDialog(
                 1,
                 1,
                 UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(defaultTextFieldWidth, -1),
+                null,
                 null,
                 0,
                 false
-            ))
+            )
+        )
+
+        generalSettingsPanel.add(
+            tokenAuthenticateButton,
+            UIGridConstraints(
+                0,
+                2,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_EAST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            )
+        )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
         generalSettingsPanel.add(
@@ -129,11 +170,12 @@ class SnykSettingsDialog(
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(120, 16),
+                null,
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         generalSettingsPanel.add(
             customEndpointTextField,
@@ -141,17 +183,18 @@ class SnykSettingsDialog(
                 1,
                 1,
                 1,
-                1,
+                2,
                 UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(defaultTextFieldWidth, -1),
+                null,
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         ignoreUnknownCACheckBox.text = "Ignore unknown CA"
         generalSettingsPanel.add(
@@ -160,17 +203,18 @@ class SnykSettingsDialog(
                 2,
                 1,
                 1,
-                1,
+                2,
                 UIGridConstraints.ANCHOR_WEST,
                 UIGridConstraints.FILL_NONE,
-                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
                 null,
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         val organizationLabel = JLabel("Organization:")
         generalSettingsPanel.add(
@@ -189,7 +233,8 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
         generalSettingsPanel.add(
             organizationTextField,
@@ -197,18 +242,20 @@ class SnykSettingsDialog(
                 3,
                 1,
                 1,
-                1,
+                2,
                 UIGridConstraints.ANCHOR_WEST,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(defaultTextFieldWidth, -1),
+                null,
                 null,
                 0,
                 false
-            ))
+            )
+        )
 
+/*
         val generalSettingsSpacer = Spacer()
         generalSettingsPanel.add(
             generalSettingsSpacer,
@@ -226,10 +273,31 @@ class SnykSettingsDialog(
                 null,
                 0,
                 false
-            ))
+            )
+        )
+*/
 
         customEndpointLabel.labelFor = customEndpointTextField
         organizationLabel.labelFor = organizationTextField
+
+        rootPanel.add(
+            scanTypesPanel,
+            UIGridConstraints(
+                2,
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            )
+        )
 
         if (isProjectSettingsAvailable(project)) {
             val projectSettingsPanel = JPanel(UIGridLayoutManager(2, 3, Insets(0, 0, 0, 0), -1, -1))
@@ -238,7 +306,7 @@ class SnykSettingsDialog(
             rootPanel.add(
                 projectSettingsPanel,
                 UIGridConstraints(
-                    1,
+                    4,
                     0,
                     1,
                     1,
@@ -247,11 +315,12 @@ class SnykSettingsDialog(
                     UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                     UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                     null,
-                    Dimension(200, 200),
+                    Dimension(150, 200),
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
             val additionalParametersLabel = JLabel("Additional parameters:")
             projectSettingsPanel.add(
@@ -266,11 +335,12 @@ class SnykSettingsDialog(
                     UIGridConstraints.SIZEPOLICY_FIXED,
                     UIGridConstraints.SIZEPOLICY_FIXED,
                     null,
-                    Dimension(120, 16),
+                    null,
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
             projectSettingsPanel.add(
                 additionalParametersTextField,
@@ -280,15 +350,16 @@ class SnykSettingsDialog(
                     1,
                     1,
                     UIGridConstraints.ANCHOR_WEST,
-                    UIGridConstraints.SIZEPOLICY_FIXED,
-                    UIGridConstraints.SIZEPOLICY_FIXED,
+                    UIGridConstraints.FILL_HORIZONTAL,
+                    UIGridConstraints.SIZEPOLICY_WANT_GROW,
                     UIGridConstraints.SIZEPOLICY_FIXED,
                     null,
-                    Dimension(defaultTextFieldWidth, -1),
+                    null,
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
@@ -309,14 +380,16 @@ class SnykSettingsDialog(
                     null,
                     0,
                     false
-                ))
+                )
+            )
 
+/*
             val emptyPanel = JPanel(UIGridLayoutManager(1, 1, Insets(0, 0, 0, 0), -1, -1))
 
             rootPanel.add(
                 emptyPanel,
                 UIGridConstraints(
-                    2,
+                    3,
                     0,
                     1,
                     1,
@@ -330,6 +403,7 @@ class SnykSettingsDialog(
                     0,
                     false
                 ))
+*/
         }
     }
 
@@ -345,6 +419,10 @@ class SnykSettingsDialog(
 
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
 
+    fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
+
+    fun saveScanTypeChanges() = scanTypesPanel.apply()
+
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 
     private fun initializeValidation() {
@@ -359,8 +437,26 @@ class SnykSettingsDialog(
             } else {
                 ValidationInfo("")
             }
-
-
+            // disable SnykCode if custom endpoint is used
+            if (textField == customEndpointTextField) {
+                val snykCodeEnabled = isSnykCodeAvailable(textField.text)
+                scanTypesPanelOuter.snykCodeCheckbox?.let {
+                    it.isEnabled = snykCodeEnabled
+                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable
+                }
+                scanTypesPanelOuter.snykCodeQualityCheckbox?.let {
+                    it.isEnabled = snykCodeEnabled
+                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable
+                }
+                scanTypesPanelOuter.snykCodeComment?.let {
+                    if (snykCodeEnabled) {
+                        it.text = ""
+                    } else {
+                        it.text = "Snyk Code only works in SAAS mode for the time being (i.e. no Custom Endpoint usage)"
+                        it.foreground = JBColor.RED
+                    }
+                }
+            }
             validationInfo
         }).installOn(textField)
 
