@@ -331,7 +331,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun updateTreeRootNodesPresentation(
         cliResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
-        qualityIssuesCount: Int? = null
+        qualityIssuesCount: Int? = null,
+        additionalPostfix: String = ""
     ) {
         val settings = getApplicationSettingsStateService()
 
@@ -347,7 +348,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
             }
         }
-        newCliTreeNodeText?.let { rootCliTreeNode.userObject = it }
+        newCliTreeNodeText?.let { rootCliTreeNode.userObject = "$it $additionalPostfix" }
 
         val newSecurityIssuesNodeText = when {
             currentSnykCodeError != null -> "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (error)"
@@ -361,7 +362,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
             }
         }
-        newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
+        newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = "$it $additionalPostfix" }
 
         val newQualityIssuesNodeText = when {
             currentSnykCodeError != null -> "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (error)"
@@ -375,7 +376,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
             }
         }
-        newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode.userObject = it }
+        newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode.userObject = "$it $additionalPostfix" }
 
         val nodesToReload = listOfNotNull(
             newCliTreeNodeText?.let { rootCliTreeNode },
@@ -442,64 +443,67 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootCliTreeNode.removeAllChildren()
 
-        var issuesCount: Int? = null
-        if (getApplicationSettingsStateService().cliScanEnable && cliResult.vulnerabilities != null) {
-            issuesCount = 0
-            cliResult.vulnerabilities!!.forEach { vulnerability ->
-                if (vulnerability.vulnerabilities.isNotEmpty()) {
-                    val cliGroupedResult = vulnerability.toCliGroupedResult()
+        if (getApplicationSettingsStateService().cliScanEnable && cliResult.allCliVulnerabilities != null) {
+            cliResult.allCliVulnerabilities!!.forEach { cliVulnerabilitiesForFile ->
+                if (cliVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
+                    val cliGroupedResult = cliVulnerabilitiesForFile.toCliGroupedResult()
 
                     val fileTreeNode =
-                        FileTreeNode(cliGroupedResult.displayTargetFile, vulnerability.packageManager)
+                        FileTreeNode(cliGroupedResult.displayTargetFile, cliVulnerabilitiesForFile.packageManager)
                     rootCliTreeNode.add(fileTreeNode)
 
-                    cliGroupedResult.vulnerabilitiesMap.values
+                    cliGroupedResult.id2vulnerabilities.values
                         .filter { isSeverityFilterPassed(it.head.severity) }
                         .sortedByDescending { it.head.getSeverityIndex() }
                         .forEach {
-                            issuesCount++
                             fileTreeNode.add(VulnerabilityTreeNode(it.head))
                         }
                 }
             }
         }
-        updateTreeRootNodesPresentation(cliResultsCount = issuesCount)
+        updateTreeRootNodesPresentation(cliResultsCount = cliResult.issuesCount)
 
         smartReloadRootNode(rootCliTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
     }
 
     private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
         if (currentSnykCodeError != null) return
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         // display Security issues
         val userObjectsForExpandedSecurityNodes = userObjectsForExpandedNodes(rootSecurityIssuesTreeNode)
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-
         rootSecurityIssuesTreeNode.removeAllChildren()
 
         var securityIssuesCount: Int? = null
         if (getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable) {
             val securityResults = snykCodeResults.cloneFiltered {
-                isSeverityFilterPassed(it.severityAsString) && it.categories.contains("Security")
+                it.categories.contains("Security")
             }
             securityIssuesCount = securityResults.totalCount
-            displayResultsForRoot(rootSecurityIssuesTreeNode, securityResults)
+
+            val securityResultsToDisplay = securityResults.cloneFiltered {
+                isSeverityFilterPassed(it.severityAsString)
+            }
+            displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
         }
         updateTreeRootNodesPresentation(securityIssuesCount = securityIssuesCount)
         smartReloadRootNode(rootSecurityIssuesTreeNode, userObjectsForExpandedSecurityNodes, selectedNodeUserObject)
 
         // display Quality (non Security) issues
         val userObjectsForExpandedQualityNodes = userObjectsForExpandedNodes(rootQualityIssuesTreeNode)
-
         rootQualityIssuesTreeNode.removeAllChildren()
 
         var qualityIssuesCount: Int? = null
         if (getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable) {
             val qualityResults = snykCodeResults.cloneFiltered {
-                isSeverityFilterPassed(it.severityAsString) && !it.categories.contains("Security")
+                !it.categories.contains("Security")
             }
             qualityIssuesCount = qualityResults.totalCount
-            displayResultsForRoot(rootQualityIssuesTreeNode, qualityResults)
+
+            val qualityResultsToDisplay = qualityResults.cloneFiltered {
+                isSeverityFilterPassed(it.severityAsString)
+            }
+            displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
         }
         updateTreeRootNodesPresentation(qualityIssuesCount = qualityIssuesCount)
         smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes, selectedNodeUserObject)
@@ -520,17 +524,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displayResultsForRoot(rootNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
-        snykCodeResults.files
-            // sort by Errors-Warnings-Infos
-            .sortedWith(Comparator { file1, file2 ->
-                val ewi1: DeepCodeUtilsBase.ErrorsWarningsInfos = SnykCodeUtils.instance.getEWI(setOf(file1))
-                val ewi2: DeepCodeUtilsBase.ErrorsWarningsInfos = SnykCodeUtils.instance.getEWI(setOf(file2))
-                return@Comparator when {
-                    ewi1.errors != ewi2.errors -> ewi2.errors - ewi1.errors
-                    ewi1.warnings != ewi2.warnings -> ewi2.warnings - ewi1.warnings
-                    else -> ewi2.infos - ewi1.infos
-                }
-            })
+        snykCodeResults.getSortedFiles()
             .forEach { file ->
                 val fileTreeNode = SnykCodeFileTreeNode(file)
                 rootNode.add(fileTreeNode)

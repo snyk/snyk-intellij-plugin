@@ -22,6 +22,26 @@ class SnykCodeResults(
         )
     }
 
+    /** sort by Errors-Warnings-Infos */
+    fun getSortedFiles(): Collection<PsiFile> = files
+        .sortedWith(Comparator { file1, file2 ->
+            val file1Errors by lazy { errorsCount(file1) }
+            val file2Errors by lazy { errorsCount(file2) }
+            val file1Warns by lazy { warnsCount(file1) }
+            val file2Warns by lazy { warnsCount(file2) }
+            val file1Infos by lazy { infosCount(file1) }
+            val file2Infos by lazy { infosCount(file2) }
+            return@Comparator when {
+                file1Errors != file2Errors -> file2Errors - file1Errors
+                file1Warns != file2Warns -> file2Warns - file1Warns
+                else -> file2Infos - file1Infos
+            }
+        })
+
+    private fun errorsCount(file: PsiFile) = suggestions(file).filter { it.severity == 3 }.size
+    private fun warnsCount(file: PsiFile) = suggestions(file).filter { it.severity == 2 }.size
+    private fun infosCount(file: PsiFile) = suggestions(file).filter { it.severity == 1 }.size
+
     override fun equals(other: Any?): Boolean {
         return other is SnykCodeResults &&
             file2suggestions == other.file2suggestions
