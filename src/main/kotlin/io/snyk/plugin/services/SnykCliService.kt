@@ -65,11 +65,11 @@ class SnykCliService(val project: Project) {
         when {
             rawStr.isEmpty() -> CliResult(null, null)
             rawStr.first() == '[' -> {
-                CliResult(Gson().fromJson(rawStr, Array<CliVulnerabilities>::class.java), null)
+                CliResult(Gson().fromJson(rawStr, Array<CliVulnerabilitiesForFile>::class.java), null)
             }
             rawStr.first() == '{' -> {
                 if (isSuccessCliJsonString(rawStr)) {
-                    CliResult(arrayOf(Gson().fromJson(rawStr, CliVulnerabilities::class.java)), null)
+                    CliResult(arrayOf(Gson().fromJson(rawStr, CliVulnerabilitiesForFile::class.java)), null)
                 } else {
                     CliResult(null, Gson().fromJson(rawStr, CliError::class.java))
                 }
