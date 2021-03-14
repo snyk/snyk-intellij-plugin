@@ -9,6 +9,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -20,6 +21,7 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.*
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliResult
+import io.snyk.plugin.cli.CliVulnerabilitiesForFile
 import io.snyk.plugin.cli.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
@@ -32,6 +34,7 @@ import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import java.awt.BorderLayout
+import java.nio.file.Path
 import java.time.Instant
 import java.util.Objects.nonNull
 import javax.swing.JLabel
@@ -208,6 +211,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         VulnerabilityDescriptionPanel(node.userObject as Collection<Vulnerability>)
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
+                    // open package manager file, if any and  was not opened yet
+                    val cliVulnerabilitiesForFile =
+                        (node.parent as FileTreeNode).userObject as CliVulnerabilitiesForFile
+                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
+                        Path.of(cliVulnerabilitiesForFile.path, cliVulnerabilitiesForFile.displayTargetFile)
+                    )
+                    virtualFile?.let {
+                        FileEditorManager.getInstance(project).openFile(it, false)
+                    }
+                    // todo: navigate to the exact line(place)
                 }
                 is SuggestionTreeNode -> {
                     val psiFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? PsiFile
@@ -463,8 +477,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 if (cliVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
                     val cliGroupedResult = cliVulnerabilitiesForFile.toCliGroupedResult()
 
-                    val fileTreeNode =
-                        FileTreeNode(cliGroupedResult.displayTargetFile, cliVulnerabilitiesForFile.packageManager)
+                    val fileTreeNode = FileTreeNode(cliVulnerabilitiesForFile)
                     rootCliTreeNode.add(fileTreeNode)
 
                     cliGroupedResult.id2vulnerabilities.values
