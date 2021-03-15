@@ -212,16 +212,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
-                    // open package manager file, if any and  was not opened yet
-                    val cliVulnerabilitiesForFile =
-                        (node.parent as FileTreeNode).userObject as CliVulnerabilitiesForFile
-                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
-                        Path.of(cliVulnerabilitiesForFile.path, cliVulnerabilitiesForFile.displayTargetFile)
-                    )
-                    virtualFile?.let {
-                        FileEditorManager.getInstance(project).openFile(it, false)
-                    }
-                    // todo: navigate to the exact line(place)
+                    // todo: open package manager file, if any and  was not opened yet
                 }
                 is SuggestionTreeNode -> {
                     val psiFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? PsiFile
