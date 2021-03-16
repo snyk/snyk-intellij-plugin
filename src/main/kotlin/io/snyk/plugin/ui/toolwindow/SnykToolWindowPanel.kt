@@ -9,7 +9,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -21,7 +20,6 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.*
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliResult
-import io.snyk.plugin.cli.CliVulnerabilitiesForFile
 import io.snyk.plugin.cli.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
@@ -34,7 +32,6 @@ import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import java.awt.BorderLayout
-import java.nio.file.Path
 import java.time.Instant
 import java.util.Objects.nonNull
 import javax.swing.JLabel
@@ -52,7 +49,7 @@ import javax.swing.tree.TreePath
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
-    private val myAlarm = Alarm()
+    private val scrollPaneAlarm = Alarm()
 
     private var descriptionPanel = SimpleToolWindowPanel(true, true)
 
@@ -264,7 +261,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
         )
         // hack to scroll Panel to beginning after all it content (hopefully) loaded
-        myAlarm.addRequest(
+        scrollPaneAlarm.addRequest(
             {
                 ApplicationManager.getApplication().invokeLater {
                     scrollPane.verticalScrollBar.value = 0
