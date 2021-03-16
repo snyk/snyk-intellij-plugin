@@ -119,7 +119,7 @@ class SuggestionDescriptionPanel(
         val label = JLabel("<html>" + getOverviewText() + "</html>").apply {
             this.isOpaque = false
             this.background = UIUtil.getPanelBackground()
-            this.font = io.snyk.plugin.ui.getFont(-1, 16, panel.font)
+            this.font = io.snyk.plugin.ui.getFont(-1, 14, panel.font)
             this.preferredSize = Dimension() // this is the key part for shrink/grow.
         }
         panel.add(label, getPanelGridConstraints(1, 1))

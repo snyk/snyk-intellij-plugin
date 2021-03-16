@@ -15,6 +15,7 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.Alarm
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.*
 import io.snyk.plugin.cli.CliError
@@ -47,6 +48,8 @@ import javax.swing.tree.TreePath
  */
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
+
+    private val scrollPaneAlarm = Alarm()
 
     private var descriptionPanel = SimpleToolWindowPanel(true, true)
 
@@ -201,23 +204,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode
             when (node) {
                 is VulnerabilityTreeNode -> {
-                    descriptionPanel.add(
-                        ScrollPaneFactory.createScrollPane(
-                            VulnerabilityDescriptionPanel(node.userObject as Vulnerability),
-                            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
-                        ),
-                        BorderLayout.CENTER
+                    val scrollPane = wrapWithScrollPane(
+                        VulnerabilityDescriptionPanel(node.userObject as Collection<Vulnerability>)
                     )
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
+                    // todo: open package manager file, if any and  was not opened yet
                 }
                 is SuggestionTreeNode -> {
                     val psiFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? PsiFile
                         ?: throw IllegalArgumentException(node.toString())
                     val (suggestion, index) = node.userObject as Pair<SuggestionForFile, Int>
-                    val scrollPane = ScrollPaneFactory.createScrollPane(
-                        SuggestionDescriptionPanel(psiFile, suggestion, index),
-                        ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
+
+                    val scrollPane = wrapWithScrollPane(
+                        SuggestionDescriptionPanel(psiFile, suggestion, index)
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
@@ -252,6 +252,23 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         descriptionPanel.revalidate()
         descriptionPanel.repaint()
+    }
+
+    private fun wrapWithScrollPane(panel: JPanel): JScrollPane {
+        val scrollPane = ScrollPaneFactory.createScrollPane(
+            panel,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
+        )
+        // hack to scroll Panel to beginning after all it content (hopefully) loaded
+        scrollPaneAlarm.addRequest(
+            {
+                ApplicationManager.getApplication().invokeLater {
+                    scrollPane.verticalScrollBar.value = 0
+                    scrollPane.horizontalScrollBar.value = 0
+                }
+            }, 50)
+        return scrollPane
     }
 
     override fun dispose() {
@@ -448,15 +465,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 if (cliVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
                     val cliGroupedResult = cliVulnerabilitiesForFile.toCliGroupedResult()
 
-                    val fileTreeNode =
-                        FileTreeNode(cliGroupedResult.displayTargetFile, cliVulnerabilitiesForFile.packageManager)
+                    val fileTreeNode = FileTreeNode(cliVulnerabilitiesForFile)
                     rootCliTreeNode.add(fileTreeNode)
 
                     cliGroupedResult.id2vulnerabilities.values
                         .filter { isSeverityFilterPassed(it.head.severity) }
                         .sortedByDescending { it.head.getSeverityIndex() }
                         .forEach {
-                            fileTreeNode.add(VulnerabilityTreeNode(it.head))
+                            fileTreeNode.add(VulnerabilityTreeNode(it))
                         }
                 }
             }
