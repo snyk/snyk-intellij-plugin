@@ -77,7 +77,6 @@ class SnykBulkFileListener() : BulkFileListener {
                         AnalysisData.instance.removeProjectFromCaches(project)
                     } else {
                         AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
-                        // todo: possibly we'll need to update Bundle files on server
                     }
                 }
         }
