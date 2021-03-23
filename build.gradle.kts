@@ -24,7 +24,7 @@ dependencies {
 
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
-  implementation("io.snyk.code.sdk:snyk-code-client:2.1.7")
+  implementation("io.snyk.code.sdk:snyk-code-client:2.1.8")
 
   testImplementation("junit:junit:4.12")
   testImplementation("org.mockito:mockito-core:3.5.2")
