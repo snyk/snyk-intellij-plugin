@@ -7,6 +7,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
@@ -54,6 +55,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
         applicationSettingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
         snykSettingsDialog.saveScanTypeChanges()
+
+        service<SnykAnalyticsService>().setAnalyticsCollectionEnabled(applicationSettingsStateService.usageAnalyticsEnabled)
 
         if (isProjectSettingsAvailable(project)) {
             project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()

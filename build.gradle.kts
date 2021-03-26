@@ -1,3 +1,4 @@
+import org.apache.tools.ant.filters.ReplaceTokens
 import org.jetbrains.changelog.closure
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -22,8 +23,9 @@ version = pluginVersion
 dependencies {
   implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
-  implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
+  implementation("com.google.code.gson:gson:2.8.6")
+  implementation("com.segment.analytics.java:analytics:+")
   implementation("io.snyk.code.sdk:snyk-code-client:2.1.8")
 
   testImplementation("junit:junit:4.12")
@@ -48,6 +50,14 @@ tasks {
   withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
     kotlinOptions.languageVersion = "1.3"
+  }
+
+  withType<ProcessResources> {
+    filesMatching("application.properties") {
+      val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
+      val tokens = mapOf("segment.analytics.write-key" to segmentWriteKey)
+      filter<ReplaceTokens>("tokens" to tokens)
+    }
   }
 
   buildSearchableOptions {
