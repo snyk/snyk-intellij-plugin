@@ -16,16 +16,22 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.isUrlValid
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
 import java.awt.Insets
-import java.util.*
 import java.util.Objects.nonNull
+import java.util.UUID
 import java.util.function.Supplier
-import javax.swing.*
+import javax.swing.JButton
+import javax.swing.JCheckBox
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JTextField
 import javax.swing.event.DocumentEvent
 import javax.swing.text.BadLocationException
 import com.intellij.uiDesigner.core.GridConstraints as UIGridConstraints
@@ -60,6 +66,10 @@ class SnykSettingsDialog(
                 snykProjectSettingsConfigurable.apply()
                 val token = service<SnykCliAuthenticationService>().authenticate()
                 tokenTextField.text = token
+
+                val analytics = service<SnykAnalyticsService>()
+                val userId = analytics.obtainUserId(token)
+                analytics.setUserId(userId)
             }
         }
 
