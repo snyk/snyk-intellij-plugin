@@ -5,7 +5,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.ui.layout.*
 import icons.SnykIcons
-import io.snyk.plugin.analytics.EventProperties
+import io.snyk.plugin.analytics.EventPropertiesProvider
 import io.snyk.plugin.analytics.Segment
 import io.snyk.plugin.events.SnykCliDownloadListener.Companion.CLI_DOWNLOAD_TOPIC
 import io.snyk.plugin.getApplicationSettingsStateService
@@ -58,7 +58,10 @@ class OnboardPanel(project: Project) {
                 button("Analyze now!") { e ->
                     scanTypesPanel.apply()
 
-                    service<SnykAnalyticsService>().logEvent(Segment.Event.USER_TRIGGERS_ITS_FIRST_ANALYSIS, getAnalyticsPayload())
+                    service<SnykAnalyticsService>().logEvent(
+                        Segment.Event.USER_TRIGGERS_ITS_FIRST_ANALYSIS,
+                        EventPropertiesProvider.getSelectedProducts(getApplicationSettingsStateService())
+                    )
 
                     getApplicationSettingsStateService().pluginFirstRun = false
                     project.messageBus.syncPublisher(CLI_DOWNLOAD_TOPIC).checkCliExistsFinished()
@@ -66,12 +69,5 @@ class OnboardPanel(project: Project) {
                 }
             }
         }
-    }
-
-    private fun getAnalyticsPayload(): EventProperties {
-        val selectedProducts = mutableListOf<String>()
-        if (getApplicationSettingsStateService().cliScanEnable) selectedProducts += "Snyk Open Source"
-        if (getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable) selectedProducts += "Snyk Code"
-        return EventProperties(mapOf("productsSelected" to selectedProducts))
     }
 }

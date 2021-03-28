@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
+import io.snyk.plugin.analytics.EventPropertiesProvider
 import io.snyk.plugin.analytics.Segment
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isScanRunning
@@ -19,7 +20,10 @@ class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
     override fun actionPerformed(actionEvent: AnActionEvent) {
         actionEvent.project!!.service<SnykTaskQueueService>().scan()
 
-        service<SnykAnalyticsService>().logEvent(Segment.Event.USER_TRIGGERS_AN_ANALYSIS)
+        service<SnykAnalyticsService>().logEvent(
+            Segment.Event.USER_TRIGGERS_AN_ANALYSIS,
+            EventPropertiesProvider.getSelectedProducts(getApplicationSettingsStateService())
+        )
     }
 
     override fun update(actionEvent: AnActionEvent) {
