@@ -22,6 +22,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val settingsStateService = getApplicationSettingsStateService()
 
         settingsStateService.ignoreUnknownCA = false
+        settingsStateService.usageAnalyticsEnabled = true
         settingsStateService.token = ""
         settingsStateService.customEndpointUrl = ""
         settingsStateService.cliVersion = ""
@@ -252,6 +253,20 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals("test", defaultCommands[1])
         assertEquals("--json", defaultCommands[2])
         assertEquals("--org=test-org", defaultCommands[3])
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
+        setupDummyCliFile()
+        val settings = getApplicationSettingsStateService()
+        settings.usageAnalyticsEnabled = false
+
+        val cliCommands = getCli(project).buildCliCommandsList(settings)
+
+        assertEquals(getCliFile().absolutePath, cliCommands[0])
+        assertEquals("test", cliCommands[1])
+        assertEquals("--json", cliCommands[2])
+        assertEquals("--DISABLE_ANALYTICS", cliCommands[3])
     }
 
     @Test
