@@ -63,11 +63,14 @@ fun toSnykCodeApiUrl(customEndpointUrl: String?): String =
     if (customEndpointUrl != null && isSnykCodeSupportedEndpoint(customEndpointUrl)) {
         customEndpointUrl
             .replace("https://", "https://deeproxy.")
+            .removeTrailingSlashes()
             .removeSuffix("api")
     } else {
         "https://deeproxy.snyk.io/"
     }
 
 private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
-    customEndpointUrl == "https://dev.snyk.io/api" ||
-    customEndpointUrl == "https://snyk.io/api"
+    customEndpointUrl.removeTrailingSlashes() == "https://dev.snyk.io/api" ||
+    customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
+
+private fun String.removeTrailingSlashes() : String = this.replace( Regex("/+$"), "")

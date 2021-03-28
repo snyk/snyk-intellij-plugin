@@ -42,7 +42,7 @@ class SnykApiClient private constructor(
 
     companion object {
         fun create(token: String, baseUrl: String = "https://snyk.io/api/"): SnykApiClient {
-            return SnykApiClient(token, baseUrl)
+            return SnykApiClient(token, if (baseUrl.endsWith('/')) baseUrl else "$baseUrl/")
         }
     }
 }
