@@ -2,7 +2,14 @@
 
 ## [2.1.0]
 ### Added
-- Snyk Code scan for Security and Code Quality issues.
+- Integrate Snyk Code product
+- Simplify authentication process
+- Add results filtering in Snyk tool window
+- Add results caching to improve UI experience
+### Changed
+- Rework and add missing icons in the tree component
+### Fixed
+- Remove duplicated vulnerability reporting in the tree component
 
 ## [2.0.4]
 ### Fixed
