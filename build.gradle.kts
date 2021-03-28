@@ -28,7 +28,10 @@ dependencies {
   implementation("com.segment.analytics.java:analytics:+")
   implementation("io.snyk.code.sdk:snyk-code-client:2.1.8")
 
-  testImplementation("junit:junit:4.12")
+  testImplementation("junit:junit:4.13") {
+    exclude(group = "org.hamcrest")
+  }
+  testImplementation("org.hamcrest:hamcrest:2.2")
   testImplementation("org.mockito:mockito-core:3.5.2")
 }
 
