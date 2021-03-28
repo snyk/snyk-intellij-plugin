@@ -18,4 +18,5 @@ jobs:
       - name: Publish Plugin
         env:
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          ORG_GRADLE_PROJECT_segmentWriteKey: ${{ secrets.SEGMENT_WRITE_KEY }}
         run: ./gradlew publishPlugin

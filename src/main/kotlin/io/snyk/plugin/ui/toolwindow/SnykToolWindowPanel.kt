@@ -17,7 +17,8 @@ import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.Alarm
 import com.intellij.util.ui.tree.TreeUtil
-import io.snyk.plugin.*
+import io.snyk.plugin.analytics.EventPropertiesProvider
+import io.snyk.plugin.analytics.Segment
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
@@ -25,6 +26,12 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.head
+import io.snyk.plugin.isScanRunning
+import io.snyk.plugin.isSnykCliRunning
+import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
@@ -41,7 +48,6 @@ import javax.swing.ScrollPaneConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
-
 
 /**
  * Main panel for Snyk tool window.
@@ -169,6 +175,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                                 displayAuthPanel()
                             }
                             getApplicationSettingsStateService().pluginFirstRun -> {
+
                                 displayPluginFirstRunPanel()
                             }
                             else -> {
@@ -204,11 +211,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode
             when (node) {
                 is VulnerabilityTreeNode -> {
+                    val groupedVulns = node.userObject as Collection<Vulnerability>
                     val scrollPane = wrapWithScrollPane(
-                        VulnerabilityDescriptionPanel(node.userObject as Collection<Vulnerability>)
+                        VulnerabilityDescriptionPanel(groupedVulns)
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
+                    service<SnykAnalyticsService>().logEvent(
+                        Segment.Event.USER_SEES_AN_ISSUE,
+                        EventPropertiesProvider.getIssueDetailsForOpenSource(groupedVulns)
+                    )
                     // todo: open package manager file, if any and  was not opened yet
                 }
                 is SuggestionTreeNode -> {
@@ -235,6 +247,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         val editor = FileEditorManager.getInstance(project).selectedTextEditor
                         editor?.selectionModel?.setSelection(textRange.start, textRange.end)
                     }
+
+                    service<SnykAnalyticsService>().logEvent(
+                        Segment.Event.USER_SEES_AN_ISSUE,
+                        EventPropertiesProvider.getIssueDetailsForCode(suggestion)
+                    )
                 }
                 is RootCliTreeNode -> {
                     currentCliError?.let { displayCliError(it) } ?: displayEmptyDescription()
@@ -308,12 +325,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         removeAll()
         add(CenterOneComponentPanel(SnykAuthPanel(project).root), BorderLayout.CENTER)
         revalidate()
+
+        val analytics = service<SnykAnalyticsService>()
+        analytics.logEvent(Segment.Event.USER_LANDED_ON_THE_WELCOME_PAGE)
+        analytics.identify()
     }
 
     private fun displayPluginFirstRunPanel() {
         removeAll()
         add(CenterOneComponentPanel(OnboardPanel(project).panel), BorderLayout.CENTER)
         revalidate()
+
+        service<SnykAnalyticsService>().logEvent(Segment.Event.USER_LANDED_ON_PRODUCT_SELECTION_PAGE)
     }
 
     private fun displayTreeAndDescriptionPanels() {
@@ -476,6 +499,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         }
                 }
             }
+
+            service<SnykAnalyticsService>().logEvent(
+                Segment.Event.SNYK_OPEN_SOURCE_ANALYSIS_READY,
+                EventPropertiesProvider.getAnalysisDetailsForOpenSource(cliResult)
+            )
         }
         updateTreeRootNodesPresentation(
             cliResultsCount = cliResult.issuesCount,
@@ -506,6 +534,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 isSeverityFilterPassed(it.severityAsString)
             }
             displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
+
+            service<SnykAnalyticsService>().logEvent(
+                Segment.Event.SNYK_CODE_SECURITY_VULNERABILITY_ANALYSIS_READY,
+                EventPropertiesProvider.getAnalysisDetailsForCode(securityResults)
+            )
         }
         updateTreeRootNodesPresentation(
             securityIssuesCount = securityIssuesCount,
@@ -530,6 +563,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 isSeverityFilterPassed(it.severityAsString)
             }
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
+
+            service<SnykAnalyticsService>().logEvent(
+                Segment.Event.SNYK_CODE_QUALITY_ISSUES_ANALYSIS_READY,
+                EventPropertiesProvider.getAnalysisDetailsForCode(qualityResults)
+            )
         }
         updateTreeRootNodesPresentation(
             qualityIssuesCount = qualityIssuesCount,

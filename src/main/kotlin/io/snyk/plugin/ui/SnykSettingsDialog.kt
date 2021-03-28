@@ -16,16 +16,22 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.isUrlValid
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
 import java.awt.Insets
-import java.util.*
 import java.util.Objects.nonNull
+import java.util.UUID
 import java.util.function.Supplier
-import javax.swing.*
+import javax.swing.JButton
+import javax.swing.JCheckBox
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JTextField
 import javax.swing.event.DocumentEvent
 import javax.swing.text.BadLocationException
 import com.intellij.uiDesigner.core.GridConstraints as UIGridConstraints
@@ -42,6 +48,7 @@ class SnykSettingsDialog(
     private val customEndpointTextField = JTextField()
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
+    private val usageAnalyticsCheckBox: JCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
     private val scanTypesPanelOuter = ScanTypesPanel()
     private val scanTypesPanel = scanTypesPanelOuter.panel
@@ -59,6 +66,10 @@ class SnykSettingsDialog(
                 snykProjectSettingsConfigurable.apply()
                 val token = service<SnykCliAuthenticationService>().authenticate()
                 tokenTextField.text = token
+
+                val analytics = service<SnykAnalyticsService>()
+                val userId = analytics.obtainUserId(token)
+                analytics.setUserId(userId)
             }
         }
 
@@ -67,6 +78,7 @@ class SnykSettingsDialog(
             customEndpointTextField.text = applicationSettings.customEndpointUrl
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
+            usageAnalyticsCheckBox.isSelected = applicationSettings.usageAnalyticsEnabled
 
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
         }
@@ -88,7 +100,7 @@ class SnykSettingsDialog(
                 1,
                 1,
                 UIGridConstraints.ANCHOR_NORTHWEST,
-                UIGridConstraints.FILL_BOTH,
+                UIGridConstraints.FILL_HORIZONTAL,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 null,
@@ -158,6 +170,7 @@ class SnykSettingsDialog(
         )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
+        customEndpointLabel.labelFor = customEndpointTextField
         generalSettingsPanel.add(
             customEndpointLabel,
             UIGridConstraints(
@@ -217,6 +230,7 @@ class SnykSettingsDialog(
         )
 
         val organizationLabel = JLabel("Organization:")
+        organizationLabel.labelFor = organizationTextField
         generalSettingsPanel.add(
             organizationLabel,
             UIGridConstraints(
@@ -255,30 +269,6 @@ class SnykSettingsDialog(
             )
         )
 
-/*
-        val generalSettingsSpacer = Spacer()
-        generalSettingsPanel.add(
-            generalSettingsSpacer,
-            UIGridConstraints(
-                4,
-                0,
-                1,
-                1,
-                UIGridConstraints.ANCHOR_CENTER,
-                UIGridConstraints.FILL_VERTICAL,
-                1,
-                UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        )
-*/
-
-        customEndpointLabel.labelFor = customEndpointTextField
-        organizationLabel.labelFor = organizationTextField
 
         rootPanel.add(
             scanTypesPanel,
@@ -287,15 +277,28 @@ class SnykSettingsDialog(
                 0,
                 1,
                 1,
-                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.ANCHOR_NORTHWEST,
                 UIGridConstraints.FILL_NONE,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 null,
                 null,
                 null,
                 0,
                 false
+            )
+        )
+
+        usageAnalyticsCheckBox.text = "Send usage analytics"
+        rootPanel.add(
+            usageAnalyticsCheckBox,
+            UIGridConstraints(
+                3, 0, 1, 1,
+                UIGridConstraints.ANCHOR_NORTHWEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null, null, null, 0, false
             )
         )
 
@@ -382,29 +385,19 @@ class SnykSettingsDialog(
                     false
                 )
             )
-
-/*
-            val emptyPanel = JPanel(UIGridLayoutManager(1, 1, Insets(0, 0, 0, 0), -1, -1))
-
-            rootPanel.add(
-                emptyPanel,
-                UIGridConstraints(
-                    3,
-                    0,
-                    1,
-                    1,
-                    UIGridConstraints.ANCHOR_CENTER,
-                    UIGridConstraints.FILL_BOTH,
-                    UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    null,
-                    Dimension(200, 200),
-                    null,
-                    0,
-                    false
-                ))
-*/
         }
+
+        val generalSettingsSpacer = Spacer()
+        rootPanel.add(
+            generalSettingsSpacer,
+            UIGridConstraints(
+                4, 0, 1, 1,
+                UIGridConstraints.ANCHOR_CENTER,
+                UIGridConstraints.FILL_BOTH,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                null, Dimension(200, 200), null, 0, false
+            ))
     }
 
     fun getToken(): String = try {
@@ -418,6 +411,8 @@ class SnykSettingsDialog(
     fun getCustomEndpoint(): String = customEndpointTextField.text
 
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
+
+    fun isUsageAnalyticsEnabled(): Boolean = usageAnalyticsCheckBox.isSelected
 
     fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
 

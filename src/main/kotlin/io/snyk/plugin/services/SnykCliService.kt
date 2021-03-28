@@ -98,7 +98,6 @@ class SnykCliService(val project: Project) {
         commands.add("--json")
 
         val customEndpoint = settings.customEndpointUrl
-
         if (customEndpoint != null && customEndpoint.isNotEmpty()) {
             commands.add("--API=$customEndpoint")
         }
@@ -108,9 +107,12 @@ class SnykCliService(val project: Project) {
         }
 
         val organization = settings.organization
-
         if (organization != null && organization.isNotEmpty()) {
             commands.add("--org=$organization")
+        }
+
+        if (!settings.usageAnalyticsEnabled) {
+            commands.add("--DISABLE_ANALYTICS")
         }
 
         val additionalParameters = settings.getAdditionalParameters(project)
