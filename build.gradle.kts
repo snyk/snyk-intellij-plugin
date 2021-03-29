@@ -1,3 +1,4 @@
+import org.apache.tools.ant.filters.ReplaceTokens
 import org.jetbrains.changelog.closure
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -22,10 +23,15 @@ version = pluginVersion
 dependencies {
   implementation("org.jetbrains.kotlin:kotlin-stdlib")
 
-  implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
+  implementation("com.google.code.gson:gson:2.8.6")
+  implementation("com.segment.analytics.java:analytics:+")
+  implementation("io.snyk.code.sdk:snyk-code-client:2.1.8")
 
-  testImplementation("junit:junit:4.12")
+  testImplementation("junit:junit:4.13") {
+    exclude(group = "org.hamcrest")
+  }
+  testImplementation("org.hamcrest:hamcrest:2.2")
   testImplementation("org.mockito:mockito-core:3.5.2")
 }
 
@@ -34,13 +40,27 @@ intellij {
 }
 
 repositories {
-  jcenter()
+  mavenCentral()
+  maven {
+    url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+    mavenContent {
+      snapshotsOnly()
+    }
+  }
 }
 
 tasks {
   withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
     kotlinOptions.languageVersion = "1.3"
+  }
+
+  withType<ProcessResources> {
+    filesMatching("application.properties") {
+      val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
+      val tokens = mapOf("segment.analytics.write-key" to segmentWriteKey)
+      filter<ReplaceTokens>("tokens" to tokens)
+    }
   }
 
   buildSearchableOptions {
@@ -77,6 +97,7 @@ tasks {
   }
 
   runIde {
+    maxHeapSize = "2g"
     if (localIdeDirectory.isNotEmpty()) {
       ideDirectory(localIdeDirectory)
     }

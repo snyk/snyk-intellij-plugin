@@ -1,15 +1,20 @@
 package io.snyk.plugin.cli
 
-class CliResult(var vulnerabilities: Array<CliVulnerabilities>?, var error: CliError?) {
+import java.time.Instant
+
+class CliResult(var allCliVulnerabilities: Array<CliVulnerabilitiesForFile>?, var error: CliError?) {
+    val timeStamp = Instant.now()
+
     fun isSuccessful(): Boolean = error == null
 
-    fun issuesCount(): Int = if (vulnerabilities == null) {
-            0
-        } else {
-            var issuesCount = 0
+    val issuesCount = allCliVulnerabilities?.sumBy { it.uniqueCount }
 
-            vulnerabilities!!.forEach { issuesCount += it.uniqueCount }
-
-            issuesCount
+    fun countBySeverity(severity: String): Int? {
+        return allCliVulnerabilities?.sumBy { vulnerabilitiesForFile ->
+            vulnerabilitiesForFile.vulnerabilities
+                .filter { it.severity == severity }
+                .distinctBy { it.id }
+                .size
         }
+    }
 }

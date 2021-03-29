@@ -7,7 +7,6 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.setupDummyCliFile
-import junit.framework.TestCase
 import org.junit.Test
 import org.mockito.Mockito
 import java.io.File
@@ -23,6 +22,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val settingsStateService = getApplicationSettingsStateService()
 
         settingsStateService.ignoreUnknownCA = false
+        settingsStateService.usageAnalyticsEnabled = true
         settingsStateService.token = ""
         settingsStateService.customEndpointUrl = ""
         settingsStateService.cliVersion = ""
@@ -38,10 +38,22 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"), "")
 
-        val cliGroupedResult = cliResult.vulnerabilities!!.first().toCliGroupedResult()
+        val cliGroupedResult = cliResult.allCliVulnerabilities!!.first().toCliGroupedResult()
 
         assertEquals(21, cliGroupedResult.uniqueCount)
         assertEquals(36, cliGroupedResult.pathsCount)
+    }
+
+    @Test
+    fun testGroupVulnerabilitiesForGoof() {
+        val cli = getCli(project)
+
+        val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-goof-test.json"), "")
+
+        val cliGroupedResult = cliResult.allCliVulnerabilities!!.first().toCliGroupedResult()
+
+        assertEquals(70, cliGroupedResult.uniqueCount)
+        assertEquals(302, cliGroupedResult.pathsCount)
     }
 
     @Test
@@ -104,9 +116,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         assertTrue(cliResult.isSuccessful())
 
-        assertEquals("npm", cliResult.vulnerabilities!!.first().packageManager)
+        assertEquals("npm", cliResult.allCliVulnerabilities!!.first().packageManager)
 
-        val vulnerabilityIds = cliResult.vulnerabilities!!.first().vulnerabilities.map { it.id }
+        val vulnerabilityIds = cliResult.allCliVulnerabilities!!.first().vulnerabilities.map { it.id }
 
         assertTrue(vulnerabilityIds.contains("SNYK-JS-DOTPROP-543489"))
         assertTrue(vulnerabilityIds.contains("SNYK-JS-OPEN-174041"))
@@ -129,7 +141,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         assertTrue(cliResult.isSuccessful())
 
-        val vulnerabilityIds = cliResult.vulnerabilities!!.first().vulnerabilities.map { it.id }
+        val vulnerabilityIds = cliResult.allCliVulnerabilities!!.first().vulnerabilities.map { it.id }
 
         assertTrue(vulnerabilityIds.contains("snyk:lic:pip:nltk:Apache-2.0"))
         assertTrue(vulnerabilityIds.contains("snyk:lic:pip:six:MIT"))
@@ -241,6 +253,20 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals("test", defaultCommands[1])
         assertEquals("--json", defaultCommands[2])
         assertEquals("--org=test-org", defaultCommands[3])
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
+        setupDummyCliFile()
+        val settings = getApplicationSettingsStateService()
+        settings.usageAnalyticsEnabled = false
+
+        val cliCommands = getCli(project).buildCliCommandsList(settings)
+
+        assertEquals(getCliFile().absolutePath, cliCommands[0])
+        assertEquals("test", cliCommands[1])
+        assertEquals("--json", cliCommands[2])
+        assertEquals("--DISABLE_ANALYTICS", cliCommands[3])
     }
 
     @Test

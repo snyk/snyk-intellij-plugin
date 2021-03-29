@@ -59,15 +59,17 @@ class SnykCliService(val project: Project) {
      * If result string not contains 'error' string and contain 'vulnerabilities' it says that everything is correct.
      * If result string not contains '{' it means CLI return an error.
      * And if result string contains 'error' and not contain 'vulnerabilities' it means CLI return error in JSON format.
+     * if result string is _empty_ - CLI scan process was intentionally terminated by user..
      */
     fun convertRawCliStringToCliResult(rawStr: String, projectPath: String): CliResult =
         when {
+            rawStr.isEmpty() -> CliResult(null, null)
             rawStr.first() == '[' -> {
-                CliResult(Gson().fromJson(rawStr, Array<CliVulnerabilities>::class.java), null)
+                CliResult(Gson().fromJson(rawStr, Array<CliVulnerabilitiesForFile>::class.java), null)
             }
             rawStr.first() == '{' -> {
                 if (isSuccessCliJsonString(rawStr)) {
-                    CliResult(arrayOf(Gson().fromJson(rawStr, CliVulnerabilities::class.java)), null)
+                    CliResult(arrayOf(Gson().fromJson(rawStr, CliVulnerabilitiesForFile::class.java)), null)
                 } else {
                     CliResult(null, Gson().fromJson(rawStr, CliError::class.java))
                 }
@@ -96,7 +98,6 @@ class SnykCliService(val project: Project) {
         commands.add("--json")
 
         val customEndpoint = settings.customEndpointUrl
-
         if (customEndpoint != null && customEndpoint.isNotEmpty()) {
             commands.add("--API=$customEndpoint")
         }
@@ -106,9 +107,12 @@ class SnykCliService(val project: Project) {
         }
 
         val organization = settings.organization
-
         if (organization != null && organization.isNotEmpty()) {
             commands.add("--org=$organization")
+        }
+
+        if (!settings.usageAnalyticsEnabled) {
+            commands.add("--DISABLE_ANALYTICS")
         }
 
         val additionalParameters = settings.getAdditionalParameters(project)
