@@ -323,7 +323,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun displayAuthPanel() {
         removeAll()
-        add(CenterOneComponentPanel(SnykAuthPanel(project).root), BorderLayout.CENTER)
+        add(CenterOneComponentPanel(SnykAuthPanel(project)), BorderLayout.CENTER)
         revalidate()
 
         val analytics = service<SnykAnalyticsService>()
