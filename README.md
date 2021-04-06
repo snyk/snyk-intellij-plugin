@@ -4,25 +4,17 @@
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/10972.svg)](https://plugins.jetbrains.com/plugin/10972)
 
 <!-- Plugin description start -->
-The Snyk Vulnerability Scanner plugin for IDEs based on the IntelliJ platform
-helps you find and fix security vulnerabilities in your projects, all from
-within your favorite IDE.
+Snyk’s Vulnerability Scanner helps you find and fix security vulnerabilities
+and code quality issues in your projects, all from within your favorite IDE.
+Within a few seconds, the plugin will provide a list of all the different
+types of issues identified, bucketed into categories, together with actionable
+fix advice:
 
-The plugin integrates seamlessly into your development environment and scans
-the open source dependencies included in your projects for security
-vulnerabilities. Identified vulnerabilities are displayed with actionable
-information, including the full dependency path and remediation advice to help
-you fix issues as fast as possible.
+- **Open Source Security** - known vulnerabilities in both the direct and in-direct (transitive) open source dependencies you are pulling into the project.
+- **Code Security** - security weaknesses identified in your own code.
+- **Code Quality** - code quality issues in your own code.
 
-## Key features
-
-- Seamless integration
-- Accurate results based on Snyk Intel
-- Dependency path
-- Remediation advice
-- License compliance
-
-## Useful links
+### Useful links
 
 - This plugin works with projects written in Java, JavaScript, .NET and many more languages. See the [full list of languages and package managers Snyk supports](https://snyk.co/ucWSd)
 - [Bug tracker](https://github.com/snyk/snyk-intellij-plugin/issues)
