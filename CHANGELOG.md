@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.1]
+### Changed
+- Update plugin description marketplace page
+
 ## [2.1.0]
 ### Added
 - Integrate Snyk Code product
