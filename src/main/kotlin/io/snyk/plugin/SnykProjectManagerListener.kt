@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 
 class SnykProjectManagerListener : ProjectManagerListener {
 
@@ -15,6 +16,7 @@ class SnykProjectManagerListener : ProjectManagerListener {
             // lets all running ProgressIndicators release MUTEX first
             RunUtils.instance.cancelRunningIndicators(project)
             AnalysisData.instance.removeProjectFromCaches(project)
+            SnykCodeIgnoreInfoHolder.instance.removeProject(project)
         }
     }
 }

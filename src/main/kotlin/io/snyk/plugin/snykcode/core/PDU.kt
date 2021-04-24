@@ -27,6 +27,10 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
 
     override fun getFileName(file: Any): String = toPsiFile(file).virtualFile.name
 
+    override fun getFilePath(file: Any): String = toPsiFile(file).virtualFile.path
+
+    override fun getDirPath(file: Any): String = toPsiFile(file).virtualFile.parent.path
+
     override fun getProjectBasedFilePath(file: Any): String {
         val psiFile = toPsiFile(file)
         // looks like we don't need ReadAction for this (?)
@@ -115,6 +119,8 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
             progress.checkCanceled()
         }
     }
+
+    override fun progressCanceled(progress: Any?): Boolean = progress is ProgressIndicator && progress.isCanceled
 
     override fun progressSetFraction(progress: Any?, fraction: Double) {
         if (progress is ProgressIndicator) {
