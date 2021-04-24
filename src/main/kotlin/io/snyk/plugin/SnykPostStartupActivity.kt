@@ -40,9 +40,9 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         val gitignore = File("$prjBasePath/.gitignore")
         val dcignore = File("$prjBasePath/.dcignore")
         if (!gitignore.exists() && dcignore.createNewFile()) {
-            val fullDcIgnoreInputStream = this.javaClass.classLoader.getResourceAsStream("full.dcignore")
+            val fullDcIgnoreText = this.javaClass.classLoader.getResource("full.dcignore")?.readText()
                 ?: throw RuntimeException("full.dcignore can not be found in plugin's resources")
-            dcignore.writeBytes(fullDcIgnoreInputStream.readAllBytes())
+            dcignore.writeText(fullDcIgnoreText)
             SnykBalloonNotifications.showInfo("We added generic .dcignore file to upload only project's source code.", project)
         }
     }
