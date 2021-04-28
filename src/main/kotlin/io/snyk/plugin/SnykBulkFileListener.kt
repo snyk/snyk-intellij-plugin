@@ -91,14 +91,7 @@ class SnykBulkFileListener() : BulkFileListener {
                 }
 
             // clean .dcignore caches if needed
-            val ignoreFilesChanged = virtualFilesAffected
-                .filter { it.name == ".dcignore" || it.name == ".gitignore" }
-                .distinct()
-            for (virtualFile in ignoreFilesChanged) {
-                val ignoreFile = PsiManager.getInstance(project).findFile(virtualFile) ?: continue
-                SnykCodeIgnoreInfoHolder.instance.remove_ignoreFileContent(ignoreFile)
-                AnalysisData.instance.removeProjectFromCaches(project)
-            }
+            SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
         }
     }
 
@@ -113,17 +106,7 @@ class SnykBulkFileListener() : BulkFileListener {
             )
 
             // update .dcignore caches if needed
-            val ignoreFilesChanged = virtualFilesAffected
-                .filter { it.name == ".dcignore" || it.name == ".gitignore" }
-                .distinct()
-            for (virtualFile in ignoreFilesChanged) {
-                val ignoreFile = PsiManager.getInstance(project).findFile(virtualFile) ?: continue
-                project.service<SnykTaskQueueService>().scheduleRunnable(
-                    "updating caches for: ${PDU.instance.getFilePath(ignoreFile)}"
-                ) { progress ->
-                    SnykCodeIgnoreInfoHolder.instance.update_ignoreFileContent(ignoreFile, progress)
-                }
-            }
+            SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
         }
     }
 

@@ -2,6 +2,7 @@
 
 ## [2.1.3]
 ### Changed
+- Fix and improve .dcignore and .gitignore parsing and usage
 - Bugfix for `missing file parameter` exception
 
 ## [2.1.2]
