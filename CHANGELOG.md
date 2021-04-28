@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.3]
+### Changed
+- Bugfix for `missing file parameter` exception
+
 ## [2.1.2]
 ### Changed
 - Make plugin compatible with 2021.1 version

@@ -30,12 +30,17 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     override fun getProjectBasedFilePath(file: Any): String {
         val psiFile = toPsiFile(file)
         // looks like we don't need ReadAction for this (?)
-        var absolutePath = psiFile.virtualFile.path
+        val absolutePath = psiFile.virtualFile.path
         val projectPath = psiFile.project.basePath
-        if (projectPath != null) {
-            absolutePath = absolutePath.replace(projectPath, "")
+            ?: throw IllegalStateException("No Project base Path found for file $psiFile")
+        // `ignoreCase = true` needed due to https://youtrack.jetbrains.com/issue/IDEA-268081
+        val projectBasedPath = absolutePath.replaceFirst(projectPath, "", ignoreCase = true)
+        if (projectBasedPath == absolutePath ) {
+            throw IllegalStateException("projectBasedPath is not valid:\n" +
+                "  psiFile.virtualFile.path = $absolutePath\n" +
+                "  psiFile.project.basePath = $projectPath")
         }
-        return absolutePath
+        return projectBasedPath
     }
 
     override fun getFileByDeepcodedPath(path: String, project: Any): Any? {
