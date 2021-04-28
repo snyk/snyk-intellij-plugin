@@ -73,7 +73,7 @@ tasks {
     untilBuild(pluginUntilBuild)
 
     pluginDescription(closure {
-      File("./README.md").readText().lines().run {
+      File("$projectDir/README.md").readText().lines().run {
         val start = "<!-- Plugin description start -->"
         val end = "<!-- Plugin description end -->"
 
