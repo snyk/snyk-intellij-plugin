@@ -3,6 +3,7 @@ package io.snyk.plugin
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykCliService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -25,6 +26,12 @@ fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
 fun isProjectSettingsAvailable(project: Project?) = nonNull(project) && !project!!.isDefault
+
+fun <L> getSyncPublisher(project: Project, topic: Topic<L>): L? {
+    val messageBus = project.messageBus
+    if (messageBus.isDisposed) return null
+    return messageBus.syncPublisher(topic)
+}
 
 val <T> List<T>.tail: List<T>
     get() = drop(1)

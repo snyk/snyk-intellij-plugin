@@ -15,6 +15,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import java.util.function.Consumer
@@ -152,7 +153,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     override fun showWarn(message: String, project: Any?, wasWarnShown: Boolean) {
         runForProject(project, Consumer { prj ->
             SnykBalloonNotifications.showWarn(message, prj)
-            prj.messageBus.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC).scanningSnykCodeError(
+            getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
                 CliError(false, message, prj.basePath ?: "")
             )
         })
@@ -161,7 +162,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     override fun showError(message: String, project: Any?) {
         runForProject(project, Consumer { prj ->
             SnykBalloonNotifications.showError(message, prj)
-            prj.messageBus.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC).scanningSnykCodeError(
+            getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
                 CliError(false, message, prj.basePath ?: "")
             )
         })

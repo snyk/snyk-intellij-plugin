@@ -9,6 +9,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.snykcode.SnykCodeResults
 import java.util.function.Consumer
 
@@ -56,8 +57,6 @@ class RunUtils private constructor() : RunUtilsBase(
     override fun updateAnalysisResultsUIPresentation(projectAsAny: Any, files: Collection<Any>) {
         val project = PDU.toProject(projectAsAny)
         if (project.isDisposed) return
-        val cliScanPublisher =
-            project.messageBus.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC)
         val scanResults = if (files.isEmpty()) {
             SnykCodeResults()
         } else {
@@ -65,7 +64,7 @@ class RunUtils private constructor() : RunUtilsBase(
                 AnalysisData.instance.getAnalysis(files).mapKeys { PDU.toPsiFile(it.key) }
             )
         }
-        cliScanPublisher.scanningSnykCodeFinished(scanResults)
+        getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeFinished(scanResults)
     }
 
     private class MyBackgroundable(project: Project, title: String, private val consumer: Consumer<Any>) :

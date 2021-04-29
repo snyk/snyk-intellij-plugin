@@ -8,14 +8,11 @@ import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.*
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
-import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.getCli
-import io.snyk.plugin.getSnykCode
-import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 
@@ -24,14 +21,14 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
 
-    private val scanPublisher =
-        project.messageBus.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC)
+    private val scanPublisher
+        get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)
 
-    private val cliDownloadPublisher =
-        project.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+    private val cliDownloadPublisher
+        get() = getSyncPublisher(project, SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
 
-    private val taskQueuePublisher =
-        project.messageBus.syncPublisher(SnykTaskQueueListener.TASK_QUEUE_TOPIC)
+    private val taskQueuePublisher
+        get() = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
@@ -39,7 +36,7 @@ class SnykTaskQueueService(val project: Project) {
 
     fun getTaskQueue() = taskQueue
 
-    fun scheduleRunnable (title: String, runnable: (indicator: ProgressIndicator) -> Unit) {
+    fun scheduleRunnable(title: String, runnable: (indicator: ProgressIndicator) -> Unit) {
         taskQueue.run(object : Task.Backgroundable(project, title, true) {
             override fun run(indicator: ProgressIndicator) {
                 runnable.invoke(indicator)
@@ -67,7 +64,7 @@ class SnykTaskQueueService(val project: Project) {
                 }
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
                     getSnykCode(project).scan()
-                    scanPublisher.scanningStarted()
+                    scanPublisher?.scanningStarted()
                 }
 
             }
@@ -82,20 +79,20 @@ class SnykTaskQueueService(val project: Project) {
                 if (toolWindowPanel.currentCliResults != null) return
 
                 currentProgressIndicator = indicator
-                scanPublisher.scanningStarted()
+                scanPublisher?.scanningStarted()
 
-                val cliResult: CliResult =  getCli(project).scan()
+                val cliResult: CliResult = getCli(project).scan()
 
                 currentProgressIndicator = null
                 if (project.isDisposed) return
 
                 if (indicator.isCanceled) {
-                    taskQueuePublisher.stopped(wasCliRunning = true)
+                    taskQueuePublisher?.stopped(wasCliRunning = true)
                 } else {
                     if (cliResult.isSuccessful()) {
-                        scanPublisher.scanningCliFinished(cliResult)
+                        scanPublisher?.scanningCliFinished(cliResult)
                     } else {
-                        scanPublisher.scanningCliError(cliResult.error!!)
+                        scanPublisher?.scanningCliError(cliResult.error!!)
                     }
                 }
             }
@@ -105,7 +102,7 @@ class SnykTaskQueueService(val project: Project) {
     fun downloadLatestRelease() {
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI", true) {
             override fun run(indicator: ProgressIndicator) {
-                cliDownloadPublisher.checkCliExistsStarted()
+                cliDownloadPublisher?.checkCliExistsStarted()
 
                 currentProgressIndicator = indicator
 
@@ -116,14 +113,14 @@ class SnykTaskQueueService(val project: Project) {
                 if (project.isDisposed) return
 
                 if (!getCli(project).isCliInstalled()) {
-                    cliDownloadPublisher.cliDownloadStarted()
+                    cliDownloadPublisher?.cliDownloadStarted()
 
                     cliDownloader.downloadLatestRelease(indicator)
                 } else {
                     cliDownloader.cliSilentAutoUpdate(indicator)
                 }
 
-                cliDownloadPublisher.checkCliExistsFinished()
+                cliDownloadPublisher?.checkCliExistsFinished()
             }
         })
     }
@@ -133,6 +130,6 @@ class SnykTaskQueueService(val project: Project) {
         currentProgressIndicator?.cancel()
         val wasSnykCodeRunning = isSnykCodeRunning(project)
         RunUtils.instance.cancelRunningIndicators(project)
-        taskQueuePublisher.stopped(wasCliRunning, wasSnykCodeRunning)
+        taskQueuePublisher?.stopped(wasCliRunning, wasSnykCodeRunning)
     }
 }

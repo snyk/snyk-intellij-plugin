@@ -4,6 +4,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getSyncPublisher
 
 class SnykTreeLowSeverityFilterAction: SnykTreeSeverityFilterActionBase() {
 
@@ -21,6 +22,6 @@ class SnykTreeLowSeverityFilterAction: SnykTreeSeverityFilterActionBase() {
         if (!state && isLastSeverityDisabling(e)) return
 
         getApplicationSettingsStateService().lowSeverityEnabled = state
-        e.project!!.messageBus.syncPublisher(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC).filtersChanged()
+        getSyncPublisher(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
     }
 }
