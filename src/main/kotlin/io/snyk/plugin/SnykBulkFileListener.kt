@@ -7,20 +7,18 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.*
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.services.SnykTaskQueueService
-import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.RunUtils
-import io.snyk.plugin.snykcode.core.SnykCodeUtils
+import io.snyk.plugin.snykcode.core.*
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import java.util.function.Predicate
 
 class SnykBulkFileListener() : BulkFileListener {
 
-    // proceed removed, added and changed files
-    override fun before(events: MutableList<out VFileEvent>) {
-        cleanCaches(
-            events, listOf(
-                VFileDeleteEvent::class.java,
+    override fun after(events: MutableList<out VFileEvent>) {
+        updateCaches(
+            events,
+            listOf(
                 VFileContentChangeEvent::class.java,
                 VFileMoveEvent::class.java,
                 VFileCopyEvent::class.java
@@ -28,7 +26,19 @@ class SnykBulkFileListener() : BulkFileListener {
         )
     }
 
-    private fun cleanCaches(events: MutableList<out VFileEvent>, classesOfEventsToFilter: Collection<Class<*>>) {
+    override fun before(events: MutableList<out VFileEvent>) {
+        cleanCaches(
+            events,
+            listOf(
+                VFileContentChangeEvent::class.java,
+                VFileMoveEvent::class.java,
+                VFileCopyEvent::class.java,
+                VFileDeleteEvent::class.java
+            )
+        )
+    }
+
+    private fun cleanCaches(events: List<out VFileEvent>, classesOfEventsToFilter: Collection<Class<*>>) {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
@@ -71,7 +81,7 @@ class SnykBulkFileListener() : BulkFileListener {
                 }
 
             if (filesToRemoveFromCache.isNotEmpty())
-                project.service<SnykTaskQueueService>().scheduleRunnable("SnykCode is updating caches...") {
+                project.service<SnykTaskQueueService>().scheduleRunnable("Snyk Code is updating caches...") {
                     if (filesToRemoveFromCache.size > 10) {
                         // bulk files change event (like `git checkout`) - better to drop cache and perform full rescan later
                         AnalysisData.instance.removeProjectFromCaches(project)
@@ -79,6 +89,24 @@ class SnykBulkFileListener() : BulkFileListener {
                         AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
                     }
                 }
+
+            // clean .dcignore caches if needed
+            SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
+        }
+    }
+
+    private fun updateCaches(events: List<out VFileEvent>, classesOfEventsToFilter: Collection<Class<out VFileEvent>>) {
+        for (project in ProjectUtil.getOpenProjects()) {
+            if (project.isDisposed) continue
+
+            val virtualFilesAffected = getAffectedVirtualFiles(
+                events,
+                fileFilter = Predicate { true },
+                classesOfEventsToFilter = classesOfEventsToFilter
+            )
+
+            // update .dcignore caches if needed
+            SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
         }
     }
 

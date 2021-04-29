@@ -67,6 +67,7 @@ class SnykTaskQueueService(val project: Project) {
                 }
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
                     getSnykCode(project).scan()
+                    scanPublisher.scanningStarted()
                 }
 
             }

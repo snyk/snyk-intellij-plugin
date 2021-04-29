@@ -36,6 +36,7 @@ import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
+import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import java.awt.BorderLayout
@@ -296,6 +297,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentCliError = null
         currentSnykCodeError = null
         AnalysisData.instance.resetCachesAndTasks(project)
+        SnykCodeIgnoreInfoHolder.instance.removeProject(project)
 
         ApplicationManager.getApplication().invokeLater {
             doCleanUi()
