@@ -7,6 +7,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener.Companion.CLI_DOWNLOAD_TOPIC
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
@@ -63,8 +64,7 @@ class SnykAuthPanel(project: Project) : JPanel() {
                 val userId = analytics.obtainUserId(token)
                 analytics.alias(userId)
 
-                project.messageBus.syncPublisher(CLI_DOWNLOAD_TOPIC)
-                    .checkCliExistsFinished()
+                getSyncPublisher(project, CLI_DOWNLOAD_TOPIC)?.checkCliExistsFinished()
             }
         })
 

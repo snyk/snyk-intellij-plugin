@@ -5,10 +5,10 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
-import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import javax.swing.JComponent
@@ -78,9 +78,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
     }
 
     private fun fireFiltersChangedEvent(project: Project) {
-        val filteringPublisher =
-            project.messageBus.syncPublisher(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)
-        filteringPublisher.filtersChanged()
+        getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
     }
 
     private fun isLastScanTypeDisabling(e: AnActionEvent): Boolean {
