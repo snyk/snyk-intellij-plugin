@@ -490,14 +490,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 if (cliVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
                     val cliGroupedResult = cliVulnerabilitiesForFile.toCliGroupedResult()
 
-                    val fileTreeNode = FileTreeNode(cliVulnerabilitiesForFile)
+                    val fileTreeNode = FileTreeNode(cliVulnerabilitiesForFile, project)
                     rootCliTreeNode.add(fileTreeNode)
 
                     cliGroupedResult.id2vulnerabilities.values
                         .filter { isSeverityFilterPassed(it.head.severity) }
                         .sortedByDescending { it.head.getSeverityIndex() }
                         .forEach {
-                            fileTreeNode.add(VulnerabilityTreeNode(it))
+                            fileTreeNode.add(VulnerabilityTreeNode(it, project))
                         }
                 }
             }

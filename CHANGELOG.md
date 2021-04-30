@@ -2,6 +2,7 @@
 
 ## [2.1.3]
 ### Changed
+- Show OSS results as `obsolete` when it's outdated
 - Fix errors on Project close while scan is running
 - Fix and improve .dcignore and .gitignore parsing and usage
 - Bugfix for `missing file parameter` exception
