@@ -46,6 +46,10 @@
     </group>
 
     <group id="io.snyk.plugin.TreeFilters.Severity">
+      <action id="io.snyk.plugin.ui.actions.SnykTreeCriticalSeverityFilterAction"
+              class="io.snyk.plugin.ui.actions.SnykTreeCriticalSeverityFilterAction"
+              text="Critical Severity"
+              description="Snyk: Show Critical severity issues"/>
       <action id="io.snyk.plugin.ui.actions.SnykTreeHighSeverityFilterAction"
               class="io.snyk.plugin.ui.actions.SnykTreeHighSeverityFilterAction"
               text="High Severity"

@@ -5,6 +5,7 @@ import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
+import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.buildBoldTitleLabel
 import io.snyk.plugin.cli.CliError
 import java.awt.Color
@@ -150,7 +151,7 @@ class CliErrorPanel(cliError: CliError) : JPanel() {
                 1,
                 false))
 
-        val errorLabelPanel = SeverityColorPanel("high")
+        val errorLabelPanel = SeverityColorPanel(Severity.HIGH)
         errorLabelPanel.layout = GridLayoutManager(2, 2, Insets(10, 10, 10, 10), -1, -1)
 
         this.add(errorLabelPanel,
