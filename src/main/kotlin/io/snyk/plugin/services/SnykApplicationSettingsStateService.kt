@@ -30,6 +30,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var lowSeverityEnabled = true
     var mediumSeverityEnabled = true
     var highSeverityEnabled = true
+    var criticalSeverityEnabled = true
 
     override fun getState(): SnykApplicationSettingsStateService = this
 

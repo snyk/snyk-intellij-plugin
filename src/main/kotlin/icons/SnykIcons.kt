@@ -40,6 +40,8 @@ object SnykIcons {
     val RPM = getIcon("/icons/rpm.svg")
     val DOCKER = getIcon("/icons/docker.svg")
 
+    private val CRITICAL_SEVERITY = getIcon("/icons/severity_critical.svg")
+    private val CRITICAL_SEVERITY_24 = getIcon("/icons/severity_critical_24.svg")
     private val HIGH_SEVERITY = getIcon("/icons/severity_high.svg")
     private val HIGH_SEVERITY_24 = getIcon("/icons/severity_high_24.svg")
     private val LOW_SEVERITY = getIcon("/icons/severity_low.svg")
@@ -49,6 +51,10 @@ object SnykIcons {
 
     fun getSeverityIcon(severity: String, iconSize: IconSize = IconSize.SIZE16): Icon {
         return when (severity) {
+            "critical" -> when (iconSize) {
+                IconSize.SIZE16 -> CRITICAL_SEVERITY
+                IconSize.SIZE24 -> CRITICAL_SEVERITY_24
+            }
             "high" -> when (iconSize) {
                 IconSize.SIZE16 -> HIGH_SEVERITY
                 IconSize.SIZE24 -> HIGH_SEVERITY_24
