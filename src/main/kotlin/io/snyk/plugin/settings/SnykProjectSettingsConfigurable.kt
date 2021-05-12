@@ -44,6 +44,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
         applicationSettingsStateService.customEndpointUrl = customEndpoint
         SnykCodeParams.instance.apiUrl = toSnykCodeApiUrl(customEndpoint)
+        SnykCodeParams.instance.isDisableSslVerification = snykSettingsDialog.isIgnoreUnknownCA()
 
         applicationSettingsStateService.token = snykSettingsDialog.getToken()
         SnykCodeParams.instance.sessionToken = snykSettingsDialog.getToken()
