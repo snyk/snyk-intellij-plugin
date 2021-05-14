@@ -1,6 +1,7 @@
 package icons
 
 import com.intellij.openapi.util.IconLoader.getIcon
+import io.snyk.plugin.Severity
 import javax.swing.Icon
 import javax.swing.ImageIcon
 
@@ -51,19 +52,19 @@ object SnykIcons {
 
     fun getSeverityIcon(severity: String, iconSize: IconSize = IconSize.SIZE16): Icon {
         return when (severity) {
-            "critical" -> when (iconSize) {
+            Severity.CRITICAL -> when (iconSize) {
                 IconSize.SIZE16 -> CRITICAL_SEVERITY
                 IconSize.SIZE24 -> CRITICAL_SEVERITY_24
             }
-            "high" -> when (iconSize) {
+            Severity.HIGH -> when (iconSize) {
                 IconSize.SIZE16 -> HIGH_SEVERITY
                 IconSize.SIZE24 -> HIGH_SEVERITY_24
             }
-            "medium" -> when (iconSize) {
+            Severity.MEDIUM -> when (iconSize) {
                 IconSize.SIZE16 -> MEDIUM_SEVERITY
                 IconSize.SIZE24 -> MEDIUM_SEVERITY_24
             }
-            "low" -> when (iconSize) {
+            Severity.LOW -> when (iconSize) {
                 IconSize.SIZE16 -> LOW_SEVERITY
                 IconSize.SIZE24 -> LOW_SEVERITY_24
             }

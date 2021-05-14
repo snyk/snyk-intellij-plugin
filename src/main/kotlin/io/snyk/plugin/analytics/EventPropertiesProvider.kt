@@ -21,10 +21,10 @@ object EventPropertiesProvider {
     fun getAnalysisDetailsForOpenSource(cliResult: CliResult): EventProperties {
         val analysisDetails = mutableMapOf<String, Any>()
 
-        analysisDetails["criticalSeverityIssuesCount"] = cliResult.countBySeverity("critical") ?: 0
-        analysisDetails["highSeverityIssuesCount"] = cliResult.countBySeverity("high") ?: 0
-        analysisDetails["mediumSeverityIssuesCount"] = cliResult.countBySeverity("medium") ?: 0
-        analysisDetails["lowSeverityIssuesCount"] = cliResult.countBySeverity("low") ?: 0
+        analysisDetails["criticalSeverityIssuesCount"] = cliResult.criticalSeveritiesCount()
+        analysisDetails["highSeverityIssuesCount"] = cliResult.highSeveritiesCount()
+        analysisDetails["mediumSeverityIssuesCount"] = cliResult.mediumSeveritiesCount()
+        analysisDetails["lowSeverityIssuesCount"] = cliResult.lowSeveritiesCount()
 
         return EventProperties(mapOf("analysisDetails" to analysisDetails))
     }
