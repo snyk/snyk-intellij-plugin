@@ -58,6 +58,10 @@ class SnykCodeResults(
         return other is SnykCodeResults &&
             file2suggestions == other.file2suggestions
     }
+
+    override fun hashCode(): Int {
+        return file2suggestions.hashCode()
+    }
 }
 
 val SuggestionForFile.severityAsString: String

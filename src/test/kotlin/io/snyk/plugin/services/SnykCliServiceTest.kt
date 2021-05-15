@@ -2,6 +2,7 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
+import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
@@ -52,8 +53,8 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val cliGroupedResult = cliResult.allCliVulnerabilities!!.first().toCliGroupedResult()
 
-        assertEquals(70, cliGroupedResult.uniqueCount)
-        assertEquals(302, cliGroupedResult.pathsCount)
+        assertEquals(78, cliGroupedResult.uniqueCount)
+        assertEquals(310, cliGroupedResult.pathsCount)
     }
 
     @Test
@@ -389,6 +390,60 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         assertEquals("Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.",
             rawErrorCliResult.error!!.message)
         assertEquals("", rawErrorCliResult.error!!.path)
+    }
+
+    @Test
+    fun testConvertRawCliStringWithLicenseVulnsToCliResult() {
+        val cli = getCli(project)
+
+        val rawMissedFixedInFieldCliString = getResourceAsString("licence-vulnerabilities.json")
+        val cliResult = cli.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString, "")
+        assertTrue(cliResult.isSuccessful())
+        assertNotNull(cliResult.allCliVulnerabilities?.find { it.vulnerabilities.any { it.fixedIn == null } })
+
+        touchAllFields(cliResult)
+    }
+
+    @Test
+    fun testConvertRawCliStringToCliResultFieldsInitialisation() {
+        val cli = getCli(project)
+
+        val rawCliString = getResourceAsString("group-vulnerabilities-goof-test.json")
+        val cliResult = cli.convertRawCliStringToCliResult(rawCliString, "")
+        assertTrue(cliResult.isSuccessful())
+
+        touchAllFields(cliResult)
+    }
+
+    private  fun touchAllFields(cliResultToCheck: CliResult) {
+        cliResultToCheck.allCliVulnerabilities?.forEach {
+            it.displayTargetFile
+            it.packageManager
+            it.projectName
+            it.uniqueCount
+            it.vulnerabilities.forEach { vuln ->
+                with(vuln){
+                    id
+                    license
+                    identifiers?.CVE
+                    identifiers?.CWE
+                    title
+                    description
+                    language
+                    packageManager
+                    packageName
+                    severity
+                    name
+                    version
+                    exploit
+                    CVSSv3
+                    cvssScore
+                    fixedIn
+                    from
+                    upgradePath
+                }
+            }
+        }
     }
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
