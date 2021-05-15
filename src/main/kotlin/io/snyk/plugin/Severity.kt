@@ -21,6 +21,7 @@ class Severity {
 
         fun toName(index: Int): String =
             when (index) {
+                4 -> CRITICAL
                 3 -> HIGH
                 2 -> MEDIUM
                 1 -> LOW
