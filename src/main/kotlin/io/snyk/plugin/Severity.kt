@@ -9,6 +9,7 @@ class Severity {
         const val HIGH = "high"
         const val MEDIUM = "medium"
         const val LOW = "low"
+        const val UNKNOWN = "unknown"
 
         fun getIndex(severity: String): Int =
             when (severity) {
@@ -25,7 +26,7 @@ class Severity {
                 3 -> HIGH
                 2 -> MEDIUM
                 1 -> LOW
-                else -> LOW
+                else -> UNKNOWN
             }
 
         fun getColor(severity: String): Color =
