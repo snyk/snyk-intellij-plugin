@@ -25,7 +25,7 @@ dependencies {
 
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
   implementation("com.google.code.gson:gson:2.8.6")
-  implementation("com.segment.analytics.java:analytics:+")
+  implementation("com.segment.analytics.java:analytics:3.1.0")
   implementation("io.snyk.code.sdk:snyk-code-client:2.1.10")
 
   testImplementation("junit:junit:4.13") {
@@ -41,12 +41,6 @@ intellij {
 
 repositories {
   mavenCentral()
-  maven {
-    url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
-    mavenContent {
-      snapshotsOnly()
-    }
-  }
 }
 
 tasks {
