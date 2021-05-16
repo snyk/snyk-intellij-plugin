@@ -8,6 +8,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     true,
     "ignored - will be set in init{}",
     false,
+    false,
     1,
     getApplicationSettingsStateService().token,
     "",
@@ -15,7 +16,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
 ) {
 
     init {
-        apiUrl = toSnykCodeApiUrl(getApplicationSettingsStateService().customEndpointUrl)
+        setApiUrl(toSnykCodeApiUrl(getApplicationSettingsStateService().customEndpointUrl), getApplicationSettingsStateService().ignoreUnknownCA)
     }
 
     override fun consentGiven(project: Any): Boolean {

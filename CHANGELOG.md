@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.4]
+### Fixed
+- Consider `ignoreUnknownCA` option for Snyk Code
+
 ## [2.1.3]
 ### Changed
 - Show OSS results as `obsolete` when it's outdated
