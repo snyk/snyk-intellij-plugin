@@ -9,12 +9,18 @@ abstract class SnykTreeSeverityFilterActionBase : ToggleAction() {
 
     protected fun isLastSeverityDisabling(e: AnActionEvent): Boolean {
         val settings = getApplicationSettingsStateService()
-        val onlyOneEnabled = (settings.highSeverityEnabled && !settings.mediumSeverityEnabled && !settings.lowSeverityEnabled) ||
-            (!settings.highSeverityEnabled && settings.mediumSeverityEnabled && !settings.lowSeverityEnabled) ||
-            (!settings.highSeverityEnabled && !settings.mediumSeverityEnabled && settings.lowSeverityEnabled)
+
+        val onlyOneEnabled = arrayOf(
+            settings.criticalSeverityEnabled,
+            settings.highSeverityEnabled,
+            settings.mediumSeverityEnabled,
+            settings.lowSeverityEnabled
+        ).count { it } == 1
+
         if (onlyOneEnabled) {
             SnykBalloonNotifications.showWarnBalloonAtEventPlace("At least one Severity type should be selected", e)
         }
+
         return onlyOneEnabled
     }
 }

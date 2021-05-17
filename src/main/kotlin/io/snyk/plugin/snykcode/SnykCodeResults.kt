@@ -2,6 +2,7 @@ package io.snyk.plugin.snykcode
 
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.Severity
 
 class SnykCodeResults(
     private val file2suggestions: Map<PsiFile, List<SuggestionForFile>> = emptyMap()
@@ -65,10 +66,5 @@ class SnykCodeResults(
 }
 
 val SuggestionForFile.severityAsString: String
-    get() = when (this.severity) {
-        3 -> "high"
-        2 -> "medium"
-        1 -> "low"
-        else -> "low"
-    }
+    get() = Severity.toName(this.severity)
 

@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import icons.SnykIcons
+import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSyncPublisher
@@ -12,7 +13,7 @@ class SnykTreeHighSeverityFilterAction: SnykTreeSeverityFilterActionBase() {
         super.update(e)
         val project = e.project
         e.presentation.isEnabled = project != null && !project.isDisposed
-        e.presentation.icon = SnykIcons.getSeverityIcon("high")
+        e.presentation.icon = SnykIcons.getSeverityIcon(Severity.HIGH)
     }
 
     override fun isSelected(e: AnActionEvent): Boolean =

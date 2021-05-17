@@ -38,6 +38,7 @@ import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
+import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import java.awt.BorderLayout
 import java.time.Instant
@@ -587,16 +588,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun buildHMLpostfix(cliResult: CliResult): String =
         buildHMLpostfix(
-            cliResult.countBySeverity("high") ?: 0,
-            cliResult.countBySeverity("medium") ?: 0,
-            cliResult.countBySeverity("low") ?: 0
+            cliResult.criticalSeveritiesCount(),
+            cliResult.highSeveritiesCount(),
+            cliResult.mediumSeveritiesCount(),
+            cliResult.lowSeveritiesCount()
         )
 
-    private fun buildHMLpostfix(errorsCount: Int, warnsCount: Int, infosCount: Int): String {
+    private fun buildHMLpostfix(criticalCount: Int = 0, errorsCount: Int, warnsCount: Int, infosCount: Int): String {
         var result = ""
-        if (errorsCount > 0) result += " | $errorsCount high"
-        if (warnsCount > 0) result += " | $warnsCount medium"
-        if (infosCount > 0) result += " | $infosCount low"
+        if (criticalCount > 0) result += " | $criticalCount ${Severity.CRITICAL}"
+        if (errorsCount > 0) result += " | $errorsCount ${Severity.HIGH}"
+        if (warnsCount > 0) result += " | $warnsCount ${Severity.MEDIUM}"
+        if (infosCount > 0) result += " | $infosCount ${Severity.LOW}"
         return result.replaceFirst(" |", ":")
     }
 
@@ -607,9 +610,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun isSeverityFilterPassed(severity: String): Boolean {
         val settings = getApplicationSettingsStateService()
         return when (severity) {
-            "high" -> settings.highSeverityEnabled
-            "medium" -> settings.mediumSeverityEnabled
-            "low" -> settings.lowSeverityEnabled
+            Severity.CRITICAL -> settings.criticalSeverityEnabled
+            Severity.HIGH -> settings.highSeverityEnabled
+            Severity.MEDIUM -> settings.mediumSeverityEnabled
+            Severity.LOW -> settings.lowSeverityEnabled
             else -> true
         }
     }

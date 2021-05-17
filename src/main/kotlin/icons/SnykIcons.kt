@@ -1,6 +1,7 @@
 package icons
 
 import com.intellij.openapi.util.IconLoader.getIcon
+import io.snyk.plugin.Severity
 import javax.swing.Icon
 import javax.swing.ImageIcon
 
@@ -40,6 +41,8 @@ object SnykIcons {
     val RPM = getIcon("/icons/rpm.svg")
     val DOCKER = getIcon("/icons/docker.svg")
 
+    private val CRITICAL_SEVERITY = getIcon("/icons/severity_critical.svg")
+    private val CRITICAL_SEVERITY_24 = getIcon("/icons/severity_critical_24.svg")
     private val HIGH_SEVERITY = getIcon("/icons/severity_high.svg")
     private val HIGH_SEVERITY_24 = getIcon("/icons/severity_high_24.svg")
     private val LOW_SEVERITY = getIcon("/icons/severity_low.svg")
@@ -49,15 +52,19 @@ object SnykIcons {
 
     fun getSeverityIcon(severity: String, iconSize: IconSize = IconSize.SIZE16): Icon {
         return when (severity) {
-            "high" -> when (iconSize) {
+            Severity.CRITICAL -> when (iconSize) {
+                IconSize.SIZE16 -> CRITICAL_SEVERITY
+                IconSize.SIZE24 -> CRITICAL_SEVERITY_24
+            }
+            Severity.HIGH -> when (iconSize) {
                 IconSize.SIZE16 -> HIGH_SEVERITY
                 IconSize.SIZE24 -> HIGH_SEVERITY_24
             }
-            "medium" -> when (iconSize) {
+            Severity.MEDIUM -> when (iconSize) {
                 IconSize.SIZE16 -> MEDIUM_SEVERITY
                 IconSize.SIZE24 -> MEDIUM_SEVERITY_24
             }
-            "low" -> when (iconSize) {
+            Severity.LOW -> when (iconSize) {
                 IconSize.SIZE16 -> LOW_SEVERITY
                 IconSize.SIZE24 -> LOW_SEVERITY_24
             }
