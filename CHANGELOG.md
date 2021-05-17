@@ -1,8 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
 ## [2.1.4]
+### Changed
+- Support critical severity level
 ### Fixed
 - Consider `ignoreUnknownCA` option for Snyk Code
+- Fix an error when displaying license issues
 
 ## [2.1.3]
 ### Changed
