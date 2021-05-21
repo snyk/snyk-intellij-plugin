@@ -13,7 +13,15 @@ class SnykApiClient private constructor(
     private val baseUrl: String
 ) {
     private lateinit var retrofit: Retrofit
+    private lateinit var cliConfigServiceEndpoint: CliConfigService
     private lateinit var userServiceEndpoint: UserService
+
+    fun cliConfigService(): CliConfigService {
+        if (!::cliConfigServiceEndpoint.isInitialized) {
+            cliConfigServiceEndpoint = createRetrofit().create(CliConfigService::class.java)
+        }
+        return cliConfigServiceEndpoint
+    }
 
     fun userService(): UserService {
         if (!::userServiceEndpoint.isInitialized) {
