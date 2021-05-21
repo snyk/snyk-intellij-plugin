@@ -1,4 +1,4 @@
-package io.snyk.plugin.analytics.internal
+package io.snyk.plugin.net
 
 import okhttp3.Interceptor
 import okhttp3.Response
