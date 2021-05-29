@@ -21,10 +21,10 @@ import javax.net.ssl.X509TrustManager
 class SnykApiService {
 
     val sastOnServerEnabled: Boolean?
-        get() = snykApiService.sastOnServerEnabled
+        get() = snykApiClient?.sastOnServerEnabled
 
     val userId: String?
-        get() = snykApiService.userId
+        get() = snykApiClient?.userId
 
     private val baseClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -66,17 +66,22 @@ class SnykApiService {
         override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
     }
 
-    private val snykApiService: SnykApiClient
+    private val snykApiClient: SnykApiClient?
         get() {
             val appSettings = service<SnykApplicationSettingsStateService>()
             var endpoint = appSettings.customEndpointUrl
             if (endpoint.isNullOrEmpty()) endpoint = "https://snyk.io/api/"
 
-            val retrofit = createRetrofit(
-                token = appSettings.token ?: "",
-                baseUrl = endpoint,
-                disableSslVerification = appSettings.ignoreUnknownCA
-            )
+            val retrofit = try {
+                createRetrofit(
+                    token = appSettings.token ?: "",
+                    baseUrl = endpoint,
+                    disableSslVerification = appSettings.ignoreUnknownCA
+                )
+            } catch (e: Exception) {
+                log.error("Failed to create Retrofit client for endpoint: $endpoint", e)
+                return null
+            }
             return SnykApiClient(retrofit)
         }
 
