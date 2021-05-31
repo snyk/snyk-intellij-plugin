@@ -1,5 +1,6 @@
 package io.snyk.plugin.services
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -18,13 +19,19 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 @Service
-class SnykApiService {
+class SnykApiService: Disposable {
 
     val sastOnServerEnabled: Boolean?
         get() = snykApiClient?.sastOnServerEnabled
 
     val userId: String?
         get() = snykApiClient?.userId
+
+    // mostly needed for httpClient correctly shutdown in Tests
+    override fun dispose() {
+        baseClient.dispatcher.executorService.shutdown()
+        baseClient.connectionPool.evictAll()
+    }
 
     private val baseClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)

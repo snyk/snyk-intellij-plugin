@@ -1,9 +1,11 @@
 package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.cli.ConsoleCommandRunner
+import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCli
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.setupDummyCliFile
@@ -27,6 +29,8 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
 
         snykTaskQueueService.scan()
+        // needed due to luck of disposing services by Idea test framework (bug?)
+        Disposer.dispose(service<SnykApiService>())
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
@@ -46,5 +50,28 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         // the Task should roll out gracefully without any Exception or Error
         snykTaskQueueService.downloadLatestRelease()
+    }
+
+    @Test
+    fun testSastEnablementCheckInScan() {
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        val settings = getApplicationSettingsStateService()
+        settings.cliScanEnable = false
+        settings.snykCodeSecurityIssuesScanEnable = true
+        settings.snykCodeQualityIssuesScanEnable = true
+
+        val mockRunner = Mockito.mock(SnykApiService::class.java)
+        Mockito
+            .`when`(mockRunner.sastOnServerEnabled)
+            .thenReturn(false)
+
+        snykTaskQueueService.scan()
+        // needed due to luck of disposing services by Idea test framework (bug?)
+        Disposer.dispose(service<SnykApiService>())
+
+        assertTrue(!settings.sastOnServerEnabled)
+        assertTrue(!settings.snykCodeSecurityIssuesScanEnable)
+        assertTrue(!settings.snykCodeQualityIssuesScanEnable)
+
     }
 }
