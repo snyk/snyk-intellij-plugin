@@ -2,6 +2,8 @@ package io.snyk.plugin.ui
 
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.util.ui.UIUtil
+import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.isSnykCodeAvailable
 import java.awt.BorderLayout
 import java.awt.Font
 import javax.swing.ImageIcon
@@ -87,4 +89,10 @@ fun buildTextAreaWithLabelPanel(title: String, text: String): JPanel {
     wrapPanel.add(ScrollPaneFactory.createScrollPane(textArea, true), BorderLayout.CENTER)
 
     return wrapPanel
+}
+
+fun snykCodeAvailabilityPostfix(): String = when {
+    !isSnykCodeAvailable(getApplicationSettingsStateService().customEndpointUrl) -> " (disabled for endpoint)"
+    !getApplicationSettingsStateService().sastOnServerEnabled -> " (disabled for organization)"
+    else -> ""
 }

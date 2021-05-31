@@ -79,7 +79,7 @@ class SnykApiService {
                     disableSslVerification = appSettings.ignoreUnknownCA
                 )
             } catch (e: Exception) {
-                log.error("Failed to create Retrofit client for endpoint: $endpoint", e)
+                log.warn("Failed to create Retrofit client for endpoint: $endpoint", e)
                 return null
             }
             return SnykApiClient(retrofit)

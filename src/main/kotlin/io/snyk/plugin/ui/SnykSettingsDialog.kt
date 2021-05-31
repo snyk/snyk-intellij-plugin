@@ -8,11 +8,9 @@ import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
-import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.isUrlValid
@@ -23,15 +21,10 @@ import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
 import java.awt.Insets
+import java.util.*
 import java.util.Objects.nonNull
-import java.util.UUID
 import java.util.function.Supplier
-import javax.swing.JButton
-import javax.swing.JCheckBox
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.JTextField
+import javax.swing.*
 import javax.swing.event.DocumentEvent
 import javax.swing.text.BadLocationException
 import com.intellij.uiDesigner.core.GridConstraints as UIGridConstraints
@@ -43,6 +36,10 @@ class SnykSettingsDialog(
     snykProjectSettingsConfigurable: SnykProjectSettingsConfigurable
 ) {
 
+    private val rootPanel = object : JPanel(), Disposable {
+        override fun dispose() = Unit
+    }
+
     private val tokenTextField = JBPasswordField()
     private val tokenAuthenticateButton = JButton("Authenticate")
     private val customEndpointTextField = JTextField()
@@ -50,12 +47,8 @@ class SnykSettingsDialog(
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val usageAnalyticsCheckBox: JCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
-    private val scanTypesPanelOuter = ScanTypesPanel()
+    private val scanTypesPanelOuter = ScanTypesPanel(project, rootPanel)
     private val scanTypesPanel = scanTypesPanelOuter.panel
-
-    private val rootPanel = object : JPanel(), Disposable {
-        override fun dispose() = Unit
-    }
 
     init {
         initializeUiComponents()
@@ -422,7 +415,7 @@ class SnykSettingsDialog(
 
     private fun initializeValidation() {
         setupValidation(tokenTextField, "Invalid token", ::isTokenValid)
-        setupValidation(customEndpointTextField, "Invalid custom enpoint URL", ::isUrlValid)
+        setupValidation(customEndpointTextField, "Invalid custom endpoint URL", ::isUrlValid)
     }
 
     private fun setupValidation(textField: JTextField, message: String, isValidText: (sourceStr: String?) -> Boolean) {
@@ -435,22 +428,10 @@ class SnykSettingsDialog(
             // disable SnykCode if custom endpoint is used
             if (textField == customEndpointTextField) {
                 val snykCodeEnabled = isSnykCodeAvailable(textField.text)
-                scanTypesPanelOuter.snykCodeCheckbox?.let {
-                    it.isEnabled = snykCodeEnabled
-                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable
-                }
-                scanTypesPanelOuter.snykCodeQualityCheckbox?.let {
-                    it.isEnabled = snykCodeEnabled
-                    it.isSelected = it.isEnabled && getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable
-                }
-                scanTypesPanelOuter.snykCodeComment?.let {
-                    if (snykCodeEnabled) {
-                        it.text = ""
-                    } else {
-                        it.text = "Snyk Code only works in SAAS mode for the time being (i.e. no Custom Endpoint usage)"
-                        it.foreground = JBColor.RED
-                    }
-                }
+                scanTypesPanelOuter.setSnykCodeAvailability(snykCodeEnabled)
+                scanTypesPanelOuter.showSnykCodeAlert(
+                    if (snykCodeEnabled) "" else "Snyk Code only works in SAAS mode for the time being (i.e. no Custom Endpoint usage)"
+                )
             }
             validationInfo
         }).installOn(textField)
