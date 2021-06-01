@@ -8,6 +8,7 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import javax.swing.JLabel
@@ -67,7 +68,6 @@ class ScanTypesPanel(
 
             setSnykCodeAvailability(false)
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-//                Thread.sleep(2000) // for debug only
                 settings.sastOnServerEnabled =
                     service<SnykApiService>().sastOnServerEnabled ?: false
 
@@ -79,7 +79,7 @@ class ScanTypesPanel(
                     showSnykCodeAlert(
                         message = "Snyk Code is disabled by your organisation's configuration. You can enable it by navigating to ",
                         linkText = "Snyk > Settings > Snyk Code",
-                        url = "https://app.snyk.io/manage/snyk-code",
+                        url = getSnykCodeSettingsUrl(),
                         forceShow = true)
 
                     // check sastEnablement every 1 sec.
@@ -117,7 +117,6 @@ class ScanTypesPanel(
         snykCodeCheckbox?.isSelected == true || snykCodeQualityCheckbox?.isSelected == true
 
     private fun getUploadingFilesMessage(scanAllMissedIgnoreFile: Boolean = false): String {
-//        Thread.sleep(2000) // for debug only
         val allSupportedFilesInProject =
             SnykCodeUtils.instance.getAllSupportedFilesInProject(project, scanAllMissedIgnoreFile, null)
         val allSupportedFilesCount = allSupportedFilesInProject.size

@@ -78,3 +78,17 @@ fun toSnykCodeApiUrl(customEndpointUrl: String?): String =
 private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
     customEndpointUrl == "https://dev.snyk.io/api" ||
     customEndpointUrl == "https://snyk.io/api"
+
+fun getSnykCodeSettingsUrl(): String {
+    val endpoint = getApplicationSettingsStateService().customEndpointUrl
+    val baseUrl = if (endpoint.isNullOrEmpty()) {
+        "https://app.snyk.io"
+    } else {
+        endpoint
+            // example: https://snyk.io/api/ -> https://app.snyk.io
+            .replace("https://", "https://app.")
+            .replace(Regex("/+$"), "") // remove trailing slashes if any
+            .removeSuffix("/api")
+    }
+    return "$baseUrl/manage/snyk-code"
+}

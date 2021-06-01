@@ -16,7 +16,6 @@ interface CliConfigService {
     }
 }
 
-
 data class CliConfigSettings(
     @SerializedName("sastEnabled")
     val sastEnabled: Boolean

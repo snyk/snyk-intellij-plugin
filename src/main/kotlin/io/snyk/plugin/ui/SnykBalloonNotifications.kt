@@ -11,6 +11,7 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.LightColors
 import com.intellij.ui.awt.RelativePoint
+import io.snyk.plugin.getSnykCodeSettingsUrl
 import java.awt.Point
 
 class SnykBalloonNotifications {
@@ -21,7 +22,7 @@ class SnykBalloonNotifications {
         private const val groupAutoHide = "SnykAutoHide"
         private val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
-        fun showError(message: String, project: Project, action: AnAction? = null)  =
+        fun showError(message: String, project: Project, action: AnAction? = null) =
             showNotification(message, project, NotificationType.ERROR, action)
 
         fun showInfo(message: String, project: Project, action: AnAction? = null) =
@@ -42,8 +43,8 @@ class SnykBalloonNotifications {
         fun showSastForOrgEnablement(project: Project) = showInfo(
             "Snyk Code is disabled by your organisation's configuration. To enable navigate to ",
             project,
-            NotificationAction.createSimpleExpiring("Snyk > Settings > Snyk Code"){
-                BrowserUtil.browse("https://app.snyk.io/manage/snyk-code")
+            NotificationAction.createSimpleExpiring("Snyk > Settings > Snyk Code") {
+                BrowserUtil.browse(getSnykCodeSettingsUrl())
             }
         )
 
