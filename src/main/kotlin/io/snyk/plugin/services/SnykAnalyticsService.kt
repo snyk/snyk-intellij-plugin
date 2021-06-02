@@ -7,7 +7,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.analytics.EventProperties
 import io.snyk.plugin.analytics.Segment
-import io.snyk.plugin.analytics.internal.SnykApiClient
+import io.snyk.plugin.net.SnykApiClient
 
 @Service
 class SnykAnalyticsService : Disposable {
@@ -40,20 +40,7 @@ class SnykAnalyticsService : Disposable {
             log.warn("Token is null or empty, user public id will not be obtained.")
             return ""
         }
-
-        catchAll(log, "obtainUserPublicId") {
-            var endpoint = service<SnykApplicationSettingsStateService>().customEndpointUrl
-            if (endpoint.isNullOrEmpty()) {
-                endpoint = "https://snyk.io/api/"
-            }
-            val response = SnykApiClient.create(token, endpoint).userService().userMe().execute()
-            if (response.isSuccessful) {
-                return response.body()!!.id
-            } else {
-                log.warn("Failed to obtain user public id: ${response.errorBody()?.string()}")
-            }
-        }
-        return ""
+        return service<SnykApiService>().userId ?: ""
     }
 
     fun identify() {

@@ -14,6 +14,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 
 
@@ -63,8 +64,19 @@ class SnykTaskQueueService(val project: Project) {
                     scheduleCliScan()
                 }
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
-                    getSnykCode(project).scan()
-                    scanPublisher?.scanningStarted()
+                    object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
+                        override fun run(indicator: ProgressIndicator) {
+                            settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled ?: false
+                            if (settings.sastOnServerEnabled) {
+                                getSnykCode(project).scan()
+                                scanPublisher?.scanningStarted()
+                            } else {
+                                settings.snykCodeSecurityIssuesScanEnable = false
+                                settings.snykCodeQualityIssuesScanEnable = false
+                                SnykBalloonNotifications.showSastForOrgEnablement(project)
+                            }
+                        }
+                    }.queue()
                 }
 
             }

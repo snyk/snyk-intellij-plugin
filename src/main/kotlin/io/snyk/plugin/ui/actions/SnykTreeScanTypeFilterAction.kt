@@ -5,12 +5,15 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isSnykCodeAvailable
+import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import javax.swing.JComponent
 
 /**
@@ -48,31 +51,39 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         }
     }
 
-    private val isSnykCodeAvailable: Boolean
-        get() = isSnykCodeAvailable(getApplicationSettingsStateService().customEndpointUrl)
+    private fun isSnykCodeAvailable(): Boolean =
+        isSnykCodeAvailable(settings.customEndpointUrl) && settings.sastOnServerEnabled
+
+    private fun showSettings(project: Project) {
+        ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
+    }
 
     private fun createSecurityIssuesScanAction(): AnAction {
-        return object : ToggleAction("Security Issues${if (isSnykCodeAvailable) "" else " (not available)"}") {
+        return object : ToggleAction("Security Issues${snykCodeAvailabilityPostfix()}") {
             override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeSecurityIssuesScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 if (!state && isLastScanTypeDisabling(e)) return
 
-                settings.snykCodeSecurityIssuesScanEnable = state && isSnykCodeAvailable
+                val available = isSnykCodeAvailable()
+                settings.snykCodeSecurityIssuesScanEnable = state && available
                 fireFiltersChangedEvent(e.project!!)
+                if (!available) showSettings(e.project!!)
             }
         }
     }
 
     private fun createQualityIssuesScanAction(): AnAction {
-        return object : ToggleAction("Quality Issues${if (isSnykCodeAvailable) "" else " (not available)"}") {
+        return object : ToggleAction("Quality Issues${snykCodeAvailabilityPostfix()}") {
             override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeQualityIssuesScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 if (!state && isLastScanTypeDisabling(e)) return
 
-                settings.snykCodeQualityIssuesScanEnable = state && isSnykCodeAvailable
+                val available = isSnykCodeAvailable()
+                settings.snykCodeQualityIssuesScanEnable = state && available
                 fireFiltersChangedEvent(e.project!!)
+                if (!available) showSettings(e.project!!)
             }
         }
     }
@@ -82,9 +93,11 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
     }
 
     private fun isLastScanTypeDisabling(e: AnActionEvent): Boolean {
-        val onlyOneEnabled = (settings.cliScanEnable && !settings.snykCodeSecurityIssuesScanEnable && !settings.snykCodeQualityIssuesScanEnable) ||
-            (!settings.cliScanEnable && settings.snykCodeSecurityIssuesScanEnable && !settings.snykCodeQualityIssuesScanEnable) ||
-            (!settings.cliScanEnable && !settings.snykCodeSecurityIssuesScanEnable && settings.snykCodeQualityIssuesScanEnable)
+        val onlyOneEnabled = arrayOf(
+            settings.cliScanEnable,
+            settings.snykCodeSecurityIssuesScanEnable,
+            settings.snykCodeQualityIssuesScanEnable
+        ).count { it } == 1
         if (onlyOneEnabled) {
             SnykBalloonNotifications.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)
         }
