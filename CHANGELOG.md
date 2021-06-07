@@ -1,5 +1,12 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.5]
+### Changed
+- Check if Snyk Code (SAST) enabled for organisation on server side
+### Fixed
+- Consider `ignoreUnknownCA` option for all external network calls
+- Fix Retrofit creation Exception for invalid endpoint
+
 ## [2.1.4]
 ### Changed
 - Support critical severity level
