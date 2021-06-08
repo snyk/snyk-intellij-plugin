@@ -438,6 +438,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val runScanLinkLabel = LinkLabel.create("Run scan") {
             project.service<SnykTaskQueueService>().scan()
+            service<SnykAnalyticsService>().logEvent(
+                Segment.Event.USER_TRIGGERS_AN_ANALYSIS,
+                EventPropertiesProvider.getSelectedProducts(getApplicationSettingsStateService())
+            )
         }
 
         emptyStatePanel.add(runScanLinkLabel)
