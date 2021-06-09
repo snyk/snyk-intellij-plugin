@@ -25,7 +25,9 @@ class ScanTypesPanel(
     private var snykCodeCheckbox: JBCheckBox? = null
     private var snykCodeQualityCheckbox: JBCheckBox? = null
     private var snykCodeComment: JLabel? = null
-    private var snykCodeAlertLinkLabel: HyperlinkLabel? = null
+    private var snykCodeAlertLinkLabel = HyperlinkLabel().apply {
+        this.isVisible = false
+    }
 
     val panel = panel {
         row {
@@ -98,10 +100,8 @@ class ScanTypesPanel(
             }
         }
         row {
-            snykCodeAlertLinkLabel = browserLink("", "")
+            snykCodeAlertLinkLabel()
                 .withLargeLeftGap()
-                .component as HyperlinkLabel
-            snykCodeAlertLinkLabel?.isVisible = false
         }
     }
 
@@ -147,9 +147,10 @@ class ScanTypesPanel(
 
     fun showSnykCodeAlert(message: String, linkText: String = "", url: String = "", forceShow: Boolean = false) {
         if (settings.sastOnServerEnabled || forceShow) {
-            snykCodeAlertLinkLabel?.isVisible = message.isNotEmpty()
-            snykCodeAlertLinkLabel?.setHyperlinkText(message, linkText, "")
-            snykCodeAlertLinkLabel?.setHyperlinkTarget(url)
+            snykCodeAlertLinkLabel.isVisible = message.isNotEmpty()
+            // todo: change to setTextWithHyperlink() after move to sinceId >= 211
+            snykCodeAlertLinkLabel.setHyperlinkText(message, linkText, "")
+            snykCodeAlertLinkLabel.setHyperlinkTarget(url)
         }
     }
 
