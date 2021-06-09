@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.6]
+### Fixed
+- Fix [Exception when Settings panel invoked](https://github.com/snyk/snyk-intellij-plugin/issues/121) 
+
 ## [2.1.5]
 ### Changed
 - Check if Snyk Code (SAST) enabled for organisation on server side
