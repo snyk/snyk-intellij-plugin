@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.7]
+### Fixed
+- Set maximal attempts fo asking for SAST feature
+
 ## [2.1.6]
 ### Fixed
 - Fix [Exception when Settings panel invoked](https://github.com/snyk/snyk-intellij-plugin/issues/121) 
