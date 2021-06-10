@@ -55,11 +55,11 @@ class SnykBalloonNotifications {
             "Take part in Snyk's plugin research and get a \$100 Amazon gift card!",
             project,
             NotificationAction.createSimpleExpiring("Schedule user testing here") {
-                getApplicationSettingsStateService().doNotShowFeedbackRequest = true
+                getApplicationSettingsStateService().showFeedbackRequest = false
                 BrowserUtil.browse("https://calendly.com/snyk-georgi/45min")
             },
             NotificationAction.createSimpleExpiring("Don’t show again") {
-                getApplicationSettingsStateService().doNotShowFeedbackRequest = true
+                getApplicationSettingsStateService().showFeedbackRequest = false
             }
         )
 

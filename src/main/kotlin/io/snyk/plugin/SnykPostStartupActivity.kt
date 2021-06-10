@@ -11,6 +11,7 @@ import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 class SnykPostStartupActivity : StartupActivity.DumbAware {
@@ -36,10 +37,9 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
             project.service<SnykTaskQueueService>().downloadLatestRelease()
         }
 
-        val twoWeeksInSeconds: Long = 14 * 24 * 60 * 60
         val feedbackRequestShownMoreThenTwoWeeksAgo =
-            settings.lastTimeFeedbackRequestShown.toInstant().plusSeconds(twoWeeksInSeconds).isBefore(Instant.now())
-        if (!settings.doNotShowFeedbackRequest && feedbackRequestShownMoreThenTwoWeeksAgo) {
+            settings.lastTimeFeedbackRequestShown.toInstant().plus(14, ChronoUnit.DAYS).isBefore(Instant.now())
+        if (settings.showFeedbackRequest && feedbackRequestShownMoreThenTwoWeeksAgo) {
             SnykBalloonNotifications.showFeedbackRequest(project)
             settings.lastTimeFeedbackRequestShown = Date.from(Instant.now())
         }

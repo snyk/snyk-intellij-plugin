@@ -38,8 +38,8 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var pluginFirstRun = true
     // Instant could not be used here due to serialisation Exception
     var pluginFirstInstallTime: Date = Date.from(Instant.now())
-    var lastTimeFeedbackRequestShown: Date = Date(0) // January 1, 1970, 00:00:00 GMT
-    var doNotShowFeedbackRequest = false
+    var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now()) // we'll give 2 weeks to evaluate initially
+    var showFeedbackRequest = true
 
     override fun getState(): SnykApplicationSettingsStateService = this
 
