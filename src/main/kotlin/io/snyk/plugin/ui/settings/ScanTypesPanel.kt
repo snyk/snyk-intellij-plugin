@@ -84,14 +84,17 @@ class ScanTypesPanel(
                         url = getSnykCodeSettingsUrl(),
                         forceShow = true)
 
-                    // check sastEnablement every 1 sec.
+                    // check sastEnablement every 2 sec.
+                    var currentAttempt = 1
+                    val maxAttempts = 20
                     lateinit var checkIfSastEnabled: () -> Unit
                     checkIfSastEnabled = {
                         settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled ?: false
                         if (settings.sastOnServerEnabled) {
                             doShowFilesToUpload()
-                        } else if (!alarm.isDisposed) {
-                            alarm.addRequest(checkIfSastEnabled, 1000)
+                        } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
+                            currentAttempt++;
+                            alarm.addRequest(checkIfSastEnabled, 2000)
                         }
                     }
                     checkIfSastEnabled.invoke()
