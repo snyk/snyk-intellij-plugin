@@ -66,14 +66,22 @@ class SnykTaskQueueService(val project: Project) {
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
                     object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
                         override fun run(indicator: ProgressIndicator) {
-                            settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled ?: false
-                            if (settings.sastOnServerEnabled) {
-                                getSnykCode(project).scan()
-                                scanPublisher?.scanningStarted()
-                            } else {
-                                settings.snykCodeSecurityIssuesScanEnable = false
-                                settings.snykCodeQualityIssuesScanEnable = false
-                                SnykBalloonNotifications.showSastForOrgEnablement(project)
+                            settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
+                            when (settings.sastOnServerEnabled) {
+                                true -> {
+                                    getSnykCode(project).scan()
+                                    scanPublisher?.scanningStarted()
+                                }
+                                false -> {
+                                    settings.snykCodeSecurityIssuesScanEnable = false
+                                    settings.snykCodeQualityIssuesScanEnable = false
+                                    SnykBalloonNotifications.showSastForOrgEnablement(project)
+                                }
+                                null -> {
+                                    settings.snykCodeSecurityIssuesScanEnable = false
+                                    settings.snykCodeQualityIssuesScanEnable = false
+                                    SnykBalloonNotifications.showNetworkErrorAlert(project)
+                                }
                             }
                         }
                     }.queue()

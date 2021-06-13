@@ -425,14 +425,6 @@ class SnykSettingsDialog(
             } else {
                 ValidationInfo("")
             }
-            // disable SnykCode if custom endpoint is used
-            if (textField == customEndpointTextField) {
-                val snykCodeEnabled = isSnykCodeAvailable(textField.text)
-                scanTypesPanelOuter.setSnykCodeAvailability(snykCodeEnabled)
-                scanTypesPanelOuter.showSnykCodeAlert(
-                    if (snykCodeEnabled) "" else "Snyk Code only works in SAAS mode for the time being (i.e. no Custom Endpoint usage)"
-                )
-            }
             validationInfo
         }).installOn(textField)
 

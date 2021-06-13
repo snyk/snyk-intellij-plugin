@@ -60,18 +60,13 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.snykCodeSecurityIssuesScanEnable = true
         settings.snykCodeQualityIssuesScanEnable = true
 
-        val mockRunner = Mockito.mock(SnykApiService::class.java)
-        Mockito
-            .`when`(mockRunner.sastOnServerEnabled)
-            .thenReturn(false)
-
         snykTaskQueueService.scan()
         // needed due to luck of disposing services by Idea test framework (bug?)
         Disposer.dispose(service<SnykApiService>())
 
-        assertTrue(!settings.sastOnServerEnabled)
-        assertTrue(!settings.snykCodeSecurityIssuesScanEnable)
-        assertTrue(!settings.snykCodeQualityIssuesScanEnable)
+        assertNull(settings.sastOnServerEnabled)
+        assertFalse(settings.snykCodeSecurityIssuesScanEnable)
+        assertFalse(settings.snykCodeQualityIssuesScanEnable)
 
     }
 }

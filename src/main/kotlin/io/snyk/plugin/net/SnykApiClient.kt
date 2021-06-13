@@ -39,7 +39,7 @@ class SnykApiClient constructor(
         }
         response.body()
     } catch (t: Throwable) {
-        log.error("Failed to execute '$apiName' network request. ${t.message}", t)
+        log.warn("Failed to execute '$apiName' network request: ${t.message}", t)
         null
     }
 

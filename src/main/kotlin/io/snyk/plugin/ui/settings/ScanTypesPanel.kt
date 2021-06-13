@@ -5,10 +5,12 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
+import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import javax.swing.JLabel
@@ -25,7 +27,12 @@ class ScanTypesPanel(
     private var snykCodeCheckbox: JBCheckBox? = null
     private var snykCodeQualityCheckbox: JBCheckBox? = null
     private var snykCodeComment: JLabel? = null
-    private var snykCodeAlertLinkLabel = HyperlinkLabel().apply {
+    private var snykCodeAlertHyperLinkLabel = HyperlinkLabel().apply {
+        this.isVisible = false
+    }
+    private var snykCodeReCheckLinkLabel = LinkLabel.create("Check again") {
+        checkSastEnable()
+    }.apply {
         this.isVisible = false
     }
 
@@ -39,21 +46,23 @@ class ScanTypesPanel(
             )
         }
         row {
-            snykCodeCheckbox = checkBox(
-                "Snyk Code Security issues",
-                { settings.snykCodeSecurityIssuesScanEnable },
-                { settings.snykCodeSecurityIssuesScanEnable = it }
-            )
-                .component
-
-            if (snykCodeQualityIssueCheckboxVisible) {
-                snykCodeQualityCheckbox = checkBox(
-                    "Snyk Code Quality issues",
-                    { settings.snykCodeQualityIssuesScanEnable },
-                    { settings.snykCodeQualityIssuesScanEnable = it }
+            cell {
+                snykCodeCheckbox = checkBox(
+                    "Snyk Code Security issues",
+                    { settings.snykCodeSecurityIssuesScanEnable },
+                    { settings.snykCodeSecurityIssuesScanEnable = it }
                 )
-                    .withLargeLeftGap()
                     .component
+
+                if (snykCodeQualityIssueCheckboxVisible) {
+                    snykCodeQualityCheckbox = checkBox(
+                        "Snyk Code Quality issues",
+                        { settings.snykCodeQualityIssuesScanEnable },
+                        { settings.snykCodeQualityIssuesScanEnable = it }
+                    )
+                        .withLargeLeftGap()
+                        .component
+                }
             }
         }
         row {
@@ -67,50 +76,55 @@ class ScanTypesPanel(
             snykCodeQualityCheckbox?.addItemListener {
                 snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
             }
+            checkSastEnable()
+        }
+        row {
+            cell {
+                snykCodeAlertHyperLinkLabel()
+                    .withLargeLeftGap()
+                snykCodeReCheckLinkLabel()
+                    .withLargeLeftGap()
 
-            setSnykCodeAvailability(false)
+            }
+        }
+    }
+
+    private fun checkSastEnable() {
+        setSnykCodeAvailability(false)
+        val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
+        showSnykCodeAlert(
+            if (snykCodeAvailable) "" else "Snyk Code only works in SAAS mode (i.e. no Custom Endpoint usage)"
+        )
+        if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                settings.sastOnServerEnabled =
-                    service<SnykApiService>().sastOnServerEnabled ?: false
-
-                if (settings.sastOnServerEnabled) {
-                    doShowFilesToUpload()
-                } else {
-                    settings.snykCodeSecurityIssuesScanEnable = false
-                    settings.snykCodeQualityIssuesScanEnable = false
-                    showSnykCodeAlert(
-                        message = "Snyk Code is disabled by your organisation's configuration. You can enable it by navigating to ",
-                        linkText = "Snyk > Settings > Snyk Code",
-                        url = getSnykCodeSettingsUrl(),
-                        forceShow = true)
-
-                    // check sastEnablement every 2 sec.
-                    var currentAttempt = 1
-                    val maxAttempts = 20
-                    lateinit var checkIfSastEnabled: () -> Unit
-                    checkIfSastEnabled = {
-                        settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled ?: false
-                        if (settings.sastOnServerEnabled) {
-                            doShowFilesToUpload()
-                        } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
-                            currentAttempt++;
-                            alarm.addRequest(checkIfSastEnabled, 2000)
-                        }
+                settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
+                when (settings.sastOnServerEnabled) {
+                    true -> doShowFilesToUpload()
+                    false -> {
+                        settings.snykCodeSecurityIssuesScanEnable = false
+                        settings.snykCodeQualityIssuesScanEnable = false
+                        showSnykCodeAlert(
+                            message = "Snyk Code is disabled by your organisation's configuration: ",
+                            linkText = "Snyk > Settings > Snyk Code",
+                            url = getSnykCodeSettingsUrl()
+                        )
                     }
-                    checkIfSastEnabled.invoke()
+                    null -> {
+                        settings.snykCodeSecurityIssuesScanEnable = false
+                        settings.snykCodeQualityIssuesScanEnable = false
+                        showSnykCodeAlert(
+                            message = "Not able to connect to Snyk server. Check your connection and network settings."
+                        )
+                    }
                 }
                 null
             }
-        }
-        row {
-            snykCodeAlertLinkLabel()
-                .withLargeLeftGap()
         }
     }
 
     private fun doShowFilesToUpload() {
         setSnykCodeAvailability(true)
-        showSnykCodeAlert("", forceShow = true)
+        showSnykCodeAlert("")
         setSnykCodeComment("Checking number of files to be uploaded...") {
             getUploadingFilesMessage(false)
         }
@@ -148,17 +162,21 @@ class ScanTypesPanel(
         }, 0)
     }
 
-    fun showSnykCodeAlert(message: String, linkText: String = "", url: String = "", forceShow: Boolean = false) {
-        if (settings.sastOnServerEnabled || forceShow) {
-            snykCodeAlertLinkLabel.isVisible = message.isNotEmpty()
-            // todo: change to setTextWithHyperlink() after move to sinceId >= 211
-            snykCodeAlertLinkLabel.setHyperlinkText(message, linkText, "")
-            snykCodeAlertLinkLabel.setHyperlinkTarget(url)
-        }
+    private fun showSnykCodeAlert(
+        message: String,
+        linkText: String = "",
+        url: String = ""
+    ) {
+        snykCodeAlertHyperLinkLabel.isVisible = message.isNotEmpty()
+        // todo: change to setTextWithHyperlink() after move to sinceId >= 211
+        snykCodeAlertHyperLinkLabel.setHyperlinkText(message, linkText, "")
+        snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
+
+        snykCodeReCheckLinkLabel.isVisible = message.isNotEmpty()
     }
 
-    fun setSnykCodeAvailability(available: Boolean) {
-        val enabled = settings.sastOnServerEnabled && available
+    private fun setSnykCodeAvailability(available: Boolean) {
+        val enabled = (settings.sastOnServerEnabled == true) && available
         snykCodeCheckbox?.let {
             it.isEnabled = enabled
             it.isSelected = enabled && settings.snykCodeSecurityIssuesScanEnable

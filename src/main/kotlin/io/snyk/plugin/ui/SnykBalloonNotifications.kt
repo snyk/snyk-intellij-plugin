@@ -6,6 +6,7 @@ import com.intellij.notification.*
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys.CONTEXT_COMPONENT
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -13,6 +14,7 @@ import com.intellij.ui.LightColors
 import com.intellij.ui.awt.RelativePoint
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
+import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import java.awt.Point
 
 class SnykBalloonNotifications {
@@ -60,6 +62,15 @@ class SnykBalloonNotifications {
             },
             NotificationAction.createSimpleExpiring("Don’t show again") {
                 getApplicationSettingsStateService().showFeedbackRequest = false
+            }
+        )
+
+        fun showNetworkErrorAlert(project: Project) = showError(
+            "Not able to connect to Snyk server. Check connection and network settings.",
+            project,
+            NotificationAction.createSimpleExpiring("Snyk Settings") {
+                ShowSettingsUtil.getInstance()
+                    .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
             }
         )
 

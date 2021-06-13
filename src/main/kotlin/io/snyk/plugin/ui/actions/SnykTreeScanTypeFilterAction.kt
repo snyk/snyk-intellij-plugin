@@ -52,7 +52,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
     }
 
     private fun isSnykCodeAvailable(): Boolean =
-        isSnykCodeAvailable(settings.customEndpointUrl) && settings.sastOnServerEnabled
+        isSnykCodeAvailable(settings.customEndpointUrl) && (settings.sastOnServerEnabled ?: false)
 
     private fun showSettings(project: Project) {
         ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)

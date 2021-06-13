@@ -40,7 +40,12 @@ class SnykAnalyticsService : Disposable {
             log.warn("Token is null or empty, user public id will not be obtained.")
             return ""
         }
-        return service<SnykApiService>().userId ?: ""
+        val userId = service<SnykApiService>().userId
+        if (userId == null) {
+            log.warn("Not able to obtain User public id.")
+            return ""
+        }
+        return userId
     }
 
     fun identify() {
@@ -59,7 +64,7 @@ class SnykAnalyticsService : Disposable {
         try {
             action()
         } catch (t: Throwable) {
-            log.error("Failed to execute '$message' analytic event. ${t.message}", t)
+            log.warn("Failed to execute '$message' analytic event. ${t.message}", t)
         }
     }
 }
