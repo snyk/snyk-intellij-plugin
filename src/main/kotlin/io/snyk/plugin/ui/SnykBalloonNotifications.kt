@@ -11,6 +11,7 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.LightColors
 import com.intellij.ui.awt.RelativePoint
+import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import java.awt.Point
 
@@ -22,20 +23,22 @@ class SnykBalloonNotifications {
         private const val groupAutoHide = "SnykAutoHide"
         private val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
-        fun showError(message: String, project: Project, action: AnAction? = null) =
-            showNotification(message, project, NotificationType.ERROR, action)
+        fun showError(message: String, project: Project, vararg actions: AnAction) =
+            showNotification(message, project, NotificationType.ERROR, *actions)
 
-        fun showInfo(message: String, project: Project, action: AnAction? = null) =
-            showNotification(message, project, NotificationType.INFORMATION, action)
+        fun showInfo(message: String, project: Project, vararg actions: AnAction) =
+            showNotification(message, project, NotificationType.INFORMATION, *actions)
 
-        fun showWarn(message: String, project: Project, action: AnAction? = null) =
-            showNotification(message, project, NotificationType.WARNING, action)
+        fun showWarn(message: String, project: Project, vararg actions: AnAction) =
+            showNotification(message, project, NotificationType.WARNING, *actions)
 
-        private fun showNotification(message: String, project: Project, type: NotificationType, action: AnAction?) {
-            val notification = if (action == null) {
+        private fun showNotification(message: String, project: Project, type: NotificationType, vararg actions: AnAction) {
+            val notification = if (actions.isEmpty()) {
                 Notification(groupAutoHide, title, message, type)
             } else {
-                GROUP.createNotification(title, message, type).addAction(action)
+                GROUP.createNotification(title, message, type).apply {
+                    actions.forEach { this.addAction(it) }
+                }
             }
             notification.notify(project)
         }
@@ -45,6 +48,18 @@ class SnykBalloonNotifications {
             project,
             NotificationAction.createSimpleExpiring("Snyk > Settings > Snyk Code") {
                 BrowserUtil.browse(getSnykCodeSettingsUrl())
+            }
+        )
+
+        fun showFeedbackRequest(project: Project) = showInfo(
+            "Take part in Snyk's plugin research and get a \$100 Amazon gift card!",
+            project,
+            NotificationAction.createSimpleExpiring("Schedule user testing here") {
+                getApplicationSettingsStateService().showFeedbackRequest = false
+                BrowserUtil.browse("https://calendly.com/snyk-georgi/45min")
+            },
+            NotificationAction.createSimpleExpiring("Don’t show again") {
+                getApplicationSettingsStateService().showFeedbackRequest = false
             }
         )
 
