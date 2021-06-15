@@ -33,6 +33,7 @@ class SnykApiClient constructor(
         return userServiceEndpoint
     }
     private fun <T> executeRequest(apiName: String, retrofitCall: Call<T>): T? = try {
+        log.debug("Executing request to $apiName")
         val response = retrofitCall.execute()
         if (!response.isSuccessful) {
             log.warn("Failed to execute `$apiName` call: ${response.errorBody()?.string()}")

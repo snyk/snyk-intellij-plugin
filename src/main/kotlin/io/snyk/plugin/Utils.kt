@@ -1,14 +1,13 @@
 package io.snyk.plugin
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
-import io.snyk.plugin.services.SnykCliService
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.SnykCodeService
-import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.services.*
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import java.io.File
@@ -95,3 +94,26 @@ fun getSnykCodeSettingsUrl(): String {
 }
 
 private fun String.removeTrailingSlashes() : String = this.replace( Regex("/+$"), "")
+
+// check sastEnablement in a loop with rising timeout
+fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
+    val settings = getApplicationSettingsStateService()
+    val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
+
+    var currentAttempt = 1
+    val maxAttempts = 20
+    lateinit var checkIfSastEnabled: () -> Unit
+    checkIfSastEnabled = {
+        if (settings.sastOnServerEnabled != true) {
+            settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled ?: false
+            if (settings.sastOnServerEnabled == true) {
+                onSuccess.invoke()
+            } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
+                currentAttempt++;
+                alarm.addRequest(checkIfSastEnabled, 2000 * currentAttempt)
+            }
+        }
+    }
+    checkIfSastEnabled.invoke()
+}
+

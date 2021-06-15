@@ -13,11 +13,14 @@ import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
+import io.snyk.plugin.startSastEnablementCheckLoop
 import javax.swing.JLabel
+import javax.swing.event.HyperlinkEvent
+import javax.swing.event.HyperlinkListener
 
 class ScanTypesPanel(
     private val project: Project,
-    parentDisposable: Disposable,
+    private val parentDisposable: Disposable,
     cliScanComments: String? = null,
     snykCodeQualityIssueCheckboxVisible: Boolean = true
 ) {
@@ -106,7 +109,8 @@ class ScanTypesPanel(
                         showSnykCodeAlert(
                             message = "Snyk Code is disabled by your organisation's configuration: ",
                             linkText = "Snyk > Settings > Snyk Code",
-                            url = getSnykCodeSettingsUrl()
+                            url = getSnykCodeSettingsUrl(),
+                            runOnClick = { startSastEnablementCheckLoop(parentDisposable, onSuccess = { doShowFilesToUpload() }) }
                         )
                     }
                     null -> {
@@ -162,16 +166,28 @@ class ScanTypesPanel(
         }, 0)
     }
 
+    private var currentHyperlinkListener: HyperlinkListener? = null
+
     private fun showSnykCodeAlert(
         message: String,
         linkText: String = "",
-        url: String = ""
+        url: String = "",
+        runOnClick: (() -> Unit)? = null
     ) {
         snykCodeAlertHyperLinkLabel.isVisible = message.isNotEmpty()
         // todo: change to setTextWithHyperlink() after move to sinceId >= 211
         snykCodeAlertHyperLinkLabel.setHyperlinkText(message, linkText, "")
         snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
-
+        if (runOnClick == null) {
+            currentHyperlinkListener?.let { snykCodeAlertHyperLinkLabel.removeHyperlinkListener(it) }
+        } else {
+            currentHyperlinkListener = HyperlinkListener {
+                if (it.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                    runOnClick.invoke()
+                }
+            }
+            snykCodeAlertHyperLinkLabel.addHyperlinkListener(currentHyperlinkListener)
+        }
         snykCodeReCheckLinkLabel.isVisible = message.isNotEmpty()
     }
 
