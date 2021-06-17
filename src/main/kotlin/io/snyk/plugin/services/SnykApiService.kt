@@ -82,11 +82,11 @@ class SnykApiService: Disposable {
             val retrofit = try {
                 createRetrofit(
                     token = appSettings.token ?: "",
-                    baseUrl = endpoint,
+                    baseUrl = if (endpoint.endsWith('/')) endpoint else "$endpoint/",
                     disableSslVerification = appSettings.ignoreUnknownCA
                 )
-            } catch (e: Exception) {
-                log.warn("Failed to create Retrofit client for endpoint: $endpoint", e)
+            } catch (t: Throwable) {
+                log.warn("Failed to create Retrofit client for endpoint: $endpoint", t)
                 return null
             }
             return SnykApiClient(retrofit)

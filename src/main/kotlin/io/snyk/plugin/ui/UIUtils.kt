@@ -93,6 +93,6 @@ fun buildTextAreaWithLabelPanel(title: String, text: String): JPanel {
 
 fun snykCodeAvailabilityPostfix(): String = when {
     !isSnykCodeAvailable(getApplicationSettingsStateService().customEndpointUrl) -> " (disabled for endpoint)"
-    !getApplicationSettingsStateService().sastOnServerEnabled -> " (disabled for organization)"
+    !(getApplicationSettingsStateService().sastOnServerEnabled ?: false) -> " (disabled for organization)"
     else -> ""
 }
