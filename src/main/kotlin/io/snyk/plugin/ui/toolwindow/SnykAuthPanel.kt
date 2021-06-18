@@ -56,7 +56,7 @@ class SnykAuthPanel(project: Project) : JPanel() {
             override fun actionPerformed(e: ActionEvent?) {
                 project.service<SnykToolWindowPanel>().cleanUiAndCaches()
 
-                val token = service<SnykCliAuthenticationService>().authenticate()
+                val token = project.service<SnykCliAuthenticationService>().authenticate()
                 getApplicationSettingsStateService().token = token
                 SnykCodeParams.instance.sessionToken = token
 

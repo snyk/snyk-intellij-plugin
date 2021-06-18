@@ -57,7 +57,7 @@ class SnykSettingsDialog(
         tokenAuthenticateButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
                 snykProjectSettingsConfigurable.apply()
-                val token = service<SnykCliAuthenticationService>().authenticate()
+                val token = project.service<SnykCliAuthenticationService>().authenticate()
                 tokenTextField.text = token
 
                 val analytics = service<SnykAnalyticsService>()
