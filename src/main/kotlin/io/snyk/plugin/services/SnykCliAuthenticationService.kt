@@ -72,7 +72,7 @@ class SnykCliAuthenticationService(val project: Project) {
                                 We are now redirecting you to our auth page, go ahead and log in.<br><br>
                                 Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.<br><br>
                                 If a browser window doesn't open after a few seconds, please <a href="$htmlLink">click here</a>
-                                or copy the url below and manually paste it in a browser.
+                                or copy the url using the button below and manually paste it in a browser.
                             </html>
                             """.trimIndent()
                         dialog.updateHtmlText(htmlText)
