@@ -1,0 +1,24 @@
+[
+  {
+    "name": "jquery",
+    "score": 0.97142857,
+    "pending": false,
+    "labels": {
+      "popularity": "Key ecosystem project",
+      "maintenance": "Healthy",
+      "community": "Active",
+      "security": "No known security issues"
+    }
+  },
+  {
+    "name": "vue",
+    "score": 0.9475,
+    "pending": true,
+    "labels": {
+      "popularity": "Key ecosystem project",
+      "maintenance": "Healthy",
+      "community": "Active",
+      "security": "No known security issues"
+    }
+  }
+]
