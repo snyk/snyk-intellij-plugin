@@ -22,7 +22,7 @@ class OnboardPanel(project: Project) {
         return@lazy ScanTypesPanel(
             project,
             disposable,
-            snykCodeQualityIssueCheckboxVisible = false
+            simplifyForOnboardPanel = true
         ).panel
     }
 
