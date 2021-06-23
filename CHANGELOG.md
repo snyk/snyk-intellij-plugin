@@ -1,8 +1,18 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.8]
+### Added
+- notify user in case of network/connection problem
+- welcome(onboarding) screen simplification by removing interactive alerts
+- user feedback request
+### Changed
+- reduce network attempts to ask for SAST feature
+### Fixed
+- exception(SunCertPathBuilderException) in case of custom/invalid certificate usage
+
 ## [2.1.7]
 ### Fixed
-- Set maximal attempts fo asking for SAST feature
+- Set maximal attempts for asking for SAST feature
 
 ## [2.1.6]
 ### Fixed
