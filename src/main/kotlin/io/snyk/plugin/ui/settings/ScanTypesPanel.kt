@@ -22,7 +22,7 @@ class ScanTypesPanel(
     private val project: Project,
     private val parentDisposable: Disposable,
     cliScanComments: String? = null,
-    snykCodeQualityIssueCheckboxVisible: Boolean = true
+    private val simplifyForOnboardPanel: Boolean = false
 ) {
     private val settings = getApplicationSettingsStateService()
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
@@ -51,15 +51,15 @@ class ScanTypesPanel(
         row {
             cell {
                 snykCodeCheckbox = checkBox(
-                    "Snyk Code Security issues",
+                    SNYK_CODE_SECURITY_ISSUES,
                     { settings.snykCodeSecurityIssuesScanEnable },
                     { settings.snykCodeSecurityIssuesScanEnable = it }
                 )
                     .component
 
-                if (snykCodeQualityIssueCheckboxVisible) {
+                if (!simplifyForOnboardPanel) {
                     snykCodeQualityCheckbox = checkBox(
-                        "Snyk Code Quality issues",
+                        SNYK_CODE_QUALITY_ISSUES,
                         { settings.snykCodeQualityIssuesScanEnable },
                         { settings.snykCodeQualityIssuesScanEnable = it }
                     )
@@ -174,21 +174,26 @@ class ScanTypesPanel(
         url: String = "",
         runOnClick: (() -> Unit)? = null
     ) {
-        snykCodeAlertHyperLinkLabel.isVisible = message.isNotEmpty()
-        // todo: change to setTextWithHyperlink() after move to sinceId >= 211
-        snykCodeAlertHyperLinkLabel.setHyperlinkText(message, linkText, "")
-        snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
-        if (runOnClick == null) {
-            currentHyperlinkListener?.let { snykCodeAlertHyperLinkLabel.removeHyperlinkListener(it) }
+        val showAlert = message.isNotEmpty()
+        if (simplifyForOnboardPanel) {
+            snykCodeCheckbox?.text = SNYK_CODE_SECURITY_ISSUES + if (showAlert)  " (you can enable it later in the Settings)" else ""
         } else {
-            currentHyperlinkListener = HyperlinkListener {
-                if (it.eventType == HyperlinkEvent.EventType.ACTIVATED) {
-                    runOnClick.invoke()
+            snykCodeAlertHyperLinkLabel.isVisible = showAlert
+            // todo: change to setTextWithHyperlink() after move to sinceId >= 211
+            snykCodeAlertHyperLinkLabel.setHyperlinkText(message, linkText, "")
+            snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
+            if (runOnClick == null) {
+                currentHyperlinkListener?.let { snykCodeAlertHyperLinkLabel.removeHyperlinkListener(it) }
+            } else {
+                currentHyperlinkListener = HyperlinkListener {
+                    if (it.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                        runOnClick.invoke()
+                    }
                 }
+                snykCodeAlertHyperLinkLabel.addHyperlinkListener(currentHyperlinkListener)
             }
-            snykCodeAlertHyperLinkLabel.addHyperlinkListener(currentHyperlinkListener)
+            snykCodeReCheckLinkLabel.isVisible = showAlert
         }
-        snykCodeReCheckLinkLabel.isVisible = message.isNotEmpty()
     }
 
     private fun setSnykCodeAvailability(available: Boolean) {
@@ -201,5 +206,10 @@ class ScanTypesPanel(
             it.isEnabled = enabled
             it.isSelected = enabled && settings.snykCodeQualityIssuesScanEnable
         }
+    }
+
+    companion object {
+        private const val SNYK_CODE_SECURITY_ISSUES = "Snyk Code Security issues"
+        private const val SNYK_CODE_QUALITY_ISSUES = "Snyk Code Quality issues"
     }
 }
