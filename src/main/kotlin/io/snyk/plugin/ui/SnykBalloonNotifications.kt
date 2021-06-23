@@ -79,7 +79,7 @@ class SnykBalloonNotifications {
         }
 
         fun showFeedbackRequest(project: Project) = showInfo(
-            "Take part in Snyk's plugin research and get a \$100 Amazon gift card!",
+            "Thank you for using Snyk! Want to help us by taking part in Snyk’s plugin research and get a \$100 Amazon gift card in return?",
             project,
             NotificationAction.createSimpleExpiring("Schedule user testing here") {
                 getApplicationSettingsStateService().showFeedbackRequest = false
