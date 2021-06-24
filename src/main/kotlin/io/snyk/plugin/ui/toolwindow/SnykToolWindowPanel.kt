@@ -22,10 +22,6 @@ import io.snyk.plugin.analytics.Segment
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
-import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
 import io.snyk.plugin.isScanRunning
@@ -39,6 +35,7 @@ import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.Severity
+import io.snyk.plugin.events.*
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import java.awt.BorderLayout
 import java.time.Instant
@@ -92,7 +89,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         initializeUiComponents()
 
-        displayTreeAndDescriptionPanels()
+        chooseMainPanelToDisplay()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
             ApplicationManager.getApplication().invokeLater {
@@ -172,22 +169,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                 override fun checkCliExistsFinished() =
                     ApplicationManager.getApplication().invokeLater {
-                        when {
-                            getApplicationSettingsStateService().token.isNullOrEmpty() -> {
-                                displayAuthPanel()
-                            }
-                            getApplicationSettingsStateService().pluginFirstRun -> {
-
-                                displayPluginFirstRunPanel()
-                            }
-                            else -> {
-                                displayTreeAndDescriptionPanels()
-                            }
-                        }
+                        chooseMainPanelToDisplay()
                     }
 
                 override fun cliDownloadStarted() =
                     ApplicationManager.getApplication().invokeLater { displayDownloadMessage() }
+            })
+
+        project.messageBus.connect(this)
+            .subscribe(SnykSettingsListener.SNYK_SETTINGS_TOPIC, object : SnykSettingsListener {
+
+                override fun settingsChanged() =
+                    ApplicationManager.getApplication().invokeLater {
+                        chooseMainPanelToDisplay()
+                    }
             })
 
         project.messageBus.connect(this)
@@ -321,6 +316,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootNodesToUpdate.forEach {
             it.removeAllChildren()
             (vulnerabilitiesTree.model as DefaultTreeModel).reload(it)
+        }
+    }
+
+    private fun chooseMainPanelToDisplay() {
+        val settings = getApplicationSettingsStateService()
+        when {
+            settings.token.isNullOrEmpty() -> displayAuthPanel()
+            settings.pluginFirstRun -> displayPluginFirstRunPanel()
+            else -> displayTreeAndDescriptionPanels()
         }
     }
 

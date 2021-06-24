@@ -4,7 +4,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.*
-import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
@@ -61,7 +61,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         }
 
         project.service<SnykToolWindowPanel>().cleanUiAndCaches()
-        getSyncPublisher(project, SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)?.checkCliExistsFinished()
+        getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
     }
 
     private fun isTokenModified(): Boolean =

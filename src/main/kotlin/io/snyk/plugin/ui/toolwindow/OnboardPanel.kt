@@ -7,7 +7,7 @@ import com.intellij.ui.layout.panel
 import icons.SnykIcons
 import io.snyk.plugin.analytics.EventPropertiesProvider
 import io.snyk.plugin.analytics.Segment
-import io.snyk.plugin.events.SnykCliDownloadListener.Companion.CLI_DOWNLOAD_TOPIC
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.services.SnykAnalyticsService
@@ -53,7 +53,7 @@ class OnboardPanel(project: Project) {
                     )
 
                     getApplicationSettingsStateService().pluginFirstRun = false
-                    getSyncPublisher(project, CLI_DOWNLOAD_TOPIC)?.checkCliExistsFinished()
+                    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
                     project.service<SnykTaskQueueService>().scan()
                 }
             }
