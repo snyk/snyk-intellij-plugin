@@ -130,19 +130,19 @@ class ScanTypesPanel(
         setSnykCodeAvailability(true)
         showSnykCodeAlert("")
         setSnykCodeComment("Checking number of files to be uploaded...") {
-            getUploadingFilesMessage(false)
+            getUploadingFilesMessage()
         }
     }
 
     private fun shouldSnykCodeCommentBeVisible() =
         snykCodeCheckbox?.isSelected == true || snykCodeQualityCheckbox?.isSelected == true
 
-    private fun getUploadingFilesMessage(scanAllMissedIgnoreFile: Boolean = false): String {
+    private fun getUploadingFilesMessage(): String {
         val allSupportedFilesInProject =
-            SnykCodeUtils.instance.getAllSupportedFilesInProject(project, scanAllMissedIgnoreFile, null)
+            SnykCodeUtils.instance.getAllSupportedFilesInProject(project, true, null)
         val allSupportedFilesCount = allSupportedFilesInProject.size
         val allFilesCount = SnykCodeUtils.instance.allProjectFilesCount(project)
-        return "We will upload and analyze up to $allSupportedFilesCount files " +
+        return "We will upload and analyze $allSupportedFilesCount files " +
             "(${(100.0 * allSupportedFilesCount / allFilesCount).toInt()}%)" +
             " out of $allFilesCount files"
     }

@@ -29,8 +29,9 @@ class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
     override fun update(actionEvent: AnActionEvent) {
         val project = actionEvent.project
         if (project != null && !project.isDisposed) {
+            val settings = getApplicationSettingsStateService()
             actionEvent.presentation.isEnabled =
-                !isScanRunning(project) && !getApplicationSettingsStateService().pluginFirstRun
+                !isScanRunning(project) && !settings.pluginFirstRun && !settings.token.isNullOrEmpty()
         }
     }
 }
