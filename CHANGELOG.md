@@ -2,14 +2,17 @@
 
 ## [2.1.8]
 ### Added
-- notify user in case of network/connection problem
-- welcome(onboarding) screen simplification by removing interactive alerts
-- user feedback request
+- Notify user in case of network/connection problem
+- Welcome(onboarding) screen simplification by removing interactive alerts
+- User feedback request
+- Display auth link for possibility of manual open/copy into browser
 ### Changed
-- reduce network attempts to ask for SAST feature
+- Reduce network attempts to ask for SAST feature
 ### Fixed
-- exception(SunCertPathBuilderException) in case of custom/invalid certificate usage
-
+- Exception(SunCertPathBuilderException) in case of custom/invalid certificate usage
+- Welcome and Auth screen was missed to display in some cases
+- Run action availability before auth passed
+  
 ## [2.1.7]
 ### Fixed
 - Set maximal attempts for asking for SAST feature
