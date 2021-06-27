@@ -29,6 +29,11 @@ dependencies {
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.segment.analytics.java:analytics:3.1.0")
   implementation("io.snyk.code.sdk:snyk-code-client:2.1.10")
+  implementation("ly.iterative.itly:plugin-iteratively:1.2.7")
+  implementation("ly.iterative.itly:plugin-schema-validator:1.2.7") {
+    exclude(group = "org.slf4j")
+  }
+  implementation("ly.iterative.itly:sdk-jvm:1.2.7")
 
   testImplementation("com.squareup.okhttp3:mockwebserver:4.9.1")
   testImplementation("junit:junit:4.13") {
@@ -84,7 +89,11 @@ tasks {
   withType<ProcessResources> {
     filesMatching("application.properties") {
       val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
-      val tokens = mapOf("segment.analytics.write-key" to segmentWriteKey)
+      val iterativelyEnvironment = project.findProject("iterativelyEnvironment") ?: "DEVELOPMENT"
+      val tokens = mapOf(
+        "segment.analytics.write-key" to segmentWriteKey,
+        "iteratively.analytics.environment" to iterativelyEnvironment
+      )
       filter<ReplaceTokens>("tokens" to tokens)
     }
   }
