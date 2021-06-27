@@ -1,0 +1,7 @@
+{
+  CompanyId: '6d7c255e-5bf5-46fc-be87-58b75c7e0ad5',
+  SourceId: 'f2e16b49-6653-4183-abba-149fa04165fb',
+  Path: './src/main/java/snyk/analytics',
+  Branch: 'ide-analytics',
+  Version: '29.0.0',
+}
