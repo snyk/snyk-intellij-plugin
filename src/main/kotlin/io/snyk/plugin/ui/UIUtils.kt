@@ -1,15 +1,18 @@
 package io.snyk.plugin.ui
 
+import com.intellij.ui.BrowserHyperlinkListener
+import com.intellij.ui.ColorUtil
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.util.ui.JBHtmlEditorKit
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.isSnykCodeAvailable
 import java.awt.BorderLayout
+import java.awt.Dimension
 import java.awt.Font
-import javax.swing.ImageIcon
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.JTextArea
+import javax.swing.*
+import javax.swing.text.html.HTMLDocument
 
 fun boldLabel(title: String): JLabel {
     val label = JLabel(title)
@@ -95,4 +98,33 @@ fun snykCodeAvailabilityPostfix(): String = when {
     !isSnykCodeAvailable(getApplicationSettingsStateService().customEndpointUrl) -> " (disabled for endpoint)"
     !(getApplicationSettingsStateService().sastOnServerEnabled ?: false) -> " (disabled for organization)"
     else -> ""
+}
+
+fun getReadOnlyClickableHtmlJEditorPane(htmlText: String): JEditorPane {
+    // don't remove that!
+    // Some magic (side-effect? customStyleSheet?) happens when JBHtmlEditorKit() initializing
+    // that make html tags like <em>, <p>, <ul> etc. be treated properly inside JEditorPane
+    JBHtmlEditorKit()
+
+    return JEditorPane(
+        "text/html",
+        "<html>$htmlText</html>"
+    ).apply {
+        isEditable = false
+        background = UIUtil.getPanelBackground()
+        preferredSize = Dimension() // this is the key part for shrink/grow.
+
+        // add a CSS rule to force body tags to use the default label font
+        // instead of the value in javax.swing.text.html.default.csss
+        val font = UIUtil.getLabelFont()
+        val fontColor = UIUtil.getTextFieldForeground()
+        val bodyRule = UIUtil.displayPropertiesToCSS(font, fontColor) +
+            "a { color: #${ColorUtil.toHex(JBUI.CurrentTheme.Link.linkColor())}; }"
+        (document as HTMLDocument).styleSheet.addRule(bodyRule)
+
+        // open clicked link in browser
+        addHyperlinkListener {
+            BrowserHyperlinkListener.INSTANCE.hyperlinkUpdate(it)
+        }
+    }
 }

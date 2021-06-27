@@ -17,7 +17,10 @@ import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.startSastEnablementCheckLoop
+import java.awt.Color
+import java.awt.Component
 import java.awt.Point
+import javax.swing.Icon
 
 class SnykBalloonNotifications {
 
@@ -96,26 +99,29 @@ class SnykBalloonNotifications {
             }
         )
 
-        fun showWarnBalloonAtEventPlace(message: String, e: AnActionEvent) {
-            val balloon = JBPopupFactory.getInstance().createHtmlTextBalloonBuilder(
-                message,
-                AllIcons.General.BalloonWarning,
-                LightColors.YELLOW,
-                null
-            )
+        fun showInfoBalloonForComponent(message: String, component: Component, showAbove: Boolean = false) {
+            val balloon = createBalloon(message, AllIcons.General.BalloonInformation, LightColors.YELLOW)
+            showBalloonForComponent(balloon, component, showAbove)
+        }
+
+        fun showWarnBalloonAtEventPlace(message: String, e: AnActionEvent, showAbove: Boolean = false) {
+            val component = e.inputEvent?.component ?: e.getData(CONTEXT_COMPONENT) ?: return
+            //todo: case if no Component exist (action invoked from Search?)
+            val balloon = createBalloon(message, AllIcons.General.BalloonWarning, LightColors.YELLOW)
+            showBalloonForComponent(balloon, component, showAbove)
+        }
+
+        private fun createBalloon(message: String, icon: Icon, color: Color): Balloon =
+            JBPopupFactory.getInstance().createHtmlTextBalloonBuilder(message, icon, color, null)
                 .setHideOnClickOutside(true)
                 .setFadeoutTime(5000)
                 .createBalloon()
 
-            val component = e.inputEvent?.component ?: e.getData(CONTEXT_COMPONENT)
-
-            if (component != null) {
-                balloon.show(
-                    RelativePoint(component, Point(component.width / 2, component.height)),
-                    Balloon.Position.below
-                )
-            }
-            //todo: case if no Component exist (action invoked from Search?)
+        private fun showBalloonForComponent(balloon: Balloon, component: Component, showAbove: Boolean) {
+            balloon.show(
+                RelativePoint(component, Point(component.width / 2, if (showAbove) 0 else component.height)),
+                if (showAbove) Balloon.Position.above else Balloon.Position.below
+            )
         }
     }
 }

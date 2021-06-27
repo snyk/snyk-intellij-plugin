@@ -3,6 +3,7 @@ package io.snyk.plugin
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
@@ -117,3 +118,18 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     checkIfSastEnabled.invoke()
 }
 
+
+private val alarm = Alarm()
+
+fun controlExternalProcessWithProgressIndicator(indicator: ProgressIndicator,
+                                                onCancel: () -> Unit) {
+    lateinit var checkCancelled: () -> Unit
+    checkCancelled = {
+        if (indicator.isCanceled) {
+            onCancel()
+        } else {
+            alarm.addRequest(checkCancelled, 100)
+        }
+    }
+    checkCancelled.invoke()
+}
