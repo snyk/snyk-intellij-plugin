@@ -11,12 +11,13 @@ import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
+import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.isProjectSettingsAvailable
-import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
+import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import java.awt.Dimension
@@ -53,6 +54,18 @@ class SnykSettingsDialog(
     init {
         initializeUiComponents()
         initializeValidation()
+
+        tokenAuthenticateButton.isEnabled = !service<SnykCliDownloaderService>().isCliDownloading()
+
+        ApplicationManager.getApplication().messageBus.connect(rootPanel)
+            .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
+                override fun cliDownloadStarted() {
+                    tokenAuthenticateButton.isEnabled = false
+                }
+                override fun cliDownloadFinished(succeed: Boolean) {
+                    tokenAuthenticateButton.isEnabled = true
+                }
+            })
 
         tokenAuthenticateButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {

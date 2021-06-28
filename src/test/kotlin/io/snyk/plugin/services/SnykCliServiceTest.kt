@@ -81,7 +81,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
             .thenReturn("""
                     {
                       "ok": false,
@@ -108,7 +108,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
             .thenReturn(getResourceAsString("group-vulnerabilities-test.json"))
 
         getCli(project).setConsoleCommandRunner(mockRunner)
@@ -133,7 +133,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
 
         Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!))
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
             .thenReturn(getResourceAsString("licence-vulnerabilities.json"))
 
         getCli(project).setConsoleCommandRunner(mockRunner)

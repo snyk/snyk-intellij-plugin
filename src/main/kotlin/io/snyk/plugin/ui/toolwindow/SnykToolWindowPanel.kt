@@ -159,7 +159,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
             })
 
-        project.messageBus.connect(this)
+        ApplicationManager.getApplication().messageBus.connect(this)
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
 
                 override fun checkCliExistsStarted() =

@@ -2,10 +2,12 @@ package io.snyk.plugin.services
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.tail
@@ -25,7 +27,14 @@ class SnykCliDownloaderService {
         const val NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK = 4
     }
 
+    private val cliDownloadPublisher
+        get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+
     private var latestReleaseInfo: LatestReleaseInfo? = null
+
+    private var currentProgressIndicator: ProgressIndicator? = null
+
+    fun isCliDownloading() = currentProgressIndicator != null
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
         try {
@@ -37,14 +46,14 @@ class SnykCliDownloaderService {
     }
 
     fun downloadLatestRelease(indicator: ProgressIndicator) {
-        val latestReleasesInfo = requestLatestReleasesInformation()
+        cliDownloadPublisher.cliDownloadStarted()
 
+        val latestReleasesInfo = requestLatestReleasesInformation()
         indicator.isIndeterminate = true
-        indicator.pushState()
+        currentProgressIndicator = indicator
+        var succeed = false
 
         try {
-            indicator.checkCanceled()
-
             indicator.text = "Downloading latest Snyk CLI release..."
 
             val snykWrapperFileName = Platform.current().snykWrapperFileName
@@ -70,10 +79,10 @@ class SnykCliDownloaderService {
 
             getApplicationSettingsStateService().cliVersion = cliVersionNumbers(cliVersion)
             getApplicationSettingsStateService().lastCheckDate = Date()
-
-            indicator.checkCanceled()
+            succeed = true
         } finally {
-            indicator.popState()
+            currentProgressIndicator = null
+            cliDownloadPublisher.cliDownloadFinished(succeed)
         }
     }
 

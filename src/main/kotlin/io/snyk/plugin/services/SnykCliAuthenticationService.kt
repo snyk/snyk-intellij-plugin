@@ -64,7 +64,7 @@ class SnykCliAuthenticationService(val project: Project) {
             override fun run(indicator: ProgressIndicator) {
                 dialog.onCancel = { indicator.cancel() }
                 val commands = buildCliCommands(listOf("auth"))
-                val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "") { line ->
+                val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
                     if (line.startsWith("https://") && line.contains("/login?token=")) {
                         val htmlLink = escapeHtml(line.removeLineEnd())
                         val htmlText =
@@ -98,7 +98,7 @@ class SnykCliAuthenticationService(val project: Project) {
     private fun executeGetConfigApiCommand() {
         val getConfigApiTask: () -> Unit = {
             val commands = buildCliCommands(listOf("config", "get", "api"))
-            val getConfigApiOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "")
+            val getConfigApiOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
             token = getConfigApiOutput.removeLineEnd()
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(

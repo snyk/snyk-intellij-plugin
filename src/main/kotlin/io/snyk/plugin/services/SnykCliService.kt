@@ -37,15 +37,12 @@ class SnykCliService(val project: Project) {
 
             val commands = buildCliCommandsList(applicationSettings)
 
-            val projectPath = project.basePath!!
+            val projectPath = project.basePath
+                ?: throw IllegalStateException("Scan should not be performed on Default project (with `null` project base dir)")
 
-            val apiToken = if (applicationSettings.token != null) {
-                applicationSettings.token!!
-            } else {
-                ""
-            }
+            val apiToken = applicationSettings.token ?: ""
 
-            val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken)
+            val rawResultStr = getConsoleCommandRunner().execute(commands, projectPath, apiToken, project)
 
             return convertRawCliStringToCliResult(rawResultStr, projectPath)
         } catch (exception: CliNotExistsException) {

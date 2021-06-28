@@ -8,9 +8,11 @@ interface SnykCliDownloadListener {
             Topic.create("Snyk CLI download", SnykCliDownloadListener::class.java)
     }
 
-    fun checkCliExistsStarted()
+    fun checkCliExistsStarted() {}
 
-    fun checkCliExistsFinished()
+    fun checkCliExistsFinished() {}
 
-    fun cliDownloadStarted()
+    fun cliDownloadStarted() {}
+
+    fun cliDownloadFinished(succeed: Boolean = true) {}
 }
