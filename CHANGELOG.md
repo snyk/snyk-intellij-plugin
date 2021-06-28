@@ -1,8 +1,21 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.8]
+### Added
+- Notify user in case of network/connection problem
+- Welcome(onboarding) screen simplification by removing interactive alerts
+- User feedback request
+- Display auth link for possibility of manual open/copy into browser
+### Changed
+- Reduce network attempts to ask for SAST feature
+### Fixed
+- Exception(SunCertPathBuilderException) in case of custom/invalid certificate usage
+- Welcome and Auth screen was missed to display in some cases
+- Run action availability before auth passed
+  
 ## [2.1.7]
 ### Fixed
-- Set maximal attempts fo asking for SAST feature
+- Set maximal attempts for asking for SAST feature
 
 ## [2.1.6]
 ### Fixed
