@@ -1,5 +1,6 @@
 package io.snyk.plugin.cli
 
+import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
@@ -8,8 +9,10 @@ import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import io.snyk.plugin.SnykPostStartupActivity
+import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import org.apache.log4j.Logger
 import java.nio.charset.Charset
@@ -26,6 +29,7 @@ open class ConsoleCommandRunner {
         commands: List<String>,
         workDirectory: String = "/",
         apiToken: String = "",
+        project: Project,
         outputConsumer: (line: String) -> Unit = {}
     ): String {
         logger.info("Enter ConsoleCommandRunner.execute()")
@@ -40,7 +44,13 @@ open class ConsoleCommandRunner {
 
         logger.info("GeneralCommandLine instance created.")
 
-        val processHandler = OSProcessHandler(generalCommandLine)
+        val processHandler = try {
+            OSProcessHandler(generalCommandLine)
+        } catch (e: ExecutionException) {
+            //  if CLI is still downloading (or temporarily blocked by Antivirus) we'll get ProcessNotCreatedException
+            SnykBalloonNotifications.showWarn("Not able to run CLI, try again later.", project)
+            return ""
+        }
         val parentIndicator = ProgressManager.getInstance().progressIndicator
 
         processHandler.addProcessListener(object : ProcessAdapter() {

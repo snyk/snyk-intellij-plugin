@@ -26,7 +26,7 @@ class SnykTaskQueueService(val project: Project) {
         get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)
 
     private val cliDownloadPublisher
-        get() = getSyncPublisher(project, SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+        get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
 
     private val taskQueuePublisher
         get() = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
@@ -122,7 +122,7 @@ class SnykTaskQueueService(val project: Project) {
     fun downloadLatestRelease() {
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI", true) {
             override fun run(indicator: ProgressIndicator) {
-                cliDownloadPublisher?.checkCliExistsStarted()
+                cliDownloadPublisher.checkCliExistsStarted()
 
                 currentProgressIndicator = indicator
 
@@ -133,14 +133,12 @@ class SnykTaskQueueService(val project: Project) {
                 if (project.isDisposed) return
 
                 if (!getCli(project).isCliInstalled()) {
-                    cliDownloadPublisher?.cliDownloadStarted()
-
                     cliDownloader.downloadLatestRelease(indicator)
                 } else {
                     cliDownloader.cliSilentAutoUpdate(indicator)
                 }
 
-                cliDownloadPublisher?.checkCliExistsFinished()
+                cliDownloadPublisher.checkCliExistsFinished()
             }
         })
     }
