@@ -44,28 +44,35 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
     @Test
     fun testCommandExecutionRequestWhileCliIsDownloading() {
-        val progressManager = ProgressManager.getInstance() as CoreProgressManager
-        getCliFile().delete()
-        assertFalse("CLI binary should NOT exist at this stage", getCliFile().exists())
+        val cliFile = getCliFile()
+        cliFile.delete()
 
+        val progressManager = ProgressManager.getInstance() as CoreProgressManager
+        val snykCliDownloaderService = service<SnykCliDownloaderService>()
+
+        assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
         progressManager.runProcessWithProgressAsynchronously(
             object : Task.Backgroundable(project, "Test CLI download", true) {
                 override fun run(indicator: ProgressIndicator) {
-                    service<SnykCliDownloaderService>().downloadLatestRelease(indicator)
+                    assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
+                    snykCliDownloaderService.downloadLatestRelease(indicator)
                 }
             },
             EmptyProgressIndicator()
         )
 
+        assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
         val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
             object : Task.Backgroundable(project, "Test CLI command invocation", true) {
                 override fun run(indicator: ProgressIndicator) {
-                    Thread.sleep(1000) // lets download begin
-
+                    while (!cliFile.exists()) {
+                        Thread.sleep(10) // lets wait till actual download begin
+                    }
+                    assertTrue("Downloading of CLI should be in progress at this stage.", snykCliDownloaderService.isCliDownloading())
                     // No exception should happened while CLI is downloading and any CLI command is invoked
                     val commands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
                     val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
-                    assertTrue("Should be NO output for CLI command while CLI is downloading", output.isEmpty())
+                    assertTrue("Should be NO output for CLI command while CLI is downloading, but received:\n$output", output.isEmpty())
                 }
             },
             EmptyProgressIndicator(),
