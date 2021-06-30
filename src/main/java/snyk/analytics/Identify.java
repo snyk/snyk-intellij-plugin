@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class Identify extends Event {
     private static final String NAME = "identify";
     private static final String ID = "identify";
-    private static final String VERSION = "29.0.0";
+    private static final String VERSION = "31.0.0";
 
     private Identify(Builder builder) {
         super(NAME, builder.properties, ID, VERSION);
@@ -65,6 +65,22 @@ public class Identify extends Event {
          */
         public Builder email(String email) {
             this.properties.put("email", email);
+            return this;
+        }
+
+        /**
+         * Whether or not the user has their first integration set up
+         */
+        public Builder hasFirstIntegration(boolean hasFirstIntegration) {
+            this.properties.put("hasFirstIntegration", hasFirstIntegration);
+            return this;
+        }
+
+        /**
+         * Whether or not the user has their first project imported
+         */
+        public Builder hasFirstProject(boolean hasFirstProject) {
+            this.properties.put("hasFirstProject", hasFirstProject);
             return this;
         }
 
@@ -127,6 +143,8 @@ public class Identify extends Event {
         IBuild authProvider(String authProvider);
         IBuild createdAt(Double createdAt);
         IBuild email(String email);
+        IBuild hasFirstIntegration(boolean hasFirstIntegration);
+        IBuild hasFirstProject(boolean hasFirstProject);
         IBuild isSnykAdmin(boolean isSnykAdmin);
         IBuild name(String name);
         IBuild username(String username);

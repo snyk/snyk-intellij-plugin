@@ -10,7 +10,6 @@ public class ItlyLogger implements Logger {
     this.log = log;
   }
 
-
   @Override
   public void debug(@NotNull String s) {
     log.debug(s);
