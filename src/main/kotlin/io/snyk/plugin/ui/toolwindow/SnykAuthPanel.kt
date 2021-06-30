@@ -68,7 +68,10 @@ class SnykAuthPanel(project: Project) : JPanel(), Disposable {
 
                 val analytics = service<SnykAnalyticsService>()
                 val userId = analytics.obtainUserId(token)
-                analytics.alias(userId)
+                if (userId.isNotBlank()) {
+                    analytics.setUserId(userId)
+                    analytics.identify()
+                }
 
                 getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
             }

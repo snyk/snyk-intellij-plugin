@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class IssueIsViewed extends Event {
     private static final String NAME = "Issue Is Viewed";
     private static final String ID = "bba9d69b-95d5-4082-80c3-4508402750bb";
-    private static final String VERSION = "5.0.0";
+    private static final String VERSION = "1.0.0";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");

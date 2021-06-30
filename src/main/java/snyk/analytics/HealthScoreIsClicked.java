@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class HealthScoreIsClicked extends Event {
     private static final String NAME = "Health Score Is Clicked";
     private static final String ID = "47cf2487-2066-4f12-9846-cba17d1fa257";
-    private static final String VERSION = "2.0.0";
+    private static final String VERSION = "1.0.0";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");

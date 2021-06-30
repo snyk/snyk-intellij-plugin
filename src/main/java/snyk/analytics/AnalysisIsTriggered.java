@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class AnalysisIsTriggered extends Event {
     private static final String NAME = "Analysis Is Triggered";
     private static final String ID = "dabf569e-219c-470f-8e31-6e029723f0cd";
-    private static final String VERSION = "7.0.0";
+    private static final String VERSION = "1.0.0";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");

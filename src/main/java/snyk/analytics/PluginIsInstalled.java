@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class PluginIsInstalled extends Event {
     private static final String NAME = "Plugin Is Installed";
     private static final String ID = "7bb34693-366e-460e-8f4c-5b3f1c71888a";
-    private static final String VERSION = "4.0.0";
+    private static final String VERSION = "1.0.0";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
