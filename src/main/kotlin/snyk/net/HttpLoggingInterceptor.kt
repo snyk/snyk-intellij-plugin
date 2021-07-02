@@ -3,6 +3,7 @@ package snyk.net
 import com.intellij.openapi.diagnostic.Logger
 import okhttp3.Interceptor
 import okhttp3.Response
+import okhttp3.internal.closeQuietly
 import okio.Buffer
 
 class HttpLoggingInterceptor(private val log: Logger) : Interceptor {
@@ -12,12 +13,20 @@ class HttpLoggingInterceptor(private val log: Logger) : Interceptor {
         val buffer = Buffer()
         val requestBody = request.body
         requestBody?.writeTo(buffer)
-        log.warn("Request: method=${request.method}, url=${request.url}, body=${buffer.readUtf8()}")
+        log.warn("--> ${request.method} ${request.url}, payload=${buffer.readUtf8()}")
 
         val response = chain.proceed(request)
-        val body = response.body?.source()?.buffer?.clone()?.readUtf8()
-        log.warn("Response: code=${response.code}, message=${response.message}, body=${body}")
+        val responseBody = response.body
+        val responseStr = responseBody?.string()
+        var responseBodyStr = ""
+        if (responseStr != null) {
+            if (responseStr.isNotEmpty()) {
+                responseBodyStr = responseStr.take(2000)
+            }
+        }
+        log.warn("<-- HTTP Response: code=${response.code}, message=${response.message}, body=${responseBodyStr}")
+        responseBody?.closeQuietly()
 
-        return response
+        return chain.proceed(request)
     }
 }
