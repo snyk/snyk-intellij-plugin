@@ -1,0 +1,24 @@
+[
+  {
+    "name": "django",
+    "score": 0.9114285714285715,
+    "pending": false,
+    "labels": {
+      "popularity": "Key ecosystem project",
+      "maintenance": "Sustainable",
+      "community": "Active",
+      "security": "No known security issues"
+    }
+  },
+  {
+    "name": "toml",
+    "score": 0.8678571428571429,
+    "pending": true,
+    "labels": {
+      "popularity": "Key ecosystem project",
+      "maintenance": "Sustainable",
+      "community": "Active",
+      "security": "No known security issues"
+    }
+  }
+]

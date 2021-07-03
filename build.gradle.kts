@@ -1,4 +1,5 @@
 import org.apache.tools.ant.filters.ReplaceTokens
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.changelog.closure
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -28,6 +29,7 @@ dependencies {
   implementation("com.segment.analytics.java:analytics:3.1.0")
   implementation("io.snyk.code.sdk:snyk-code-client:2.1.10")
 
+  testImplementation("com.squareup.okhttp3:mockwebserver:4.9.1")
   testImplementation("junit:junit:4.13") {
     exclude(group = "org.hamcrest")
   }
@@ -54,6 +56,12 @@ tasks {
       val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
       val tokens = mapOf("segment.analytics.write-key" to segmentWriteKey)
       filter<ReplaceTokens>("tokens" to tokens)
+    }
+  }
+
+  withType<Test> {
+    testLogging {
+      exceptionFormat = TestExceptionFormat.FULL
     }
   }
 

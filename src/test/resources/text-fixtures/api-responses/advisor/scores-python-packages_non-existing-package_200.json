@@ -1,0 +1,6 @@
+[
+  {
+    "name": "non-existing-package",
+    "error": "not found"
+  }
+]
