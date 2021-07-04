@@ -27,13 +27,21 @@ import java.awt.Font
 class SnykAdvisorEditorLinePainter : EditorLinePainter() {
 
     override fun getLineExtensions(project: Project, file: VirtualFile, lineNumber: Int): Collection<LineExtensionInfo>? {
-        if (file.name != "package.json") return null
+        val packageManager = when (file.name) {
+            "package.json" -> AdvisorPackageManager.NPM
+            else -> null // todo: replace with python support
+        } ?: return null
+
         val document = FileDocumentManager.getInstance().getCachedDocument(file) ?: return null
         val psiFile = PsiManager.getInstance(project).findFile(file) ?: return null
         val lineStartElement = psiFile.findElementAt(document.getLineStartOffset(lineNumber)) ?: return null
 
-        val packageName = getPackageName(lineStartElement) ?: return null
-        val score = service<SnykAdvisorModel>().getScore(project, packageName) ?: return null
+        val packageName = when (packageManager) {
+            AdvisorPackageManager.NPM -> getNpmPackageName(lineStartElement)
+            else -> null // todo: replace with python support
+        } ?: return null
+
+        val score = service<SnykAdvisorModel>().getScore(project, packageManager, packageName) ?: return null
 
         if (score > 70) return null
 
@@ -44,7 +52,7 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
         )
     }
 
-    private fun getPackageName(lineStartElement: PsiElement): String? {
+    private fun getNpmPackageName(lineStartElement: PsiElement): String? {
         // see(PsiViewer) Psi representation of "dependencies" in package.json
         val packageJsonPropertyElement =
             if (lineStartElement is PsiWhiteSpace &&

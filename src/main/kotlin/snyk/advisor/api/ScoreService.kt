@@ -30,7 +30,7 @@ data class PackageInfo(
     val labels: PackageInfoLabels,
 
     @SerializedName("error")
-    val error: String
+    val error: String?
 )
 
 data class PackageInfoLabels(
