@@ -45,6 +45,13 @@ repositories {
   mavenCentral()
 }
 
+sourceSets {
+  create("integTest") {
+    compileClasspath += sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().output
+  }
+}
+
 tasks {
   withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
@@ -105,3 +112,18 @@ tasks {
     }
   }
 }
+
+val integTestImplementation: Configuration by configurations.getting {
+  extendsFrom(configurations.implementation.get(), configurations.testImplementation.get())
+}
+configurations["integTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
+
+val integTest = task<Test>("integTest") {
+  description = "Runs the integration tests."
+  group = "verification"
+
+  testClassesDirs = sourceSets["integTest"].output.classesDirs
+  classpath = sourceSets["integTest"].runtimeClasspath
+  shouldRunAfter("test")
+}
+tasks.check { dependsOn(integTest) }

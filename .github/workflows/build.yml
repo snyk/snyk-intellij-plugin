@@ -38,4 +38,4 @@ jobs:
         run: ./gradlew verifyPlugin
 
       - name: Run Tests
-        run: ./gradlew clean test
+        run: ./gradlew clean check
