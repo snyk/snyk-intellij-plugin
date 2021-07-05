@@ -13,11 +13,20 @@ import snyk.advisor.api.AdvisorApiClient
 import snyk.advisor.api.PackageInfo
 
 @Service
-class AdvisorServiceImpl : AdvisorService,  Disposable {
-    private val log = logger<AdvisorServiceImpl>()
-    private val apiClient by lazy { createAdvisorApiClient() }
+class AdvisorServiceImpl : AdvisorService, Disposable {
 
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
+
+    private val apiClient by lazy {
+        //TODO(pavel): customize parameter here
+        val token = service<SnykApplicationSettingsStateService>().token
+        return@lazy if (token.isNullOrBlank()) {
+            log.warn("Token cannot be empty")
+            null
+        } else {
+            AdvisorApiClient.create(token = token)
+        }
+    }
 
     override fun requestPackageInfos(project: Project?,
                                      packageManager: AdvisorPackageManager,
@@ -25,58 +34,35 @@ class AdvisorServiceImpl : AdvisorService,  Disposable {
                                      pollingDelay: Int,
                                      onPackageInfoReady: (name: String, PackageInfo?) -> Unit) {
         object : Task.Backgroundable(project, "Retrieving Advisor info", true) {
-            override fun run(indicator: ProgressIndicator ) {
-                try {
-                    log.debug("Executing request to Advisor api")
-                    val retrofitCall = when(packageManager) {
-                        AdvisorPackageManager.NPM -> apiClient.scoreService().scoresNpmPackages(packages = packageNames)
-                        AdvisorPackageManager.PYTHON -> apiClient.scoreService().scoresPythonPackages(packages = packageNames)
-                    }
-                    val response = retrofitCall.execute()
-                    if (!response.isSuccessful) {
-                        log.warn("Failed to execute Advisor api call: ${response.errorBody()?.string()}")
-                        return
-                    }
-                    val infos = response.body() ?: return
+            override fun run(indicator: ProgressIndicator) {
+                val infos = apiClient?.getPackagesInfo(packageManager, packageNames) ?: return
 
-                    val packagesInfoReady = infos.filter { !it.pending }
-                    val packageNamesToPollLater = infos.filter { it.pending }.map { it.name }
+                val packagesInfoReady = infos.filter { !it.pending }
+                val packageNamesToPollLater = infos.filter { it.pending }.map { it.name }
 
-                    packagesInfoReady.forEach { onPackageInfoReady(it.name, it) }
+                packagesInfoReady.forEach { onPackageInfoReady(it.name, it) }
 
-                    if (packageNamesToPollLater.isNotEmpty() && pollingDelay < POLLING_THRESHOLD) {
-                        alarm.addRequest({
-                            requestPackageInfos(
-                                project = project,
-                                packageManager = packageManager,
-                                packageNames = packageNamesToPollLater,
-                                pollingDelay = pollingDelay * 2,
-                                onPackageInfoReady = onPackageInfoReady
-                            )
-                        }, pollingDelay * 1000)
-                    } else {
-                        packageNamesToPollLater.forEach { onPackageInfoReady(it, null) }
-                    }
-
-                } catch (t: Throwable) {
-                    log.warn("Failed to execute Advisor api network request: ${t.message}", t)
+                if (packageNamesToPollLater.isNotEmpty() && pollingDelay < POLLING_THRESHOLD) {
+                    alarm.addRequest({
+                        requestPackageInfos(
+                            project = project,
+                            packageManager = packageManager,
+                            packageNames = packageNamesToPollLater,
+                            pollingDelay = pollingDelay * 2,
+                            onPackageInfoReady = onPackageInfoReady
+                        )
+                    }, pollingDelay * 1000)
+                } else {
+                    packageNamesToPollLater.forEach { onPackageInfoReady(it, null) }
                 }
             }
         }.queue()
     }
 
-    private fun createAdvisorApiClient(): AdvisorApiClient {
-        //TODO(pavel): customize parameter here + better exception handling
-        val token = service<SnykApplicationSettingsStateService>().token
-        if (token.isNullOrBlank()) {
-            throw IllegalArgumentException("Token cannot be empty")
-        }
-        return AdvisorApiClient.create(token = token)
-    }
-
     override fun dispose() {}
 
     companion object {
+        private val log = logger<AdvisorServiceImpl>()
         private const val POLLING_THRESHOLD = 100 //sec
     }
 }

@@ -33,7 +33,7 @@ class AdvisorApiClientTest {
             baseUrl = server.url("/").toString(),
             token = "random-local-test-token",
             httpClient = mockHttpClient
-        )
+        )!!
     }
 
     @Test

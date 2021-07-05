@@ -20,12 +20,32 @@ class SnykAdvisorModelTest : LightPlatformTestCase() {
             assertNull("Score should be not set (NULL) before actual request to Advisor executed", currentScore)
         }
 
-        // wait for batch request collected and executed plus wait for fake "server" to response
-        Thread.sleep(SnykAdvisorModel.SCORE_REQUESTS_BATCHING_DELAY + MAX_RESPONSE_TIME.toLong() + 100)
-
         fun hasPackageWithUnknownScore() = packageName2Score.keys.any {
             model.getScore(null, AdvisorPackageManager.NPM, it) == null
         }
+
+        fun hasPackageWithScore() = packageName2Score.keys.any {
+            model.getScore(null, AdvisorPackageManager.NPM, it) != null
+        }
+
+        fun hasNoPackagesWithScore() = packageName2Score.keys.none {
+            model.getScore(null, AdvisorPackageManager.NPM, it) != null
+        }
+
+        // wait for batch request collected and executed
+        Thread.sleep(SnykAdvisorModel.SCORE_REQUESTS_BATCHING_DELAY.toLong())
+        assertTrue("All scores should NOT be set before actual request to Advisor executed", hasNoPackagesWithScore())
+
+        // wait for fake "server" to produce some (~half) responses
+        Thread.sleep((MAX_RESPONSE_TIME / 2).toLong())
+        assertTrue(
+            "Scores should exist for some packages and not exist for others on this stage",
+            hasPackageWithScore() && hasPackageWithUnknownScore()
+        )
+
+        // wait for fake "server" to produce all responses
+        Thread.sleep((MAX_RESPONSE_TIME / 2).toLong())
+
 
         // extra 100..1000 ms to finish all background jobs
         var counter: Long = 1
@@ -49,16 +69,11 @@ class SnykAdvisorModelTest : LightPlatformTestCase() {
                                          packageNames: List<String>,
                                          pollingDelay: Int,
                                          onPackageInfoReady: (name: String, PackageInfo?) -> Unit) {
-            for (name in packageNames) {
+            packageNames.forEach { name ->
+                val score = packageName2Score[name] ?: (0..100).random().toDouble() / 100
                 alarm.addRequest({
-                    onPackageInfoReady(
-                        name,
-                        getPackageInfo(
-                            name,
-                            packageName2Score[name] ?: (0..100).random().toDouble() / 100
-                        )
-                    )
-                }, (100..MAX_RESPONSE_TIME).random())
+                    onPackageInfoReady(name, getPackageInfo(name, score))
+                }, (MAX_RESPONSE_TIME * score).toLong())
             }
         }
 
