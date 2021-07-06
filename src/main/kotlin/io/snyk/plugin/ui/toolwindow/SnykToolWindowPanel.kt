@@ -119,6 +119,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater {
                         SnykBalloonNotifications.showError(cliError.message, project)
                         if (cliError.message.startsWith("Authentication failed. Please check the API token on ")) {
+                            getApplicationSettingsStateService().token = null
                             displayAuthPanel()
                         } else {
                             currentCliError = cliError

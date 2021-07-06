@@ -61,7 +61,7 @@ class SnykAdvisorModel : Disposable {
     }
 
     @TestOnly
-    fun setAdvisorService(mockedAdvisorService: AdvisorService) {
+    internal fun setAdvisorService(mockedAdvisorService: AdvisorService) {
         this.advisorService = mockedAdvisorService
     }
 

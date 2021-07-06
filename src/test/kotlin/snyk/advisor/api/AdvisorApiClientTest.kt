@@ -1,5 +1,6 @@
 package snyk.advisor.api
 
+import com.google.gson.Gson
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.buffer
@@ -12,6 +13,7 @@ import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import snyk.advisor.AdvisorPackageManager
 import snyk.net.HttpClient
 import java.nio.charset.StandardCharsets
 
@@ -163,10 +165,43 @@ class AdvisorApiClientTest {
         assertThat(nonExistingPackageInfo?.name, equalTo("non-existing-package"))
         assertThat(nonExistingPackageInfo?.error, equalTo("not found"))
     }
+
+    @Test
+    fun `getPackagesInfo should return correct List of PackageInfo`() {
+        val expectedJsonFile = "scores-npm-packages_multiple-packages-payload_200.json"
+
+        server.enqueueResponse(expectedJsonFile, 200)
+
+        val expectedInfos = Gson().fromJson(
+            javaClass.classLoader.getResource("$FIXTURES_BASE_DIR/$expectedJsonFile")!!.readText(),
+            Array<PackageInfo>::class.java
+        ).toList()
+
+        val expectedNames = expectedInfos.map { it.name }
+
+        assertInfos(
+            expectedInfos,
+            clientUnderTest.getPackagesInfo(AdvisorPackageManager.NPM, expectedNames)
+        )
+    }
+
+    private fun assertInfos(expectedInfos: List<PackageInfo>, actualInfos: List<PackageInfo>?) {
+        assertThat(actualInfos, notNullValue())
+        assertThat(actualInfos, hasSize(expectedInfos.size))
+
+        actualInfos?.forEachIndexed { index, actual ->
+            val expected = expectedInfos[index]
+            assertThat(actual.name, equalTo(expected.name))
+            assertThat(actual.score, equalTo(expected.score))
+            assertThat(actual.pending, equalTo(expected.pending))
+            assertThat(actual.error, equalTo(expected.error))
+            assertThat(actual.labels, equalTo(expected.labels))
+        }
+    }
 }
 
 internal fun MockWebServer.enqueueResponse(fileName: String, statusCode: Int) {
-    val inputStream = javaClass.classLoader?.getResourceAsStream("text-fixtures/api-responses/advisor/$fileName")
+    val inputStream = javaClass.classLoader?.getResourceAsStream("$FIXTURES_BASE_DIR/$fileName")
 
     val source = inputStream?.let { inputStream.source().buffer() }
     source?.let {
@@ -177,3 +212,5 @@ internal fun MockWebServer.enqueueResponse(fileName: String, statusCode: Int) {
         )
     }
 }
+
+private const val FIXTURES_BASE_DIR = "text-fixtures/api-responses/advisor"

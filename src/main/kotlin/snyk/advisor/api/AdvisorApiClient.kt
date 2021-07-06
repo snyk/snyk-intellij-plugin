@@ -36,7 +36,7 @@ class AdvisorApiClient private constructor(
     }
 
     @TestOnly
-    fun scoreService(): ScoreService {
+    internal fun scoreService(): ScoreService {
         if (!::scoreServiceEndpoint.isInitialized) {
             scoreServiceEndpoint = createRetrofitIfNeeded().create(ScoreService::class.java)
         }
