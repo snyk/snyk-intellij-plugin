@@ -43,7 +43,8 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
 
         val score = service<SnykAdvisorModel>().getScore(project, packageManager, packageName) ?: return null
 
-        if (score > 70) return null
+        if (score > SCORE_THRESHOLD) return null
+        if (score == 0 ) return null // package not_found case
 
         return listOf(
             LineExtensionInfo("    \\\\ ", getNormalAttributes()),
@@ -75,6 +76,7 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
     }
 
     companion object {
+        private const val SCORE_THRESHOLD = 70
         /** see [com.intellij.xdebugger.impl.evaluate.XDebuggerEditorLinePainter.getNormalAttributes] */
         private fun getNormalAttributes(): TextAttributes {
             val attributes = EditorColorsManager.getInstance().globalScheme.getAttributes(DefaultLanguageHighlighterColors.BLOCK_COMMENT)

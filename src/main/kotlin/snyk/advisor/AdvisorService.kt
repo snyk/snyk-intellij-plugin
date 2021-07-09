@@ -9,6 +9,8 @@ interface AdvisorService {
                             packageManager: AdvisorPackageManager,
                             packageNames: List<String>,
                             pollingDelay: Int = 2, //initial delay in sec
-                            onPackageInfoReady: (name: String, PackageInfo?) -> Unit)
+                            onPackageInfoReady: (name: String, PackageInfo) -> Unit,
+                            onFailGetInfo: (name: String) -> Unit
+    )
 
 }

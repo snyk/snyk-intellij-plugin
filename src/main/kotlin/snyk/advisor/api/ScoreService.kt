@@ -27,7 +27,7 @@ data class PackageInfo(
     val pending: Boolean,
 
     @SerializedName("labels")
-    val labels: PackageInfoLabels,
+    val labels: PackageInfoLabels?,
 
     @SerializedName("error")
     val error: String?

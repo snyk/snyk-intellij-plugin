@@ -32,10 +32,15 @@ class AdvisorServiceImpl : AdvisorService, Disposable {
                                      packageManager: AdvisorPackageManager,
                                      packageNames: List<String>,
                                      pollingDelay: Int,
-                                     onPackageInfoReady: (name: String, PackageInfo?) -> Unit) {
+                                     onPackageInfoReady: (name: String, PackageInfo) -> Unit,
+                                     onFailGetInfo: (name: String) -> Unit) {
         object : Task.Backgroundable(project, "Retrieving Advisor info", true) {
             override fun run(indicator: ProgressIndicator) {
-                val infos = apiClient?.getPackagesInfo(packageManager, packageNames) ?: return
+                val infos = apiClient?.getPackagesInfo(packageManager, packageNames)
+                if (infos == null) {
+                    packageNames.forEach { onFailGetInfo(it) }
+                    return
+                }
 
                 val packagesInfoReady = infos.filter { !it.pending }
                 val packageNamesToPollLater = infos.filter { it.pending }.map { it.name }
@@ -49,11 +54,12 @@ class AdvisorServiceImpl : AdvisorService, Disposable {
                             packageManager = packageManager,
                             packageNames = packageNamesToPollLater,
                             pollingDelay = pollingDelay * 2,
-                            onPackageInfoReady = onPackageInfoReady
+                            onPackageInfoReady = onPackageInfoReady,
+                            onFailGetInfo = onFailGetInfo
                         )
                     }, pollingDelay * 1000)
                 } else {
-                    packageNamesToPollLater.forEach { onPackageInfoReady(it, null) }
+                    packageNamesToPollLater.forEach { onFailGetInfo(it) }
                 }
             }
         }.queue()
