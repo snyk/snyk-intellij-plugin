@@ -8,6 +8,7 @@ plugins {
   id("org.jetbrains.changelog") version "0.4.0"
   id("org.jetbrains.intellij") version "0.4.21"
   id("org.jetbrains.kotlin.jvm") version "1.3.72"
+  id("io.gitlab.arturbosch.detekt") version ("1.17.1")
 }
 
 // variables from gradle.properties file
@@ -35,10 +36,8 @@ dependencies {
   }
   testImplementation("org.hamcrest:hamcrest:2.2")
   testImplementation("org.mockito:mockito-core:3.5.2")
-}
 
-intellij {
-  version = platformVersion
+  detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
 }
 
 repositories {
@@ -49,6 +48,30 @@ sourceSets {
   create("integTest") {
     compileClasspath += sourceSets.main.get().output
     runtimeClasspath += sourceSets.main.get().output
+  }
+}
+
+// configuration for gradle-changelog-plugin plugin.
+// read more: https://github.com/JetBrains/gradle-changelog-plugin
+intellij {
+  version = platformVersion
+}
+
+// configure for detekt plugin.
+// read more: https://detekt.github.io/detekt/kotlindsl.html
+detekt {
+  config = files("$projectDir/.github/detekt/detekt-config.yml")
+  baseline = file("$projectDir/.github/detekt/detekt-baseline.xml")
+  buildUponDefaultConfig = true
+
+  reports {
+    sarif {
+      enabled = true
+      destination = file("$buildDir/detekt.sarif")
+    }
+    html.enabled = false
+    xml.enabled = false
+    txt.enabled = false
   }
 }
 
