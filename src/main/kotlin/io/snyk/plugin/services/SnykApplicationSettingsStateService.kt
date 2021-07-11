@@ -1,6 +1,11 @@
 package io.snyk.plugin.services
 
-import com.intellij.openapi.components.*
+import com.intellij.openapi.components.PersistentStateComponent
+import com.intellij.openapi.components.RoamingType
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.State
+import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
 import io.snyk.plugin.isProjectSettingsAvailable
@@ -8,7 +13,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
+import java.util.Date
+import java.util.UUID
 
 @Service
 @State(
@@ -40,6 +46,11 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var pluginFirstInstallTime: Date = Date.from(Instant.now())
     var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now()) // we'll give 2 weeks to evaluate initially
     var showFeedbackRequest = true
+
+    /**
+     * Random UUID used by analytics events if enabled.
+     */
+    var userAnonymousId = UUID.randomUUID().toString()
 
     override fun getState(): SnykApplicationSettingsStateService = this
 

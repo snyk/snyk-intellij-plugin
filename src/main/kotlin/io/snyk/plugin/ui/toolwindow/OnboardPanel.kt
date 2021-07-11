@@ -5,14 +5,14 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.layout.panel
 import icons.SnykIcons
-import io.snyk.plugin.analytics.EventPropertiesProvider
-import io.snyk.plugin.analytics.Segment
+import io.snyk.plugin.analytics.ItlyHelper
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.ui.settings.ScanTypesPanel
+import snyk.analytics.AnalysisIsTriggered
 import javax.swing.SwingConstants
 
 class OnboardPanel(project: Project) {
@@ -47,9 +47,12 @@ class OnboardPanel(project: Project) {
                     scanTypesPanel.apply()
                     Disposer.dispose(disposable)
 
-                    service<SnykAnalyticsService>().logEvent(
-                        Segment.Event.USER_TRIGGERS_ITS_FIRST_ANALYSIS,
-                        EventPropertiesProvider.getSelectedProducts(getApplicationSettingsStateService())
+                    service<SnykAnalyticsService>().logAnalysisIsTriggered(
+                        AnalysisIsTriggered.builder()
+                            .analysisType(ItlyHelper.getSelectedProducts(getApplicationSettingsStateService()))
+                            .ide(AnalysisIsTriggered.Ide.JETBRAINS)
+                            .triggeredByUser(true)
+                            .build()
                     )
 
                     getApplicationSettingsStateService().pluginFirstRun = false
