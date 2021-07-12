@@ -1,0 +1,439 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues>
+  </ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:115</ID>
+    <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:98</ID>
+    <ID>ChainWrapping:io.snyk.plugin.services.SnykCliService.kt:80</ID>
+    <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:31</ID>
+    <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:32</ID>
+    <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:33</ID>
+    <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:34</ID>
+    <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:35</ID>
+    <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:36</ID>
+    <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:84</ID>
+    <ID>ChainWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:364</ID>
+    <ID>ChainWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:365</ID>
+    <ID>ChainWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:175</ID>
+    <ID>CommentSpacing:io.snyk.plugin.snykcode.core.AnalysisData.kt:12</ID>
+    <ID>CommentSpacing:io.snyk.plugin.snykcode.core.PDU.kt:146</ID>
+    <ID>CommentSpacing:io.snyk.plugin.snykcode.core.SCLogger.kt:17</ID>
+    <ID>CommentSpacing:io.snyk.plugin.snykcode.core.SnykCodeParams.kt:23</ID>
+    <ID>CommentSpacing:io.snyk.plugin.snykcode.core.SnykCodeParams.kt:28</ID>
+    <ID>CommentSpacing:io.snyk.plugin.ui.SnykBalloonNotifications.kt:109</ID>
+    <ID>CommentSpacing:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:310</ID>
+    <ID>CommentSpacing:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:433</ID>
+    <ID>CommentSpacing:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:181</ID>
+    <ID>CommentSpacing:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:326</ID>
+    <ID>CommentSpacing:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:366</ID>
+    <ID>CommentSpacing:snyk.advisor.AdvisorService.kt:21</ID>
+    <ID>CommentSpacing:snyk.advisor.api.AdvisorApiClient.kt:36</ID>
+    <ID>ComplexCondition:SnykCliDownloaderService.kt$SnykCliDownloaderService$currentCliVersion == null || newCliVersion == null || currentCliVersion.isEmpty() || currentCliVersion.isEmpty()</ID>
+    <ID>ComplexMethod:PackageManagerIconProvider.kt$PackageManagerIconProvider.Companion$fun getIcon(packageManagerKey: String): Icon</ID>
+    <ID>ComplexMethod:SnykIcons.kt$SnykIcons$fun getSeverityIcon(severity: String, iconSize: IconSize = IconSize.SIZE16): Icon</ID>
+    <ID>ComplexMethod:SnykToolWindowPanel.kt$SnykToolWindowPanel$ private fun updateTreeRootNodesPresentation( cliResultsCount: Int? = null, securityIssuesCount: Int? = null, qualityIssuesCount: Int? = null, addHMLPostfix: String = "" )</ID>
+    <ID>ComplexMethod:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$override fun customizeCellRenderer( tree: JTree, value: Any, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean )</ID>
+    <ID>EmptyClassBlock:CliError.kt$CliError${ }</ID>
+    <ID>EmptyDefaultConstructor:SnykBulkFileListener.kt$SnykBulkFileListener$()</ID>
+    <ID>EmptyDefaultConstructor:SnykCliAuthenticationService.kt$AuthDialog$()</ID>
+    <ID>EmptyFunctionBlock:SnykApiService.kt$SnykApiService.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:SnykAuthPanel.kt$SnykAuthPanel${}</ID>
+    <ID>EmptyFunctionBlock:SnykToolWindowPanel.kt$SnykToolWindowPanel${ }</ID>
+    <ID>ForbiddenComment:ScanTypesPanel.kt$ScanTypesPanel$// todo: change to setTextWithHyperlink() after move to sinceId &gt;= 211</ID>
+    <ID>ForbiddenComment:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$//todo: case if no Component exist (action invoked from Search?)</ID>
+    <ID>ForbiddenComment:SnykToolWindowPanel.kt$SnykToolWindowPanel$// todo: open package manager file, if any and was not opened yet</ID>
+    <ID>ForbiddenComment:Vulnerability.kt$Vulnerability$// todo: (by Pavel)</ID>
+    <ID>ForbiddenComment:Vulnerability.kt$Vulnerability$// todo: replace lateinit with nullable val(r) or do pre-transformation of data to address possible json field absence</ID>
+    <ID>FunctionParameterNaming:SnykAuthPanel.kt$SnykAuthPanel$HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED</ID>
+    <ID>FunctionParameterNaming:SnykAuthPanel.kt$SnykAuthPanel$VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED</ID>
+    <ID>FunctionParameterNaming:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED</ID>
+    <ID>FunctionParameterNaming:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED</ID>
+    <ID>FunctionParameterNaming:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED</ID>
+    <ID>FunctionParameterNaming:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED</ID>
+    <ID>LongMethod:SnykSettingsDialog.kt$SnykSettingsDialog$private fun initializeUiComponents()</ID>
+    <ID>LongMethod:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$private fun diffPanel(exampleCommitFix: ExampleCommitFix, rowCount: Int): JComponent</ID>
+    <ID>LongMethod:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$override fun customizeCellRenderer( tree: JTree, value: Any, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean )</ID>
+    <ID>LongParameterList:SnykAuthPanel.kt$SnykAuthPanel$( row: Int, column: Int = 0, rowSpan: Int = 1, colSpan: Int = 1, anchor: Int = GridConstraints.ANCHOR_CENTER, fill: Int = GridConstraints.FILL_NONE, HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, minimumSize: Dimension? = null, preferredSize: Dimension? = null, maximumSize: Dimension? = null, indent: Int = 1, useParentLayout: Boolean = false )</ID>
+    <ID>LongParameterList:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$( beforeLinkText: String = "", linkText: String, afterLinkText: String = "", toolTipText: String, customFont: Font? = null, onClick: (HyperlinkEvent) -&gt; Unit)</ID>
+    <ID>LongParameterList:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$( row: Int, column: Int = 0, rowSpan: Int = 1, colSpan: Int = 1, anchor: Int = GridConstraints.ANCHOR_WEST, fill: Int = GridConstraints.FILL_NONE, HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, minimumSize: Dimension? = null, preferredSize: Dimension? = null, maximumSize: Dimension? = null, indent: Int = 1, useParentLayout: Boolean = false )</ID>
+    <ID>LongParameterList:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$( panel: JPanel, startingColumn: Int, items: Array&lt;String&gt;, separator: String = " | ", firstSeparator: Boolean = true, opaqueSeparator: Boolean = true, buildUrl: (String) -&gt; String )</ID>
+    <ID>LongParameterList:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$( row: Int, column: Int = 0, rowSpan: Int = 1, colSpan: Int = 1, anchor: Int = GridConstraints.ANCHOR_WEST, fill: Int = GridConstraints.FILL_NONE, HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, minimumSize: Dimension? = null, preferredSize: Dimension? = null, maximumSize: Dimension? = null, indent: Int = 1, useParentLayout: Boolean = false )</ID>
+    <ID>MagicNumber:CliCheckingPanel.kt$CliCheckingPanel$3</ID>
+    <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$10</ID>
+    <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$11</ID>
+    <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$14</ID>
+    <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$20</ID>
+    <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$4</ID>
+    <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$7</ID>
+    <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$8</ID>
+    <ID>MagicNumber:ConsoleCommandRunner.kt$ConsoleCommandRunner$50</ID>
+    <ID>MagicNumber:ConsoleCommandRunner.kt$ConsoleCommandRunner$720000</ID>
+    <ID>MagicNumber:HttpLoggingInterceptor.kt$HttpLoggingInterceptor$2000</ID>
+    <ID>MagicNumber:ScanTypesPanel.kt$ScanTypesPanel$100.0</ID>
+    <ID>MagicNumber:Segment.kt$Segment$10</ID>
+    <ID>MagicNumber:Segment.kt$Segment$5</ID>
+    <ID>MagicNumber:Severity.kt$Severity.Companion$3</ID>
+    <ID>MagicNumber:Severity.kt$Severity.Companion$4</ID>
+    <ID>MagicNumber:SeverityColorPanel.kt$SeverityColorPanel$150</ID>
+    <ID>MagicNumber:SeverityColorPanel.kt$SeverityColorPanel$20</ID>
+    <ID>MagicNumber:SeverityColorPanel.kt$SeverityColorPanel$5</ID>
+    <ID>MagicNumber:SnykApiService.kt$SnykApiService$30</ID>
+    <ID>MagicNumber:SnykApiService.kt$SnykApiService$60</ID>
+    <ID>MagicNumber:SnykAuthPanel.kt$SnykAuthPanel$3</ID>
+    <ID>MagicNumber:SnykAuthPanel.kt$SnykAuthPanel$4</ID>
+    <ID>MagicNumber:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$1000</ID>
+    <ID>MagicNumber:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$200</ID>
+    <ID>MagicNumber:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$5000</ID>
+    <ID>MagicNumber:SnykBulkFileListener.kt$SnykBulkFileListener$10</ID>
+    <ID>MagicNumber:SnykCliAuthenticationService.kt$AuthDialog$150</ID>
+    <ID>MagicNumber:SnykCliAuthenticationService.kt$AuthDialog$5</ID>
+    <ID>MagicNumber:SnykCliAuthenticationService.kt$AuthDialog$500</ID>
+    <ID>MagicNumber:SnykCodeResults.kt$SnykCodeResults$3</ID>
+    <ID>MagicNumber:SnykPostStartupActivity.kt$SnykPostStartupActivity$14</ID>
+    <ID>MagicNumber:SnykSettingsDialog.kt$SnykSettingsDialog$150</ID>
+    <ID>MagicNumber:SnykSettingsDialog.kt$SnykSettingsDialog$200</ID>
+    <ID>MagicNumber:SnykSettingsDialog.kt$SnykSettingsDialog$3</ID>
+    <ID>MagicNumber:SnykSettingsDialog.kt$SnykSettingsDialog$4</ID>
+    <ID>MagicNumber:SnykSettingsDialog.kt$SnykSettingsDialog$5</ID>
+    <ID>MagicNumber:SnykToolWindowPanel.kt$SnykToolWindowPanel$0.4f</ID>
+    <ID>MagicNumber:SnykToolWindowPanel.kt$SnykToolWindowPanel$24</ID>
+    <ID>MagicNumber:SnykToolWindowPanel.kt$SnykToolWindowPanel$50</ID>
+    <ID>MagicNumber:SnykToolWindowPanel.kt$SnykToolWindowPanel$60</ID>
+    <ID>MagicNumber:StatePanel.kt$StatePanel$3</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$0.75</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$0.85</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$1.25</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$10</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$14</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$20</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$255</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$3</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$4</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$5</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$50</ID>
+    <ID>MagicNumber:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$6</ID>
+    <ID>MagicNumber:UIUtils.kt$16</ID>
+    <ID>MagicNumber:Utils.kt$100</ID>
+    <ID>MagicNumber:Utils.kt$20</ID>
+    <ID>MagicNumber:Utils.kt$2000</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$10</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$11</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$20</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$3</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$4</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$5</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$50</ID>
+    <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$9</ID>
+    <ID>MaxLineLength:ConsoleCommandRunner.kt$ConsoleCommandRunner$val processOutput = ScriptRunnerUtil.getProcessOutput(processHandler, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)</ID>
+    <ID>MaxLineLength:EventPropertiesProviderTest.kt$EventPropertiesProviderTest$@Suppress("UNCHECKED_CAST") val actualAnalysisDetails = actualAnalysis.map["analysisDetails"] as java.util.HashMap&lt;*, *&gt;</ID>
+    <ID>MaxLineLength:ScanTypesPanel.kt$ScanTypesPanel$runOnClick = { startSastEnablementCheckLoop(parentDisposable, onSuccess = { doShowFilesToUpload() }) }</ID>
+    <ID>MaxLineLength:ScanTypesPanel.kt$ScanTypesPanel$snykCodeCheckbox?.text = SNYK_CODE_SECURITY_ISSUES + if (showAlert) " (you can enable it later in the Settings)" else ""</ID>
+    <ID>MaxLineLength:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$"Thank you for using Snyk! Want to help us by taking part in Snyk’s plugin research and get a \$100 Amazon gift card in return?"</ID>
+    <ID>MaxLineLength:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$private</ID>
+    <ID>MaxLineLength:SnykBulkFileListener.kt$SnykBulkFileListener$// bulk files change event (like `git checkout`) - better to drop cache and perform full rescan later</ID>
+    <ID>MaxLineLength:SnykCliAuthenticationService.kt$AuthDialog$val scrollPane = JBScrollPane(viewer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)</ID>
+    <ID>MaxLineLength:SnykCliAuthenticationService.kt$SnykCliAuthenticationService.&lt;no name provided&gt;$ If a browser window doesn't open after a few seconds, please &lt;a href=</ID>
+    <ID>MaxLineLength:SnykCliAuthenticationService.kt$SnykCliAuthenticationService.&lt;no name provided&gt;$ Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.&lt;br&gt;&lt;br&gt;</ID>
+    <ID>MaxLineLength:SnykCliDownloaderService.kt$SnykCliDownloaderService$&amp;&amp;</ID>
+    <ID>MaxLineLength:SnykCliDownloaderService.kt$SnykCliDownloaderService$tailrec</ID>
+    <ID>MaxLineLength:SnykCliService.kt$SnykCliService$*</ID>
+    <ID>MaxLineLength:SnykCliService.kt$SnykCliService$?:</ID>
+    <ID>MaxLineLength:SnykCodeIgnoreInfoHolder.kt$SnykCodeIgnoreInfoHolder$SnykBalloonNotifications.showInfo("We added generic .dcignore file to upload only project's source code.", project)</ID>
+    <ID>MaxLineLength:SnykCodeParams.kt$SnykCodeParams$setApiUrl(toSnykCodeApiUrl(getApplicationSettingsStateService().customEndpointUrl), getApplicationSettingsStateService().ignoreUnknownCA)</ID>
+    <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$&amp;&amp;</ID>
+    <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$project.service&lt;SnykProjectSettingsStateService&gt;().additionalParameters = snykSettingsDialog.getAdditionalParameters()</ID>
+    <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$service&lt;SnykAnalyticsService&gt;().setAnalyticsCollectionEnabled(applicationSettingsStateService.usageAnalyticsEnabled)</ID>
+    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$if (descriptionPanel.components.firstOrNull() is JScrollPane) return</ID>
+    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$isSnykCodeRunning(project) &amp;&amp; settings.snykCodeQualityIssuesScanEnable -&gt; "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"</ID>
+    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$isSnykCodeRunning(project) &amp;&amp; settings.snykCodeSecurityIssuesScanEnable -&gt; "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (scanning...)"</ID>
+    <ID>MaxLineLength:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$else</ID>
+    <ID>MaxLineLength:UIUtils.kt$return Font(currentFont.name, if (style &gt;= 0) style else currentFont.style, if (size &gt;= 0) size else currentFont.size)</ID>
+    <ID>MaxLineLength:Vulnerability.kt$Vulnerability$// How about using comparator for tree nodes? Issue I see atm: this code cannot handle other issues e.g. critical if this will come later.</ID>
+    <ID>MaxLineLength:Vulnerability.kt$Vulnerability$// todo: replace lateinit with nullable val(r) or do pre-transformation of data to address possible json field absence</ID>
+    <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$addRowOfItemsToPanel(panel, 0, cwes) { "https://cwe.mitre.org/data/definitions/${it.removePrefix("CWE-")}.html" }</ID>
+    <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$addRowOfItemsToPanel(panel, lastColumn, arrayOf("CVSS $cvssScore")) { "https://www.first.org/cvss/calculator/3.1#$cvsSv3" }</ID>
+    <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$fun boldLabel(text: String)</ID>
+    <ID>MaxLineLength:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$text = SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + availabilityPostfix.ifEmpty { " (disabled)" }</ID>
+    <ID>MaxLineLength:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$text = SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + availabilityPostfix.ifEmpty { " (disabled)" }</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.analytics.EventPropertiesProviderTest.kt:45</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.cli.ConsoleCommandRunner.kt:69</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliAuthenticationService.kt:144</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliDownloaderService.kt:119</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliDownloaderService.kt:98</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliService.kt:41</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:57</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:60</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:84</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder.kt:45</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.snykcode.core.SnykCodeParams.kt:19</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.SnykBalloonNotifications.kt:44</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.SnykBalloonNotifications.kt:82</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.UIUtils.kt:39</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:113</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:179</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:402</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:416</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:645</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:317</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:295</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:304</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:93</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:101</ID>
+    <ID>MaximumLineLength:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:114</ID>
+    <ID>MultiLineIfElse:io.snyk.plugin.SnykBulkFileListener.kt:84</ID>
+    <ID>NestedBlockDepth:SnykToolWindowPanel.kt$SnykToolWindowPanel$ private fun updateTreeRootNodesPresentation( cliResultsCount: Int? = null, securityIssuesCount: Int? = null, qualityIssuesCount: Int? = null, addHMLPostfix: String = "" )</ID>
+    <ID>NestedBlockDepth:SnykToolWindowPanel.kt$SnykToolWindowPanel$private fun displayVulnerabilities(cliResult: CliResult)</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.SnykPostStartupActivity.kt:47</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.cli.CliError.kt:9</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.events.SnykResultsFilteringListener.kt:12</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.events.SnykSettingsListener.kt:12</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.services.SnykTaskQueueService.kt:89</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.snykcode.core.RunUtils.kt:95</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:90</ID>
+    <ID>NoBlankLineBeforeRbrace:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:371</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.Utils.kt:121</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.services.SnykCliAuthenticationService.kt:29</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.services.SnykTaskQueueService.kt:20</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.snykcode.SnykCodeResults.kt:71</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.ui.SnykSettingsDialog.kt:278</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.ui.SnykSettingsDialog.kt:444</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.ui.toolwindow.CliErrorPanel.kt:56</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:438</ID>
+    <ID>NoConsecutiveBlankLines:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:18</ID>
+    <ID>NoEmptyClassBody:io.snyk.plugin.cli.CliError.kt:8</ID>
+    <ID>NoMultipleSpaces:icons.SnykIcons.kt:19</ID>
+    <ID>NoMultipleSpaces:icons.SnykIcons.kt:20</ID>
+    <ID>NoMultipleSpaces:icons.SnykIcons.kt:21</ID>
+    <ID>NoMultipleSpaces:icons.SnykIcons.kt:22</ID>
+    <ID>NoMultipleSpaces:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:179</ID>
+    <ID>NoSemicolons:io.snyk.plugin.Utils.kt:113</ID>
+    <ID>NoSemicolons:io.snyk.plugin.services.SnykApplicationSettingsStateService.kt:65</ID>
+    <ID>NoSemicolons:io.snyk.plugin.ui.SnykBalloonNotifications.kt:72</ID>
+    <ID>NoUnusedImports:io.snyk.plugin.SnykBulkFileListener.kt:10</ID>
+    <ID>NoUnusedImports:io.snyk.plugin.services.SnykAnalyticsService.kt:10</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.SnykBulkFileListener.kt:12</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.SnykBulkFileListener.kt:7</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.SnykPostStartupActivity.kt:15</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.Utils.kt:11</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.cli.Platform.kt:5</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.cli.PlatformTest.kt:5</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.services.SnykApplicationSettingsStateService.kt:11</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.services.SnykApplicationSettingsStateService.kt:3</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.services.SnykCliAuthenticationService.kt:27</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.services.SnykCliDownloaderService.kt:18</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.services.SnykCliService.kt:6</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.services.SnykProjectSettingsStateService.kt:3</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.services.SnykTaskQueueService.kt:11</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:6</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.SnykBalloonNotifications.kt:5</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.SnykSettingsDialog.kt:25</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.SnykSettingsDialog.kt:28</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.UIUtils.kt:14</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:38</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:23</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:24</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:15</ID>
+    <ID>NoWildcardImports:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:16</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.SnykBulkFileListener.kt:114</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.SnykBulkFileListener.kt:115</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.SnykBulkFileListener.kt:116</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.Utils.kt:124</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.Utils.kt:125</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliError.kt:6</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliError.kt:7</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliError.kt:8</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliGroupedResult.kt:4</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliGroupedResult.kt:5</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliGroupedResult.kt:6</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:29</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:30</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:31</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:32</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:33</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.net.CliConfigService.kt:20</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.net.SnykApiClient.kt:11</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.net.UserService.kt:20</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:119</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:149</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:150</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:151</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:152</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.snykcode.SnykCodeResults.kt:8</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.snykcode.core.RunUtils.kt:83</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.SnykBalloonNotifications.kt:44</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.SnykSettingsDialog.kt:35</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.SnykSettingsDialog.kt:36</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.SnykSettingsDialog.kt:37</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:172</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:173</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:174</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:175</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:22</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:23</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:24</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.settings.ScanTypesPanel.kt:25</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.FileTreeNode.kt:8</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.FileTreeNode.kt:9</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:30</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:31</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:32</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:33</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:34</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:35</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:36</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:37</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:38</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:39</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:40</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:41</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykAuthPanel.kt:42</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:313</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:379</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:380</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:381</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:382</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:686</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:687</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.kt:688</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:146</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:147</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:148</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:149</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:150</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:151</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:244</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:245</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:246</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:247</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:30</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:31</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:32</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:36</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:37</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:38</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:39</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:40</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:41</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:42</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:43</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:44</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:45</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:46</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:47</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.kt:48</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:24</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:25</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:26</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:27</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:28</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:29</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:30</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:31</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:316</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:317</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:318</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:319</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:32</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:320</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:321</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:322</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:33</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:34</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:35</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityDescriptionPanel.kt:36</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:25</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:26</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:27</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:28</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:29</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:30</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeCellRenderer.kt:31</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeNode.kt:8</ID>
+    <ID>ParameterListWrapping:io.snyk.plugin.ui.toolwindow.VulnerabilityTreeNode.kt:9</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.AdvisorApiClient.kt:10</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.AdvisorApiClient.kt:11</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.AdvisorApiClient.kt:37</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.AdvisorApiClient.kt:38</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.AdvisorApiClient.kt:39</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:20</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:23</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:26</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:29</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:32</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:37</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:40</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:43</ID>
+    <ID>ParameterListWrapping:snyk.advisor.api.ScoreService.kt:46</ID>
+    <ID>ParameterListWrapping:snyk.net.HttpClient.kt:25</ID>
+    <ID>ParameterListWrapping:snyk.net.HttpClient.kt:26</ID>
+    <ID>ParameterListWrapping:snyk.net.HttpClient.kt:27</ID>
+    <ID>ParameterListWrapping:snyk.net.HttpClient.kt:28</ID>
+    <ID>ParameterListWrapping:snyk.net.HttpClient.kt:29</ID>
+    <ID>ReturnCount:PDU.kt$PDU$override fun getLineStartOffset(file: Any, line: Int): Int</ID>
+    <ID>ReturnCount:SnykAnalyticsService.kt$SnykAnalyticsService$fun obtainUserId(token: String?): String</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.Utils.kt:97</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.services.SnykApiService.kt:22</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.services.SnykCliDownloaderService.kt:43</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.ui.actions.SnykTreeCriticalSeverityFilterAction.kt:9</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.ui.actions.SnykTreeHighSeverityFilterAction.kt:10</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.ui.actions.SnykTreeLowSeverityFilterAction.kt:10</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction.kt:10</ID>
+    <ID>SpacingAroundColon:io.snyk.plugin.ui.toolwindow.SuggestionTreeNode.kt:6</ID>
+    <ID>SpacingAroundCurly:io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder.kt:55</ID>
+    <ID>SpacingAroundKeyword:io.snyk.plugin.cli.Platform.kt:21</ID>
+    <ID>SpacingAroundParens:io.snyk.plugin.Utils.kt:97</ID>
+    <ID>SpacingAroundParens:io.snyk.plugin.snykcode.core.PDU.kt:43</ID>
+    <ID>SpreadOperator:SnykCodeUtils.kt$SnykCodeUtils$(*psiDirectory.files)</ID>
+    <ID>StringTemplate:snyk.net.HttpLoggingInterceptor.kt:27</ID>
+    <ID>SwallowedException:ConsoleCommandRunner.kt$ConsoleCommandRunner$catch (e: ExecutionException) { // if CLI is still downloading (or temporarily blocked by Antivirus) we'll get ProcessNotCreatedException SnykBalloonNotifications.showWarn("Not able to run CLI, try again later.", project) return "" }</ID>
+    <ID>SwallowedException:SnykSettingsDialog.kt$SnykSettingsDialog$catch (exception: BadLocationException) { "" }</ID>
+    <ID>SwallowedException:SnykSettingsDialog.kt$SnykSettingsDialog$catch (exception: IllegalArgumentException) { false }</ID>
+    <ID>SwallowedException:Utils.kt$catch (throwable: Throwable) { false }</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:SnykToolWindowPanel.kt$SnykToolWindowPanel$IllegalStateException()</ID>
+    <ID>ThrowsCount:SnykToolWindowPanel.kt$SnykToolWindowPanel$ private fun updateTreeRootNodesPresentation( cliResultsCount: Int? = null, securityIssuesCount: Int? = null, qualityIssuesCount: Int? = null, addHMLPostfix: String = "" )</ID>
+    <ID>TooGenericExceptionCaught:Segment.kt$Segment$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SnykAnalyticsService.kt$SnykAnalyticsService$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SnykApiClient.kt$SnykApiClient$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SnykApiService.kt$SnykApiService$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:Utils.kt$throwable: Throwable</ID>
+    <ID>TooGenericExceptionThrown:SnykCodeIgnoreInfoHolder.kt$SnykCodeIgnoreInfoHolder$throw RuntimeException("full.dcignore can not be found in plugin's resources")</ID>
+    <ID>TooManyFunctions:PDU.kt$PDU : PlatformDependentUtilsBase</ID>
+    <ID>TooManyFunctions:SnykBalloonNotifications.kt$SnykBalloonNotifications$Companion</ID>
+    <ID>TooManyFunctions:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable : SearchableConfigurable</ID>
+    <ID>TooManyFunctions:SnykSettingsDialog.kt$SnykSettingsDialog</ID>
+    <ID>TooManyFunctions:SnykToolWindowPanel.kt$SnykToolWindowPanel : JPanelDisposable</ID>
+    <ID>TooManyFunctions:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel : JPanel</ID>
+    <ID>TooManyFunctions:Utils.kt$io.snyk.plugin.Utils.kt</ID>
+    <ID>TooManyFunctions:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel : JPanel</ID>
+    <ID>UnusedPrivateMember:AdvisorService.kt$AdvisorService$packageInfo: (PackageInfo) -&gt; Unit</ID>
+    <ID>UnusedPrivateMember:AdvisorService.kt$AdvisorService$private val log = logger&lt;AdvisorService&gt;()</ID>
+    <ID>UnusedPrivateMember:SnykToolWindowPanel.kt$SnykToolWindowPanel$val nodesToReload = listOfNotNull( newCliTreeNodeText?.let { rootCliTreeNode }, newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode }, newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode } )</ID>
+    <ID>UnusedPrivateMember:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$val columnNumber = startOffset - lineStartOffset</ID>
+    <ID>UnusedPrivateMember:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$val endOffset = range.end</ID>
+    <ID>UnusedPrivateMember:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer.Companion$private val GRAYED_STRIKEOUT_ATTRIBUTES = SimpleTextAttributes(SimpleTextAttributes.STYLE_STRIKEOUT, UIUtil.getInactiveTextColor())</ID>
+    <ID>UtilityClassWithPublicConstructor:PackageManagerIconProvider.kt$PackageManagerIconProvider</ID>
+    <ID>UtilityClassWithPublicConstructor:Severity.kt$Severity</ID>
+    <ID>UtilityClassWithPublicConstructor:SnykBalloonNotifications.kt$SnykBalloonNotifications</ID>
+    <ID>VariableNaming:Vulnerability.kt$Identifiers$lateinit var CVE: Array&lt;String&gt;</ID>
+    <ID>VariableNaming:Vulnerability.kt$Identifiers$lateinit var CWE: Array&lt;String&gt;</ID>
+    <ID>VariableNaming:Vulnerability.kt$Vulnerability$var CVSSv3: String? = null</ID>
+    <ID>WildcardImport:SnykApplicationSettingsStateService.kt$import com.intellij.openapi.components.*</ID>
+    <ID>WildcardImport:SnykBalloonNotifications.kt$import com.intellij.notification.*</ID>
+    <ID>WildcardImport:SnykBulkFileListener.kt$import com.intellij.openapi.vfs.newvfs.events.*</ID>
+    <ID>WildcardImport:SnykBulkFileListener.kt$import io.snyk.plugin.snykcode.core.*</ID>
+    <ID>WildcardImport:SnykCliAuthenticationService.kt$import javax.swing.*</ID>
+    <ID>WildcardImport:SnykCliService.kt$import io.snyk.plugin.cli.*</ID>
+    <ID>WildcardImport:SnykProjectSettingsConfigurable.kt$import io.snyk.plugin.*</ID>
+    <ID>WildcardImport:SnykProjectSettingsStateService.kt$import com.intellij.openapi.components.*</ID>
+    <ID>WildcardImport:SnykSettingsDialog.kt$import javax.swing.*</ID>
+    <ID>WildcardImport:SnykTaskQueueService.kt$import io.snyk.plugin.*</ID>
+    <ID>WildcardImport:SnykToolWindowPanel.kt$import io.snyk.plugin.events.*</ID>
+    <ID>WildcardImport:SuggestionDescriptionPanel.kt$import java.awt.*</ID>
+    <ID>WildcardImport:SuggestionDescriptionPanel.kt$import javax.swing.*</ID>
+    <ID>WildcardImport:UIUtils.kt$import javax.swing.*</ID>
+    <ID>WildcardImport:Utils.kt$import io.snyk.plugin.services.*</ID>
+    <ID>WildcardImport:VulnerabilityDescriptionPanel.kt$import java.awt.*</ID>
+    <ID>WildcardImport:VulnerabilityDescriptionPanel.kt$import javax.swing.*</ID>
+  </CurrentIssues>
+</SmellBaseline>
