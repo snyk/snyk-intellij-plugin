@@ -21,12 +21,16 @@ import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.util.elementType
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
+import io.snyk.plugin.getApplicationSettingsStateService
 import java.awt.Color
 import java.awt.Font
 
 class SnykAdvisorEditorLinePainter : EditorLinePainter() {
 
     override fun getLineExtensions(project: Project, file: VirtualFile, lineNumber: Int): Collection<LineExtensionInfo>? {
+        val settings = getApplicationSettingsStateService()
+        if (settings.pluginFirstRun || !settings.advisorEnable) return null
+
         val packageManager = when (file.name) {
             "package.json" -> AdvisorPackageManager.NPM
             else -> null // todo: replace with python support

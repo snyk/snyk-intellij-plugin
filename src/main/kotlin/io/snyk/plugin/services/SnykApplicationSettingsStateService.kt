@@ -24,6 +24,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var cliVersion: String? = null
 
     var cliScanEnable: Boolean = true
+    var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = false
     var sastOnServerEnabled: Boolean? = null
