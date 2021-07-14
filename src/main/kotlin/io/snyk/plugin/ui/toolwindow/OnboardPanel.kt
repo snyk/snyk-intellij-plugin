@@ -5,7 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.layout.panel
 import icons.SnykIcons
-import io.snyk.plugin.analytics.ItlyHelper
+import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSyncPublisher
@@ -49,7 +49,7 @@ class OnboardPanel(project: Project) {
 
                     service<SnykAnalyticsService>().logAnalysisIsTriggered(
                         AnalysisIsTriggered.builder()
-                            .analysisType(ItlyHelper.getSelectedProducts(getApplicationSettingsStateService()))
+                            .analysisType(getSelectedProducts(getApplicationSettingsStateService()))
                             .ide(AnalysisIsTriggered.Ide.JETBRAINS)
                             .triggeredByUser(true)
                             .build()

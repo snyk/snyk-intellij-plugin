@@ -5,11 +5,11 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import io.snyk.plugin.analytics.SegmentPlugin
 import ly.iterative.itly.Environment
 import ly.iterative.itly.IterativelyOptions
 import ly.iterative.itly.Options
 import ly.iterative.itly.ValidationOptions
-import ly.iterative.itly.segment.SegmentPlugin
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.DestinationsOptions
@@ -25,25 +25,23 @@ import java.util.Properties
 class SnykAnalyticsService : Disposable {
     private val log = logger<SnykAnalyticsService>()
 
-    private var analyticsCollectionEnabled = true
-
+    private var itlyLoaded = false
     private var anonymousId = ""
     private var userId = ""
 
     init {
         val settings = service<SnykApplicationSettingsStateService>()
-        analyticsCollectionEnabled = settings.usageAnalyticsEnabled
         anonymousId = settings.userAnonymousId
         userId = obtainUserId(settings.token)
 
-        val environment = loadIterativelyEnvironment()
-        log.warn("Initializing Iteratively integration for $environment...")
-
         val segmentWriteKey = loadSegmentWriteKey()
         if (segmentWriteKey.isBlank()) {
-            analyticsCollectionEnabled = false
-            log.warn("Segment analytics collection is disabled because write key is empty!")
+            itlyLoaded = false
+            log.debug("Segment analytics write key is empty. No analytics will be collected.")
         } else {
+            val environment = loadIterativelyEnvironment()
+            log.debug("Initializing Iteratively integration for $environment...")
+
             Itly.getInstance().load(
                 DestinationsOptions.builder()
                     .iteratively(
@@ -59,21 +57,21 @@ class SnykAnalyticsService : Disposable {
                             .build()
                     )
                     .logger(ItlyLogger(log))
-                    .plugins(listOf(SegmentPlugin(segmentWriteKey)))
+                    .plugins(listOf(SegmentPlugin(segmentWriteKey, anonymousId)))
                     .build()
             )
+            itlyLoaded = true
         }
     }
 
     override fun dispose() {
-        Itly.getInstance().flush()
-        Itly.getInstance().shutdown()
-    }
-
-    fun setAnalyticsCollectionEnabled(enabled: Boolean) {
-        log.info("Analytics collection is activated: '$enabled'")
-
-        analyticsCollectionEnabled = enabled
+        if (!itlyLoaded) {
+            return
+        }
+        catchAll(log, "flush-and-shutdown") {
+            Itly.getInstance().flush()
+            Itly.getInstance().shutdown()
+        }
     }
 
     fun setUserId(userId: String) {
@@ -94,8 +92,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun identify() {
-        if (this.userId.isBlank()) {
-            log.warn("User public id is blank, identify call will not be executed")
+        if (!canReportEvents() || userId.isBlank()) {
             return
         }
 
@@ -106,18 +103,17 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logWelcomeIsViewed(event: WelcomeIsViewed) {
-        if (!analyticsCollectionEnabled) {
+        if (!canReportEvents()) {
             return
         }
 
-        val userId = this.userId.ifEmpty { this.anonymousId }
         catchAll(log, "welcomeIsViewed") {
             Itly.getInstance().welcomeIsViewed(userId, event)
         }
     }
 
     fun logProductSelectionIsViewed(event: ProductSelectionIsViewed) {
-        if (!analyticsCollectionEnabled || userId.isBlank()) {
+        if (!canReportEvents() || userId.isBlank()) {
             return
         }
 
@@ -127,7 +123,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logAnalysisIsTriggered(event: AnalysisIsTriggered) {
-        if (!analyticsCollectionEnabled || userId.isBlank()) {
+        if (!canReportEvents() || userId.isBlank()) {
             return
         }
 
@@ -137,7 +133,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logAnalysisIsReady(event: AnalysisIsReady) {
-        if (!analyticsCollectionEnabled || userId.isBlank()) {
+        if (!canReportEvents() || userId.isBlank()) {
             return
         }
 
@@ -147,7 +143,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logIssueIsViewed(event: IssueIsViewed) {
-        if (!analyticsCollectionEnabled || userId.isBlank()) {
+        if (!canReportEvents() || userId.isBlank()) {
             return
         }
 
@@ -193,5 +189,15 @@ class SnykAnalyticsService : Disposable {
             log.warn("Could not load Segment write key.", t)
             ""
         }
+    }
+
+    private fun canReportEvents(): Boolean {
+        if (!itlyLoaded) {
+            log.debug("Cannot report events because Iteratively not loaded.")
+            return false
+        }
+
+        val settings = service<SnykApplicationSettingsStateService>()
+        return settings.usageAnalyticsEnabled
     }
 }

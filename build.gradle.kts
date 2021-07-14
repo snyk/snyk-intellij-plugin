@@ -33,7 +33,6 @@ dependencies {
   implementation("ly.iterative.itly:plugin-schema-validator:1.2.7") {
     exclude(group = "org.slf4j")
   }
-  implementation("ly.iterative.itly:plugin-segment-jvm:1.2.7")
   implementation("ly.iterative.itly:sdk-jvm:1.2.7")
 
   testImplementation("com.squareup.okhttp3:mockwebserver:4.9.1")

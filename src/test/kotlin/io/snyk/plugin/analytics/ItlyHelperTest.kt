@@ -15,7 +15,7 @@ class ItlyHelperTest {
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
 
-        val actualProducts = ItlyHelper.getSelectedProducts(settings)
+        val actualProducts = getSelectedProducts(settings)
 
         assertThat(actualProducts.size, equalTo(0))
     }
@@ -27,7 +27,7 @@ class ItlyHelperTest {
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
 
-        val actualProducts = ItlyHelper.getSelectedProducts(settings)
+        val actualProducts = getSelectedProducts(settings)
 
         assertThat(actualProducts.size, equalTo(1))
         assertThat(actualProducts[0], equalTo(AnalysisType.SNYK_OPEN_SOURCE.analysisType))

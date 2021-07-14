@@ -18,7 +18,9 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.Alarm
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
-import io.snyk.plugin.analytics.ItlyHelper
+import io.snyk.plugin.analytics.getIssueSeverityOrNull
+import io.snyk.plugin.analytics.getIssueType
+import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
@@ -245,8 +247,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         IssueIsViewed.builder()
                             .ide(IssueIsViewed.Ide.JETBRAINS)
                             .issueId(issue.id)
-                            .issueType(IssueType.OPEN_SOURCE_VULNERABILITY)
-                            .severity(ItlyHelper.getIssueSeverityOrNull(issue.severity))
+                            .issueType(issue.getIssueType())
+                            .severity(issue.getIssueSeverityOrNull())
                             .build()
                     )
                     // todo: open package manager file, if any and  was not opened yet
@@ -280,8 +282,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         IssueIsViewed.builder()
                             .ide(IssueIsViewed.Ide.JETBRAINS)
                             .issueId(suggestion.id)
-                            .issueType(ItlyHelper.getIssueType(suggestion))
-                            .severity(ItlyHelper.getIssueSeverityOrNull(suggestion))
+                            .issueType(suggestion.getIssueType())
+                            .severity(suggestion.getIssueSeverityOrNull())
                             .build()
                     )
                 }
@@ -487,7 +489,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             project.service<SnykTaskQueueService>().scan()
             service<SnykAnalyticsService>().logAnalysisIsTriggered(
                 AnalysisIsTriggered.builder()
-                    .analysisType(ItlyHelper.getSelectedProducts(getApplicationSettingsStateService()))
+                    .analysisType(getSelectedProducts(getApplicationSettingsStateService()))
                     .ide(AnalysisIsTriggered.Ide.JETBRAINS)
                     .triggeredByUser(true)
                     .build()
@@ -587,10 +589,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
 
-            // service<SnykAnalyticsService>().logEvent(
-            //     Segment.Event.SNYK_CODE_SECURITY_VULNERABILITY_ANALYSIS_READY,
-            //     ItlyHelper.getAnalysisDetailsForCode(securityResults)
-            // )
             service<SnykAnalyticsService>().logAnalysisIsReady(
                 AnalysisIsReady.builder()
                     .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
@@ -623,10 +621,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
 
-            // service<SnykAnalyticsService>().logEvent(
-            //     Segment.Event.SNYK_CODE_QUALITY_ISSUES_ANALYSIS_READY,
-            //     EventPropertiesProvider.getAnalysisDetailsForCode(qualityResults)
-            // )
             service<SnykAnalyticsService>().logAnalysisIsReady(
                 AnalysisIsReady.builder()
                     .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
