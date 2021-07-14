@@ -31,6 +31,5 @@ class ItlyHelperTest {
 
         assertThat(actualProducts.size, equalTo(1))
         assertThat(actualProducts[0], equalTo(AnalysisType.SNYK_OPEN_SOURCE.analysisType))
-
     }
 }

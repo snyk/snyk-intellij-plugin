@@ -56,8 +56,8 @@ sourceSets {
   }
 }
 
-// configuration for gradle-changelog-plugin plugin.
-// read more: https://github.com/JetBrains/gradle-changelog-plugin
+// configuration for gradle-intellij-plugin plugin.
+// read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
   version = platformVersion
 }
@@ -89,7 +89,7 @@ tasks {
   withType<ProcessResources> {
     filesMatching("application.properties") {
       val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
-      val iterativelyEnvironment = project.findProject("iterativelyEnvironment") ?: "DEVELOPMENT"
+      val iterativelyEnvironment = project.findProperty("iterativelyEnvironment") ?: "DEVELOPMENT"
       val tokens = mapOf(
         "segment.analytics.write-key" to segmentWriteKey,
         "iteratively.analytics.environment" to iterativelyEnvironment
