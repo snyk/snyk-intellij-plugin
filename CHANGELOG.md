@@ -1,5 +1,10 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.1.9]
+### Fixed
+- Fix ProcessNotCreatedException when running OSS scans and CLI is still downloading
+- Allow authentication while CLI is still downloading
+
 ## [2.1.8]
 ### Added
 - Notify user in case of network/connection problem
@@ -12,7 +17,7 @@
 - Exception(SunCertPathBuilderException) in case of custom/invalid certificate usage
 - Welcome and Auth screen was missed to display in some cases
 - Run action availability before auth passed
-  
+
 ## [2.1.7]
 ### Fixed
 - Set maximal attempts for asking for SAST feature
