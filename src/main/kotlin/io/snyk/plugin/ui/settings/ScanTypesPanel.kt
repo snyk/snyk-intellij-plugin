@@ -10,6 +10,7 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.isSnykCodeAvailable
@@ -61,6 +62,20 @@ class ScanTypesPanel(
         }
         row {
             cell {
+                checkBox(
+                    "Snyk Advisor (early preview)",
+                    { settings.advisorEnable },
+                    { settings.advisorEnable = it },
+                    null
+                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                label("").component.convertIntoHelpHintLabel(
+                    "Discover the health (maintenance, community, popularity & security)\n" +
+                        "status of your open source packages"
+                )
+            }
+        }
+        row {
+            cell {
                 snykCodeCheckbox = checkBox(
                     SNYK_CODE_SECURITY_ISSUES,
                     { settings.snykCodeSecurityIssuesScanEnable },
@@ -87,7 +102,9 @@ class ScanTypesPanel(
         row {
             snykCodeComment = label("")
                 .withLargeLeftGap()
-                .component
+                .component.apply {
+                    foreground = UIUtil.getContextHelpForeground()
+                }
 
             snykCodeCheckbox?.addItemListener {
                 snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
@@ -105,20 +122,6 @@ class ScanTypesPanel(
                     .withLargeLeftGap()
             }
         }
-        row {
-            cell {
-                checkBox(
-                    "Snyk Advisor",
-                    { settings.advisorEnable },
-                    { settings.advisorEnable = it },
-                    null
-                ).withLeftGap(2) // needed due to bug with selection: left side is cut
-                label("").component.convertIntoHelpHintLabel(
-                    "Learn more about your packages and get insights on\n" +
-                        "Security, Maintenance, Community and Popularity"
-                )
-            }
-        }
     }
 
     private fun JLabel.convertIntoHelpHintLabel(text: String) {
@@ -129,7 +132,7 @@ class ScanTypesPanel(
     private var currentHint: Balloon? = null
 
     inner class ShowHintMouseAdapter(val component: Component, val text: String) : MouseAdapter() {
-        override fun mouseEntered(e: MouseEvent?) {
+        override fun mouseClicked(e: MouseEvent?) {
             currentHint?.hide()
             currentHint = SnykBalloonNotifications.showInfoBalloonForComponent(text, component, true)
         }
