@@ -41,12 +41,12 @@ class SnykAdvisorModel : Disposable {
             return (info.score * 100).toInt()
         }
 
-        /** Ignore requests for that [packageName] during [IGNORE_REQUESTS_DELAY] after first ever request
+        /** Ignore requests for that [packageName] during [IGNORE_REQUESTS_DELAY_MS] after first ever request
          * to avoid create server requests while __user is typing__ */
         val firstRequest = packages2FirstRequest.put(packageName, Instant.now()) ?: return null
-        if (firstRequest.plusMillis(IGNORE_REQUESTS_DELAY) > Instant.now()) return null
+        if (firstRequest.plusMillis(IGNORE_REQUESTS_DELAY_MS) > Instant.now()) return null
 
-        /** Proceed requests in batch, by waiting for [SCORE_REQUESTS_BATCHING_DELAY] after last request */
+        /** Proceed requests in batch, by waiting for [SCORE_REQUESTS_BATCHING_DELAY_MS] after last request */
         if (packagesRequestDelayed.add(packageName)) {
             alarmToRequestScore.cancelAllRequests()
             alarmToRequestScore.addRequest({
@@ -71,7 +71,7 @@ class SnykAdvisorModel : Disposable {
                 }
                 packagesRequestDelayed.clear()
                 packages2FirstRequest.clear()
-            }, SCORE_REQUESTS_BATCHING_DELAY)
+            }, SCORE_REQUESTS_BATCHING_DELAY_MS)
         }
         return null
     }
@@ -92,7 +92,7 @@ class SnykAdvisorModel : Disposable {
 
     companion object {
         private const val H24_IN_MILLISECONDS = 24 * 60 * 60 * 1000
-        const val IGNORE_REQUESTS_DELAY: Long = 1000 //ms
-        const val SCORE_REQUESTS_BATCHING_DELAY = 1000 //ms
+        const val IGNORE_REQUESTS_DELAY_MS: Long = 1000
+        const val SCORE_REQUESTS_BATCHING_DELAY_MS = 1000
     }
 }

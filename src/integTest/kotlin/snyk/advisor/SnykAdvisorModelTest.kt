@@ -105,12 +105,12 @@ class SnykAdvisorModelTest : LightPlatformTestCase() {
 
     private fun waitForRequestsStartCollecting() {
         // wait for batch request collected and executed + time to finish all background jobs
-        Thread.sleep(SnykAdvisorModel.IGNORE_REQUESTS_DELAY + 10)
+        Thread.sleep(SnykAdvisorModel.IGNORE_REQUESTS_DELAY_MS + 10)
     }
 
     private fun waitForRequestsBatched() {
         // wait for batch request collected and executed + time to finish all background jobs
-        Thread.sleep(SnykAdvisorModel.SCORE_REQUESTS_BATCHING_DELAY.toLong() + 10)
+        Thread.sleep(SnykAdvisorModel.SCORE_REQUESTS_BATCHING_DELAY_MS.toLong() + 10)
     }
 
     private fun waitForServerResponse(ratio: Double = 1.0) {

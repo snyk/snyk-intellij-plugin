@@ -190,12 +190,7 @@ class AdvisorApiClientTest {
         assertThat(actualInfos, hasSize(expectedInfos.size))
 
         actualInfos?.forEachIndexed { index, actual ->
-            val expected = expectedInfos[index]
-            assertThat(actual.name, equalTo(expected.name))
-            assertThat(actual.score, equalTo(expected.score))
-            assertThat(actual.pending, equalTo(expected.pending))
-            assertThat(actual.error, equalTo(expected.error))
-            assertThat(actual.labels, equalTo(expected.labels))
+            assertThat(actual, equalTo(expectedInfos[index]))
         }
     }
 }
