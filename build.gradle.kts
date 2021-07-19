@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   id("org.jetbrains.changelog") version "0.4.0"
-  id("org.jetbrains.intellij") version "0.4.21"
+  id("org.jetbrains.intellij") version "0.4.22"
   id("org.jetbrains.kotlin.jvm") version "1.3.72"
   id("io.gitlab.arturbosch.detekt") version ("1.17.1")
 }
@@ -130,6 +130,7 @@ tasks {
 
   runIde {
     maxHeapSize = "2g"
+    autoReloadPlugins = false
     if (localIdeDirectory.isNotEmpty()) {
       ideDirectory(localIdeDirectory)
     }
