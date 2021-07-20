@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys.CONTEXT_COMPONENT
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.LightColors
@@ -99,9 +100,10 @@ class SnykBalloonNotifications {
             }
         )
 
-        fun showInfoBalloonForComponent(message: String, component: Component, showAbove: Boolean = false) {
-            val balloon = createBalloon(message, AllIcons.General.BalloonInformation, LightColors.YELLOW)
-            showBalloonForComponent(balloon, component, showAbove)
+        fun showInfoBalloonForComponent(message: String, component: Component, showAbove: Boolean = false): Balloon {
+            return createBalloon(message, AllIcons.General.BalloonInformation, MessageType.INFO.popupBackground).apply {
+                showBalloonForComponent(this, component, showAbove)
+            }
         }
 
         fun showWarnBalloonAtEventPlace(message: String, e: AnActionEvent, showAbove: Boolean = false) {

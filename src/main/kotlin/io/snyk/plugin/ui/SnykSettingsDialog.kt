@@ -42,7 +42,7 @@ class SnykSettingsDialog(
     }
 
     private val tokenTextField = JBPasswordField()
-    private val tokenAuthenticateButton = JButton("Authenticate")
+    private val receiveTokenButton = JButton("Connect IDE to Snyk")
     private val customEndpointTextField = JTextField()
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
@@ -55,19 +55,19 @@ class SnykSettingsDialog(
         initializeUiComponents()
         initializeValidation()
 
-        tokenAuthenticateButton.isEnabled = !service<SnykCliDownloaderService>().isCliDownloading()
+        receiveTokenButton.isEnabled = !service<SnykCliDownloaderService>().isCliDownloading()
 
         ApplicationManager.getApplication().messageBus.connect(rootPanel)
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
                 override fun cliDownloadStarted() {
-                    tokenAuthenticateButton.isEnabled = false
+                    receiveTokenButton.isEnabled = false
                 }
                 override fun cliDownloadFinished(succeed: Boolean) {
-                    tokenAuthenticateButton.isEnabled = true
+                    receiveTokenButton.isEnabled = true
                 }
             })
 
-        tokenAuthenticateButton.addActionListener {
+        receiveTokenButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
                 snykProjectSettingsConfigurable.apply()
                 val token = project.service<SnykCliAuthenticationService>().authenticate()
@@ -95,6 +95,8 @@ class SnykSettingsDialog(
     private fun initializeUiComponents() {
         rootPanel.layout = UIGridLayoutManager(5, 1, Insets(0, 0, 0, 0), -1, -1)
 
+        /** General settings ------------------ */
+
         val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
@@ -108,9 +110,28 @@ class SnykSettingsDialog(
                 UIGridConstraints.ANCHOR_NORTHWEST,
                 UIGridConstraints.FILL_HORIZONTAL,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
-                Dimension(150, 200),
+                null, //Dimension(150, 200),
+                null,
+                0,
+                false
+            )
+        )
+
+        generalSettingsPanel.add(
+            receiveTokenButton,
+            UIGridConstraints(
+                0,
+                1,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_WEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
                 null,
                 0,
                 false
@@ -121,7 +142,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             tokenLabel,
             UIGridConstraints(
-                0,
+                1,
                 0,
                 1,
                 1,
@@ -140,7 +161,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             tokenTextField,
             UIGridConstraints(
-                0,
+                1,
                 1,
                 1,
                 1,
@@ -156,31 +177,12 @@ class SnykSettingsDialog(
             )
         )
 
-        generalSettingsPanel.add(
-            tokenAuthenticateButton,
-            UIGridConstraints(
-                0,
-                2,
-                1,
-                1,
-                UIGridConstraints.ANCHOR_EAST,
-                UIGridConstraints.FILL_NONE,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        )
-
         val customEndpointLabel = JLabel("Custom endpoint:")
         customEndpointLabel.labelFor = customEndpointTextField
         generalSettingsPanel.add(
             customEndpointLabel,
             UIGridConstraints(
-                1,
+                2,
                 0,
                 1,
                 1,
@@ -199,7 +201,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             customEndpointTextField,
             UIGridConstraints(
-                1,
+                2,
                 1,
                 1,
                 2,
@@ -219,7 +221,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             ignoreUnknownCACheckBox,
             UIGridConstraints(
-                2,
+                3,
                 1,
                 1,
                 2,
@@ -240,7 +242,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationLabel,
             UIGridConstraints(
-                3,
+                4,
                 0,
                 1,
                 1,
@@ -259,7 +261,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationTextField,
             UIGridConstraints(
-                3,
+                4,
                 1,
                 1,
                 2,
@@ -275,11 +277,34 @@ class SnykSettingsDialog(
             )
         )
 
+        /** Product selection ------------------ */
+
+        val productSelectionPanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
+        productSelectionPanel.border = IdeBorderFactory.createTitledBorder("Product selection")
 
         rootPanel.add(
+            productSelectionPanel,
+            UIGridConstraints(
+                1,
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_NORTHWEST,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            )
+        )
+
+        productSelectionPanel.add(
             scanTypesPanel,
             UIGridConstraints(
-                2,
+                0,
                 0,
                 1,
                 1,
@@ -295,18 +320,7 @@ class SnykSettingsDialog(
             )
         )
 
-        usageAnalyticsCheckBox.text = "Send usage analytics"
-        rootPanel.add(
-            usageAnalyticsCheckBox,
-            UIGridConstraints(
-                3, 0, 1, 1,
-                UIGridConstraints.ANCHOR_NORTHWEST,
-                UIGridConstraints.FILL_NONE,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                UIGridConstraints.SIZEPOLICY_FIXED,
-                null, null, null, 0, false
-            )
-        )
+        /** Project settings ------------------ */
 
         if (isProjectSettingsAvailable(project)) {
             val projectSettingsPanel = JPanel(UIGridLayoutManager(2, 3, Insets(0, 0, 0, 0), -1, -1))
@@ -315,16 +329,16 @@ class SnykSettingsDialog(
             rootPanel.add(
                 projectSettingsPanel,
                 UIGridConstraints(
-                    4,
+                    2,
                     0,
                     1,
                     1,
                     UIGridConstraints.ANCHOR_CENTER,
                     UIGridConstraints.FILL_BOTH,
                     UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    UIGridConstraints.SIZEPOLICY_FIXED,
                     null,
-                    Dimension(150, 200),
+                    null,
                     null,
                     0,
                     false
@@ -393,6 +407,45 @@ class SnykSettingsDialog(
             )
         }
 
+        /** User experience ------------------ */
+
+        val userExperiencePanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
+        userExperiencePanel.border = IdeBorderFactory.createTitledBorder("User experience")
+
+        rootPanel.add(
+            userExperiencePanel,
+            UIGridConstraints(
+                3,
+                0,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_NORTHWEST,
+                UIGridConstraints.FILL_HORIZONTAL,
+                UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            )
+        )
+
+        usageAnalyticsCheckBox.text = "Help us with anonymous usage analytics"
+        userExperiencePanel.add(
+            usageAnalyticsCheckBox,
+            UIGridConstraints(
+                0, 0, 1, 1,
+                UIGridConstraints.ANCHOR_NORTHWEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null, null, null, 0, false
+            )
+        )
+
+        /** Spacer ------------------ */
+
         val generalSettingsSpacer = Spacer()
         rootPanel.add(
             generalSettingsSpacer,
@@ -402,7 +455,7 @@ class SnykSettingsDialog(
                 UIGridConstraints.FILL_BOTH,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                null, Dimension(200, 200), null, 0, false
+                null, null, null, 0, false
             ))
     }
 
