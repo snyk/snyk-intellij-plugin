@@ -1,28 +1,16 @@
 package snyk.advisor
 
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import snyk.advisor.api.AdvisorApiClient
+import com.intellij.openapi.project.Project
 import snyk.advisor.api.PackageInfo
 
-@Service
-class AdvisorService {
-    private val log = logger<AdvisorService>()
-    private val apiClient by lazy { createAdvisorApiClient() }
+interface AdvisorService {
 
-    fun requestPackageInfos(packageNames: List<String>, packageInfo: (PackageInfo) -> Unit) {
-        // example call
-        apiClient.scoreService().scoresNpmPackages(packages = packageNames)
-    }
+    fun requestPackageInfos(project: Project?,
+                            packageManager: AdvisorPackageManager,
+                            packageNames: List<String>,
+                            pollingDelay: Int = 2, //initial delay in sec
+                            onPackageInfoReady: (name: String, PackageInfo) -> Unit,
+                            onFailGetInfo: (name: String) -> Unit
+    )
 
-    private fun createAdvisorApiClient(): AdvisorApiClient {
-        //TODO(pavel): customize parameter here + better exception handling
-        val token = service<SnykApplicationSettingsStateService>().token
-        if (token.isNullOrBlank()) {
-            throw IllegalArgumentException("Token cannot be empty")
-        }
-        return AdvisorApiClient.create(token = token)
-    }
 }

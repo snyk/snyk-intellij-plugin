@@ -18,6 +18,9 @@
                          instance="io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
                          groupId="tools"
                          displayName="Snyk"/>
+
+    <editor.linePainter implementation="snyk.advisor.SnykAdvisorEditorLinePainter"/>
+
   </extensions>
 
   <actions>
