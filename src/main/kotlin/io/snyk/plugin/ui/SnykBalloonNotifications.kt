@@ -11,7 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
-import com.intellij.ui.LightColors
+import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.util.Alarm
 import io.snyk.plugin.getApplicationSettingsStateService
@@ -21,6 +21,7 @@ import io.snyk.plugin.startSastEnablementCheckLoop
 import java.awt.Color
 import java.awt.Component
 import java.awt.Point
+import java.awt.event.MouseEvent
 import javax.swing.Icon
 
 class SnykBalloonNotifications {
@@ -106,10 +107,26 @@ class SnykBalloonNotifications {
             }
         }
 
+        fun showAdvisorMoreDetailsPopup(htmlMessage: String, mouseEvent: MouseEvent): Balloon {
+            val balloon = JBPopupFactory.getInstance().createHtmlTextBalloonBuilder(
+                htmlMessage,
+                null,
+                MessageType.WARNING.popupBackground,
+                BrowserHyperlinkListener.INSTANCE
+            )
+                .setHideOnClickOutside(true)
+                .setAnimationCycle(300)
+                .createBalloon()
+
+            showBalloonForComponent(balloon, mouseEvent.component, true, mouseEvent.point)
+
+            return balloon
+        }
+
         fun showWarnBalloonAtEventPlace(message: String, e: AnActionEvent, showAbove: Boolean = false) {
             val component = e.inputEvent?.component ?: e.getData(CONTEXT_COMPONENT) ?: return
             //todo: case if no Component exist (action invoked from Search?)
-            val balloon = createBalloon(message, AllIcons.General.BalloonWarning, LightColors.YELLOW)
+            val balloon = createBalloon(message, AllIcons.General.BalloonWarning, MessageType.WARNING.popupBackground)
             showBalloonForComponent(balloon, component, showAbove)
         }
 
@@ -119,9 +136,12 @@ class SnykBalloonNotifications {
                 .setFadeoutTime(5000)
                 .createBalloon()
 
-        private fun showBalloonForComponent(balloon: Balloon, component: Component, showAbove: Boolean) {
+        private fun showBalloonForComponent(balloon: Balloon, component: Component, showAbove: Boolean, point: Point? = null) {
             balloon.show(
-                RelativePoint(component, Point(component.width / 2, if (showAbove) 0 else component.height)),
+                RelativePoint(
+                    component,
+                    point ?: Point(component.width / 2, if (showAbove) 0 else component.height)
+                ),
                 if (showAbove) Balloon.Position.above else Balloon.Position.below
             )
         }
