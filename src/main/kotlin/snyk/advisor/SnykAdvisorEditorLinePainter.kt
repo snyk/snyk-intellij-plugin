@@ -31,6 +31,7 @@ import snyk.advisor.api.PackageInfo
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Font
+import kotlin.math.min
 
 class SnykAdvisorEditorLinePainter : EditorLinePainter() {
 
@@ -53,14 +54,16 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
 
         val lineStartElement = psiFile.findElementAt(document.getLineStartOffset(lineNumber)) ?: return null
 
+        val editor = PsiEditorUtil.findEditor(lineStartElement) ?: return null
+
         val packageName = when (packageManager) {
             AdvisorPackageManager.NPM -> getNpmPackageName(lineStartElement, document, lineNumber)
             else -> null // todo: replace with python support
-        } ?: return null
+        }
 
-        val editor = PsiEditorUtil.findEditor(lineStartElement) ?: return null
-
-        val info = service<SnykAdvisorModel>().getInfo(project, packageManager, packageName)
+        val info = packageName?.let {
+            service<SnykAdvisorModel>().getInfo(project, packageManager, it)
+        }
         val score = info?.normalizedScore
         if (score == null
             || score > SCORE_THRESHOLD
@@ -104,7 +107,7 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
         val name2versionPropertyElement: JsonProperty = when {
             lineStartElement is PsiWhiteSpace &&
                 // check for multi-line PsiWhiteSpace element (i.e. few empty lines)
-                document.getLineNumber(lineStartElement.textRange.endOffset) == lineNumber
+                document.getLineNumberChecked(lineStartElement.textRange.endOffset) == lineNumber
             -> (lineStartElement.nextSibling as? JsonProperty) ?: return null
 
             lineStartElement is LeafPsiElement &&
@@ -122,11 +125,11 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
         // don't show Scores if few packages are on the same line
         val prevName2VersionElement = PsiTreeUtil.getPrevSiblingOfType(name2versionPropertyElement, JsonProperty::class.java)
         if (prevName2VersionElement != null &&
-            document.getLineNumber(prevName2VersionElement.textRange.endOffset) == lineNumber) return null
+            document.getLineNumberChecked(prevName2VersionElement.textRange.endOffset) == lineNumber) return null
 
         val nextName2VersionElement = PsiTreeUtil.getNextSiblingOfType(name2versionPropertyElement, JsonProperty::class.java)
         if (nextName2VersionElement != null &&
-            document.getLineNumber(nextName2VersionElement.textRange.endOffset) == lineNumber) return null
+            document.getLineNumberChecked(nextName2VersionElement.textRange.endOffset) == lineNumber) return null
 
         // see(PsiViewer) Psi representation of package dependencies in package.json, i.e. "adm-zip": "0.4.7"
         return if (name2versionPropertyElement.firstChild is JsonStringLiteral &&
@@ -144,6 +147,8 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
             element.parent.parent is JsonProperty &&
             element.parent.parent.firstChild is JsonStringLiteral &&
             element.parent.parent.firstChild.textMatches("\"dependencies\"")
+
+    private fun Document.getLineNumberChecked(offset: Int): Int = getLineNumber(min(offset, textLength))
 
     inner class AdvisorEditorMouseListener : EditorMouseListener, EditorMouseMotionListener {
         override fun mouseClicked(e: EditorMouseEvent) {
