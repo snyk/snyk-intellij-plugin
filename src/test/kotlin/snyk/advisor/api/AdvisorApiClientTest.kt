@@ -31,7 +31,7 @@ class AdvisorApiClientTest {
     fun setUp() {
         clientUnderTest = AdvisorApiClient.create(
             baseUrl = server.url("/").toString(),
-            token = "random-local-test-token",
+            token = "",
             httpClient = mockHttpClient
         )
     }
