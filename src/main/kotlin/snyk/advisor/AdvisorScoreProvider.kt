@@ -1,6 +1,5 @@
 package snyk.advisor
 
-import com.intellij.execution.process.ConsoleHighlighter
 import com.intellij.json.JsonElementTypes
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonProperty
@@ -8,20 +7,12 @@ import com.intellij.json.psi.JsonStringLiteral
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.*
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.event.EditorMouseEvent
-import com.intellij.openapi.editor.event.EditorMouseListener
-import com.intellij.openapi.editor.event.EditorMouseMotionListener
+import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.TextAttributes
-import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiManager
-import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.LeafPsiElement
-import com.intellij.psi.util.PsiEditorUtil
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
@@ -33,34 +24,39 @@ import java.awt.Cursor
 import java.awt.Font
 import kotlin.math.min
 
-class SnykAdvisorEditorLinePainter : EditorLinePainter() {
-
-    private val editorsWithListeners: MutableSet<Editor> = mutableSetOf()
-    private val editor2scoredLine: MutableMap<Editor, MutableMap<Int, Pair<PackageInfo, AdvisorPackageManager>>> = mutableMapOf()
-    private var selectedScore: Pair<Editor, Int>? = null
+class AdvisorScoreProvider(
+    private val editor: Editor
+) {
+    private val scoredLines: MutableMap<Int, Pair<PackageInfo, AdvisorPackageManager>> = mutableMapOf()
+    private var selectedScore: Int? = null
     private var currentBalloon: Balloon? = null
+    private var editorListener: AdvisorEditorListener? = null
 
-    override fun getLineExtensions(project: Project, file: VirtualFile, lineNumber: Int): Collection<LineExtensionInfo>? {
+    fun getLineExtensions(lineNumber: Int): Collection<LineExtensionInfo> {
         val settings = getApplicationSettingsStateService()
-        if (settings.pluginFirstRun || !settings.advisorEnable) return null
-
-        val packageManager = when (file.name) {
+        if (settings.pluginFirstRun || !settings.advisorEnable) {
+            return resetAndReturnEmptyList()
+        }
+        val project = editor.project
+        if (project == null || project.isDisposed) {
+            return resetAndReturnEmptyList()
+        }
+        val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
+        if (psiFile == null || psiFile is PsiCompiledElement) {
+            return resetAndReturnEmptyList()
+        }
+        val packageManager = when (psiFile.virtualFile.name) {
             "package.json" -> AdvisorPackageManager.NPM
             else -> null // todo: replace with python support
-        } ?: return null
+        } ?: return resetAndReturnEmptyList()
 
-        val document = FileDocumentManager.getInstance().getCachedDocument(file) ?: return null
-        val psiFile = PsiManager.getInstance(project).findFile(file) ?: return null
-
-        val lineStartElement = psiFile.findElementAt(document.getLineStartOffset(lineNumber)) ?: return null
-
-        val editor = PsiEditorUtil.findEditor(lineStartElement) ?: return null
+        val lineStartElement = psiFile.findElementAt(editor.document.getLineStartOffset(lineNumber))
+            ?: return resetAndReturnEmptyList()
 
         val packageName = when (packageManager) {
-            AdvisorPackageManager.NPM -> getNpmPackageName(lineStartElement, document, lineNumber)
+            AdvisorPackageManager.NPM -> getNpmPackageName(lineStartElement, editor.document, lineNumber)
             else -> null // todo: replace with python support
         }
-
         val info = packageName?.let {
             service<SnykAdvisorModel>().getInfo(project, packageManager, it)
         }
@@ -69,26 +65,21 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
             || score > SCORE_THRESHOLD
             || score == 0 // package not_found case
         ) {
-            editor2scoredLine[editor]?.remove(lineNumber)
-            return null
-        }
-        editor2scoredLine
-            .computeIfAbsent(editor) { mutableMapOf() }
-            .putIfAbsent(lineNumber, Pair(info, packageManager))
-
-        if (editorsWithListeners.add(editor)) {
-            val listener = AdvisorEditorMouseListener()
-
-            editor.addEditorMouseListener(listener)
-            editor.addEditorMouseMotionListener(listener)
-
-            editor.scrollingModel.addVisibleAreaListener {
-                currentBalloon?.hide()
-                currentBalloon = null
+            scoredLines.remove(lineNumber)
+            // no Listeners needed if no scores shown
+            return if (scoredLines.isNotEmpty()) emptyList() else resetAndReturnEmptyList()
+        } else {
+            scoredLines.putIfAbsent(lineNumber, Pair(info, packageManager))
+            // init Listeners if not done yet
+            if (editorListener == null) {
+                editorListener = AdvisorEditorListener()
+                editor.addEditorMouseListener(editorListener!!)
+                editor.addEditorMouseMotionListener(editorListener!!)
+                editor.scrollingModel.addVisibleAreaListener(editorListener!!)
             }
         }
 
-        val attributes = if (selectedScore?.first == editor && selectedScore?.second == lineNumber) {
+        val attributes = if (selectedScore == lineNumber) {
             getSelectedScoreAttributes()
         } else {
             getNormalAttributes()
@@ -98,6 +89,20 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
             LineExtensionInfo(LINE_EXTENSION_PREFIX, getWarningIconAttributes()),
             LineExtensionInfo("$LINE_EXTENSION_BODY$score$LINE_EXTENSION_POSTFIX", attributes)
         )
+    }
+
+    private fun resetAndReturnEmptyList(): Collection<LineExtensionInfo> {
+        scoredLines.clear()
+        selectedScore = null
+        currentBalloon?.hide()
+        currentBalloon = null
+        if (editorListener != null) {
+            editor.removeEditorMouseListener(editorListener!!)
+            editor.removeEditorMouseMotionListener(editorListener!!)
+            editor.scrollingModel.removeVisibleAreaListener(editorListener!!)
+            editorListener = null
+        }
+        return emptyList()
     }
 
     private fun getNpmPackageName(lineStartElement: PsiElement, document: Document, lineNumber: Int): String? {
@@ -150,11 +155,11 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
 
     private fun Document.getLineNumberChecked(offset: Int): Int = getLineNumber(min(offset, textLength))
 
-    inner class AdvisorEditorMouseListener : EditorMouseListener, EditorMouseMotionListener {
+    inner class AdvisorEditorListener : EditorMouseListener, EditorMouseMotionListener, VisibleAreaListener {
         override fun mouseClicked(e: EditorMouseEvent) {
             if (isOverScoreText(e)) {
                 val (info, packageManager) =
-                    editor2scoredLine[e.editor]?.get(e.logicalPosition.line) ?: return
+                    scoredLines[e.logicalPosition.line] ?: return
 
                 val moreDetailsLink = "https://snyk.io/advisor/${packageManager.getUrlName()}/${info.name}"
 
@@ -172,7 +177,7 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
                     """.trimIndent(),
                     e.mouseEvent
                 )
-                selectedScore = Pair(e.editor, e.logicalPosition.line)
+                selectedScore = e.logicalPosition.line
             } else {
                 currentBalloon?.hide()
                 currentBalloon = null
@@ -191,7 +196,7 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
 
             // over line with No score shown
             val line = e.logicalPosition.line
-            if (editor2scoredLine[e.editor]?.containsKey(line) != true) return false
+            if (!scoredLines.containsKey(line)) return false
 
             // not over Text in LineExtension
             val lineLength = e.editor.document.getLineEndOffset(line) - e.editor.document.getLineStartOffset(line)
@@ -199,6 +204,11 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
                 e.logicalPosition.column > lineLength + LINE_EXTENSION_LENGTH) return false
 
             return true
+        }
+
+        override fun visibleAreaChanged(e: VisibleAreaEvent) {
+            currentBalloon?.hide()
+            currentBalloon = null
         }
     }
 
@@ -226,18 +236,13 @@ class SnykAdvisorEditorLinePainter : EditorLinePainter() {
             } else attributes
         }
 
-        private fun getWarningIconAttributes(): TextAttributes {
-            val attributes = EditorColorsManager.getInstance().globalScheme.getAttributes(ConsoleHighlighter.YELLOW)
-            return if (attributes == null || attributes.foregroundColor == null) {
-                TextAttributes(
-                    JBColor { if (EditorColorsManager.getInstance().isDarkEditor) Color.YELLOW.darker() else Color.YELLOW },
-                    null,
-                    null,
-                    null,
-                    Font.PLAIN
-                )
-            } else attributes
-        }
+        private fun getWarningIconAttributes(): TextAttributes = TextAttributes(
+            Color.YELLOW.darker(),
+            null,
+            null,
+            null,
+            Font.PLAIN
+        )
 
         private fun getSelectedScoreAttributes(): TextAttributes = getNormalAttributes().clone().apply {
             fontType = fontType xor Font.BOLD
