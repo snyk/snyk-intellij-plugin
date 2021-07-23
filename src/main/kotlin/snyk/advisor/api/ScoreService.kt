@@ -31,7 +31,10 @@ data class PackageInfo(
 
     @SerializedName("error")
     val error: String?
-)
+){
+    val normalizedScore: Int
+        get() = (score * 100).toInt()
+}
 
 data class PackageInfoLabels(
     @SerializedName("popularity")

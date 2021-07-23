@@ -16,20 +16,20 @@ class SnykAdvisorModelTest : LightPlatformTestCase() {
             setAdvisorService(FakeAdvisorService())
         }
         packageName2Score.keys.forEach {
-            val currentScore = model.getScore(null, AdvisorPackageManager.NPM, it)
+            val currentScore = model.getInfo(null, AdvisorPackageManager.NPM, it)?.normalizedScore
             assertNull("Score should be not set (NULL) before actual request to Advisor executed", currentScore)
         }
 
         fun hasPackageWithUnknownScore() = packageName2Score.keys.any {
-            model.getScore(null, AdvisorPackageManager.NPM, it) == null
+            model.getInfo(null, AdvisorPackageManager.NPM, it) == null
         }
 
         fun hasPackageWithScore() = packageName2Score.keys.any {
-            model.getScore(null, AdvisorPackageManager.NPM, it) != null
+            model.getInfo(null, AdvisorPackageManager.NPM, it) != null
         }
 
         fun hasNoPackagesWithScore() = packageName2Score.keys.none {
-            model.getScore(null, AdvisorPackageManager.NPM, it) != null
+            model.getInfo(null, AdvisorPackageManager.NPM, it) != null
         }
 
         waitForRequestsStartCollecting()
@@ -55,14 +55,14 @@ class SnykAdvisorModelTest : LightPlatformTestCase() {
             setAdvisorService(FakeAdvisorService())
         }
         val fakePackageName = "fake_package"
-        var score = model.getScore(null, AdvisorPackageManager.NPM, fakePackageName)
+        var score = model.getInfo(null, AdvisorPackageManager.NPM, fakePackageName)
         assertNull("Score should be not set (NULL) before actual request to Advisor executed", score)
 
         waitForRequestsBatched()
         waitForServerResponse()
         waitExtraUntil { model.getPackagesRequested().isEmpty() }
 
-        score = model.getScore(null, AdvisorPackageManager.NPM, fakePackageName)
+        score = model.getInfo(null, AdvisorPackageManager.NPM, fakePackageName)
         assertNull("Score should stay not set (NULL) for unknown package", score)
     }
 
@@ -81,13 +81,13 @@ class SnykAdvisorModelTest : LightPlatformTestCase() {
         assertTrue(packagesRequested.isEmpty())
 
         // first ever requests
-        model.getScore(null, AdvisorPackageManager.NPM, packageName1)
-        model.getScore(null, AdvisorPackageManager.NPM, packageName2)
+        model.getInfo(null, AdvisorPackageManager.NPM, packageName1)
+        model.getInfo(null, AdvisorPackageManager.NPM, packageName2)
         waitForRequestsStartCollecting()
 
         // requests after SnykAdvisorModel.IGNORE_REQUESTS_DELAY -> should start collecting
-        model.getScore(null, AdvisorPackageManager.NPM, packageName1)
-        model.getScore(null, AdvisorPackageManager.NPM, packageName2)
+        model.getInfo(null, AdvisorPackageManager.NPM, packageName1)
+        model.getInfo(null, AdvisorPackageManager.NPM, packageName2)
         waitExtraUntil { packagesRequestDelayed.size == 2 }
         assertTrue(packagesRequestDelayed.size == 2 && packagesRequestDelayed == allPackages)
         assertTrue(packagesRequested.isEmpty())

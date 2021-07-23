@@ -35,10 +35,10 @@ class SnykAdvisorModel : Disposable {
         dropCacheRunnable()
     }
 
-    fun getScore(project: Project?, packageManager: AdvisorPackageManager, packageName: String): Int? {
+    fun getInfo(project: Project?, packageManager: AdvisorPackageManager, packageName: String): PackageInfo? {
 
-        name2Info[packageName]?.let { info ->
-            return (info.score * 100).toInt()
+        name2Info[packageName]?.let {
+            return it
         }
 
         /** Ignore requests for that [packageName] during [IGNORE_REQUESTS_DELAY_MS] after first ever request

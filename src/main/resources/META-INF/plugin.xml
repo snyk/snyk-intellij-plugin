@@ -19,7 +19,7 @@
                          groupId="tools"
                          displayName="Snyk"/>
 
-    <editor.linePainter implementation="snyk.advisor.SnykAdvisorEditorLinePainter"/>
+    <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
 
   </extensions>
 
