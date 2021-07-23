@@ -37,6 +37,7 @@ class AdvisorScoreProvider(
         if (settings.pluginFirstRun || !settings.advisorEnable) {
             return resetAndReturnEmptyList()
         }
+        // sanity checks, examples taken from com.intellij.codeInsight.preview.ImageOrColorPreviewManager.registerListeners
         val project = editor.project
         if (project == null || project.isDisposed) {
             return resetAndReturnEmptyList()
@@ -62,7 +63,7 @@ class AdvisorScoreProvider(
         }
         val score = info?.normalizedScore
         if (score == null
-            || score > SCORE_THRESHOLD
+            || score >= SCORE_THRESHOLD
             || score == 0 // package not_found case
         ) {
             scoredLines.remove(lineNumber)
