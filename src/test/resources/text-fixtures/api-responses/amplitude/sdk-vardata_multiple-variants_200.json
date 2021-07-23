@@ -1,0 +1,11 @@
+{
+  "first-experiment": {
+    "key": "on",
+    "payload": {
+      "message": "random message"
+    }
+  },
+  "second-experiment": {
+    "value": "off"
+  }
+}
