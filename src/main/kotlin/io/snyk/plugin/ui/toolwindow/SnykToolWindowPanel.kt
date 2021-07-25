@@ -17,11 +17,18 @@ import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.Alarm
 import com.intellij.util.ui.tree.TreeUtil
-import io.snyk.plugin.analytics.EventPropertiesProvider
-import io.snyk.plugin.analytics.Segment
+import io.snyk.plugin.Severity
+import io.snyk.plugin.analytics.getIssueSeverityOrNull
+import io.snyk.plugin.analytics.getIssueType
+import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.cli.Vulnerability
+import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykResultsFilteringListener
+import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
 import io.snyk.plugin.isScanRunning
@@ -34,9 +41,15 @@ import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
-import io.snyk.plugin.Severity
-import io.snyk.plugin.events.*
 import io.snyk.plugin.ui.SnykBalloonNotifications
+import snyk.analytics.AnalysisIsReady
+import snyk.analytics.AnalysisIsReady.Result
+import snyk.analytics.AnalysisIsTriggered
+import snyk.analytics.IssueIsViewed
+import snyk.analytics.IssueIsViewed.IssueType
+import snyk.analytics.ProductSelectionIsViewed
+import snyk.analytics.WelcomeIsViewed
+import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import java.awt.BorderLayout
 import java.time.Instant
 import java.util.Objects.nonNull
@@ -109,6 +122,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningCliFinished(cliResult: CliResult) {
                     currentCliResults = cliResult
                     ApplicationManager.getApplication().invokeLater { displayVulnerabilities(cliResult) }
+                    service<SnykAnalyticsService>().logAnalysisIsReady(
+                        AnalysisIsReady.builder()
+                            .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
+                            .ide(AnalysisIsReady.Ide.JETBRAINS)
+                            .result(Result.SUCCESS)
+                            .build()
+                    )
                 }
 
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) =
@@ -128,6 +148,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             displayEmptyDescription()
                         }
                     }
+                    service<SnykAnalyticsService>().logAnalysisIsReady(
+                        AnalysisIsReady.builder()
+                            .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
+                            .ide(AnalysisIsReady.Ide.JETBRAINS)
+                            .result(Result.ERROR)
+                            .build()
+                    )
                 }
 
                 override fun scanningSnykCodeError(cliError: CliError) {
@@ -215,9 +242,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
-                    service<SnykAnalyticsService>().logEvent(
-                        Segment.Event.USER_SEES_AN_ISSUE,
-                        EventPropertiesProvider.getIssueDetailsForOpenSource(groupedVulns)
+                    val issue = groupedVulns.first()
+                    service<SnykAnalyticsService>().logIssueIsViewed(
+                        IssueIsViewed.builder()
+                            .ide(IssueIsViewed.Ide.JETBRAINS)
+                            .issueId(issue.id)
+                            .issueType(issue.getIssueType())
+                            .severity(issue.getIssueSeverityOrNull())
+                            .build()
                     )
                     // todo: open package manager file, if any and  was not opened yet
                 }
@@ -246,9 +278,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         editor?.selectionModel?.setSelection(textRange.start, textRange.end)
                     }
 
-                    service<SnykAnalyticsService>().logEvent(
-                        Segment.Event.USER_SEES_AN_ISSUE,
-                        EventPropertiesProvider.getIssueDetailsForCode(suggestion)
+                    service<SnykAnalyticsService>().logIssueIsViewed(
+                        IssueIsViewed.builder()
+                            .ide(IssueIsViewed.Ide.JETBRAINS)
+                            .issueId(suggestion.id)
+                            .issueType(suggestion.getIssueType())
+                            .severity(suggestion.getIssueSeverityOrNull())
+                            .build()
                     )
                 }
                 is RootCliTreeNode -> {
@@ -282,7 +318,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     scrollPane.verticalScrollBar.value = 0
                     scrollPane.horizontalScrollBar.value = 0
                 }
-            }, 50)
+            }, 50
+        )
         return scrollPane
     }
 
@@ -311,8 +348,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         //revalidate()
     }
 
-    private fun removeAllChildren(rootNodesToUpdate: List<DefaultMutableTreeNode> =
-                                      listOf(rootCliTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode)
+    private fun removeAllChildren(
+        rootNodesToUpdate: List<DefaultMutableTreeNode> =
+            listOf(rootCliTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode)
     ) {
         rootNodesToUpdate.forEach {
             it.removeAllChildren()
@@ -334,9 +372,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         add(CenterOneComponentPanel(SnykAuthPanel(project)), BorderLayout.CENTER)
         revalidate()
 
-        val analytics = service<SnykAnalyticsService>()
-        analytics.logEvent(Segment.Event.USER_LANDED_ON_THE_WELCOME_PAGE)
-        analytics.identify()
+        service<SnykAnalyticsService>().logWelcomeIsViewed(
+            WelcomeIsViewed.builder()
+                .ide(JETBRAINS)
+                .build()
+        )
     }
 
     private fun displayPluginFirstRunPanel() {
@@ -344,7 +384,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         add(CenterOneComponentPanel(OnboardPanel(project).panel), BorderLayout.CENTER)
         revalidate()
 
-        service<SnykAnalyticsService>().logEvent(Segment.Event.USER_LANDED_ON_PRODUCT_SELECTION_PAGE)
+        service<SnykAnalyticsService>().logProductSelectionIsViewed(
+            ProductSelectionIsViewed.builder()
+                .ide(ProductSelectionIsViewed.Ide.JETBRAINS)
+                .build()
+        )
     }
 
     private fun displayTreeAndDescriptionPanels() {
@@ -443,9 +487,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val runScanLinkLabel = LinkLabel.create("Run scan") {
             project.service<SnykTaskQueueService>().scan()
-            service<SnykAnalyticsService>().logEvent(
-                Segment.Event.USER_TRIGGERS_AN_ANALYSIS,
-                EventPropertiesProvider.getSelectedProducts(getApplicationSettingsStateService())
+            service<SnykAnalyticsService>().logAnalysisIsTriggered(
+                AnalysisIsTriggered.builder()
+                    .analysisType(getSelectedProducts(getApplicationSettingsStateService()))
+                    .ide(AnalysisIsTriggered.Ide.JETBRAINS)
+                    .triggeredByUser(true)
+                    .build()
             )
         }
 
@@ -511,11 +558,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         }
                 }
             }
-
-            service<SnykAnalyticsService>().logEvent(
-                Segment.Event.SNYK_OPEN_SOURCE_ANALYSIS_READY,
-                EventPropertiesProvider.getAnalysisDetailsForOpenSource(cliResult)
-            )
         }
         updateTreeRootNodesPresentation(
             cliResultsCount = cliResult.issuesCount,
@@ -547,9 +589,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
 
-            service<SnykAnalyticsService>().logEvent(
-                Segment.Event.SNYK_CODE_SECURITY_VULNERABILITY_ANALYSIS_READY,
-                EventPropertiesProvider.getAnalysisDetailsForCode(securityResults)
+            service<SnykAnalyticsService>().logAnalysisIsReady(
+                AnalysisIsReady.builder()
+                    .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
+                    .ide(AnalysisIsReady.Ide.JETBRAINS)
+                    .result(Result.SUCCESS)
+                    .build()
             )
         }
         updateTreeRootNodesPresentation(
@@ -576,9 +621,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
 
-            service<SnykAnalyticsService>().logEvent(
-                Segment.Event.SNYK_CODE_QUALITY_ISSUES_ANALYSIS_READY,
-                EventPropertiesProvider.getAnalysisDetailsForCode(qualityResults)
+            service<SnykAnalyticsService>().logAnalysisIsReady(
+                AnalysisIsReady.builder()
+                    .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
+                    .ide(AnalysisIsReady.Ide.JETBRAINS)
+                    .result(Result.SUCCESS)
+                    .build()
             )
         }
         updateTreeRootNodesPresentation(

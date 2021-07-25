@@ -5,7 +5,6 @@ import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.*
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
@@ -53,8 +52,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
         applicationSettingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
         snykSettingsDialog.saveScanTypeChanges()
-
-        service<SnykAnalyticsService>().setAnalyticsCollectionEnabled(applicationSettingsStateService.usageAnalyticsEnabled)
 
         if (isProjectSettingsAvailable(project)) {
             project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
