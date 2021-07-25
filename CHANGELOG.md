@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.2.0]
+### Added
+- [Advisor](https://snyk.io/advisor) support for NPM packages in package.json
+
 ## [2.1.9]
 ### Fixed
 - Fix ProcessNotCreatedException when running OSS scans and CLI is still downloading
