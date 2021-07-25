@@ -1,19 +1,26 @@
 package io.snyk.plugin.ui.settings
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
+import io.snyk.plugin.ui.SnykBalloonNotifications
+import java.awt.Component
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.JLabel
 import javax.swing.event.HyperlinkEvent
 import javax.swing.event.HyperlinkListener
@@ -41,12 +48,31 @@ class ScanTypesPanel(
 
     val panel = panel {
         row {
-            checkBox(
-                "Snyk Open Source vulnerabilities",
-                { settings.cliScanEnable },
-                { settings.cliScanEnable = it },
-                cliScanComments
-            )
+            cell {
+                val ossCheckbox = checkBox(
+                    "Snyk Open Source vulnerabilities",
+                    { settings.cliScanEnable },
+                    { settings.cliScanEnable = it },
+                    cliScanComments
+                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                label("").component.convertIntoHelpHintLabel(
+                    "Find and automatically fix open source vulnerabilities"
+                )
+            }
+        }
+        row {
+            cell {
+                checkBox(
+                    "Snyk Advisor (early preview)",
+                    { settings.advisorEnable },
+                    { settings.advisorEnable = it },
+                    null
+                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                label("").component.convertIntoHelpHintLabel(
+                    "Discover the health (maintenance, community, popularity & security)\n" +
+                        "status of your open source packages"
+                )
+            }
         }
         row {
             cell {
@@ -54,9 +80,11 @@ class ScanTypesPanel(
                     SNYK_CODE_SECURITY_ISSUES,
                     { settings.snykCodeSecurityIssuesScanEnable },
                     { settings.snykCodeSecurityIssuesScanEnable = it }
-                )
+                ).withLeftGap(2) // needed due to bug with selection: left side is cut
                     .component
-
+                label("").component.convertIntoHelpHintLabel(
+                    "Find and fix vulnerabilities in your application code in real time"
+                )
                 if (!simplifyForOnboardPanel) {
                     snykCodeQualityCheckbox = checkBox(
                         SNYK_CODE_QUALITY_ISSUES,
@@ -65,13 +93,18 @@ class ScanTypesPanel(
                     )
                         .withLargeLeftGap()
                         .component
+                    label("").component.convertIntoHelpHintLabel(
+                        "Find and fix code quality issues in your application code in real time"
+                    )
                 }
             }
         }
         row {
             snykCodeComment = label("")
                 .withLargeLeftGap()
-                .component
+                .component.apply {
+                    foreground = UIUtil.getContextHelpForeground()
+                }
 
             snykCodeCheckbox?.addItemListener {
                 snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
@@ -87,8 +120,21 @@ class ScanTypesPanel(
                     .withLargeLeftGap()
                 snykCodeReCheckLinkLabel()
                     .withLargeLeftGap()
-
             }
+        }
+    }
+
+    private fun JLabel.convertIntoHelpHintLabel(text: String) {
+        icon = AllIcons.General.ContextHelp
+        addMouseListener(ShowHintMouseAdapter(this, text))
+    }
+
+    private var currentHint: Balloon? = null
+
+    inner class ShowHintMouseAdapter(val component: Component, val text: String) : MouseAdapter() {
+        override fun mouseClicked(e: MouseEvent?) {
+            currentHint?.hide()
+            currentHint = SnykBalloonNotifications.showInfoBalloonForComponent(text, component, true)
         }
     }
 
@@ -176,7 +222,7 @@ class ScanTypesPanel(
     ) {
         val showAlert = message.isNotEmpty()
         if (simplifyForOnboardPanel) {
-            snykCodeCheckbox?.text = SNYK_CODE_SECURITY_ISSUES + if (showAlert)  " (you can enable it later in the Settings)" else ""
+            snykCodeCheckbox?.text = SNYK_CODE_SECURITY_ISSUES + if (showAlert) " (you can enable it later in the Settings)" else ""
         } else {
             snykCodeAlertHyperLinkLabel.isVisible = showAlert
             // todo: change to setTextWithHyperlink() after move to sinceId >= 211

@@ -27,11 +27,14 @@ data class PackageInfo(
     val pending: Boolean,
 
     @SerializedName("labels")
-    val labels: PackageInfoLabels,
+    val labels: PackageInfoLabels?,
 
     @SerializedName("error")
-    val error: String
-)
+    val error: String?
+){
+    val normalizedScore: Int
+        get() = (score * 100).toInt()
+}
 
 data class PackageInfoLabels(
     @SerializedName("popularity")

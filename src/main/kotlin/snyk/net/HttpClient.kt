@@ -29,22 +29,22 @@ class HttpClient(
     var interceptors: List<Interceptor> = listOf()
 ) {
     fun build(): OkHttpClient {
-        val client = OkHttpClient.Builder().apply {
-            connectTimeout(connectTimeout, TimeUnit.SECONDS)
-            readTimeout(readTimeout, TimeUnit.SECONDS)
-            writeTimeout(writeTimeout, TimeUnit.SECONDS)
-            interceptors().addAll(interceptors)
+        val httpClientBuilder = OkHttpClient.Builder()
+            .connectTimeout(connectTimeout, TimeUnit.SECONDS)
+            .readTimeout(readTimeout, TimeUnit.SECONDS)
+            .writeTimeout(writeTimeout, TimeUnit.SECONDS)
 
-            if (disableSslVerification) {
-                ignoreAllSslErrors()
-            }
+        httpClientBuilder.interceptors().addAll(interceptors)
+
+        if (disableSslVerification) {
+            httpClientBuilder.ignoreAllSslErrors()
         }
 
-        return client.build()
+        return httpClientBuilder.build()
     }
 }
 
-private fun OkHttpClient.Builder.ignoreAllSslErrors(): OkHttpClient.Builder {
+private fun OkHttpClient.Builder.ignoreAllSslErrors() {
     val unsafeTrustManager = object : X509TrustManager {
         override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) = Unit
         override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) = Unit
@@ -58,6 +58,4 @@ private fun OkHttpClient.Builder.ignoreAllSslErrors(): OkHttpClient.Builder {
 
     sslSocketFactory(insecureSocketFactory, unsafeTrustManager)
     hostnameVerifier(HostnameVerifier { _, _ -> true })
-
-    return this
 }

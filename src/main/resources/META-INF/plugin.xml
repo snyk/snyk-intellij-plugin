@@ -18,6 +18,9 @@
                          instance="io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
                          groupId="tools"
                          displayName="Snyk"/>
+
+    <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
+
   </extensions>
 
   <actions>
