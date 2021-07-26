@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Changed
+- Make plugin compatible with 2021.2 version
+
 ## [2.2.0]
 ### Added
 - [Advisor](https://snyk.io/advisor) support for NPM packages in package.json

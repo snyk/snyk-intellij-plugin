@@ -7,7 +7,7 @@ on:
 jobs:
   release:
     name: Publish Plugin
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     container: gradle:jdk8
     steps:
       - name: Fetch Sources

@@ -1,30 +1,28 @@
+import io.gitlab.arturbosch.detekt.Detekt
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.jetbrains.changelog.closure
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+// reads properties from from gradle.properties file
+fun properties(key: String) = project.findProperty(key).toString()
+
 plugins {
-  id("org.jetbrains.changelog") version "0.4.0"
-  id("org.jetbrains.intellij") version "0.4.22"
+  id("org.jetbrains.changelog") version "1.2.1"
+  id("org.jetbrains.intellij") version "1.1.2"
   id("org.jetbrains.kotlin.jvm") version "1.3.72"
   id("io.gitlab.arturbosch.detekt") version ("1.17.1")
 }
 
-// variables from gradle.properties file
-val pluginVersion: String by project
-val pluginSinceBuild: String by project
-val pluginUntilBuild: String by project
-val platformVersion: String by project
-val localIdeDirectory: String by project
+group = properties("pluginGroup")
+description = properties("pluginName")
+version = properties("pluginVersion")
 
-group = "io.snyk.intellij"
-description = "Snyk Vulnerability Scanner"
-version = pluginVersion
+repositories {
+  mavenCentral()
+}
 
 dependencies {
-  implementation("org.jetbrains.kotlin:kotlin-stdlib")
-
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.segment.analytics.java:analytics:3.1.0")
@@ -45,21 +43,13 @@ dependencies {
   detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
 }
 
-repositories {
-  mavenCentral()
-}
-
-sourceSets {
-  create("integTest") {
-    compileClasspath += sourceSets.main.get().output
-    runtimeClasspath += sourceSets.main.get().output
-  }
-}
-
 // configuration for gradle-intellij-plugin plugin.
 // read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
-  version = platformVersion
+  pluginName.set(properties("pluginName"))
+  version.set(properties("platformVersion"))
+
+  downloadSources.set(properties("platformDownloadSources").toBoolean())
 }
 
 // configure for detekt plugin.
@@ -86,6 +76,10 @@ tasks {
     kotlinOptions.languageVersion = "1.3"
   }
 
+  withType<Detekt> {
+    jvmTarget = "1.8"
+  }
+
   withType<ProcessResources> {
     filesMatching("application.properties") {
       val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
@@ -109,11 +103,11 @@ tasks {
   }
 
   patchPluginXml {
-    version(pluginVersion)
-    sinceBuild(pluginSinceBuild)
-    untilBuild(pluginUntilBuild)
+    version.set(properties("pluginVersion"))
+    sinceBuild.set(properties("pluginSinceBuild"))
+    untilBuild.set(properties("pluginUntilBuild"))
 
-    pluginDescription(closure {
+    pluginDescription.set(
       File("$projectDir/README.md").readText().lines().run {
         val start = "<!-- Plugin description start -->"
         val end = "<!-- Plugin description end -->"
@@ -123,29 +117,31 @@ tasks {
         }
         subList(indexOf(start) + 1, indexOf(end))
       }.joinToString("\n").run { markdownToHTML(this) }
-    })
-
-    changeNotes(
-      closure {
-        changelog.getLatest().toHTML()
-      }
     )
+
+    changeNotes.set(provider { changelog.getLatest().toHTML() })
   }
 
   publishPlugin {
-    token(System.getenv("PUBLISH_TOKEN"))
-    channels(pluginVersion.split('-').getOrElse(1) { "default" }.split('.').first())
+    token.set(System.getenv("PUBLISH_TOKEN"))
+    channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
   }
 
   runIde {
     maxHeapSize = "2g"
-    autoReloadPlugins = false
-    if (localIdeDirectory.isNotEmpty()) {
-      ideDirectory(localIdeDirectory)
+    autoReloadPlugins.set(false)
+    if (properties("localIdeDirectory").isNotEmpty()) {
+      ideDir.set(File(properties("localIdeDirectory")))
     }
   }
 }
 
+sourceSets {
+  create("integTest") {
+    compileClasspath += sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().output
+  }
+}
 val integTestImplementation: Configuration by configurations.getting {
   extendsFrom(configurations.implementation.get(), configurations.testImplementation.get())
 }
