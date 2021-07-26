@@ -165,7 +165,7 @@ class SnykAnalyticsService : Disposable {
     private fun loadIterativelyEnvironment(): Environment {
         return try {
             val prop = Properties()
-            prop.load(javaClass.classLoader.getResourceAsStream("/application.properties"))
+            prop.load(javaClass.classLoader.getResourceAsStream("application.properties"))
             val environment = prop.getProperty("iteratively.analytics.environment") ?: "DEVELOPMENT"
 
             if (environment.isEmpty()) {
@@ -183,7 +183,7 @@ class SnykAnalyticsService : Disposable {
     private fun loadSegmentWriteKey(): String {
         return try {
             val prop = Properties()
-            prop.load(javaClass.classLoader.getResourceAsStream("/application.properties"))
+            prop.load(javaClass.classLoader.getResourceAsStream("application.properties"))
             prop.getProperty("segment.analytics.write-key") ?: ""
         } catch (t: Throwable) {
             log.warn("Could not load Segment write key.", t)

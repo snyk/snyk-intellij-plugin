@@ -1,7 +1,6 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.jetbrains.changelog.closure
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -9,8 +8,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
-  id("org.jetbrains.changelog") version "0.4.0"
-  id("org.jetbrains.intellij") version "0.4.22"
+  id("org.jetbrains.changelog") version "1.2.1"
+  id("org.jetbrains.intellij") version "1.1.2"
   id("org.jetbrains.kotlin.jvm") version "1.3.72"
   id("io.gitlab.arturbosch.detekt") version ("1.17.1")
 }
@@ -47,10 +46,10 @@ dependencies {
 // configuration for gradle-intellij-plugin plugin.
 // read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
-  pluginName = properties("pluginName")
-  version = properties("platformVersion")
+  pluginName.set(properties("pluginName"))
+  version.set(properties("platformVersion"))
 
-  downloadSources = properties("platformDownloadSources").toBoolean()
+  downloadSources.set(properties("platformDownloadSources").toBoolean())
 }
 
 // configure for detekt plugin.
@@ -104,11 +103,11 @@ tasks {
   }
 
   patchPluginXml {
-    version(properties("pluginVersion"))
-    sinceBuild(properties("pluginSinceBuild"))
-    untilBuild(properties("pluginUntilBuild"))
+    version.set(properties("pluginVersion"))
+    sinceBuild.set(properties("pluginSinceBuild"))
+    untilBuild.set(properties("pluginUntilBuild"))
 
-    pluginDescription(closure {
+    pluginDescription.set(
       File("$projectDir/README.md").readText().lines().run {
         val start = "<!-- Plugin description start -->"
         val end = "<!-- Plugin description end -->"
@@ -118,25 +117,21 @@ tasks {
         }
         subList(indexOf(start) + 1, indexOf(end))
       }.joinToString("\n").run { markdownToHTML(this) }
-    })
-
-    changeNotes(
-      closure {
-        changelog.getLatest().toHTML()
-      }
     )
+
+    changeNotes.set(provider { changelog.getLatest().toHTML() })
   }
 
   publishPlugin {
-    token(System.getenv("PUBLISH_TOKEN"))
-    channels(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first())
+    token.set(System.getenv("PUBLISH_TOKEN"))
+    channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
   }
 
   runIde {
     maxHeapSize = "2g"
-    autoReloadPlugins = false
+    autoReloadPlugins.set(false)
     if (properties("localIdeDirectory").isNotEmpty()) {
-      ideDirectory(properties("localIdeDirectory"))
+      ideDir.set(File(properties("localIdeDirectory")))
     }
   }
 }
