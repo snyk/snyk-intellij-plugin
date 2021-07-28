@@ -2,23 +2,20 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.cli.CliResult
+import snyk.oss.OssResult
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.getCli
+import io.snyk.plugin.getOssService
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
 import org.mockito.Mockito
-import java.io.File
 
-class SnykCliServiceTest : LightPlatformTestCase() {
+class OssServiceTest : LightPlatformTestCase() {
 
     @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
-
-        getCli(project).setConsoleCommandRunner(null)
 
         val settingsStateService = getApplicationSettingsStateService()
 
@@ -35,11 +32,11 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testGroupVulnerabilities() {
-        val cli = getCli(project)
+        val cli = getOssService(project)
 
-        val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"), "")
+        val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
 
-        val cliGroupedResult = cliResult.allCliVulnerabilities!!.first().toCliGroupedResult()
+        val cliGroupedResult = cliResult.allCliIssues!!.first().toGroupedResult()
 
         assertEquals(21, cliGroupedResult.uniqueCount)
         assertEquals(36, cliGroupedResult.pathsCount)
@@ -47,31 +44,14 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testGroupVulnerabilitiesForGoof() {
-        val cli = getCli(project)
+        val cli = getOssService(project)
 
-        val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-goof-test.json"), "")
+        val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-goof-test.json"))
 
-        val cliGroupedResult = cliResult.allCliVulnerabilities!!.first().toCliGroupedResult()
+        val cliGroupedResult = cliResult.allCliIssues!!.first().toGroupedResult()
 
         assertEquals(78, cliGroupedResult.uniqueCount)
         assertEquals(310, cliGroupedResult.pathsCount)
-    }
-
-    @Test
-    fun testIsPackageJsonExists() {
-        val projectDirectory = File(project.basePath!!)
-
-        if (!projectDirectory.exists()) {
-            projectDirectory.mkdir()
-        }
-
-        val packageJsonFile = File(projectDirectory, "package.json")
-
-        packageJsonFile.createNewFile()
-
-        assertTrue(getCli(project).isPackageJsonExists())
-
-        packageJsonFile.delete()
     }
 
     @Test
@@ -90,9 +70,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
                     }
                 """.trimIndent())
 
-        getCli(project).setConsoleCommandRunner(mockRunner)
+        getOssService(project).setConsoleCommandRunner(mockRunner)
 
-        val cliResult = getCli(project).scan()
+        val cliResult = getOssService(project).scan()
 
         assertFalse(cliResult.isSuccessful())
         assertEquals(
@@ -111,15 +91,15 @@ class SnykCliServiceTest : LightPlatformTestCase() {
             .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
             .thenReturn(getResourceAsString("group-vulnerabilities-test.json"))
 
-        getCli(project).setConsoleCommandRunner(mockRunner)
+        getOssService(project).setConsoleCommandRunner(mockRunner)
 
-        val cliResult = getCli(project).scan()
+        val cliResult = getOssService(project).scan()
 
         assertTrue(cliResult.isSuccessful())
 
-        assertEquals("npm", cliResult.allCliVulnerabilities!!.first().packageManager)
+        assertEquals("npm", cliResult.allCliIssues!!.first().packageManager)
 
-        val vulnerabilityIds = cliResult.allCliVulnerabilities!!.first().vulnerabilities.map { it.id }
+        val vulnerabilityIds = cliResult.allCliIssues!!.first().vulnerabilities.map { it.id }
 
         assertTrue(vulnerabilityIds.contains("SNYK-JS-DOTPROP-543489"))
         assertTrue(vulnerabilityIds.contains("SNYK-JS-OPEN-174041"))
@@ -136,13 +116,13 @@ class SnykCliServiceTest : LightPlatformTestCase() {
             .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
             .thenReturn(getResourceAsString("licence-vulnerabilities.json"))
 
-        getCli(project).setConsoleCommandRunner(mockRunner)
+        getOssService(project).setConsoleCommandRunner(mockRunner)
 
-        val cliResult = getCli(project).scan()
+        val cliResult = getOssService(project).scan()
 
         assertTrue(cliResult.isSuccessful())
 
-        val vulnerabilityIds = cliResult.allCliVulnerabilities!!.first().vulnerabilities.map { it.id }
+        val vulnerabilityIds = cliResult.allCliIssues!!.first().vulnerabilities.map { it.id }
 
         assertTrue(vulnerabilityIds.contains("snyk:lic:pip:nltk:Apache-2.0"))
         assertTrue(vulnerabilityIds.contains("snyk:lic:pip:six:MIT"))
@@ -153,10 +133,10 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val cliFile = getCliFile()
 
         if (cliFile.exists()) {
-            cliFile.delete()
+            assertTrue(cliFile.delete())
         }
 
-        val isCliInstalled = getCli(project).isCliInstalled()
+        val isCliInstalled = getOssService(project).isCliInstalled()
 
         assertFalse(isCliInstalled)
     }
@@ -169,7 +149,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
             cliFile.delete()
         }
 
-        val isCliInstalled = getCli(project).isCliInstalled()
+        val isCliInstalled = getOssService(project).isCliInstalled()
 
         assertFalse(isCliInstalled)
     }
@@ -179,10 +159,10 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         val cliFile = getCliFile()
 
         if (!cliFile.exists()) {
-            cliFile.createNewFile()
+            assertTrue(cliFile.createNewFile())
         }
 
-        val isCliInstalled = getCli(project).isCliInstalled()
+        val isCliInstalled = getOssService(project).isCliInstalled()
 
         assertTrue(isCliInstalled)
 
@@ -193,7 +173,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testIsCliInstalledSuccess() {
         setupDummyCliFile()
 
-        val isCliInstalled = getCli(project).isCliInstalled()
+        val isCliInstalled = getOssService(project).isCliInstalled()
 
         assertTrue(isCliInstalled)
     }
@@ -202,7 +182,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListForMaven() {
         setupDummyCliFile()
 
-        val defaultCommands =  getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
+        val defaultCommands =  getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
@@ -213,11 +193,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithCustomEndpointParameter() {
         setupDummyCliFile()
 
-        val settingsStateService = getApplicationSettingsStateService()
+        getApplicationSettingsStateService().customEndpointUrl = "https://app.snyk.io/api"
 
-        settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
-
-        val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
+        val defaultCommands = getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
@@ -229,11 +207,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithInsecureParameter() {
         setupDummyCliFile()
 
-        val settings = getApplicationSettingsStateService()
+        getApplicationSettingsStateService().ignoreUnknownCA = true
 
-        settings.ignoreUnknownCA = true
-
-        val defaultCommands = getCli(project).buildCliCommandsList(settings)
+        val defaultCommands = getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
@@ -245,10 +221,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithOrganizationParameter() {
         setupDummyCliFile()
 
-        val settingsStateService = getApplicationSettingsStateService()
-        settingsStateService.organization = "test-org"
+        getApplicationSettingsStateService().organization = "test-org"
 
-        val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
+        val defaultCommands = getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
@@ -259,10 +234,9 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     @Test
     fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
         setupDummyCliFile()
-        val settings = getApplicationSettingsStateService()
-        settings.usageAnalyticsEnabled = false
+        getApplicationSettingsStateService().usageAnalyticsEnabled = false
 
-        val cliCommands = getCli(project).buildCliCommandsList(settings)
+        val cliCommands = getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, cliCommands[0])
         assertEquals("test", cliCommands[1])
@@ -276,7 +250,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val defaultCommands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
+        val defaultCommands = getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
@@ -297,7 +271,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
+        val defaultCommands = getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
@@ -322,7 +296,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
         project.service<SnykProjectSettingsStateService>().additionalParameters =
             "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
 
-        val defaultCommands = getCli(project).buildCliCommandsList(settingsStateService)
+        val defaultCommands = getOssService(project).buildCliCommandsList()
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("test", defaultCommands[1])
@@ -336,39 +310,15 @@ class SnykCliServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testCheckIsCliInstalledAutomaticallyByPluginSuccessful() {
-        val cliFile = getCliFile()
-
-        if (!cliFile.exists()) {
-            cliFile.createNewFile()
-        }
-
-        assertTrue(getCli(project).checkIsCliInstalledAutomaticallyByPlugin())
-
-        cliFile.delete()
-    }
-
-    @Test
-    fun testCheckIsCliInstalledAutomaticallyByPluginFailed() {
-        val cliFile = getCliFile()
-
-        if (cliFile.exists()) {
-            cliFile.delete()
-        }
-
-        assertFalse(getCli(project).checkIsCliInstalledAutomaticallyByPlugin())
-    }
-
-    @Test
     fun testConvertRawCliStringToCliResult() {
-        val cli = getCli(project)
+        val cli = getOssService(project)
 
         val sigleObjectCliResult = cli
-            .convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"), "")
+            .convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
         assertTrue(sigleObjectCliResult.isSuccessful())
 
         val arrayObjectCliResult = cli
-            .convertRawCliStringToCliResult(getResourceAsString("vulnerabilities-array-cli-result.json"), "")
+            .convertRawCliStringToCliResult(getResourceAsString("vulnerabilities-array-cli-result.json"))
         assertTrue(arrayObjectCliResult.isSuccessful())
 
         val jsonErrorCliResult = cli.convertRawCliStringToCliResult("""
@@ -377,7 +327,7 @@ class SnykCliServiceTest : LightPlatformTestCase() {
                       "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
                       "path": "/Users/user/Desktop/example-npm-project"
                     }
-                """.trimIndent(), "")
+                """.trimIndent())
         assertFalse(jsonErrorCliResult.isSuccessful())
         assertEquals("Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
             jsonErrorCliResult.error!!.message)
@@ -385,38 +335,38 @@ class SnykCliServiceTest : LightPlatformTestCase() {
 
         val rawErrorCliResult = cli.convertRawCliStringToCliResult("""
                     Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.
-                """.trimIndent(), "")
+                """.trimIndent())
         assertFalse(rawErrorCliResult.isSuccessful())
         assertEquals("Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.",
             rawErrorCliResult.error!!.message)
-        assertEquals("", rawErrorCliResult.error!!.path)
+        assertEquals(project.basePath, rawErrorCliResult.error!!.path)
     }
 
     @Test
     fun testConvertRawCliStringWithLicenseVulnsToCliResult() {
-        val cli = getCli(project)
+        val cli = getOssService(project)
 
         val rawMissedFixedInFieldCliString = getResourceAsString("licence-vulnerabilities.json")
-        val cliResult = cli.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString, "")
+        val cliResult = cli.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString)
         assertTrue(cliResult.isSuccessful())
-        assertNotNull(cliResult.allCliVulnerabilities?.find { it.vulnerabilities.any { it.fixedIn == null } })
+        assertNotNull(cliResult.allCliIssues?.find { it.vulnerabilities.any { it.fixedIn == null } })
 
         touchAllFields(cliResult)
     }
 
     @Test
     fun testConvertRawCliStringToCliResultFieldsInitialisation() {
-        val cli = getCli(project)
+        val cli = getOssService(project)
 
         val rawCliString = getResourceAsString("group-vulnerabilities-goof-test.json")
-        val cliResult = cli.convertRawCliStringToCliResult(rawCliString, "")
+        val cliResult = cli.convertRawCliStringToCliResult(rawCliString)
         assertTrue(cliResult.isSuccessful())
 
         touchAllFields(cliResult)
     }
 
-    private  fun touchAllFields(cliResultToCheck: CliResult) {
-        cliResultToCheck.allCliVulnerabilities?.forEach {
+    private  fun touchAllFields(ossResultToCheck: OssResult) {
+        ossResultToCheck.allCliIssues?.forEach {
             it.displayTargetFile
             it.packageManager
             it.projectName

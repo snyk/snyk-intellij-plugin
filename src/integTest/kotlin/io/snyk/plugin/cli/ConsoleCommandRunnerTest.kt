@@ -10,8 +10,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.impl.CoreProgressManager
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.getCli
+import io.snyk.plugin.getOssService
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.services.SnykCliDownloaderService
@@ -20,13 +19,6 @@ import snyk.PLUGIN_ID
 import java.util.concurrent.TimeUnit
 
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
-
-    @Throws(Exception::class)
-    override fun setUp() {
-        super.setUp()
-
-        getCli(project).setConsoleCommandRunner(null)
-    }
 
     @Test
     fun testSetupCliEnvironmentVariables() {
@@ -49,12 +41,14 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
         val progressManager = ProgressManager.getInstance() as CoreProgressManager
         val snykCliDownloaderService = service<SnykCliDownloaderService>()
+        var downloadIndicator: ProgressIndicator? = null
 
         assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
         progressManager.runProcessWithProgressAsynchronously(
             object : Task.Backgroundable(project, "Test CLI download", true) {
                 override fun run(indicator: ProgressIndicator) {
                     assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
+                    downloadIndicator = indicator
                     snykCliDownloaderService.downloadLatestRelease(indicator)
                 }
             },
@@ -73,7 +67,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                         snykCliDownloaderService.isCliDownloading()
                     )
                     // No exception should happened while CLI is downloading and any CLI command is invoked
-                    val commands = getCli(project).buildCliCommandsList(getApplicationSettingsStateService())
+                    val commands = getOssService(project).buildCliCommandsList()
                     val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
                     assertTrue(
                         "Should be NO output for CLI command while CLI is downloading, but received:\n$output",
@@ -86,5 +80,11 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         )
 
         testRunFuture.get(5000, TimeUnit.MILLISECONDS)
+        // we have to stop CLI download process otherwise partially downloaded CLI file will be visible in other tests
+        downloadIndicator?.cancel()
+        while (snykCliDownloaderService.isCliDownloading()) {
+            Thread.sleep(10) // lets wait till download actually stopped
+        }
+        assertFalse(cliFile.exists())
     }
 }

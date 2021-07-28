@@ -36,6 +36,11 @@ class SnykCliDownloaderService {
 
     fun isCliDownloading() = currentProgressIndicator != null
 
+    fun stopCliDownload() = currentProgressIndicator?.let {
+        it.cancel()
+        currentProgressIndicator = null
+    }
+
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
         try {
             val jsonResponseStr = URL(LATEST_RELEASES_URL).readText()

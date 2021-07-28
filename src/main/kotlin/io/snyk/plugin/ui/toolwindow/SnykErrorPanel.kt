@@ -7,7 +7,7 @@ import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.buildBoldTitleLabel
-import io.snyk.plugin.cli.CliError
+import snyk.common.SnykError
 import java.awt.Color
 import java.awt.Font
 import java.awt.Insets
@@ -15,7 +15,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
 
-class CliErrorPanel(cliError: CliError) : JPanel() {
+class SnykErrorPanel(snykError: SnykError) : JPanel() {
 
     init {
         this.layout = GridLayoutManager(11, 1, Insets(20, 0, 0, 0), -1, 10)
@@ -70,7 +70,7 @@ class CliErrorPanel(cliError: CliError) : JPanel() {
                 0,
                 false))
 
-        val pathTextArea = JTextArea(cliError.path)
+        val pathTextArea = JTextArea(snykError.path)
         pathTextArea.lineWrap = true
         pathTextArea.wrapStyleWord = true
         pathTextArea.isOpaque = false
@@ -128,7 +128,7 @@ class CliErrorPanel(cliError: CliError) : JPanel() {
                 0,
                 false))
 
-        val errorMessageTextArea = JTextArea(cliError.message)
+        val errorMessageTextArea = JTextArea(snykError.message)
         errorMessageTextArea.lineWrap = true
         errorMessageTextArea.wrapStyleWord = true
         errorMessageTextArea.isOpaque = false

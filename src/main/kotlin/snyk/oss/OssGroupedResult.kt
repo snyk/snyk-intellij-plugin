@@ -1,6 +1,6 @@
-package io.snyk.plugin.cli
+package snyk.oss
 
-data class CliGroupedResult(
+data class OssGroupedResult(
     val id2vulnerabilities: Map<String, List<Vulnerability>>,
     val uniqueCount: Int,
     val pathsCount: Int

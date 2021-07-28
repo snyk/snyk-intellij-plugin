@@ -7,7 +7,6 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.*
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.*
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -42,7 +41,7 @@ class SnykBulkFileListener() : BulkFileListener {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
-            // clean CLI cached results
+            // clean OSS cached results
             val changedBuildFiles = getAffectedVirtualFiles(
                 events,
                 fileFilter = Predicate { supportedBuildFiles.contains(it.name) },
@@ -50,7 +49,7 @@ class SnykBulkFileListener() : BulkFileListener {
             )
             if (changedBuildFiles.isNotEmpty()) {
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
-                toolWindowPanel.currentCliResults = null
+                toolWindowPanel.currentOssResults = null
             }
 
             val virtualFilesAffected = getAffectedVirtualFiles(

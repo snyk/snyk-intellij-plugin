@@ -1,23 +1,21 @@
 package io.snyk.plugin.cli
 
 import io.snyk.plugin.Severity
+import snyk.common.SnykError
 import java.time.Instant
 
-class CliResult(var allCliVulnerabilities: Array<CliVulnerabilitiesForFile>?, var error: CliError?) {
-    val timeStamp = Instant.now()
+abstract class CliResult<CliIssuesForFile>(
+    var allCliIssues: Array<CliIssuesForFile>?,
+    var error: SnykError?
+) {
+
+    val timeStamp: Instant = Instant.now()
 
     fun isSuccessful(): Boolean = error == null
 
-    val issuesCount = allCliVulnerabilities?.sumBy { it.uniqueCount }
+    abstract val issuesCount: Int?
 
-    fun countBySeverity(severity: String): Int? {
-        return allCliVulnerabilities?.sumBy { vulnerabilitiesForFile ->
-            vulnerabilitiesForFile.vulnerabilities
-                .filter { it.severity == severity }
-                .distinctBy { it.id }
-                .size
-        }
-    }
+    protected abstract fun countBySeverity(severity: String): Int?
 
     fun criticalSeveritiesCount(): Int = countBySeverity(Severity.CRITICAL) ?: 0
 

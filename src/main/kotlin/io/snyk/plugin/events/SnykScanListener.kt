@@ -1,8 +1,8 @@
 package io.snyk.plugin.events
 
 import com.intellij.util.messages.Topic
-import io.snyk.plugin.cli.CliError
-import io.snyk.plugin.cli.CliResult
+import snyk.common.SnykError
+import snyk.oss.OssResult
 import io.snyk.plugin.snykcode.SnykCodeResults
 
 interface SnykScanListener {
@@ -13,11 +13,11 @@ interface SnykScanListener {
 
     fun scanningStarted()
 
-    fun scanningCliFinished(cliResult: CliResult)
+    fun scanningOssFinished(ossResult: OssResult)
 
     fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults)
 
-    fun scanningCliError(cliError: CliError)
+    fun scanningOssError(snykError: SnykError)
 
-    fun scanningSnykCodeError(cliError: CliError)
+    fun scanningSnykCodeError(snykError: SnykError)
 }

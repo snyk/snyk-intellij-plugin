@@ -12,13 +12,6 @@ import java.time.LocalDateTime
 
 class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
-    @Throws(Exception::class)
-    override fun setUp() {
-        super.setUp()
-
-        getCli(project).setConsoleCommandRunner(null)
-    }
-
     @Test
     fun testGetLatestReleasesInformation() {
         val latestReleaseInfo = project.service<SnykCliDownloaderService>().requestLatestReleasesInformation()

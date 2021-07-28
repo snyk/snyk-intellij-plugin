@@ -5,7 +5,7 @@
   <CurrentIssues>
     <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:115</ID>
     <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:98</ID>
-    <ID>ChainWrapping:io.snyk.plugin.services.SnykCliService.kt:80</ID>
+    <ID>ChainWrapping:snyk.oss.SnykCliService.kt:80</ID>
     <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:31</ID>
     <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:32</ID>
     <ID>ChainWrapping:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:33</ID>
@@ -161,7 +161,7 @@
     <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliAuthenticationService.kt:144</ID>
     <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliDownloaderService.kt:119</ID>
     <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliDownloaderService.kt:98</ID>
-    <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliService.kt:41</ID>
+    <ID>MaximumLineLength:snyk.oss.SnykCliService.kt:41</ID>
     <ID>MaximumLineLength:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:57</ID>
     <ID>MaximumLineLength:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:60</ID>
     <ID>MaximumLineLength:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:84</ID>
@@ -222,7 +222,7 @@
     <ID>NoWildcardImports:io.snyk.plugin.services.SnykApplicationSettingsStateService.kt:3</ID>
     <ID>NoWildcardImports:io.snyk.plugin.services.SnykCliAuthenticationService.kt:27</ID>
     <ID>NoWildcardImports:io.snyk.plugin.services.SnykCliDownloaderService.kt:18</ID>
-    <ID>NoWildcardImports:io.snyk.plugin.services.SnykCliService.kt:6</ID>
+    <ID>NoWildcardImports:snyk.oss.SnykCliService.kt:6</ID>
     <ID>NoWildcardImports:io.snyk.plugin.services.SnykProjectSettingsStateService.kt:3</ID>
     <ID>NoWildcardImports:io.snyk.plugin.services.SnykTaskQueueService.kt:11</ID>
     <ID>NoWildcardImports:io.snyk.plugin.settings.SnykProjectSettingsConfigurable.kt:6</ID>
@@ -243,9 +243,9 @@
     <ID>ParameterListWrapping:io.snyk.plugin.cli.CliError.kt:6</ID>
     <ID>ParameterListWrapping:io.snyk.plugin.cli.CliError.kt:7</ID>
     <ID>ParameterListWrapping:io.snyk.plugin.cli.CliError.kt:8</ID>
-    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliGroupedResult.kt:4</ID>
-    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliGroupedResult.kt:5</ID>
-    <ID>ParameterListWrapping:io.snyk.plugin.cli.CliGroupedResult.kt:6</ID>
+    <ID>ParameterListWrapping:snyk.oss.CliGroupedResult.kt:4</ID>
+    <ID>ParameterListWrapping:snyk.oss.CliGroupedResult.kt:5</ID>
+    <ID>ParameterListWrapping:snyk.oss.CliGroupedResult.kt:6</ID>
     <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:29</ID>
     <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:30</ID>
     <ID>ParameterListWrapping:io.snyk.plugin.cli.ConsoleCommandRunner.kt:31</ID>

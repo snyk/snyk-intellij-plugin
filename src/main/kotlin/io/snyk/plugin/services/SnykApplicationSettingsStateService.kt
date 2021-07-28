@@ -29,7 +29,10 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var ignoreUnknownCA = false
     var cliVersion: String? = null
 
-    var cliScanEnable: Boolean = true
+    @Deprecated("left for old users migration only, scheduled for removal in 2.2.3")
+    private var cliScanEnable: Boolean = true
+
+    var ossScanEnable: Boolean = cliScanEnable
     var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = false

@@ -13,7 +13,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import io.snyk.plugin.cli.CliError
+import snyk.common.SnykError
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -154,7 +154,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         runForProject(project, Consumer { prj ->
             SnykBalloonNotifications.showWarn(message, prj)
             getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
-                CliError(false, message, prj.basePath ?: "")
+                SnykError(message, prj.basePath ?: "")
             )
         })
     }
@@ -163,7 +163,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         runForProject(project, Consumer { prj ->
             SnykBalloonNotifications.showError(message, prj)
             getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
-                CliError(false, message, prj.basePath ?: "")
+                SnykError(message, prj.basePath ?: "")
             )
         })
     }
