@@ -1,6 +1,6 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.2.1]
 ### Changed
 - Make plugin compatible with 2021.2 version
 
