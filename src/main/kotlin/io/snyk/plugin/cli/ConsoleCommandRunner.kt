@@ -6,17 +6,17 @@ import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ScriptRunnerUtil
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.ui.SnykBalloonNotifications
-import org.apache.log4j.Logger
 import snyk.pluginInfo
 import java.nio.charset.Charset
 
 open class ConsoleCommandRunner {
-    private val logger: Logger = Logger.getLogger(ConsoleCommandRunner::class.java)
+    private val logger = logger<ConsoleCommandRunner>()
 
     open fun execute(
         commands: List<String>,
@@ -25,8 +25,7 @@ open class ConsoleCommandRunner {
         project: Project,
         outputConsumer: (line: String) -> Unit = {}
     ): String {
-        logger.info("Enter ConsoleCommandRunner.execute()")
-        logger.info("Commands: $commands")
+        logger.info("Call to execute commands: $commands")
 
         val generalCommandLine = GeneralCommandLine(commands)
 
@@ -34,8 +33,6 @@ open class ConsoleCommandRunner {
         generalCommandLine.setWorkDirectory(workDirectory)
 
         setupCliEnvironmentVariables(generalCommandLine, apiToken)
-
-        logger.info("GeneralCommandLine instance created.")
 
         val processHandler = try {
             OSProcessHandler(generalCommandLine)
@@ -46,8 +43,15 @@ open class ConsoleCommandRunner {
         }
         val parentIndicator = ProgressManager.getInstance().progressIndicator
 
+        var firstLine = true
         processHandler.addProcessListener(object : ProcessAdapter() {
-            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) = outputConsumer(event.text)
+            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                if (firstLine) {
+                    logger.debug("Executing: \"${event.text}\"")
+                    firstLine = false
+                }
+                outputConsumer(event.text)
+            }
         })
 
         var wasProcessTerminated = false
@@ -58,7 +62,7 @@ open class ConsoleCommandRunner {
             }
         }
 
-        logger.info("Execute ScriptRunnerUtil.getProcessOutput(...)")
+        logger.debug("Execute ScriptRunnerUtil.getProcessOutput(...)")
         val processOutput = ScriptRunnerUtil.getProcessOutput(processHandler, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
 
         return if (wasProcessTerminated) PROCESS_CANCELLED_BY_USER else processOutput

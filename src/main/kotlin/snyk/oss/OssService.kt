@@ -11,7 +11,10 @@ import snyk.common.SnykError
  * Wrap work with Snyk CLI for OSS (`test` command).
  */
 @Service
-class OssService(project: Project) : CliService<OssResult>(project) {
+class OssService(project: Project) : CliService<OssResult>(
+    project = project,
+    cliCommands = listOf("test")
+) {
 
     override fun getErrorResult(errorMsg: String): OssResult = OssResult(null, SnykError(errorMsg, projectPath))
 
@@ -19,7 +22,7 @@ class OssService(project: Project) : CliService<OssResult>(project) {
      * If result string not contains 'error' string and contain 'vulnerabilities' it says that everything is correct.
      * If result string not contains '{' it means CLI return an error.
      * And if result string contains 'error' and not contain 'vulnerabilities' it means CLI return error in JSON format.
-     * if result == [ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER] - CLI scan process was intentionally terminated by user..
+     * if result == [ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER] - CLI scan process was terminated by user..
      */
     override fun convertRawCliStringToCliResult(rawStr: String): OssResult =
         when {
@@ -42,7 +45,4 @@ class OssService(project: Project) : CliService<OssResult>(project) {
 
     private fun isSuccessCliJsonString(jsonStr: String): Boolean =
         jsonStr.contains("\"vulnerabilities\":") && !jsonStr.contains("\"error\":")
-
-    override fun buildCliCommandsList(): List<String>  = buildCliCommandsList("test")
-
 }

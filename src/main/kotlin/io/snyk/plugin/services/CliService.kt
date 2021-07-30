@@ -1,21 +1,22 @@
 package io.snyk.plugin.services
 
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.cli.*
+import io.snyk.plugin.cli.CliNotExistsException
+import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
-import org.apache.log4j.Logger
 import org.jetbrains.annotations.TestOnly
 
 /**
  * Wrap work with Snyk CLI.
  */
-abstract class CliService<R>(val project: Project) {
+abstract class CliService<R>(val project: Project, private val cliCommands: List<String>) {
 
     private var consoleCommandRunner = ConsoleCommandRunner()
 
-    private val logger: Logger = Logger.getLogger(CliService::class.java)
+    private val logger = logger<CliService<R>>()
 
     protected val projectPath: String = project.basePath
         ?: throw IllegalStateException("Scan should not be performed on Default project (with `null` project base dir)")
@@ -27,13 +28,9 @@ abstract class CliService<R>(val project: Project) {
 
     fun scan(): R = try {
         val commands = buildCliCommandsList()
-
         val apiToken = getApplicationSettingsStateService().token ?: ""
-
         val rawResultStr = consoleCommandRunner.execute(commands, projectPath, apiToken, project)
-
         convertRawCliStringToCliResult(rawResultStr)
-
     } catch (exception: CliNotExistsException) {
         getErrorResult(exception.message ?: "Snyk CLI not installed.")
     }
@@ -45,8 +42,6 @@ abstract class CliService<R>(val project: Project) {
      */
     abstract fun convertRawCliStringToCliResult(rawStr: String): R
 
-    abstract  fun buildCliCommandsList(): List<String>
-
     /**
      * Build list of commands for run Snyk CLI command.
      *
@@ -54,13 +49,13 @@ abstract class CliService<R>(val project: Project) {
      *
      * @return List<String>
      */
-    protected fun buildCliCommandsList(cliCommand: String): List<String> {
+    fun buildCliCommandsList(): List<String> {
         logger.debug("Enter buildCliCommandsList")
         val settings = getApplicationSettingsStateService()
 
         val commands: MutableList<String> = mutableListOf()
         commands.add(getCliCommandPath())
-        commands.add(cliCommand)
+        commands.addAll(cliCommands)
         commands.add("--json")
 
         val customEndpoint = settings.customEndpointUrl
@@ -99,5 +94,4 @@ abstract class CliService<R>(val project: Project) {
 
     private fun getCliCommandPath(): String =
         if (isCliInstalled()) getCliFile().absolutePath else throw CliNotExistsException()
-
 }

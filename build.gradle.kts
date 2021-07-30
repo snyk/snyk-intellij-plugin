@@ -48,7 +48,6 @@ dependencies {
 intellij {
   pluginName.set(properties("pluginName"))
   version.set(properties("platformVersion"))
-//  plugins.add("PsiViewer:202-SNAPSHOT")
 
   downloadSources.set(properties("platformDownloadSources").toBoolean())
 }
