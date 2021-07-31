@@ -1,0 +1,675 @@
+{
+  "meta": {
+    "isPrivate": true,
+    "isLicensesEnabled": false,
+    "ignoreSettings": null,
+    "org": "artsiom.chapialiou",
+    "projectId": "",
+    "policy": ""
+  },
+  "filesystemPolicy": false,
+  "vulnerabilities": [],
+  "dependencyCount": 0,
+  "licensesPolicy": null,
+  "ignoreSettings": null,
+  "targetFile": "fargate.yml",
+  "projectName": "cloudformation",
+  "org": "artsiom.chapialiou",
+  "policy": "",
+  "isPrivate": true,
+  "targetFilePath": "D:\\TestProjects\\infrastructure-as-code-goof\\cloudformation\\fargate.yml",
+  "packageManager": "cloudformationconfig",
+  "path": "fargate.yml",
+  "projectType": "cloudformationconfig",
+  "ok": false,
+  "infrastructureAsCodeIssues": [
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.ImageScanningConfiguration` attribute to `true`",
+      "id": "SNYK-CC-TF-61",
+      "impact": "The known vulnerabilities will not be automatically discovered",
+      "msg": "Resources[EcrDockerRepository].Properties.ImageScanningConfiguration",
+      "remediation": {
+        "cloudformation": "Set `Properties.ImageScanningConfiguration` attribute to `true`",
+        "terraform": "Set `image_scanning_configuration.scan_on_push` attribute to `true`"
+      },
+      "subType": "ECR",
+      "issue": "The ECR image scan for known vulnerabilities is disabled",
+      "publicId": "SNYK-CC-TF-61",
+      "title": "ECR image scanning is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "The ECR image scan for known vulnerabilities is disabled",
+        "impact": "The known vulnerabilities will not be automatically discovered",
+        "resolve": "Set `Properties.ImageScanningConfiguration` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-61",
+      "path": [
+        "[DocId:0]",
+        "Resources[EcrDockerRepository]",
+        "Properties",
+        "ImageScanningConfiguration"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`",
+      "id": "SNYK-CC-TF-124",
+      "impact": "Changes or deletion of objects will not be reversible",
+      "msg": "Resources[CodePipelineArtifactBucket].Properties.VersioningConfiguration.Status",
+      "remediation": {
+        "cloudformation": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`",
+        "terraform": "Set `versioning.enabled` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "S3 bucket versioning is disabled",
+      "publicId": "SNYK-CC-TF-124",
+      "title": "S3 bucket versioning disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "S3 bucket versioning is disabled",
+        "impact": "Changes or deletion of objects will not be reversible",
+        "resolve": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-124",
+      "path": [
+        "[DocId:0]",
+        "Resources[CodePipelineArtifactBucket]",
+        "Properties",
+        "VersioningConfiguration",
+        "Status"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`",
+      "id": "SNYK-CC-TF-95",
+      "impact": "Anyone who can manage bucket's ACLs will be able to grant public access to the bucket",
+      "msg": "Resources[DefaultContainerBucket].Properties.PublicAccessBlockConfiguration.BlockPublicAcls",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`",
+        "terraform": "Set `block_public_acls` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket does not prevent creation of public ACLs",
+      "publicId": "SNYK-CC-TF-95",
+      "title": "S3 block public ACLs control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-accesspoint.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket does not prevent creation of public ACLs",
+        "impact": "Anyone who can manage bucket's ACLs will be able to grant public access to the bucket",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-95",
+      "path": [
+        "[DocId:0]",
+        "Resources[DefaultContainerBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "BlockPublicAcls"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`",
+      "id": "SNYK-CC-TF-95",
+      "impact": "Anyone who can manage bucket's ACLs will be able to grant public access to the bucket",
+      "msg": "Resources[CodePipelineArtifactBucket].Properties.PublicAccessBlockConfiguration.BlockPublicAcls",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`",
+        "terraform": "Set `block_public_acls` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket does not prevent creation of public ACLs",
+      "publicId": "SNYK-CC-TF-95",
+      "title": "S3 block public ACLs control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-accesspoint.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket does not prevent creation of public ACLs",
+        "impact": "Anyone who can manage bucket's ACLs will be able to grant public access to the bucket",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-95",
+      "path": [
+        "[DocId:0]",
+        "Resources[CodePipelineArtifactBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "BlockPublicAcls"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.EncryptionConfiguration.KmsKey` attribute to customer managed KMS key",
+      "id": "SNYK-CC-AWS-418",
+      "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+      "msg": "Resources[EcrDockerRepository].Properties.EncryptionConfiguration.KmsKey",
+      "remediation": {
+        "cloudformation": "Set `Properties.EncryptionConfiguration.KmsKey` attribute to customer managed KMS key",
+        "terraform": "Set `encryption_configuration.kms_key` attribute to customer managed KMS key"
+      },
+      "subType": "ECR",
+      "issue": "ECR repository is not encrypted with customer managed key",
+      "publicId": "SNYK-CC-AWS-418",
+      "title": "ECR repository is not encrypted with customer managed key",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonECR/latest/userguide/encryption-at-rest.html",
+        "https://docs.aws.amazon.com/whitepapers/latest/kms-best-practices/aws-managed-and-customer-managed-cmks.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "ECR repository is not encrypted with customer managed key",
+        "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+        "resolve": "Set `Properties.EncryptionConfiguration.KmsKey` attribute to customer managed KMS key"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-418",
+      "path": [
+        "[DocId:0]",
+        "Resources[EcrDockerRepository]",
+        "Properties",
+        "EncryptionConfiguration",
+        "KmsKey"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`",
+      "id": "SNYK-CC-TF-96",
+      "impact": "Anyone who can manage bucket's policies will be able to grant public access to the bucket.",
+      "msg": "Resources[DefaultContainerBucket].Properties.PublicAccessBlockConfiguration.BlockPublicPolicy",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`",
+        "terraform": "Set `block_public_policy` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket does not prevent creation of public policies",
+      "publicId": "SNYK-CC-TF-96",
+      "title": "S3 block public policy control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket does not prevent creation of public policies",
+        "impact": "Anyone who can manage bucket's policies will be able to grant public access to the bucket.",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-96",
+      "path": [
+        "[DocId:0]",
+        "Resources[DefaultContainerBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "BlockPublicPolicy"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`",
+      "id": "SNYK-CC-AWS-405",
+      "impact": "Maliciously crafted headers may be accepted by the load balancer",
+      "msg": "Resources[ApplicationLoadBalancer].Properties.LoadBalancerAttributes",
+      "remediation": {
+        "cloudformation": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`",
+        "terraform": "Set `drop_invalid_header_fields` to `true`"
+      },
+      "subType": "Elastic Load Balancing v2 (ALB/NLB)",
+      "issue": "The application load balancer is not set to drop invalid headers.",
+      "publicId": "SNYK-CC-AWS-405",
+      "title": "ALB does not drop invalid headers",
+      "references": [
+        "https://docs.aws.amazon.com/config/latest/developerguide/alb-http-drop-invalid-header-enabled.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "The application load balancer is not set to drop invalid headers.",
+        "impact": "Maliciously crafted headers may be accepted by the load balancer",
+        "resolve": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-405",
+      "path": [
+        "[DocId:0]",
+        "Resources[ApplicationLoadBalancer]",
+        "Properties",
+        "LoadBalancerAttributes"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.Scheme` attribute to `internal`",
+      "id": "SNYK-CC-TF-48",
+      "impact": "Increases attack vector reachability",
+      "msg": "Resources.ApplicationLoadBalancer.Properties.Scheme",
+      "remediation": {
+        "cloudformation": "Set `Properties.Scheme` attribute to `internal`",
+        "terraform": "Set `internal` attribute to `true`"
+      },
+      "subType": "Elastic Load Balancing (ELB Classic)",
+      "issue": "Load balancer is internet facing",
+      "publicId": "SNYK-CC-TF-48",
+      "title": "Load balancer is internet facing",
+      "references": [
+        "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-internet-facing-load-balancers.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Load balancer is internet facing",
+        "impact": "Increases attack vector reachability",
+        "resolve": "Set `Properties.Scheme` attribute to `internal`"
+      },
+      "lineNumber": 569,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-48",
+      "path": [
+        "[DocId:0]",
+        "Resources",
+        "ApplicationLoadBalancer",
+        "Properties",
+        "Scheme"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.ImageTagMutability` attribute to `IMMUTABLE`",
+      "id": "SNYK-CC-TF-126",
+      "impact": "Image tags can be modified post deployment",
+      "msg": "Resources[EcrDockerRepository].Properties.ImageTagMutability",
+      "remediation": {
+        "cloudformation": "Set `Properties.ImageTagMutability` attribute to `IMMUTABLE`",
+        "terraform": "Set `image_tag_mutability` attribute to `IMMUTABLE`"
+      },
+      "subType": "ECR",
+      "issue": "The AWS ECR registry does not enforce immutable tags",
+      "publicId": "SNYK-CC-TF-126",
+      "title": "ECR Registry allows mutable tags",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "The AWS ECR registry does not enforce immutable tags",
+        "impact": "Image tags can be modified post deployment",
+        "resolve": "Set `Properties.ImageTagMutability` attribute to `IMMUTABLE`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-126",
+      "path": [
+        "[DocId:0]",
+        "Resources[EcrDockerRepository]",
+        "Properties",
+        "ImageTagMutability"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`",
+      "id": "SNYK-CC-TF-124",
+      "impact": "Changes or deletion of objects will not be reversible",
+      "msg": "Resources[DefaultContainerBucket].Properties.VersioningConfiguration.Status",
+      "remediation": {
+        "cloudformation": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`",
+        "terraform": "Set `versioning.enabled` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "S3 bucket versioning is disabled",
+      "publicId": "SNYK-CC-TF-124",
+      "title": "S3 bucket versioning disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "S3 bucket versioning is disabled",
+        "impact": "Changes or deletion of objects will not be reversible",
+        "resolve": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-124",
+      "path": [
+        "[DocId:0]",
+        "Resources[DefaultContainerBucket]",
+        "Properties",
+        "VersioningConfiguration",
+        "Status"
+      ]
+    },
+    {
+      "severity": "medium",
+      "resolve": "Set `KmsMasterKeyId` attribute to KMS key for example `alias/aws/sns`",
+      "id": "SNYK-CC-TF-55",
+      "impact": "That should someone gain unauthorized access to the data they would be able to read the contents.",
+      "msg": "Resources.LoadBalancerAlarmTopic.Properties.KmsMasterKeyId",
+      "remediation": {
+        "cloudformation": "Set `KmsMasterKeyId` attribute to KMS key for example `alias/aws/sns`",
+        "terraform": "Set `kms_master_key_id` attribute to KMS key"
+      },
+      "subType": "SNS",
+      "issue": "The SNS topic is not encrypted at rest",
+      "publicId": "SNYK-CC-TF-55",
+      "title": "Non-Encrypted SNS Topic",
+      "references": [
+        "https://docs.aws.amazon.com/sns/latest/dg/sns-server-side-encryption.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "The SNS topic is not encrypted at rest",
+        "impact": "That should someone gain unauthorized access to the data they would be able to read the contents.",
+        "resolve": "Set `KmsMasterKeyId` attribute to KMS key for example `alias/aws/sns`"
+      },
+      "lineNumber": 893,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-55",
+      "path": [
+        "[DocId:0]",
+        "Resources",
+        "LoadBalancerAlarmTopic",
+        "Properties",
+        "KmsMasterKeyId"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`",
+      "id": "SNYK-CC-TF-96",
+      "impact": "Anyone who can manage bucket's policies will be able to grant public access to the bucket.",
+      "msg": "Resources[CodePipelineArtifactBucket].Properties.PublicAccessBlockConfiguration.BlockPublicPolicy",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`",
+        "terraform": "Set `block_public_policy` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket does not prevent creation of public policies",
+      "publicId": "SNYK-CC-TF-96",
+      "title": "S3 block public policy control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket does not prevent creation of public policies",
+        "impact": "Anyone who can manage bucket's policies will be able to grant public access to the bucket.",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-96",
+      "path": [
+        "[DocId:0]",
+        "Resources[CodePipelineArtifactBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "BlockPublicPolicy"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`",
+      "id": "SNYK-CC-TF-97",
+      "impact": "If public ACL is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+      "msg": "Resources[DefaultContainerBucket].Properties.PublicAccessBlockConfiguration.IgnorePublicAcls",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`",
+        "terraform": "Set `ignore_public_acls` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket will recognize public ACLs and allow public access",
+      "publicId": "SNYK-CC-TF-97",
+      "title": "S3 ignore public ACLs control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-accesspoint.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket will recognize public ACLs and allow public access",
+        "impact": "If public ACL is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-97",
+      "path": [
+        "[DocId:0]",
+        "Resources[DefaultContainerBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "IgnorePublicAcls"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.KmsMasterKeyId` attribute to a customer managed key id ",
+      "id": "SNYK-CC-AWS-422",
+      "impact": "Scope of use of the encryption key cannot be controlled via KMS/IAM policies",
+      "msg": "Resources[LoadBalancerAlarmTopic].Properties.KmsMasterKeyId",
+      "remediation": {
+        "cloudformation": "Set `Properties.KmsMasterKeyId` attribute to a customer managed key id ",
+        "terraform": "Set `kms_master_key_id` attribute to a customer managed key id"
+      },
+      "subType": "SNS",
+      "issue": "SNS topic is not encrypted with customer managed key",
+      "publicId": "SNYK-CC-AWS-422",
+      "title": "SNS topic is not encrypted with customer managed key",
+      "references": [
+        "https://docs.aws.amazon.com/sns/latest/dg/sns-create-topic.html",
+        "https://docs.aws.amazon.com/whitepapers/latest/kms-best-practices/aws-managed-and-customer-managed-cmks.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "SNS topic is not encrypted with customer managed key",
+        "impact": "Scope of use of the encryption key cannot be controlled via KMS/IAM policies",
+        "resolve": "Set `Properties.KmsMasterKeyId` attribute to a customer managed key id "
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-422",
+      "path": [
+        "[DocId:0]",
+        "Resources[LoadBalancerAlarmTopic]",
+        "Properties",
+        "KmsMasterKeyId"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`",
+      "id": "SNYK-CC-TF-97",
+      "impact": "If public ACL is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+      "msg": "Resources[CodePipelineArtifactBucket].Properties.PublicAccessBlockConfiguration.IgnorePublicAcls",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`",
+        "terraform": "Set `ignore_public_acls` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket will recognize public ACLs and allow public access",
+      "publicId": "SNYK-CC-TF-97",
+      "title": "S3 ignore public ACLs control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-accesspoint.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket will recognize public ACLs and allow public access",
+        "impact": "If public ACL is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-97",
+      "path": [
+        "[DocId:0]",
+        "Resources[CodePipelineArtifactBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "IgnorePublicAcls"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`",
+      "id": "SNYK-CC-TF-98",
+      "impact": "If public policy is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+      "msg": "Resources[DefaultContainerBucket].Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`",
+        "terraform": "Set `restrict_public_buckets` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket will recognize public policies and allow public access",
+      "publicId": "SNYK-CC-TF-98",
+      "title": "S3 restrict public bucket control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket will recognize public policies and allow public access",
+        "impact": "If public policy is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-98",
+      "path": [
+        "[DocId:0]",
+        "Resources[DefaultContainerBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "RestrictPublicBuckets"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.KmsKeyId` attribute with customer managed key id",
+      "id": "SNYK-CC-AWS-415",
+      "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+      "msg": "Resources[DefaultLogGroup].Properties.KmsKeyId",
+      "remediation": {
+        "cloudformation": "Set `Properties.KmsKeyId` attribute with customer managed key id",
+        "terraform": "Set `kms_key_id` attribute with customer managed key id"
+      },
+      "subType": "CloudWatch",
+      "issue": "Log group is not encrypted with customer managed key",
+      "publicId": "SNYK-CC-AWS-415",
+      "title": "CloudWatch log group not encrypted with managed key",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html",
+        "https://docs.aws.amazon.com/whitepapers/latest/kms-best-practices/aws-managed-and-customer-managed-cmks.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Log group is not encrypted with customer managed key",
+        "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+        "resolve": "Set `Properties.KmsKeyId` attribute with customer managed key id"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-415",
+      "path": [
+        "[DocId:0]",
+        "Resources[DefaultLogGroup]",
+        "Properties",
+        "KmsKeyId"
+      ]
+    },
+    {
+      "severity": "high",
+      "resolve": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`",
+      "id": "SNYK-CC-TF-98",
+      "impact": "If public policy is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+      "msg": "Resources[CodePipelineArtifactBucket].Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets",
+      "remediation": {
+        "cloudformation": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`",
+        "terraform": "Set `restrict_public_buckets` attribute to `true`"
+      },
+      "subType": "S3",
+      "issue": "Bucket will recognize public policies and allow public access",
+      "publicId": "SNYK-CC-TF-98",
+      "title": "S3 restrict public bucket control is disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html",
+        "https://docs.aws.amazon.com/AmazonS3/latest/user-guide/block-public-access.html",
+        "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "Bucket will recognize public policies and allow public access",
+        "impact": "If public policy is attached to the bucket, anyone will be able to read and/or write to the bucket.",
+        "resolve": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-98",
+      "path": [
+        "[DocId:0]",
+        "Resources[CodePipelineArtifactBucket]",
+        "Properties",
+        "PublicAccessBlockConfiguration",
+        "RestrictPublicBuckets"
+      ]
+    },
+    {
+      "severity": "low",
+      "resolve": "Set `Properties.ClusterSettings.Name` attribute to `containerInsights`, and `Properties.ClusterSettings.Value` to `enabled`",
+      "id": "SNYK-CC-TF-128",
+      "impact": "Performance log events will not be collected and displayed in CloudWatch",
+      "msg": "Resources[FargateEcsCluster].Properties.ClusterSettings",
+      "remediation": {
+        "cloudformation": "Set `Properties.ClusterSettings.Name` attribute to `containerInsights`, and `Properties.ClusterSettings.Value` to `enabled`",
+        "terraform": "Set `settings.name` attribute to `containerInsights`, and `settings.value` to `enabled`"
+      },
+      "subType": "ECS",
+      "issue": "ECS ContainerInsights will not be enabled on the cluster",
+      "publicId": "SNYK-CC-TF-128",
+      "title": "ECS ContainerInsights disabled",
+      "references": [
+        "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html"
+      ],
+      "isIgnored": false,
+      "iacDescription": {
+        "issue": "ECS ContainerInsights will not be enabled on the cluster",
+        "impact": "Performance log events will not be collected and displayed in CloudWatch",
+        "resolve": "Set `Properties.ClusterSettings.Name` attribute to `containerInsights`, and `Properties.ClusterSettings.Value` to `enabled`"
+      },
+      "lineNumber": 23,
+      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-128",
+      "path": [
+        "[DocId:0]",
+        "Resources[FargateEcsCluster]",
+        "Properties",
+        "ClusterSettings"
+      ]
+    }
+  ]
+}

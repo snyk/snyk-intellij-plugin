@@ -11,12 +11,15 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.*
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
+import snyk.iac.IacService
 import snyk.oss.OssService
 import java.io.File
 import java.net.URL
 import java.util.Objects.nonNull
 
 fun getOssService(project: Project): OssService = project.service()
+
+fun getIacService(project: Project): IacService = project.service()
 
 fun getSnykCode(project: Project): SnykCodeService = project.service()
 
