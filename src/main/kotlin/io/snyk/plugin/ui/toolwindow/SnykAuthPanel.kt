@@ -16,6 +16,8 @@ import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.boldLabel
+import snyk.amplitude.AmplitudeExperimentService
+import snyk.amplitude.api.ExperimentUser
 import java.awt.Dimension
 import java.awt.Insets
 import java.awt.event.ActionEvent
@@ -71,6 +73,8 @@ class SnykAuthPanel(project: Project) : JPanel(), Disposable {
                 if (userId.isNotBlank()) {
                     analytics.setUserId(userId)
                     analytics.identify()
+
+                    service<AmplitudeExperimentService>().fetch(ExperimentUser(userId))
                 }
 
                 getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
@@ -84,6 +88,7 @@ class SnykAuthPanel(project: Project) : JPanel(), Disposable {
                 override fun cliDownloadStarted() {
                     authButton.isEnabled = false
                 }
+
                 override fun cliDownloadFinished(succeed: Boolean) {
                     authButton.isEnabled = true
                 }
