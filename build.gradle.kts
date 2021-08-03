@@ -4,7 +4,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-// reads properties from from gradle.properties file
+// reads properties from gradle.properties file
 fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
@@ -82,11 +82,13 @@ tasks {
 
   withType<ProcessResources> {
     filesMatching("application.properties") {
-      val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
+      val amplitudeExperimentApiKey = project.findProperty("amplitudeExperimentApiKey") ?: ""
       val iterativelyEnvironment = project.findProperty("iterativelyEnvironment") ?: "DEVELOPMENT"
+      val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
       val tokens = mapOf(
-        "segment.analytics.write-key" to segmentWriteKey,
-        "iteratively.analytics.environment" to iterativelyEnvironment
+        "amplitude.experiment.api-key" to amplitudeExperimentApiKey,
+        "iteratively.analytics.environment" to iterativelyEnvironment,
+        "segment.analytics.write-key" to segmentWriteKey
       )
       filter<ReplaceTokens>("tokens" to tokens)
     }
