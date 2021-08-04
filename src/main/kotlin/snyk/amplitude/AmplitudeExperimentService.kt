@@ -15,9 +15,7 @@ private val LOG = logger<AmplitudeExperimentService>()
 
 @Service
 class AmplitudeExperimentService : Disposable {
-
-    private var amplitudeLoaded = false
-    private var apiClient: AmplitudeExperimentApiClient = AmplitudeExperimentApiClient.create(apiKey = "")
+    private var apiClient: AmplitudeExperimentApiClient? = null
     private val storage: ConcurrentHashMap<String, Variant> = ConcurrentHashMap()
     private var user: ExperimentUser = ExperimentUser("")
 
@@ -27,7 +25,6 @@ class AmplitudeExperimentService : Disposable {
             prop.load(javaClass.classLoader.getResourceAsStream("application.properties"))
             val apiKey = prop.getProperty("amplitude.experiment.api-key") ?: ""
             apiClient = AmplitudeExperimentApiClient.create(apiKey = apiKey)
-            amplitudeLoaded = true
         } catch (e: IllegalArgumentException) {
             LOG.warn("Property file contains a malformed Unicode escape sequence", e)
         } catch (e: IOException) {
@@ -41,13 +38,13 @@ class AmplitudeExperimentService : Disposable {
     }
 
     fun fetch(user: ExperimentUser) {
-        if (!amplitudeLoaded) {
-            LOG.warn("Amplitude experiment client is not loaded, no results will be fetched for $user")
+        if (apiClient == null) {
+            LOG.warn("Amplitude experiment was not initialized, no results will be fetched for $user")
             return
         }
 
         this.user = user
-        val variants = this.apiClient.allVariants(this.user)
+        val variants = this.apiClient?.allVariants(this.user) ?: emptyMap()
         storeVariants(variants)
     }
 
