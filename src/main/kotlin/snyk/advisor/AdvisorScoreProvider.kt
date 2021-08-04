@@ -5,20 +5,33 @@ import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonStringLiteral
 import com.intellij.openapi.components.service
-import com.intellij.openapi.editor.*
+import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.LineExtensionInfo
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.event.*
+import com.intellij.openapi.editor.event.EditorMouseEvent
+import com.intellij.openapi.editor.event.EditorMouseListener
+import com.intellij.openapi.editor.event.EditorMouseMotionListener
+import com.intellij.openapi.editor.event.VisibleAreaEvent
+import com.intellij.openapi.editor.event.VisibleAreaListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.ui.popup.Balloon
-import com.intellij.psi.*
+import com.intellij.psi.PsiCompiledElement
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiWhiteSpace
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
+import io.snyk.plugin.analytics.getEcosystem
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.advisor.api.PackageInfo
+import snyk.analytics.HealthScoreIsClicked
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Font
@@ -144,7 +157,6 @@ class AdvisorScoreProvider(
         ) {
             name2versionPropertyElement.firstChild.text.removeSurrounding("\"")
         } else return null
-
     }
 
     // see(PsiViewer) Psi representation of "dependencies" in package.json
@@ -177,6 +189,13 @@ class AdvisorScoreProvider(
                        </html>
                     """.trimIndent(),
                     e.mouseEvent
+                )
+                service<SnykAnalyticsService>().logHealthScoreIsClicked(
+                    HealthScoreIsClicked.builder()
+                        .ecosystem(packageManager.getEcosystem())
+                        .ide(HealthScoreIsClicked.Ide.JETBRAINS)
+                        .packageName(info.name)
+                        .build()
                 )
                 selectedScore = e.logicalPosition.line
             } else {
@@ -221,7 +240,6 @@ class AdvisorScoreProvider(
 
         private const val LINE_EXTENSION_LENGTH =
             (LINE_EXTENSION_PREFIX + LINE_EXTENSION_BODY + "00" + LINE_EXTENSION_POSTFIX).length
-
 
         /** see [com.intellij.xdebugger.impl.evaluate.XDebuggerEditorLinePainter.getNormalAttributes] */
         private fun getNormalAttributes(): TextAttributes {

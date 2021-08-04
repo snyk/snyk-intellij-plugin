@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class Group extends Event {
     private static final String NAME = "group";
     private static final String ID = "group";
-    private static final String VERSION = "31.0.0";
+    private static final String VERSION = "39.0.0";
 
     public enum GroupType {
         ORG("org"), GROUP("group"), ACCOUNT("account");
