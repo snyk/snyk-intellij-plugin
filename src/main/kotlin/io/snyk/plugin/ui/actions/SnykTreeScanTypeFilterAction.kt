@@ -31,21 +31,21 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
         return DefaultActionGroup(
             listOf(
-                createCliScanAction(),
+                createOssScanAction(),
                 createSecurityIssuesScanAction(),
                 createQualityIssuesScanAction()
             )
         )
     }
 
-    private fun createCliScanAction(): AnAction {
+    private fun createOssScanAction(): AnAction {
         return object : ToggleAction("Open Source Vulnerabilities") {
-            override fun isSelected(e: AnActionEvent): Boolean = settings.cliScanEnable
+            override fun isSelected(e: AnActionEvent): Boolean = settings.ossScanEnable
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 if (!state && isLastScanTypeDisabling(e)) return
 
-                settings.cliScanEnable = state
+                settings.ossScanEnable = state
                 fireFiltersChangedEvent(e.project!!)
             }
         }
@@ -94,7 +94,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
     private fun isLastScanTypeDisabling(e: AnActionEvent): Boolean {
         val onlyOneEnabled = arrayOf(
-            settings.cliScanEnable,
+            settings.ossScanEnable,
             settings.snykCodeSecurityIssuesScanEnable,
             settings.snykCodeQualityIssuesScanEnable
         ).count { it } == 1

@@ -51,8 +51,8 @@ class ScanTypesPanel(
             cell {
                 val ossCheckbox = checkBox(
                     "Snyk Open Source vulnerabilities",
-                    { settings.cliScanEnable },
-                    { settings.cliScanEnable = it },
+                    { settings.ossScanEnable },
+                    { settings.ossScanEnable = it },
                     cliScanComments
                 ).withLeftGap(2) // needed due to bug with selection: left side is cut
                 label("").component.convertIntoHelpHintLabel(

@@ -1,6 +1,6 @@
-package io.snyk.plugin.cli
+package snyk.oss
 
-class CliVulnerabilitiesForFile {
+class OssVulnerabilitiesForFile {
     lateinit var vulnerabilities: Array<Vulnerability>
     lateinit var projectName: String
     lateinit var displayTargetFile: String
@@ -8,11 +8,11 @@ class CliVulnerabilitiesForFile {
 
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
 
-    fun toCliGroupedResult(): CliGroupedResult {
+    fun toGroupedResult(): OssGroupedResult {
         val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })
         val uniqueCount = id2vulnerabilities.keys.size
         val pathsCount = id2vulnerabilities.values.flatten().size
 
-        return CliGroupedResult(id2vulnerabilities, uniqueCount, pathsCount)
+        return OssGroupedResult(id2vulnerabilities, uniqueCount, pathsCount)
     }
 }

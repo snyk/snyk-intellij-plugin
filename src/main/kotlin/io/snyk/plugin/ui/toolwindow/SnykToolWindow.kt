@@ -8,8 +8,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import io.snyk.plugin.cli.CliError
-import io.snyk.plugin.cli.CliResult
+import snyk.common.SnykError
+import snyk.oss.OssResult
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.snykcode.SnykCodeResults
@@ -40,18 +40,18 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningStarted() = updateActionsPresentation()
 
-                override fun scanningCliFinished(cliResult: CliResult) = updateActionsPresentation()
+                override fun scanningOssFinished(ossResult: OssResult) = updateActionsPresentation()
 
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) = updateActionsPresentation()
 
-                override fun scanningCliError(cliError: CliError) = updateActionsPresentation()
+                override fun scanningOssError(snykError: SnykError) = updateActionsPresentation()
 
-                override fun scanningSnykCodeError(cliError: CliError) = updateActionsPresentation()
+                override fun scanningSnykCodeError(snykError: SnykError) = updateActionsPresentation()
             })
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasCliRunning: Boolean, wasSnykCodeRunning: Boolean) = updateActionsPresentation()
+                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean) = updateActionsPresentation()
             })
     }
 

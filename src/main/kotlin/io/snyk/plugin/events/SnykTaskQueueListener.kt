@@ -8,5 +8,5 @@ interface SnykTaskQueueListener {
             Topic.create("Snyk Task Queue", SnykTaskQueueListener::class.java)
     }
 
-    fun stopped(wasCliRunning: Boolean = false, wasSnykCodeRunning: Boolean = false)
+    fun stopped(wasOssRunning: Boolean = false, wasSnykCodeRunning: Boolean = false)
 }

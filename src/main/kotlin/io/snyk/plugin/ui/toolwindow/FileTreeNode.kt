@@ -1,10 +1,10 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.cli.CliVulnerabilitiesForFile
+import snyk.oss.OssVulnerabilitiesForFile
 import javax.swing.tree.DefaultMutableTreeNode
 
 class FileTreeNode(
-    cliVulnerabilitiesForFile: CliVulnerabilitiesForFile,
+    ossVulnerabilitiesForFile: OssVulnerabilitiesForFile,
     val project: Project
-) : DefaultMutableTreeNode(cliVulnerabilitiesForFile)
+) : DefaultMutableTreeNode(ossVulnerabilitiesForFile)

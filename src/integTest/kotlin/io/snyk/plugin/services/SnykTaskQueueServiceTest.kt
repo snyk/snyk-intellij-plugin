@@ -6,7 +6,7 @@ import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.getCli
+import io.snyk.plugin.getOssService
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
@@ -24,7 +24,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
             .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
             .thenReturn(javaClass.classLoader.getResource("group-vulnerabilities-test.json")!!.readText(Charsets.UTF_8))
 
-        getCli(project).setConsoleCommandRunner(mockRunner)
+        getOssService(project).setConsoleCommandRunner(mockRunner)
 
         val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
 
@@ -38,7 +38,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
-        assertNull(snykTaskQueueService.getCurrentProgressIndicator())
+        assertNull(snykTaskQueueService.getOssScanProgressIndicator())
     }
 
     @Test
@@ -56,7 +56,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     fun testSastEnablementCheckInScan() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         val settings = getApplicationSettingsStateService()
-        settings.cliScanEnable = false
+        settings.ossScanEnable = false
         settings.snykCodeSecurityIssuesScanEnable = true
         settings.snykCodeQualityIssuesScanEnable = true
 

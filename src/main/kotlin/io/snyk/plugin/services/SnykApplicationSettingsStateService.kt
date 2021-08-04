@@ -29,7 +29,11 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var ignoreUnknownCA = false
     var cliVersion: String? = null
 
+    // can't be private -> serialization will not work
+    @Deprecated("left for old users migration only")
     var cliScanEnable: Boolean = true
+
+    var ossScanEnable: Boolean = true
     var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = false
@@ -57,6 +61,15 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     override fun loadState(state: SnykApplicationSettingsStateService) {
         XmlSerializerUtil.copyBean(state, this)
+    }
+
+    override fun initializeComponent() {
+        super.initializeComponent()
+        // migration for old users
+        if (!cliScanEnable) {
+            ossScanEnable = false
+            cliScanEnable = true // drop prev state
+        }
     }
 
     fun getAdditionalParameters(project: Project? = null): String? {

@@ -21,9 +21,9 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.analytics.getIssueSeverityOrNull
 import io.snyk.plugin.analytics.getIssueType
 import io.snyk.plugin.analytics.getSelectedProducts
-import io.snyk.plugin.cli.CliError
-import io.snyk.plugin.cli.CliResult
-import io.snyk.plugin.cli.Vulnerability
+import snyk.common.SnykError
+import snyk.oss.OssResult
+import snyk.oss.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
@@ -32,9 +32,10 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
 import io.snyk.plugin.isScanRunning
-import io.snyk.plugin.isSnykCliRunning
+import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.services.SnykAnalyticsService
+import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
@@ -46,7 +47,6 @@ import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.IssueIsViewed
-import snyk.analytics.IssueIsViewed.IssueType
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
@@ -71,7 +71,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private var descriptionPanel = SimpleToolWindowPanel(true, true)
 
-    var currentCliResults: CliResult? = null
+    var currentOssResults: OssResult? = null
         get() {
             val prevTimeStamp = field?.timeStamp ?: Instant.MIN
             if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
@@ -80,16 +80,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             return field
         }
 
-    var currentCliError: CliError? = null
+    var currentOssError: SnykError? = null
 
-    var currentSnykCodeError: CliError? = null
+    var currentSnykCodeError: SnykError? = null
 
     private val rootTreeNode = DefaultMutableTreeNode("")
-    private val rootCliTreeNode = RootCliTreeNode(project)
+    private val rootOssTreeNode = RootOssTreeNode(project)
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     private val vulnerabilitiesTree by lazy {
-        rootTreeNode.add(rootCliTreeNode)
+        rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
         Tree(rootTreeNode).apply {
@@ -114,14 +114,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, object : SnykScanListener {
 
                 override fun scanningStarted() {
-                    currentCliError = null
+                    currentOssError = null
                     currentSnykCodeError = null
                     ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
                 }
 
-                override fun scanningCliFinished(cliResult: CliResult) {
-                    currentCliResults = cliResult
-                    ApplicationManager.getApplication().invokeLater { displayVulnerabilities(cliResult) }
+                override fun scanningOssFinished(ossResult: OssResult) {
+                    currentOssResults = ossResult
+                    ApplicationManager.getApplication().invokeLater { displayVulnerabilities(ossResult) }
                     service<SnykAnalyticsService>().logAnalysisIsReady(
                         AnalysisIsReady.builder()
                             .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
@@ -134,16 +134,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) =
                     ApplicationManager.getApplication().invokeLater { displaySnykCodeResults(snykCodeResults) }
 
-                override fun scanningCliError(cliError: CliError) {
-                    currentCliResults = null
+                override fun scanningOssError(snykError: SnykError) {
+                    currentOssResults = null
                     ApplicationManager.getApplication().invokeLater {
-                        SnykBalloonNotifications.showError(cliError.message, project)
-                        if (cliError.message.startsWith("Authentication failed. Please check the API token on ")) {
+                        SnykBalloonNotifications.showError(snykError.message, project)
+                        if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
                             getApplicationSettingsStateService().token = null
                             displayAuthPanel()
                         } else {
-                            currentCliError = cliError
-                            removeAllChildren(listOf(rootCliTreeNode))
+                            currentOssError = snykError
+                            removeAllChildren(listOf(rootOssTreeNode))
                             updateTreeRootNodesPresentation()
                             displayEmptyDescription()
                         }
@@ -157,9 +157,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                 }
 
-                override fun scanningSnykCodeError(cliError: CliError) {
+                override fun scanningSnykCodeError(snykError: SnykError) {
                     AnalysisData.instance.resetCachesAndTasks(project)
-                    currentSnykCodeError = cliError
+                    currentSnykCodeError = snykError
                     ApplicationManager.getApplication().invokeLater {
                         removeAllChildren(listOf(rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode))
                         updateTreeRootNodesPresentation()
@@ -182,18 +182,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         }
                     ApplicationManager.getApplication().invokeLater {
                         snykCodeResults?.let { displaySnykCodeResults(it) }
-                        currentCliResults?.let { displayVulnerabilities(it) }
+                        currentOssResults?.let { displayVulnerabilities(it) }
                     }
                 }
             })
 
         ApplicationManager.getApplication().messageBus.connect(this)
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
-
-                override fun checkCliExistsStarted() =
-                    ApplicationManager.getApplication().invokeLater {
-                        displayCliCheckMessage()
-                    }
 
                 override fun checkCliExistsFinished() =
                     ApplicationManager.getApplication().invokeLater {
@@ -215,10 +210,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasCliRunning: Boolean, wasSnykCodeRunning: Boolean) =
+                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean) =
                     ApplicationManager.getApplication().invokeLater {
                         updateTreeRootNodesPresentation(
-                            cliResultsCount = if (wasCliRunning) -1 else null,
+                            ossResultsCount = if (wasOssRunning) -1 else null,
                             securityIssuesCount = if (wasSnykCodeRunning) -1 else null,
                             qualityIssuesCount = if (wasSnykCodeRunning) -1 else null
                         )
@@ -287,11 +282,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             .build()
                     )
                 }
-                is RootCliTreeNode -> {
-                    currentCliError?.let { displayCliError(it) } ?: displayEmptyDescription()
+                is RootOssTreeNode -> {
+                    currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
                 }
                 is RootSecurityIssuesTreeNode, is RootQualityIssuesTreeNode -> {
-                    currentSnykCodeError?.let { displayCliError(it) } ?: displayEmptyDescription()
+                    currentSnykCodeError?.let { displaySnykError(it) } ?: displayEmptyDescription()
                 }
                 else -> {
                     displayEmptyDescription()
@@ -327,8 +322,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun cleanUiAndCaches() {
-        currentCliResults = null
-        currentCliError = null
+        currentOssResults = null
+        currentOssError = null
         currentSnykCodeError = null
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
@@ -350,7 +345,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun removeAllChildren(
         rootNodesToUpdate: List<DefaultMutableTreeNode> =
-            listOf(rootCliTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode)
+            listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode)
     ) {
         rootNodesToUpdate.forEach {
             it.removeAllChildren()
@@ -405,7 +400,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displayEmptyDescription() {
         if (isScanRunning(project)) {
             displayScanningMessage()
-        } else if (rootCliTreeNode.childCount == 0
+        } else if (rootOssTreeNode.childCount == 0
             && rootSecurityIssuesTreeNode.childCount == 0
             && rootQualityIssuesTreeNode.childCount == 0
         ) {
@@ -421,18 +416,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
      *   `-1` - initial state (clean all postfixes)
      */
     private fun updateTreeRootNodesPresentation(
-        cliResultsCount: Int? = null,
+        ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
         qualityIssuesCount: Int? = null,
         addHMLPostfix: String = ""
     ) {
         val settings = getApplicationSettingsStateService()
 
-        val newCliTreeNodeText = when {
-            currentCliError != null -> "$CLI_ROOT_TEXT (error)"
-            isSnykCliRunning(project) && settings.cliScanEnable -> "$CLI_ROOT_TEXT (scanning...)"
-            else -> cliResultsCount?.let { count ->
-                CLI_ROOT_TEXT + when {
+        val newOssTreeNodeText = when {
+            currentOssError != null -> "$OSS_ROOT_TEXT (error)"
+            isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
+            else -> ossResultsCount?.let { count ->
+                OSS_ROOT_TEXT + when {
                     count == -1 -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
@@ -440,7 +435,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
             }
         }
-        newCliTreeNodeText?.let { rootCliTreeNode.userObject = it }
+        newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
         val newSecurityIssuesNodeText = when {
             currentSnykCodeError != null -> "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (error)"
@@ -471,7 +466,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode.userObject = it }
 
         val nodesToReload = listOfNotNull(
-            newCliTreeNodeText?.let { rootCliTreeNode },
+            newOssTreeNodeText?.let { rootOssTreeNode },
             newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode },
             newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode }
         )
@@ -526,8 +521,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         descriptionPanel.removeAll()
 
         val statePanel = StatePanel("Downloading Snyk CLI...", "Stop Downloading", Runnable {
-            project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
-
+            service<SnykCliDownloaderService>().stopCliDownload()
             displayEmptyDescription()
         })
 
@@ -536,21 +530,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    private fun displayVulnerabilities(cliResult: CliResult) {
-        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootCliTreeNode)
+    private fun displayVulnerabilities(ossResult: OssResult) {
+        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootOssTreeNode)
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
-        rootCliTreeNode.removeAllChildren()
+        rootOssTreeNode.removeAllChildren()
 
-        if (getApplicationSettingsStateService().cliScanEnable && cliResult.allCliVulnerabilities != null) {
-            cliResult.allCliVulnerabilities!!.forEach { cliVulnerabilitiesForFile ->
-                if (cliVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
-                    val cliGroupedResult = cliVulnerabilitiesForFile.toCliGroupedResult()
+        if (getApplicationSettingsStateService().ossScanEnable && ossResult.allCliIssues != null) {
+            ossResult.allCliIssues!!.forEach { ossVulnerabilitiesForFile ->
+                if (ossVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
+                    val ossGroupedResult = ossVulnerabilitiesForFile.toGroupedResult()
 
-                    val fileTreeNode = FileTreeNode(cliVulnerabilitiesForFile, project)
-                    rootCliTreeNode.add(fileTreeNode)
+                    val fileTreeNode = FileTreeNode(ossVulnerabilitiesForFile, project)
+                    rootOssTreeNode.add(fileTreeNode)
 
-                    cliGroupedResult.id2vulnerabilities.values
+                    ossGroupedResult.id2vulnerabilities.values
                         .filter { isSeverityFilterPassed(it.head.severity) }
                         .sortedByDescending { it.head.getSeverityIndex() }
                         .forEach {
@@ -560,11 +554,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         }
         updateTreeRootNodesPresentation(
-            cliResultsCount = cliResult.issuesCount,
-            addHMLPostfix = buildHMLpostfix(cliResult)
+            ossResultsCount = ossResult.issuesCount,
+            addHMLPostfix = buildHMLpostfix(ossResult)
         )
 
-        smartReloadRootNode(rootCliTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
+        smartReloadRootNode(rootOssTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
     }
 
     private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
@@ -643,12 +637,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             infosCount = snykCodeResults.totalInfosCount
         )
 
-    private fun buildHMLpostfix(cliResult: CliResult): String =
+    private fun buildHMLpostfix(ossResult: OssResult): String =
         buildHMLpostfix(
-            cliResult.criticalSeveritiesCount(),
-            cliResult.highSeveritiesCount(),
-            cliResult.mediumSeveritiesCount(),
-            cliResult.lowSeveritiesCount()
+            ossResult.criticalSeveritiesCount(),
+            ossResult.highSeveritiesCount(),
+            ossResult.mediumSeveritiesCount(),
+            ossResult.lowSeveritiesCount()
         )
 
     private fun buildHMLpostfix(criticalCount: Int = 0, errorsCount: Int, warnsCount: Int, infosCount: Int): String {
@@ -700,23 +694,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    private fun displayCliError(cliError: CliError) {
+    private fun displaySnykError(snykError: SnykError) {
         descriptionPanel.removeAll()
 
-        descriptionPanel.add(CliErrorPanel(cliError), BorderLayout.CENTER)
-
-        revalidate()
-    }
-
-    private fun displayCliCheckMessage() {
-        descriptionPanel.removeAll()
-
-        val checkingPanel = CliCheckingPanel(Runnable {
-            project.service<SnykTaskQueueService>().getCurrentProgressIndicator()?.cancel()
-            displayEmptyDescription()
-        })
-
-        descriptionPanel.add(CenterOneComponentPanel(checkingPanel), BorderLayout.CENTER)
+        descriptionPanel.add(SnykErrorPanel(snykError), BorderLayout.CENTER)
 
         revalidate()
     }
@@ -769,7 +750,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     companion object {
-        const val CLI_ROOT_TEXT = " Open Source Security"
+        const val OSS_ROOT_TEXT = " Open Source Security"
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
@@ -777,8 +758,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 }
 
-class RootCliTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CLI_ROOT_TEXT, project)
+class RootOssTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.OSS_ROOT_TEXT, project)
 
 class RootSecurityIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT, project)

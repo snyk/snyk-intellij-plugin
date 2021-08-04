@@ -49,7 +49,7 @@ class SnykCliAuthenticationService(val project: Project) {
                 val downloaderService = service<SnykCliDownloaderService>()
                 downloaderService.downloadLatestRelease(ProgressManager.getInstance().progressIndicator)
             } else {
-                logger.info("Skip CLI download, since it was already downloaded")
+                logger.debug("Skip CLI download, since it was already downloaded")
             }
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(

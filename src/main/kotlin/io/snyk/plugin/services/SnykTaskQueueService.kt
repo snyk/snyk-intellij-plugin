@@ -9,7 +9,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.*
-import io.snyk.plugin.cli.CliResult
+import snyk.oss.OssResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
@@ -31,9 +31,9 @@ class SnykTaskQueueService(val project: Project) {
     private val taskQueuePublisher
         get() = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
 
-    private var currentProgressIndicator: ProgressIndicator? = null
+    private var ossScanProgressIndicator: ProgressIndicator? = null
 
-    fun getCurrentProgressIndicator(): ProgressIndicator? = currentProgressIndicator
+    fun getOssScanProgressIndicator(): ProgressIndicator? = ossScanProgressIndicator
 
     fun getTaskQueue() = taskQueue
 
@@ -48,20 +48,14 @@ class SnykTaskQueueService(val project: Project) {
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk wait for changed files to be saved on disk", true) {
             override fun run(indicator: ProgressIndicator) {
-
-                currentProgressIndicator = indicator
-
                 ApplicationManager.getApplication().invokeAndWait {
                     FileDocumentManager.getInstance().saveAllDocuments()
                 }
-
-                currentProgressIndicator = null
                 indicator.checkCanceled()
 
                 val settings = getApplicationSettingsStateService()
-
-                if (settings.cliScanEnable) {
-                    scheduleCliScan()
+                if (settings.ossScanEnable) {
+                    scheduleOssScan()
                 }
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
                     object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
@@ -91,28 +85,28 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    private fun scheduleCliScan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk CLI is scanning", true) {
+    private fun scheduleOssScan() {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk Open Source is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
 
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
-                if (toolWindowPanel.currentCliResults != null) return
+                if (toolWindowPanel.currentOssResults != null) return
 
-                currentProgressIndicator = indicator
+                ossScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
-                val cliResult: CliResult = getCli(project).scan()
+                val ossResult: OssResult = getOssService(project).scan()
 
-                currentProgressIndicator = null
+                ossScanProgressIndicator = null
                 if (project.isDisposed) return
 
                 if (indicator.isCanceled) {
-                    taskQueuePublisher?.stopped(wasCliRunning = true)
+                    taskQueuePublisher?.stopped(wasOssRunning = true)
                 } else {
-                    if (cliResult.isSuccessful()) {
-                        scanPublisher?.scanningCliFinished(cliResult)
+                    if (ossResult.isSuccessful()) {
+                        scanPublisher?.scanningOssFinished(ossResult)
                     } else {
-                        scanPublisher?.scanningCliError(cliResult.error!!)
+                        scanPublisher?.scanningOssError(ossResult.error!!)
                     }
                 }
             }
@@ -120,34 +114,27 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun downloadLatestRelease() {
-        taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI", true) {
+        taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI presence", true) {
             override fun run(indicator: ProgressIndicator) {
                 cliDownloadPublisher.checkCliExistsStarted()
-
-                currentProgressIndicator = indicator
-
                 val cliDownloader = service<SnykCliDownloaderService>()
-
-                currentProgressIndicator = null
-                indicator.checkCanceled()
                 if (project.isDisposed) return
 
-                if (!getCli(project).isCliInstalled()) {
+                if (!getOssService(project).isCliInstalled()) {
                     cliDownloader.downloadLatestRelease(indicator)
                 } else {
                     cliDownloader.cliSilentAutoUpdate(indicator)
                 }
-
                 cliDownloadPublisher.checkCliExistsFinished()
             }
         })
     }
 
     fun stopScan() {
-        val wasCliRunning = currentProgressIndicator?.isRunning == true
-        currentProgressIndicator?.cancel()
+        val wasOssRunning = ossScanProgressIndicator?.isRunning == true
+        ossScanProgressIndicator?.cancel()
         val wasSnykCodeRunning = isSnykCodeRunning(project)
         RunUtils.instance.cancelRunningIndicators(project)
-        taskQueuePublisher?.stopped(wasCliRunning, wasSnykCodeRunning)
+        taskQueuePublisher?.stopped(wasOssRunning, wasSnykCodeRunning)
     }
 }

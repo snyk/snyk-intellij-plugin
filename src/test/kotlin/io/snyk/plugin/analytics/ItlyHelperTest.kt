@@ -11,7 +11,7 @@ class ItlyHelperTest {
     @Test
     fun `empty selected products if nothing configured`() {
         val settings = SnykApplicationSettingsStateService()
-        settings.cliScanEnable = false
+        settings.ossScanEnable = false
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
 
@@ -23,7 +23,7 @@ class ItlyHelperTest {
     @Test
     fun `one selected product if only one configured`() {
         val settings = SnykApplicationSettingsStateService()
-        settings.cliScanEnable = true
+        settings.ossScanEnable = true
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
 

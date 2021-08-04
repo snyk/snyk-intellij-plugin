@@ -11,11 +11,12 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.*
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
+import snyk.oss.OssService
 import java.io.File
 import java.net.URL
 import java.util.Objects.nonNull
 
-fun getCli(project: Project): SnykCliService = project.service()
+fun getOssService(project: Project): OssService = project.service()
 
 fun getSnykCode(project: Project): SnykCodeService = project.service()
 
@@ -53,15 +54,15 @@ fun isUrlValid(url: String?): Boolean {
     }
 }
 
-fun isSnykCliRunning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().getCurrentProgressIndicator()
+fun isOssRunning(project: Project): Boolean {
+    val indicator = project.service<SnykTaskQueueService>().getOssScanProgressIndicator()
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
 fun isSnykCodeRunning(project: Project): Boolean =
     AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
 
-fun isScanRunning(project: Project): Boolean = isSnykCliRunning(project) || isSnykCodeRunning(project)
+fun isScanRunning(project: Project): Boolean = isOssRunning(project) || isSnykCodeRunning(project)
 
 fun isSnykCodeAvailable(customEndpointUrl: String?): Boolean =
     customEndpointUrl.isNullOrEmpty() || isSnykCodeSupportedEndpoint(customEndpointUrl)
