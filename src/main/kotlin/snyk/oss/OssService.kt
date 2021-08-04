@@ -3,7 +3,8 @@ package snyk.oss
 import com.google.gson.Gson
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.cli.*
+import io.snyk.plugin.cli.CliError
+import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.services.CliService
 import snyk.common.SnykError
 

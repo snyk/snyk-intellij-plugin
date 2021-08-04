@@ -13,7 +13,6 @@ import org.mockito.Mockito
 
 class OssServiceTest : LightPlatformTestCase() {
 
-    @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
 
