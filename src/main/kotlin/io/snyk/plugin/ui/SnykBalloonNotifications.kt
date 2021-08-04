@@ -2,10 +2,15 @@ package io.snyk.plugin.ui
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
-import com.intellij.notification.*
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationAction
+import com.intellij.notification.NotificationDisplayType
+import com.intellij.notification.NotificationGroup
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys.CONTEXT_COMPONENT
+import com.intellij.openapi.components.service
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.MessageType
@@ -14,10 +19,14 @@ import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.util.Alarm
+import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
+import io.snyk.plugin.services.SnykAnalyticsService
+import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.startSastEnablementCheckLoop
+import snyk.analytics.AnalysisIsTriggered
 import java.awt.Color
 import java.awt.Component
 import java.awt.Point
@@ -89,6 +98,21 @@ class SnykBalloonNotifications {
             },
             NotificationAction.createSimpleExpiring("Don’t show again") {
                 getApplicationSettingsStateService().showFeedbackRequest = false
+            }
+        )
+
+        fun showScanningReminder(project: Project) = showInfo(
+            "Scan your project for security vulnerabilities and code issues",
+            project,
+            NotificationAction.createSimpleExpiring("Run scan") {
+                project.service<SnykTaskQueueService>().scan()
+                project.service<SnykAnalyticsService>().logAnalysisIsTriggered(
+                    AnalysisIsTriggered.builder()
+                        .analysisType(getSelectedProducts(getApplicationSettingsStateService()))
+                        .ide(AnalysisIsTriggered.Ide.JETBRAINS)
+                        .triggeredByUser(true)
+                        .build()
+                )
             }
         )
 

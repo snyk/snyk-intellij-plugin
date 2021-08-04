@@ -20,12 +20,18 @@ import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
-import java.awt.Dimension
+import snyk.amplitude.AmplitudeExperimentService
+import snyk.amplitude.api.ExperimentUser
 import java.awt.Insets
-import java.util.*
 import java.util.Objects.nonNull
+import java.util.UUID
 import java.util.function.Supplier
-import javax.swing.*
+import javax.swing.JButton
+import javax.swing.JCheckBox
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JTextField
 import javax.swing.event.DocumentEvent
 import javax.swing.text.BadLocationException
 import com.intellij.uiDesigner.core.GridConstraints as UIGridConstraints
@@ -62,6 +68,7 @@ class SnykSettingsDialog(
                 override fun cliDownloadStarted() {
                     receiveTokenButton.isEnabled = false
                 }
+
                 override fun cliDownloadFinished(succeed: Boolean) {
                     receiveTokenButton.isEnabled = true
                 }
@@ -76,6 +83,8 @@ class SnykSettingsDialog(
                 val analytics = service<SnykAnalyticsService>()
                 val userId = analytics.obtainUserId(token)
                 analytics.setUserId(userId)
+
+                service<AmplitudeExperimentService>().fetch(ExperimentUser(userId))
             }
         }
 
@@ -456,7 +465,8 @@ class SnykSettingsDialog(
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_WANT_GROW,
                 null, null, null, 0, false
-            ))
+            )
+        )
     }
 
     fun getToken(): String = try {

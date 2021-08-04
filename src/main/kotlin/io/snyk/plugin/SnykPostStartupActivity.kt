@@ -2,17 +2,23 @@ package io.snyk.plugin
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.vfs.VirtualFileManager
+import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.ui.SnykBalloonNotifications
+import snyk.amplitude.AmplitudeExperimentService
+import snyk.amplitude.api.ExperimentUser
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Date
+
+private val LOG = logger<SnykPostStartupActivity>()
 
 class SnykPostStartupActivity : StartupActivity.DumbAware {
 
@@ -43,6 +49,17 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
             SnykBalloonNotifications.showFeedbackRequest(project)
             settings.lastTimeFeedbackRequestShown = Date.from(Instant.now())
         }
-    }
 
+        val userToken = settings.token ?: ""
+        if (userToken.isNotBlank()) {
+            LOG.info("Loading variants for all amplitude experiments")
+            val publicUserId = service<SnykApiService>().userId ?: ""
+            val experimentUser = ExperimentUser(publicUserId)
+            service<AmplitudeExperimentService>().fetch(experimentUser)
+
+            if (service<AmplitudeExperimentService>().isShowScanningReminderEnabled()) {
+                SnykBalloonNotifications.showScanningReminder(project)
+            }
+        }
+    }
 }
