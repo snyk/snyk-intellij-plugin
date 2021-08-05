@@ -173,6 +173,28 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun testConvertRawCliStringToCliResultWithEmptyRawString() {
+        val cli = getOssService(project)
+
+        val cliResult = cli.convertRawCliStringToCliResult("")
+        assertFalse(cliResult.isSuccessful())
+    }
+
+    @Test
+    fun testConvertRawCliStringToCliResultWithMissformedJson() {
+        val cli = getOssService(project)
+
+        val cliResult = cli.convertRawCliStringToCliResult("""
+                    {
+                      "ok": false,
+                      "error": ["could not be","array here"],
+                      "path": "some/path/here"
+                    }
+                """.trimIndent())
+        assertFalse(cliResult.isSuccessful())
+    }
+
+    @Test
     fun testConvertRawCliStringToCliResultFieldsInitialisation() {
         val cli = getOssService(project)
 

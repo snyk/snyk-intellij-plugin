@@ -11,6 +11,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys.CONTEXT_COMPONENT
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.MessageType
@@ -36,6 +37,7 @@ import javax.swing.Icon
 class SnykBalloonNotifications {
 
     companion object {
+        private val logger = logger<SnykBalloonNotifications>()
         const val title = "Snyk"
         private const val groupNeedAction = "SnykNeedAction"
         private const val groupAutoHide = "SnykAutoHide"
@@ -52,7 +54,16 @@ class SnykBalloonNotifications {
         fun showWarn(message: String, project: Project, vararg actions: AnAction) =
             showNotification(message, project, NotificationType.WARNING, *actions)
 
-        private fun showNotification(message: String, project: Project, type: NotificationType, vararg actions: AnAction): Notification {
+        private fun showNotification(
+            message: String,
+            project: Project,
+            type: NotificationType,
+            vararg actions: AnAction
+        ): Notification {
+            when(type) {
+                NotificationType.ERROR, NotificationType.WARNING -> logger.warn(message)
+                else -> logger.info(message)
+            }
             val notification = if (actions.isEmpty()) {
                 Notification(groupAutoHide, title, message, type)
             } else {
