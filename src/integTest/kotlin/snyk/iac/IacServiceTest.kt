@@ -96,8 +96,8 @@ class IacServiceTest : LightPlatformTestCase() {
     fun testConvertRawCliStringToIacResult() {
         val iacService = getIacService(project)
 
-        val sigleObjectIacResult = iacService.convertRawCliStringToCliResult(singleFileJson)
-        assertTrue(sigleObjectIacResult.isSuccessful())
+        val singleObjectIacResult = iacService.convertRawCliStringToCliResult(singleFileJson)
+        assertTrue(singleObjectIacResult.isSuccessful())
 
         val arrayObjectIacResult = iacService.convertRawCliStringToCliResult(wholeProjectJson)
         assertTrue(arrayObjectIacResult.isSuccessful())
@@ -118,6 +118,28 @@ class IacServiceTest : LightPlatformTestCase() {
         assertFalse(rawErrorIacResult.isSuccessful())
         assertEquals(errorMsg, rawErrorIacResult.error!!.message)
         assertEquals(project.basePath, rawErrorIacResult.error!!.path)
+    }
+
+    @Test
+    fun testConvertRawCliStringToIacResultWithEmptyRawString() {
+        val cli = getIacService(project)
+
+        val cliResult = cli.convertRawCliStringToCliResult("")
+        assertFalse(cliResult.isSuccessful())
+    }
+
+    @Test
+    fun testConvertRawCliStringToIacResultWithMissformedJson() {
+        val cli = getIacService(project)
+
+        val cliResult = cli.convertRawCliStringToCliResult("""
+                    {
+                      "ok": false,
+                      "error": ["could not be","array here"],
+                      "path": "some/path/here"
+                    }
+                """.trimIndent())
+        assertFalse(cliResult.isSuccessful())
     }
 
     @Test
