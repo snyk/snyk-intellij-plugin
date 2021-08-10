@@ -157,6 +157,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater {
                         displayIacResults(iacResult)
                     }
+                    // TODO: Add event logging
                 }
 
                 override fun scanningOssError(snykError: SnykError) {
@@ -686,13 +687,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
                 if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
                     val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
-                    rootOssTreeNode.add(fileTreeNode)
+                    rootIacIssuesTreeNode.add(fileTreeNode)
 
                     iacVulnerabilitiesForFile.infrastructureAsCodeIssues
                         .filter { isSeverityFilterPassed(it.severity) }
                         .sortedByDescending { Severity.getIndex(it.severity) }  // TODO: use comparator for tree nodes
                         .forEach {
-                            fileTreeNode.add(IacIssueTreeNode(it))
+                            fileTreeNode.add(IacIssueTreeNode(it, project))
                         }
                 }
             }
