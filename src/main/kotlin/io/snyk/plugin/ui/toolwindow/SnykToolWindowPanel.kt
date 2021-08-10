@@ -6,6 +6,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -28,6 +29,7 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
+import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
@@ -62,6 +64,8 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
 
+private val LOG = logger<SnykToolWindowPanel>()
+
 /**
  * Main panel for Snyk tool window.
  */
@@ -85,7 +89,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     var currentSnykCodeError: SnykError? = null
 
-    var currentIacResults: IacResult? = null
+    var currentIacResult: IacResult? = null
         get() {
             val prevTimeStamp = field?.timeStamp ?: Instant.MIN
             if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
@@ -149,7 +153,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater { displaySnykCodeResults(snykCodeResults) }
 
                 override fun scanningIacFinished(iacResult: IacResult) {
-                    currentIacResults = iacResult
+                    currentIacResult = iacResult
                     ApplicationManager.getApplication().invokeLater {
                         displayIacResults(iacResult)
                     }
@@ -189,9 +193,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
 
                 override fun scanningIacError(snykError: SnykError) {
-                    currentIacResults = null
+                    currentIacResult = null
                     ApplicationManager.getApplication().invokeLater {
-                        // handle IaC errors
+                        SnykBalloonNotifications.showError(snykError.message, project)
+                        currentIacError = snykError
+                        removeAllChildren(listOf(rootIacIssuesTreeNode))
+                        updateTreeRootNodesPresentation()
+                        displayEmptyDescription()
                     }
                 }
             })
@@ -238,12 +246,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean) =
+                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
                     ApplicationManager.getApplication().invokeLater {
                         updateTreeRootNodesPresentation(
                             ossResultsCount = if (wasOssRunning) -1 else null,
                             securityIssuesCount = if (wasSnykCodeRunning) -1 else null,
-                            qualityIssuesCount = if (wasSnykCodeRunning) -1 else null
+                            qualityIssuesCount = if (wasSnykCodeRunning) -1 else null,
+                            iacResultsCount = if (wasIacRunning) -1 else null
                         )
                         displayEmptyDescription()
                     }
@@ -367,8 +376,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         reloadTree()
 
         displayEmptyDescription()
-
-        //revalidate()
     }
 
     private fun removeAllChildren(
@@ -494,12 +501,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
         newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode.userObject = it }
 
-        val nodesToReload = listOfNotNull(
-            newOssTreeNodeText?.let { rootOssTreeNode },
-            newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode },
-            newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode }
-        )
-        //nodesToReload.forEach { reloadTreeNode(it) }
+        val newIacTreeNodeText = when {
+            currentIacError != null -> "$IAC_ROOT_TEXT (error)"
+            //TODO(pavel): check settings if iacScanEnable
+            isIacRunning(project) -> "$IAC_ROOT_TEXT (scanning...)"
+            else -> iacResultsCount?.let { count ->
+                IAC_ROOT_TEXT + when {
+                    count == -1 -> ""
+                    count == 0 -> NO_ISSUES_FOUND_TEXT
+                    count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
+                    else -> throw IllegalStateException()
+                }
+            }
+        }
+        newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
     }
 
     private fun displayNoVulnerabilitiesMessage() {

@@ -13,6 +13,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getIacService
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCode
 import io.snyk.plugin.getSyncPublisher
@@ -39,7 +40,11 @@ class SnykTaskQueueService(val project: Project) {
 
     private var ossScanProgressIndicator: ProgressIndicator? = null
 
+    private var iacScanProgressIndicator: ProgressIndicator? = null
+
     fun getOssScanProgressIndicator(): ProgressIndicator? = ossScanProgressIndicator
+
+    fun getIacScanProgressIndicator(): ProgressIndicator? = iacScanProgressIndicator
 
     fun getTaskQueue() = taskQueue
 
@@ -127,7 +132,30 @@ class SnykTaskQueueService(val project: Project) {
     private fun scheduleIacScan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk Infrastructure as Code is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
-                LOG.warn("running IaC scan...")
+                val toolWindowPanel = project.service<SnykToolWindowPanel>()
+                if (toolWindowPanel.currentIacResult != null) return
+
+                iacScanProgressIndicator = indicator
+
+                val iacResult = getIacService(project).scan()
+
+                iacScanProgressIndicator = null
+                if (project.isDisposed) return
+
+                if (indicator.isCanceled) {
+                    LOG.warn("cancel IaC scan")
+                    //taskQueuePublisher?.stopped()
+                } else {
+                    if (iacResult.isSuccessful()) {
+                        LOG.warn("IaC result: ->")
+                        iacResult.allCliIssues?.forEach {
+                            LOG.warn("  ${it.targetFile}, ${it.infrastructureAsCodeIssues.size} issues")
+                        }
+                        scanPublisher?.scanningIacFinished(iacResult)
+                    } else {
+                        scanPublisher?.scanningIacError(iacResult.error!!)
+                    }
+                }
             }
         })
     }

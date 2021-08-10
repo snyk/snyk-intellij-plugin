@@ -65,7 +65,12 @@ fun isOssRunning(project: Project): Boolean {
 fun isSnykCodeRunning(project: Project): Boolean =
     AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
 
-fun isScanRunning(project: Project): Boolean = isOssRunning(project) || isSnykCodeRunning(project)
+fun isIacRunning(project: Project): Boolean {
+    val indicator = project.service<SnykTaskQueueService>().getIacScanProgressIndicator()
+    return indicator != null && indicator.isRunning && !indicator.isCanceled
+}
+
+fun isScanRunning(project: Project): Boolean = isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
 
 fun isSnykCodeAvailable(customEndpointUrl: String?): Boolean =
     customEndpointUrl.isNullOrEmpty() || isSnykCodeSupportedEndpoint(customEndpointUrl)
