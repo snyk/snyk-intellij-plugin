@@ -151,7 +151,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningIacFinished(iacResult: IacResult) {
                     currentIacResults = iacResult
                     ApplicationManager.getApplication().invokeLater {
-                        // display results
+                        displayIacResults(iacResult)
                     }
                 }
 
@@ -447,6 +447,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
         qualityIssuesCount: Int? = null,
+        iacResultsCount: Int? = null,
         addHMLPostfix: String = ""
     ) {
         val settings = getApplicationSettingsStateService()
@@ -658,6 +659,38 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes, selectedNodeUserObject)
     }
 
+    private fun displayIacResults(iacResult: IacResult) {
+        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootIacIssuesTreeNode)
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+
+        rootIacIssuesTreeNode.removeAllChildren()
+
+        // TODO: work with Iac settings
+        val settingsEnabled = true // getApplicationSettingsStateService().iacScanEnable
+        if (settingsEnabled && iacResult.allCliIssues != null) {
+            iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
+                if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
+                    val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
+                    rootOssTreeNode.add(fileTreeNode)
+
+                    iacVulnerabilitiesForFile.infrastructureAsCodeIssues
+                        .filter { isSeverityFilterPassed(it.severity) }
+                        .sortedByDescending { Severity.getIndex(it.severity) }  // TODO: use comparator for tree nodes
+                        .forEach {
+                            fileTreeNode.add(IacIssueTreeNode(it))
+                        }
+                }
+            }
+        }
+
+        updateTreeRootNodesPresentation(
+            iacResultsCount = iacResult.issuesCount,
+            addHMLPostfix = buildHMLpostfix(iacResult)
+        )
+
+        smartReloadRootNode(rootIacIssuesTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
+    }
+
     private fun buildHMLpostfix(snykCodeResults: SnykCodeResults): String =
         buildHMLpostfix(
             errorsCount = snykCodeResults.totalErrorsCount,
@@ -671,6 +704,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ossResult.highSeveritiesCount(),
             ossResult.mediumSeveritiesCount(),
             ossResult.lowSeveritiesCount()
+        )
+
+    private fun buildHMLpostfix(iacResult: IacResult): String =
+        buildHMLpostfix(
+            iacResult.criticalSeveritiesCount(),
+            iacResult.highSeveritiesCount(),
+            iacResult.mediumSeveritiesCount(),
+            iacResult.lowSeveritiesCount()
         )
 
     private fun buildHMLpostfix(criticalCount: Int = 0, errorsCount: Int, warnsCount: Int, infosCount: Int): String {
