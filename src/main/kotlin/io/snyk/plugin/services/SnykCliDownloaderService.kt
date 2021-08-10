@@ -58,6 +58,7 @@ class SnykCliDownloaderService {
         currentProgressIndicator = indicator
         var succeed = false
 
+        val cliFile = getCliFile()
         try {
             indicator.text = "Downloading latest Snyk CLI release..."
 
@@ -68,8 +69,6 @@ class SnykCliDownloaderService {
             val cliVersion = latestReleasesInfo!!.tagName
 
             val url = URL(format(LATEST_RELEASE_DOWNLOAD_URL, cliVersion, snykWrapperFileName)).toString()
-
-            val cliFile = getCliFile()
 
             if (cliFile.exists()) {
                 cliFile.delete()
@@ -87,6 +86,9 @@ class SnykCliDownloaderService {
             succeed = true
         } finally {
             currentProgressIndicator = null
+            if (!succeed && cliFile.exists()) {
+                cliFile.delete()
+            }
             cliDownloadPublisher.cliDownloadFinished(succeed)
         }
     }

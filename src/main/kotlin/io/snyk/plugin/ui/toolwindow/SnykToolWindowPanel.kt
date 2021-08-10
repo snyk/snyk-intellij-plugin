@@ -406,9 +406,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isCliDownloading() -> {
                 displayDownloadMessage()
             }
-            rootOssTreeNode.childCount == 0
-                && rootSecurityIssuesTreeNode.childCount == 0
-                && rootQualityIssuesTreeNode.childCount == 0 -> {
+            rootOssTreeNode.childCount == 0 &&
+                rootSecurityIssuesTreeNode.childCount == 0 &&
+                rootQualityIssuesTreeNode.childCount == 0 -> {
                 displayNoVulnerabilitiesMessage()
             }
             else -> {

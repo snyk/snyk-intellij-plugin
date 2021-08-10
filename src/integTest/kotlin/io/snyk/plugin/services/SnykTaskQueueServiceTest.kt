@@ -18,14 +18,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     fun testSnykTaskQueueService() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
-
-        Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
-            .thenReturn(javaClass.classLoader.getResource("group-vulnerabilities-test.json")!!.readText(Charsets.UTF_8))
-
-        getOssService(project).setConsoleCommandRunner(mockRunner)
-
         val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
 
         snykTaskQueueService.scan()
@@ -46,14 +38,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val cliFile = getCliFile()
         if (cliFile.exists()) cliFile.delete()
         assertFalse(cliFile.exists())
-
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
-
-        Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
-            .thenReturn(javaClass.classLoader.getResource("group-vulnerabilities-test.json")!!.readText(Charsets.UTF_8))
-
-        getOssService(project).setConsoleCommandRunner(mockRunner)
 
         val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
 
