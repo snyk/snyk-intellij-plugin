@@ -88,10 +88,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val rootOssTreeNode = RootOssTreeNode(project)
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
+    private val rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
     private val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
+        rootTreeNode.add(rootIacIssuesTreeNode)
         Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -753,6 +755,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val OSS_ROOT_TEXT = " Open Source Security"
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
+        const val IAC_ROOT_TEXT = "Infrastructure as Code"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }
@@ -766,6 +769,9 @@ class RootSecurityIssuesTreeNode(project: Project) :
 
 class RootQualityIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT, project)
+
+class RootIacIssuesTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project)
 
 open class ProjectBasedDefaultMutableTreeNode(userObject: Any, val project: Project) :
     DefaultMutableTreeNode(userObject)
