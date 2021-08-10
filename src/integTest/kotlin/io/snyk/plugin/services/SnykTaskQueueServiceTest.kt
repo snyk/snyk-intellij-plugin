@@ -42,6 +42,31 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun testCliDownloadBeforeScanIfNeeded() {
+        val cliFile = getCliFile()
+
+        if (cliFile.exists()) cliFile.delete()
+
+        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+
+        Mockito
+            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
+            .thenReturn(javaClass.classLoader.getResource("group-vulnerabilities-test.json")!!.readText(Charsets.UTF_8))
+
+        getOssService(project).setConsoleCommandRunner(mockRunner)
+
+        val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
+
+        snykTaskQueueService.scan()
+        // needed due to luck of disposing services by Idea test framework (bug?)
+        Disposer.dispose(service<SnykApiService>())
+
+        assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
+
+        assertTrue(cliFile.exists())
+    }
+
+    @Test
     fun testProjectClosedWhileTaskRunning() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
