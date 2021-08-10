@@ -21,9 +21,6 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.analytics.getIssueSeverityOrNull
 import io.snyk.plugin.analytics.getIssueType
 import io.snyk.plugin.analytics.getSelectedProducts
-import snyk.common.SnykError
-import snyk.oss.OssResult
-import snyk.oss.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
@@ -31,8 +28,8 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
-import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isOssRunning
+import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliDownloaderService
@@ -50,6 +47,10 @@ import snyk.analytics.IssueIsViewed
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
+import snyk.common.SnykError
+import snyk.iac.IacResult
+import snyk.oss.OssResult
+import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.time.Instant
 import java.util.Objects.nonNull
@@ -83,6 +84,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     var currentOssError: SnykError? = null
 
     var currentSnykCodeError: SnykError? = null
+
+    var currentIacResults: IacResult? = null
+        get() {
+            val prevTimeStamp = field?.timeStamp ?: Instant.MIN
+            if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
+                field = null
+            }
+            return field
+        }
+    var currentIacError: SnykError? = null
 
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -118,6 +129,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningStarted() {
                     currentOssError = null
                     currentSnykCodeError = null
+                    currentIacError = null
                     ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
                 }
 
@@ -135,6 +147,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) =
                     ApplicationManager.getApplication().invokeLater { displaySnykCodeResults(snykCodeResults) }
+
+                override fun scanningIacFinished(iacResult: IacResult) {
+                    currentIacResults = iacResult
+                    ApplicationManager.getApplication().invokeLater {
+                        // display results
+                    }
+                }
 
                 override fun scanningOssError(snykError: SnykError) {
                     currentOssResults = null
@@ -166,6 +185,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         removeAllChildren(listOf(rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode))
                         updateTreeRootNodesPresentation()
                         displayEmptyDescription()
+                    }
+                }
+
+                override fun scanningIacError(snykError: SnykError) {
+                    currentIacResults = null
+                    ApplicationManager.getApplication().invokeLater {
+                        // handle IaC errors
                     }
                 }
             })

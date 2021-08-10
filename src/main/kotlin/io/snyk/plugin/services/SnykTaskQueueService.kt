@@ -3,20 +3,26 @@ package io.snyk.plugin.services
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.*
-import snyk.oss.OssResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getOssService
+import io.snyk.plugin.getSnykCode
+import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.oss.OssResult
 
+private val LOG = logger<SnykTaskQueueService>()
 
 @Service
 class SnykTaskQueueService(val project: Project) {
@@ -81,6 +87,11 @@ class SnykTaskQueueService(val project: Project) {
                     }.queue()
                 }
 
+                //TODO(pavel): replace with settings
+                val iacEnabled = true
+                if (iacEnabled) {
+                    scheduleIacScan()
+                }
             }
         })
     }
@@ -109,6 +120,14 @@ class SnykTaskQueueService(val project: Project) {
                         scanPublisher?.scanningOssError(ossResult.error!!)
                     }
                 }
+            }
+        })
+    }
+
+    private fun scheduleIacScan() {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk Infrastructure as Code is scanning", true) {
+            override fun run(indicator: ProgressIndicator) {
+                LOG.warn("running IaC scan...")
             }
         })
     }

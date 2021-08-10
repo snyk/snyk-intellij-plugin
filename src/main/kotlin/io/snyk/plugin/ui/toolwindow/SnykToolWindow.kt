@@ -8,11 +8,12 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import snyk.common.SnykError
-import snyk.oss.OssResult
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.snykcode.SnykCodeResults
+import snyk.common.SnykError
+import snyk.iac.IacResult
+import snyk.oss.OssResult
 
 /**
  * IntelliJ ToolWindow for Snyk plugin.
@@ -42,11 +43,15 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningOssFinished(ossResult: OssResult) = updateActionsPresentation()
 
+                override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
+
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) = updateActionsPresentation()
 
                 override fun scanningOssError(snykError: SnykError) = updateActionsPresentation()
 
                 override fun scanningSnykCodeError(snykError: SnykError) = updateActionsPresentation()
+
+                override fun scanningIacError(snykError: SnykError) = updateActionsPresentation()
             })
 
         project.messageBus.connect(this)
