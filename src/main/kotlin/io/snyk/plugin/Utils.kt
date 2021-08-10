@@ -67,6 +67,8 @@ fun isSnykCodeRunning(project: Project): Boolean =
 
 fun isScanRunning(project: Project): Boolean = isOssRunning(project) || isSnykCodeRunning(project)
 
+fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
+
 fun isSnykCodeAvailable(customEndpointUrl: String?): Boolean =
     customEndpointUrl.isNullOrEmpty() || isSnykCodeSupportedEndpoint(customEndpointUrl)
 

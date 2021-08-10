@@ -7,6 +7,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
 import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykTaskQueueService
@@ -34,7 +35,10 @@ class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
         if (project != null && !project.isDisposed) {
             val settings = getApplicationSettingsStateService()
             actionEvent.presentation.isEnabled =
-                !isScanRunning(project) && !settings.pluginFirstRun && !settings.token.isNullOrEmpty()
+                !isCliDownloading() &&
+                    !isScanRunning(project) &&
+                    !settings.pluginFirstRun &&
+                    !settings.token.isNullOrEmpty()
         }
     }
 }

@@ -16,11 +16,13 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
-
+import org.jetbrains.annotations.TestOnly
 
 @Service
 class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
+
+    private val settings = getApplicationSettingsStateService()
 
     private val scanPublisher
         get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)
@@ -35,6 +37,7 @@ class SnykTaskQueueService(val project: Project) {
 
     fun getOssScanProgressIndicator(): ProgressIndicator? = ossScanProgressIndicator
 
+    @TestOnly
     fun getTaskQueue() = taskQueue
 
     fun scheduleRunnable(title: String, runnable: (indicator: ProgressIndicator) -> Unit) {
@@ -53,41 +56,45 @@ class SnykTaskQueueService(val project: Project) {
                 }
                 indicator.checkCanceled()
 
-                val settings = getApplicationSettingsStateService()
                 if (settings.ossScanEnable) {
+                    if (!getOssService(project).isCliInstalled()) downloadLatestRelease()
                     scheduleOssScan()
                 }
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
-                    object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
-                        override fun run(indicator: ProgressIndicator) {
-                            settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
-                            when (settings.sastOnServerEnabled) {
-                                true -> {
-                                    getSnykCode(project).scan()
-                                    scanPublisher?.scanningStarted()
-                                }
-                                false -> {
-                                    settings.snykCodeSecurityIssuesScanEnable = false
-                                    settings.snykCodeQualityIssuesScanEnable = false
-                                    SnykBalloonNotifications.showSastForOrgEnablement(project)
-                                }
-                                null -> {
-                                    settings.snykCodeSecurityIssuesScanEnable = false
-                                    settings.snykCodeQualityIssuesScanEnable = false
-                                    SnykBalloonNotifications.showNetworkErrorAlert(project)
-                                }
-                            }
-                        }
-                    }.queue()
+                    scheduleSnykCodeScan()
                 }
-
             }
         })
+    }
+
+    private fun scheduleSnykCodeScan() {
+        object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
+            override fun run(indicator: ProgressIndicator) {
+                settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
+                when (settings.sastOnServerEnabled) {
+                    true -> {
+                        getSnykCode(project).scan()
+                        scanPublisher?.scanningStarted()
+                    }
+                    false -> {
+                        settings.snykCodeSecurityIssuesScanEnable = false
+                        settings.snykCodeQualityIssuesScanEnable = false
+                        SnykBalloonNotifications.showSastForOrgEnablement(project)
+                    }
+                    null -> {
+                        settings.snykCodeSecurityIssuesScanEnable = false
+                        settings.snykCodeQualityIssuesScanEnable = false
+                        SnykBalloonNotifications.showNetworkErrorAlert(project)
+                    }
+                }
+            }
+        }.queue()
     }
 
     private fun scheduleOssScan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk Open Source is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
+                if (!getOssService(project).isCliInstalled()) return
 
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
                 if (toolWindowPanel.currentOssResults != null) return
