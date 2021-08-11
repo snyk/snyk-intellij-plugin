@@ -130,7 +130,7 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     private fun scheduleIacScan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk Infrastructure as Code is scanning", true) {
+        object : Task.Backgroundable(project, "Snyk Infrastructure as Code is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
                 if (toolWindowPanel.currentIacResult != null) return
@@ -138,13 +138,14 @@ class SnykTaskQueueService(val project: Project) {
                 iacScanProgressIndicator = indicator
 
                 val iacResult = getIacService(project).scan()
+                scanPublisher?.scanningStarted()
 
                 iacScanProgressIndicator = null
                 if (project.isDisposed) return
 
                 if (indicator.isCanceled) {
                     LOG.warn("cancel IaC scan")
-                    //taskQueuePublisher?.stopped()
+                    taskQueuePublisher?.stopped(wasIacRunning = true)
                 } else {
                     if (iacResult.isSuccessful()) {
                         LOG.warn("IaC result: ->")
@@ -157,7 +158,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
             }
-        })
+        }.queue()
     }
 
     fun downloadLatestRelease() {
@@ -184,7 +185,5 @@ class SnykTaskQueueService(val project: Project) {
         RunUtils.instance.cancelRunningIndicators(project)
         val wasIacRunning = iacScanProgressIndicator?.isRunning == true
         taskQueuePublisher?.stopped(wasOssRunning, wasSnykCodeRunning, wasIacRunning)
-
-
     }
 }
