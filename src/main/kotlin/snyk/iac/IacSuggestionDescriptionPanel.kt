@@ -98,7 +98,7 @@ class IacSuggestionDescriptionPanel(
             baseGridConstraints(4, 0)
         )
         panel.add(
-            JLabel(issue.path.joinToString(postfix = ">")),
+            JLabel(issue.path.joinToString(" > ")),
             baseGridConstraints(4, 1)
         )
 
