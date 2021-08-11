@@ -182,6 +182,9 @@ class SnykTaskQueueService(val project: Project) {
         ossScanProgressIndicator?.cancel()
         val wasSnykCodeRunning = isSnykCodeRunning(project)
         RunUtils.instance.cancelRunningIndicators(project)
-        taskQueuePublisher?.stopped(wasOssRunning, wasSnykCodeRunning)
+        val wasIacRunning = iacScanProgressIndicator?.isRunning == true
+        taskQueuePublisher?.stopped(wasOssRunning, wasSnykCodeRunning, wasIacRunning)
+
+
     }
 }
