@@ -5,6 +5,7 @@ import com.intellij.ui.HyperlinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
+import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.buildBoldTitleLabel
@@ -87,17 +88,17 @@ class IacSuggestionDescriptionPanel(
         fun boldLabel(text: String) = JLabel(text).apply { font = io.snyk.plugin.ui.getFont(Font.BOLD, -1, JLabel().font) }
 
         mainBodyPanel.add(
-            boldLabel("Issue:"),
-            baseGridConstraints(2, 0)
+            boldLabel("Description:"),
+            baseGridConstraints(2, 0, indent = 0)
         )
         mainBodyPanel.add(
-            JLabel(issue.id),
+            JLabel(issue.issue),
             baseGridConstraints(2, 1)
         )
 
         mainBodyPanel.add(
             boldLabel("Impact:"),
-            baseGridConstraints(3, 0)
+            baseGridConstraints(3, 0, indent = 0)
         )
         mainBodyPanel.add(
             JLabel(issue.impact),
@@ -106,10 +107,15 @@ class IacSuggestionDescriptionPanel(
 
         mainBodyPanel.add(
             boldLabel("Path:"),
-            baseGridConstraints(4, 0)
+            baseGridConstraints(4, 0, indent = 0)
         )
+
+        val pathLabel = JLabel(issue.path.joinToString(" > ")).apply {
+            font = io.snyk.plugin.ui.getFont(-1, -1, JTextArea().font)
+        }
+
         mainBodyPanel.add(
-            JLabel(issue.path.joinToString(" > ")),
+            pathLabel,
             baseGridConstraints(4, 1)
         )
 
@@ -148,7 +154,7 @@ class IacSuggestionDescriptionPanel(
         panel.layout = GridLayoutManager(1, 3, Insets(0, 0, 0, 0), 5, 0)
 
         panel.add(
-            JLabel("Policy Id"),
+            JLabel("Issue"),
             baseGridConstraints(0)
         )
 
@@ -199,10 +205,13 @@ class IacSuggestionDescriptionPanel(
 
     private fun remediationPanel(resolve: String): JPanel {
         val remediationPanel = JPanel()
-        remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 5, 0, 0), -1, 0)
+        remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 20, 20, 0), -1, 0)
+        remediationPanel.background = UIUtil.getTextFieldBackground()
 
         val resolveMarkdown = markdownToHtml((resolve))
-        val remediationPane = getReadOnlyClickableHtmlJEditorPane(resolveMarkdown)
+        val remediationPane = getReadOnlyClickableHtmlJEditorPane(resolveMarkdown).apply {
+            isOpaque = false
+        }
 
         remediationPanel.add(remediationPane,
             panelGridConstraints(1)
