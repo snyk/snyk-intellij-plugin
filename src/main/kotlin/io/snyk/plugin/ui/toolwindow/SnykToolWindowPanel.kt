@@ -363,6 +363,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentOssResults = null
         currentOssError = null
         currentSnykCodeError = null
+        currentIacResult = null
+        currentIacError = null
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
 
