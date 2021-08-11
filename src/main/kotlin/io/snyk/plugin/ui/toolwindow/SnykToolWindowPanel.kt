@@ -7,9 +7,12 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -51,11 +54,13 @@ import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
 import snyk.iac.IacIssue
+import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
+import java.nio.file.Path
 import java.time.Instant
 import java.util.Objects.nonNull
 import javax.swing.JLabel
@@ -301,16 +306,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
                     if (psiFile.virtualFile.isValid) {
-                        // jump to Source
-                        PsiNavigationSupport.getInstance().createNavigatable(
-                            project,
-                            psiFile.virtualFile,
-                            textRange.start
-                        ).navigate(false)
-
-                        // highlight(by selection) suggestion range in source file
-                        val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                        editor?.selectionModel?.setSelection(textRange.start, textRange.end)
+                        navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
                     }
 
                     service<SnykAnalyticsService>().logIssueIsViewed(
@@ -323,14 +319,31 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                 }
                 is IacIssueTreeNode -> {
-                    val groupedVulns = node.userObject as IacIssue
+                    val iacIssue = node.userObject as IacIssue
                     val scrollPane = wrapWithScrollPane(
-                        IacSuggestionDescriptionPanel(groupedVulns)
+                        IacSuggestionDescriptionPanel(iacIssue)
                     )
-
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
-                    // todo: open package manager file, if any and  was not opened yet
+                    val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
+                        ?: throw IllegalArgumentException(node.toString())
+                    val fileName = iacIssuesForFile.targetFile
+                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
+                        Path.of(project.basePath, fileName)
+                    )
+                    if (virtualFile != null && virtualFile.isValid) {
+                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+                        if (document != null) {
+                            val lineNumber = iacIssue.lineNumber.toInt().let {
+                                val candidate = it - 1 // to 1-based count used in the editor
+                                if (0 <= candidate && candidate < document.lineCount) candidate else 0
+                            }
+                            val lineStartOffset = document.getLineStartOffset(lineNumber)
+
+                            navigateToSource(virtualFile, lineStartOffset)
+                        }
+                    }
+                    // TODO: Add event logging
                 }
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
@@ -348,6 +361,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         descriptionPanel.revalidate()
         descriptionPanel.repaint()
+    }
+
+    private fun navigateToSource(virtualFile: VirtualFile, selectionStartOffset: Int, selectionEndOffset: Int? = null) {
+        // jump to Source
+        PsiNavigationSupport.getInstance().createNavigatable(
+            project,
+            virtualFile,
+            selectionStartOffset
+        ).navigate(false)
+
+        if (selectionEndOffset != null) {
+            // highlight(by selection) suggestion range in source file
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor
+            editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
+        }
     }
 
     private fun wrapWithScrollPane(panel: JPanel): JScrollPane {
