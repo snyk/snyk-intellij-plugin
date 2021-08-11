@@ -50,7 +50,9 @@ import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
+import snyk.iac.IacIssue
 import snyk.iac.IacResult
+import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
@@ -319,6 +321,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             .severity(suggestion.getIssueSeverityOrNull())
                             .build()
                     )
+                }
+                is IacIssueTreeNode -> {
+                    val groupedVulns = node.userObject as IacIssue
+                    val scrollPane = wrapWithScrollPane(
+                        IacSuggestionDescriptionPanel(groupedVulns)
+                    )
+
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
+                    // todo: open package manager file, if any and  was not opened yet
                 }
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
