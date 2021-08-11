@@ -7,6 +7,10 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import icons.SnykIcons
 import io.snyk.plugin.Severity
+import io.snyk.plugin.ui.buildBoldTitleLabel
+import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
+import org.commonmark.parser.Parser
+import org.commonmark.renderer.html.HtmlRenderer
 import java.awt.*
 import javax.swing.*
 import javax.swing.event.HyperlinkEvent
@@ -60,49 +64,56 @@ class IacSuggestionDescriptionPanel(
             )
         )
 
+        this.add(titlePanel(), panelGridConstraints(0))
+
         this.add(
-            getMainBodyPanel(),
+            mainBodyPanel(),
             baseGridConstraints(1, indent = 0)
         )
 
-        this.add(titlePanel(), panelGridConstraints(0))
+        if (!issue.resolve.isNullOrBlank()) {
+            this.add(
+                remediationPanelWithTitle(issue.resolve!!),
+                panelGridConstraints(6)
+            )
+        }
     }
 
-    private fun getMainBodyPanel(): JPanel {
-        val panel = JPanel()
+    private fun mainBodyPanel(): JPanel {
+        val mainBodyPanel = JPanel()
 
-        panel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
+        mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
 
         fun boldLabel(text: String) = JLabel(text).apply { font = io.snyk.plugin.ui.getFont(Font.BOLD, -1, JLabel().font) }
 
-        panel.add(
+        mainBodyPanel.add(
             boldLabel("Issue:"),
             baseGridConstraints(2, 0)
         )
-        panel.add(
+        mainBodyPanel.add(
             JLabel(issue.id),
             baseGridConstraints(2, 1)
         )
 
-        panel.add(
+        mainBodyPanel.add(
             boldLabel("Impact:"),
             baseGridConstraints(3, 0)
         )
-        panel.add(
+        mainBodyPanel.add(
             JLabel(issue.impact),
             baseGridConstraints(3, 1)
         )
 
-        panel.add(
+        mainBodyPanel.add(
             boldLabel("Path:"),
             baseGridConstraints(4, 0)
         )
-        panel.add(
+        mainBodyPanel.add(
             JLabel(issue.path.joinToString(" > ")),
             baseGridConstraints(4, 1)
         )
 
-        return panel
+        return mainBodyPanel
     }
 
     private fun titlePanel(): JPanel {
@@ -184,5 +195,49 @@ class IacSuggestionDescriptionPanel(
             titleLabelFont?.let { font = it }
             text = labelText
         }
+    }
+
+    private fun remediationPanel(resolve: String): JPanel {
+        val remediationPanel = JPanel()
+        remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 5, 0, 0), -1, 0)
+
+        val resolveMarkdown = markdownToHtml((resolve))
+        val remediationPane = getReadOnlyClickableHtmlJEditorPane(resolveMarkdown)
+
+        remediationPanel.add(remediationPane,
+            panelGridConstraints(1)
+        )
+
+        return remediationPanel
+    }
+
+    private fun markdownToHtml(sourceStr: String): String {
+        val parser = Parser.builder().build()
+        val document = parser.parse(sourceStr)
+
+        val renderer = HtmlRenderer.builder().escapeHtml(true).build()
+
+        return renderer.render(document)
+    }
+
+    private fun remediationPanelWithTitle(remediation: String): JPanel {
+        val remediationPanel = JPanel()
+        remediationPanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, -1)
+
+        remediationPanel.add(
+            buildBoldTitleLabel("Remediation"),
+            panelGridConstraints(
+                row = 0
+            )
+        )
+
+        remediationPanel.add(
+            remediationPanel(remediation),
+            panelGridConstraints(
+                row = 1
+            )
+        )
+
+        return remediationPanel
     }
 }
