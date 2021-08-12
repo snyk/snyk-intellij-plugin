@@ -416,7 +416,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun doCleanUi() {
         removeAllChildren()
-        updateTreeRootNodesPresentation(-1, -1, -1)
+        updateTreeRootNodesPresentation(-1, -1, -1, -1)
         reloadTree()
 
         displayEmptyDescription()
@@ -424,7 +424,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun removeAllChildren(
         rootNodesToUpdate: List<DefaultMutableTreeNode> =
-            listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode)
+            listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode, rootIacIssuesTreeNode)
     ) {
         rootNodesToUpdate.forEach {
             it.removeAllChildren()
@@ -487,7 +487,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         } else {
             displaySelectVulnerabilityMessage()
         }
-
     }
 
     /** Params value:
