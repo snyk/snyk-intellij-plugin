@@ -61,6 +61,7 @@ import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.time.Instant
 import java.util.Objects.nonNull
 import javax.swing.JLabel
@@ -329,7 +330,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ?: throw IllegalArgumentException(node.toString())
                     val fileName = iacIssuesForFile.targetFile
                     val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
-                        Path.of(project.basePath, fileName)
+                        Paths.get(project.basePath!!, fileName)
                     )
                     if (virtualFile != null && virtualFile.isValid) {
                         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
