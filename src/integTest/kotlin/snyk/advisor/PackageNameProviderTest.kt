@@ -4,12 +4,14 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 class PackageNameProviderTest : BasePlatformTestCase() {
 
-    override fun getTestDataPath(): String {
-        return "src/IntegTest/resources/advisor-build-files"
-    }
+    private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
+        .getResource(resourceName)!!.readText(Charsets.UTF_8)
 
     fun testPythonPackageNames() {
-        myFixture.configureByFile("requirements.txt")
+        myFixture.configureByText(
+            "requirements.txt",
+            getResourceAsString("advisor-build-files/requirements.txt")
+        )
         val packageNameProvider = PackageNameProvider(myFixture.editor)
 
         fun assertPackageName(name: String?, lineNumber: Int) {
@@ -49,7 +51,10 @@ class PackageNameProviderTest : BasePlatformTestCase() {
     }
 
     fun testNpmPackageNames() {
-        myFixture.configureByFile("package.json")
+        myFixture.configureByText(
+            "package.json",
+            getResourceAsString("advisor-build-files/package.json")
+        )
         val packageNameProvider = PackageNameProvider(myFixture.editor)
 
         fun assertPackageName(name: String?, lineNumber: Int) {
