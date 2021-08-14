@@ -1,0 +1,104 @@
+--extra-index-url https://pypi.fury.io/szxGyDm9EBpkyVFVy7qR/snyk-org/
+piper==1.5.9
+pika==0.10.0
+pymongo
+pyaml
+gitpython
+pytest
+pytest-mock
+bs4
+requests
+lxml
+tornado
+subprocess32
+toml
+# google-cloud-bigquery dependencies
+cachetools==3.1.1
+certifi==2019.11.28
+chardet==3.0.4
+enum34==1.1.6
+futures==3.3.0
+google-api-core==1.16.0
+google-auth==1.11.0
+google-cloud-bigquery==1.24.0
+google-cloud-core==1.3.0
+google-resumable-media==0.5.0
+googleapis-common-protos==1.51.0
+idna==2.8
+protobuf==3.11.3
+pyasn1==0.4.8
+pyasn1-modules==0.2.8
+pytz==2019.3
+rsa==4.0
+six==1.14.0
+urllib3==1.25.8
+# dev dependencies
+freezegun==0.3.9
+requests_mock==1.4.0
+pygithub==1.43.7
+
+# --------------------------
+00000a
+souper-plone
+#
+####### example-requirements.txt #######
+#
+###### Requirements without Version Specifiers ######
+nose
+nose-cov
+beautifulsoup4
+#
+###### Requirements with Version Specifiers ######
+#   See https://www.python.org/dev/peps/pep-0440/#version-specifiers
+docopt == 0.6.1             # Version Matching. Must be version 0.6.1
+keyring >= 4.1.1            # Minimum version 4.1.1
+coverage != 3.5             # Version Exclusion. Anything except version 3.5
+Mopidy-Dirble ~= 1.1        # Compatible release. Same as >= 1.1, == 1.*
+#
+###### Refer to other requirements files ######
+-r other-requirements.txt
+#
+#
+###### A particular file ######
+./downloads/numpy-1.9.2-cp34-none-win32.whl
+http://wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-3.0.3.dev1820+49a8884-cp34-none-win_amd64.whl
+#
+###### Additional Requirements without Version Specifiers ######
+#   Same as 1st section, just here to show that you can put things in any order.
+rejected \
+    rejected # not a package name, it's line continuation
+rejected  # some comment
+rejected \
+   --hash=sha256:abc012
+rejected @ file:///somewhere
+posix_ipc ( >1.0.0, <2.00)
+green
+#
+
+# ---- https://github.com/snyk/pip-deps/tree/develop/tests/fixtures/sanitise/input
+
+-e .              # sources a local setup.py file
+-i https://my.private.artifactory.com # private nexus
+--index-url=https://my.private.artifactory.com # private nexus
+--extra-index-url=https://my-private-repo/is/here # extra registry url
+-r extra.txt      # sources another requirements file
+-c extra.txt      # sources a constraints file
+  -e .            # with some leading spaces
+posix_ipc==1.0.0  # a normal dependency
+dep-e-r==0.2.1    # false positive looking, leave it be!
+http://www.com    # http url
+https://www.com   # https url
+ftp://ftp.com     # ftp url
+git+ssh://git.org # git url
+pkg-resources==0.0.0 # invalid, due to OS bug with pip freeze
+secure-pkg \
+   --hash=sha256:abc012 # trailing comment to prevent IDE whitespace stripping
+secure-pkg2 --hash=sha256:abc012 --no-binary # with a --hash
+relative/file     # relative file/folder
+./realtive        # relative file/folder
+../relative-back  # relative to parent
+windows\\path     # windows path
+pip>=10.0.0       # we can't support pip as a dep due to custom patching
+virtualenv == 15.2.0 # nor can we support virtualenv as a dep
+pip
+pip-foo==1.2.3    # looks like pip but is not pip
