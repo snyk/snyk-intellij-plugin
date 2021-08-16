@@ -13,6 +13,7 @@ import ly.iterative.itly.ValidationOptions
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.DestinationsOptions
+import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.Identify
 import snyk.analytics.IssueIsViewed
 import snyk.analytics.Itly
@@ -149,6 +150,16 @@ class SnykAnalyticsService : Disposable {
 
         catchAll(log, "issueIsViewed") {
             Itly.getInstance().issueIsViewed(userId, event)
+        }
+    }
+
+    fun logHealthScoreIsClicked(event: HealthScoreIsClicked) {
+        if (!canReportEvents() || userId.isBlank()) {
+            return
+        }
+
+        catchAll(log, "healthScoreIsClicked") {
+            Itly.getInstance().healthScoreIsClicked(userId, event)
         }
     }
 
