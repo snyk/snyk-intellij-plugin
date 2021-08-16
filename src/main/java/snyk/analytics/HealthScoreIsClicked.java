@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class HealthScoreIsClicked extends Event {
     private static final String NAME = "Health Score Is Clicked";
     private static final String ID = "47cf2487-2066-4f12-9846-cba17d1fa257";
-    private static final String VERSION = "1.0.0";
+    private static final String VERSION = "3.0.0";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
@@ -30,6 +30,22 @@ public class HealthScoreIsClicked extends Event {
         }
     }
 
+    public enum Ecosystem {
+        NPM("npm"), PYTHON("python"), DOCKER("docker");
+
+        private String ecosystem;
+
+        public String getEcosystem()
+        {
+            return this.ecosystem;
+        }
+
+        Ecosystem(String ecosystem)
+        {
+            this.ecosystem = ecosystem;
+        }
+    }
+
     private HealthScoreIsClicked(Builder builder) {
         super(NAME, builder.properties, ID, VERSION);
     }
@@ -42,10 +58,10 @@ public class HealthScoreIsClicked extends Event {
         return new HealthScoreIsClicked(this);
     }
 
-    public static IIde builder() { return new Builder(); }
+    public static IEcosystem builder() { return new Builder(); }
 
     // Inner Builder class with required properties
-    public static class Builder implements IIde, IBuild {
+    public static class Builder implements IEcosystem, IIde, IPackageName, IBuild {
         private final HashMap<String, Object> properties = new HashMap<String, Object>();
 
         private Builder() {
@@ -53,12 +69,38 @@ public class HealthScoreIsClicked extends Event {
         }
 
         /**
+         * What ecosystem for advisor score was used:
+         *
+         * * docker
+         *
+         * * npm
+         *
+         * * python
+         * <p>
+         * Must be followed by {@link IIde#ide(Ide)
+         */
+        public IIde ecosystem(Ecosystem ecosystem) {
+            this.properties.put("ecosystem", ecosystem.getEcosystem());
+            return this;
+        }
+
+        /**
          * Ide family.
+         * <p>
+         * Must be followed by {@link IPackageName#packageName(String)
+         */
+        public IPackageName ide(Ide ide) {
+            this.properties.put("ide", ide.getIde());
+            return this;
+        }
+
+        /**
+         * Name of the package for which we get a score.
          * <p>
          * Must be followed by by additional optional properties or build() method
          */
-        public Builder ide(Ide ide) {
-            this.properties.put("ide", ide.getIde());
+        public Builder packageName(String packageName) {
+            this.properties.put("packageName", packageName);
             return this;
         }
 
@@ -68,8 +110,16 @@ public class HealthScoreIsClicked extends Event {
     }
 
     // Required property interfaces
+    public interface IEcosystem {
+        IIde ecosystem(Ecosystem ecosystem);
+    }
+
     public interface IIde {
-        Builder ide(Ide ide);
+        IPackageName ide(Ide ide);
+    }
+
+    public interface IPackageName {
+        Builder packageName(String packageName);
     }
 
     /** Build interface with optional properties */

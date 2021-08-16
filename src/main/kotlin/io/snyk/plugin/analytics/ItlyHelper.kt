@@ -3,7 +3,9 @@ package io.snyk.plugin.analytics
 import ai.deepcode.javaclient.core.SuggestionForFile
 import snyk.oss.Vulnerability
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import snyk.advisor.AdvisorPackageManager
 import snyk.analytics.AnalysisIsReady.AnalysisType
+import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.IssueIsViewed
 import snyk.analytics.IssueIsViewed.IssueType.CODE_QUALITY_ISSUE
 import snyk.analytics.IssueIsViewed.IssueType.CODE_SECURITY_VULNERABILITY
@@ -47,4 +49,11 @@ fun SuggestionForFile.getIssueSeverityOrNull(): IssueIsViewed.Severity? {
 
 fun SuggestionForFile.getIssueType(): IssueIsViewed.IssueType {
     return if (categories.contains("Security")) CODE_SECURITY_VULNERABILITY else CODE_QUALITY_ISSUE
+}
+
+fun AdvisorPackageManager.getEcosystem(): HealthScoreIsClicked.Ecosystem {
+    return when (this) {
+        AdvisorPackageManager.NPM -> HealthScoreIsClicked.Ecosystem.NPM
+        AdvisorPackageManager.PYTHON -> HealthScoreIsClicked.Ecosystem.PYTHON
+    }
 }

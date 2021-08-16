@@ -3,5 +3,5 @@
   SourceId: 'f2e16b49-6653-4183-abba-149fa04165fb',
   Path: './src/main/java/snyk/analytics',
   Branch: 'main',
-  Version: '31.0.0',
+  Version: '39.0.0',
 }

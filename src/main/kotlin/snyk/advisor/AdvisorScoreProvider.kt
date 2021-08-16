@@ -15,9 +15,12 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
+import io.snyk.plugin.analytics.getEcosystem
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.advisor.api.PackageInfo
+import snyk.analytics.HealthScoreIsClicked
 import java.awt.Color
 import java.awt.Cursor
 import java.awt.Font
@@ -111,6 +114,13 @@ class AdvisorScoreProvider(
                        </html>
                     """.trimIndent(),
                     e.mouseEvent
+                )
+                service<SnykAnalyticsService>().logHealthScoreIsClicked(
+                    HealthScoreIsClicked.builder()
+                        .ecosystem(packageManager.getEcosystem())
+                        .ide(HealthScoreIsClicked.Ide.JETBRAINS)
+                        .packageName(info.name)
+                        .build()
                 )
                 selectedScore = e.logicalPosition.line
             } else {

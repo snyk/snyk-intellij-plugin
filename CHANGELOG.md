@@ -1,5 +1,15 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.2.2]
+### Added
+- Download CLI if needed when starting scans
+### Fixed
+- Fix exception by empty CLI output ([GH-153](https://github.com/snyk/snyk-intellij-plugin/issues/153))
+- Fix error when parsing malformed JSON produced by CLI
+- Disable `Run scan` action during `CLI download` task
+- Fix cancelling action for `CLI download` task
+- Fix issue with partially downloaded CLI file
+
 ## [2.2.1]
 ### Changed
 - Make plugin compatible with 2021.2 version
