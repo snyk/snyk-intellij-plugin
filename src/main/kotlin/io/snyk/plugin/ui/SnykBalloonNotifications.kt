@@ -26,6 +26,7 @@ import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
+import io.snyk.plugin.snykToolWindow
 import io.snyk.plugin.startSastEnablementCheckLoop
 import snyk.analytics.AnalysisIsTriggered
 import java.awt.Color
@@ -54,13 +55,14 @@ class SnykBalloonNotifications {
         fun showWarn(message: String, project: Project, vararg actions: AnAction) =
             showNotification(message, project, NotificationType.WARNING, *actions)
 
+        // TODO(pavel): refactor showNotification function to make it more generic + default arguments
         private fun showNotification(
             message: String,
             project: Project,
             type: NotificationType,
             vararg actions: AnAction
         ): Notification {
-            when(type) {
+            when (type) {
                 NotificationType.ERROR, NotificationType.WARNING -> logger.warn(message)
                 else -> logger.info(message)
             }
@@ -73,6 +75,20 @@ class SnykBalloonNotifications {
             }
             notification.notify(project)
             return notification
+        }
+
+        fun showWelcomeNotification(project: Project) {
+            val welcomeMessage = "Welcome to Snyk! Check out our tool window to start analyzing your code"
+            logger.info(welcomeMessage)
+            val notification = GROUP.createNotification(
+                welcomeMessage,
+                NotificationType.INFORMATION
+            ).addAction(
+                NotificationAction.createSimpleExpiring("Configure Snyk\u2026") {
+                    snykToolWindow(project)?.show()
+                }
+            )
+            notification.notify(project)
         }
 
         fun showSastForOrgEnablement(project: Project): Notification {
@@ -91,7 +107,7 @@ class SnykBalloonNotifications {
                 if (getApplicationSettingsStateService().sastOnServerEnabled == true) {
                     notification.expire()
                 } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
-                    currentAttempt++;
+                    currentAttempt++
                     alarm.addRequest(checkIfSastEnabled, 1000)
                 }
             }

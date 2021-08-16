@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Added
+- Show welcome notification after first plugin install
+
 ## [2.2.2]
 ### Added
 - Download CLI if needed when starting scans

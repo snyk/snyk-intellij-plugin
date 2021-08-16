@@ -46,7 +46,6 @@ dependencies {
 // configuration for gradle-intellij-plugin plugin.
 // read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
-  pluginName.set(properties("pluginName"))
   version.set(properties("platformVersion"))
 
   downloadSources.set(properties("platformDownloadSources").toBoolean())
