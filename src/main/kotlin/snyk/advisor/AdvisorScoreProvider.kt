@@ -132,9 +132,14 @@ class AdvisorScoreProvider(
             // over editable text area
             if (e.isOverText) return false
 
-            // over line with No score shown
             val line = e.logicalPosition.line
+            // over line with No score shown
             if (!scoredLines.containsKey(line)) return false
+
+            if (line >= e.editor.document.lineCount) {
+                cleanCacheForRemovedLines()
+                return false
+            }
 
             // not over Text in LineExtension
             val lineLength = e.editor.document.getLineEndOffset(line) - e.editor.document.getLineStartOffset(line)
@@ -142,6 +147,11 @@ class AdvisorScoreProvider(
                 e.logicalPosition.column > lineLength + LINE_EXTENSION_LENGTH) return false
 
             return true
+        }
+
+        private fun cleanCacheForRemovedLines(){
+            val lineCount = editor.document.lineCount
+            scoredLines.entries.removeIf { it.key >= lineCount }
         }
 
         override fun visibleAreaChanged(e: VisibleAreaEvent) {
