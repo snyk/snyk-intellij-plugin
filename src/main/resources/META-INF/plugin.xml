@@ -13,6 +13,7 @@
                 factoryClass="io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory"/>
 
     <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
+    <postStartupActivity implementation="snyk.WelcomeNotifyActivity"/>
 
     <projectConfigurable id="io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
                          instance="io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
