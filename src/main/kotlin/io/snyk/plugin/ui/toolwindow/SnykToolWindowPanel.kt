@@ -32,6 +32,7 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
+import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
@@ -60,7 +61,6 @@ import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Instant
 import java.util.Objects.nonNull
@@ -477,15 +477,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displayEmptyDescription() {
-        if (isScanRunning(project)) {
-            displayScanningMessage()
-        } else if (rootOssTreeNode.childCount == 0
-            && rootSecurityIssuesTreeNode.childCount == 0
-            && rootQualityIssuesTreeNode.childCount == 0
-        ) {
-            displayNoVulnerabilitiesMessage()
-        } else {
-            displaySelectVulnerabilityMessage()
+        when {
+            isScanRunning(project) -> {
+                displayScanningMessage()
+            }
+            isCliDownloading() -> {
+                displayDownloadMessage()
+            }
+            rootOssTreeNode.childCount == 0 &&
+                rootSecurityIssuesTreeNode.childCount == 0 &&
+                rootQualityIssuesTreeNode.childCount == 0 -> {
+                displayNoVulnerabilitiesMessage()
+            }
+            else -> {
+                displaySelectVulnerabilityMessage()
+            }
         }
     }
 

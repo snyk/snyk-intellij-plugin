@@ -5,12 +5,19 @@ import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ToolWindow
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
-import io.snyk.plugin.services.*
+import io.snyk.plugin.services.SnykApiService
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykCliDownloaderService
+import io.snyk.plugin.services.SnykCodeService
+import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import snyk.iac.IacService
 import snyk.oss.OssService
 import java.io.File
@@ -30,6 +37,10 @@ fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
 fun isProjectSettingsAvailable(project: Project?) = nonNull(project) && !project!!.isDefault
+
+fun snykToolWindow(project: Project): ToolWindow? {
+    return ToolWindowManager.getInstance(project).getToolWindow(SnykToolWindowFactory.SNYK_TOOL_WINDOW)
+}
 
 fun <L> getSyncPublisher(project: Project, topic: Topic<L>): L? {
     val messageBus = project.messageBus
@@ -72,6 +83,8 @@ fun isIacRunning(project: Project): Boolean {
 
 fun isScanRunning(project: Project): Boolean = isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
 
+fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
+
 fun isSnykCodeAvailable(customEndpointUrl: String?): Boolean =
     customEndpointUrl.isNullOrEmpty() || isSnykCodeSupportedEndpoint(customEndpointUrl)
 
@@ -103,7 +116,7 @@ fun getSnykCodeSettingsUrl(): String {
     return "$baseUrl/manage/snyk-code"
 }
 
-private fun String.removeTrailingSlashes() : String = this.replace( Regex("/+$"), "")
+private fun String.removeTrailingSlashes(): String = this.replace(Regex("/+$"), "")
 
 // check sastEnablement in a loop with rising timeout
 fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
@@ -127,11 +140,12 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     checkIfSastEnabled.invoke()
 }
 
-
 private val alarm = Alarm()
 
-fun controlExternalProcessWithProgressIndicator(indicator: ProgressIndicator,
-                                                onCancel: () -> Unit) {
+fun controlExternalProcessWithProgressIndicator(
+    indicator: ProgressIndicator,
+    onCancel: () -> Unit
+) {
     lateinit var checkCancelled: () -> Unit
     checkCancelled = {
         if (indicator.isCanceled) {

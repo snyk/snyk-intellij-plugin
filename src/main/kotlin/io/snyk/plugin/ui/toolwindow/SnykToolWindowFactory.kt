@@ -19,4 +19,8 @@ class SnykToolWindowFactory : ToolWindowFactory, DumbAware {
 
         Disposer.register(project, toolWindowPanel)
     }
+
+    companion object {
+        const val SNYK_TOOL_WINDOW = "Snyk"
+    }
 }

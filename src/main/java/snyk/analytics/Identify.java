@@ -12,7 +12,7 @@ import ly.iterative.itly.Event;
 public class Identify extends Event {
     private static final String NAME = "identify";
     private static final String ID = "identify";
-    private static final String VERSION = "31.0.0";
+    private static final String VERSION = "39.0.0";
 
     private Identify(Builder builder) {
         super(NAME, builder.properties, ID, VERSION);
@@ -85,6 +85,14 @@ public class Identify extends Event {
         }
 
         /**
+         * Whether or not the user belongs to the Snyk org (determined by the email address ending with @snyk.io)
+         */
+        public Builder isSnyk(boolean isSnyk) {
+            this.properties.put("isSnyk", isSnyk);
+            return this;
+        }
+
+        /**
          * Whether or not the user should be considered a Snyk administrator
          */
         public Builder isSnykAdmin(boolean isSnykAdmin) {
@@ -97,6 +105,14 @@ public class Identify extends Event {
          */
         public Builder name(String name) {
             this.properties.put("name", name);
+            return this;
+        }
+
+        /**
+         * Public ID of user
+         */
+        public Builder userId(String userId) {
+            this.properties.put("user_id", userId);
             return this;
         }
 
@@ -145,8 +161,10 @@ public class Identify extends Event {
         IBuild email(String email);
         IBuild hasFirstIntegration(boolean hasFirstIntegration);
         IBuild hasFirstProject(boolean hasFirstProject);
+        IBuild isSnyk(boolean isSnyk);
         IBuild isSnykAdmin(boolean isSnykAdmin);
         IBuild name(String name);
+        IBuild userId(String userId);
         IBuild username(String username);
         IBuild utmCampaign(String utmCampaign);
         IBuild utmMedium(String utmMedium);

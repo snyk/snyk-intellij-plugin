@@ -13,6 +13,7 @@ fix advice:
 - **Open Source Security** - known vulnerabilities in both the direct and in-direct (transitive) open source dependencies you are pulling into the project.
 - **Code Security** - security weaknesses identified in your own code.
 - **Code Quality** - code quality issues in your own code.
+- **Open Source Advisor** - health test for the direct dependencies you are using. Including: popularity, maintenance, risk & community insights.
 
 ### Useful links
 
