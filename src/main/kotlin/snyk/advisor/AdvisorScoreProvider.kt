@@ -49,9 +49,9 @@ class AdvisorScoreProvider(
             service<SnykAdvisorModel>().getInfo(editor.project, packageManager, it)
         }
         val score = info?.normalizedScore
-        if (score == null
-            || score >= SCORE_THRESHOLD
-            || score <= 0 // package not_found case
+        if (score == null ||
+            score >= SCORE_THRESHOLD ||
+            score <= 0 // package not_found case
         ) {
             scoredLines.remove(lineNumber)
             // no Listeners needed if no scores shown
@@ -154,12 +154,13 @@ class AdvisorScoreProvider(
             // not over Text in LineExtension
             val lineLength = e.editor.document.getLineEndOffset(line) - e.editor.document.getLineStartOffset(line)
             if (e.logicalPosition.column < lineLength + LINE_EXTENSION_PREFIX.length ||
-                e.logicalPosition.column > lineLength + LINE_EXTENSION_LENGTH) return false
+                e.logicalPosition.column > lineLength + LINE_EXTENSION_LENGTH
+            ) return false
 
             return true
         }
 
-        private fun cleanCacheForRemovedLines(){
+        private fun cleanCacheForRemovedLines() {
             val lineCount = editor.document.lineCount
             scoredLines.entries.removeIf { it.key >= lineCount }
         }
