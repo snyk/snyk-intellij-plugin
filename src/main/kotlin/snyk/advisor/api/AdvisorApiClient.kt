@@ -18,7 +18,7 @@ class AdvisorApiClient private constructor(
 
     fun getPackagesInfo(packageManager: AdvisorPackageManager, packageNames: List<String>): List<PackageInfo>? {
         try {
-            log.debug("Executing request to Advisor api")
+            log.debug("Executing request to Advisor api for packages: $packageNames")
             val retrofitCall = when (packageManager) {
                 AdvisorPackageManager.NPM -> scoreService().scoresNpmPackages(packages = packageNames)
                 AdvisorPackageManager.PYTHON -> scoreService().scoresPythonPackages(packages = packageNames)
