@@ -24,5 +24,3 @@ class IacIssue {
     lateinit var references: List<String>
     lateinit var path: List<String>
 }
-
-/* Real json Example: src/integTest/resources/iac-test-results/infrastructure-as-code-goof.json */
