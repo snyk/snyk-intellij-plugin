@@ -49,7 +49,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                 override fun run(indicator: ProgressIndicator) {
                     assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
                     downloadIndicator = indicator
-                    snykCliDownloaderService.downloadLatestRelease(indicator)
+                    snykCliDownloaderService.downloadLatestRelease(indicator, project)
                 }
             },
             EmptyProgressIndicator()

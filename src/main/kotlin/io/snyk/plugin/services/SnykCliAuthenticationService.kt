@@ -24,8 +24,12 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
-import javax.swing.*
-
+import javax.swing.AbstractAction
+import javax.swing.Action
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.JProgressBar
+import javax.swing.ScrollPaneConstants
 
 @Service
 class SnykCliAuthenticationService(val project: Project) {
@@ -47,7 +51,7 @@ class SnykCliAuthenticationService(val project: Project) {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
                 val downloaderService = service<SnykCliDownloaderService>()
-                downloaderService.downloadLatestRelease(ProgressManager.getInstance().progressIndicator)
+                downloaderService.downloadLatestRelease(ProgressManager.getInstance().progressIndicator, project)
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
             }
@@ -173,7 +177,8 @@ class AuthDialog() : DialogWrapper(true) {
             SnykBalloonNotifications.showInfoBalloonForComponent(
                 "URL copied",
                 getButton(this) ?: viewer,
-                showAbove = getButton(this) != null)
+                showAbove = getButton(this) != null
+            )
         }
     }
 }
