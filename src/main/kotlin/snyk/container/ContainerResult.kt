@@ -14,6 +14,7 @@ class ContainerResult(
         return allCliIssues?.sumBy { issuesForFile ->
             issuesForFile.vulnerabilities
                 .filter { it.severity == severity }
+                .distinctBy { it.id }
                 .size
         }
     }

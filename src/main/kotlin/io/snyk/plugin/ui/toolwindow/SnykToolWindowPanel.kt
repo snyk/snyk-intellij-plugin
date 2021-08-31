@@ -33,6 +33,7 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
+import io.snyk.plugin.isContainerScanning
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
@@ -54,6 +55,11 @@ import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
+import snyk.container.ContainerIssue
+import snyk.container.ContainerResult
+import snyk.container.ui.ContainerFileTreeNode
+import snyk.container.ui.ContainerIssueDetailPanel
+import snyk.container.ui.ContainerIssueTreeNode
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -107,16 +113,28 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     var currentIacError: SnykError? = null
 
+    var currentContainerResult: ContainerResult? = null
+        get() {
+            val prevTimeStamp = field?.timeStamp ?: Instant.MIN
+            if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
+                field = null
+            }
+            return field
+        }
+    var currentContainerError: SnykError? = null
+
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     private val rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
+    private val rootContainerIssuesTreeNode = RootContainerIssuesTreeNode(project)
     private val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
         rootTreeNode.add(rootIacIssuesTreeNode)
+        rootTreeNode.add(rootContainerIssuesTreeNode)
         Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -142,6 +160,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     currentOssError = null
                     currentSnykCodeError = null
                     currentIacError = null
+                    currentContainerError = null
                     ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
                 }
 
@@ -164,6 +183,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     currentIacResult = iacResult
                     ApplicationManager.getApplication().invokeLater {
                         displayIacResults(iacResult)
+                    }
+                    // TODO: Add event logging
+                }
+
+                override fun scanningContainerFinished(containerResult: ContainerResult) {
+                    currentContainerResult = containerResult
+                    ApplicationManager.getApplication().invokeLater {
+                        displayContainerResults(containerResult)
                     }
                     // TODO: Add event logging
                 }
@@ -207,6 +234,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         SnykBalloonNotifications.showError(snykError.message, project)
                         currentIacError = snykError
                         removeAllChildren(listOf(rootIacIssuesTreeNode))
+                        updateTreeRootNodesPresentation()
+                        displayEmptyDescription()
+                    }
+                }
+
+                override fun scanningContainerError(error: SnykError) {
+                    currentContainerResult = null
+                    ApplicationManager.getApplication().invokeLater {
+                        SnykBalloonNotifications.showError(error.message, project)
+                        currentContainerError = error
+                        removeAllChildren(listOf(rootContainerIssuesTreeNode))
                         updateTreeRootNodesPresentation()
                         displayEmptyDescription()
                     }
@@ -255,13 +293,19 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
+                override fun stopped(
+                    wasOssRunning: Boolean,
+                    wasSnykCodeRunning: Boolean,
+                    wasIacRunning: Boolean,
+                    wasContainerRunning: Boolean
+                ) =
                     ApplicationManager.getApplication().invokeLater {
                         updateTreeRootNodesPresentation(
                             ossResultsCount = if (wasOssRunning) -1 else null,
                             securityIssuesCount = if (wasSnykCodeRunning) -1 else null,
                             qualityIssuesCount = if (wasSnykCodeRunning) -1 else null,
-                            iacResultsCount = if (wasIacRunning) -1 else null
+                            iacResultsCount = if (wasIacRunning) -1 else null,
+                            containerIssuesCount = if (wasContainerRunning) -1 else null
                         )
                         displayEmptyDescription()
                     }
@@ -346,6 +390,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     }
                     // TODO: Add event logging
                 }
+                is ContainerIssueTreeNode -> {
+                    val containerIssue = node.userObject as ContainerIssue
+                    val scrollPane = wrapWithScrollPane(ContainerIssueDetailPanel(containerIssue))
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+                }
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
                 }
@@ -406,6 +455,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentSnykCodeError = null
         currentIacResult = null
         currentIacError = null
+        currentContainerResult = null
+        currentContainerError = null
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
 
@@ -416,7 +467,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun doCleanUi() {
         removeAllChildren()
-        updateTreeRootNodesPresentation(-1, -1, -1, -1)
+        updateTreeRootNodesPresentation(-1, -1, -1, -1, -1)
         reloadTree()
 
         displayEmptyDescription()
@@ -424,7 +475,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun removeAllChildren(
         rootNodesToUpdate: List<DefaultMutableTreeNode> =
-            listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode, rootIacIssuesTreeNode)
+            listOf(
+                rootOssTreeNode,
+                rootSecurityIssuesTreeNode,
+                rootQualityIssuesTreeNode,
+                rootIacIssuesTreeNode,
+                rootContainerIssuesTreeNode
+            )
     ) {
         rootNodesToUpdate.forEach {
             it.removeAllChildren()
@@ -504,6 +561,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         securityIssuesCount: Int? = null,
         qualityIssuesCount: Int? = null,
         iacResultsCount: Int? = null,
+        containerIssuesCount: Int? = null,
         addHMLPostfix: String = ""
     ) {
         val settings = getApplicationSettingsStateService()
@@ -564,6 +622,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         }
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
+
+        val newContainerTreeNodeText = when {
+            currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
+            isContainerScanning(project) -> "$CONTAINER_ROOT_TEXT (scanning...)"
+            else -> containerIssuesCount?.let { count ->
+                CONTAINER_ROOT_TEXT + when {
+                    count == -1 -> ""
+                    count == 0 -> NO_ISSUES_FOUND_TEXT
+                    count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
+                    else -> throw IllegalStateException()
+                }
+            }
+        }
+        newContainerTreeNodeText?.let { rootContainerIssuesTreeNode.userObject = it }
     }
 
     private fun displayNoVulnerabilitiesMessage() {
@@ -755,6 +827,38 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         smartReloadRootNode(rootIacIssuesTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
     }
 
+    private fun displayContainerResults(containerResult: ContainerResult) {
+        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootContainerIssuesTreeNode)
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+
+        rootContainerIssuesTreeNode.removeAllChildren()
+
+        // TODO: check container settings
+        val containerEnabled = true
+        if (containerEnabled && containerResult.allCliIssues != null) {
+            containerResult.allCliIssues!!.forEach { containerIssuesForFile ->
+                if (containerIssuesForFile.vulnerabilities.isNotEmpty()) {
+                    val fileTreeNode = ContainerFileTreeNode(containerIssuesForFile, project)
+                    rootContainerIssuesTreeNode.add(fileTreeNode)
+
+                    containerIssuesForFile.vulnerabilities
+                        .filter { isSeverityFilterPassed(it.severity) }
+                        .sortedByDescending { Severity.getIndex(it.severity) }
+                        .forEach {
+                            fileTreeNode.add(ContainerIssueTreeNode(it, project))
+                        }
+                }
+            }
+        }
+
+        updateTreeRootNodesPresentation(
+            containerIssuesCount = containerResult.issuesCount,
+            addHMLPostfix = buildHMLpostfix(containerResult)
+        )
+
+        smartReloadRootNode(rootContainerIssuesTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
+    }
+
     private fun buildHMLpostfix(snykCodeResults: SnykCodeResults): String =
         buildHMLpostfix(
             errorsCount = snykCodeResults.totalErrorsCount,
@@ -776,6 +880,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             iacResult.highSeveritiesCount(),
             iacResult.mediumSeveritiesCount(),
             iacResult.lowSeveritiesCount()
+        )
+
+    private fun buildHMLpostfix(containerResult: ContainerResult): String =
+        buildHMLpostfix(
+            containerResult.criticalSeveritiesCount(),
+            containerResult.highSeveritiesCount(),
+            containerResult.mediumSeveritiesCount(),
+            containerResult.lowSeveritiesCount()
         )
 
     private fun buildHMLpostfix(criticalCount: Int = 0, errorsCount: Int, warnsCount: Int, infosCount: Int): String {
@@ -887,6 +999,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
         const val IAC_ROOT_TEXT = "Infrastructure as Code"
+        const val CONTAINER_ROOT_TEXT = "Container Security"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }
@@ -903,6 +1016,9 @@ class RootQualityIssuesTreeNode(project: Project) :
 
 class RootIacIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project)
+
+class RootContainerIssuesTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CONTAINER_ROOT_TEXT, project)
 
 open class ProjectBasedDefaultMutableTreeNode(userObject: Any, val project: Project) :
     DefaultMutableTreeNode(userObject)
