@@ -12,6 +12,7 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.snykcode.SnykCodeResults
 import snyk.common.SnykError
+import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
 
@@ -45,6 +46,8 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
 
+                override fun scanningContainerFinished(containerResult: ContainerResult) = updateActionsPresentation()
+
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) = updateActionsPresentation()
 
                 override fun scanningOssError(snykError: SnykError) = updateActionsPresentation()
@@ -52,11 +55,18 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
                 override fun scanningSnykCodeError(snykError: SnykError) = updateActionsPresentation()
 
                 override fun scanningIacError(snykError: SnykError) = updateActionsPresentation()
+
+                override fun scanningContainerError(error: SnykError) = updateActionsPresentation()
             })
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
+                override fun stopped(
+                    wasOssRunning: Boolean,
+                    wasSnykCodeRunning: Boolean,
+                    wasIacRunning: Boolean,
+                    wasContainerRunning: Boolean
+                ) =
                     updateActionsPresentation()
             })
     }

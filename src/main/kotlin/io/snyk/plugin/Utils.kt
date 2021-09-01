@@ -18,6 +18,7 @@ import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
+import snyk.container.ContainerService
 import snyk.iac.IacService
 import snyk.oss.OssService
 import java.io.File
@@ -27,6 +28,8 @@ import java.util.Objects.nonNull
 fun getOssService(project: Project): OssService = project.service()
 
 fun getIacService(project: Project): IacService = project.service()
+
+fun getContainerService(project: Project): ContainerService = project.service()
 
 fun getSnykCode(project: Project): SnykCodeService = project.service()
 
@@ -81,7 +84,17 @@ fun isIacRunning(project: Project): Boolean {
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
-fun isScanRunning(project: Project): Boolean = isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
+fun isContainerScanning(project: Project): Boolean {
+    val indicator = project.service<SnykTaskQueueService>().getContainerScanProgressIndicator()
+    return indicator != null && indicator.isRunning && !indicator.isCanceled
+}
+
+fun isScanRunning(project: Project): Boolean {
+    return isOssRunning(project) ||
+        isSnykCodeRunning(project) ||
+        isIacRunning(project) ||
+        isContainerScanning(project)
+}
 
 fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
 
@@ -100,7 +113,7 @@ fun toSnykCodeApiUrl(customEndpointUrl: String?): String =
 
 private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
     customEndpointUrl.removeTrailingSlashes() == "https://dev.snyk.io/api" ||
-    customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
+        customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
 
 fun getSnykCodeSettingsUrl(): String {
     val endpoint = getApplicationSettingsStateService().customEndpointUrl

@@ -13,6 +13,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCode
@@ -29,6 +30,7 @@ private val LOG = logger<SnykTaskQueueService>()
 @Service
 class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
+    private val taskQueueIacContainer = BackgroundTaskQueue(project, "Snyk: Iac - Container")
 
     private val settings = getApplicationSettingsStateService()
 
@@ -42,12 +44,12 @@ class SnykTaskQueueService(val project: Project) {
         get() = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
 
     private var ossScanProgressIndicator: ProgressIndicator? = null
-
     private var iacScanProgressIndicator: ProgressIndicator? = null
+    private var containerScanProgressIndicator: ProgressIndicator? = null
 
     fun getOssScanProgressIndicator(): ProgressIndicator? = ossScanProgressIndicator
-
     fun getIacScanProgressIndicator(): ProgressIndicator? = iacScanProgressIndicator
+    fun getContainerScanProgressIndicator(): ProgressIndicator? = containerScanProgressIndicator
 
     @TestOnly
     fun getTaskQueue() = taskQueue
@@ -80,6 +82,12 @@ class SnykTaskQueueService(val project: Project) {
                 val iacEnabled = true
                 if (iacEnabled) {
                     scheduleIacScan()
+                }
+
+                //TODO(pavel): replace with settings
+                val containerEnabled = true
+                if (containerEnabled) {
+                    scheduleContainerScan()
                 }
             }
         })
@@ -139,15 +147,20 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     private fun scheduleIacScan() {
-        object : Task.Backgroundable(project, "Snyk Infrastructure as Code is scanning", true) {
+        taskQueueIacContainer.run(object : Task.Backgroundable(
+            project,
+            "Snyk Infrastructure as Code is scanning",
+            true
+        ) {
             override fun run(indicator: ProgressIndicator) {
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
                 if (toolWindowPanel.currentIacResult != null) return
 
+                LOG.info("Starting IaC scan")
                 iacScanProgressIndicator = indicator
+                scanPublisher?.scanningStarted()
 
                 val iacResult = getIacService(project).scan()
-                scanPublisher?.scanningStarted()
 
                 iacScanProgressIndicator = null
                 if (project.isDisposed) return
@@ -166,8 +179,41 @@ class SnykTaskQueueService(val project: Project) {
                         scanPublisher?.scanningIacError(iacResult.error!!)
                     }
                 }
+                LOG.info("IaC scan completed")
             }
-        }.queue()
+        })
+    }
+
+    private fun scheduleContainerScan() {
+        taskQueueIacContainer.run(object : Task.Backgroundable(project, "Snyk Container is scanning", true) {
+            override fun run(indicator: ProgressIndicator) {
+                val toolWindowPanel = project.service<SnykToolWindowPanel>()
+                if (toolWindowPanel.currentContainerResult != null) return
+
+                val iacResult = toolWindowPanel.currentIacResult
+                if (iacResult != null) {
+                    containerScanProgressIndicator = indicator
+                    scanPublisher?.scanningStarted()
+                    val containerResult = getContainerService(project).scan(iacResult)
+
+                    containerScanProgressIndicator = null
+                    if (project.isDisposed) return
+
+                    if (indicator.isCanceled) {
+                        LOG.warn("cancel Container scan")
+                        taskQueuePublisher?.stopped(wasContainerRunning = true)
+                    } else {
+                        if (containerResult.isSuccessful()) {
+                            scanPublisher?.scanningContainerFinished(containerResult)
+                        } else {
+                            scanPublisher?.scanningContainerError(containerResult.error!!)
+                        }
+                    }
+                } else {
+                    LOG.warn("IaC result is null, nothing to scan")
+                }
+            }
+        })
     }
 
     fun downloadLatestRelease() {
