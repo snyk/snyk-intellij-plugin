@@ -136,6 +136,17 @@ tasks {
       ideDir.set(File(properties("localIdeDirectory")))
     }
   }
+
+  runPluginVerifier {
+    ideVersions.set(properties("pluginVerifierIdeVersions").split(',').map(String::trim).filter(String::isNotEmpty))
+    failureLevel.set(
+      listOf(
+        org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.COMPATIBILITY_PROBLEMS,
+        org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.INVALID_PLUGIN
+      )
+    )
+    verificationReportsDir.set("$rootDir.path/reports/pluginVerifier")
+  }
 }
 
 sourceSets {
