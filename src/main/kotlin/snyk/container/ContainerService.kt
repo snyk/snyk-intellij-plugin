@@ -87,6 +87,7 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
                 val end = document.getLineEndOffset(line)
 
                 val text = document.getText(TextRange(start, end))
+                // TODO(pavel): find all images (not only first one)
                 if (text.contains("image")) {
                     return Pair(line, text)
                 }
