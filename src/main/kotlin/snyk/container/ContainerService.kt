@@ -39,10 +39,6 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
                     findImageLineNumberOrNull(iacIssuesForFile.targetFile)
                 }
 
-                val containerIssueForFile = ContainerIssuesForFile()
-                containerIssueForFile.targetFile = iacIssuesForFile.targetFile
-                containerIssueForFile.lineNumber = lineWithImage.first!!
-
                 if (lineWithImage.first != null) {
                     // extract image name
                     val imageName = lineWithImage.second.trim().replace("image:", "").trim()
@@ -59,6 +55,12 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
                     result.allCliIssues?.forEach {
                         it.targetFile = iacIssuesForFile.targetFile
                         it.imageName = imageName
+                        it.lineNumber = lineWithImage.first!!
+
+                        val baseImageRemediationInfo = ReadAction.compute<BaseImageRemediationInfo, RuntimeException> {
+                            convertBaseImageRemediationInfo(it.docker.baseImageRemediation)
+                        }
+                        it.baseImageRemediationInfo = baseImageRemediationInfo
                     }
 
                     return result
@@ -95,6 +97,74 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
         }
 
         return Pair(null, "")
+    }
+
+    private fun convertBaseImageRemediationInfo(baseImageRemediation: BaseImageRemediation): BaseImageRemediationInfo? {
+        if (!baseImageRemediation.isRemediationAvailable()) return null
+
+        // current image always first
+        val currentImageRawString = baseImageRemediation.advice[0].message
+        val currentBaseImageInfo = BaseImageRemediationExtractor.extractImageInfo(currentImageRawString)
+        var majorUpgradeInfo: BaseImageInfo? = null
+        var minorUpgradeInfo: BaseImageInfo? = null
+        var alternativeUpgradeInfo: BaseImageInfo? = null
+
+
+        var minorUpgrade = false
+        var majorUpgrade = false
+        var alternativeUpgrade = false
+
+        val advices = baseImageRemediation.advice.drop(1)
+        for (advice in advices) {
+            if (advice.bold != null && advice.bold!! &&
+                advice.message == "Major upgrades"
+            ) {
+                majorUpgrade = true
+                minorUpgrade = false
+                alternativeUpgrade = false
+                continue
+            }
+
+            if (advice.bold != null && advice.bold!! &&
+                advice.message == "Minor upgrades"
+            ) {
+                majorUpgrade = false
+                minorUpgrade = true
+                alternativeUpgrade = false
+                continue
+            }
+
+            if (advice.bold != null && advice.bold!! &&
+                advice.message == "Alternative image types"
+            ) {
+                majorUpgrade = false
+                minorUpgrade = false
+                alternativeUpgrade = true
+                continue
+            }
+
+            if (majorUpgrade) {
+                majorUpgrade = false
+                majorUpgradeInfo = BaseImageRemediationExtractor.extractImageInfo(advice.message)
+            }
+
+            if (minorUpgrade) {
+                minorUpgrade = false
+                minorUpgradeInfo = BaseImageRemediationExtractor.extractImageInfo(advice.message)
+            }
+
+            if (alternativeUpgrade) {
+                alternativeUpgrade = false
+                alternativeUpgradeInfo = BaseImageRemediationExtractor.extractImageInfo(advice.message)
+            }
+        }
+
+        return BaseImageRemediationInfo(
+            currentImage = currentBaseImageInfo,
+            majorUpgrades = majorUpgradeInfo,
+            minorUpgrades = minorUpgradeInfo,
+            alternativeUpgrades = alternativeUpgradeInfo
+        )
     }
 
     override fun getErrorResult(errorMsg: String): ContainerResult =

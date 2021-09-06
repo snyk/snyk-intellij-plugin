@@ -5,6 +5,7 @@
 
   <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.modules.platform</depends>
+  <depends>org.jetbrains.plugins.yaml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <toolWindow id="Snyk"
@@ -22,6 +23,7 @@
 
     <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
 
+    <externalAnnotator language="yaml" implementationClass="snyk.container.annotator.KubernetesManifestAnnotator"/>
   </extensions>
 
   <actions>

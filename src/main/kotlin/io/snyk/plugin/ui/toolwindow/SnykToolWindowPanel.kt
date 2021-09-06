@@ -6,7 +6,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -56,7 +55,9 @@ import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
 import snyk.container.ContainerIssue
+import snyk.container.ContainerIssuesForFile
 import snyk.container.ContainerResult
+import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerFileTreeNode
 import snyk.container.ui.ContainerIssueDetailPanel
 import snyk.container.ui.ContainerIssueTreeNode
@@ -77,8 +78,6 @@ import javax.swing.ScrollPaneConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
-
-private val LOG = logger<SnykToolWindowPanel>()
 
 /**
  * Main panel for Snyk tool window.
@@ -389,6 +388,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         }
                     }
                     // TODO: Add event logging
+                }
+                is ContainerFileTreeNode -> {
+                    val containerIssuesForFile = node.userObject as ContainerIssuesForFile
+                    val scrollPane = wrapWithScrollPane(BaseImageRemediationDetailPanel(containerIssuesForFile))
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
                 }
                 is ContainerIssueTreeNode -> {
                     val containerIssue = node.userObject as ContainerIssue
@@ -998,8 +1002,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val OSS_ROOT_TEXT = " Open Source Security"
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
-        const val IAC_ROOT_TEXT = "Infrastructure as Code"
-        const val CONTAINER_ROOT_TEXT = "Container Security"
+        const val IAC_ROOT_TEXT = " Infrastructure as Code"
+        const val CONTAINER_ROOT_TEXT = " Container Security"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }

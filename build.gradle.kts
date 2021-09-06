@@ -49,6 +49,8 @@ intellij {
   version.set(properties("platformVersion"))
 
   downloadSources.set(properties("platformDownloadSources").toBoolean())
+
+  plugins.set(listOf("org.jetbrains.plugins.yaml"))
 }
 
 // configure for detekt plugin.
