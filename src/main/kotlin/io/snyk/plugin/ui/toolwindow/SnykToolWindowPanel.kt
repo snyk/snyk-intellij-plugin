@@ -393,6 +393,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val containerIssuesForFile = node.userObject as ContainerIssuesForFile
                     val scrollPane = wrapWithScrollPane(BaseImageRemediationDetailPanel(containerIssuesForFile))
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
+                    val fileName = containerIssuesForFile.targetFile
+                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
+                        Paths.get(project.basePath!!, fileName)
+                    )
+                    if (virtualFile != null && virtualFile.isValid) {
+                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+                        if (document != null) {
+                            val lineNumber = containerIssuesForFile.lineNumber.toInt().let {
+                                if (0 <= it && it < document.lineCount) it else 0
+                            }
+                            val lineStartOffset = document.getLineStartOffset(lineNumber)
+                            navigateToSource(virtualFile, lineStartOffset)
+                        }
+                    }
                 }
                 is ContainerIssueTreeNode -> {
                     val containerIssue = node.userObject as ContainerIssue
