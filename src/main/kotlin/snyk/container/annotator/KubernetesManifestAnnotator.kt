@@ -10,6 +10,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.jetbrains.yaml.psi.impl.YAMLKeyValueImpl
 import snyk.container.ContainerIssuesForFile
 import snyk.container.ContainerResult
 
@@ -32,10 +33,7 @@ class KubernetesManifestAnnotator : ExternalAnnotator<PsiFile, List<ContainerIss
 
     private fun getAnnotationForFile(psiFile: PsiFile, containerResult: ContainerResult): List<ContainerIssuesForFile> {
         val filename = psiFile.name
-        val code = psiFile.text
-
         LOG.info(">>> file name: $filename")
-        LOG.info(">>> file text: $code")
 
         val containerIssueForFile = containerResult.allCliIssues?.firstOrNull {
             it.targetFile == filename
@@ -62,28 +60,31 @@ class KubernetesManifestAnnotator : ExternalAnnotator<PsiFile, List<ContainerIss
     ) {
         val message = "Recommendations for upgrading the base image"
 
-        val annotationBuilder = holder.newAnnotation(HighlightSeverity.ERROR, message)
-            .highlightType(ProblemHighlightType.GENERIC_ERROR_OR_WARNING)
-            .range(errorTextRange(psiFile, containerIssuesForFile))
+        val document = psiFile.viewProvider.document!!
+        val startOffset = document.getLineStartOffset(containerIssuesForFile.lineNumber.toInt())
+        val psiElementStart = psiFile.findElementAt(startOffset)
+        val yamlKeyValuePsiElement = psiElementStart?.nextSibling as YAMLKeyValueImpl
 
-        annotationBuilder.withFix(BaseImageRemediationFix(containerIssuesForFile))
+        LOG.warn(">>> ${yamlKeyValuePsiElement.keyText} - ${yamlKeyValuePsiElement.valueText}")
+        if (yamlKeyValuePsiElement.keyText == "image" &&
+            yamlKeyValuePsiElement.valueText == containerIssuesForFile.imageName
+        ) {
+            val annotationBuilder = holder.newAnnotation(HighlightSeverity.ERROR, message)
+                .highlightType(ProblemHighlightType.GENERIC_ERROR_OR_WARNING)
+                .range(errorTextRange(psiFile, containerIssuesForFile))
 
-        annotationBuilder.create()
+            annotationBuilder.withFix(BaseImageRemediationFix(containerIssuesForFile))
+
+            annotationBuilder.create()
+        }
     }
 
     private fun errorTextRange(file: PsiFile, containerIssuesForFile: ContainerIssuesForFile): TextRange {
         val doc = file.viewProvider.document!!
-        var startOffset = doc.getLineStartOffset(containerIssuesForFile.lineNumber.toInt())
+        val startOffset = doc.getLineStartOffset(containerIssuesForFile.lineNumber.toInt())
         val psiElementStart = file.findElementAt(startOffset)
-        if (psiElementStart?.text.isNullOrBlank()) {
-            startOffset += psiElementStart!!.textLength
-        }
+        val yamlKeyValuePsiElement = psiElementStart?.nextSibling as YAMLKeyValueImpl
 
-        val endOffset = doc.getLineEndOffset(containerIssuesForFile.lineNumber.toInt())
-        val errorOffset = startOffset + endOffset
-
-        val fullLineRange = TextRange(startOffset, endOffset)
-
-        return file.findElementAt(errorOffset)?.let { TextRange.from(errorOffset, it.textLength) } ?: fullLineRange
+        return yamlKeyValuePsiElement.value?.textRange!!
     }
 }

@@ -109,7 +109,6 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
         var minorUpgradeInfo: BaseImageInfo? = null
         var alternativeUpgradeInfo: BaseImageInfo? = null
 
-
         var minorUpgrade = false
         var majorUpgrade = false
         var alternativeUpgrade = false
