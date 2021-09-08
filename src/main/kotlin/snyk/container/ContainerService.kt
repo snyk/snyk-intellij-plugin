@@ -35,35 +35,41 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
             if (iacIssuesForFile.targetFile.endsWith("yaml") ||
                 iacIssuesForFile.targetFile.endsWith("yml")
             ) {
-                val lineWithImage = ReadAction.compute<Pair<Int?, String>, RuntimeException> {
+                val imageLineNumbers = ReadAction.compute<List<Pair<Int?, String>>, RuntimeException> {
                     findImageLineNumberOrNull(iacIssuesForFile.targetFile)
                 }
 
-                if (lineWithImage.first != null) {
-                    // extract image name
-                    val imageName = lineWithImage.second.trim().replace("image:", "").trim()
-                    LOG.info("Found image tag for container scan: $imageName")
+                if (imageLineNumbers.isNotEmpty()) {
+                    imageLineNumbers.forEach { lineWithImage ->
+                        LOG.warn("start scanning: ${lineWithImage.second}")
 
-                    var commands = buildCliCommandsList()
-                    val mutCommands = commands.toMutableList()
-                    mutCommands.add(imageName)
-                    commands = mutCommands.toList()
+                        if (lineWithImage.first != null) {
+                            // extract image name
+                            val imageName = lineWithImage.second.trim().replace("image:", "").trim()
+                            LOG.info("Found image tag for container scan: $imageName")
 
-                    val apiToken = getApplicationSettingsStateService().token ?: ""
-                    val rawResultStr = ConsoleCommandRunner().execute(commands, projectPath, apiToken, project)
-                    val result = convertRawCliStringToCliResult(rawResultStr)
-                    result.allCliIssues?.forEach {
-                        it.targetFile = iacIssuesForFile.targetFile
-                        it.imageName = imageName
-                        it.lineNumber = lineWithImage.first!!
+                            var commands = buildCliCommandsList()
+                            val mutCommands = commands.toMutableList()
+                            mutCommands.add(imageName)
+                            commands = mutCommands.toList()
 
-                        val baseImageRemediationInfo = ReadAction.compute<BaseImageRemediationInfo, RuntimeException> {
-                            convertBaseImageRemediationInfo(it.docker.baseImageRemediation)
+                            val apiToken = getApplicationSettingsStateService().token ?: ""
+                            val rawResultStr = ConsoleCommandRunner().execute(commands, projectPath, apiToken, project)
+                            val result = convertRawCliStringToCliResult(rawResultStr)
+                            result.allCliIssues?.forEach {
+                                it.targetFile = iacIssuesForFile.targetFile
+                                it.imageName = imageName
+                                it.lineNumber = lineWithImage.first!!
+
+                                val baseImageRemediationInfo = ReadAction.compute<BaseImageRemediationInfo, RuntimeException> {
+                                    convertBaseImageRemediationInfo(it.docker.baseImageRemediation)
+                                }
+                                it.baseImageRemediationInfo = baseImageRemediationInfo
+
+                                issuesForFile.add(it)
+                            }
                         }
-                        it.baseImageRemediationInfo = baseImageRemediationInfo
                     }
-
-                    return result
                 }
             }
         }
@@ -73,34 +79,35 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
         return ContainerResult(issuesForFile.toTypedArray(), null)
     }
 
-    private fun findImageLineNumberOrNull(fileName: String): Pair<Int?, String> {
+    private fun findImageLineNumberOrNull(fileName: String): List<Pair<Int?, String>> {
         val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
             Paths.get(project.basePath!!, fileName)
-        ) ?: return Pair(null, "")
+        ) ?: return listOf(Pair(null, ""))
 
         if (!virtualFile.isValid) {
-            return Pair(null, "")
+            return listOf(Pair(null, ""))
         }
 
         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
         if (document != null) {
-            for (line in 0..document.lineCount) {
+            val imageLineNumbers = mutableListOf<Pair<Int?, String>>()
+            for (line in 0 until document.lineCount) {
                 val start = document.getLineStartOffset(line)
                 val end = document.getLineEndOffset(line)
 
                 val text = document.getText(TextRange(start, end))
-                // TODO(pavel): find all images (not only first one)
                 if (text.contains("image")) {
-                    return Pair(line, text)
+                    imageLineNumbers.add(Pair(line, text))
                 }
             }
+            return imageLineNumbers
         }
 
-        return Pair(null, "")
+        return listOf(Pair(null, ""))
     }
 
-    private fun convertBaseImageRemediationInfo(baseImageRemediation: BaseImageRemediation): BaseImageRemediationInfo? {
-        if (!baseImageRemediation.isRemediationAvailable()) return null
+    private fun convertBaseImageRemediationInfo(baseImageRemediation: BaseImageRemediation?): BaseImageRemediationInfo? {
+        if (baseImageRemediation == null || !baseImageRemediation.isRemediationAvailable()) return null
 
         // current image always first
         val currentImageRawString = baseImageRemediation.advice[0].message

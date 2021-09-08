@@ -16,7 +16,7 @@ class ContainerIssuesForFile {
 }
 
 class Docker {
-    lateinit var baseImageRemediation: BaseImageRemediation
+    var baseImageRemediation: BaseImageRemediation? = null
 }
 
 class BaseImageRemediation {

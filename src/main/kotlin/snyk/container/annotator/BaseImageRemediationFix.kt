@@ -30,7 +30,7 @@ class BaseImageRemediationFix(
     }
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
-        return containerIssuesForFile.docker.baseImageRemediation.isRemediationAvailable()
+        return containerIssuesForFile.docker.baseImageRemediation?.isRemediationAvailable() ?: false
     }
 
     override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {

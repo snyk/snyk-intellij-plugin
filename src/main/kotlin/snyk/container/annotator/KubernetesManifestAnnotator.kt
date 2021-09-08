@@ -35,11 +35,9 @@ class KubernetesManifestAnnotator : ExternalAnnotator<PsiFile, List<ContainerIss
         val filename = psiFile.name
         LOG.info(">>> file name: $filename")
 
-        val containerIssueForFile = containerResult.allCliIssues?.firstOrNull {
+        return containerResult.allCliIssues?.filter {
             it.targetFile == filename
-        } ?: return emptyList()
-
-        return listOf(containerIssueForFile)
+        } ?: emptyList()
     }
 
     override fun apply(file: PsiFile, annotations: List<ContainerIssuesForFile>?, holder: AnnotationHolder) {
