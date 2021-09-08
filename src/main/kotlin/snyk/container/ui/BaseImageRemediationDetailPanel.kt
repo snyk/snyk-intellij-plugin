@@ -48,7 +48,9 @@ class BaseImageRemediationDetailPanel(
         )
         var currentVulns = ""
         currentImage?.vulnerabilities.let {
-            currentVulns = getVulnerabilitiesText(it!!)
+            if (it != null) {
+                currentVulns = getVulnerabilitiesText(it)
+            }
         }
         panel.add(
             JLabel(currentVulns),
@@ -66,7 +68,9 @@ class BaseImageRemediationDetailPanel(
         )
         var minorVulns = ""
         minorUpgrades?.vulnerabilities.let {
-            minorVulns = getVulnerabilitiesText(it!!)
+            if (it != null) {
+                minorVulns = getVulnerabilitiesText(it)
+            }
         }
         panel.add(
             JLabel(minorVulns),
@@ -84,7 +88,9 @@ class BaseImageRemediationDetailPanel(
         )
         var alternativeVulns = ""
         alternativeUpgrades?.vulnerabilities.let {
-            alternativeVulns = getVulnerabilitiesText(it!!)
+            if (it != null) {
+                alternativeVulns = getVulnerabilitiesText(it)
+            }
         }
         panel.add(
             JLabel(alternativeVulns),
