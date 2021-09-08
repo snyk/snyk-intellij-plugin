@@ -51,6 +51,8 @@ jobs:
       - name: Fetch Sources
         uses: actions/checkout@v2
 
+      # PluginVerifier has been compiled by a more recent version of the Java - Java 11.
+      # That's why, we are using not version 8 here, but 11.
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
