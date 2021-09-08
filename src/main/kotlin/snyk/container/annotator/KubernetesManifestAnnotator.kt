@@ -47,7 +47,9 @@ class KubernetesManifestAnnotator : ExternalAnnotator<PsiFile, List<ContainerIss
 
         LOG.info("Received ${annotations.size} annotations")
         for (annotation in annotations) {
-            generateAnnotationForBaseImageUpgrade(file, annotation, holder)
+            if (annotation.docker.baseImageRemediation?.isRemediationAvailable() == true) {
+                generateAnnotationForBaseImageUpgrade(file, annotation, holder)
+            }
         }
     }
 
