@@ -1,16 +1,28 @@
 package snyk.container.ui
 
+import com.intellij.ide.util.PsiNavigationSupport
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
+import icons.SnykIcons
 import snyk.container.BaseImageVulnerabilities
 import snyk.container.ContainerIssuesForFile
+import java.awt.Color
+import java.awt.Component
 import java.awt.Dimension
+import java.awt.Font
 import java.awt.Insets
+import java.nio.file.Paths
+import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 
 class BaseImageRemediationDetailPanel(
+    private val project: Project,
     private val imageIssues: ContainerIssuesForFile
 ) : JPanel() {
     init {
@@ -30,6 +42,11 @@ class BaseImageRemediationDetailPanel(
 
         this.add(
             baseRemediationInfoPanel(),
+            panelGridConstraints(8)
+        )
+
+        this.add(
+            getTitlePanel(),
             panelGridConstraints(0)
         )
     }
@@ -135,5 +152,90 @@ class BaseImageRemediationDetailPanel(
             "${vulnerabilities.high} high, " +
             "${vulnerabilities.medium} medium, " +
             "${vulnerabilities.low} low"
+    }
+
+    private fun getTitlePanel(): JPanel {
+        val titlePanel = JPanel()
+        titlePanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, 5)
+
+        val titleLabel = JLabel().apply {
+            font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
+            text = " ${imageIssues.imageName}"
+            icon = SnykIcons.CONTAINER_IMAGE_24
+        }
+
+        titlePanel.add(
+            titleLabel,
+            baseGridConstraints(0)
+        )
+
+        titlePanel.add(
+            secondRowTitlePanel(),
+            baseGridConstraints(1)
+        )
+
+        return titlePanel
+    }
+
+    private fun secondRowTitlePanel(): Component {
+        val panel = JPanel()
+        panel.layout = GridLayoutManager(1, 7, Insets(0, 0, 0, 0), 5, 0)
+
+        panel.add(
+            JLabel("Image"),
+            baseGridConstraints(0, column = 0, indent = 0)
+        )
+        addSeparator(panel, 1)
+
+        panel.add(
+            JLabel("${imageIssues.uniqueCount} vulnerabilities"),
+            baseGridConstraints(0, column = 2, indent = 0)
+        )
+        addSeparator(panel, 3)
+
+        panel.add(
+            LinkLabel.create(imageIssues.targetFile) {
+                navigateToTargetFile()
+            },
+            baseGridConstraints(0, column = 6, indent = 0)
+        )
+
+        return panel
+    }
+
+    private fun navigateToTargetFile() {
+        val fileName = imageIssues.targetFile
+        val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
+            Paths.get(project.basePath!!, fileName)
+        )
+        if (virtualFile != null && virtualFile.isValid) {
+            val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+            if (document != null) {
+                val lineNumber = imageIssues.lineNumber.toInt().let {
+                    if (0 <= it && it < document.lineCount) it else 0
+                }
+                val lineStartOffset = document.getLineStartOffset(lineNumber)
+                PsiNavigationSupport.getInstance().createNavigatable(
+                    project,
+                    virtualFile,
+                    lineStartOffset
+                ).navigate(false)
+            }
+        }
+    }
+
+    private fun addSeparator(panel: JPanel, column: Int) {
+        panel.add(
+            JLabel("|").apply { makeOpaque(this, 50) },
+            baseGridConstraints(0, column = column, indent = 0)
+        )
+    }
+
+    private fun makeOpaque(component: JComponent, alpha: Int) {
+        component.foreground = Color(
+            component.foreground.red,
+            component.foreground.green,
+            component.foreground.blue,
+            alpha)
     }
 }

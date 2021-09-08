@@ -391,7 +391,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
                 is ContainerFileTreeNode -> {
                     val containerIssuesForFile = node.userObject as ContainerIssuesForFile
-                    val scrollPane = wrapWithScrollPane(BaseImageRemediationDetailPanel(containerIssuesForFile))
+                    val scrollPane = wrapWithScrollPane(
+                        BaseImageRemediationDetailPanel(project, containerIssuesForFile)
+                    )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
                     val fileName = containerIssuesForFile.targetFile
