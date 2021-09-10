@@ -47,6 +47,8 @@ object SnykIcons {
     val RPM = getIcon("/icons/rpm.svg")
     val DOCKER = getIcon("/icons/docker.svg")
 
+    val SNYK_LEARN = getIcon("/icons/snyk_learn.svg", SnykIcons::class.java)
+
     private val CRITICAL_SEVERITY = getIcon("/icons/severity_critical.svg")
     private val CRITICAL_SEVERITY_24 = getIcon("/icons/severity_critical_24.svg")
     private val HIGH_SEVERITY = getIcon("/icons/severity_high.svg")
