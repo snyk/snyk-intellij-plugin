@@ -15,6 +15,7 @@ import io.sentry.protocol.Message
 import io.sentry.protocol.OperatingSystem
 import io.sentry.protocol.SentryId
 import io.sentry.protocol.SentryRuntime
+import io.snyk.plugin.getApplicationSettingsStateService
 import snyk.PropertyLoader
 import snyk.pluginInfo
 
@@ -94,6 +95,20 @@ object SentryErrorReporter {
                 LOG.warn("Unable to submit Sentry error information")
                 consumer.consume(SubmittedReportInfo(SubmissionStatus.FAILED))
             }
+        }
+    }
+
+    /**
+     * Captures exception with Sentry. This method should be used in `try-catch` blocks.
+     *
+     * Note: [io.snyk.plugin.services.SnykApplicationSettingsStateService.crashReportingEnabled] is respected
+     */
+    fun captureException(throwable: Throwable): SentryId {
+        val settings = getApplicationSettingsStateService()
+        return if (settings.crashReportingEnabled) {
+            Sentry.captureException(throwable)
+        } else {
+            SentryId.EMPTY_ID
         }
     }
 }

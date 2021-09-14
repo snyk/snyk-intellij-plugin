@@ -39,6 +39,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var snykCodeQualityIssuesScanEnable: Boolean = false
     var sastOnServerEnabled: Boolean? = null
     var usageAnalyticsEnabled = true
+    var crashReportingEnabled = true
 
     var lowSeverityEnabled = true
     var mediumSeverityEnabled = true

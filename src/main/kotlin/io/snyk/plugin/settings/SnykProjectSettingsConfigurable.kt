@@ -31,6 +31,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         || isOrganizationModified()
         || isIgnoreUnknownCAModified()
         || isSendUsageAnalyticsModified()
+        || isCrashReportingModified()
         || isAdditionalParametersModified()
         || snykSettingsDialog.isScanTypeChanged()
 
@@ -51,6 +52,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         applicationSettingsStateService.organization = snykSettingsDialog.getOrganization()
         applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
         applicationSettingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
+        applicationSettingsStateService.crashReportingEnabled = snykSettingsDialog.isCrashReportingEnabled()
         snykSettingsDialog.saveScanTypeChanges()
 
         if (isProjectSettingsAvailable(project)) {
@@ -75,6 +77,9 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
     private fun isSendUsageAnalyticsModified(): Boolean =
         snykSettingsDialog.isUsageAnalyticsEnabled() != applicationSettingsStateService.usageAnalyticsEnabled
+
+    private fun isCrashReportingModified(): Boolean =
+        snykSettingsDialog.isCrashReportingEnabled() != applicationSettingsStateService.crashReportingEnabled
 
     private fun isAdditionalParametersModified(): Boolean =
         isProjectSettingsAvailable(project)
