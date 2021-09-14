@@ -3,11 +3,15 @@ package io.snyk.plugin.settings
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.*
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isProjectSettingsAvailable
+import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
+import io.snyk.plugin.toSnykCodeApiUrl
 import io.snyk.plugin.ui.SnykSettingsDialog
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import javax.swing.JComponent
@@ -26,14 +30,14 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
     override fun createComponent(): JComponent = snykSettingsDialog.getRootPanel()
 
-    override fun isModified(): Boolean = isTokenModified()
-        || isCustomEndpointModified()
-        || isOrganizationModified()
-        || isIgnoreUnknownCAModified()
-        || isSendUsageAnalyticsModified()
-        || isCrashReportingModified()
-        || isAdditionalParametersModified()
-        || snykSettingsDialog.isScanTypeChanged()
+    override fun isModified(): Boolean = isTokenModified() ||
+        isCustomEndpointModified() ||
+        isOrganizationModified() ||
+        isIgnoreUnknownCAModified() ||
+        isSendUsageAnalyticsModified() ||
+        isCrashReportingModified() ||
+        isAdditionalParametersModified() ||
+        snykSettingsDialog.isScanTypeChanged()
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
