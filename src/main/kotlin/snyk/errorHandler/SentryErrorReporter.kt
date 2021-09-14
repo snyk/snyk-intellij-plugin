@@ -106,8 +106,11 @@ object SentryErrorReporter {
     fun captureException(throwable: Throwable): SentryId {
         val settings = getApplicationSettingsStateService()
         return if (settings.crashReportingEnabled) {
-            Sentry.captureException(throwable)
+            val sentryId = Sentry.captureException(throwable)
+            LOG.info("Sentry event reported: $sentryId")
+            sentryId
         } else {
+            LOG.info("Sentry crash reporting is disabled")
             SentryId.EMPTY_ID
         }
     }
