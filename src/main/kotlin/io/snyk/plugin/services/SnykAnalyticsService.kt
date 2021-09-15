@@ -5,73 +5,30 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.analytics.SegmentPlugin
-import ly.iterative.itly.Environment
-import ly.iterative.itly.IterativelyOptions
-import ly.iterative.itly.Options
-import ly.iterative.itly.ValidationOptions
+import io.snyk.plugin.analytics.Iteratively
+import io.snyk.plugin.getApplicationSettingsStateService
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
-import snyk.analytics.DestinationsOptions
 import snyk.analytics.HealthScoreIsClicked
-import snyk.analytics.Identify
 import snyk.analytics.IssueIsViewed
-import snyk.analytics.Itly
-import snyk.analytics.ItlyLogger
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
-import java.util.Properties
 
 @Service
 class SnykAnalyticsService : Disposable {
     private val log = logger<SnykAnalyticsService>()
+    private val itly = Iteratively
+    private val settings = getApplicationSettingsStateService()
 
-    private var itlyLoaded = false
-    private var anonymousId = ""
     private var userId = ""
 
     init {
-        val settings = service<SnykApplicationSettingsStateService>()
-        anonymousId = settings.userAnonymousId
         userId = obtainUserId(settings.token)
-
-        val segmentWriteKey = loadSegmentWriteKey()
-        if (segmentWriteKey.isBlank()) {
-            itlyLoaded = false
-            log.debug("Segment analytics write key is empty. No analytics will be collected.")
-        } else {
-            val environment = loadIterativelyEnvironment()
-            log.debug("Initializing Iteratively integration for $environment...")
-
-            Itly.getInstance().load(
-                DestinationsOptions.builder()
-                    .iteratively(
-                        IterativelyOptions.builder().build()
-                    )
-                    .build(),
-                Options.builder()
-                    .environment(environment)
-                    .validation(
-                        ValidationOptions.builder()
-                            .errorOnInvalid(true)
-                            .trackInvalid(false)
-                            .build()
-                    )
-                    .logger(ItlyLogger(log))
-                    .plugins(listOf(SegmentPlugin(segmentWriteKey, anonymousId)))
-                    .build()
-            )
-            itlyLoaded = true
-        }
     }
 
     override fun dispose() {
-        if (!itlyLoaded) {
-            return
-        }
-        catchAll(log, "flush-and-shutdown") {
-            Itly.getInstance().flush()
-            Itly.getInstance().shutdown()
+        catchAll(log, "flush") {
+            itly.flush()
         }
     }
 
@@ -93,73 +50,70 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun identify() {
-        if (!canReportEvents() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
         catchAll(log, "identify") {
-            Itly.getInstance().identify(userId, Identify.builder().build())
-            Itly.getInstance().alias(userId, anonymousId)
+            itly.identify(userId)
         }
     }
 
     fun logWelcomeIsViewed(event: WelcomeIsViewed) {
-        if (!canReportEvents()) {
-            return
-        }
+        if (!settings.usageAnalyticsEnabled) return
 
         catchAll(log, "welcomeIsViewed") {
-            Itly.getInstance().welcomeIsViewed(userId, event)
+            itly.logWelcomeIsViewed(userId, event)
         }
     }
 
     fun logProductSelectionIsViewed(event: ProductSelectionIsViewed) {
-        if (!canReportEvents() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
         catchAll(log, "productSelectionIsViewed") {
-            Itly.getInstance().productSelectionIsViewed(userId, event)
+            itly.logProductSelectionIsViewed(userId, event)
         }
     }
 
     fun logAnalysisIsTriggered(event: AnalysisIsTriggered) {
-        if (!canReportEvents() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
         catchAll(log, "analysisIsTriggered") {
-            Itly.getInstance().analysisIsTriggered(userId, event)
+            itly.logAnalysisIsTriggered(userId, event)
         }
     }
 
     fun logAnalysisIsReady(event: AnalysisIsReady) {
-        if (!canReportEvents() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
         catchAll(log, "analysisIsReady") {
-            Itly.getInstance().analysisIsReady(userId, event)
+            itly.logAnalysisIsReady(userId, event)
         }
     }
 
     fun logIssueIsViewed(event: IssueIsViewed) {
-        if (!canReportEvents() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
         catchAll(log, "issueIsViewed") {
-            Itly.getInstance().issueIsViewed(userId, event)
+            itly.logIssueIsViewed(userId, event)
         }
     }
 
     fun logHealthScoreIsClicked(event: HealthScoreIsClicked) {
-        if (!canReportEvents() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
         catchAll(log, "healthScoreIsClicked") {
-            Itly.getInstance().healthScoreIsClicked(userId, event)
+            itly.logHealthScoreIsClicked(userId, event)
         }
     }
 
@@ -171,44 +125,5 @@ class SnykAnalyticsService : Disposable {
         } catch (t: Throwable) {
             log.warn("Failed to execute '$message' analytic event. ${t.message}", t)
         }
-    }
-
-    private fun loadIterativelyEnvironment(): Environment {
-        return try {
-            val prop = Properties()
-            prop.load(javaClass.classLoader.getResourceAsStream("application.properties"))
-            val environment = prop.getProperty("iteratively.analytics.environment") ?: "DEVELOPMENT"
-
-            if (environment.isEmpty()) {
-                log.warn("Iteratively environment is empty. Use DEVELOPMENT as default")
-                Environment.DEVELOPMENT
-            } else {
-                Environment.valueOf(environment)
-            }
-        } catch (t: Throwable) {
-            log.warn("Could not load Iteratively environment: use DEVELOPMENT as default.", t)
-            Environment.DEVELOPMENT
-        }
-    }
-
-    private fun loadSegmentWriteKey(): String {
-        return try {
-            val prop = Properties()
-            prop.load(javaClass.classLoader.getResourceAsStream("application.properties"))
-            prop.getProperty("segment.analytics.write-key") ?: ""
-        } catch (t: Throwable) {
-            log.warn("Could not load Segment write key.", t)
-            ""
-        }
-    }
-
-    private fun canReportEvents(): Boolean {
-        if (!itlyLoaded) {
-            log.debug("Cannot report events because Iteratively not loaded.")
-            return false
-        }
-
-        val settings = service<SnykApplicationSettingsStateService>()
-        return settings.usageAnalyticsEnabled
     }
 }
