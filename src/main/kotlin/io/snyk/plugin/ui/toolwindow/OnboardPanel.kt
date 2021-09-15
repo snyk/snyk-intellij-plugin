@@ -4,7 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.layout.panel
-import icons.SnykIcons
 import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getApplicationSettingsStateService
@@ -28,13 +27,7 @@ class OnboardPanel(project: Project) {
 
     val panel = panel {
         row {
-            label("").constraints(growX).apply {
-                component.icon = SnykIcons.LOGO
-                component.horizontalAlignment = SwingConstants.CENTER
-            }
-        }
-        row {
-            label("Let's start analyzing your code", bold = true).constraints(growX).apply {
+            label("Welcome to Snyk, let's start by analysing your code.", bold = true).constraints(growX).apply {
                 component.horizontalAlignment = SwingConstants.CENTER
             }
         }
