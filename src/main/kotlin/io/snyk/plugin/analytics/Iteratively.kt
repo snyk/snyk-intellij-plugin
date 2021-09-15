@@ -22,10 +22,9 @@ import java.util.Properties
 object Iteratively {
     private val LOG = logger<Iteratively>()
 
-    private var itlyLoaded = false
-
     // TODO(pavel): anonymousId will be moved into SnykAnalyticsService after using official SegmentPlugin
     private var anonymousId = ""
+    private var itly: Itly? = null
 
     init {
         val settings = service<SnykApplicationSettingsStateService>()
@@ -34,7 +33,6 @@ object Iteratively {
         val segmentWriteKey = loadSegmentWriteKey()
         if (segmentWriteKey.isBlank()) {
             LOG.debug("Segment analytics write key is empty. No analytics will be collected.")
-            itlyLoaded = false
         } else {
             val environment = loadIterativelyEnvironment()
             LOG.debug("Initializing Iteratively integration for $environment...")
@@ -57,57 +55,41 @@ object Iteratively {
                     .plugins(listOf(SegmentPlugin(segmentWriteKey, anonymousId)))
                     .build()
             )
-            itlyLoaded = true
+            itly = Itly.getInstance()
         }
     }
 
     fun flush() {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().flush()
+        itly?.flush()
     }
 
     fun identify(userId: String) {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().identify(userId, Identify.builder().build())
-        Itly.getInstance().alias(userId, anonymousId)
+        itly?.identify(userId, Identify.builder().build())
+        itly?.alias(userId, anonymousId)
     }
 
     fun logWelcomeIsViewed(userId: String, event: WelcomeIsViewed) {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().welcomeIsViewed(userId, event)
+        itly?.welcomeIsViewed(userId, event)
     }
 
     fun logProductSelectionIsViewed(userId: String, event: ProductSelectionIsViewed) {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().productSelectionIsViewed(userId, event)
+        itly?.productSelectionIsViewed(userId, event)
     }
 
     fun logAnalysisIsTriggered(userId: String, event: AnalysisIsTriggered) {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().analysisIsTriggered(userId, event)
+        itly?.analysisIsTriggered(userId, event)
     }
 
     fun logAnalysisIsReady(userId: String, event: AnalysisIsReady) {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().analysisIsReady(userId, event)
+        itly?.analysisIsReady(userId, event)
     }
 
     fun logIssueIsViewed(userId: String, event: IssueIsViewed) {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().issueIsViewed(userId, event)
+        itly?.issueIsViewed(userId, event)
     }
 
     fun logHealthScoreIsClicked(userId: String, event: HealthScoreIsClicked) {
-        if (!itlyLoaded) return
-
-        Itly.getInstance().healthScoreIsClicked(userId, event)
+        itly?.healthScoreIsClicked(userId, event)
     }
 
     private fun loadSegmentWriteKey(): String {
