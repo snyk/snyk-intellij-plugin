@@ -59,6 +59,7 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
             if (service<AmplitudeExperimentService>().isShowScanningReminderEnabled()) {
                 SnykBalloonNotifications.showScanningReminder(project)
+                settings.scanningReminderWasShown = true
             }
         }
     }
