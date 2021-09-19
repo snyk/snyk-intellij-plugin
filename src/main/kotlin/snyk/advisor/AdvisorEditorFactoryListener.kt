@@ -23,7 +23,7 @@ class AdvisorEditorFactoryListener: EditorFactoryListener {
         }
 
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
-        if (psiFile == null || psiFile is PsiCompiledElement) {
+        if (psiFile == null || psiFile.virtualFile == null || psiFile is PsiCompiledElement) {
             return
         }
 
