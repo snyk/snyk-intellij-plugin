@@ -1,8 +1,16 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.3.0]
 ### Added
+- Add Advisor support for Python packages in requirements.txt
 - Show welcome notification after first plugin install
+- Run `runPluginVerifier` task as part of CI workflow
+### Changed
+- Remove logo image from product selection panel
+- Update Iteratively tracking plan for Advisor events
+### Fixed
+- Fix exception by downloading CLI when no GitHub release info available
+- Fix error when initializing Iteratively library
 
 ## [2.2.2]
 ### Added
