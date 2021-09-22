@@ -53,6 +53,7 @@ class SnykSettingsDialog(
     private val organizationTextField: JTextField = JTextField()
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val usageAnalyticsCheckBox: JCheckBox = JCheckBox()
+    private val crashReportingCheckBox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
     private val scanTypesPanelOuter = ScanTypesPanel(project, rootPanel)
     private val scanTypesPanel = scanTypesPanelOuter.panel
@@ -94,6 +95,7 @@ class SnykSettingsDialog(
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
             usageAnalyticsCheckBox.isSelected = applicationSettings.usageAnalyticsEnabled
+            crashReportingCheckBox.isSelected = applicationSettings.crashReportingEnabled
 
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
         }
@@ -453,6 +455,19 @@ class SnykSettingsDialog(
             )
         )
 
+        crashReportingCheckBox.text = "Allow automatically sending crash reports"
+        userExperiencePanel.add(
+            crashReportingCheckBox,
+            UIGridConstraints(
+                1, 0, 1, 1,
+                UIGridConstraints.ANCHOR_NORTHWEST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null, null, null, 0, false
+            )
+        )
+
         /** Spacer ------------------ */
 
         val generalSettingsSpacer = Spacer()
@@ -482,6 +497,8 @@ class SnykSettingsDialog(
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
 
     fun isUsageAnalyticsEnabled(): Boolean = usageAnalyticsCheckBox.isSelected
+
+    fun isCrashReportingEnabled(): Boolean = crashReportingCheckBox.isSelected
 
     fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
 

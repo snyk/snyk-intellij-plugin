@@ -26,6 +26,7 @@ dependencies {
   implementation("com.atlassian.commonmark:commonmark:0.15.2")
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.segment.analytics.java:analytics:3.1.0")
+  implementation("io.sentry:sentry:5.1.2")
   implementation("io.snyk.code.sdk:snyk-code-client:2.1.10")
   implementation("ly.iterative.itly:plugin-iteratively:1.2.7")
   implementation("ly.iterative.itly:plugin-schema-validator:1.2.7") {
@@ -80,14 +81,17 @@ tasks {
   }
 
   withType<ProcessResources> {
+    val environment = project.findProperty("environment") ?: "DEVELOPMENT"
     filesMatching("application.properties") {
       val amplitudeExperimentApiKey = project.findProperty("amplitudeExperimentApiKey") ?: ""
-      val iterativelyEnvironment = project.findProperty("iterativelyEnvironment") ?: "DEVELOPMENT"
       val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
+      val sentryDsnKey = project.findProperty("sentryDsn") ?: ""
       val tokens = mapOf(
         "amplitude.experiment.api-key" to amplitudeExperimentApiKey,
-        "iteratively.analytics.environment" to iterativelyEnvironment,
-        "segment.analytics.write-key" to segmentWriteKey
+        "environment" to environment,
+        "iteratively.analytics.environment" to environment,
+        "segment.analytics.write-key" to segmentWriteKey,
+        "sentry.dsn" to sentryDsnKey
       )
       filter<ReplaceTokens>("tokens" to tokens)
     }
