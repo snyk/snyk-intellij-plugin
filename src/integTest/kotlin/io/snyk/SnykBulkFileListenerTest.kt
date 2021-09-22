@@ -14,7 +14,7 @@ import snyk.oss.OssResult
 class SnykBulkFileListenerTest : BasePlatformTestCase() {
 
     @Test
-    fun testBuildFileChanged() {
+    fun testCurrentOssResults_shouldDropCachedResult_whenBuildFileChanged() {
         val fakeOssResult = OssResult(null, null)
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
         toolWindowPanel.currentOssResults = fakeOssResult
@@ -28,7 +28,7 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun testBuildFileChangedOutOfProjectContent() {
+    fun testCurrentOssResults_shouldKeepCachedResult_whenOutOfProjectContentBuildFileChanged() {
         val fakeOssResult = OssResult(null, null)
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
