@@ -1,6 +1,7 @@
 package io.snyk.plugin.snykcode.core
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
@@ -13,6 +14,11 @@ import java.io.FileNotFoundException
 // .dcignore is deleted between calls but Project is not reopened in BasePlatformTestCase
 // See: https://plugins.jetbrains.com/docs/intellij/light-and-heavy-tests.html
 class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
+
+    override fun setUp() {
+        super.setUp()
+        ModuleRootModificationUtil.addContentRoot(module, project.basePath!!)
+    }
 
     fun testGenericDcIgnoreAddedOnProjectOpening() {
         val genericDcIgnoreFile = File(project.basePath + "/.dcignore")
