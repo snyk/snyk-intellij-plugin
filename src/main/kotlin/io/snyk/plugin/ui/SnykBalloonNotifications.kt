@@ -132,6 +132,7 @@ class SnykBalloonNotifications {
             "Scan your project for security vulnerabilities and code issues",
             project,
             NotificationAction.createSimpleExpiring("Run scan") {
+                snykToolWindow(project)?.show()
                 project.service<SnykTaskQueueService>().scan()
                 project.service<SnykAnalyticsService>().logAnalysisIsTriggered(
                     AnalysisIsTriggered.builder()
