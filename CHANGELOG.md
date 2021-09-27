@@ -1,5 +1,14 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.3.1]
+### Added
+- Allow submitting error reports anonymously to Sentry when exceptions occur
+### Changed
+- Increase performance when collecting files for Snyk Code
+### Fixed
+- Fix exception when Advisor analyse in-memory files ([GH-161](https://github.com/snyk/snyk-intellij-plugin/issues/161))
+- Fix wrong cache invalidation for OSS results when modifying non-manifest files
+
 ## [2.3.0]
 ### Added
 - Add Advisor support for Python packages in requirements.txt
