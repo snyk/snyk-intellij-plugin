@@ -1,6 +1,6 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [2.3.1]
+## [2.4.0]
 ### Added
 - Allow submitting error reports anonymously to Sentry when exceptions occur
 ### Changed
