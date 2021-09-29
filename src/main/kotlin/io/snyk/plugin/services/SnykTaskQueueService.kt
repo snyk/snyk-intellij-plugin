@@ -79,15 +79,13 @@ class SnykTaskQueueService(val project: Project) {
                     scheduleSnykCodeScan()
                 }
 
-                //TODO(pavel): replace with settings
-                val iacEnabled = true
-                if (iacEnabled) {
+                if (settings.iacScanEnabled) {
+                    if (!getIacService(project).isCliInstalled()) downloadLatestRelease()
                     scheduleIacScan()
                 }
 
-                //TODO(pavel): replace with settings
-                val containerEnabled = true
-                if (containerEnabled) {
+                if (settings.containerScanEnabled) {
+                    if (!getContainerService(project).isCliInstalled()) downloadLatestRelease()
                     scheduleContainerScan()
                 }
             }
@@ -155,9 +153,9 @@ class SnykTaskQueueService(val project: Project) {
         ) {
             override fun run(indicator: ProgressIndicator) {
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
-                // if (toolWindowPanel.currentIacResult != null) return
+                //Todo: if (toolWindowPanel.currentIacResult != null) return
 
-                LOG.info("Starting IaC scan")
+                LOG.debug("Starting IaC scan")
                 iacScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
@@ -168,20 +166,20 @@ class SnykTaskQueueService(val project: Project) {
                 if (project.isDisposed) return
 
                 if (indicator.isCanceled) {
-                    LOG.warn("cancel IaC scan")
+                    LOG.debug("cancel IaC scan")
                     taskQueuePublisher?.stopped(wasIacRunning = true)
                 } else {
                     if (iacResult.isSuccessful()) {
-                        LOG.warn("IaC result: ->")
+                        LOG.debug("IaC result: ->")
                         iacResult.allCliIssues?.forEach {
-                            LOG.warn("  ${it.targetFile}, ${it.infrastructureAsCodeIssues.size} issues")
+                            LOG.debug("  ${it.targetFile}, ${it.infrastructureAsCodeIssues.size} issues")
                         }
                         scanPublisher?.scanningIacFinished(iacResult)
                     } else {
                         scanPublisher?.scanningIacError(iacResult.error!!)
                     }
                 }
-                LOG.info("IaC scan completed")
+                LOG.debug("IaC scan completed")
             }
         })
     }
@@ -190,7 +188,7 @@ class SnykTaskQueueService(val project: Project) {
         taskQueueIacContainer.run(object : Task.Backgroundable(project, "Snyk Container is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
-                //if (toolWindowPanel.currentContainerResult != null) return
+                //Todo: if (toolWindowPanel.currentContainerResult != null) return
 
                 val iacResult = toolWindowPanel.currentIacResult
                 if (iacResult != null) {
@@ -203,7 +201,7 @@ class SnykTaskQueueService(val project: Project) {
                     if (project.isDisposed) return
 
                     if (indicator.isCanceled) {
-                        LOG.warn("cancel Container scan")
+                        LOG.debug("cancel Container scan")
                         taskQueuePublisher?.stopped(wasContainerRunning = true)
                     } else {
                         if (containerResult.isSuccessful()) {
@@ -216,7 +214,7 @@ class SnykTaskQueueService(val project: Project) {
                     LOG.warn("IaC result is null, nothing to scan")
                 }
 
-                DaemonCodeAnalyzer.getInstance(project).restart()
+                DaemonCodeAnalyzer.getInstance(project).restart() //todo: only for needed files
             }
         })
     }
@@ -241,9 +239,16 @@ class SnykTaskQueueService(val project: Project) {
     fun stopScan() {
         val wasOssRunning = ossScanProgressIndicator?.isRunning == true
         ossScanProgressIndicator?.cancel()
+
         val wasSnykCodeRunning = isSnykCodeRunning(project)
         RunUtils.instance.cancelRunningIndicators(project)
+
         val wasIacRunning = iacScanProgressIndicator?.isRunning == true
-        taskQueuePublisher?.stopped(wasOssRunning, wasSnykCodeRunning, wasIacRunning)
+        iacScanProgressIndicator?.cancel()
+
+        val wasContainerRunning = containerScanProgressIndicator?.isRunning == true
+        containerScanProgressIndicator?.cancel()
+
+        taskQueuePublisher?.stopped(wasOssRunning, wasSnykCodeRunning, wasIacRunning, wasContainerRunning)
     }
 }

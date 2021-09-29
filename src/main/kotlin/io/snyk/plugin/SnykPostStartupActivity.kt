@@ -44,7 +44,9 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         }
 
         val feedbackRequestShownMoreThenTwoWeeksAgo =
-            settings.lastTimeFeedbackRequestShown.toInstant().plus(14, ChronoUnit.DAYS).isBefore(Instant.now())
+            settings.lastTimeFeedbackRequestShown.toInstant()
+                .plus(14, ChronoUnit.DAYS) // we'll give 2 weeks to evaluate initially
+                .isBefore(Instant.now())
         if (settings.showFeedbackRequest && feedbackRequestShownMoreThenTwoWeeksAgo) {
             SnykBalloonNotifications.showFeedbackRequest(project)
             settings.lastTimeFeedbackRequestShown = Date.from(Instant.now())

@@ -33,7 +33,9 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
             listOf(
                 createOssScanAction(),
                 createSecurityIssuesScanAction(),
-                createQualityIssuesScanAction()
+                createQualityIssuesScanAction(),
+                createIacScanAction(),
+                createContainerScanAction()
             )
         )
     }
@@ -46,6 +48,32 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
                 if (!state && isLastScanTypeDisabling(e)) return
 
                 settings.ossScanEnable = state
+                fireFiltersChangedEvent(e.project!!)
+            }
+        }
+    }
+
+    private fun createIacScanAction(): AnAction {
+        return object : ToggleAction("Infrastructure as Code Vulnerabilities") {
+            override fun isSelected(e: AnActionEvent): Boolean = settings.iacScanEnabled
+
+            override fun setSelected(e: AnActionEvent, state: Boolean) {
+                if (!state && isLastScanTypeDisabling(e)) return
+
+                settings.iacScanEnabled = state
+                fireFiltersChangedEvent(e.project!!)
+            }
+        }
+    }
+
+    private fun createContainerScanAction(): AnAction {
+        return object : ToggleAction("Container Security Issues") {
+            override fun isSelected(e: AnActionEvent): Boolean = settings.containerScanEnabled
+
+            override fun setSelected(e: AnActionEvent, state: Boolean) {
+                if (!state && isLastScanTypeDisabling(e)) return
+
+                settings.containerScanEnabled = state
                 fireFiltersChangedEvent(e.project!!)
             }
         }
@@ -96,7 +124,9 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         val onlyOneEnabled = arrayOf(
             settings.ossScanEnable,
             settings.snykCodeSecurityIssuesScanEnable,
-            settings.snykCodeQualityIssuesScanEnable
+            settings.snykCodeQualityIssuesScanEnable,
+            settings.iacScanEnabled && !settings.containerScanEnabled,
+            settings.containerScanEnabled
         ).count { it } == 1
         if (onlyOneEnabled) {
             SnykBalloonNotifications.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)

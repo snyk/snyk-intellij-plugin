@@ -37,6 +37,10 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = false
+    var iacScanEnabled: Boolean = false
+    var containerScanEnabled: Boolean = false
+        get() = field && iacScanEnabled
+
     var sastOnServerEnabled: Boolean? = null
     var usageAnalyticsEnabled = true
     var crashReportingEnabled = true
@@ -50,7 +54,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var pluginFirstRun = true
     // Instant could not be used here due to serialisation Exception
     var pluginFirstInstallTime: Date = Date.from(Instant.now())
-    var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now()) // we'll give 2 weeks to evaluate initially
+    var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
     var showFeedbackRequest = true
 
     // experiment section

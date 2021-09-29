@@ -49,7 +49,7 @@ class ScanTypesPanel(
     val panel = panel {
         row {
             cell {
-                val ossCheckbox = checkBox(
+                checkBox(
                     "Snyk Open Source vulnerabilities",
                     { settings.ossScanEnable },
                     { settings.ossScanEnable = it },
@@ -71,6 +71,32 @@ class ScanTypesPanel(
                 label("").component.convertIntoHelpHintLabel(
                     "Discover the health (maintenance, community, popularity & security)\n" +
                         "status of your open source packages"
+                )
+            }
+        }
+        row {
+            cell {
+                checkBox(
+                    "Snyk Infrastructure as Code issues",
+                    { settings.iacScanEnabled },
+                    { settings.iacScanEnabled = it },
+                    null
+                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                label("").component.convertIntoHelpHintLabel(
+                    "Find and fix insecure configurations in Terraform and Kubernetes code"
+                )
+            }
+        }
+        row {
+            cell {
+                checkBox(
+                    "Snyk Container vulnerabilities",
+                    { settings.containerScanEnabled },
+                    { settings.containerScanEnabled = it },
+                    null
+                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                label("").component.convertIntoHelpHintLabel(
+                    "Find and fix vulnerabilities in container images and Kubernetes applications"
                 )
             }
         }
