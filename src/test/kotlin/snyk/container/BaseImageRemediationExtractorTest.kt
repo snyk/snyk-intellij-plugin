@@ -10,8 +10,9 @@ class BaseImageRemediationExtractorTest {
     @Test
     fun extractImageInfo() {
         val input = """
-Base Image  Vulnerabilities  Severity\nnginx:1.17  150              17 critical, 35 high, 26 medium, 72 low\n
-        """
+            Base Image  Vulnerabilities  Severity
+            nginx:1.17  150              17 critical, 35 high, 26 medium, 72 low
+        """.trimIndent()
 
         val currentImage = BaseImageRemediationExtractor.extractImageInfo(input)
 
