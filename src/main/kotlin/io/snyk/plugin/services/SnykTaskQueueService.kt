@@ -229,9 +229,9 @@ class SnykTaskQueueService(val project: Project) {
                 if (project.isDisposed) return
 
                 if (!getOssService(project).isCliInstalled()) {
-                    cliDownloader.downloadLatestRelease(indicator)
+                    cliDownloader.downloadLatestRelease(indicator, project)
                 } else {
-                    cliDownloader.cliSilentAutoUpdate(indicator)
+                    cliDownloader.cliSilentAutoUpdate(indicator, project)
                 }
                 cliDownloadPublisher.checkCliExistsFinished()
             }

@@ -23,6 +23,8 @@
 
     <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
 
+    <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
+
     <externalAnnotator language="yaml" implementationClass="snyk.container.annotator.KubernetesManifestAnnotator"/>
   </extensions>
 

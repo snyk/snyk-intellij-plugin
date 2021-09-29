@@ -39,6 +39,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var snykCodeQualityIssuesScanEnable: Boolean = false
     var sastOnServerEnabled: Boolean? = null
     var usageAnalyticsEnabled = true
+    var crashReportingEnabled = true
 
     var lowSeverityEnabled = true
     var mediumSeverityEnabled = true
@@ -51,6 +52,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var pluginFirstInstallTime: Date = Date.from(Instant.now())
     var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now()) // we'll give 2 weeks to evaluate initially
     var showFeedbackRequest = true
+
+    // experiment section
+    var scanningReminderWasShown: Boolean = false
 
     /**
      * Random UUID used by analytics events if enabled.

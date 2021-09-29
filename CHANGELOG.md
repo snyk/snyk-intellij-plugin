@@ -1,8 +1,25 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.4.0]
 ### Added
+- Allow submitting error reports anonymously to Sentry when exceptions occur
+### Changed
+- Increase performance when collecting files for Snyk Code
+### Fixed
+- Fix exception when Advisor analyse in-memory files ([GH-161](https://github.com/snyk/snyk-intellij-plugin/issues/161))
+- Fix wrong cache invalidation for OSS results when modifying non-manifest files
+
+## [2.3.0]
+### Added
+- Add Advisor support for Python packages in requirements.txt
 - Show welcome notification after first plugin install
+- Run `runPluginVerifier` task as part of CI workflow
+### Changed
+- Remove logo image from product selection panel
+- Update Iteratively tracking plan for Advisor events
+### Fixed
+- Fix exception by downloading CLI when no GitHub release info available
+- Fix error when initializing Iteratively library
 
 ## [2.2.2]
 ### Added

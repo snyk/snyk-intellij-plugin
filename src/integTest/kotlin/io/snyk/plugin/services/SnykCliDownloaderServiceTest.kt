@@ -3,9 +3,12 @@ package io.snyk.plugin.services
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.*
 import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getPluginPath
 import org.junit.Test
+import org.mockito.Mockito
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -34,15 +37,29 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
             cliFile.createNewFile()
         }
 
-        project.service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator())
+        project.service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator(), project)
 
         val downloadedFile = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
         assertTrue(downloadedFile.exists())
-        assertEquals(cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + getApplicationSettingsStateService().cliVersion)
+        assertEquals(
+            cliDownloaderService.getLatestReleaseInfo()!!.tagName,
+            "v" + getApplicationSettingsStateService().cliVersion
+        )
 
         downloadedFile.delete()
+    }
+
+    @Test
+    fun testDownloadLatestCliReleaseWhenNoReleaseInfoAvailable() {
+        val cliDownloaderService = project.service<SnykCliDownloaderService>()
+
+        val cliDownloaderServiceSpy = Mockito.spy(cliDownloaderService)
+        Mockito.doReturn(null).`when`<SnykCliDownloaderService>(cliDownloaderServiceSpy).requestLatestReleasesInformation()
+
+        assertNoThrowable {
+            cliDownloaderServiceSpy.downloadLatestRelease(EmptyProgressIndicator(), project)
+        }
     }
 
     @Test
@@ -60,12 +77,14 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
             cliFile.createNewFile()
         }
 
-        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator())
+        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
 
         assertTrue(getCliFile().exists())
         assertEquals(currentDate.toLocalDate(), getApplicationSettingsStateService().getLastCheckDate())
-        assertEquals(cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + getApplicationSettingsStateService().cliVersion)
+        assertEquals(
+            cliDownloaderService.getLatestReleaseInfo()!!.tagName,
+            "v" + getApplicationSettingsStateService().cliVersion
+        )
 
         cliFile.delete()
     }
@@ -87,13 +106,15 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
             cliFile.createNewFile()
         }
 
-        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator())
+        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
 
         assertTrue(getCliFile().exists())
 
         assertEquals(currentDate, applicationSettingsStateService.getLastCheckDate())
-        assertEquals(cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + applicationSettingsStateService.cliVersion)
+        assertEquals(
+            cliDownloaderService.getLatestReleaseInfo()!!.tagName,
+            "v" + applicationSettingsStateService.cliVersion
+        )
 
         cliFile.delete()
     }

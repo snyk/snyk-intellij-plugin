@@ -2,6 +2,7 @@ package io.snyk.plugin
 
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.service
+import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.*
@@ -47,7 +48,7 @@ class SnykBulkFileListener() : BulkFileListener {
                 fileFilter = Predicate { supportedBuildFiles.contains(it.name) },
                 classesOfEventsToFilter = classesOfEventsToFilter
             )
-            if (changedBuildFiles.isNotEmpty()) {
+             if (changedBuildFiles.any { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }) {
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
                 toolWindowPanel.currentOssResults = null
             }
