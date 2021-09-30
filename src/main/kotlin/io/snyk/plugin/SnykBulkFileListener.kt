@@ -53,6 +53,8 @@ class SnykBulkFileListener() : BulkFileListener {
                 toolWindowPanel.currentOssResults = null
             }
 
+            // todo: clean IaC and Container cached results
+
             val virtualFilesAffected = getAffectedVirtualFiles(
                 events,
                 fileFilter = Predicate { true },

@@ -14,7 +14,7 @@ object BaseImageRemediationExtractor {
     }
 
     fun extractImageInfo(text: String): BaseImageInfo {
-        val lines = text.split("\n".toRegex())
+        val lines = text.lines()
         // first line is headers
         val baseImageLines = lines.drop(1)
 

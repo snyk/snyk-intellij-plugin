@@ -304,7 +304,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             securityIssuesCount = if (wasSnykCodeRunning) -1 else null,
                             qualityIssuesCount = if (wasSnykCodeRunning) -1 else null,
                             iacResultsCount = if (wasIacRunning) -1 else null,
-                            containerIssuesCount = if (wasContainerRunning) -1 else null
+                            containerIssuesCount = if (wasContainerRunning || wasIacRunning) -1 else null
                         )
                         displayEmptyDescription()
                     }
@@ -564,7 +564,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             rootOssTreeNode.childCount == 0 &&
                 rootSecurityIssuesTreeNode.childCount == 0 &&
-                rootQualityIssuesTreeNode.childCount == 0 -> {
+                rootQualityIssuesTreeNode.childCount == 0 &&
+                rootIacIssuesTreeNode.childCount == 0 &&
+                rootContainerIssuesTreeNode.childCount == 0 -> {
                 displayNoVulnerabilitiesMessage()
             }
             else -> {
@@ -631,8 +633,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val newIacTreeNodeText = when {
             currentIacError != null -> "$IAC_ROOT_TEXT (error)"
-            //TODO(pavel): check settings if iacScanEnable
-            isIacRunning(project) -> "$IAC_ROOT_TEXT (scanning...)"
+            isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
             else -> iacResultsCount?.let { count ->
                 IAC_ROOT_TEXT + when {
                     count == -1 -> ""
@@ -646,7 +647,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val newContainerTreeNodeText = when {
             currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
-            isContainerScanning(project) -> "$CONTAINER_ROOT_TEXT (scanning...)"
+            settings.containerScanEnabled && isIacRunning(project) && settings.iacScanEnabled -> "$CONTAINER_ROOT_TEXT (scheduled...)"
+            isContainerScanning(project) && settings.containerScanEnabled -> "$CONTAINER_ROOT_TEXT (scanning...)"
             else -> containerIssuesCount?.let { count ->
                 CONTAINER_ROOT_TEXT + when {
                     count == -1 -> ""
@@ -822,9 +824,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootIacIssuesTreeNode.removeAllChildren()
 
-        // TODO: work with Iac settings
-        val settingsEnabled = true // getApplicationSettingsStateService().iacScanEnable
-        if (settingsEnabled && iacResult.allCliIssues != null) {
+        if (getApplicationSettingsStateService().iacScanEnabled && iacResult.allCliIssues != null) {
             iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
                 if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
                     val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
@@ -854,9 +854,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootContainerIssuesTreeNode.removeAllChildren()
 
-        // TODO: check container settings
-        val containerEnabled = true
-        if (containerEnabled && containerResult.allCliIssues != null) {
+        if (getApplicationSettingsStateService().containerScanEnabled && containerResult.allCliIssues != null) {
             containerResult.allCliIssues!!.forEach { containerIssuesForFile ->
                 if (containerIssuesForFile.vulnerabilities.isNotEmpty()) {
                     val fileTreeNode = ContainerFileTreeNode(containerIssuesForFile, project)
