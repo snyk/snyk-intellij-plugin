@@ -22,7 +22,8 @@ import org.jetbrains.annotations.TestOnly
 class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
 
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
 
     private val scanPublisher
         get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)

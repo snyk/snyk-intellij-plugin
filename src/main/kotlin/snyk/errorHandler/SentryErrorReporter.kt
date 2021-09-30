@@ -15,7 +15,7 @@ import io.sentry.protocol.Message
 import io.sentry.protocol.OperatingSystem
 import io.sentry.protocol.SentryId
 import io.sentry.protocol.SentryRuntime
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import snyk.PropertyLoader
 import snyk.pluginInfo
 
@@ -104,7 +104,7 @@ object SentryErrorReporter {
      * Note: [io.snyk.plugin.services.SnykApplicationSettingsStateService.crashReportingEnabled] is respected
      */
     fun captureException(throwable: Throwable): SentryId {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         return if (settings.crashReportingEnabled) {
             val sentryId = Sentry.captureException(throwable)
             LOG.info("Sentry event reported: $sentryId")

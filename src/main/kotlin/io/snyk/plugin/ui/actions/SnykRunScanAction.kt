@@ -6,7 +6,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
 import io.snyk.plugin.analytics.getSelectedProducts
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.services.SnykAnalyticsService
@@ -23,7 +23,7 @@ class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
 
         service<SnykAnalyticsService>().logAnalysisIsTriggered(
             AnalysisIsTriggered.builder()
-                .analysisType(getSelectedProducts(getApplicationSettingsStateService()))
+                .analysisType(getSelectedProducts(pluginSettings()))
                 .ide(AnalysisIsTriggered.Ide.JETBRAINS)
                 .triggeredByUser(true)
                 .build()
@@ -33,7 +33,7 @@ class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
     override fun update(actionEvent: AnActionEvent) {
         val project = actionEvent.project
         if (project != null && !project.isDisposed) {
-            val settings = getApplicationSettingsStateService()
+            val settings = pluginSettings()
             actionEvent.presentation.isEnabled =
                 !isCliDownloading() &&
                     !isScanRunning(project) &&

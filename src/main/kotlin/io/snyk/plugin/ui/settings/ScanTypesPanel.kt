@@ -11,7 +11,7 @@ import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.services.SnykApiService
@@ -31,7 +31,9 @@ class ScanTypesPanel(
     cliScanComments: String? = null,
     private val simplifyForOnboardPanel: Boolean = false
 ) {
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
+
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
 
     private var snykCodeCheckbox: JBCheckBox? = null

@@ -6,7 +6,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.analytics.Iteratively
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.HealthScoreIsClicked
@@ -18,7 +18,8 @@ import snyk.analytics.WelcomeIsViewed
 class SnykAnalyticsService : Disposable {
     private val log = logger<SnykAnalyticsService>()
     private val itly = Iteratively
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
 
     private var userId = ""
 

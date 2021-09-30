@@ -2,7 +2,7 @@ package snyk
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.SnykBalloonNotifications
 
@@ -12,7 +12,7 @@ import io.snyk.plugin.ui.SnykBalloonNotifications
  */
 class WelcomeNotifyActivity : StartupActivity {
     override fun runActivity(project: Project) {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
 
         if (settings.pluginFirstRun) {
             SnykBalloonNotifications.showWelcomeNotification(project)

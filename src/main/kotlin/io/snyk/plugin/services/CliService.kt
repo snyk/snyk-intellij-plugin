@@ -4,7 +4,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliNotExistsException
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import org.jetbrains.annotations.TestOnly
@@ -28,7 +28,7 @@ abstract class CliService<R>(val project: Project, private val cliCommands: List
 
     fun scan(): R = try {
         val commands = buildCliCommandsList()
-        val apiToken = getApplicationSettingsStateService().token ?: ""
+        val apiToken = pluginSettings().token ?: ""
         val rawResultStr = consoleCommandRunner.execute(commands, projectPath, apiToken, project)
         convertRawCliStringToCliResult(rawResultStr)
     } catch (exception: CliNotExistsException) {
@@ -51,7 +51,7 @@ abstract class CliService<R>(val project: Project, private val cliCommands: List
      */
     fun buildCliCommandsList(): List<String> {
         logger.debug("Enter buildCliCommandsList")
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
 
         val commands: MutableList<String> = mutableListOf()
         commands.add(getCliCommandPath())

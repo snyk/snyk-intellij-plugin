@@ -4,13 +4,10 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
-import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getOssService
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
-import org.mockito.Mockito
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
@@ -41,7 +38,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
 
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         settings.ossScanEnable = true
 
         snykTaskQueueService.scan()
@@ -68,7 +65,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     @Test
     fun testSastEnablementCheckInScan() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         settings.ossScanEnable = false
         settings.snykCodeSecurityIssuesScanEnable = true
         settings.snykCodeQualityIssuesScanEnable = true

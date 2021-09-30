@@ -28,7 +28,7 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         // clean up left-overs in case project wasn't properly closed before
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
 
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
