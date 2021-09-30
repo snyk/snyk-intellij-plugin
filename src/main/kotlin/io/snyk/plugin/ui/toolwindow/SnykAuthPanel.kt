@@ -9,7 +9,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliAuthenticationService
@@ -65,7 +65,7 @@ class SnykAuthPanel(project: Project) : JPanel(), Disposable {
                 project.service<SnykToolWindowPanel>().cleanUiAndCaches()
 
                 val token = project.service<SnykCliAuthenticationService>().authenticate()
-                getApplicationSettingsStateService().token = token
+                pluginSettings().token = token
                 SnykCodeParams.instance.sessionToken = token
 
                 val analytics = service<SnykAnalyticsService>()

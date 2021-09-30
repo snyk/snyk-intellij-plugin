@@ -3,7 +3,7 @@ package snyk.amplitude
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import snyk.amplitude.api.AmplitudeExperimentApiClient
 import snyk.amplitude.api.AmplitudeExperimentApiClient.Defaults.FALLBACK_VARIANT
 import snyk.amplitude.api.ExperimentUser
@@ -64,7 +64,7 @@ class AmplitudeExperimentService : Disposable {
     fun isShowScanningReminderEnabled(): Boolean {
         val variant = storage["intellij-show-scanning-reminder"] ?: return false
 
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         LOG.debug("Scanning reminder: variant - ${variant.value}, was shown - ${settings.scanningReminderWasShown}")
 
         return variant.value == "test" && !settings.scanningReminderWasShown

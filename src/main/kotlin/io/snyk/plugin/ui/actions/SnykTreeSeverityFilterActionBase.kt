@@ -2,13 +2,13 @@ package io.snyk.plugin.ui.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotifications
 
 abstract class SnykTreeSeverityFilterActionBase : ToggleAction() {
 
     protected fun isLastSeverityDisabling(e: AnActionEvent): Boolean {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
 
         val onlyOneEnabled = arrayOf(
             settings.criticalSeverityEnabled,
