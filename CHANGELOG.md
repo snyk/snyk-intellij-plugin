@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Fixed
+- Remove IntelliJ API methods that are scheduled for removal in 2021.3
+
 ## [2.4.1]
 ### Fixed
 - Fix ClassCastException when updating the plugin without rebooting IDE
