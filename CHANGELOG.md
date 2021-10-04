@@ -1,6 +1,8 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.4.2]
+### Changed
+- Require restarting the IDE when updating or uninstalling the plugin ([GH-182](https://github.com/snyk/snyk-intellij-plugin/issues/182))
 ### Fixed
 - Remove IntelliJ API methods that are scheduled for removal in 2021.3
 
