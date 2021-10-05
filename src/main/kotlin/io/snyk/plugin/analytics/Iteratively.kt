@@ -15,6 +15,8 @@ import snyk.analytics.Identify
 import snyk.analytics.IssueIsViewed
 import snyk.analytics.Itly
 import snyk.analytics.ItlyLogger
+import snyk.analytics.PluginIsInstalled
+import snyk.analytics.PluginIsUninstalled
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import java.util.Properties
@@ -90,6 +92,14 @@ object Iteratively {
 
     fun logHealthScoreIsClicked(userId: String, event: HealthScoreIsClicked) {
         itly?.healthScoreIsClicked(userId, event)
+    }
+
+    fun logPluginIsInstalled(userId: String, event: PluginIsInstalled) {
+        itly?.pluginIsInstalled(userId, event)
+    }
+
+    fun logPluginIsUninstalled(userId: String, event: PluginIsUninstalled) {
+        itly?.pluginIsUninstalled(userId, event)
     }
 
     private fun loadSegmentWriteKey(): String {
