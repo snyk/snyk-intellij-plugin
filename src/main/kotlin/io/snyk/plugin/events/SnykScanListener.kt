@@ -15,7 +15,7 @@ interface SnykScanListener {
 
     fun scanningOssFinished(ossResult: OssResult)
 
-    fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults)
+    fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?)
 
     fun scanningOssError(snykError: SnykError)
 

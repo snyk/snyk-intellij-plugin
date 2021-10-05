@@ -1,5 +1,10 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Fixed
+- SnykCode scan stopped by user shows `No issues` found.
+- Wrong `Analysis Is Ready` events triggers;
+
 ## [2.4.2]
 ### Changed
 - Require restarting the IDE when updating or uninstalling the plugin ([GH-182](https://github.com/snyk/snyk-intellij-plugin/issues/182))

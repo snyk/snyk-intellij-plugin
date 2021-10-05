@@ -132,8 +132,30 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                 }
 
-                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) =
+                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
                     ApplicationManager.getApplication().invokeLater { displaySnykCodeResults(snykCodeResults) }
+                    if (snykCodeResults == null) {
+                        return
+                    }
+                    if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
+                        service<SnykAnalyticsService>().logAnalysisIsReady(
+                            AnalysisIsReady.builder()
+                                .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
+                                .ide(AnalysisIsReady.Ide.JETBRAINS)
+                                .result(Result.SUCCESS)
+                                .build()
+                        )
+                    }
+                    if (pluginSettings().snykCodeQualityIssuesScanEnable) {
+                        service<SnykAnalyticsService>().logAnalysisIsReady(
+                            AnalysisIsReady.builder()
+                                .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
+                                .ide(AnalysisIsReady.Ide.JETBRAINS)
+                                .result(Result.SUCCESS)
+                                .build()
+                        )
+                    }
+                }
 
                 override fun scanningOssError(snykError: SnykError) {
                     currentOssResults = null
@@ -149,13 +171,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             displayEmptyDescription()
                         }
                     }
-                    service<SnykAnalyticsService>().logAnalysisIsReady(
-                        AnalysisIsReady.builder()
-                            .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
-                            .ide(AnalysisIsReady.Ide.JETBRAINS)
-                            .result(Result.ERROR)
-                            .build()
-                    )
                 }
 
                 override fun scanningSnykCodeError(snykError: SnykError) {
@@ -182,7 +197,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             )
                         }
                     ApplicationManager.getApplication().invokeLater {
-                        snykCodeResults?.let { displaySnykCodeResults(it) }
+                        displaySnykCodeResults(snykCodeResults)
                         currentOssResults?.let { displayVulnerabilities(it) }
                     }
                 }
@@ -567,8 +582,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         smartReloadRootNode(rootOssTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
     }
 
-    private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults) {
+    private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults?) {
         if (currentSnykCodeError != null) return
+        if (snykCodeResults == null) {
+            updateTreeRootNodesPresentation(
+                securityIssuesCount = -1,
+                qualityIssuesCount = -1
+            )
+            return
+        }
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         // display Security issues
@@ -588,14 +610,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 isSeverityFilterPassed(it.severityAsString)
             }
             displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
-
-            service<SnykAnalyticsService>().logAnalysisIsReady(
-                AnalysisIsReady.builder()
-                    .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
-                    .ide(AnalysisIsReady.Ide.JETBRAINS)
-                    .result(Result.SUCCESS)
-                    .build()
-            )
         }
         updateTreeRootNodesPresentation(
             securityIssuesCount = securityIssuesCount,
@@ -620,14 +634,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 isSeverityFilterPassed(it.severityAsString)
             }
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
-
-            service<SnykAnalyticsService>().logAnalysisIsReady(
-                AnalysisIsReady.builder()
-                    .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
-                    .ide(AnalysisIsReady.Ide.JETBRAINS)
-                    .result(Result.SUCCESS)
-                    .build()
-            )
         }
         updateTreeRootNodesPresentation(
             qualityIssuesCount = qualityIssuesCount,

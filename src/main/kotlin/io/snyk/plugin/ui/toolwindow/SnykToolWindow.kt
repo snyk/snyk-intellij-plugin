@@ -42,7 +42,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningOssFinished(ossResult: OssResult) = updateActionsPresentation()
 
-                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) = updateActionsPresentation()
+                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) = updateActionsPresentation()
 
                 override fun scanningOssError(snykError: SnykError) = updateActionsPresentation()
 
