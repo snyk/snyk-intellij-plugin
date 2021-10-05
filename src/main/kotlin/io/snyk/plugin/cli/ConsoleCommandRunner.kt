@@ -13,6 +13,7 @@ import com.intellij.openapi.util.Key
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.ui.SnykBalloonNotifications
+import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
 import java.nio.charset.Charset
 
@@ -72,6 +73,7 @@ open class ConsoleCommandRunner {
                 timeout
             )
         } catch (e: ExecutionException) {
+            SentryErrorReporter.captureException(e)
             "Execution timeout [${timeout / 1000} sec] is reached with NO results produced"
         }
 
