@@ -5,6 +5,7 @@ import ai.deepcode.javaclient.core.PlatformDependentUtilsBase
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -40,7 +41,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
             ?: throw IllegalStateException("No Project base Path found for file $psiFile")
         // `ignoreCase = true` needed due to https://youtrack.jetbrains.com/issue/IDEA-268081
         val projectBasedPath = absolutePath.replaceFirst(projectPath, "", ignoreCase = true)
-        if (projectBasedPath == absolutePath ) {
+        if (projectBasedPath == absolutePath) {
             throw IllegalStateException("projectBasedPath is not valid:\n" +
                 "  psiFile.virtualFile.path = $absolutePath\n" +
                 "  psiFile.project.basePath = $projectPath")
@@ -151,12 +152,16 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     override fun showWarn(message: String, project: Any?, wasWarnShown: Boolean) {
-        runForProject(project, Consumer { prj ->
-            SnykBalloonNotifications.showWarn(message, prj)
-            getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
-                SnykError(message, prj.basePath ?: "")
-            )
-        })
+        if (!wasWarnShown) {
+            runForProject(project, Consumer { prj ->
+                SnykBalloonNotifications.showWarn(message, prj)
+                getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
+                    SnykError(message, prj.basePath ?: "")
+                )
+            })
+        } else {
+            logger.debug(message)
+        }
     }
 
     override fun showError(message: String, project: Any?) {
@@ -177,6 +182,8 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     companion object {
+        private val logger = logger<PDU>()
+
         fun toPsiFile(file: Any): PsiFile {
             require(file is PsiFile) { "file should be PsiFile instance" }
             return file

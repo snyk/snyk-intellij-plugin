@@ -5,6 +5,7 @@ import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.util.Alarm
@@ -95,7 +96,7 @@ fun toSnykCodeApiUrl(customEndpointUrl: String?): String =
 
 private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
     customEndpointUrl.removeTrailingSlashes() == "https://dev.snyk.io/api" ||
-    customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
+        customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
 
 fun getSnykCodeSettingsUrl(): String {
     val endpoint = pluginSettings().customEndpointUrl
@@ -151,3 +152,11 @@ fun controlExternalProcessWithProgressIndicator(
     }
     checkCancelled.invoke()
 }
+
+fun getWaitForResultsTimeout(): Long =
+    Registry.intValue(
+        "snyk.timeout.results.waiting",
+        DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
+    ).toLong()
+
+const val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS = 720000  // 10 minutes in milliseconds

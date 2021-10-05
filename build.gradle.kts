@@ -27,7 +27,7 @@ dependencies {
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("com.segment.analytics.java:analytics:3.1.0")
   implementation("io.sentry:sentry:5.1.2")
-  implementation("io.snyk.code.sdk:snyk-code-client:2.1.10")
+  implementation("io.snyk.code.sdk:snyk-code-client:2.1.11")
   implementation("ly.iterative.itly:plugin-iteratively:1.2.7")
   implementation("ly.iterative.itly:plugin-schema-validator:1.2.7") {
     exclude(group = "org.slf4j")
