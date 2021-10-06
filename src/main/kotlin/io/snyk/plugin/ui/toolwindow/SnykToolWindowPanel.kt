@@ -137,24 +137,26 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (snykCodeResults == null) {
                         return
                     }
+                    logSnykCodeAnalysisIsReady(Result.SUCCESS)
+                }
+
+                private fun logSnykCodeAnalysisIsReady(result: Result) {
                     if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
-                        service<SnykAnalyticsService>().logAnalysisIsReady(
-                            AnalysisIsReady.builder()
-                                .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
-                                .ide(AnalysisIsReady.Ide.JETBRAINS)
-                                .result(Result.SUCCESS)
-                                .build()
-                        )
+                        doLogSnykCodeAnalysisIsReady(result, AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
                     }
                     if (pluginSettings().snykCodeQualityIssuesScanEnable) {
-                        service<SnykAnalyticsService>().logAnalysisIsReady(
-                            AnalysisIsReady.builder()
-                                .analysisType(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
-                                .ide(AnalysisIsReady.Ide.JETBRAINS)
-                                .result(Result.SUCCESS)
-                                .build()
-                        )
+                        doLogSnykCodeAnalysisIsReady(result, AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
                     }
+                }
+
+                private fun doLogSnykCodeAnalysisIsReady(result: Result, analysisType: AnalysisIsReady.AnalysisType) {
+                    service<SnykAnalyticsService>().logAnalysisIsReady(
+                        AnalysisIsReady.builder()
+                            .analysisType(analysisType)
+                            .ide(AnalysisIsReady.Ide.JETBRAINS)
+                            .result(result)
+                            .build()
+                    )
                 }
 
                 override fun scanningOssError(snykError: SnykError) {
@@ -171,6 +173,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             displayEmptyDescription()
                         }
                     }
+                    service<SnykAnalyticsService>().logAnalysisIsReady(
+                        AnalysisIsReady.builder()
+                            .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
+                            .ide(AnalysisIsReady.Ide.JETBRAINS)
+                            .result(Result.ERROR)
+                            .build()
+                    )
                 }
 
                 override fun scanningSnykCodeError(snykError: SnykError) {
@@ -181,6 +190,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         updateTreeRootNodesPresentation()
                         displayEmptyDescription()
                     }
+                    logSnykCodeAnalysisIsReady(Result.ERROR)
                 }
             })
 

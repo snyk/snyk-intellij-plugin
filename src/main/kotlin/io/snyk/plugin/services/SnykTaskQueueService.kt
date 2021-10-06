@@ -17,6 +17,7 @@ import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.jetbrains.annotations.TestOnly
+import snyk.common.SnykError
 
 @Service
 class SnykTaskQueueService(val project: Project) {
@@ -78,14 +79,21 @@ class SnykTaskQueueService(val project: Project) {
                         scanPublisher?.scanningStarted()
                     }
                     false -> {
+                        SnykBalloonNotifications.showSastForOrgEnablement(project)
+                        scanPublisher?.scanningSnykCodeError(
+                            SnykError(SnykBalloonNotifications.sastForOrgEnablementMessage, project.basePath ?: "")
+                        )
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false
-                        SnykBalloonNotifications.showSastForOrgEnablement(project)
                     }
                     null -> {
+                        SnykBalloonNotifications.showNetworkErrorAlert(project)
+                        scanPublisher?.scanningSnykCodeError(
+                            SnykError(SnykBalloonNotifications.networkErrorAlertMessage, project.basePath ?: "")
+                        )
+                        // todo(artsiom): shell we do it `false` here?
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false
-                        SnykBalloonNotifications.showNetworkErrorAlert(project)
                     }
                 }
             }

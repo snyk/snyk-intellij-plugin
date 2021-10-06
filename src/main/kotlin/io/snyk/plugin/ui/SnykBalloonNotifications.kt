@@ -44,6 +44,9 @@ class SnykBalloonNotifications {
         private const val groupAutoHide = "SnykAutoHide"
         private val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
+        const val sastForOrgEnablementMessage = "Snyk Code is disabled by your organisation's configuration."
+        const val networkErrorAlertMessage = "Not able to connect to Snyk server."
+
         private val alarm = Alarm()
 
         fun showError(message: String, project: Project, vararg actions: AnAction) =
@@ -93,7 +96,7 @@ class SnykBalloonNotifications {
 
         fun showSastForOrgEnablement(project: Project): Notification {
             val notification = showInfo(
-                "Snyk Code is disabled by your organisation's configuration. To enable navigate to ",
+                "$sastForOrgEnablementMessage To enable navigate to ",
                 project,
                 NotificationAction.createSimpleExpiring("Snyk > Settings > Snyk Code") {
                     BrowserUtil.browse(getSnykCodeSettingsUrl())
@@ -145,7 +148,7 @@ class SnykBalloonNotifications {
         )
 
         fun showNetworkErrorAlert(project: Project) = showError(
-            "Not able to connect to Snyk server. Check connection and network settings.",
+            "$networkErrorAlertMessage Check connection and network settings.",
             project,
             NotificationAction.createSimpleExpiring("Snyk Settings") {
                 ShowSettingsUtil.getInstance()
