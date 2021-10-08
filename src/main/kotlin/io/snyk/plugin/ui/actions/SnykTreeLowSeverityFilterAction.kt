@@ -4,7 +4,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSyncPublisher
 
 class SnykTreeLowSeverityFilterAction: SnykTreeSeverityFilterActionBase() {
@@ -17,12 +17,12 @@ class SnykTreeLowSeverityFilterAction: SnykTreeSeverityFilterActionBase() {
     }
 
     override fun isSelected(e: AnActionEvent): Boolean =
-        getApplicationSettingsStateService().lowSeverityEnabled
+        pluginSettings().lowSeverityEnabled
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
         if (!state && isLastSeverityDisabling(e)) return
 
-        getApplicationSettingsStateService().lowSeverityEnabled = state
+        pluginSettings().lowSeverityEnabled = state
         getSyncPublisher(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
     }
 }

@@ -35,7 +35,7 @@ fun getSnykCode(project: Project): SnykCodeService = project.service()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
-fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = service()
+fun pluginSettings(): SnykApplicationSettingsStateService = service()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
@@ -116,7 +116,7 @@ private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
         customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
 
 fun getSnykCodeSettingsUrl(): String {
-    val endpoint = getApplicationSettingsStateService().customEndpointUrl
+    val endpoint = pluginSettings().customEndpointUrl
     val baseUrl = if (endpoint.isNullOrEmpty()) {
         "https://app.snyk.io"
     } else {
@@ -133,7 +133,7 @@ private fun String.removeTrailingSlashes(): String = this.replace(Regex("/+$"), 
 
 // check sastEnablement in a loop with rising timeout
 fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
-    val settings = getApplicationSettingsStateService()
+    val settings = pluginSettings()
     val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
 
     var currentAttempt = 1

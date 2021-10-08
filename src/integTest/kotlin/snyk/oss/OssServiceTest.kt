@@ -3,7 +3,7 @@ package snyk.oss
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
@@ -16,7 +16,7 @@ class OssServiceTest : LightPlatformTestCase() {
     override fun setUp() {
         super.setUp()
 
-        val settingsStateService = getApplicationSettingsStateService()
+        val settingsStateService = pluginSettings()
 
         settingsStateService.ignoreUnknownCA = false
         settingsStateService.usageAnalyticsEnabled = true

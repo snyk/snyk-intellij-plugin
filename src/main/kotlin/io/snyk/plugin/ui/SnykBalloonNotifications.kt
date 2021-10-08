@@ -21,7 +21,7 @@ import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.util.Alarm
 import io.snyk.plugin.analytics.getSelectedProducts
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykTaskQueueService
@@ -104,7 +104,7 @@ class SnykBalloonNotifications {
             val maxAttempts = 200
             lateinit var checkIfSastEnabled: () -> Unit
             checkIfSastEnabled = {
-                if (getApplicationSettingsStateService().sastOnServerEnabled == true) {
+                if (pluginSettings().sastOnServerEnabled == true) {
                     notification.expire()
                 } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
                     currentAttempt++
@@ -120,11 +120,11 @@ class SnykBalloonNotifications {
             "Thank you for using Snyk! Want to help us by taking part in Snyk’s plugin research and get a \$100 Amazon gift card in return?",
             project,
             NotificationAction.createSimpleExpiring("Schedule user testing here") {
-                getApplicationSettingsStateService().showFeedbackRequest = false
+                pluginSettings().showFeedbackRequest = false
                 BrowserUtil.browse("https://calendly.com/snyk-georgi/45min")
             },
             NotificationAction.createSimpleExpiring("Don’t show again") {
-                getApplicationSettingsStateService().showFeedbackRequest = false
+                pluginSettings().showFeedbackRequest = false
             }
         )
 
@@ -136,7 +136,7 @@ class SnykBalloonNotifications {
                 project.service<SnykTaskQueueService>().scan()
                 project.service<SnykAnalyticsService>().logAnalysisIsTriggered(
                     AnalysisIsTriggered.builder()
-                        .analysisType(getSelectedProducts(getApplicationSettingsStateService()))
+                        .analysisType(getSelectedProducts(pluginSettings()))
                         .ide(AnalysisIsTriggered.Ide.JETBRAINS)
                         .triggeredByUser(true)
                         .build()

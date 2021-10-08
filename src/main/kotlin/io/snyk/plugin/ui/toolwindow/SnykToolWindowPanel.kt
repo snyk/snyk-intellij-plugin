@@ -29,7 +29,7 @@ import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isContainerScanning
@@ -199,7 +199,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater {
                         SnykBalloonNotifications.showError(snykError.message, project)
                         if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
-                            getApplicationSettingsStateService().token = null
+                            pluginSettings().token = null
                             displayAuthPanel()
                         } else {
                             currentOssError = snykError
@@ -511,7 +511,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun chooseMainPanelToDisplay() {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         when {
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> displayPluginFirstRunPanel()
@@ -587,7 +587,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         containerIssuesCount: Int? = null,
         addHMLPostfix: String = ""
     ) {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
 
         val newOssTreeNodeText = when {
             currentOssError != null -> "$OSS_ROOT_TEXT (error)"
@@ -672,7 +672,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             project.service<SnykTaskQueueService>().scan()
             service<SnykAnalyticsService>().logAnalysisIsTriggered(
                 AnalysisIsTriggered.builder()
-                    .analysisType(getSelectedProducts(getApplicationSettingsStateService()))
+                    .analysisType(getSelectedProducts(pluginSettings()))
                     .ide(AnalysisIsTriggered.Ide.JETBRAINS)
                     .triggeredByUser(true)
                     .build()
@@ -724,7 +724,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootOssTreeNode.removeAllChildren()
 
-        if (getApplicationSettingsStateService().ossScanEnable && ossResult.allCliIssues != null) {
+        if (pluginSettings().ossScanEnable && ossResult.allCliIssues != null) {
             ossResult.allCliIssues!!.forEach { ossVulnerabilitiesForFile ->
                 if (ossVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
                     val ossGroupedResult = ossVulnerabilitiesForFile.toGroupedResult()
@@ -759,7 +759,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         var securityIssuesCount: Int? = null
         var securityIssuesHMLPostfix = ""
-        if (getApplicationSettingsStateService().snykCodeSecurityIssuesScanEnable) {
+        if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
             val securityResults = snykCodeResults.cloneFiltered {
                 it.categories.contains("Security")
             }
@@ -791,7 +791,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         var qualityIssuesCount: Int? = null
         var qualityIssuesHMLPostfix = ""
-        if (getApplicationSettingsStateService().snykCodeQualityIssuesScanEnable) {
+        if (pluginSettings().snykCodeQualityIssuesScanEnable) {
             val qualityResults = snykCodeResults.cloneFiltered {
                 !it.categories.contains("Security")
             }
@@ -923,7 +923,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         else TreeUtil.collectExpandedUserObjects(vulnerabilitiesTree, TreePath(rootNode.path))
 
     private fun isSeverityFilterPassed(severity: String): Boolean {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         return when (severity) {
             Severity.CRITICAL -> settings.criticalSeverityEnabled
             Severity.HIGH -> settings.highSeverityEnabled

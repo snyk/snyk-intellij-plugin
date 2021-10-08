@@ -6,7 +6,7 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.util.ui.JBHtmlEditorKit
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.isSnykCodeAvailable
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -95,8 +95,8 @@ fun buildTextAreaWithLabelPanel(title: String, text: String): JPanel {
 }
 
 fun snykCodeAvailabilityPostfix(): String = when {
-    !isSnykCodeAvailable(getApplicationSettingsStateService().customEndpointUrl) -> " (disabled for endpoint)"
-    !(getApplicationSettingsStateService().sastOnServerEnabled ?: false) -> " (disabled for organization)"
+    !isSnykCodeAvailable(pluginSettings().customEndpointUrl) -> " (disabled for endpoint)"
+    !(pluginSettings().sastOnServerEnabled ?: false) -> " (disabled for organization)"
     else -> ""
 }
 

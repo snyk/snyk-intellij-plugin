@@ -10,10 +10,11 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.isSnykCodeAvailable
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
@@ -31,7 +32,9 @@ class ScanTypesPanel(
     cliScanComments: String? = null,
     private val simplifyForOnboardPanel: Boolean = false
 ) {
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
+
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
 
     private var snykCodeCheckbox: JBCheckBox? = null
@@ -54,7 +57,7 @@ class ScanTypesPanel(
                     { settings.ossScanEnable },
                     { settings.ossScanEnable = it },
                     cliScanComments
-                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                )
                 label("").component.convertIntoHelpHintLabel(
                     "Find and automatically fix open source vulnerabilities"
                 )
@@ -67,7 +70,7 @@ class ScanTypesPanel(
                     { settings.advisorEnable },
                     { settings.advisorEnable = it },
                     null
-                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                )
                 label("").component.convertIntoHelpHintLabel(
                     "Discover the health (maintenance, community, popularity & security)\n" +
                         "status of your open source packages"
@@ -106,7 +109,7 @@ class ScanTypesPanel(
                     SNYK_CODE_SECURITY_ISSUES,
                     { settings.snykCodeSecurityIssuesScanEnable },
                     { settings.snykCodeSecurityIssuesScanEnable = it }
-                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                )
                     .component
                 label("").component.convertIntoHelpHintLabel(
                     "Find and fix vulnerabilities in your application code in real time"
@@ -148,6 +151,8 @@ class ScanTypesPanel(
                     .withLargeLeftGap()
             }
         }
+    }.apply {
+        border = JBUI.Borders.empty(2)
     }
 
     private fun JLabel.convertIntoHelpHintLabel(text: String) {

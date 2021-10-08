@@ -2,7 +2,7 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
@@ -20,7 +20,7 @@ class CliServiceTest : LightPlatformTestCase() {
     override fun setUp() {
         super.setUp()
 
-        val settingsStateService = getApplicationSettingsStateService()
+        val settingsStateService = pluginSettings()
 
         settingsStateService.ignoreUnknownCA = false
         settingsStateService.usageAnalyticsEnabled = true
@@ -70,7 +70,7 @@ class CliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithCustomEndpointParameter() {
         setupDummyCliFile()
 
-        getApplicationSettingsStateService().customEndpointUrl = "https://app.snyk.io/api"
+        pluginSettings().customEndpointUrl = "https://app.snyk.io/api"
 
         val defaultCommands = dummyCliService.buildCliCommandsList()
 
@@ -81,7 +81,7 @@ class CliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithInsecureParameter() {
         setupDummyCliFile()
 
-        getApplicationSettingsStateService().ignoreUnknownCA = true
+        pluginSettings().ignoreUnknownCA = true
 
         val defaultCommands = dummyCliService.buildCliCommandsList()
 
@@ -92,7 +92,7 @@ class CliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithOrganizationParameter() {
         setupDummyCliFile()
 
-        getApplicationSettingsStateService().organization = "test-org"
+        pluginSettings().organization = "test-org"
 
         val defaultCommands = dummyCliService.buildCliCommandsList()
 
@@ -102,7 +102,7 @@ class CliServiceTest : LightPlatformTestCase() {
     @Test
     fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
         setupDummyCliFile()
-        getApplicationSettingsStateService().usageAnalyticsEnabled = false
+        pluginSettings().usageAnalyticsEnabled = false
 
         val cliCommands = dummyCliService.buildCliCommandsList()
 
@@ -124,7 +124,7 @@ class CliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithAllParameter() {
         setupDummyCliFile()
 
-        val settingsStateService = getApplicationSettingsStateService()
+        val settingsStateService = pluginSettings()
 
         settingsStateService.token = "0000-1111-2222-3333"
         settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
@@ -145,7 +145,7 @@ class CliServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithMultiAdditionalParameters() {
         setupDummyCliFile()
 
-        val settingsStateService = getApplicationSettingsStateService()
+        val settingsStateService = pluginSettings()
 
         settingsStateService.token = "0000-1111-2222-3333"
         settingsStateService.customEndpointUrl = "https://app.snyk.io/api"

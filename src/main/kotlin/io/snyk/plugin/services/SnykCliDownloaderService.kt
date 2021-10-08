@@ -11,7 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.tail
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -102,8 +102,8 @@ class SnykCliDownloaderService {
 
             cliFile.setExecutable(true)
 
-            getApplicationSettingsStateService().cliVersion = cliVersionNumbers(cliVersion)
-            getApplicationSettingsStateService().lastCheckDate = Date()
+            pluginSettings().cliVersion = cliVersionNumbers(cliVersion)
+            pluginSettings().lastCheckDate = Date()
             succeeded = true
         } finally {
             currentProgressIndicator = null
@@ -120,7 +120,7 @@ class SnykCliDownloaderService {
 
             indicator.checkCanceled()
 
-            val settings = getApplicationSettingsStateService()
+            val settings = pluginSettings()
 
             if (latestReleaseInfo?.tagName != null &&
                 latestReleaseInfo.tagName.isNotEmpty() &&
@@ -135,7 +135,7 @@ class SnykCliDownloaderService {
     }
 
     fun isFourDaysPassedSinceLastCheck(): Boolean {
-        val previousDate = getApplicationSettingsStateService().getLastCheckDate() ?: return true
+        val previousDate = pluginSettings().getLastCheckDate() ?: return true
 
         return ChronoUnit.DAYS.between(previousDate, LocalDate.now()) >= NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK
     }

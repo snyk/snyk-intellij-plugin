@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
@@ -21,7 +21,8 @@ import javax.swing.JComponent
  */
 class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
 
     override fun update(e: AnActionEvent) {
         val project = e.project
