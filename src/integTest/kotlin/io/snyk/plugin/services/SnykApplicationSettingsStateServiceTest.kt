@@ -1,14 +1,14 @@
 package io.snyk.plugin.services
 
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import org.junit.Test
 
 class SnykApplicationSettingsStateServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testContainerAndIacEnablementDependency() {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
 
         // initial default values test
         assertFalse(settings.iacScanEnabled)

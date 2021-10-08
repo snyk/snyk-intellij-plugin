@@ -824,7 +824,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootIacIssuesTreeNode.removeAllChildren()
 
-        if (getApplicationSettingsStateService().iacScanEnabled && iacResult.allCliIssues != null) {
+        if (pluginSettings().iacScanEnabled && iacResult.allCliIssues != null) {
             iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
                 if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
                     val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
@@ -854,7 +854,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootContainerIssuesTreeNode.removeAllChildren()
 
-        if (getApplicationSettingsStateService().containerScanEnabled && containerResult.allCliIssues != null) {
+        if (pluginSettings().containerScanEnabled && containerResult.allCliIssues != null) {
             containerResult.allCliIssues!!.forEach { containerIssuesForFile ->
                 if (containerIssuesForFile.vulnerabilities.isNotEmpty()) {
                     val fileTreeNode = ContainerFileTreeNode(containerIssuesForFile, project)

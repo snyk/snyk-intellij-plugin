@@ -11,7 +11,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.CliService
 import snyk.common.SnykError
 import snyk.iac.IacResult
@@ -53,7 +53,7 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
                             mutCommands.add(imageName)
                             commands = mutCommands.toList()
 
-                            val apiToken = getApplicationSettingsStateService().token ?: ""
+                            val apiToken = pluginSettings().token ?: ""
                             val rawResultStr = ConsoleCommandRunner().execute(commands, projectPath, apiToken, project)
                             val result = convertRawCliStringToCliResult(rawResultStr)
                             result.allCliIssues?.forEach {
