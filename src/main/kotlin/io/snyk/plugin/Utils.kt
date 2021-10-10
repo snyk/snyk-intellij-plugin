@@ -24,6 +24,7 @@ import snyk.oss.OssService
 import java.io.File
 import java.net.URL
 import java.util.Objects.nonNull
+import java.util.concurrent.TimeUnit
 
 fun getOssService(project: Project): OssService = project.service()
 
@@ -159,4 +160,4 @@ fun getWaitForResultsTimeout(): Long =
         DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
     ).toLong()
 
-const val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS = 720000  // 10 minutes in milliseconds
+val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS = TimeUnit.MILLISECONDS.convert(12L, TimeUnit.MINUTES).toInt()
