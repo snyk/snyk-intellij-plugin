@@ -57,10 +57,10 @@ class RunUtils private constructor() : RunUtilsBase(
     override fun updateAnalysisResultsUIPresentation(projectAsAny: Any, files: Collection<Any>) {
         val project = PDU.toProject(projectAsAny)
         if (project.isDisposed) return
-        val scanResults = if (files.isEmpty()) {
-            SnykCodeResults()
-        } else {
-            SnykCodeResults(
+        val scanResults: SnykCodeResults? = when {
+            ProgressManager.getInstance().progressIndicator?.isCanceled == true -> null
+            files.isEmpty() -> SnykCodeResults()
+            else -> SnykCodeResults(
                 AnalysisData.instance.getAnalysis(files).mapKeys { PDU.toPsiFile(it.key) }
             )
         }

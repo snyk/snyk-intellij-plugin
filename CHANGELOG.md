@@ -1,5 +1,10 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Fixed
+- Show correct result in the tree when Snyk Code scan was stopped by user
+- Send analytic events correctly when triggering Snyk Code analysis
+
 ## [2.4.2]
 ### Changed
 - Require restarting the IDE when updating or uninstalling the plugin ([GH-182](https://github.com/snyk/snyk-intellij-plugin/issues/182))
