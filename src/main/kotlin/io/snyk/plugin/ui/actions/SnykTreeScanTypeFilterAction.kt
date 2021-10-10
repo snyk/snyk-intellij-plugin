@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -31,10 +32,11 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
         return DefaultActionGroup(
-            listOf(
+            listOfNotNull(
                 createOssScanAction(),
                 createSecurityIssuesScanAction(),
-                createQualityIssuesScanAction()
+                createQualityIssuesScanAction(),
+                if (isIacEnabled()) createIacScanAction() else null
             )
         )
     }
@@ -89,6 +91,19 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         }
     }
 
+    private fun createIacScanAction(): AnAction {
+        return object : ToggleAction("Infrastructure as Code Vulnerabilities") {
+            override fun isSelected(e: AnActionEvent): Boolean = settings.iacScanEnabled
+
+            override fun setSelected(e: AnActionEvent, state: Boolean) {
+                if (!state && isLastScanTypeDisabling(e)) return
+
+                settings.iacScanEnabled = state
+                fireFiltersChangedEvent(e.project!!)
+            }
+        }
+    }
+
     private fun fireFiltersChangedEvent(project: Project) {
         getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
     }
@@ -97,7 +112,8 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         val onlyOneEnabled = arrayOf(
             settings.ossScanEnable,
             settings.snykCodeSecurityIssuesScanEnable,
-            settings.snykCodeQualityIssuesScanEnable
+            settings.snykCodeQualityIssuesScanEnable,
+            settings.iacScanEnabled
         ).count { it } == 1
         if (onlyOneEnabled) {
             SnykBalloonNotifications.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)

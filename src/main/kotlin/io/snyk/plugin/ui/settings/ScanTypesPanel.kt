@@ -13,6 +13,7 @@ import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getSnykCodeSettingsUrl
+import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApiService
@@ -52,7 +53,7 @@ class ScanTypesPanel(
     val panel = panel {
         row {
             cell {
-                val ossCheckbox = checkBox(
+                checkBox(
                     "Snyk Open Source vulnerabilities",
                     { settings.ossScanEnable },
                     { settings.ossScanEnable = it },
@@ -75,6 +76,21 @@ class ScanTypesPanel(
                     "Discover the health (maintenance, community, popularity & security)\n" +
                         "status of your open source packages"
                 )
+            }
+        }
+        if (isIacEnabled()) {
+            row {
+                cell {
+                    checkBox(
+                        "Snyk Infrastructure as Code issues",
+                        { settings.iacScanEnabled },
+                        { settings.iacScanEnabled = it },
+                        null
+                    )
+                    label("").component.convertIntoHelpHintLabel(
+                        "Find and fix insecure configurations in Terraform and Kubernetes code"
+                    )
+                }
             }
         }
         row {

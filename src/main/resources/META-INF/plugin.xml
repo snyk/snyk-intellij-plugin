@@ -30,6 +30,12 @@
       description="Snyk timeout (milliseconds) to wait for results during scan"
     />
 
+    <registryKey
+      key="snyk.iac.enabled"
+      defaultValue="false"
+      description="Snyk Infrastructure as Code product enablement"
+    />
+
   </extensions>
 
   <actions>
