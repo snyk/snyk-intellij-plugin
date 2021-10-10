@@ -2,8 +2,8 @@
 
 ## [Unreleased]
 ### Fixed
-- SnykCode scan stopped by user shows `No issues` found.
-- Wrong `Analysis Is Ready` events triggers;
+- Show correct result in the tree when Snyk Code scan was stopped by user
+- Send analytic events correctly when triggering Snyk Code analysis
 
 ## [2.4.2]
 ### Changed
