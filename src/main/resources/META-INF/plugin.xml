@@ -31,9 +31,10 @@
     />
 
     <registryKey
-      key="snyk.iac.enabled"
+      key="snyk.preview.iac.enabled"
       defaultValue="false"
-      description="Snyk Infrastructure as Code product enablement"
+      description="Preview: Enable Snyk Infrastructure as Code product."
+      restartRequired="true"
     />
 
   </extensions>

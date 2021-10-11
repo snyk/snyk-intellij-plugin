@@ -154,7 +154,7 @@ fun controlExternalProcessWithProgressIndicator(
     checkCancelled.invoke()
 }
 
-fun isIacEnabled(): Boolean = Registry.`is`("snyk.iac.enabled", false)
+fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", false)
 
 fun getWaitForResultsTimeout(): Long =
     Registry.intValue(
