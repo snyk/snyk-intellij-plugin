@@ -23,6 +23,13 @@
     <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
 
     <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
+
+    <registryKey
+      key="snyk.timeout.results.waiting"
+      defaultValue="720000"
+      description="Snyk timeout (milliseconds) to wait for results during scan"
+    />
+
   </extensions>
 
   <actions>

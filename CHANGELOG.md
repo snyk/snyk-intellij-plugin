@@ -4,6 +4,8 @@
 ### Fixed
 - Show correct result in the tree when Snyk Code scan was stopped by user
 - Send analytic events correctly when triggering Snyk Code analysis
+### Changed
+- Timeout for Snyk Code scan `waiting for results` phase increased to 12 minutes (to match OSS scan timeout). Could be changed through 'snyk.timeout.results.waiting' Idea registry key.
 
 ## [2.4.2]
 ### Changed

@@ -11,7 +11,9 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
+import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.ui.SnykBalloonNotifications
+import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
 import java.nio.charset.Charset
 
@@ -63,7 +65,17 @@ open class ConsoleCommandRunner {
         }
 
         logger.debug("Execute ScriptRunnerUtil.getProcessOutput(...)")
-        val processOutput = ScriptRunnerUtil.getProcessOutput(processHandler, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
+        val timeout = getWaitForResultsTimeout()
+        val processOutput = try {
+            ScriptRunnerUtil.getProcessOutput(
+                processHandler,
+                ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER,
+                timeout
+            )
+        } catch (e: ExecutionException) {
+            SentryErrorReporter.captureException(e)
+            "Execution timeout [${timeout / 1000} sec] is reached with NO results produced"
+        }
 
         return if (wasProcessTerminated) PROCESS_CANCELLED_BY_USER else processOutput
     }

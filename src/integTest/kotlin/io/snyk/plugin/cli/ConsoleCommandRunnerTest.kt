@@ -9,9 +9,11 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.impl.CoreProgressManager
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.getOssService
+import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.services.SnykCliDownloaderService
 import org.junit.Test
@@ -86,5 +88,38 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             Thread.sleep(10) // lets wait till download actually stopped
         }
         assertFalse(cliFile.exists())
+    }
+
+    @Test
+    fun testErrorReportedWhenExecutionTimeoutExpire() {
+        service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator(), project)
+
+        val registryValue = Registry.get("snyk.timeout.results.waiting")
+        val defaultValue = registryValue.asInteger()
+        assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
+
+        registryValue.setValue(100)
+
+        val commands = getOssService(project).buildCliCommandsList()
+
+        val progressManager = ProgressManager.getInstance() as CoreProgressManager
+        val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
+            object : Task.Backgroundable(project, "Test CLI command invocation", true) {
+                override fun run(indicator: ProgressIndicator) {
+                    val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
+                    assertTrue(
+                        "Should get timeout error, but received:\n$output",
+                        output.startsWith("Execution timeout")
+                    )
+                }
+            },
+            EmptyProgressIndicator(),
+            null
+        )
+        testRunFuture.get(1000, TimeUnit.MILLISECONDS)
+
+        // clean up
+        registryValue.setValue(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS)
+        getCliFile().delete()
     }
 }
