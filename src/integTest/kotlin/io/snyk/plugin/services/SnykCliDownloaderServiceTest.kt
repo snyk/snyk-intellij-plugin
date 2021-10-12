@@ -3,12 +3,13 @@ package io.snyk.plugin.services
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
+import io.mockk.every
+import io.mockk.spyk
 import io.snyk.plugin.cli.Platform
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.pluginSettings
 import org.junit.Test
-import org.mockito.Mockito
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -54,8 +55,8 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
     fun testDownloadLatestCliReleaseWhenNoReleaseInfoAvailable() {
         val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
-        val cliDownloaderServiceSpy = Mockito.spy(cliDownloaderService)
-        Mockito.doReturn(null).`when`<SnykCliDownloaderService>(cliDownloaderServiceSpy).requestLatestReleasesInformation()
+        val cliDownloaderServiceSpy = spyk(cliDownloaderService )
+        every { cliDownloaderServiceSpy.requestLatestReleasesInformation() } returns null
 
         assertNoThrowable {
             cliDownloaderServiceSpy.downloadLatestRelease(EmptyProgressIndicator(), project)
