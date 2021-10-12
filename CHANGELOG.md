@@ -6,6 +6,7 @@
 - Send analytic events correctly when triggering Snyk Code analysis
 ### Changed
 - Timeout for Snyk Code scan `waiting for results` phase increased to 12 minutes (to match OSS scan timeout). Could be changed through 'snyk.timeout.results.waiting' Idea registry key.
+- Make plugin compatible with 2021.3 version
 
 ## [2.4.2]
 ### Changed
