@@ -1,11 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.4.3]
 ### Fixed
 - Show correct result in the tree when Snyk Code scan was stopped by user
 - Send analytic events correctly when triggering Snyk Code analysis
 ### Changed
-- Timeout for Snyk Code scan `waiting for results` phase increased to 12 minutes (to match OSS scan timeout). Could be changed through 'snyk.timeout.results.waiting' Idea registry key.
+- Increase timeout for Snyk Code scan to 12 minutes. Configurable via 'snyk.timeout.results.waiting' registry key.
 - Make plugin compatible with 2021.3 version
 
 ## [2.4.2]
