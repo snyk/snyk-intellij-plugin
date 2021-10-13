@@ -14,11 +14,11 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import snyk.common.SnykError
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.common.SnykError
 import java.util.function.Consumer
 
 class PDU private constructor() : PlatformDependentUtilsBase() {
@@ -148,13 +148,13 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     override fun showInfo(message: String, project: Any?) {
-        runForProject(project, Consumer { prj -> SnykBalloonNotifications.showInfo(message, prj) })
+        runForProject(project, Consumer { prj -> SnykBalloonNotificationHelper.showInfo(message, prj) })
     }
 
     override fun showWarn(message: String, project: Any?, wasWarnShown: Boolean) {
         if (!wasWarnShown) {
             runForProject(project, Consumer { prj ->
-                SnykBalloonNotifications.showWarn(message, prj)
+                SnykBalloonNotificationHelper.showWarn(message, prj)
                 getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
                     SnykError(message, prj.basePath ?: "")
                 )
@@ -166,7 +166,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
 
     override fun showError(message: String, project: Any?) {
         runForProject(project, Consumer { prj ->
-            SnykBalloonNotifications.showError(message, prj)
+            SnykBalloonNotificationHelper.showError(message, prj)
             getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
                 SnykError(message, prj.basePath ?: "")
             )

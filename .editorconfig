@@ -13,3 +13,13 @@ trim_trailing_whitespace = false
 
 [*.kt]
 indent_size = 4
+wildcard_import_limit = 999
+ij_kotlin_packages_to_use_import_on_demand = ^
+ij_kotlin_name_count_to_use_star_import = 999
+ij_kotlin_name_count_to_use_star_import_for_members = 999
+ij_kotlin_imports_layout = *, java.**, javax.**, kotlin.**, ^
+
+[*.java]
+ij_java_names_count_to_use_import_on_demand = 999
+ij_java_class_count_to_use_import_on_demand = 999
+ij_java_packages_to_use_import_on_demand = ^

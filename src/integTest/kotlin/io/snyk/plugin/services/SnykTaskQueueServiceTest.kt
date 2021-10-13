@@ -4,8 +4,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
 

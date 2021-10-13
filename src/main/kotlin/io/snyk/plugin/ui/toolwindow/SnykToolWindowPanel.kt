@@ -21,20 +21,17 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.analytics.getIssueSeverityOrNull
 import io.snyk.plugin.analytics.getIssueType
 import io.snyk.plugin.analytics.getSelectedProducts
-import snyk.common.SnykError
-import snyk.oss.OssResult
-import snyk.oss.Vulnerability
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
-import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isOssRunning
+import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.services.SnykTaskQueueService
@@ -43,7 +40,7 @@ import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
@@ -51,6 +48,9 @@ import snyk.analytics.IssueIsViewed
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
+import snyk.common.SnykError
+import snyk.oss.OssResult
+import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.time.Instant
 import java.util.Objects.nonNull
@@ -161,7 +161,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningOssError(snykError: SnykError) {
                     currentOssResults = null
                     ApplicationManager.getApplication().invokeLater {
-                        SnykBalloonNotifications.showError(snykError.message, project)
+                        SnykBalloonNotificationHelper.showError(snykError.message, project)
                         if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
                             pluginSettings().token = null
                             displayAuthPanel()
