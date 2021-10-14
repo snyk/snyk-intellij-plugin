@@ -34,12 +34,12 @@ dependencies {
   }
   implementation("ly.iterative.itly:sdk-jvm:1.2.7")
 
-  testImplementation("com.squareup.okhttp3:mockwebserver:4.9.1")
-  testImplementation("junit:junit:4.13") {
+  testImplementation("com.squareup.okhttp3:mockwebserver:4.9.2")
+  testImplementation("junit:junit:4.13.2") {
     exclude(group = "org.hamcrest")
   }
   testImplementation("org.hamcrest:hamcrest:2.2")
-  testImplementation("org.mockito:mockito-core:3.5.2")
+  testImplementation("io.mockk:mockk:1.12.0")
 
   detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
 }

@@ -2,14 +2,15 @@ package snyk.iac
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
+import io.mockk.every
+import io.mockk.mockk
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
-import org.mockito.Mockito
 
 class IacServiceTest : LightPlatformTestCase() {
 
@@ -40,21 +41,23 @@ class IacServiceTest : LightPlatformTestCase() {
     fun testScanWithErrorResult() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+        val mockRunner = mockk<ConsoleCommandRunner>()
 
         val errorMsg = "Some error here"
         val errorPath = "/Users/user/Desktop/example-npm-project"
-        Mockito
-            .`when`(mockRunner.execute(
+
+        every {
+            mockRunner.execute(
                 listOf(getCliFile().absolutePath, "iac", "test", "--json"),
                 project.basePath!!,
-                project = project))
-            .thenReturn("""
-                    {
-                      "error": "$errorMsg",
-                      "path": "$errorPath"
-                    }
-                """.trimIndent())
+                project = project
+            )
+        } returns """
+            {
+              "error": "$errorMsg",
+              "path": "$errorPath"
+            }
+        """.trimIndent()
 
         getIacService(project).setConsoleCommandRunner(mockRunner)
 
@@ -69,14 +72,15 @@ class IacServiceTest : LightPlatformTestCase() {
     fun testScanWithSuccessfulIacResult() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+        val mockRunner = mockk<ConsoleCommandRunner>()
 
-        Mockito
-            .`when`(mockRunner.execute(
+        every {
+            mockRunner.execute(
                 listOf(getCliFile().absolutePath, "iac", "test", "--json"),
                 project.basePath!!,
-                project = project))
-            .thenReturn(wholeProjectJson)
+                project = project
+            )
+        } returns (wholeProjectJson)
 
         getIacService(project).setConsoleCommandRunner(mockRunner)
 
