@@ -1,3 +1,4 @@
+@file:JvmName("Utils")
 package io.snyk.plugin
 
 import com.intellij.openapi.Disposable
@@ -71,14 +72,20 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().getOssScanProgressIndicator()
+    val indicator = project.service<SnykTaskQueueService>().ossScanProgressIndicator
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
 fun isSnykCodeRunning(project: Project): Boolean =
     AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
 
-fun isScanRunning(project: Project): Boolean = isOssRunning(project) || isSnykCodeRunning(project)
+fun isIacRunning(project: Project): Boolean {
+    val indicator = project.service<SnykTaskQueueService>().iacScanProgressIndicator
+    return indicator != null && indicator.isRunning && !indicator.isCanceled
+}
+
+fun isScanRunning(project: Project): Boolean =
+    isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
 
 fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
 

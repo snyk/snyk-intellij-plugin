@@ -20,6 +20,8 @@ object SnykIcons {
     val OPEN_SOURCE_SECURITY_DISABLED =  getIcon("/icons/oss_disabled.svg")
     val SNYK_CODE =  getIcon("/icons/code.svg")
     val SNYK_CODE_DISABLED =  getIcon("/icons/code_disabled.svg")
+    val IAC = getIcon("/icons/iac.svg")
+    val IAC_DISABLED = getIcon("/icons/iac_disabled.svg")
 
     val GRADLE = getIcon("/icons/gradle.svg")
     val MAVEN = getIcon("/icons/maven.svg")
