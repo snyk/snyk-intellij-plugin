@@ -8,16 +8,20 @@ import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.*
-import snyk.oss.OssResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getOssService
+import io.snyk.plugin.getSnykCode
+import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
+import snyk.oss.OssResult
 
 @Service
 class SnykTaskQueueService(val project: Project) {

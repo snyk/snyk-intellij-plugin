@@ -184,7 +184,8 @@ class AdvisorScoreProvider(
 
         /** see [com.intellij.xdebugger.impl.evaluate.XDebuggerEditorLinePainter.getNormalAttributes] */
         private fun getNormalAttributes(): TextAttributes {
-            val attributes = EditorColorsManager.getInstance().globalScheme.getAttributes(DefaultLanguageHighlighterColors.BLOCK_COMMENT)
+            val attributes = EditorColorsManager.getInstance()
+                .globalScheme.getAttributes(DefaultLanguageHighlighterColors.BLOCK_COMMENT)
             return if (attributes == null || attributes.foregroundColor == null) {
                 TextAttributes(
                     JBColor { if (EditorColorsManager.getInstance().isDarkEditor) Color(0x3d8065) else Gray._135 },

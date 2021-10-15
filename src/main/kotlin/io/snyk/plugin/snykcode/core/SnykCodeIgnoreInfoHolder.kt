@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import io.snyk.plugin.services.SnykTaskQueueService
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.File
 
 class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderBase(
@@ -42,7 +42,10 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
             val fullDcIgnoreText = this.javaClass.classLoader.getResource("full.dcignore")?.readText()
                 ?: throw RuntimeException("full.dcignore can not be found in plugin's resources")
             dcignore.writeText(fullDcIgnoreText)
-            SnykBalloonNotifications.showInfo("We added generic .dcignore file to upload only project's source code.", project)
+            SnykBalloonNotificationHelper.showInfo(
+                "We added generic .dcignore file to upload only project's source code.",
+                project
+            )
         }
     }
 

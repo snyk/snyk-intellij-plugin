@@ -12,7 +12,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
 import java.nio.charset.Charset
@@ -40,7 +40,7 @@ open class ConsoleCommandRunner {
             OSProcessHandler(generalCommandLine)
         } catch (e: ExecutionException) {
             //  if CLI is still downloading (or temporarily blocked by Antivirus) we'll get ProcessNotCreatedException
-            SnykBalloonNotifications.showWarn("Not able to run CLI, try again later.", project)
+            SnykBalloonNotificationHelper.showWarn("Not able to run CLI, try again later.", project)
             return ""
         }
         val parentIndicator = ProgressManager.getInstance().progressIndicator

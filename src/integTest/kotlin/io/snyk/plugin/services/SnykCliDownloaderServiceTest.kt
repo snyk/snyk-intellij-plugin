@@ -3,18 +3,39 @@ package io.snyk.plugin.services
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
+import com.intellij.util.io.HttpRequests
 import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockk
 import io.mockk.spyk
+import io.mockk.verify
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
+import org.junit.Before
 import org.junit.Test
 import java.io.File
+import java.net.SocketTimeoutException
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
+
+    private lateinit var indicator: EmptyProgressIndicator
+    private lateinit var errorHandler: SnykCliDownloaderErrorHandler
+    private lateinit var cut: SnykCliDownloaderService
+    private lateinit var cutSpy: SnykCliDownloaderService
+
+    @Before
+    override fun setUp() {
+        super.setUp()
+        cut = project.service<SnykCliDownloaderService>()
+        cutSpy = spyk(cut)
+        errorHandler = mockk<SnykCliDownloaderErrorHandler>()
+        cutSpy.errorHandler = errorHandler
+        indicator = EmptyProgressIndicator()
+    }
 
     @Test
     fun testGetLatestReleasesInformation() {
@@ -49,6 +70,38 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
         )
 
         downloadedFile.delete()
+    }
+
+    @Test
+    fun testDownloadLatestCliReleaseShouldHandleSocketTimeout() {
+        val indicator = EmptyProgressIndicator()
+        val exceptionMessage = "Read Timed Out"
+        val ioException = SocketTimeoutException(exceptionMessage)
+
+        every { cutSpy.downloadFile(any(), any(), any()) } throws ioException
+        justRun { errorHandler.handleIOException(ioException, indicator, project) }
+
+        cutSpy.downloadLatestRelease(indicator, project)
+
+        verify {
+            cutSpy.downloadFile(any(), any(), any())
+            errorHandler.handleIOException(ioException, indicator, project)
+        }
+    }
+
+    @Test
+    fun testDownloadLatestCliReleaseShouldHandleHttpStatusException() {
+        val httpStatusException = HttpRequests.HttpStatusException("status bad", 503, "url")
+
+        every { cutSpy.downloadFile(any(), any(), any()) } throws httpStatusException
+        justRun { errorHandler.handleHttpStatusException(httpStatusException, project) }
+
+        cutSpy.downloadLatestRelease(indicator, project)
+
+        verify {
+            cutSpy.downloadFile(any(), any(), any())
+            errorHandler.handleHttpStatusException(httpStatusException, project)
+        }
     }
 
     @Test

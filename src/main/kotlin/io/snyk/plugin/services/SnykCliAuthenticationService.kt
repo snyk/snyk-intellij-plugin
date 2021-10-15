@@ -17,7 +17,7 @@ import com.intellij.util.PlatformIcons
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.lang.StringEscapeUtils.escapeHtml
 import java.awt.BorderLayout
@@ -86,7 +86,7 @@ class SnykCliAuthenticationService(val project: Project) {
                 }
                 val authSucceed = finalOutput.contains("Your account has been authenticated.")
                 if (!authSucceed && finalOutput != ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER) {
-                    SnykBalloonNotifications.showError("Failed to authenticate.", project)
+                    SnykBalloonNotificationHelper.showError("Failed to authenticate.", project)
                 }
                 val exitCode = if (authSucceed) DialogWrapper.OK_EXIT_CODE else DialogWrapper.CLOSE_EXIT_CODE
                 ApplicationManager.getApplication().invokeLater(
@@ -174,7 +174,7 @@ class AuthDialog() : DialogWrapper(true) {
     inner class CopyUrlAction(var url: String = "") : AbstractAction("&Copy URL", PlatformIcons.COPY_ICON) {
         override fun actionPerformed(e: ActionEvent) {
             CopyPasteManager.getInstance().setContents(StringSelection(url))
-            SnykBalloonNotifications.showInfoBalloonForComponent(
+            SnykBalloonNotificationHelper.showInfoBalloonForComponent(
                 "URL copied",
                 getButton(this) ?: viewer,
                 showAbove = getButton(this) != null

@@ -19,7 +19,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.awt.Component
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -155,7 +155,7 @@ class ScanTypesPanel(
     inner class ShowHintMouseAdapter(val component: Component, val text: String) : MouseAdapter() {
         override fun mouseClicked(e: MouseEvent?) {
             currentHint?.hide()
-            currentHint = SnykBalloonNotifications.showInfoBalloonForComponent(text, component, true)
+            currentHint = SnykBalloonNotificationHelper.showInfoBalloonForComponent(text, component, true)
         }
     }
 

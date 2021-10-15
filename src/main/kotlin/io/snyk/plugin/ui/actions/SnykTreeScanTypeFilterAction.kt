@@ -8,12 +8,12 @@ import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeAvailable
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import javax.swing.JComponent
 
@@ -116,7 +116,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
             settings.iacScanEnabled
         ).count { it } == 1
         if (onlyOneEnabled) {
-            SnykBalloonNotifications.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)
+            SnykBalloonNotificationHelper.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)
         }
         return onlyOneEnabled
     }
