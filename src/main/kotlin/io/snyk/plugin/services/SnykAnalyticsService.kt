@@ -11,6 +11,8 @@ import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.IssueIsViewed
+import snyk.analytics.PluginIsInstalled
+import snyk.analytics.PluginIsUninstalled
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 
@@ -115,6 +117,22 @@ class SnykAnalyticsService : Disposable {
 
         catchAll(log, "healthScoreIsClicked") {
             itly.logHealthScoreIsClicked(userId, event)
+        }
+    }
+
+    fun logPluginIsInstalled(event: PluginIsInstalled) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "pluginIsInstalled") {
+            itly.logPluginIsInstalled(userId, event)
+        }
+    }
+
+    fun logPluginIsUninstalled(event: PluginIsUninstalled) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "pluginIsUninstalled") {
+            itly.logPluginIsUninstalled(userId, event)
         }
     }
 

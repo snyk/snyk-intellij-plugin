@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Changed
+- Send missing analytic events by plugin install/uninstall
+
 ## [2.4.3]
 ### Fixed
 - Show correct result in the tree when Snyk Code scan was stopped by user
