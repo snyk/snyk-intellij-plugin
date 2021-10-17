@@ -594,12 +594,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults?) {
         if (currentSnykCodeError != null) return
         if (snykCodeResults == null) {
-            ApplicationManager.getApplication().invokeLater {
-                updateTreeRootNodesPresentation(
-                    securityIssuesCount = -1,
-                    qualityIssuesCount = -1
-                )
-            }
+            updateTreeRootNodesPresentation(
+                securityIssuesCount = -1,
+                qualityIssuesCount = -1
+            )
             return
         }
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
@@ -622,12 +620,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
         }
-        ApplicationManager.getApplication().invokeLater {
-            updateTreeRootNodesPresentation(
-                securityIssuesCount = securityIssuesCount,
-                addHMLPostfix = securityIssuesHMLPostfix
-            )
-        }
+        updateTreeRootNodesPresentation(
+            securityIssuesCount = securityIssuesCount,
+            addHMLPostfix = securityIssuesHMLPostfix
+        )
         smartReloadRootNode(rootSecurityIssuesTreeNode, userObjectsForExpandedSecurityNodes, selectedNodeUserObject)
 
         // display Quality (non Security) issues
@@ -648,12 +644,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
         }
-        ApplicationManager.getApplication().invokeLater {
-            updateTreeRootNodesPresentation(
-                qualityIssuesCount = qualityIssuesCount,
-                addHMLPostfix = qualityIssuesHMLPostfix
-            )
-        }
+        updateTreeRootNodesPresentation(
+            qualityIssuesCount = qualityIssuesCount,
+            addHMLPostfix = qualityIssuesHMLPostfix
+        )
         smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes, selectedNodeUserObject)
     }
 
