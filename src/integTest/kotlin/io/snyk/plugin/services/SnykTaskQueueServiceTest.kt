@@ -4,10 +4,17 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getIacService
+import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.setupDummyCliFile
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Test
+import snyk.iac.IacResult
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
@@ -27,7 +34,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
-        assertNull(snykTaskQueueService.getOssScanProgressIndicator())
+        assertNull(snykTaskQueueService.ossScanProgressIndicator)
     }
 
     @Test
@@ -77,5 +84,30 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         assertNull(settings.sastOnServerEnabled)
         assertFalse(settings.snykCodeSecurityIssuesScanEnable)
         assertFalse(settings.snykCodeQualityIssuesScanEnable)
+    }
+
+    @Test
+    fun testIacScanTriggeredAndProduceResults() {
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        val settings = pluginSettings()
+        settings.ossScanEnable = false
+        settings.snykCodeSecurityIssuesScanEnable = false
+        settings.snykCodeQualityIssuesScanEnable = false
+        settings.iacScanEnabled = true
+
+        val fakeIacResult = IacResult(null, null)
+
+        mockkStatic("io.snyk.plugin.Utils")
+        every { isIacEnabled() } returns true
+        every { getIacService(project).isCliInstalled() } returns true
+        every { getIacService(project).scan() } returns fakeIacResult
+
+        snykTaskQueueService.scan()
+
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        assertEquals(fakeIacResult, toolWindowPanel.currentIacResult)
+
+        unmockkStatic("io.snyk.plugin.Utils")
     }
 }

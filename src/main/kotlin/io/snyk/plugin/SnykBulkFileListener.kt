@@ -2,6 +2,7 @@ package io.snyk.plugin
 
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
@@ -13,7 +14,9 @@ import io.snyk.plugin.snykcode.core.*
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import java.util.function.Predicate
 
-class SnykBulkFileListener() : BulkFileListener {
+private val LOG = logger<SnykBulkFileListener>()
+
+class SnykBulkFileListener : BulkFileListener {
 
     override fun after(events: MutableList<out VFileEvent>) {
         updateCaches(
@@ -42,22 +45,36 @@ class SnykBulkFileListener() : BulkFileListener {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
-            // clean OSS cached results
-            val changedBuildFiles = getAffectedVirtualFiles(
-                events,
-                fileFilter = Predicate { supportedBuildFiles.contains(it.name) },
-                classesOfEventsToFilter = classesOfEventsToFilter
-            )
-             if (changedBuildFiles.any { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }) {
-                val toolWindowPanel = project.service<SnykToolWindowPanel>()
-                toolWindowPanel.currentOssResults = null
-            }
-
             val virtualFilesAffected = getAffectedVirtualFiles(
                 events,
                 fileFilter = Predicate { true },
                 classesOfEventsToFilter = classesOfEventsToFilter
             )
+
+            val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+            // clean OSS cached results if needed
+            if (toolWindowPanel.currentOssResults != null) {
+                val buildFileChanged = virtualFilesAffected
+                    .filter { supportedBuildFiles.contains(it.name) }
+                    .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
+                if (buildFileChanged != null) {
+                    toolWindowPanel.currentOssResults = null
+                    LOG.debug("OSS cached results dropped due to changes in: $buildFileChanged")
+                }
+            }
+
+            // clean IaC cached results if needed
+            val currentIacResult = toolWindowPanel.currentIacResult
+            if (currentIacResult != null) {
+                val iacRelatedFileChanged = virtualFilesAffected
+                    .filter { iacFileExtensions.contains(it.extension) }
+                    .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
+                if (iacRelatedFileChanged != null) {
+                    toolWindowPanel.currentIacResult = null
+                    LOG.debug("IaC cached results dropped due to changes in: $iacRelatedFileChanged")
+                }
+            }
 
             // if SnykCode analysis is running then re-run it (with updated files)
             val manager = PsiManager.getInstance(project)
@@ -155,6 +172,14 @@ class SnykBulkFileListener() : BulkFileListener {
             "Podfile.lock",
             "pyproject.toml",
             "poetry.lock"
+        )
+
+        // see https://github.com/snyk/snyk/blob/master/src/lib/iac/constants.ts#L7
+        private val iacFileExtensions = listOf(
+            "yaml",
+            "yml",
+            "json",
+            "tf"
         )
     }
 }

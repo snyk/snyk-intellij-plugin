@@ -27,6 +27,7 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.head
+import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
@@ -54,6 +55,7 @@ import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.time.Instant
 import java.util.Objects.nonNull
+import snyk.iac.IacResult
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
@@ -85,14 +87,26 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     var currentSnykCodeError: SnykError? = null
 
+    var currentIacResult: IacResult? = null
+        get() {
+            val prevTimeStamp = field?.timeStamp ?: Instant.MIN
+            if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
+                field = null
+            }
+            return field
+        }
+    var currentIacError: SnykError? = null
+
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
+    private val rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
     private val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
+        if (isIacEnabled()) rootTreeNode.add(rootIacIssuesTreeNode)
         Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -117,6 +131,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningStarted() {
                     currentOssError = null
                     currentSnykCodeError = null
+                    currentIacError = null
                     ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
                 }
 
@@ -138,6 +153,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         return
                     }
                     logSnykCodeAnalysisIsReady(Result.SUCCESS)
+                }
+
+                override fun scanningIacFinished(iacResult: IacResult) {
+                    currentIacResult = iacResult
+                    ApplicationManager.getApplication().invokeLater {
+                        // todo: displayIacResults(iacResult)
+                    }
+                    // TODO: Add event logging
                 }
 
                 private fun logSnykCodeAnalysisIsReady(result: Result) {
@@ -179,6 +202,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             .result(Result.ERROR)
                             .build()
                     )
+                }
+
+                override fun scanningIacError(snykError: SnykError) {
+                    currentIacResult = null
+                    ApplicationManager.getApplication().invokeLater {
+                        SnykBalloonNotificationHelper.showError(snykError.message, project)
+                        currentIacError = snykError
+                        removeAllChildren(listOf(rootIacIssuesTreeNode))
+                        updateTreeRootNodesPresentation()
+                        displayEmptyDescription()
+                    }
                 }
 
                 override fun scanningSnykCodeError(snykError: SnykError) {
@@ -235,7 +269,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean) =
+                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
                     ApplicationManager.getApplication().invokeLater {
                         updateTreeRootNodesPresentation(
                             ossResultsCount = if (wasOssRunning) -1 else null,
@@ -350,6 +384,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentOssResults = null
         currentOssError = null
         currentSnykCodeError = null
+        currentIacResult = null
+        currentIacError = null
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
 
@@ -364,13 +400,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         reloadTree()
 
         displayEmptyDescription()
-
-        //revalidate()
     }
 
     private fun removeAllChildren(
         rootNodesToUpdate: List<DefaultMutableTreeNode> =
-            listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode)
+            listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode, rootIacIssuesTreeNode)
     ) {
         rootNodesToUpdate.forEach {
             it.removeAllChildren()
@@ -780,6 +814,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val OSS_ROOT_TEXT = " Open Source Security"
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
+        const val IAC_ROOT_TEXT = " Infrastructure as Code"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
     }
@@ -793,6 +828,9 @@ class RootSecurityIssuesTreeNode(project: Project) :
 
 class RootQualityIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT, project)
+
+class RootIacIssuesTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project)
 
 open class ProjectBasedDefaultMutableTreeNode(userObject: Any, val project: Project) :
     DefaultMutableTreeNode(userObject)

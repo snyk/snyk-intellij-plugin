@@ -13,6 +13,7 @@ import snyk.oss.OssResult
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.snykcode.SnykCodeResults
+import snyk.iac.IacResult
 
 /**
  * IntelliJ ToolWindow for Snyk plugin.
@@ -44,14 +45,19 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) = updateActionsPresentation()
 
+                override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
+
                 override fun scanningOssError(snykError: SnykError) = updateActionsPresentation()
+
+                override fun scanningIacError(snykError: SnykError) = updateActionsPresentation()
 
                 override fun scanningSnykCodeError(snykError: SnykError) = updateActionsPresentation()
             })
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean) = updateActionsPresentation()
+                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
+                    updateActionsPresentation()
             })
     }
 
