@@ -4,7 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import ly.iterative.itly.Environment
-import ly.iterative.itly.IterativelyOptions
 import ly.iterative.itly.Options
 import ly.iterative.itly.ValidationOptions
 import snyk.analytics.AnalysisIsReady
@@ -40,11 +39,7 @@ object Iteratively {
             LOG.debug("Initializing Iteratively integration for $environment...")
 
             Itly.getInstance().load(
-                DestinationsOptions.builder()
-                    .iteratively(
-                        IterativelyOptions.builder().build()
-                    )
-                    .build(),
+                DestinationsOptions.builder().build(),
                 Options.builder()
                     .environment(environment)
                     .validation(
