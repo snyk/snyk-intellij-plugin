@@ -89,7 +89,6 @@ tasks {
       val tokens = mapOf(
         "amplitude.experiment.api-key" to amplitudeExperimentApiKey,
         "environment" to environment,
-        "iteratively.analytics.environment" to environment,
         "segment.analytics.write-key" to segmentWriteKey,
         "sentry.dsn" to sentryDsnKey
       )
