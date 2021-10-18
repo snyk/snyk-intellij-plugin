@@ -14,7 +14,7 @@ import io.snyk.plugin.snykcode.core.*
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import java.util.function.Predicate
 
-private val log = logger<SnykBulkFileListener>()
+private val LOG = logger<SnykBulkFileListener>()
 
 class SnykBulkFileListener : BulkFileListener {
 
@@ -60,7 +60,7 @@ class SnykBulkFileListener : BulkFileListener {
                     .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
                 if (buildFileChanged != null) {
                     toolWindowPanel.currentOssResults = null
-                    log.debug("OSS cached results dropped due to changes in: $buildFileChanged")
+                    LOG.debug("OSS cached results dropped due to changes in: $buildFileChanged")
                 }
             }
 
@@ -72,7 +72,7 @@ class SnykBulkFileListener : BulkFileListener {
                     .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
                 if (iacRelatedFileChanged != null) {
                     toolWindowPanel.currentIacResult = null
-                    log.debug("IaC cached results dropped due to changes in: $iacRelatedFileChanged")
+                    LOG.debug("IaC cached results dropped due to changes in: $iacRelatedFileChanged")
                 }
             }
 
