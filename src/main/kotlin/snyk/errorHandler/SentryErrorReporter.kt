@@ -1,5 +1,6 @@
 package snyk.errorHandler
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Attachment
 import com.intellij.openapi.diagnostic.SubmittedReportInfo
 import com.intellij.openapi.diagnostic.SubmittedReportInfo.SubmissionStatus
@@ -104,6 +105,8 @@ object SentryErrorReporter {
      * Note: [io.snyk.plugin.services.SnykApplicationSettingsStateService.crashReportingEnabled] is respected
      */
     fun captureException(throwable: Throwable): SentryId {
+        if (ApplicationManager.getApplication().isUnitTestMode) return SentryId.EMPTY_ID
+
         val settings = pluginSettings()
         return if (settings.crashReportingEnabled) {
             val sentryId = Sentry.captureException(throwable)

@@ -40,7 +40,9 @@ open class ConsoleCommandRunner {
             OSProcessHandler(generalCommandLine)
         } catch (e: ExecutionException) {
             //  if CLI is still downloading (or temporarily blocked by Antivirus) we'll get ProcessNotCreatedException
-            SnykBalloonNotificationHelper.showWarn("Not able to run CLI, try again later.", project)
+            val message = "Not able to run CLI, try again later."
+            SnykBalloonNotificationHelper.showWarn(message, project)
+            logger.warn(message, e)
             return ""
         }
         val parentIndicator = ProgressManager.getInstance().progressIndicator
