@@ -5,11 +5,11 @@ import io.mockk.clearAllMocks
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import org.junit.Before
 import org.junit.Test
 import javax.swing.JLabel
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class LabelProviderTest {
     @Before
@@ -26,7 +26,7 @@ class LabelProviderTest {
 
         val label: JLabel = LabelProvider().getDependencyLabel("npm", packageName)
 
-        assertTrue(label is LinkLabel<*>, "Expected LinkLabel, but got ${label::class}")
+        assertTrue("Expected LinkLabel, but got ${label::class}", label is LinkLabel<*>)
         assertEquals(packageName, label.text)
         verifyLinkLabelCreated(LabelProvider.npmBaseUrl + "/$packageName")
     }

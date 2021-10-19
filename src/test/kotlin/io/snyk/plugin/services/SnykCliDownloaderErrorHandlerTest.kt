@@ -12,11 +12,11 @@ import io.mockk.slot
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
-import kotlin.test.assertEquals
 
 class SnykCliDownloaderErrorHandlerTest {
 
