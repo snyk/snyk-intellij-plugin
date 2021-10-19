@@ -21,7 +21,7 @@ class LabelProviderTest {
     }
 
     @Test
-    fun shouldProvideLinkLabelWhenNpm() {
+    fun `getDependencyLabel should provide a label with a clickable link to package at npmBaseUrl for npm packages`() {
         val packageName = "packageName"
 
         val label: JLabel = LabelProvider().getDependencyLabel("npm", packageName)
@@ -32,7 +32,7 @@ class LabelProviderTest {
     }
 
     @Test
-    fun shouldProvidePlainTextLabelWhenNotNpm() {
+    fun `getDependencyLabel should provide a plain text label for non-npm packages`() {
         val packageName = "package"
 
         val output: JLabel = LabelProvider().getDependencyLabel("maven", packageName)
@@ -42,7 +42,7 @@ class LabelProviderTest {
     }
 
     @Test
-    fun shouldProvideLinkLabelForCWE() {
+    fun `getCWELabel should provide a label with a clickable link to the CWE info at cweBaseUrl`() {
         val cwe = "CWE-400"
 
         val output: JLabel = LabelProvider().getCWELabel(cwe)
@@ -53,7 +53,7 @@ class LabelProviderTest {
     }
 
     @Test
-    fun shouldProvideLinkLabelForCVE() {
+    fun `getCVELabel should provide a label with a clickable link to the CVE info at cveBaseUrl`() {
         val cve = "CVE123"
 
         val output: JLabel = LabelProvider().getCVELabel(cve)
@@ -64,7 +64,7 @@ class LabelProviderTest {
     }
 
     @Test
-    fun shouldProvideLinkLabelForVulnerability() {
+    fun `getVulnerability should provide a label with a clickable link to the vulnerability at vulnerabilityBaseUrl`() {
         val id = "VULN123"
 
         val output: JLabel = LabelProvider().getVulnerabilityLabel(id)
@@ -75,7 +75,7 @@ class LabelProviderTest {
     }
 
     @Test
-    fun shouldProvideLinkLabelForCVSS() {
+    fun `getCVSSLabel should provide a label with a clickable link to the CVSS scoring calculator for this score`() {
         val cvssText = "package"
         val cvssId = "1"
         val output: JLabel = LabelProvider().getCVSSLabel(cvssText, cvssId)
