@@ -1,4 +1,5 @@
 @file:JvmName("Utils")
+
 package io.snyk.plugin
 
 import com.intellij.openapi.Disposable
@@ -162,6 +163,8 @@ fun controlExternalProcessWithProgressIndicator(
 }
 
 fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", false)
+
+fun isNewRefactoredTreeEnabled(): Boolean = Registry.`is`("snyk.preview.new.refactored.tree.enabled", false)
 
 fun getWaitForResultsTimeout(): Long =
     Registry.intValue(

@@ -24,19 +24,20 @@
 
     <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
 
-    <registryKey
-      key="snyk.timeout.results.waiting"
-      defaultValue="720000"
-      description="Snyk timeout (milliseconds) to wait for results during scan"
-    />
+    <!-- Registry keys -->
+    <registryKey key="snyk.timeout.results.waiting"
+                 defaultValue="720000"
+                 description="Snyk timeout (milliseconds) to wait for results during scan"/>
 
-    <registryKey
-      key="snyk.preview.iac.enabled"
-      defaultValue="false"
-      description="Preview: Enable Snyk Infrastructure as Code product."
-      restartRequired="true"
-    />
+    <registryKey key="snyk.preview.iac.enabled"
+                 defaultValue="false"
+                 description="Preview: Enable Snyk Infrastructure as Code product."
+                 restartRequired="true"/>
 
+    <registryKey key="snyk.preview.new.refactored.tree.enabled"
+                 defaultValue="false"
+                 description="Preview: Enable new refactored issues tree."
+                 restartRequired="true"/>
   </extensions>
 
   <actions>
