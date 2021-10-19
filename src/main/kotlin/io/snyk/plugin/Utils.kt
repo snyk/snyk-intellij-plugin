@@ -1,4 +1,4 @@
-@file:JvmName("Utils")
+@file:JvmName("UtilsKt")
 package io.snyk.plugin
 
 import com.intellij.openapi.Disposable
