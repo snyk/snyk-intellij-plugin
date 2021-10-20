@@ -105,7 +105,7 @@ class SnykAnalyticsService : Disposable {
             return
         }
 
-        catchAll(log, "IssueInTreeIsClicked") {
+        catchAll(log, "issueInTreeIsClicked") {
             itly.logIssueInTreeIsClicked(userId, event)
         }
     }
