@@ -65,7 +65,7 @@ class SentryErrorReporterTest {
     }
 
     private fun mockPluginInformation(): SnykApplicationSettingsStateService {
-        mockkStatic("io.snyk.plugin.Utils")
+        mockkStatic("io.snyk.plugin.UtilsKt")
         val settings = SnykApplicationSettingsStateService()
         every { pluginSettings() } returns settings
 

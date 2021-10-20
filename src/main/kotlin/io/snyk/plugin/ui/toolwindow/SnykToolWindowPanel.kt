@@ -6,9 +6,12 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -27,8 +30,9 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.head
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isCliDownloading
+import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
@@ -50,12 +54,17 @@ import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
+import snyk.iac.IacIssue
+import snyk.iac.IacIssuesForFile
+import snyk.iac.IacResult
+import snyk.iac.IacSuggestionDescriptionPanel
+import snyk.iac.ui.toolwindow.IacFileTreeNode
+import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.time.Instant
 import java.util.Objects.nonNull
-import snyk.iac.IacResult
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
@@ -158,7 +167,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningIacFinished(iacResult: IacResult) {
                     currentIacResult = iacResult
                     ApplicationManager.getApplication().invokeLater {
-                        // todo: displayIacResults(iacResult)
+                        displayIacResults(iacResult)
                     }
                     // TODO: Add event logging
                 }
@@ -272,9 +281,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
                     ApplicationManager.getApplication().invokeLater {
                         updateTreeRootNodesPresentation(
-                            ossResultsCount = if (wasOssRunning) -1 else null,
-                            securityIssuesCount = if (wasSnykCodeRunning) -1 else null,
-                            qualityIssuesCount = if (wasSnykCodeRunning) -1 else null
+                            ossResultsCount = if (wasOssRunning) NODE_INITIAL_STATE else null,
+                            securityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
+                            qualityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
+                            iacResultsCount = if (wasIacRunning) NODE_INITIAL_STATE else null
                         )
                         displayEmptyDescription()
                     }
@@ -320,16 +330,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
                     if (psiFile.virtualFile.isValid) {
-                        // jump to Source
-                        PsiNavigationSupport.getInstance().createNavigatable(
-                            project,
-                            psiFile.virtualFile,
-                            textRange.start
-                        ).navigate(false)
-
-                        // highlight(by selection) suggestion range in source file
-                        val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                        editor?.selectionModel?.setSelection(textRange.start, textRange.end)
+                        navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
                     }
 
                     service<SnykAnalyticsService>().logIssueIsViewed(
@@ -340,6 +341,31 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             .severity(suggestion.getIssueSeverityOrNull())
                             .build()
                     )
+                }
+                is IacIssueTreeNode -> {
+                    val iacIssue = node.userObject as IacIssue
+                    val scrollPane = wrapWithScrollPane(
+                        IacSuggestionDescriptionPanel(iacIssue)
+                    )
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
+                    val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
+                        ?: throw IllegalArgumentException(node.toString())
+                    val fileName = iacIssuesForFile.targetFile
+                    val virtualFile = project.guessProjectDir()?.findFileByRelativePath(fileName)
+                    if (virtualFile != null && virtualFile.isValid) {
+                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+                        if (document != null) {
+                            val lineNumber = iacIssue.lineNumber.toInt().let {
+                                val candidate = it - 1 // to 1-based count used in the editor
+                                if (0 <= candidate && candidate < document.lineCount) candidate else 0
+                            }
+                            val lineStartOffset = document.getLineStartOffset(lineNumber)
+
+                            navigateToSource(virtualFile, lineStartOffset)
+                        }
+                    }
+                    // TODO: Add event logging
                 }
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
@@ -357,6 +383,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         descriptionPanel.revalidate()
         descriptionPanel.repaint()
+    }
+
+    private fun navigateToSource(virtualFile: VirtualFile, selectionStartOffset: Int, selectionEndOffset: Int? = null) {
+        // jump to Source
+        PsiNavigationSupport.getInstance().createNavigatable(
+            project,
+            virtualFile,
+            selectionStartOffset
+        ).navigate(false)
+
+        if (selectionEndOffset != null) {
+            // highlight(by selection) suggestion range in source file
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor
+            editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
+        }
     }
 
     private fun wrapWithScrollPane(panel: JPanel): JScrollPane {
@@ -396,7 +437,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun doCleanUi() {
         removeAllChildren()
-        updateTreeRootNodesPresentation(-1, -1, -1)
+        updateTreeRootNodesPresentation(
+            ossResultsCount = NODE_INITIAL_STATE,
+            securityIssuesCount = NODE_INITIAL_STATE,
+            qualityIssuesCount = NODE_INITIAL_STATE,
+            iacResultsCount = NODE_INITIAL_STATE
+        )
         reloadTree()
 
         displayEmptyDescription()
@@ -477,12 +523,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     /** Params value:
      *   `null` - if not qualify for `scanning` or `error` state then do NOT change previous value
-     *   `-1` - initial state (clean all postfixes)
+     *   `NODE_INITIAL_STATE` - initial state (clean all postfixes)
      */
     private fun updateTreeRootNodesPresentation(
         ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
         qualityIssuesCount: Int? = null,
+        iacResultsCount: Int? = null,
         addHMLPostfix: String = ""
     ) {
         val settings = pluginSettings()
@@ -492,7 +539,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
             else -> ossResultsCount?.let { count ->
                 OSS_ROOT_TEXT + when {
-                    count == -1 -> ""
+                    count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
                     else -> throw IllegalStateException()
@@ -506,7 +553,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isSnykCodeRunning(project) && settings.snykCodeSecurityIssuesScanEnable -> "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (scanning...)"
             else -> securityIssuesCount?.let { count ->
                 SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + when {
-                    count == -1 -> ""
+                    count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
                     else -> throw IllegalStateException()
@@ -520,7 +567,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isSnykCodeRunning(project) && settings.snykCodeQualityIssuesScanEnable -> "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"
             else -> qualityIssuesCount?.let { count ->
                 SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + when {
-                    count == -1 -> ""
+                    count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
                     else -> throw IllegalStateException()
@@ -529,12 +576,19 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
         newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode.userObject = it }
 
-        val nodesToReload = listOfNotNull(
-            newOssTreeNodeText?.let { rootOssTreeNode },
-            newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode },
-            newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode }
-        )
-        //nodesToReload.forEach { reloadTreeNode(it) }
+        val newIacTreeNodeText = when {
+            currentIacError != null -> "$IAC_ROOT_TEXT (error)"
+            isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
+            else -> iacResultsCount?.let { count ->
+                IAC_ROOT_TEXT + when {
+                    count == NODE_INITIAL_STATE -> ""
+                    count == 0 -> NO_ISSUES_FOUND_TEXT
+                    count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
+                    else -> throw IllegalStateException()
+                }
+            }
+        }
+        newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
     }
 
     private fun displayNoVulnerabilitiesMessage() {
@@ -629,8 +683,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         if (currentSnykCodeError != null) return
         if (snykCodeResults == null) {
             updateTreeRootNodesPresentation(
-                securityIssuesCount = -1,
-                qualityIssuesCount = -1
+                securityIssuesCount = NODE_INITIAL_STATE,
+                qualityIssuesCount = NODE_INITIAL_STATE
             )
             return
         }
@@ -685,6 +739,36 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes, selectedNodeUserObject)
     }
 
+    private fun displayIacResults(iacResult: IacResult) {
+        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootIacIssuesTreeNode)
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+
+        rootIacIssuesTreeNode.removeAllChildren()
+
+        if (pluginSettings().iacScanEnabled && iacResult.allCliIssues != null) {
+            iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
+                if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
+                    val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
+                    rootIacIssuesTreeNode.add(fileTreeNode)
+
+                    iacVulnerabilitiesForFile.infrastructureAsCodeIssues
+                        .filter { isSeverityFilterPassed(it.severity) }
+                        .sortedByDescending { Severity.getIndex(it.severity) } // TODO: use comparator for tree nodes
+                        .forEach {
+                            fileTreeNode.add(IacIssueTreeNode(it, project))
+                        }
+                }
+            }
+        }
+
+        updateTreeRootNodesPresentation(
+            iacResultsCount = iacResult.issuesCount,
+            addHMLPostfix = buildHMLpostfix(iacResult)
+        )
+
+        smartReloadRootNode(rootIacIssuesTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
+    }
+
     private fun buildHMLpostfix(snykCodeResults: SnykCodeResults): String =
         buildHMLpostfix(
             errorsCount = snykCodeResults.totalErrorsCount,
@@ -698,6 +782,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ossResult.highSeveritiesCount(),
             ossResult.mediumSeveritiesCount(),
             ossResult.lowSeveritiesCount()
+        )
+
+    private fun buildHMLpostfix(iacResult: IacResult): String =
+        buildHMLpostfix(
+            iacResult.criticalSeveritiesCount(),
+            iacResult.highSeveritiesCount(),
+            iacResult.mediumSeveritiesCount(),
+            iacResult.lowSeveritiesCount()
         )
 
     private fun buildHMLpostfix(criticalCount: Int = 0, errorsCount: Int, warnsCount: Int, infosCount: Int): String {
@@ -811,6 +903,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val IAC_ROOT_TEXT = " Infrastructure as Code"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
+        private const val NODE_INITIAL_STATE = -1
     }
 }
 

@@ -97,7 +97,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         val fakeIacResult = IacResult(null, null)
 
-        mockkStatic("io.snyk.plugin.Utils")
+        mockkStatic("io.snyk.plugin.UtilsKt")
         every { isIacEnabled() } returns true
         every { getIacService(project).isCliInstalled() } returns true
         every { getIacService(project).scan() } returns fakeIacResult
@@ -108,6 +108,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertEquals(fakeIacResult, toolWindowPanel.currentIacResult)
 
-        unmockkStatic("io.snyk.plugin.Utils")
+        unmockkStatic("io.snyk.plugin.UtilsKt")
     }
 }
