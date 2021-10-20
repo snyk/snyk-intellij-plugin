@@ -1,4 +1,6 @@
-package snyk.analytics;
+package snyk;
+
+import snyk.analytics.AnalysisIsReady;
 
 import java.util.List;
 

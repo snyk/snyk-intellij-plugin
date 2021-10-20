@@ -1,8 +1,8 @@
 package io.snyk.plugin.analytics
 
 import ai.deepcode.javaclient.core.SuggestionForFile
-import snyk.oss.Vulnerability
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import snyk.ItlyOverrideHelper
 import snyk.advisor.AdvisorPackageManager
 import snyk.analytics.AnalysisIsReady.AnalysisType
 import snyk.analytics.HealthScoreIsClicked
@@ -11,7 +11,7 @@ import snyk.analytics.IssueIsViewed.IssueType.CODE_QUALITY_ISSUE
 import snyk.analytics.IssueIsViewed.IssueType.CODE_SECURITY_VULNERABILITY
 import snyk.analytics.IssueIsViewed.IssueType.LICENCE_ISSUE
 import snyk.analytics.IssueIsViewed.IssueType.OPEN_SOURCE_VULNERABILITY
-import snyk.analytics.ItlyOverrideHelper
+import snyk.oss.Vulnerability
 
 fun getSelectedProducts(settings: SnykApplicationSettingsStateService): Array<String> {
     val selectedProducts = mutableListOf<AnalysisType>()
