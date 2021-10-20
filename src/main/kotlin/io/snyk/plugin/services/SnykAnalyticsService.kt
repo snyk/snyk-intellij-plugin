@@ -10,7 +10,7 @@ import io.snyk.plugin.pluginSettings
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.HealthScoreIsClicked
-import snyk.analytics.IssueIsViewed
+import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
 import snyk.analytics.ProductSelectionIsViewed
@@ -100,13 +100,13 @@ class SnykAnalyticsService : Disposable {
         }
     }
 
-    fun logIssueIsViewed(event: IssueIsViewed) {
+    fun logIssueInTreeIsClicked(event: IssueInTreeIsClicked) {
         if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
-        catchAll(log, "issueIsViewed") {
-            itly.logIssueIsViewed(userId, event)
+        catchAll(log, "IssueInTreeIsClicked") {
+            itly.logIssueInTreeIsClicked(userId, event)
         }
     }
 

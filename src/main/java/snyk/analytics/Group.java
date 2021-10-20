@@ -8,30 +8,28 @@
 
 package snyk.analytics;
 
-import java.util.HashMap;
-
 import ly.iterative.itly.Event;
 
+import java.util.HashMap;
+
 public class Group extends Event {
-    private static final String NAME = "group";
-    private static final String ID = "group";
-    private static final String VERSION = "82.0.0";
+  private static final String NAME = "group";
+  private static final String ID = "group";
+  private static final String VERSION = "83.0.0";
 
-    public enum GroupType {
-        ORG("org"), GROUP("group"), ACCOUNT("account");
+  public enum GroupType {
+    ORG("org"), GROUP("group"), ACCOUNT("account");
 
-        private String groupType;
+    private String groupType;
 
-        public String getGroupType()
-        {
-            return this.groupType;
-        }
-
-        GroupType(String groupType)
-        {
-            this.groupType = groupType;
-        }
+    public String getGroupType() {
+      return this.groupType;
     }
+
+    GroupType(String groupType) {
+      this.groupType = groupType;
+    }
+  }
 
     private Group(Builder builder) {
         super(NAME, builder.properties, ID, VERSION);

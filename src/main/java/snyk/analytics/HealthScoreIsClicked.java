@@ -8,30 +8,28 @@
 
 package snyk.analytics;
 
-import java.util.HashMap;
-
 import ly.iterative.itly.Event;
 
+import java.util.HashMap;
+
 public class HealthScoreIsClicked extends Event {
-    private static final String NAME = "Health Score Is Clicked";
-    private static final String ID = "47cf2487-2066-4f12-9846-cba17d1fa257";
-    private static final String VERSION = "4.0.0";
+  private static final String NAME = "Health Score Is Clicked";
+  private static final String ID = "47cf2487-2066-4f12-9846-cba17d1fa257";
+  private static final String VERSION = "4.0.0";
 
-    public enum Ide {
-        VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+  public enum Ide {
+    VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
 
-        private String ide;
+    private String ide;
 
-        public String getIde()
-        {
-            return this.ide;
-        }
-
-        Ide(String ide)
-        {
-            this.ide = ide;
-        }
+    public String getIde() {
+      return this.ide;
     }
+
+    Ide(String ide) {
+      this.ide = ide;
+    }
+  }
 
     public enum Ecosystem {
         NPM("npm"), PYTHON("python"), DOCKER("docker"), JAVA("java"), JAVASCRIPT("javascript"), KUBERNETES("kubernetes");
