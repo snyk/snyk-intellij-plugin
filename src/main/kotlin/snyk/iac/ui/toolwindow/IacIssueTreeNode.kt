@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui.toolwindow
+package snyk.iac.ui.toolwindow
 
 import com.intellij.openapi.project.Project
 import snyk.iac.IacIssue

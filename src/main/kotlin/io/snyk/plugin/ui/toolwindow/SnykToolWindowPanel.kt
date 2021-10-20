@@ -58,6 +58,8 @@ import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import snyk.iac.IacSuggestionDescriptionPanel
+import snyk.iac.ui.toolwindow.IacFileTreeNode
+import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
@@ -279,10 +281,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
                     ApplicationManager.getApplication().invokeLater {
                         updateTreeRootNodesPresentation(
-                            ossResultsCount = if (wasOssRunning) -1 else null,
-                            securityIssuesCount = if (wasSnykCodeRunning) -1 else null,
-                            qualityIssuesCount = if (wasSnykCodeRunning) -1 else null,
-                            iacResultsCount = if (wasIacRunning) -1 else null
+                            ossResultsCount = if (wasOssRunning) NODE_INITIAL_STATE else null,
+                            securityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
+                            qualityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
+                            iacResultsCount = if (wasIacRunning) NODE_INITIAL_STATE else null
                         )
                         displayEmptyDescription()
                     }
@@ -435,7 +437,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun doCleanUi() {
         removeAllChildren()
-        updateTreeRootNodesPresentation(-1, -1, -1, -1)
+        updateTreeRootNodesPresentation(
+            ossResultsCount = NODE_INITIAL_STATE,
+            securityIssuesCount = NODE_INITIAL_STATE,
+            qualityIssuesCount = NODE_INITIAL_STATE,
+            iacResultsCount = NODE_INITIAL_STATE
+        )
         reloadTree()
 
         displayEmptyDescription()
@@ -516,7 +523,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     /** Params value:
      *   `null` - if not qualify for `scanning` or `error` state then do NOT change previous value
-     *   `-1` - initial state (clean all postfixes)
+     *   `NODE_INITIAL_STATE` - initial state (clean all postfixes)
      */
     private fun updateTreeRootNodesPresentation(
         ossResultsCount: Int? = null,
@@ -532,7 +539,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
             else -> ossResultsCount?.let { count ->
                 OSS_ROOT_TEXT + when {
-                    count == -1 -> ""
+                    count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
                     else -> throw IllegalStateException()
@@ -546,7 +553,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isSnykCodeRunning(project) && settings.snykCodeSecurityIssuesScanEnable -> "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (scanning...)"
             else -> securityIssuesCount?.let { count ->
                 SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + when {
-                    count == -1 -> ""
+                    count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
                     else -> throw IllegalStateException()
@@ -560,7 +567,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isSnykCodeRunning(project) && settings.snykCodeQualityIssuesScanEnable -> "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"
             else -> qualityIssuesCount?.let { count ->
                 SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + when {
-                    count == -1 -> ""
+                    count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
                     else -> throw IllegalStateException()
@@ -574,7 +581,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
             else -> iacResultsCount?.let { count ->
                 IAC_ROOT_TEXT + when {
-                    count == -1 -> ""
+                    count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
                     else -> throw IllegalStateException()
@@ -676,8 +683,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         if (currentSnykCodeError != null) return
         if (snykCodeResults == null) {
             updateTreeRootNodesPresentation(
-                securityIssuesCount = -1,
-                qualityIssuesCount = -1
+                securityIssuesCount = NODE_INITIAL_STATE,
+                qualityIssuesCount = NODE_INITIAL_STATE
             )
             return
         }
@@ -746,7 +753,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                     iacVulnerabilitiesForFile.infrastructureAsCodeIssues
                         .filter { isSeverityFilterPassed(it.severity) }
-                        .sortedByDescending { Severity.getIndex(it.severity) }  // TODO: use comparator for tree nodes
+                        .sortedByDescending { Severity.getIndex(it.severity) } // TODO: use comparator for tree nodes
                         .forEach {
                             fileTreeNode.add(IacIssueTreeNode(it, project))
                         }
@@ -896,6 +903,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val IAC_ROOT_TEXT = " Infrastructure as Code"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
+        private const val NODE_INITIAL_STATE = -1
     }
 }
 

@@ -12,8 +12,14 @@ import io.snyk.plugin.ui.buildBoldTitleLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
-import java.awt.*
-import javax.swing.*
+import java.awt.Color
+import java.awt.Component
+import java.awt.Dimension
+import java.awt.Font
+import java.awt.Insets
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JTextArea
 import javax.swing.event.HyperlinkEvent
 
 class IacSuggestionDescriptionPanel(
