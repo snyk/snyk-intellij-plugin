@@ -13,7 +13,7 @@ import snyk.common.SnykError
  * Wrap work with Snyk CLI for IaC (`iac test` command).
  */
 @Service
-class IacService(project: Project) : CliService<IacResult>(
+class IacScanService(project: Project) : CliService<IacResult>(
     project = project,
     cliCommands = listOf("iac", "test")
 ) {

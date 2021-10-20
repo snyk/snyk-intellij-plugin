@@ -21,7 +21,7 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
-import snyk.iac.IacService
+import snyk.iac.IacScanService
 import snyk.oss.OssService
 import java.io.File
 import java.net.URL
@@ -35,7 +35,7 @@ import javax.net.ssl.X509TrustManager
 
 fun getOssService(project: Project): OssService = project.service()
 
-fun getIacService(project: Project): IacService = project.service()
+fun getIacService(project: Project): IacScanService = project.service()
 
 fun getSnykCode(project: Project): SnykCodeService = project.service()
 
@@ -177,7 +177,9 @@ fun getWaitForResultsTimeout(): Long =
         DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
     ).toLong()
 
-val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS = TimeUnit.MILLISECONDS.convert(12L, TimeUnit.MINUTES).toInt()
+const val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MIN = 12L
+val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS =
+    TimeUnit.MILLISECONDS.convert(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MIN, TimeUnit.MINUTES).toInt()
 
 fun getSSLContext(): SSLContext {
     val trustManager = getX509TrustManager()

@@ -4,9 +4,9 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliNotExistsException
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.pluginSettings
 import org.jetbrains.annotations.TestOnly
 
 /**
@@ -38,18 +38,16 @@ abstract class CliService<R>(val project: Project, private val cliCommands: List
     protected abstract fun getErrorResult(errorMsg: String): R
 
     /**
-     * if rawStr == [ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER] - CLI scan process was intentionally terminated by user..
+     * if rawStr == [ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER] - CLI scan process
+     * was intentionally terminated by user.
      */
     abstract fun convertRawCliStringToCliResult(rawStr: String): R
 
     /**
      * Build list of commands for run Snyk CLI command.
-     *
-     * @param cliCommand - Snyk CLI command to execute
-     *
      * @return List<String>
      */
-    fun buildCliCommandsList(): List<String> {
+    fun buildCliCommandsList(): MutableList<String> {
         logger.debug("Enter buildCliCommandsList")
         val settings = pluginSettings()
 
@@ -84,7 +82,7 @@ abstract class CliService<R>(val project: Project, private val cliCommands: List
 
         logger.debug("Cli parameters: $commands")
 
-        return commands.toList()
+        return commands.toMutableList()
     }
 
     @TestOnly
