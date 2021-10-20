@@ -52,9 +52,6 @@ public class Identify extends Event {
     /**
      * Auth provider (login method)
      */
-    /**
-     * Auth provider (login method)
-     */
     public Builder authProvider(String authProvider) {
       this.properties.put("authProvider", authProvider);
       return this;
@@ -103,10 +100,6 @@ public class Identify extends Event {
     /**
      * Whether or not the user belongs to the Snyk org (determined by the email address ending with @snyk.io)
      */
-
-    /**
-     * Whether or not the user belongs to the Snyk org (determined by the email address ending with @snyk.io)
-     */
     public Builder isSnyk(boolean isSnyk) {
       this.properties.put("isSnyk", isSnyk);
       return this;
@@ -147,10 +140,6 @@ public class Identify extends Event {
     /**
      * query utm_campaign
      */
-
-    /**
-     * query utm_campaign
-     */
     public Builder utmCampaign(String utmCampaign) {
       this.properties.put("utmCampaign", utmCampaign);
       return this;
@@ -164,9 +153,6 @@ public class Identify extends Event {
       return this;
     }
 
-    /**
-     * query utm_medium
-     */
     /**
      * query utm_source
      */
