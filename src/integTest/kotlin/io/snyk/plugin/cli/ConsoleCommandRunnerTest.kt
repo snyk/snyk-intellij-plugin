@@ -11,13 +11,21 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.impl.CoreProgressManager
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatformTestCase
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.verify
+import io.sentry.protocol.SentryId
 import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.services.SnykCliDownloaderService
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import snyk.PLUGIN_ID
+import snyk.errorHandler.SentryErrorReporter
 import java.util.concurrent.TimeUnit
 
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
@@ -88,20 +96,18 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             Thread.sleep(10) // lets wait till download actually stopped
         }
         assertFalse(cliFile.exists())
+        verify(exactly = 0) { SentryErrorReporter.captureException(any()) }
     }
 
     @Test
     fun testErrorReportedWhenExecutionTimeoutExpire() {
         service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator(), project)
-
         val registryValue = Registry.get("snyk.timeout.results.waiting")
         val defaultValue = registryValue.asInteger()
         assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
-
         registryValue.setValue(100)
 
         val commands = getOssService(project).buildCliCommandsList()
-
         val progressManager = ProgressManager.getInstance() as CoreProgressManager
         val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
             object : Task.Backgroundable(project, "Test CLI command invocation", true) {
@@ -118,8 +124,25 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         )
         testRunFuture.get(1000, TimeUnit.MILLISECONDS)
 
+        verify(exactly = 1) { SentryErrorReporter.captureException(any()) }
+
         // clean up
         registryValue.setValue(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS)
         getCliFile().delete()
+    }
+
+    @Before
+    override fun setUp() {
+        super.setUp()
+        // don't report to Sentry when running this test
+        unmockkAll()
+        mockkObject(SentryErrorReporter)
+        every { SentryErrorReporter.captureException(any()) } returns SentryId()
+    }
+
+    @After
+    override fun tearDown() {
+        super.tearDown()
+        unmockkAll()
     }
 }

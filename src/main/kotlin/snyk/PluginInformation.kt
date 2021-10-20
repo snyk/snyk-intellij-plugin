@@ -1,3 +1,4 @@
+@file:JvmName("PluginInformationKt")
 package snyk
 
 import com.intellij.ide.plugins.PluginManagerCore
