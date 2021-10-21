@@ -17,6 +17,7 @@ import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
+import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
@@ -80,7 +81,7 @@ class IacSuggestionDescriptionPanel(
 
         if (!issue.resolve.isNullOrBlank()) {
             this.add(
-                remediationPanelWithTitle(issue.resolve!!),
+                remediationPanelWithTitle(issue.resolve),
                 panelGridConstraints(6)
             )
         }
@@ -132,8 +133,7 @@ class IacSuggestionDescriptionPanel(
 
     private fun titlePanel(): JPanel {
         val titlePanel = JPanel()
-        titlePanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, 5)
-
+        titlePanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, 5)
         val titleLabel = JLabel().apply {
             font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
             text = " " + if (issue.title.isNotBlank()) issue.title else when (issue.severity) {
@@ -151,9 +151,25 @@ class IacSuggestionDescriptionPanel(
             baseGridConstraints(0)
         )
 
-        titlePanel.add(cwePanel(), baseGridConstraints(1, indent = 0))
+        titlePanel.add(cwePanel(), baseGridConstraints(row = 1, column = 0, indent = 0))
+        titlePanel.add(
+            topButtonPanel(),
+            baseGridConstraints(row = 0, column = 1, anchor = GridConstraints.ANCHOR_EAST, indent = 0)
+        )
 
         return titlePanel
+    }
+
+    private fun topButtonPanel(): Component {
+        val panel = JPanel()
+
+        panel.layout = GridLayoutManager(1, 3, Insets(0, 0, 0, 0), 5, 0)
+
+        panel.add(
+            JButton("Ignore This Issue"),
+            baseGridConstraints(0)
+        )
+        return panel
     }
 
     private fun cwePanel(): Component {

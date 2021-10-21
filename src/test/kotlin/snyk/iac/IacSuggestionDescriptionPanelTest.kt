@@ -1,9 +1,9 @@
 package snyk.iac
 
-import junit.framework.TestCase.assertEquals
-import org.junit.After
+import junit.framework.TestCase.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import java.awt.Container
 import javax.swing.JButton
 
 class IacSuggestionDescriptionPanelTest {
@@ -30,13 +30,26 @@ class IacSuggestionDescriptionPanelTest {
         cut = IacSuggestionDescriptionPanel(issue)
     }
 
-    @After
-    fun tearDown() {
+    @Test
+    fun `IacSuggestionDescriptionPanel should have ignore button`() {
+        val expectedButtonText = "Ignore This Issue"
+        val actualButton = getJButtonByText(cut, expectedButtonText)
+        assertNotNull("Didn't find button with text $expectedButtonText", actualButton)
     }
 
-    @Test
-    fun `panel should have ignore button`() {
-        val actualButton: JButton
-        assertEquals("Ignore This Issue", actualButton.text)
+    private fun getJButtonByText(parent: Container, text: String): JButton? {
+        val components = parent.components
+        var found: JButton? = null
+        for (component in components) {
+            if (component is JButton && text == component.text) {
+                found = component
+            } else if (component is Container) {
+                found = getJButtonByText(component, text)
+            }
+            if (found != null) {
+                break
+            }
+        }
+        return found
     }
 }
