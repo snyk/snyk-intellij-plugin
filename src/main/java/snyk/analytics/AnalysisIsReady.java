@@ -8,30 +8,28 @@
 
 package snyk.analytics;
 
-import java.util.HashMap;
-
 import ly.iterative.itly.Event;
 
+import java.util.HashMap;
+
 public class AnalysisIsReady extends Event {
-    private static final String NAME = "Analysis Is Ready";
-    private static final String ID = "c9337edb-27a3-416e-a654-092fa4375feb";
-    private static final String VERSION = "2.0.0";
+  private static final String NAME = "Analysis Is Ready";
+  private static final String ID = "c9337edb-27a3-416e-a654-092fa4375feb";
+  private static final String VERSION = "2.0.0";
 
-    public enum Ide {
-        VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+  public enum Ide {
+    VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
 
-        private String ide;
+    private String ide;
 
-        public String getIde()
-        {
-            return this.ide;
-        }
-
-        Ide(String ide)
-        {
-            this.ide = ide;
-        }
+    public String getIde() {
+      return this.ide;
     }
+
+    Ide(String ide) {
+      this.ide = ide;
+    }
+  }
 
     public enum AnalysisType {
         SNYK_ADVISOR("Snyk Advisor"), SNYK_CODE_QUALITY("Snyk Code Quality"), SNYK_CODE_SECURITY("Snyk Code Security"), SNYK_OPEN_SOURCE("Snyk Open Source"), SNYK_CONTAINER("Snyk Container"), SNYK_INFRASTRUCTURE_AS_CODE("Snyk Infrastructure as Code");

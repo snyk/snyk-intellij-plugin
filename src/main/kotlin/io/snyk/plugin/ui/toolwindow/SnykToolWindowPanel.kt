@@ -49,7 +49,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
-import snyk.analytics.IssueIsViewed
+import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
@@ -307,9 +307,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
                     val issue = groupedVulns.first()
-                    service<SnykAnalyticsService>().logIssueIsViewed(
-                        IssueIsViewed.builder()
-                            .ide(IssueIsViewed.Ide.JETBRAINS)
+                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                        IssueInTreeIsClicked.builder()
+                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueId(issue.id)
                             .issueType(issue.getIssueType())
                             .severity(issue.getIssueSeverityOrNull())
@@ -333,9 +333,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
                     }
 
-                    service<SnykAnalyticsService>().logIssueIsViewed(
-                        IssueIsViewed.builder()
-                            .ide(IssueIsViewed.Ide.JETBRAINS)
+                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                        IssueInTreeIsClicked.builder()
+                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueId(suggestion.id)
                             .issueType(suggestion.getIssueType())
                             .severity(suggestion.getIssueSeverityOrNull())

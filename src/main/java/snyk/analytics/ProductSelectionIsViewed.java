@@ -8,30 +8,28 @@
 
 package snyk.analytics;
 
-import java.util.HashMap;
-
 import ly.iterative.itly.Event;
 
+import java.util.HashMap;
+
 public class ProductSelectionIsViewed extends Event {
-    private static final String NAME = "Product Selection Is Viewed";
-    private static final String ID = "4817979a-5fa1-4d1c-9418-2c28471c682d";
-    private static final String VERSION = "1.0.0";
+  private static final String NAME = "Product Selection Is Viewed";
+  private static final String ID = "4817979a-5fa1-4d1c-9418-2c28471c682d";
+  private static final String VERSION = "1.0.0";
 
-    public enum Ide {
-        VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+  public enum Ide {
+    VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
 
-        private String ide;
+    private String ide;
 
-        public String getIde()
-        {
-            return this.ide;
-        }
-
-        Ide(String ide)
-        {
-            this.ide = ide;
-        }
+    public String getIde() {
+      return this.ide;
     }
+
+    Ide(String ide) {
+      this.ide = ide;
+    }
+  }
 
     private ProductSelectionIsViewed(Builder builder) {
         super(NAME, builder.properties, ID, VERSION);

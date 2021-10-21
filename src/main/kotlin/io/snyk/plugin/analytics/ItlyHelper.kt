@@ -1,17 +1,17 @@
 package io.snyk.plugin.analytics
 
 import ai.deepcode.javaclient.core.SuggestionForFile
-import snyk.oss.Vulnerability
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import snyk.ItlyOverrideHelper
 import snyk.advisor.AdvisorPackageManager
 import snyk.analytics.AnalysisIsReady.AnalysisType
 import snyk.analytics.HealthScoreIsClicked
-import snyk.analytics.IssueIsViewed
-import snyk.analytics.IssueIsViewed.IssueType.CODE_QUALITY_ISSUE
-import snyk.analytics.IssueIsViewed.IssueType.CODE_SECURITY_VULNERABILITY
-import snyk.analytics.IssueIsViewed.IssueType.LICENCE_ISSUE
-import snyk.analytics.IssueIsViewed.IssueType.OPEN_SOURCE_VULNERABILITY
-import snyk.analytics.ItlyOverrideHelper
+import snyk.analytics.IssueInTreeIsClicked
+import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_QUALITY_ISSUE
+import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_SECURITY_VULNERABILITY
+import snyk.analytics.IssueInTreeIsClicked.IssueType.LICENCE_ISSUE
+import snyk.analytics.IssueInTreeIsClicked.IssueType.OPEN_SOURCE_VULNERABILITY
+import snyk.oss.Vulnerability
 
 fun getSelectedProducts(settings: SnykApplicationSettingsStateService): Array<String> {
     val selectedProducts = mutableListOf<AnalysisType>()
@@ -23,31 +23,31 @@ fun getSelectedProducts(settings: SnykApplicationSettingsStateService): Array<St
     return ItlyOverrideHelper.convertProducts(selectedProducts)
 }
 
-fun Vulnerability.getIssueSeverityOrNull(): IssueIsViewed.Severity? {
+fun Vulnerability.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
     return when (severity) {
-        "critical" -> IssueIsViewed.Severity.CRITICAL
-        "high" -> IssueIsViewed.Severity.HIGH
-        "medium" -> IssueIsViewed.Severity.MEDIUM
-        "low" -> IssueIsViewed.Severity.LOW
+        "critical" -> IssueInTreeIsClicked.Severity.CRITICAL
+        "high" -> IssueInTreeIsClicked.Severity.HIGH
+        "medium" -> IssueInTreeIsClicked.Severity.MEDIUM
+        "low" -> IssueInTreeIsClicked.Severity.LOW
         else -> null
     }
 }
 
-fun Vulnerability.getIssueType(): IssueIsViewed.IssueType {
+fun Vulnerability.getIssueType(): IssueInTreeIsClicked.IssueType {
     return if (license.isNullOrEmpty()) OPEN_SOURCE_VULNERABILITY else LICENCE_ISSUE
 }
 
-fun SuggestionForFile.getIssueSeverityOrNull(): IssueIsViewed.Severity? {
+fun SuggestionForFile.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
     return when (severity) {
-        4 -> IssueIsViewed.Severity.CRITICAL
-        3 -> IssueIsViewed.Severity.HIGH
-        2 -> IssueIsViewed.Severity.MEDIUM
-        1 -> IssueIsViewed.Severity.LOW
+        4 -> IssueInTreeIsClicked.Severity.CRITICAL
+        3 -> IssueInTreeIsClicked.Severity.HIGH
+        2 -> IssueInTreeIsClicked.Severity.MEDIUM
+        1 -> IssueInTreeIsClicked.Severity.LOW
         else -> null
     }
 }
 
-fun SuggestionForFile.getIssueType(): IssueIsViewed.IssueType {
+fun SuggestionForFile.getIssueType(): IssueInTreeIsClicked.IssueType {
     return if (categories.contains("Security")) CODE_SECURITY_VULNERABILITY else CODE_QUALITY_ISSUE
 }
 

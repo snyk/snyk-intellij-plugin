@@ -6,15 +6,15 @@ import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import ly.iterative.itly.Environment
 import ly.iterative.itly.Options
 import ly.iterative.itly.ValidationOptions
+import snyk.ItlyLogger
 import snyk.PropertyLoader
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.DestinationsOptions
 import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.Identify
-import snyk.analytics.IssueIsViewed
+import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.Itly
-import snyk.analytics.ItlyLogger
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
 import snyk.analytics.ProductSelectionIsViewed
@@ -81,8 +81,8 @@ object Iteratively {
         itly?.analysisIsReady(userId, event)
     }
 
-    fun logIssueIsViewed(userId: String, event: IssueIsViewed) {
-        itly?.issueIsViewed(userId, event)
+    fun logIssueInTreeIsClicked(userId: String, event: IssueInTreeIsClicked) {
+        itly?.issueInTreeIsClicked(userId, event)
     }
 
     fun logHealthScoreIsClicked(userId: String, event: HealthScoreIsClicked) {

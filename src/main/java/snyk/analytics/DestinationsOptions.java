@@ -8,8 +8,6 @@
 
 package snyk.analytics;
 
-import ly.iterative.itly.IterativelyOptions;
-
 public class DestinationsOptions {
 
     private DestinationsOptions(Builder builder) {
