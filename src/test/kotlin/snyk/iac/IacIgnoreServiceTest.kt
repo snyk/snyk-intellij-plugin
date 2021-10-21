@@ -1,5 +1,9 @@
 package snyk.iac
 
+import com.intellij.openapi.application.Application
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.impl.ProgressManagerImpl
 import com.intellij.openapi.project.Project
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -27,6 +31,13 @@ class IacIgnoreServiceTest {
     fun setUp() {
         clearAllMocks()
         mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkStatic(ProgressManager::class)
+        mockkStatic(ApplicationManager::class)
+        val application = mockk<Application>(relaxed = true)
+        every { ApplicationManager.getApplication() } returns application
+        every { application.isUnitTestMode } returns true
+        every { application.isHeadlessEnvironment } returns true
+        every { ProgressManager.getInstance() } returns ProgressManagerImpl()
         every { pluginSettings() } returns settings
         every { getCliFile() } returns File.createTempFile("cliTestTmpFile", ".tmp")
         every { project.basePath } returns expectedWorkingDirectory
@@ -44,7 +55,7 @@ class IacIgnoreServiceTest {
             "--json",
             "--DISABLE_ANALYTICS",
             "ignore",
-            "--id='${issue.id}'"
+            "--id=${issue.id}"
         )
         val expectedOutput = "mockedOutput"
 

@@ -1,6 +1,7 @@
 package snyk.iac
 
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.project.Project
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -8,6 +9,7 @@ import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.Severity
+import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.ui.buildBoldTitleLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.commonmark.parser.Parser
@@ -24,7 +26,8 @@ import javax.swing.JTextArea
 import javax.swing.event.HyperlinkEvent
 
 class IacSuggestionDescriptionPanel(
-    private val issue: IacIssue
+    val issue: IacIssue,
+    val project: Project
 ) : JPanel() {
 
     private fun baseGridConstraints(
@@ -163,13 +166,20 @@ class IacSuggestionDescriptionPanel(
     private fun topButtonPanel(): Component {
         val panel = JPanel()
 
-        panel.layout = GridLayoutManager(1, 3, Insets(0, 0, 0, 0), 5, 0)
+        panel.layout = GridLayoutManager(1, 1, Insets(0, 0, 0, 0), 5, 0)
 
+        createIgnoreButton(panel)
+        return panel
+    }
+
+    private fun createIgnoreButton(panel: JPanel) {
+        val ignoreButton = JButton("Ignore This Issue")
+        val service = IacIgnoreService(ConsoleCommandRunner(), project, emptyList())
+        ignoreButton.addActionListener(IgnoreButtonActionListener(service, issue))
         panel.add(
-            JButton("Ignore This Issue"),
+            ignoreButton,
             baseGridConstraints(0)
         )
-        return panel
     }
 
     private fun cwePanel(): Component {
@@ -208,7 +218,8 @@ class IacSuggestionDescriptionPanel(
         afterLinkText: String = "",
         toolTipText: String,
         customFont: Font? = null,
-        onClick: (HyperlinkEvent) -> Unit): HyperlinkLabel {
+        onClick: (HyperlinkEvent) -> Unit
+    ): HyperlinkLabel {
         return HyperlinkLabel().apply {
             this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
             this.toolTipText = toolTipText
@@ -237,7 +248,8 @@ class IacSuggestionDescriptionPanel(
             isOpaque = false
         }
 
-        remediationPanel.add(remediationPane,
+        remediationPanel.add(
+            remediationPane,
             panelGridConstraints(1)
         )
 

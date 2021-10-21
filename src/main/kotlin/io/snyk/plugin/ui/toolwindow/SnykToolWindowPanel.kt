@@ -345,7 +345,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 is IacIssueTreeNode -> {
                     val iacIssue = node.userObject as IacIssue
                     val scrollPane = wrapWithScrollPane(
-                        IacSuggestionDescriptionPanel(iacIssue)
+                        IacSuggestionDescriptionPanel(iacIssue, project)
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
