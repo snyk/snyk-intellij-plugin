@@ -1,5 +1,7 @@
 package snyk.net
 
+import io.snyk.plugin.getSSLContext
+import io.snyk.plugin.getX509TrustManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.security.SecureRandom
@@ -25,7 +27,7 @@ class HttpClient(
     var connectTimeout: Long = 30,
     var readTimeout: Long = 60,
     var writeTimeout: Long = 60,
-    var disableSslVerification: Boolean = false,
+    private var disableSslVerification: Boolean = false,
     var interceptors: List<Interceptor> = listOf()
 ) {
     fun build(): OkHttpClient {
@@ -33,7 +35,7 @@ class HttpClient(
             .connectTimeout(connectTimeout, TimeUnit.SECONDS)
             .readTimeout(readTimeout, TimeUnit.SECONDS)
             .writeTimeout(writeTimeout, TimeUnit.SECONDS)
-
+            .sslSocketFactory(getSSLContext().socketFactory, getX509TrustManager())
         httpClientBuilder.interceptors().addAll(interceptors)
 
         if (disableSslVerification) {
@@ -51,7 +53,7 @@ private fun OkHttpClient.Builder.ignoreAllSslErrors() {
         override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
     }
 
-    val insecureSocketFactory = SSLContext.getInstance("TLS").apply {
+    val insecureSocketFactory = SSLContext.getInstance("TLSv1.2").apply {
         val trustAllCertificates = arrayOf<TrustManager>(unsafeTrustManager)
         init(null, trustAllCertificates, SecureRandom())
     }.socketFactory
