@@ -15,9 +15,9 @@ import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.services.SnykCodeService
 import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory

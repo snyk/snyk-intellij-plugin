@@ -1,4 +1,4 @@
-package io.snyk.plugin.services
+package io.snyk.plugin.services.download
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.notification.NotificationAction
@@ -21,14 +21,8 @@ class SnykCliDownloaderErrorHandler {
     }
 
     fun handleIOException(exception: IOException, indicator: ProgressIndicator, project: Project) {
-        val downloaderService = project.getService(SnykCliDownloaderService::class.java)
-
-        val latestReleaseInfo = downloaderService.getLatestReleaseInfo()
-        if (latestReleaseInfo != null) {
-            val cliVersion = latestReleaseInfo.tagName
-            val cliFile = getCliFile()
-            downloaderService.downloadFile(cliFile, cliVersion, indicator)
-        }
+        val downloader = project.getService(SnykCliDownloaderService::class.java).downloader
+        downloader.downloadFile(getCliFile(), indicator)
         showErrorWithRetryAndContactAction(getNetworkErrorNotificationMessage(exception), indicator, project)
     }
 
@@ -47,4 +41,17 @@ class SnykCliDownloaderErrorHandler {
 
     fun getHttpStatusErrorNotificationMessage(exception: HttpRequests.HttpStatusException) =
         "The download request of the current Snyk CLI was not successful (${exception.localizedMessage})."
+
+    fun handleChecksumVerificationException(
+        e: ChecksumVerificationException,
+        indicator: ProgressIndicator,
+        project: Project
+    ) {
+        val downloader = project.getService(SnykCliDownloaderService::class.java).downloader
+        downloader.downloadFile(getCliFile(), indicator)
+        showErrorWithRetryAndContactAction(getChecksumFailedNotificationMessage(e), indicator, project)
+    }
+
+    fun getChecksumFailedNotificationMessage(exception: ChecksumVerificationException) =
+        "The download of the Snyk CLI was not successful. The integrity check failed (${exception.localizedMessage})."
 }

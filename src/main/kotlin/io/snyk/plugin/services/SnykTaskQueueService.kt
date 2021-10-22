@@ -19,6 +19,7 @@ import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel

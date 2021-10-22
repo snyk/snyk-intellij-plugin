@@ -9,11 +9,11 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliAuthenticationService
-import io.snyk.plugin.services.SnykCliDownloaderService
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.boldLabel
 import snyk.amplitude.AmplitudeExperimentService

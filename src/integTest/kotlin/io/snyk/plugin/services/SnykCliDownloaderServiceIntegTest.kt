@@ -8,12 +8,16 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.spyk
+import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
 import org.apache.http.HttpStatus
+import io.snyk.plugin.services.download.SnykCliDownloaderErrorHandler
+import io.snyk.plugin.services.download.SnykCliDownloaderService
+import io.snyk.plugin.services.download.SnykDownloader
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -21,19 +25,24 @@ import java.net.SocketTimeoutException
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
+class SnykCliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
     private lateinit var indicator: EmptyProgressIndicator
     private lateinit var errorHandler: SnykCliDownloaderErrorHandler
+    private lateinit var downloader: SnykDownloader
     private lateinit var cut: SnykCliDownloaderService
     private lateinit var cutSpy: SnykCliDownloaderService
+    private val cliFile = getCliFile()
 
     @Before
     override fun setUp() {
         super.setUp()
-        cut = project.service<SnykCliDownloaderService>()
+        unmockkAll()
+        cut = project.service()
         cutSpy = spyk(cut)
-        errorHandler = mockk<SnykCliDownloaderErrorHandler>()
+        errorHandler = mockk()
+        downloader = spyk()
+        cutSpy.downloader = downloader
         cutSpy.errorHandler = errorHandler
         indicator = EmptyProgressIndicator()
     }
@@ -44,32 +53,43 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
         assertNotNull(latestReleaseInfo)
 
-        assertTrue(latestReleaseInfo!!.id > 0)
-        assertTrue(latestReleaseInfo.name.isNotEmpty())
+        assertTrue(latestReleaseInfo!!.name.isNotEmpty())
         assertTrue(latestReleaseInfo.url.isNotEmpty())
         assertTrue(latestReleaseInfo.tagName.isNotEmpty())
     }
 
     @Test
     fun testDownloadLatestCliRelease() {
-        val cliDownloaderService = project.service<SnykCliDownloaderService>()
+        ensureCliFileExistent()
 
-        val cliFile = getCliFile()
-
-        if (!cliFile.exists()) {
-            cliFile.createNewFile()
-        }
-
-        project.service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator(), project)
+        cutSpy.downloadLatestRelease(indicator, project)
 
         val downloadedFile = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
         assertTrue(downloadedFile.exists())
-        assertEquals(
-            cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + pluginSettings().cliVersion
-        )
+        assertEquals(cutSpy.getLatestReleaseInfo()!!.tagName, "v" + pluginSettings().cliVersion)
+
+        verify { downloader.downloadFile(cliFile, indicator) }
+        verify { downloader.verifyCLIChecksum(cliFile) }
         downloadedFile.delete()
+    }
+
+    @Test
+    fun testDownloadLatestCliReleaseFailsWhenShaDoesNotMatch() {
+        ensureCliFileExistent()
+        every { downloader.calculateSha256(any()) } returns "wrong-sha"
+        justRun { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
+
+        cutSpy.downloadLatestRelease(indicator, project)
+
+        verify(exactly = 1) { downloader.verifyCLIChecksum(cliFile) }
+        verify(exactly = 1) { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
+    }
+
+    private fun ensureCliFileExistent() {
+        if (!cliFile.exists()) {
+            cliFile.createNewFile()
+        }
     }
 
     @Test
@@ -78,13 +98,13 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
         val exceptionMessage = "Read Timed Out"
         val ioException = SocketTimeoutException(exceptionMessage)
 
-        every { cutSpy.downloadFile(any(), any(), any()) } throws ioException
+        every { downloader.downloadFile(any(), any()) } throws ioException
         justRun { errorHandler.handleIOException(ioException, indicator, project) }
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify {
-            cutSpy.downloadFile(any(), any(), any())
+            downloader.downloadFile(any(), any())
             errorHandler.handleIOException(ioException, indicator, project)
         }
     }
@@ -93,13 +113,13 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
     fun testDownloadLatestCliReleaseShouldHandleHttpStatusException() {
         val httpStatusException = HttpRequests.HttpStatusException("status bad", HttpStatus.SC_GATEWAY_TIMEOUT, "url")
 
-        every { cutSpy.downloadFile(any(), any(), any()) } throws httpStatusException
+        every { downloader.downloadFile(any(), any()) } throws httpStatusException
         justRun { errorHandler.handleHttpStatusException(httpStatusException, project) }
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify {
-            cutSpy.downloadFile(any(), any(), any())
+            downloader.downloadFile(any(), any())
             errorHandler.handleHttpStatusException(httpStatusException, project)
         }
     }

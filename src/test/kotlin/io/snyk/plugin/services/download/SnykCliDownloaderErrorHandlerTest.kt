@@ -1,4 +1,4 @@
-package io.snyk.plugin.services
+package io.snyk.plugin.services.download
 
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.progress.ProgressIndicator
@@ -72,8 +72,9 @@ class SnykCliDownloaderErrorHandlerTest {
         val messageSlot = slot<String>()
         val projectSlot = slot<Project>()
         val downloaderService = mockk<SnykCliDownloaderService>()
+        val downloader = mockk<SnykDownloader>()
         val latestReleaseInfo =
-            LatestReleaseInfo(1, "release-url", "release-name", "release-tagName")
+            LatestReleaseInfo("release-url", "release-name", "release-tagName")
         val exception = IOException("Read Timed Out")
         val notificationMessage = cut.getNetworkErrorNotificationMessage(exception)
 
@@ -88,7 +89,8 @@ class SnykCliDownloaderErrorHandlerTest {
 
         every { project.getService(SnykCliDownloaderService::class.java) } returns downloaderService
         every { downloaderService.getLatestReleaseInfo() } returns latestReleaseInfo
-        every { downloaderService.downloadFile(any(), any(), any()) } returns getCliFile()
+        every { downloaderService.downloader } returns downloader
+        every { downloader.downloadFile(any(), any()) } returns getCliFile()
 
         cut.handleIOException(exception, indicator, project)
 
@@ -99,13 +101,13 @@ class SnykCliDownloaderErrorHandlerTest {
         assertEquals(project, projectSlot.captured)
 
         verify(exactly = 1) {
-            downloaderService.downloadFile(getCliFile(), latestReleaseInfo.tagName, indicator)
+            downloader.downloadFile(getCliFile(), indicator)
             SnykBalloonNotificationHelper.showError(any(), any(), any(), any())
         }
     }
 
     @Test
-    fun handleIOException_shouldOnlyShowErrorWithActionsWhenReleaseInfoEmpty() {
+    fun `handleChecksumVerificationException should retry and if not successful show balloon notification`() {
         val project = mockk<Project>()
         val indicator = mockk<ProgressIndicator>()
         val retryActionSlot = slot<NotificationAction>()
@@ -113,7 +115,11 @@ class SnykCliDownloaderErrorHandlerTest {
         val messageSlot = slot<String>()
         val projectSlot = slot<Project>()
         val downloaderService = mockk<SnykCliDownloaderService>()
-        val exception = IOException("Read Timed Out")
+        val downloader = mockk<SnykDownloader>()
+        val latestReleaseInfo =
+            LatestReleaseInfo("release-url", "release-name", "release-tagName")
+        val exception = ChecksumVerificationException("Oh no, wrong checksum!")
+        val notificationMessage = cut.getChecksumFailedNotificationMessage(exception)
 
         every {
             SnykBalloonNotificationHelper.showError(
@@ -125,22 +131,21 @@ class SnykCliDownloaderErrorHandlerTest {
         } returns mockk()
 
         every { project.getService(SnykCliDownloaderService::class.java) } returns downloaderService
-        every { downloaderService.getLatestReleaseInfo() } returns null
+        every { downloaderService.getLatestReleaseInfo() } returns latestReleaseInfo
+        every { downloaderService.downloader } returns downloader
+        every { downloader.downloadFile(any(), any()) } returns getCliFile()
 
-        cut.handleIOException(exception, indicator, project)
+        cut.handleChecksumVerificationException(exception, indicator, project)
 
         // verify notification
         assertEquals("Retry CLI download", retryActionSlot.captured.templateText)
         assertEquals("Contact support...", contactActionSlot.captured.templateText)
-        assertEquals(cut.getNetworkErrorNotificationMessage(exception), messageSlot.captured)
+        assertEquals(notificationMessage, messageSlot.captured)
         assertEquals(project, projectSlot.captured)
 
         verify(exactly = 1) {
+            downloader.downloadFile(getCliFile(), indicator)
             SnykBalloonNotificationHelper.showError(any(), any(), any(), any())
-        }
-
-        verify(exactly = 0) {
-            downloaderService.downloadFile(any(), any(), any())
         }
     }
 
