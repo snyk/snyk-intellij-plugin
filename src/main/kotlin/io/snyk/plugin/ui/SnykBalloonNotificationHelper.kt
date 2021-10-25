@@ -10,6 +10,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -27,8 +28,23 @@ object SnykBalloonNotificationHelper {
     private const val groupAutoHide = "SnykAutoHide"
     val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
-    fun showError(message: String, project: Project, vararg actions: AnAction) =
-        showNotification(message, project, NotificationType.ERROR, *actions)
+    fun showError(message: String, project: Project?, vararg actions: AnAction) {
+        var foundProject = getProject(project)
+        showNotification(message, foundProject, NotificationType.ERROR, *actions)
+    }
+
+    private fun getProject(project: Project?): Project? {
+        var foundProject = project
+        if (foundProject == null) {
+            val openProjects: Array<Project> = ProjectManager.getInstance().openProjects
+            if (openProjects.isNotEmpty()) {
+                foundProject = openProjects[0]
+            }
+        }
+        return foundProject
+    }
+
+    fun showError(message: String) = showNotification(message, null, NotificationType.ERROR)
 
     fun showInfo(message: String, project: Project, vararg actions: AnAction) =
         showNotification(message, project, NotificationType.INFORMATION, *actions)
@@ -39,7 +55,7 @@ object SnykBalloonNotificationHelper {
     // TODO(pavel): refactor showNotification function to make it more generic + default arguments
     private fun showNotification(
         message: String,
-        project: Project,
+        project: Project?,
         type: NotificationType,
         vararg actions: AnAction
     ): Notification {
@@ -58,7 +74,7 @@ object SnykBalloonNotificationHelper {
         return notification
     }
 
-    fun createBalloon(message: String, icon: Icon, color: Color): Balloon =
+    private fun createBalloon(message: String, icon: Icon, color: Color): Balloon =
         JBPopupFactory.getInstance().createHtmlTextBalloonBuilder(message, icon, color, null)
             .setHideOnClickOutside(true)
             .setFadeoutTime(5000)
@@ -80,23 +96,23 @@ object SnykBalloonNotificationHelper {
     }
 
     fun showInfoBalloonForComponent(message: String, component: Component, showAbove: Boolean = false): Balloon {
-        return SnykBalloonNotificationHelper.createBalloon(
+        return createBalloon(
             message,
             AllIcons.General.BalloonInformation,
             MessageType.INFO.popupBackground
         ).apply {
-            SnykBalloonNotificationHelper.showBalloonForComponent(this, component, showAbove)
+            showBalloonForComponent(this, component, showAbove)
         }
     }
 
     fun showWarnBalloonAtEventPlace(message: String, e: AnActionEvent, showAbove: Boolean = false) {
         val component = e.inputEvent?.component ?: e.getData(PlatformDataKeys.CONTEXT_COMPONENT) ?: return
         // todo: case if no Component exist (action invoked from Search?)
-        val balloon = SnykBalloonNotificationHelper.createBalloon(
+        val balloon = createBalloon(
             message,
             AllIcons.General.BalloonWarning,
             MessageType.WARNING.popupBackground
         )
-        SnykBalloonNotificationHelper.showBalloonForComponent(balloon, component, showAbove)
+        showBalloonForComponent(balloon, component, showAbove)
     }
 }
