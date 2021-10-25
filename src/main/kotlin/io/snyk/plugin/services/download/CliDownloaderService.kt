@@ -24,8 +24,8 @@ class SnykCliDownloaderService {
         const val NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK = 4
     }
 
-    var downloader = SnykDownloader()
-    var errorHandler = SnykCliDownloaderErrorHandler()
+    var downloader = CliDownloader()
+    var errorHandler = CliDownloaderErrorHandler()
 
     private val cliDownloadPublisher
         get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
@@ -43,7 +43,7 @@ class SnykCliDownloaderService {
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
         try {
-            val response = "v" + URL(SnykDownloader.LATEST_RELEASES_URL).readText().removeSuffix("\n")
+            val response = "v" + URL(CliDownloader.LATEST_RELEASES_URL).readText().removeSuffix("\n")
             latestReleaseInfo = LatestReleaseInfo(
                 tagName = response,
                 url = "https://static.snyk.io/cli/latest/${Platform.current().snykWrapperFileName}",

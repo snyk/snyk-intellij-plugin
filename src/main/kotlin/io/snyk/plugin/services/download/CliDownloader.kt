@@ -8,7 +8,7 @@ import java.net.URL
 import java.security.MessageDigest
 import javax.xml.bind.DatatypeConverter
 
-class SnykDownloader {
+class CliDownloader {
     companion object {
         const val BASE_URL = "https://static.snyk.io"
         const val LATEST_RELEASES_URL = "$BASE_URL/cli/latest/version"

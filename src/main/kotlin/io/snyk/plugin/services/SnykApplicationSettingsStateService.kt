@@ -94,6 +94,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     }
 
     fun setLastCheckDate(localDate: LocalDateTime) {
-        this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant());
+        this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant())
     }
 }

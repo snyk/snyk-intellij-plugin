@@ -195,6 +195,5 @@ fun getX509TrustManager(): X509TrustManager {
     check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
         ("Unexpected default trust managers:${trustManagers.contentToString()}")
     }
-    val trustManager = trustManagers[0] as X509TrustManager
-    return trustManager
+    return trustManagers[0] as X509TrustManager
 }

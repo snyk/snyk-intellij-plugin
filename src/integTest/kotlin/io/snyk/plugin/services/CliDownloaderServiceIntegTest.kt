@@ -15,9 +15,9 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
 import org.apache.http.HttpStatus
-import io.snyk.plugin.services.download.SnykCliDownloaderErrorHandler
+import io.snyk.plugin.services.download.CliDownloader
+import io.snyk.plugin.services.download.CliDownloaderErrorHandler
 import io.snyk.plugin.services.download.SnykCliDownloaderService
-import io.snyk.plugin.services.download.SnykDownloader
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -25,11 +25,11 @@ import java.net.SocketTimeoutException
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class SnykCliDownloaderServiceIntegTest : LightPlatformTestCase() {
+class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
     private lateinit var indicator: EmptyProgressIndicator
-    private lateinit var errorHandler: SnykCliDownloaderErrorHandler
-    private lateinit var downloader: SnykDownloader
+    private lateinit var errorHandler: CliDownloaderErrorHandler
+    private lateinit var downloader: CliDownloader
     private lateinit var cut: SnykCliDownloaderService
     private lateinit var cutSpy: SnykCliDownloaderService
     private val cliFile = getCliFile()

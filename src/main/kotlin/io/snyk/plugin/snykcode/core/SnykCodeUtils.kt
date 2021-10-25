@@ -7,6 +7,7 @@ import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 
 class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
@@ -38,12 +39,11 @@ class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
         scLogger.logInfo("allProjectFiles scan finished. Found ${allVirtualFiles.size} files")
 
         val psiManager = PsiManager.getInstance(project)
-        val allPsiFiles = RunUtils.computeInReadActionInSmartMode(
+
+        return RunUtils.computeInReadActionInSmartMode(
             project,
             Computable { allVirtualFiles.mapNotNull(psiManager::findFile) }
-        ) ?: emptyList()
-
-        return allPsiFiles
+        ) ?: emptyList<PsiFile>()
     }
 
     override fun getFileLength(file: Any): Long = PDU.toPsiFile(file).virtualFile.length

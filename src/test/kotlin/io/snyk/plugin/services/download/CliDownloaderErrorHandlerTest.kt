@@ -18,13 +18,13 @@ import org.junit.Before
 import org.junit.Test
 import java.io.IOException
 
-class SnykCliDownloaderErrorHandlerTest {
+class CliDownloaderErrorHandlerTest {
 
-    private lateinit var cut: SnykCliDownloaderErrorHandler
+    private lateinit var cut: CliDownloaderErrorHandler
 
     @Before
     fun setUp() {
-        cut = SnykCliDownloaderErrorHandler()
+        cut = CliDownloaderErrorHandler()
         mockkObject(SnykBalloonNotificationHelper)
     }
 
@@ -72,7 +72,7 @@ class SnykCliDownloaderErrorHandlerTest {
         val messageSlot = slot<String>()
         val projectSlot = slot<Project>()
         val downloaderService = mockk<SnykCliDownloaderService>()
-        val downloader = mockk<SnykDownloader>()
+        val downloader = mockk<CliDownloader>()
         val latestReleaseInfo =
             LatestReleaseInfo("release-url", "release-name", "release-tagName")
         val exception = IOException("Read Timed Out")
@@ -115,7 +115,7 @@ class SnykCliDownloaderErrorHandlerTest {
         val messageSlot = slot<String>()
         val projectSlot = slot<Project>()
         val downloaderService = mockk<SnykCliDownloaderService>()
-        val downloader = mockk<SnykDownloader>()
+        val downloader = mockk<CliDownloader>()
         val latestReleaseInfo =
             LatestReleaseInfo("release-url", "release-name", "release-tagName")
         val exception = ChecksumVerificationException("Oh no, wrong checksum!")

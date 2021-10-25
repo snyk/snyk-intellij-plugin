@@ -9,7 +9,7 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
 
-class SnykCliDownloaderErrorHandler {
+class CliDownloaderErrorHandler {
     fun showErrorWithRetryAndContactAction(message: String, indicator: ProgressIndicator, project: Project) {
         SnykBalloonNotificationHelper.showError(message, project,
             NotificationAction.createSimple("Retry CLI download") {
