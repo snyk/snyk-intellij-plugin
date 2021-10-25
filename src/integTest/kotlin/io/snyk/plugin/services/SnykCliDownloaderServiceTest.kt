@@ -13,6 +13,7 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
+import org.apache.http.HttpStatus
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -68,7 +69,6 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
             cliDownloaderService.getLatestReleaseInfo()!!.tagName,
             "v" + pluginSettings().cliVersion
         )
-
         downloadedFile.delete()
     }
 
@@ -91,7 +91,7 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testDownloadLatestCliReleaseShouldHandleHttpStatusException() {
-        val httpStatusException = HttpRequests.HttpStatusException("status bad", 503, "url")
+        val httpStatusException = HttpRequests.HttpStatusException("status bad", HttpStatus.SC_GATEWAY_TIMEOUT, "url")
 
         every { cutSpy.downloadFile(any(), any(), any()) } throws httpStatusException
         justRun { errorHandler.handleHttpStatusException(httpStatusException, project) }
@@ -108,7 +108,7 @@ class SnykCliDownloaderServiceTest : LightPlatformTestCase() {
     fun testDownloadLatestCliReleaseWhenNoReleaseInfoAvailable() {
         val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
-        val cliDownloaderServiceSpy = spyk(cliDownloaderService )
+        val cliDownloaderServiceSpy = spyk(cliDownloaderService)
         every { cliDownloaderServiceSpy.requestLatestReleasesInformation() } returns null
 
         assertNoThrowable {

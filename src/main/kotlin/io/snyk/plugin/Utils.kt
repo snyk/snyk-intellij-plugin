@@ -1,4 +1,5 @@
 @file:JvmName("UtilsKt")
+
 package io.snyk.plugin
 
 import com.intellij.openapi.Disposable
@@ -24,8 +25,13 @@ import snyk.iac.IacService
 import snyk.oss.OssService
 import java.io.File
 import java.net.URL
+import java.security.KeyStore
 import java.util.Objects.nonNull
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 fun getOssService(project: Project): OssService = project.service()
 
@@ -136,7 +142,7 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
             if (settings.sastOnServerEnabled == true) {
                 onSuccess.invoke()
             } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
-                currentAttempt++;
+                currentAttempt++
                 alarm.addRequest(checkIfSastEnabled, 2000 * currentAttempt)
             }
         }
@@ -172,3 +178,23 @@ fun getWaitForResultsTimeout(): Long =
     ).toLong()
 
 val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS = TimeUnit.MILLISECONDS.convert(12L, TimeUnit.MINUTES).toInt()
+
+fun getSSLContext(): SSLContext {
+    val trustManager = getX509TrustManager()
+    val sslContext = SSLContext.getInstance("TLSv1.2")
+    sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
+    return sslContext
+}
+
+fun getX509TrustManager(): X509TrustManager {
+    val trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(
+        TrustManagerFactory.getDefaultAlgorithm()
+    )
+    trustManagerFactory.init(null as KeyStore?)
+    val trustManagers: Array<TrustManager> = trustManagerFactory.trustManagers
+    check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
+        ("Unexpected default trust managers:${trustManagers.contentToString()}")
+    }
+    val trustManager = trustManagers[0] as X509TrustManager
+    return trustManager
+}
