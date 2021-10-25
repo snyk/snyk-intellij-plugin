@@ -17,6 +17,7 @@ import com.intellij.util.PlatformIcons
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.lang.StringEscapeUtils.escapeHtml
@@ -132,7 +133,7 @@ class SnykCliAuthenticationService(val project: Project) {
     }
 }
 
-class AuthDialog() : DialogWrapper(true) {
+class AuthDialog : DialogWrapper(true) {
     var onCancel: () -> Unit = {}
     private val viewer = getReadOnlyClickableHtmlJEditorPane("Initializing authentication...")
     val copyUrlAction = CopyUrlAction()

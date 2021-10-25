@@ -20,7 +20,7 @@ import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.services.SnykCliDownloaderService
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.junit.After
 import org.junit.Before
 import org.junit.Test

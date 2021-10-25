@@ -29,7 +29,7 @@ object SnykBalloonNotificationHelper {
     val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
     fun showError(message: String, project: Project?, vararg actions: AnAction) {
-        var foundProject = getProject(project)
+        val foundProject = getProject(project)
         showNotification(message, foundProject, NotificationType.ERROR, *actions)
     }
 

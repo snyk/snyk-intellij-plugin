@@ -449,7 +449,7 @@ class SuggestionDescriptionPanel(
             getGridConstraints(0)
         )
 
-        cwes.forEachIndexed() { index, cwe ->
+        cwes.forEachIndexed { index, cwe ->
             if (!cwe.isNullOrEmpty()) {
                 val positionLabel = linkLabel(
                     linkText = cwe,

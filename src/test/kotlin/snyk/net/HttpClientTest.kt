@@ -1,17 +1,31 @@
 package snyk.net
 
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import junit.framework.TestCase.assertFalse
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import javax.net.ssl.TrustManagerFactory
 
 class HttpClientTest {
+
+    @Before
+    fun setUp() {
+        clearAllMocks()
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun `should use SSLContext with TLSv12 configured`() {

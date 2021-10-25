@@ -38,8 +38,8 @@ import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
