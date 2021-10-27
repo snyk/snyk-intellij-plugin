@@ -23,16 +23,16 @@ repositories {
 }
 
 dependencies {
-  implementation("com.atlassian.commonmark:commonmark:0.15.2")
-  implementation("com.google.code.gson:gson:2.8.6")
-  implementation("com.segment.analytics.java:analytics:3.1.0")
-  implementation("io.sentry:sentry:5.1.2")
+  implementation("com.atlassian.commonmark:commonmark:0.17.0")
+  implementation("com.google.code.gson:gson:2.8.8")
+  implementation("com.segment.analytics.java:analytics:3.1.3")
+  implementation("io.sentry:sentry:5.2.4")
   implementation("io.snyk.code.sdk:snyk-code-client:2.1.12")
-  implementation("ly.iterative.itly:plugin-iteratively:1.2.7")
-  implementation("ly.iterative.itly:plugin-schema-validator:1.2.7") {
+  implementation("ly.iterative.itly:plugin-iteratively:1.2.10")
+  implementation("ly.iterative.itly:plugin-schema-validator:1.2.10") {
     exclude(group = "org.slf4j")
   }
-  implementation("ly.iterative.itly:sdk-jvm:1.2.7")
+  implementation("ly.iterative.itly:sdk-jvm:1.2.10")
 
   testImplementation("com.squareup.okhttp3:mockwebserver:4.9.2")
   testImplementation("junit:junit:4.13.2") {
@@ -41,7 +41,7 @@ dependencies {
   testImplementation("org.hamcrest:hamcrest:2.2")
   testImplementation("io.mockk:mockk:1.12.0")
 
-  detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
+  detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.18.1")
 }
 
 // configuration for gradle-intellij-plugin plugin.
