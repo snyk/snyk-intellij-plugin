@@ -1,22 +1,21 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.4.4]
 ### Fixed
 - Handle errors when downloading Snyk CLI
 ### Changed
 - Send missing analytic events by plugin install/uninstall
-- Snyk OSS: Only show links to https://app.snyk.io/test (Introduced through) for NPM packages
+- Rename IssueIsViewed analytic event to IssueInTreeIsClicked
+- Show links (Introduced through) only for NPM packages
 - Create Sentry release on plugin release to be able to assign bugs to be fixed in next release
+- Download Snyk CLI from static.snyk.io instead of GitHub releases
+- Use TLS 1.2 as default to communicate with Snyk API
 
 ## [2.4.3]
-
 ### Fixed
-
 - Show correct result in the tree when Snyk Code scan was stopped by user
 - Send analytic events correctly when triggering Snyk Code analysis
-
 ### Changed
-
 - Increase timeout for Snyk Code scan to 12 minutes. Configurable via 'snyk.timeout.results.waiting' registry key.
 - Make plugin compatible with 2021.3 version
 
