@@ -11,10 +11,9 @@ class IgnoreButtonActionListener(
     ActionListener {
     override fun actionPerformed(e: ActionEvent?) {
         iacIgnoreService.ignore(issue)
-        if (e != null && e.source is JButton) {
-            val jButton = e.source as JButton
-            jButton.isEnabled = false
-            jButton.text = "Issue now ignored"
+        (e?.source as? JButton)?.apply {
+            isEnabled = false
+            text = "Issue now ignored"
         }
     }
 }
