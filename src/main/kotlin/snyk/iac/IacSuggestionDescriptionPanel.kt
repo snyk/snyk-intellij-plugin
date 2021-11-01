@@ -14,6 +14,7 @@ import io.snyk.plugin.ui.buildBoldTitleLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
+import snyk.common.IgnoreService
 import java.awt.Color
 import java.awt.Component
 import java.awt.Dimension
@@ -174,7 +175,7 @@ class IacSuggestionDescriptionPanel(
 
     private fun createIgnoreButton(panel: JPanel) {
         val ignoreButton = JButton("Ignore This Issue")
-        val service = IacIgnoreService(ConsoleCommandRunner(), project, emptyList())
+        val service = IgnoreService(ConsoleCommandRunner(), project, emptyList())
         ignoreButton.addActionListener(IgnoreButtonActionListener(service, issue))
         panel.add(
             ignoreButton,

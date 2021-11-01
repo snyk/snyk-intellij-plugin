@@ -1,4 +1,4 @@
-package snyk.iac
+package snyk.common
 
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -6,14 +6,16 @@ import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.CliService
+import io.snyk.plugin.services.CliAdapter
 import org.jetbrains.annotations.NotNull
+import snyk.iac.IacIssue
+import snyk.iac.IacResult
 
-class IacIgnoreService(
+class IgnoreService(
     val consoleCommandRunner: ConsoleCommandRunner,
     project: Project,
     cliCommands: List<String> = emptyList()
-) : CliService<IacResult>(project, cliCommands) {
+) : CliAdapter<IacResult>(project, cliCommands) {
 
     fun ignore(issue: IacIssue): String {
         val apiToken = pluginSettings().token ?: ""

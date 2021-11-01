@@ -6,13 +6,14 @@ import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import org.junit.Test
+import snyk.common.IgnoreService
 import java.awt.event.ActionEvent
 import javax.swing.JButton
 
 class IgnoreButtonActionListenerTest {
     @Test
     fun `actionPerformed should call ignore on IacIgnoreService with Issue`() {
-        val service = mockk<IacIgnoreService>()
+        val service = mockk<IgnoreService>()
         val issue = mockk<IacIssue>()
         val cut = IgnoreButtonActionListener(service, issue)
         val event = mockk<ActionEvent>()

@@ -1,4 +1,4 @@
-package snyk.iac
+package snyk.common
 
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
@@ -17,10 +17,11 @@ import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Test
+import snyk.iac.IacIssue
 import java.io.File
 import java.util.UUID
 
-class IacIgnoreServiceTest {
+class IgnoreServiceTest {
     private val expectedWorkingDirectory = "testDir"
     private val expectedApiToken = UUID.randomUUID().toString()
     private val mockRunner = mockk<ConsoleCommandRunner>()
@@ -63,7 +64,7 @@ class IacIgnoreServiceTest {
             mockRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
         } returns expectedOutput
 
-        val actualOutput = IacIgnoreService(mockRunner, project, emptyList()).ignore(issue)
+        val actualOutput = IgnoreService(mockRunner, project, emptyList()).ignore(issue)
 
         verify(exactly = 1) {
             mockRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)

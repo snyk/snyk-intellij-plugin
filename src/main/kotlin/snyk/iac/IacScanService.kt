@@ -6,14 +6,14 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.services.CliService
+import io.snyk.plugin.services.CliAdapter
 import snyk.common.SnykError
 
 /**
  * Wrap work with Snyk CLI for IaC (`iac test` command).
  */
 @Service
-class IacScanService(project: Project) : CliService<IacResult>(
+class IacScanService(project: Project) : CliAdapter<IacResult>(
     project = project,
     cliCommands = listOf("iac", "test")
 ) {

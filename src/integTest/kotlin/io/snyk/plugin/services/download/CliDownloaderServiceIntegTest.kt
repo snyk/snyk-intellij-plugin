@@ -14,6 +14,9 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.download.CliDownloader
+import io.snyk.plugin.services.download.CliDownloaderErrorHandler
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.apache.http.HttpStatus
 import org.junit.Before
 import org.junit.Test

@@ -1,16 +1,17 @@
 package snyk.iac
 
+import snyk.common.IgnoreService
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import javax.swing.JButton
 
 class IgnoreButtonActionListener(
-    private val iacIgnoreService: IacIgnoreService,
+    private val ignoreService: IgnoreService,
     val issue: IacIssue
 ) :
     ActionListener {
     override fun actionPerformed(e: ActionEvent?) {
-        iacIgnoreService.ignore(issue)
+        ignoreService.ignore(issue)
         (e?.source as? JButton)?.apply {
             isEnabled = false
             text = "Issue now ignored"

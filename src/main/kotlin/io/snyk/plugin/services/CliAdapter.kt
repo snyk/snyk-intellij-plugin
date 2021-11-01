@@ -12,11 +12,11 @@ import org.jetbrains.annotations.TestOnly
 /**
  * Wrap work with Snyk CLI.
  */
-abstract class CliService<R>(val project: Project, private val cliCommands: List<String>) {
+abstract class CliAdapter<R>(val project: Project, private val cliCommands: List<String>) {
 
     private var consoleCommandRunner = ConsoleCommandRunner()
 
-    private val logger = logger<CliService<R>>()
+    private val logger = logger<CliAdapter<R>>()
 
     protected val projectPath: String = project.basePath
         ?: throw IllegalStateException("Scan should not be performed on Default project (with `null` project base dir)")
@@ -47,7 +47,7 @@ abstract class CliService<R>(val project: Project, private val cliCommands: List
      * Build list of commands for run Snyk CLI command.
      * @return List<String>
      */
-    fun buildCliCommandsList(): MutableList<String> {
+    fun buildCliCommandsList(): List<String> {
         logger.debug("Enter buildCliCommandsList")
         val settings = pluginSettings()
 

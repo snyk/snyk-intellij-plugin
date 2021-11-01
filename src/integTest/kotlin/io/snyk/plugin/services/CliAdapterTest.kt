@@ -2,15 +2,15 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
 
-class CliServiceTest : LightPlatformTestCase() {
+class CliAdapterTest : LightPlatformTestCase() {
 
     private val dummyCliService by lazy {
-        object : CliService<Any>(project, listOf("fake_cli_command")) {
+        object : CliAdapter<Any>(project, listOf("fake_cli_command")) {
             override fun getErrorResult(errorMsg: String): Any = Unit
             override fun convertRawCliStringToCliResult(rawStr: String): Any = Unit
         }
