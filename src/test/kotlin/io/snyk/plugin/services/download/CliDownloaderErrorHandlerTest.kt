@@ -4,43 +4,57 @@ import com.intellij.notification.NotificationAction
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
+import io.mockk.CapturingSlot
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.getCliFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import java.io.IOException
 
 class CliDownloaderErrorHandlerTest {
 
+    private lateinit var indicator: ProgressIndicator
+    private lateinit var project: Project
     private lateinit var cut: CliDownloaderErrorHandler
+
+    private lateinit var retryActionSlot: CapturingSlot<NotificationAction>
+    private lateinit var contactActionSlot: CapturingSlot<NotificationAction>
+    private lateinit var messageSlot: CapturingSlot<String>
+    private lateinit var projectSlot: CapturingSlot<Project>
 
     @Before
     fun setUp() {
-        cut = CliDownloaderErrorHandler()
+        clearAllMocks()
+        unmockkAll()
         mockkObject(SnykBalloonNotificationHelper)
+
+        project = mockk()
+        indicator = mockk()
+
+        contactActionSlot = slot()
+        messageSlot = slot()
+        projectSlot = slot()
+
+        cut = CliDownloaderErrorHandler()
     }
 
     @After
     fun tearDown() {
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test
     fun showErrorWithWithRetryAndContactAction_shouldShowErrorWithActions() {
         val notificationMessage = "Test message"
-        val project = mockk<Project>()
-        val retryActionSlot = slot<NotificationAction>()
-        val contactActionSlot = slot<NotificationAction>()
-        val messageSlot = slot<String>()
-        val projectSlot = slot<Project>()
+
+        retryActionSlot = slot()
 
         every {
             SnykBalloonNotificationHelper.showError(
@@ -64,99 +78,9 @@ class CliDownloaderErrorHandlerTest {
     }
 
     @Test
-    fun handleIOException_shouldTryAgainAndShowErrorWithActions() {
-        val project = mockk<Project>()
-        val indicator = mockk<ProgressIndicator>()
-        val retryActionSlot = slot<NotificationAction>()
-        val contactActionSlot = slot<NotificationAction>()
-        val messageSlot = slot<String>()
-        val projectSlot = slot<Project>()
-        val downloaderService = mockk<SnykCliDownloaderService>()
-        val downloader = mockk<CliDownloader>()
-        val latestReleaseInfo =
-            LatestReleaseInfo("release-url", "release-name", "release-tagName")
-        val exception = IOException("Read Timed Out")
-        val notificationMessage = cut.getNetworkErrorNotificationMessage(exception)
-
-        every {
-            SnykBalloonNotificationHelper.showError(
-                capture(messageSlot),
-                capture(projectSlot),
-                capture(retryActionSlot),
-                capture(contactActionSlot)
-            )
-        } returns mockk()
-
-        every { project.getService(SnykCliDownloaderService::class.java) } returns downloaderService
-        every { downloaderService.getLatestReleaseInfo() } returns latestReleaseInfo
-        every { downloaderService.downloader } returns downloader
-        every { downloader.downloadFile(any(), any()) } returns getCliFile()
-
-        cut.handleIOException(exception, indicator, project)
-
-        // verify notification
-        assertEquals("Retry CLI download", retryActionSlot.captured.templateText)
-        assertEquals("Contact support...", contactActionSlot.captured.templateText)
-        assertEquals(notificationMessage, messageSlot.captured)
-        assertEquals(project, projectSlot.captured)
-
-        verify(exactly = 1) {
-            downloader.downloadFile(getCliFile(), indicator)
-            SnykBalloonNotificationHelper.showError(any(), any(), any(), any())
-        }
-    }
-
-    @Test
-    fun `handleChecksumVerificationException should retry and if not successful show balloon notification`() {
-        val project = mockk<Project>()
-        val indicator = mockk<ProgressIndicator>()
-        val retryActionSlot = slot<NotificationAction>()
-        val contactActionSlot = slot<NotificationAction>()
-        val messageSlot = slot<String>()
-        val projectSlot = slot<Project>()
-        val downloaderService = mockk<SnykCliDownloaderService>()
-        val downloader = mockk<CliDownloader>()
-        val latestReleaseInfo =
-            LatestReleaseInfo("release-url", "release-name", "release-tagName")
-        val exception = ChecksumVerificationException("Oh no, wrong checksum!")
-        val notificationMessage = cut.getChecksumFailedNotificationMessage(exception)
-
-        every {
-            SnykBalloonNotificationHelper.showError(
-                capture(messageSlot),
-                capture(projectSlot),
-                capture(retryActionSlot),
-                capture(contactActionSlot)
-            )
-        } returns mockk()
-
-        every { project.getService(SnykCliDownloaderService::class.java) } returns downloaderService
-        every { downloaderService.getLatestReleaseInfo() } returns latestReleaseInfo
-        every { downloaderService.downloader } returns downloader
-        every { downloader.downloadFile(any(), any()) } returns getCliFile()
-
-        cut.handleChecksumVerificationException(exception, indicator, project)
-
-        // verify notification
-        assertEquals("Retry CLI download", retryActionSlot.captured.templateText)
-        assertEquals("Contact support...", contactActionSlot.captured.templateText)
-        assertEquals(notificationMessage, messageSlot.captured)
-        assertEquals(project, projectSlot.captured)
-
-        verify(exactly = 1) {
-            downloader.downloadFile(getCliFile(), indicator)
-            SnykBalloonNotificationHelper.showError(any(), any(), any(), any())
-        }
-    }
-
-    @Test
     fun handleHttpStatusException_shouldDisplayErrorMessage() {
-        val project = mockk<Project>()
         val exception = HttpRequests.HttpStatusException("Forbidden", 403, "url")
 
-        val contactActionSlot = slot<NotificationAction>()
-        val messageSlot = slot<String>()
-        val projectSlot = slot<Project>()
         every {
             SnykBalloonNotificationHelper.showError(
                 capture(messageSlot),
