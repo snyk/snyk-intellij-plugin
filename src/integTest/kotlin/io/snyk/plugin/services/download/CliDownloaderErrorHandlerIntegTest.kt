@@ -13,6 +13,7 @@ import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
 
@@ -27,6 +28,7 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
     override fun setUp() {
         super.setUp()
         clearAllMocks()
+        resetSettings(project)
         mockkObject(SnykBalloonNotificationHelper)
 
         mockkStatic(ProgressManager::class)
@@ -43,8 +45,9 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
-        super.tearDown()
         clearAllMocks()
+        resetSettings(project)
+        super.tearDown()
     }
 
     fun testHandleIOExceptionShouldRetryDownloadAndShowBalloonIfItFails() {

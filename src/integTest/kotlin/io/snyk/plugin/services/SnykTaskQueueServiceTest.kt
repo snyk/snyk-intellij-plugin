@@ -4,19 +4,38 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.unmockkStatic
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.removeDummyCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Test
 import snyk.iac.IacResult
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
+
+    override fun setUp() {
+        super.setUp()
+        clearAllMocks()
+        unmockkAll()
+        resetSettings(project)
+    }
+
+    override fun tearDown() {
+        clearAllMocks()
+        unmockkAll()
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
+    }
 
     @Test
     fun testSnykTaskQueueService() {

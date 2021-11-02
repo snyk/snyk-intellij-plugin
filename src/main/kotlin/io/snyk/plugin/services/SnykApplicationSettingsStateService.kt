@@ -16,6 +16,9 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
 
+/**
+ * If default values changed then [io.snyk.plugin.TestUtilsKt.resetSettings] MUST be changed too!
+ */
 @Service
 @State(
     name = "SnykApplicationSettingsState",

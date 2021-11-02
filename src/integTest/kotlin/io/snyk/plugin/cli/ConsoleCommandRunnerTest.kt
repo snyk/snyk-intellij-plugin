@@ -20,6 +20,7 @@ import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.junit.After
 import org.junit.Before
@@ -136,13 +137,15 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         super.setUp()
         // don't report to Sentry when running this test
         unmockkAll()
+        resetSettings(project)
         mockkObject(SentryErrorReporter)
         every { SentryErrorReporter.captureException(any()) } returns SentryId()
     }
 
     @After
     override fun tearDown() {
-        super.tearDown()
         unmockkAll()
+        resetSettings(project)
+        super.tearDown()
     }
 }
