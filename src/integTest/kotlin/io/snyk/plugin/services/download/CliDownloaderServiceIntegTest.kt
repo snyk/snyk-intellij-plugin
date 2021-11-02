@@ -1,4 +1,4 @@
-package io.snyk.plugin.services
+package io.snyk.plugin.services.download
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.EmptyProgressIndicator
@@ -15,9 +15,6 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
 import org.apache.http.HttpStatus
-import io.snyk.plugin.services.download.CliDownloader
-import io.snyk.plugin.services.download.CliDownloaderErrorHandler
-import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.junit.Before
 import org.junit.Test
 import java.io.File
