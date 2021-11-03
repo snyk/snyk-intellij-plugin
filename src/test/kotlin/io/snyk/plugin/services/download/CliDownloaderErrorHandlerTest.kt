@@ -65,7 +65,7 @@ class CliDownloaderErrorHandlerTest {
             )
         } returns mockk()
 
-        cut.showErrorWithRetryAndContactAction(notificationMessage, mockk(), project)
+        cut.showErrorWithRetryAndContactAction(notificationMessage, project)
 
         assertEquals("Retry CLI download", retryActionSlot.captured.templateText)
         assertEquals("Contact support...", contactActionSlot.captured.templateText)

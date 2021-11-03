@@ -2,6 +2,7 @@ package io.snyk.plugin.services.download
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.notification.NotificationAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.runBackgroundableTask
@@ -12,12 +13,11 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
 
 class CliDownloaderErrorHandler {
-    fun showErrorWithRetryAndContactAction(message: String, indicator: ProgressIndicator, project: Project) {
+    fun showErrorWithRetryAndContactAction(message: String, project: Project) {
         SnykBalloonNotificationHelper.showError(message, project,
             NotificationAction.createSimple("Retry CLI download") {
-                project.getService(SnykCliDownloaderService::class.java).downloadLatestRelease(indicator, project)
-                runBackgroundableTask("Retry Snyk CLI Download", project, false) {
-                    project.getService(SnykCliDownloaderService::class.java).downloadLatestRelease(it, project)
+                runBackgroundableTask("Retry Snyk CLI Download", project, true) {
+                    project.service<SnykCliDownloaderService>().downloadLatestRelease(it, project)
                 }
             },
             NotificationAction.createSimple("Contact support...") {
@@ -31,14 +31,15 @@ class CliDownloaderErrorHandler {
 
     private fun retryDownload(project: Project, indicator: ProgressIndicator, message: String) {
         try {
-            runBackgroundableTask("Retry CLI Download", project, false) {
+            runBackgroundableTask("Retry CLI Download", project, true) {
+                // not using the service here to not causing an endless recursion (the service triggers a retry)
                 val downloader = project.getService(SnykCliDownloaderService::class.java).downloader
                 downloader.downloadFile(getCliFile(), indicator)
             }
         } catch (throwable: Throwable) { // we must catch throwable as IntelliJ could throw AssertionError
             // IntelliJ throws an exception if we log an error, and in this case it is just the retry that failed
             logger<CliDownloaderErrorHandler>().warn("Retry of downloading the Snyk CLI failed.", throwable)
-            showErrorWithRetryAndContactAction(message, indicator, project)
+            showErrorWithRetryAndContactAction(message, project)
         }
     }
 
