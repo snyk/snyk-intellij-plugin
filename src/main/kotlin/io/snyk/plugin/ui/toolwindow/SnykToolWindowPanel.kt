@@ -169,7 +169,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater {
                         displayIacResults(iacResult)
                     }
-                    // TODO: Add event logging
+                    service<SnykAnalyticsService>().logAnalysisIsReady(
+                        AnalysisIsReady.builder()
+                            .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
+                            .ide(AnalysisIsReady.Ide.JETBRAINS)
+                            .result(Result.SUCCESS)
+                            .build()
+                    )
                 }
 
                 private fun logSnykCodeAnalysisIsReady(result: Result) {
@@ -365,7 +371,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             navigateToSource(virtualFile, lineStartOffset)
                         }
                     }
-                    // TODO: Add event logging
+                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                        IssueInTreeIsClicked.builder()
+                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
+                            .issueId(iacIssue.id)
+                            .issueType(IssueInTreeIsClicked.IssueType.INFRASTRUCTURE_AS_CODE_ISSUE)
+                            .severity(iacIssue.getIssueSeverityOrNull())
+                            .build()
+                    )
                 }
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
