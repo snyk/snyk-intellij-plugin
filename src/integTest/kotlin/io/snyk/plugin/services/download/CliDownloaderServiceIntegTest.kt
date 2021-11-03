@@ -4,7 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.util.io.HttpRequests
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -35,7 +34,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        clearAllMocks()
         resetSettings(project)
         cut = project.service()
         cutSpy = spyk(cut)
@@ -48,7 +46,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
     override fun tearDown() {
         unmockkAll()
-        clearAllMocks()
         resetSettings(project)
         super.tearDown()
     }

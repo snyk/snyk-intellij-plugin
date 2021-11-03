@@ -6,7 +6,6 @@ import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.TestActionEvent
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -23,6 +22,7 @@ import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
 import org.junit.Test
 import snyk.iac.IacIssue
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
+import javax.swing.tree.TreeNode
 
 class SnykToolWindowPanelTest : HeavyPlatformTestCase() {
 
@@ -33,14 +33,12 @@ class SnykToolWindowPanelTest : HeavyPlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        clearAllMocks()
         unmockkAll()
         resetSettings(project)
         setupDummyCliFile()
     }
 
     override fun tearDown() {
-        clearAllMocks()
         unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
@@ -82,7 +80,7 @@ class SnykToolWindowPanelTest : HeavyPlatformTestCase() {
 
         val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
         fun isMediumSeverityShown(): Boolean = rootIacIssuesTreeNode.children().asSequence()
-            .flatMap { it.children().asSequence() }
+            .flatMap { (it as TreeNode).children().asSequence() }
             .any {
                 it is IacIssueTreeNode &&
                     it.userObject is IacIssue &&

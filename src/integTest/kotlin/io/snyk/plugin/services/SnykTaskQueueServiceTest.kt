@@ -4,7 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -24,13 +23,11 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        clearAllMocks()
         unmockkAll()
         resetSettings(project)
     }
 
     override fun tearDown() {
-        clearAllMocks()
         unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
