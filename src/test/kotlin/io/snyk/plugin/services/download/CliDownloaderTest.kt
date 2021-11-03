@@ -8,8 +8,8 @@ import java.nio.file.Files
 class CliDownloaderTest {
     @Test
     fun `calculateSha256 should verify the SHA of a given file and return false if no match`() {
-        val filePath = "src/test/resources/npm-test-vulnerability.json"
-        val expectedSha = "dd307dd1effb43473562d02ccef9ea1f925b6f8364e85e85077b72335019a4d3"
+        val filePath = "src/test/resources/dummy-binary"
+        val expectedSha = "2b418a5d0573164b4f93188fc94de0332fc0968e7a8439b01f530a4cdde1dcf2"
         val bytes = Files.readAllBytes(File(filePath).toPath())
 
         assertEquals(expectedSha, CliDownloader().calculateSha256(bytes))
