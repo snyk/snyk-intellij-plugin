@@ -55,7 +55,7 @@ class IacSuggestionDescriptionPanelTest {
         assertNotNull("Didn't find Ignore Button", actualButton)
         val listener = actualButton!!.actionListeners.first() as IgnoreButtonActionListener
         assertEquals(IgnoreButtonActionListener::class, listener::class)
-        assertEquals(issue, listener.issue)
+        assertEquals(issue.id, listener.issueId)
     }
 
     private fun getJButtonByText(parent: Container, text: String): JButton? {

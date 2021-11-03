@@ -15,13 +15,12 @@ import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.awt.RelativePoint
-import io.snyk.plugin.Notifier
 import java.awt.Color
 import java.awt.Component
 import java.awt.Point
 import javax.swing.Icon
 
-object SnykBalloonNotificationHelper : Notifier {
+object SnykBalloonNotificationHelper {
 
     private val logger = logger<SnykBalloonNotifications>()
     const val title = "Snyk"

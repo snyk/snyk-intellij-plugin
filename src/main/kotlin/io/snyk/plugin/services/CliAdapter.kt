@@ -12,7 +12,7 @@ import org.jetbrains.annotations.TestOnly
 /**
  * Wrap work with Snyk CLI.
  */
-abstract class CliAdapter<R>(val project: Project, private val cliCommands: List<String>) {
+abstract class CliAdapter<R>(val project: Project) {
 
     private var consoleCommandRunner = ConsoleCommandRunner()
 
@@ -26,10 +26,10 @@ abstract class CliAdapter<R>(val project: Project, private val cliCommands: List
         return getCliFile().exists()
     }
 
-    fun scan(): R = try {
-        val commands = buildCliCommandsList()
+    fun execute(commands: List<String>): R = try {
+        val cmds = buildCliCommandsList(commands)
         val apiToken = pluginSettings().token ?: ""
-        val rawResultStr = consoleCommandRunner.execute(commands, projectPath, apiToken, project)
+        val rawResultStr = consoleCommandRunner.execute(cmds, projectPath, apiToken, project)
         convertRawCliStringToCliResult(rawResultStr)
     } catch (exception: CliNotExistsException) {
         getErrorResult(exception.message ?: "Snyk CLI not installed.")
@@ -47,13 +47,13 @@ abstract class CliAdapter<R>(val project: Project, private val cliCommands: List
      * Build list of commands for run Snyk CLI command.
      * @return List<String>
      */
-    fun buildCliCommandsList(): List<String> {
+    fun buildCliCommandsList(cmds: List<String>): List<String> {
         logger.debug("Enter buildCliCommandsList")
         val settings = pluginSettings()
 
         val commands: MutableList<String> = mutableListOf()
         commands.add(getCliCommandPath())
-        commands.addAll(cliCommands)
+        commands.addAll(cmds)
         commands.add("--json")
 
         val customEndpoint = settings.customEndpointUrl

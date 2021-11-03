@@ -9,7 +9,6 @@ import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.Severity
-import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.ui.buildBoldTitleLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.commonmark.parser.Parser
@@ -175,8 +174,7 @@ class IacSuggestionDescriptionPanel(
 
     private fun createIgnoreButton(panel: JPanel) {
         val ignoreButton = JButton("Ignore This Issue")
-        val service = IgnoreService(ConsoleCommandRunner(), project, emptyList())
-        ignoreButton.addActionListener(IgnoreButtonActionListener(service, issue))
+        ignoreButton.addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue.id, project))
         panel.add(
             ignoreButton,
             baseGridConstraints(0)

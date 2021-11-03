@@ -1,44 +1,34 @@
 package snyk.common
 
-import com.intellij.openapi.application.Application
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.impl.ProgressManagerImpl
 import com.intellij.openapi.project.Project
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.cli.CliNotExistsException
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import junit.framework.TestCase.assertEquals
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import snyk.iac.IacIssue
 import java.io.File
 import java.util.UUID
 
 class IgnoreServiceTest {
     private val expectedWorkingDirectory = "testDir"
     private val expectedApiToken = UUID.randomUUID().toString()
-    private val mockRunner = mockk<ConsoleCommandRunner>()
+    private val commandRunner = mockk<ConsoleCommandRunner>()
     private val project = mockk<Project>()
     private val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
 
     @Before
     fun setUp() {
-        clearAllMocks()
+        unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
-        mockkStatic(ProgressManager::class)
-        mockkStatic(ApplicationManager::class)
-        val application = mockk<Application>(relaxed = true)
-        every { ApplicationManager.getApplication() } returns application
-        every { application.isUnitTestMode } returns true
-        every { application.isHeadlessEnvironment } returns true
-        every { ProgressManager.getInstance() } returns ProgressManagerImpl()
+
         every { pluginSettings() } returns settings
         every { getCliFile() } returns File.createTempFile("cliTestTmpFile", ".tmp")
         every { project.basePath } returns expectedWorkingDirectory
@@ -46,29 +36,86 @@ class IgnoreServiceTest {
         every { settings.getAdditionalParameters() } returns ""
     }
 
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
     @Test
-    fun `ignore should call the cli ignore functionality with the issue given`() {
-        val issue = IacIssue(
-            "IaCTestIssueId", "", "", "", "", 0, "", "", null, emptyList(), emptyList()
-        )
+    fun `ignore should call the cli ignore with the issue given`() {
+        val issueId = "IssueId"
         val expectedCommands = listOf(
             getCliFile().absolutePath,
-            "--json",
-            "--DISABLE_ANALYTICS",
             "ignore",
-            "--id=${issue.id}"
+            "--id=$issueId",
+            "--json",
+            "--DISABLE_ANALYTICS"
         )
-        val expectedOutput = "mockedOutput"
+        val expectedOutput = ""
+        val cut = IgnoreService(project)
+        cut.setConsoleCommandRunner(commandRunner)
 
         every {
-            mockRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
+            commandRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
         } returns expectedOutput
 
-        val actualOutput = IgnoreService(mockRunner, project, emptyList()).ignore(issue)
+        cut.ignore(issueId)
 
         verify(exactly = 1) {
-            mockRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
+            commandRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
         }
-        assertEquals(expectedOutput, actualOutput)
+    }
+
+    @Test(expected = IgnoreException::class)
+    fun `ignore should call the cli ignore with the issue given and throw exception if output not empty`() {
+        val issueId = "IssueId"
+        val expectedCommands = listOf(
+            getCliFile().absolutePath,
+            "ignore",
+            "--id=$issueId",
+            "--json",
+            "--DISABLE_ANALYTICS"
+        )
+        val expectedOutput = "unexpected output"
+        val cut = IgnoreService(project)
+        cut.setConsoleCommandRunner(commandRunner)
+
+        every {
+            commandRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
+        } returns expectedOutput
+
+        try {
+            cut.ignore(issueId)
+        } finally {
+            verify(exactly = 1) {
+                commandRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
+            }
+        }
+    }
+
+    @Test(expected = IgnoreException::class)
+    fun `ignore should call the cli ignore with the issue given and throw exception cli throws error`() {
+        val issueId = "IssueId"
+        val expectedCommands = listOf(
+            getCliFile().absolutePath,
+            "ignore",
+            "--id=$issueId",
+            "--json",
+            "--DISABLE_ANALYTICS"
+        )
+        val cut = IgnoreService(project)
+        cut.setConsoleCommandRunner(commandRunner)
+
+        every {
+            commandRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
+        } throws CliNotExistsException()
+
+        try {
+            cut.ignore(issueId)
+        } finally {
+            verify(exactly = 1) {
+                commandRunner.execute(expectedCommands, expectedWorkingDirectory, expectedApiToken, project)
+            }
+        }
     }
 }

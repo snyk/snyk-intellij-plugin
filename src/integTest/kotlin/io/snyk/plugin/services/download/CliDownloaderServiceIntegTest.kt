@@ -14,9 +14,6 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.download.CliDownloader
-import io.snyk.plugin.services.download.CliDownloaderErrorHandler
-import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.apache.http.HttpStatus
 import org.junit.Before
 import org.junit.Test
@@ -70,7 +67,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         assertEquals(cutSpy.getLatestReleaseInfo()!!.tagName, "v" + pluginSettings().cliVersion)
 
         verify { downloader.downloadFile(cliFile, indicator) }
-        verify { downloader.verifyCLIChecksum(cliFile) }
+        verify { downloader.verifyChecksum(any(), any()) }
         downloadedFile.delete()
     }
 
@@ -82,7 +79,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
         cutSpy.downloadLatestRelease(indicator, project)
 
-        verify(exactly = 1) { downloader.verifyCLIChecksum(cliFile) }
+        verify(exactly = 1) { downloader.verifyChecksum(any(), any()) }
         verify(exactly = 1) { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
     }
 

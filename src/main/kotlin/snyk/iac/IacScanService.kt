@@ -13,10 +13,9 @@ import snyk.common.SnykError
  * Wrap work with Snyk CLI for IaC (`iac test` command).
  */
 @Service
-class IacScanService(project: Project) : CliAdapter<IacResult>(
-    project = project,
-    cliCommands = listOf("iac", "test")
-) {
+class IacScanService(project: Project) : CliAdapter<IacResult>(project) {
+
+    fun scan(): IacResult = execute(listOf("iac", "test"))
 
     override fun getErrorResult(errorMsg: String): IacResult = IacResult(null, SnykError(errorMsg, projectPath))
 

@@ -10,7 +10,7 @@ import org.junit.Test
 class CliAdapterTest : LightPlatformTestCase() {
 
     private val dummyCliService by lazy {
-        object : CliAdapter<Any>(project, listOf("fake_cli_command")) {
+        object : CliAdapter<Any>(project) {
             override fun getErrorResult(errorMsg: String): Any = Unit
             override fun convertRawCliStringToCliResult(rawStr: String): Any = Unit
         }
@@ -59,7 +59,7 @@ class CliAdapterTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithDefaults() {
         setupDummyCliFile()
 
-        val defaultCommands = dummyCliService.buildCliCommandsList()
+        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertEquals(getCliFile().absolutePath, defaultCommands[0])
         assertEquals("fake_cli_command", defaultCommands[1])
@@ -72,7 +72,7 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().customEndpointUrl = "https://app.snyk.io/api"
 
-        val defaultCommands = dummyCliService.buildCliCommandsList()
+        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
     }
@@ -83,7 +83,7 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().ignoreUnknownCA = true
 
-        val defaultCommands = dummyCliService.buildCliCommandsList()
+        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertEquals("--insecure", defaultCommands[3])
     }
@@ -94,7 +94,7 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().organization = "test-org"
 
-        val defaultCommands = dummyCliService.buildCliCommandsList()
+        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertEquals("--org=test-org", defaultCommands[3])
     }
@@ -104,7 +104,7 @@ class CliAdapterTest : LightPlatformTestCase() {
         setupDummyCliFile()
         pluginSettings().usageAnalyticsEnabled = false
 
-        val cliCommands = dummyCliService.buildCliCommandsList()
+        val cliCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertEquals("--DISABLE_ANALYTICS", cliCommands[3])
     }
@@ -115,7 +115,7 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val defaultCommands = dummyCliService.buildCliCommandsList()
+        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertEquals("--file=package.json", defaultCommands[3])
     }
@@ -133,12 +133,9 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val defaultCommands = dummyCliService.buildCliCommandsList()
+        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
-        assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
-        assertEquals("--insecure", defaultCommands[4])
-        assertEquals("--org=test-org", defaultCommands[5])
-        assertEquals("--file=package.json", defaultCommands[6])
+        assertAllParameters(defaultCommands)
     }
 
     @Test
@@ -155,13 +152,17 @@ class CliAdapterTest : LightPlatformTestCase() {
         project.service<SnykProjectSettingsStateService>().additionalParameters =
             "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
 
-        val defaultCommands = dummyCliService.buildCliCommandsList()
+        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
 
+        assertAllParameters(defaultCommands)
+        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[7])
+        assertEquals("--sub-project=snyk", defaultCommands[8])
+    }
+
+    private fun assertAllParameters(defaultCommands: List<String>) {
         assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
         assertEquals("--insecure", defaultCommands[4])
         assertEquals("--org=test-org", defaultCommands[5])
         assertEquals("--file=package.json", defaultCommands[6])
-        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[7])
-        assertEquals("--sub-project=snyk", defaultCommands[8])
     }
 }

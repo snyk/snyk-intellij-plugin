@@ -13,10 +13,9 @@ import snyk.common.SnykError
  * Wrap work with Snyk CLI for OSS (`test` command).
  */
 @Service
-class OssService(project: Project) : CliAdapter<OssResult>(
-    project = project,
-    cliCommands = listOf("test")
-) {
+class OssService(project: Project) : CliAdapter<OssResult>(project) {
+
+    fun scan(): OssResult = execute(listOf("test"))
 
     override fun getErrorResult(errorMsg: String): OssResult = OssResult(null, SnykError(errorMsg, projectPath))
 
