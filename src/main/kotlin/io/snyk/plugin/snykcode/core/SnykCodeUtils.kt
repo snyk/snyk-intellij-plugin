@@ -42,7 +42,7 @@ class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
 
         return RunUtils.computeInReadActionInSmartMode(
             project,
-            Computable { allVirtualFiles.mapNotNull(psiManager::findFile) }
+            Computable { allVirtualFiles.filter { it.isValid }.mapNotNull(psiManager::findFile) }
         ) ?: emptyList<PsiFile>()
     }
 
