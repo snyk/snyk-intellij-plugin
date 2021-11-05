@@ -82,7 +82,7 @@ abstract class CliAdapter<R>(val project: Project) {
 
         logger.debug("Cli parameters: $commands")
 
-        return commands.toMutableList()
+        return commands.toList()
     }
 
     @TestOnly
