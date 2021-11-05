@@ -1,16 +1,24 @@
 package io.snyk.plugin
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
-import com.intellij.openapi.vfs.newvfs.events.*
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import io.snyk.plugin.services.SnykTaskQueueService
-import io.snyk.plugin.snykcode.core.*
+import io.snyk.plugin.snykcode.core.AnalysisData
+import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
+import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import java.util.function.Predicate
 
@@ -73,6 +81,7 @@ class SnykBulkFileListener : BulkFileListener {
                 if (iacRelatedFileChanged != null) {
                     toolWindowPanel.currentIacResult = null
                     LOG.debug("IaC cached results dropped due to changes in: $iacRelatedFileChanged")
+                    DaemonCodeAnalyzer.getInstance(project).restart()
                 }
             }
 

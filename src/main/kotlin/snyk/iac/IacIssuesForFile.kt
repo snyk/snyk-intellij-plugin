@@ -3,6 +3,7 @@ package snyk.iac
 class IacIssuesForFile {
     lateinit var infrastructureAsCodeIssues: Array<IacIssue>
     lateinit var targetFile: String
+    lateinit var targetFilePath: String
     lateinit var packageManager: String
 
     val uniqueCount: Int get() = infrastructureAsCodeIssues.groupBy { it.id }.size

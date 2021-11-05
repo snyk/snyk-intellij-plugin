@@ -50,6 +50,9 @@ intellij {
   version.set(properties("platformVersion"))
 
   downloadSources.set(properties("platformDownloadSources").toBoolean())
+
+  // plugin dependencies: uses `platformPlugins` property from the gradle.properties file.
+  plugins.set(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
 }
 
 // configure for detekt plugin.
