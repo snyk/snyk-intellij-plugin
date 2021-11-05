@@ -21,6 +21,7 @@ fun getSelectedProducts(settings: SnykApplicationSettingsStateService): Array<St
     if (settings.ossScanEnable) selectedProducts += AnalysisType.SNYK_OPEN_SOURCE
     if (settings.snykCodeSecurityIssuesScanEnable) selectedProducts += AnalysisType.SNYK_CODE_SECURITY
     if (settings.snykCodeQualityIssuesScanEnable) selectedProducts += AnalysisType.SNYK_CODE_QUALITY
+    if (settings.iacScanEnabled) selectedProducts += AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE
 
     return ItlyOverrideHelper.convertProducts(selectedProducts)
 }
