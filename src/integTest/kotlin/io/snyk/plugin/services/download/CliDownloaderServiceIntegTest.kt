@@ -67,7 +67,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         assertEquals(cutSpy.getLatestReleaseInfo()!!.tagName, "v" + pluginSettings().cliVersion)
 
         verify { downloader.downloadFile(cliFile, indicator) }
-        verify { downloader.verifyCLIChecksum(cliFile) }
+        verify { downloader.verifyChecksum(any(), any()) }
         downloadedFile.delete()
     }
 
@@ -79,7 +79,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
         cutSpy.downloadLatestRelease(indicator, project)
 
-        verify(exactly = 1) { downloader.verifyCLIChecksum(cliFile) }
+        verify(exactly = 1) { downloader.verifyChecksum(any(), any()) }
         verify(exactly = 1) { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
     }
 

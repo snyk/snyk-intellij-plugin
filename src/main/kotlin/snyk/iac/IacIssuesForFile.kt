@@ -8,21 +8,4 @@ class IacIssuesForFile {
     val uniqueCount: Int get() = infrastructureAsCodeIssues.groupBy { it.id }.size
 }
 
-class IacIssue {
-    lateinit var id: String
-    lateinit var title: String
-    lateinit var severity: String
-
-    lateinit var publicId: String
-    lateinit var documentation: String
-    lateinit var lineNumber: Integer
-
-    lateinit var issue: String
-    lateinit var impact: String
-    var resolve: String? = null
-
-    lateinit var references: List<String>
-    lateinit var path: List<String>
-}
-
 /* Real json Example: src/integTest/resources/iac-test-results/infrastructure-as-code-goof.json */

@@ -1,6 +1,7 @@
 package snyk.iac
 
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.project.Project
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -12,18 +13,21 @@ import io.snyk.plugin.ui.buildBoldTitleLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
+import snyk.common.IgnoreService
 import java.awt.Color
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
+import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
 import javax.swing.event.HyperlinkEvent
 
 class IacSuggestionDescriptionPanel(
-    private val issue: IacIssue
+    val issue: IacIssue,
+    val project: Project
 ) : JPanel() {
 
     private fun baseGridConstraints(
@@ -80,7 +84,7 @@ class IacSuggestionDescriptionPanel(
 
         if (!issue.resolve.isNullOrBlank()) {
             this.add(
-                remediationPanelWithTitle(issue.resolve!!),
+                remediationPanelWithTitle(issue.resolve),
                 panelGridConstraints(6)
             )
         }
@@ -132,8 +136,7 @@ class IacSuggestionDescriptionPanel(
 
     private fun titlePanel(): JPanel {
         val titlePanel = JPanel()
-        titlePanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, 5)
-
+        titlePanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, 5)
         val titleLabel = JLabel().apply {
             font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
             text = " " + if (issue.title.isNotBlank()) issue.title else when (issue.severity) {
@@ -151,9 +154,31 @@ class IacSuggestionDescriptionPanel(
             baseGridConstraints(0)
         )
 
-        titlePanel.add(cwePanel(), baseGridConstraints(1, indent = 0))
+        titlePanel.add(cwePanel(), baseGridConstraints(row = 1, column = 0, indent = 0))
+        titlePanel.add(
+            topButtonPanel(),
+            baseGridConstraints(row = 0, column = 1, anchor = GridConstraints.ANCHOR_EAST, indent = 0)
+        )
 
         return titlePanel
+    }
+
+    private fun topButtonPanel(): Component {
+        val panel = JPanel()
+
+        panel.layout = GridLayoutManager(1, 1, Insets(0, 0, 0, 0), 5, 0)
+
+        createIgnoreButton(panel)
+        return panel
+    }
+
+    private fun createIgnoreButton(panel: JPanel) {
+        val ignoreButton = JButton("Ignore This Issue")
+        ignoreButton.addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue.id, project))
+        panel.add(
+            ignoreButton,
+            baseGridConstraints(0)
+        )
     }
 
     private fun cwePanel(): Component {
@@ -192,7 +217,8 @@ class IacSuggestionDescriptionPanel(
         afterLinkText: String = "",
         toolTipText: String,
         customFont: Font? = null,
-        onClick: (HyperlinkEvent) -> Unit): HyperlinkLabel {
+        onClick: (HyperlinkEvent) -> Unit
+    ): HyperlinkLabel {
         return HyperlinkLabel().apply {
             this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
             this.toolTipText = toolTipText
@@ -221,7 +247,8 @@ class IacSuggestionDescriptionPanel(
             isOpaque = false
         }
 
-        remediationPanel.add(remediationPane,
+        remediationPanel.add(
+            remediationPane,
             panelGridConstraints(1)
         )
 

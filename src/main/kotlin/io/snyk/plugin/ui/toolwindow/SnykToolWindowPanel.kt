@@ -345,7 +345,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 is IacIssueTreeNode -> {
                     val iacIssue = node.userObject as IacIssue
                     val scrollPane = wrapWithScrollPane(
-                        IacSuggestionDescriptionPanel(iacIssue)
+                        IacSuggestionDescriptionPanel(iacIssue, project)
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
@@ -356,7 +356,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (virtualFile != null && virtualFile.isValid) {
                         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                         if (document != null) {
-                            val lineNumber = iacIssue.lineNumber.toInt().let {
+                            val lineNumber = iacIssue.lineNumber.let {
                                 val candidate = it - 1 // to 1-based count used in the editor
                                 if (0 <= candidate && candidate < document.lineCount) candidate else 0
                             }

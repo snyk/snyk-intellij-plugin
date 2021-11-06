@@ -4,19 +4,19 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliNotExistsException
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.pluginSettings
 import org.jetbrains.annotations.TestOnly
 
 /**
  * Wrap work with Snyk CLI.
  */
-abstract class CliService<R>(val project: Project, private val cliCommands: List<String>) {
+abstract class CliAdapter<R>(val project: Project) {
 
     private var consoleCommandRunner = ConsoleCommandRunner()
 
-    private val logger = logger<CliService<R>>()
+    private val logger = logger<CliAdapter<R>>()
 
     protected val projectPath: String = project.basePath
         ?: throw IllegalStateException("Scan should not be performed on Default project (with `null` project base dir)")
@@ -26,10 +26,10 @@ abstract class CliService<R>(val project: Project, private val cliCommands: List
         return getCliFile().exists()
     }
 
-    fun scan(): R = try {
-        val commands = buildCliCommandsList()
+    fun execute(commands: List<String>): R = try {
+        val cmds = buildCliCommandsList(commands)
         val apiToken = pluginSettings().token ?: ""
-        val rawResultStr = consoleCommandRunner.execute(commands, projectPath, apiToken, project)
+        val rawResultStr = consoleCommandRunner.execute(cmds, projectPath, apiToken, project)
         convertRawCliStringToCliResult(rawResultStr)
     } catch (exception: CliNotExistsException) {
         getErrorResult(exception.message ?: "Snyk CLI not installed.")
@@ -38,24 +38,22 @@ abstract class CliService<R>(val project: Project, private val cliCommands: List
     protected abstract fun getErrorResult(errorMsg: String): R
 
     /**
-     * if rawStr == [ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER] - CLI scan process was intentionally terminated by user..
+     * if rawStr == [ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER] - CLI scan process
+     * was intentionally terminated by user.
      */
     abstract fun convertRawCliStringToCliResult(rawStr: String): R
 
     /**
      * Build list of commands for run Snyk CLI command.
-     *
-     * @param cliCommand - Snyk CLI command to execute
-     *
      * @return List<String>
      */
-    fun buildCliCommandsList(): List<String> {
+    fun buildCliCommandsList(cmds: List<String>): List<String> {
         logger.debug("Enter buildCliCommandsList")
         val settings = pluginSettings()
 
         val commands: MutableList<String> = mutableListOf()
         commands.add(getCliCommandPath())
-        commands.addAll(cliCommands)
+        commands.addAll(cmds)
         commands.add("--json")
 
         val customEndpoint = settings.customEndpointUrl

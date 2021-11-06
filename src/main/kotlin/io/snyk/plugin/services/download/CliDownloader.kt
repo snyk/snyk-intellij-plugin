@@ -22,19 +22,15 @@ class CliDownloader {
         ).toLowerCase()
     }
 
-    fun verifyCLIChecksum(file: File) {
-        if (file.exists()) {
-            val remoteShaUrl =
-                URL(String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName))
-            val sha256 = calculateSha256(file.readBytes())
-            val remoteSha256 = remoteShaUrl.readText(Charsets.UTF_8).toLowerCase()
-            if (sha256 != remoteSha256.split(" ")[0]) {
-                throw ChecksumVerificationException("Expected $remoteSha256, but downloaded file has $sha256")
-            }
+    @Throws(ChecksumVerificationException::class)
+    fun verifyChecksum(expectedSha: String, bytes: ByteArray) {
+        val sha256 = calculateSha256(bytes)
+        if (sha256.toLowerCase() != expectedSha.toLowerCase()) {
+            throw ChecksumVerificationException("Expected $expectedSha, but downloaded file has $sha256")
         }
     }
 
-    fun downloadFile(cliFile: File, indicator: ProgressIndicator?): File {
+    fun downloadFile(cliFile: File, indicator: ProgressIndicator): File {
         val snykWrapperFileName = Platform.current().snykWrapperFileName
         val url = URL(java.lang.String.format(LATEST_RELEASE_DOWNLOAD_URL, snykWrapperFileName)).toString()
 
@@ -42,12 +38,15 @@ class CliDownloader {
             cliFile.delete()
         }
 
+        val shaUrl = URL(String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName))
+        val expectedSha = shaUrl.readText(Charsets.UTF_8).split(" ")[0]
+
         HttpRequests
             .request(url)
             .productNameAsUserAgent()
             .saveToFile(cliFile, indicator)
 
-        verifyCLIChecksum(cliFile)
+        verifyChecksum(expectedSha, cliFile.readBytes())
         cliFile.setExecutable(true)
         return cliFile
     }

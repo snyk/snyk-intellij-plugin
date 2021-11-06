@@ -77,7 +77,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                         snykCliDownloaderService.isCliDownloading()
                     )
                     // No exception should happened while CLI is downloading and any CLI command is invoked
-                    val commands = getOssService(project).buildCliCommandsList()
+                    val commands = getOssService(project).buildCliCommandsList(listOf("test"))
                     val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
                     assertTrue(
                         "Should be NO output for CLI command while CLI is downloading, but received:\n$output",
@@ -107,7 +107,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
         registryValue.setValue(100)
 
-        val commands = getOssService(project).buildCliCommandsList()
+        val commands = getOssService(project).buildCliCommandsList(listOf("test"))
         val progressManager = ProgressManager.getInstance() as CoreProgressManager
         val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
             object : Task.Backgroundable(project, "Test CLI command invocation", true) {
