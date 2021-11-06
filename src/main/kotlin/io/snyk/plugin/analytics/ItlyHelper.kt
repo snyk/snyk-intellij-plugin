@@ -1,6 +1,7 @@
 package io.snyk.plugin.analytics
 
 import ai.deepcode.javaclient.core.SuggestionForFile
+import io.snyk.plugin.Severity
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import snyk.ItlyOverrideHelper
 import snyk.advisor.AdvisorPackageManager
@@ -11,6 +12,7 @@ import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_QUALITY_ISSUE
 import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_SECURITY_VULNERABILITY
 import snyk.analytics.IssueInTreeIsClicked.IssueType.LICENCE_ISSUE
 import snyk.analytics.IssueInTreeIsClicked.IssueType.OPEN_SOURCE_VULNERABILITY
+import snyk.iac.IacIssue
 import snyk.oss.Vulnerability
 
 fun getSelectedProducts(settings: SnykApplicationSettingsStateService): Array<String> {
@@ -19,16 +21,25 @@ fun getSelectedProducts(settings: SnykApplicationSettingsStateService): Array<St
     if (settings.ossScanEnable) selectedProducts += AnalysisType.SNYK_OPEN_SOURCE
     if (settings.snykCodeSecurityIssuesScanEnable) selectedProducts += AnalysisType.SNYK_CODE_SECURITY
     if (settings.snykCodeQualityIssuesScanEnable) selectedProducts += AnalysisType.SNYK_CODE_QUALITY
+    if (settings.iacScanEnabled) selectedProducts += AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE
 
     return ItlyOverrideHelper.convertProducts(selectedProducts)
 }
 
 fun Vulnerability.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
+    return mapIssueSeverity(severity)
+}
+
+fun IacIssue.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
+    return mapIssueSeverity(severity)
+}
+
+private fun mapIssueSeverity(severity: String): IssueInTreeIsClicked.Severity? {
     return when (severity) {
-        "critical" -> IssueInTreeIsClicked.Severity.CRITICAL
-        "high" -> IssueInTreeIsClicked.Severity.HIGH
-        "medium" -> IssueInTreeIsClicked.Severity.MEDIUM
-        "low" -> IssueInTreeIsClicked.Severity.LOW
+        Severity.CRITICAL -> IssueInTreeIsClicked.Severity.CRITICAL
+        Severity.HIGH -> IssueInTreeIsClicked.Severity.HIGH
+        Severity.MEDIUM -> IssueInTreeIsClicked.Severity.MEDIUM
+        Severity.LOW -> IssueInTreeIsClicked.Severity.LOW
         else -> null
     }
 }
