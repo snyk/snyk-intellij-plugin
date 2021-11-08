@@ -68,7 +68,7 @@ class SnykCliDownloaderService {
             val latestRelease = requestLatestReleasesInformation()
 
             if (latestRelease == null) {
-                val failedMsg = "Failed to fetch the latest Snyk CLI release info from GitHub. " +
+                val failedMsg = "Failed to fetch the latest Snyk CLI release info. " +
                     "Please retry in a few minutes or contact support if the issue persists."
                 errorHandler.showErrorWithRetryAndContactAction(failedMsg, project)
                 cleanupCliFile = false
