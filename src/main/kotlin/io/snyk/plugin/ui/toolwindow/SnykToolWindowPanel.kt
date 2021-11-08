@@ -29,6 +29,7 @@ import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isIacEnabled
@@ -38,6 +39,7 @@ import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
+import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.SnykCodeResults
@@ -47,6 +49,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.TestOnly
+import snyk.amplitude.AmplitudeExperimentService
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
@@ -82,7 +85,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private val scrollPaneAlarm = Alarm()
 
-    private var descriptionPanel = SimpleToolWindowPanel(true, true)
+    private var descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
 
     var currentOssResults: OssResult? = null
         get() {
@@ -112,7 +115,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     private val rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
-    private val vulnerabilitiesTree by lazy {
+    val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
@@ -305,8 +308,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         val selectionPath = vulnerabilitiesTree.selectionPath
 
         if (nonNull(selectionPath)) {
-            val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode
-            when (node) {
+            when (val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode) {
                 is VulnerabilityTreeNode -> {
                     val groupedVulns = node.userObject as Collection<Vulnerability>
                     val scrollPane = wrapWithScrollPane(
@@ -473,18 +475,49 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
-    private fun chooseMainPanelToDisplay() {
+    internal fun chooseMainPanelToDisplay() {
         val settings = pluginSettings()
         when {
             settings.token.isNullOrEmpty() -> displayAuthPanel()
-            settings.pluginFirstRun -> displayPluginFirstRunPanel()
+            settings.pluginFirstRun -> {
+                if (project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow()) {
+                    pluginSettings().pluginFirstRun = false
+                    enableProductsAccordingToServerSetting()
+                    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
+                    displayTreeAndDescriptionPanels()
+                    triggerScan()
+                } else {
+                    displayPluginFirstRunPanel()
+                }
+            }
             else -> displayTreeAndDescriptionPanels()
         }
     }
 
+    fun triggerScan() {
+        service<SnykAnalyticsService>().logAnalysisIsTriggered(
+            AnalysisIsTriggered.builder()
+                .analysisType(getSelectedProducts(pluginSettings()))
+                .ide(AnalysisIsTriggered.Ide.JETBRAINS)
+                .triggeredByUser(true)
+                .build()
+        )
+
+        val taskQueueService = project.service<SnykTaskQueueService>()
+        taskQueueService.scan()
+    }
+
     fun displayAuthPanel() {
         removeAll()
-        add(CenterOneComponentPanel(SnykAuthPanel(project)), BorderLayout.CENTER)
+        val amplitudeExperimentService: AmplitudeExperimentService = project.service()
+        if (amplitudeExperimentService.isPartOfExperimentalWelcomeWorkflow()) {
+            val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
+            add(splitter, BorderLayout.CENTER)
+            splitter.firstComponent = TreePanel(vulnerabilitiesTree)
+            splitter.secondComponent = SnykAuthPanel(project)
+        } else {
+            add(CenterOneComponentPanel(SnykAuthPanel(project)), BorderLayout.CENTER)
+        }
         revalidate()
 
         service<SnykAnalyticsService>().logWelcomeIsViewed(
@@ -494,9 +527,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         )
     }
 
-    private fun displayPluginFirstRunPanel() {
+    fun displayPluginFirstRunPanel() {
         removeAll()
-        add(CenterOneComponentPanel(OnboardPanel(project).panel), BorderLayout.CENTER)
+        val onboardPanel = OnboardPanel(project)
+        add(CenterOneComponentPanel(onboardPanel.panel), BorderLayout.CENTER)
         revalidate()
 
         service<SnykAnalyticsService>().logProductSelectionIsViewed(
@@ -504,6 +538,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 .ide(ProductSelectionIsViewed.Ide.JETBRAINS)
                 .build()
         )
+    }
+
+    private fun enableProductsAccordingToServerSetting() {
+        pluginSettings().apply {
+            sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
+            ossScanEnable = true
+            advisorEnable = true
+            iacScanEnabled = isIacEnabled()
+            snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: false
+            snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: false
+        }
     }
 
     private fun displayTreeAndDescriptionPanels() {
@@ -614,14 +659,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         emptyStatePanel.add(JLabel("Scan your project for security vulnerabilities and code issues. "))
 
         val runScanLinkLabel = LinkLabel.create("Run scan") {
-            project.service<SnykTaskQueueService>().scan()
-            service<SnykAnalyticsService>().logAnalysisIsTriggered(
-                AnalysisIsTriggered.builder()
-                    .analysisType(getSelectedProducts(pluginSettings()))
-                    .ide(AnalysisIsTriggered.Ide.JETBRAINS)
-                    .triggeredByUser(true)
-                    .build()
-            )
+            triggerScan()
         }
 
         emptyStatePanel.add(runScanLinkLabel)

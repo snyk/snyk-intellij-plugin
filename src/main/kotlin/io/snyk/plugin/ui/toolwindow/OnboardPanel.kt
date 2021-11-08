@@ -12,11 +12,13 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.ui.settings.ScanTypesPanel
+import snyk.amplitude.AmplitudeExperimentService
 import snyk.analytics.AnalysisIsTriggered
 import javax.swing.SwingConstants
 
 class OnboardPanel(project: Project) {
     private val disposable = Disposer.newDisposable()
+    private val amplitudeExperimentService = project.service<AmplitudeExperimentService>()
 
     private val scanTypesPanel by lazy {
         return@lazy ScanTypesPanel(
@@ -36,26 +38,33 @@ class OnboardPanel(project: Project) {
             scanTypesPanel()
         }
         row {
-            right {
-                button("Analyze now!") { e ->
-                    scanTypesPanel.apply()
-                    Disposer.dispose(disposable)
+            button("Analyze now!") {
+                scanTypesPanel.apply()
+                Disposer.dispose(disposable)
+                pluginSettings().pluginFirstRun = false
+                getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
 
-                    service<SnykAnalyticsService>().logAnalysisIsTriggered(
-                        AnalysisIsTriggered.builder()
-                            .analysisType(getSelectedProducts(pluginSettings()))
-                            .ide(AnalysisIsTriggered.Ide.JETBRAINS)
-                            .triggeredByUser(true)
-                            .build()
-                    )
-
-                    pluginSettings().pluginFirstRun = false
-                    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
-                    project.service<SnykTaskQueueService>().scan()
-                }
+                triggerScan(project)
             }
+                .apply {
+                    focused()
+                    component.horizontalAlignment = SwingConstants.CENTER
+                }
         }
     }.apply {
         border = JBUI.Borders.empty(2)
+        name = "onboardingPanel"
+    }
+
+    fun triggerScan(project: Project) {
+        service<SnykAnalyticsService>().logAnalysisIsTriggered(
+            AnalysisIsTriggered.builder()
+                .analysisType(getSelectedProducts(pluginSettings()))
+                .ide(AnalysisIsTriggered.Ide.JETBRAINS)
+                .triggeredByUser(true)
+                .build()
+        )
+
+        project.service<SnykTaskQueueService>().scan()
     }
 }

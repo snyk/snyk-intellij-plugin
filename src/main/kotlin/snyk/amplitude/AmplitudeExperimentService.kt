@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.pluginSettings
+import org.jetbrains.annotations.TestOnly
 import snyk.amplitude.api.AmplitudeExperimentApiClient
 import snyk.amplitude.api.AmplitudeExperimentApiClient.Defaults.FALLBACK_VARIANT
 import snyk.amplitude.api.ExperimentUser
@@ -16,6 +17,11 @@ private val LOG = logger<AmplitudeExperimentService>()
 
 @Service
 class AmplitudeExperimentService : Disposable {
+    companion object {
+        const val CHANGE_AUTHENTICATE_BUTTON = "ide-jetbrains-change-authenticate-button-and-first-time-workflow"
+        const val TEST_GROUP = "TEST"
+    }
+
     private var apiClient: AmplitudeExperimentApiClient? = null
     private val storage: ConcurrentHashMap<String, Variant> = ConcurrentHashMap()
     private var user: ExperimentUser = ExperimentUser("")
@@ -68,5 +74,15 @@ class AmplitudeExperimentService : Disposable {
         LOG.debug("Scanning reminder: variant - ${variant.value}, was shown - ${settings.scanningReminderWasShown}")
 
         return variant.value == "test" && !settings.scanningReminderWasShown
+    }
+
+    fun isPartOfExperimentalWelcomeWorkflow(): Boolean {
+        val variant = storage[CHANGE_AUTHENTICATE_BUTTON] ?: return false
+        return variant.value == TEST_GROUP
+    }
+
+    @TestOnly
+    fun setApiClient(apiClient: AmplitudeExperimentApiClient) {
+        this.apiClient = apiClient
     }
 }

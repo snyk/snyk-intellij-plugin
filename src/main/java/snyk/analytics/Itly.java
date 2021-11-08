@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 
+
 public class Itly {
     private static volatile Itly singleton = null;
 
@@ -45,23 +46,24 @@ public class Itly {
         DestinationsOptions destinations,
         Options options
     ) {
-        Map<String, String> schemas = new HashMap<>();
-        schemas.put("group", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/group\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Group\",\"description\":\"\",\"type\":\"object\",\"properties\":{\"groupId\":{\"description\":\"ID that is used in conjunction with a groupType to specify an Org or a Group association: {groupId: 1234, groupType: \\\"org\\\"}\",\"type\":\"string\"},\"name\":{\"description\":\"The display name of the org\",\"type\":\"string\"},\"internalName\":{\"description\":\"The internal name (org.name) of the org\",\"type\":\"string\"},\"groupType\":{\"description\":\"Key that is used to specify the name of the Segment Group that a groupId is being set for.\",\"enum\":[\"org\",\"group\",\"account\"]},\"plan\":{\"description\":\"The plan of the org\",\"type\":\"string\"},\"groupName\":{\"description\":\"The name of the group associated with the org\",\"type\":\"string\"},\"projectTypes\":{\"description\":\"The types of projects in the org\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true}},\"additionalProperties\":false,\"required\":[]}");
-        schemas.put("identify", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/identify\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Identify\",\"description\":\"\",\"type\":\"object\",\"properties\":{\"isNonUser\":{\"description\":\"Applies to non-user identities, such as Snyk Orgs\",\"type\":\"boolean\"},\"is_snyk\":{\"description\":\"Whether or not the user belongs to the Snyk org (determined by the email address ending with @snyk.io)\",\"type\":\"boolean\"},\"utm_medium\":{\"description\":\"query utm_medium\",\"type\":\"string\"},\"name\":{\"description\":\"Name of the user\",\"type\":\"string\"},\"utmMedium\":{\"description\":\"query utm_medium\",\"type\":\"string\"},\"utm_campaign\":{\"description\":\"query utm_campaign\",\"type\":\"string\"},\"adminLink\":{\"description\":\"Link to access more information about the user\",\"type\":\"string\"},\"createdAt\":{\"description\":\"Timestamp of user creation\",\"type\":\"number\"},\"utmSource\":{\"description\":\"query utm_source\",\"type\":\"string\"},\"email\":{\"description\":\"Email address for the user\",\"type\":\"string\"},\"authProvider\":{\"description\":\"Auth provider (login method)\",\"type\":\"string\"},\"isSnyk\":{\"description\":\"Whether or not the user belongs to the Snyk org (determined by the email address ending with @snyk.io)\",\"type\":\"boolean\"},\"utm_source\":{\"description\":\"query utm_source\",\"type\":\"string\"},\"created_at\":{\"description\":\"Timestamp of user creation\",\"type\":\"number\"},\"auth_provider\":{\"description\":\"Auth provider (login method)\",\"type\":\"string\"},\"hasFirstProject\":{\"description\":\"Whether or not the user has their first project imported\",\"type\":\"boolean\"},\"isSnykAdmin\":{\"description\":\"Whether or not the user should be considered a Snyk administrator\",\"type\":\"boolean\"},\"user_id\":{\"description\":\"Public ID of user\",\"type\":\"string\"},\"hasFirstIntegration\":{\"description\":\"Whether or not the user has their first integration set up\",\"type\":\"boolean\"},\"admin_link\":{\"description\":\"Link to access more information about the user\",\"type\":\"string\"},\"username\":{\"description\":\"Username of the user\",\"type\":\"string\"},\"utmCampaign\":{\"description\":\"query utm_campaign\",\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[]}");
-        schemas.put("page", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/page\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Page\",\"description\":\"\",\"type\":\"object\",\"properties\":{\"package\":{\"description\":\"The name of the package\",\"type\":\"string\"},\"search\":{\"description\":\"Query parameters in url.\",\"type\":\"string\"},\"url\":{\"description\":\"The url of the page.\",\"type\":\"string\"},\"title\":{\"description\":\"The page title.\",\"type\":\"string\"},\"path\":{\"description\":\"The canonical path of the page\",\"type\":\"string\"},\"ecosystem\":{\"description\":\"Name of the ecosystem (npm|python|docker...)\",\"type\":\"string\"},\"referrer\":{\"description\":\"The page that linked to this page.\",\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[]}");
-        schemas.put("Analysis Is Ready", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Analysis%20Is%20Ready/version/2.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Analysis Is Ready\",\"description\":\"Triggered when the analysis is loaded within the IDE.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true},\"analysisType\":{\"description\":\"Analysis types selected by the user for the scan:\\\\n\\\\n* open source vulnerabilities\\\\n\\\\n* code quality issues\\\\n\\\\n* code security vulnerabilities\\\\n\\\\n* advisor issues\\\\n\\\\n* infrastructure as code issues\\\\n\\\\n* container vulnerabilities\",\"enum\":[\"Snyk Advisor\",\"Snyk Code Quality\",\"Snyk Code Security\",\"Snyk Open Source\",\"Snyk Container\",\"Snyk Infrastructure as Code\"]},\"result\":{\"description\":\"\",\"enum\":[\"Success\",\"Error\"]}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\",\"analysisType\",\"result\"]}");
-        schemas.put("Analysis Is Triggered", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Analysis%20Is%20Triggered/version/2.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Analysis Is Triggered\",\"description\":\"User triggers an analysis or analysis is automatically triggered.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true},\"analysisType\":{\"description\":\"Analysis types selected by the user for the scan: open source vulnerabilities, code quality issues and/or code security vulnerabilities.\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true,\"minItems\":1},\"triggeredByUser\":{\"description\":\"* True means that the analysis was triggered by the User.\\\\n\\\\n* False means that the analysis was triggered automatically by the plugin.\",\"type\":\"boolean\"}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\",\"analysisType\",\"triggeredByUser\"]}");
-        schemas.put("Health Score Is Clicked", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Health%20Score%20Is%20Clicked/version/5.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Health Score Is Clicked\",\"description\":\"Triggered when the user clicks the health score of a package.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"ecosystem\":{\"description\":\"Advisor: what ecosystem for advisor score was used:\\\\n\\\\n* docker\\\\n\\\\n* npm\\\\n\\\\n* python\\\\n\\\\nLearn: the most general grouping for topics/lessons:\\\\n\\\\n* java\\\\n\\\\n* javascript\\\\n\\\\n* kubernetes\",\"enum\":[\"all\",\"docker\",\"java\",\"javascript\",\"kubernetes\",\"npm\",\"python\",\"php\",\"c++\",\"c#\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true},\"packageName\":{\"description\":\"Name of the package for which we get a score.\",\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[\"ide\",\"ecosystem\",\"itly\",\"packageName\"]}");
-        schemas.put("Issue In Tree Is Clicked", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Issue%20In%20Tree%20Is%20Clicked/version/2.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Issue In Tree Is Clicked\",\"description\":\"Triggered when the user selects an issue from the issues list and the issue is loaded.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"issueType\":{\"description\":\"Issue type\",\"enum\":[\"Advisor\",\"Code Quality Issue\",\"Code Security Vulnerability\",\"Licence Issue\",\"Open Source Vulnerability\",\"Infrastructure as Code Issue\",\"Container Vulnerability\"]},\"severity\":{\"description\":\"Severity of the issue\",\"enum\":[\"High\",\"Medium\",\"Low\",\"Critical\"]},\"issueId\":{\"description\":\"Issue ID as received from the backend.\",\"type\":\"string\"},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"issueType\",\"severity\",\"issueId\",\"itly\"]}");
-        schemas.put("Plugin Is Installed", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Plugin%20Is%20Installed/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Plugin Is Installed\",\"description\":\"Triggered when the user installs the plugin.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
-        schemas.put("Plugin Is Uninstalled", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Plugin%20Is%20Uninstalled/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Plugin Is Uninstalled\",\"description\":\"Triggered when the user uninstalls the plugin.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
-        schemas.put("Product Selection Is Viewed", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Product%20Selection%20Is%20Viewed/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Product Selection Is Viewed\",\"description\":\"User has connected the IDE with Snyk and needs to decide which products to enable.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
-        schemas.put("Welcome Is Viewed", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Welcome%20Is%20Viewed/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Welcome Is Viewed\",\"description\":\"User installs the IDE plugin and see Snyk's welcome screen.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
+      Map<String, String> schemas = new HashMap<>();
+      schemas.put("group", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/group\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Group\",\"description\":\"\",\"type\":\"object\",\"properties\":{\"groupId\":{\"description\":\"ID that is used in conjunction with a groupType to specify an Org or a Group association: {groupId: 1234, groupType: \\\"org\\\"}\",\"type\":\"string\"},\"name\":{\"description\":\"The display name of the org\",\"type\":\"string\"},\"internalName\":{\"description\":\"The internal name (org.name) of the org\",\"type\":\"string\"},\"groupType\":{\"description\":\"Key that is used to specify the name of the Segment Group that a groupId is being set for.\",\"enum\":[\"org\",\"group\",\"account\"]},\"plan\":{\"description\":\"The plan of the org\",\"type\":\"string\"},\"groupName\":{\"description\":\"The name of the group associated with the org\",\"type\":\"string\"},\"projectTypes\":{\"description\":\"The types of projects in the org\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true}},\"additionalProperties\":false,\"required\":[]}");
+      schemas.put("identify", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/identify\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Identify\",\"description\":\"\",\"type\":\"object\",\"properties\":{\"isNonUser\":{\"description\":\"Applies to non-user identities, such as Snyk Orgs\",\"type\":\"boolean\"},\"is_snyk\":{\"description\":\"Whether or not the user belongs to the Snyk org (determined by the email address ending with @snyk.io)\",\"type\":\"boolean\"},\"utm_medium\":{\"description\":\"query utm_medium\",\"type\":\"string\"},\"name\":{\"description\":\"Name of the user\",\"type\":\"string\"},\"utmMedium\":{\"description\":\"query utm_medium\",\"type\":\"string\"},\"utm_campaign\":{\"description\":\"query utm_campaign\",\"type\":\"string\"},\"adminLink\":{\"description\":\"Link to access more information about the user\",\"type\":\"string\"},\"createdAt\":{\"description\":\"Timestamp of user creation\",\"type\":\"number\"},\"utmSource\":{\"description\":\"query utm_source\",\"type\":\"string\"},\"email\":{\"description\":\"Email address for the user\",\"type\":\"string\"},\"accountType\":{\"description\":\"when a User record is an actual user or when it’s a “service account”\",\"enum\":[\"user\",\"service\",\"app-instance\"]},\"authProvider\":{\"description\":\"Auth provider (login method)\",\"type\":\"string\"},\"isSnyk\":{\"description\":\"Whether or not the user belongs to the Snyk org (determined by the email address ending with @snyk.io)\",\"type\":\"boolean\"},\"utm_source\":{\"description\":\"query utm_source\",\"type\":\"string\"},\"created_at\":{\"description\":\"Timestamp of user creation\",\"type\":\"number\"},\"auth_provider\":{\"description\":\"Auth provider (login method)\",\"type\":\"string\"},\"hasFirstProject\":{\"description\":\"Whether or not the user has their first project imported\",\"type\":\"boolean\"},\"isSnykAdmin\":{\"description\":\"Whether or not the user should be considered a Snyk administrator\",\"type\":\"boolean\"},\"user_id\":{\"description\":\"Public ID of user\",\"type\":\"string\"},\"hasFirstIntegration\":{\"description\":\"Whether or not the user has their first integration set up\",\"type\":\"boolean\"},\"admin_link\":{\"description\":\"Link to access more information about the user\",\"type\":\"string\"},\"username\":{\"description\":\"Username of the user\",\"type\":\"string\"},\"utmCampaign\":{\"description\":\"query utm_campaign\",\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[]}");
+      schemas.put("page", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/page\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Page\",\"description\":\"\",\"type\":\"object\",\"properties\":{\"package\":{\"description\":\"The name of the package\",\"type\":\"string\"},\"search\":{\"description\":\"Query parameters in url.\",\"type\":\"string\"},\"url\":{\"description\":\"The url of the page.\",\"type\":\"string\"},\"title\":{\"description\":\"The page title.\",\"type\":\"string\"},\"path\":{\"description\":\"The canonical path of the page\",\"type\":\"string\"},\"ecosystem\":{\"description\":\"Name of the ecosystem (npm|python|docker...)\",\"type\":\"string\"},\"referrer\":{\"description\":\"The page that linked to this page.\",\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[]}");
+      schemas.put("Analysis Is Ready", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Analysis%20Is%20Ready/version/2.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Analysis Is Ready\",\"description\":\"Triggered when the analysis is loaded within the IDE.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true},\"analysisType\":{\"description\":\"Analysis types selected by the user for the scan:\\\\n\\\\n* open source vulnerabilities\\\\n\\\\n* code quality issues\\\\n\\\\n* code security vulnerabilities\\\\n\\\\n* advisor issues\\\\n\\\\n* infrastructure as code issues\\\\n\\\\n* container vulnerabilities\",\"enum\":[\"Snyk Advisor\",\"Snyk Code Quality\",\"Snyk Code Security\",\"Snyk Open Source\",\"Snyk Container\",\"Snyk Infrastructure as Code\"]},\"result\":{\"description\":\"\",\"enum\":[\"Success\",\"Error\"]}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\",\"analysisType\",\"result\"]}");
+      schemas.put("Analysis Is Triggered", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Analysis%20Is%20Triggered/version/2.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Analysis Is Triggered\",\"description\":\"User triggers an analysis or analysis is automatically triggered.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true},\"analysisType\":{\"description\":\"Analysis types selected by the user for the scan: open source vulnerabilities, code quality issues and/or code security vulnerabilities.\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true,\"minItems\":1},\"triggeredByUser\":{\"description\":\"* True means that the analysis was triggered by the User.\\\\n\\\\n* False means that the analysis was triggered automatically by the plugin.\",\"type\":\"boolean\"}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\",\"analysisType\",\"triggeredByUser\"]}");
+      schemas.put("Authenticate Button Is Clicked", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Authenticate%20Button%20Is%20Clicked/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Authenticate Button Is Clicked\",\"description\":\"This Event fires when the authenticate button is clicked.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true},\"eventSource\":{\"description\":\"Used to identify the source for multi-source events.\\\\n\\\\nFor example, if a given event is shared between Snyk Advisor and Snyk Learn, this property helps to differentiate between the two.\",\"enum\":[\"Advisor\",\"App\",\"Learn\",\"IDE\"]}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
+      schemas.put("Health Score Is Clicked", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Health%20Score%20Is%20Clicked/version/5.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Health Score Is Clicked\",\"description\":\"Triggered when the user clicks the health score of a package.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"ecosystem\":{\"description\":\"Advisor: what ecosystem for advisor score was used:\\\\n\\\\n* docker\\\\n\\\\n* npm\\\\n\\\\n* python\\\\n\\\\nLearn: the most general grouping for topics/lessons:\\\\n\\\\n* java\\\\n\\\\n* javascript\\\\n\\\\n* kubernetes\",\"enum\":[\"all\",\"docker\",\"java\",\"javascript\",\"kubernetes\",\"npm\",\"python\",\"php\",\"c++\",\"c#\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true},\"packageName\":{\"description\":\"Name of the package for which we get a score.\",\"type\":\"string\"}},\"additionalProperties\":false,\"required\":[\"ide\",\"ecosystem\",\"itly\",\"packageName\"]}");
+      schemas.put("Issue In Tree Is Clicked", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Issue%20In%20Tree%20Is%20Clicked/version/2.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Issue In Tree Is Clicked\",\"description\":\"Triggered when the user selects an issue from the issues list and the issue is loaded.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"issueType\":{\"description\":\"Issue type\",\"enum\":[\"Advisor\",\"Code Quality Issue\",\"Code Security Vulnerability\",\"Licence Issue\",\"Open Source Vulnerability\",\"Infrastructure as Code Issue\",\"Container Vulnerability\"]},\"severity\":{\"description\":\"Severity of the issue\",\"enum\":[\"High\",\"Medium\",\"Low\",\"Critical\"]},\"issueId\":{\"description\":\"Issue ID as received from the backend.\",\"type\":\"string\"},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"issueType\",\"severity\",\"issueId\",\"itly\"]}");
+      schemas.put("Plugin Is Installed", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Plugin%20Is%20Installed/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Plugin Is Installed\",\"description\":\"Triggered when the user installs the plugin.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
+      schemas.put("Plugin Is Uninstalled", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Plugin%20Is%20Uninstalled/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Plugin Is Uninstalled\",\"description\":\"Triggered when the user uninstalls the plugin.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
+      schemas.put("Product Selection Is Viewed", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Product%20Selection%20Is%20Viewed/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Product Selection Is Viewed\",\"description\":\"User has connected the IDE with Snyk and needs to decide which products to enable.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
+      schemas.put("Welcome Is Viewed", "{\"$id\":\"https://data.amplitude.com/6d7c255e-5bf5-46fc-be87-58b75c7e0ad5/event/Welcome%20Is%20Viewed/version/1.0.0\",\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Welcome Is Viewed\",\"description\":\"User installs the IDE plugin and see Snyk's welcome screen.\",\"type\":\"object\",\"properties\":{\"ide\":{\"description\":\"Ide family.\",\"enum\":[\"Visual Studio Code\",\"Visual Studio\",\"Eclipse\",\"JetBrains\"]},\"itly\":{\"description\":\"Set to true for filtering within Segment\",\"const\":true}},\"additionalProperties\":false,\"required\":[\"ide\",\"itly\"]}");
 
-        List<Plugin> plugins = new ArrayList<>(Arrays.<Plugin>asList(
-            new SchemaValidatorPlugin(schemas)
-        ));
-        plugins.addAll(options.plugins);
+      List<Plugin> plugins = new ArrayList<>(Arrays.<Plugin>asList(
+        new SchemaValidatorPlugin(schemas)
+      ));
+      plugins.addAll(options.plugins);
 
         itly.load(options.withOverrides(null, plugins));
     }
@@ -125,45 +127,65 @@ public class Itly {
     public void group(String userId, String groupId, Group properties) {
         itly.group(userId, groupId, properties);
     }
-    /**
-     * Triggered when the analysis is loaded within the IDE.
-     *
-     * Owner: Georgi Mitev
-     * @param userId The user's ID.
-     * @param event
-     */
-    public void analysisIsReady(String userId, AnalysisIsReady event) {
-        track(userId, event);
-    }
-    /**
-     * User triggers an analysis or analysis is automatically triggered.
-     *
-     * Owner: Georgi Mitev
-     * @param userId The user's ID.
-     * @param event
-     */
-    public void analysisIsTriggered(String userId, AnalysisIsTriggered event) {
-        track(userId, event);
-    }
-    /**
-     * Triggered when the user clicks the health score of a package.
-     *
-     * Owner: Georgi Mitev
-     * @param userId The user's ID.
-     * @param event
-     */
-    public void healthScoreIsClicked(String userId, HealthScoreIsClicked event) {
-        track(userId, event);
-    }
-    /**
-     * Triggered when the user selects an issue from the issues list and the issue is loaded.
-     *
-     * Owner: Georgi Mitev
-     * @param userId The user's ID.
-     * @param event
-     */
-    public void issueInTreeIsClicked(String userId, IssueInTreeIsClicked event) {
-        track(userId, event);
+
+  /**
+   * Triggered when the analysis is loaded within the IDE.
+   * <p>
+   * Owner: Georgi Mitev
+   *
+   * @param userId The user's ID.
+   * @param event
+   */
+  public void analysisIsReady(String userId, AnalysisIsReady event) {
+    track(userId, event);
+  }
+
+  /**
+   * User triggers an analysis or analysis is automatically triggered.
+   * <p>
+   * Owner: Georgi Mitev
+   *
+   * @param userId The user's ID.
+   * @param event
+   */
+  public void analysisIsTriggered(String userId, AnalysisIsTriggered event) {
+    track(userId, event);
+  }
+
+  /**
+   * This Event fires when the authenticate button is clicked.
+   * <p>
+   * Owner: Bastian Doetsch
+   *
+   * @param userId The user's ID.
+   * @param event
+   */
+  public void authenticateButtonIsClicked(String userId, AuthenticateButtonIsClicked event) {
+    track(userId, event);
+  }
+
+  /**
+   * Triggered when the user clicks the health score of a package.
+   * <p>
+   * Owner: Georgi Mitev
+   *
+   * @param userId The user's ID.
+   * @param event
+   */
+  public void healthScoreIsClicked(String userId, HealthScoreIsClicked event) {
+    track(userId, event);
+  }
+
+  /**
+   * Triggered when the user selects an issue from the issues list and the issue is loaded.
+   * <p>
+   * Owner: Georgi Mitev
+   *
+   * @param userId The user's ID.
+   * @param event
+   */
+  public void issueInTreeIsClicked(String userId, IssueInTreeIsClicked event) {
+    track(userId, event);
     }
     /**
      * Triggered when the user installs the plugin.

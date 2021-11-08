@@ -41,7 +41,7 @@ class SnykBulkFileListener : BulkFileListener {
         )
     }
 
-    private fun cleanCaches(events: List<out VFileEvent>, classesOfEventsToFilter: Collection<Class<*>>) {
+    private fun cleanCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<*>>) {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
@@ -113,7 +113,7 @@ class SnykBulkFileListener : BulkFileListener {
         }
     }
 
-    private fun updateCaches(events: List<out VFileEvent>, classesOfEventsToFilter: Collection<Class<out VFileEvent>>) {
+    private fun updateCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<out VFileEvent>>) {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 

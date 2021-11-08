@@ -20,8 +20,16 @@ import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.severityAsString
-import java.awt.*
-import javax.swing.*
+import java.awt.Color
+import java.awt.Component
+import java.awt.Dimension
+import java.awt.Font
+import java.awt.Insets
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JTextArea
+import javax.swing.ScrollPaneConstants
 import javax.swing.event.HyperlinkEvent
 import kotlin.math.max
 import kotlin.math.min
@@ -94,11 +102,13 @@ class SuggestionDescriptionPanel(
 
         val titleLabel = JLabel().apply {
             font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
-            text = " " + if (suggestion.title.isNotBlank()) suggestion.title else when (suggestion.severity) {
-                3 -> "High Severity"
-                2 -> "Medium Severity"
-                1 -> "Low Severity"
-                else -> ""
+            text = " " + suggestion.title.ifBlank {
+                when (suggestion.severity) {
+                    3 -> "High Severity"
+                    2 -> "Medium Severity"
+                    1 -> "Low Severity"
+                    else -> ""
+                }
             }
             icon = SnykIcons.getSeverityIcon(suggestion.severityAsString, SnykIcons.IconSize.SIZE24)
         }
