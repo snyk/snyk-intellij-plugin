@@ -1,5 +1,10 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Fixed
+- run CLI download retries in background instead of UI thread
+- validate CLI download with sha-256
+
 ## [2.4.4]
 ### Fixed
 - Handle errors when downloading Snyk CLI

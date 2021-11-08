@@ -4,7 +4,9 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.NotNull
+import snyk.common.IgnoreException
 import snyk.common.IgnoreService
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
@@ -23,10 +25,17 @@ class IgnoreButtonActionListener(
     class IgnoreTask(project: Project, val ignoreService: IgnoreService, val issueId: String, val e: ActionEvent?) :
         Task.Backgroundable(project, "Ignoring issue...") {
         override fun run(@NotNull progressIndicator: ProgressIndicator) {
-            ignoreService.ignore(issueId)
-            (e?.source as? JButton)?.apply {
-                isEnabled = false
-                text = "Issue now ignored"
+            try {
+                ignoreService.ignore(issueId)
+                (e?.source as? JButton)?.apply {
+                    isEnabled = false
+                    text = "Issue now ignored"
+                }
+            } catch (e: IgnoreException) {
+                SnykBalloonNotificationHelper.showError(
+                    "Ignoring did not succeed. Error message: ${e.message})",
+                    project
+                )
             }
         }
     }
