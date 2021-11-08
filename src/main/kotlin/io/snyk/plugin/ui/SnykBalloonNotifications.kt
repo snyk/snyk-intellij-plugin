@@ -73,12 +73,11 @@ object SnykBalloonNotifications {
     }
 
     fun showFeedbackRequest(project: Project) = SnykBalloonNotificationHelper.showInfo(
-        "Thank you for using Snyk! Want to help us by taking part in Snyk’s plugin research and " +
-            "get a \$100 Amazon gift card in return?",
+        "<html>Have any ideas or feedback for us? <br>Let's sync and improve our extension.</html>",
         project,
-        NotificationAction.createSimpleExpiring("Schedule user testing here") {
+        NotificationAction.createSimpleExpiring("Schedule a meeting") {
             pluginSettings().showFeedbackRequest = false
-            BrowserUtil.browse("https://calendly.com/snyk-georgi/45min")
+            BrowserUtil.browse("https://calendly.com/andy-gongea-snyk/50min")
         },
         NotificationAction.createSimpleExpiring("Don’t show again") {
             pluginSettings().showFeedbackRequest = false
