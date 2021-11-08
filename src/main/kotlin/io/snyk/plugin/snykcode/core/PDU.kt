@@ -40,26 +40,23 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         val projectPath = psiFile.project.basePath
             ?: throw IllegalStateException("No Project base Path found for file $psiFile")
         // `ignoreCase = true` needed due to https://youtrack.jetbrains.com/issue/IDEA-268081
-        val projectBasedPath = absolutePath.replaceFirst(projectPath, "", ignoreCase = true)
-        if (projectBasedPath == absolutePath) {
-            throw IllegalStateException("projectBasedPath is not valid:\n" +
-                "  psiFile.virtualFile.path = $absolutePath\n" +
-                "  psiFile.project.basePath = $projectPath")
-        }
-        return projectBasedPath
+        return absolutePath.replaceFirst(projectPath, "", ignoreCase = true)
     }
 
     override fun getFileByDeepcodedPath(path: String, project: Any): Any? {
         val prj = toProject(project)
         val absolutePath = prj.basePath + if (path.startsWith("/")) path else "/$path"
         val virtualFile = LocalFileSystem.getInstance().findFileByPath(absolutePath)
+            ?: LocalFileSystem.getInstance().findFileByPath(path)
         if (virtualFile == null) {
-            SCLogger.instance.logWarn("VirtualFile not found for: $absolutePath")
+            SCLogger.instance.logWarn("VirtualFile not found for: $absolutePath or $path")
             return null
         }
         return RunUtils.computeInReadActionInSmartMode(
             prj,
-            Computable { PsiManager.getInstance(prj).findFile(virtualFile) }
+            Computable {
+                if (virtualFile.isValid) PsiManager.getInstance(prj).findFile(virtualFile) else null
+            }
         )
     }
 

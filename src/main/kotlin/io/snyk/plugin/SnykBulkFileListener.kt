@@ -79,6 +79,7 @@ class SnykBulkFileListener : BulkFileListener {
             // if SnykCode analysis is running then re-run it (with updated files)
             val manager = PsiManager.getInstance(project)
             val supportedFileChanged = virtualFilesAffected
+                .filter { it.isValid }
                 .mapNotNull { manager.findFile(it) }
                 .any { SnykCodeUtils.instance.isSupportedFileFormat(it) }
             val isSnykCodeRunning = AnalysisData.instance.isUpdateAnalysisInProgress(project)

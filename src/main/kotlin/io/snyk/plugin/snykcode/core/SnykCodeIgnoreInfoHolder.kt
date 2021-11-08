@@ -52,6 +52,7 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
     private fun getIgnoreFiles(project: Project, virtualFilesToCheck: Collection<VirtualFile>) =
         virtualFilesToCheck
             .filter { it.name == ".dcignore" || it.name == ".gitignore" }
+            .filter { it.isValid }
             .distinct()
             .mapNotNull { PsiManager.getInstance(project).findFile(it) }
 
