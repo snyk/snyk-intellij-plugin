@@ -14,8 +14,8 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.resetSettings
 import org.apache.http.HttpStatus
-import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.net.SocketTimeoutException
@@ -31,10 +31,10 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     private lateinit var cutSpy: SnykCliDownloaderService
     private val cliFile = getCliFile()
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()
+        resetSettings(project)
         cut = project.service()
         cutSpy = spyk(cut)
         errorHandler = mockk()
@@ -42,6 +42,12 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         cutSpy.downloader = downloader
         cutSpy.errorHandler = errorHandler
         indicator = EmptyProgressIndicator()
+    }
+
+    override fun tearDown() {
+        unmockkAll()
+        resetSettings(project)
+        super.tearDown()
     }
 
     @Test

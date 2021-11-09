@@ -2,8 +2,10 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.getCliFile
+import io.snyk.plugin.removeDummyCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
 
@@ -19,27 +21,18 @@ class CliAdapterTest : LightPlatformTestCase() {
     @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
+        resetSettings(project)
+    }
 
-        val settingsStateService = pluginSettings()
-
-        settingsStateService.ignoreUnknownCA = false
-        settingsStateService.usageAnalyticsEnabled = true
-        settingsStateService.token = ""
-        settingsStateService.customEndpointUrl = ""
-        settingsStateService.cliVersion = ""
-        settingsStateService.lastCheckDate = null
-        settingsStateService.organization = ""
-
-        project.service<SnykProjectSettingsStateService>().additionalParameters = ""
+    override fun tearDown() {
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
     }
 
     @Test
     fun testIsCliInstalledFailed() {
-        val cliFile = getCliFile()
-
-        if (cliFile.exists()) {
-            assertTrue(cliFile.delete())
-        }
+        removeDummyCliFile()
 
         val isCliInstalled = dummyCliService.isCliInstalled()
 

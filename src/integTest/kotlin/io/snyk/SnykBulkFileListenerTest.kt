@@ -7,12 +7,25 @@ import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.snyk.plugin.removeDummyCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Test
 import snyk.iac.IacResult
 import snyk.oss.OssResult
 
 class SnykBulkFileListenerTest : BasePlatformTestCase() {
+
+    override fun setUp() {
+        super.setUp()
+        resetSettings(project)
+    }
+
+    override fun tearDown() {
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
+    }
 
     @Test
     fun testCurrentOssResults_shouldDropCachedResult_whenBuildFileChanged() {

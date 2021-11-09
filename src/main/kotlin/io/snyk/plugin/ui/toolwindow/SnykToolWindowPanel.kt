@@ -46,6 +46,7 @@ import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import org.jetbrains.annotations.TestOnly
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
@@ -257,6 +258,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater {
                         displaySnykCodeResults(snykCodeResults)
                         currentOssResults?.let { displayVulnerabilities(it) }
+                        currentIacResult?.let { displayIacResults(it) }
                     }
                 }
             })
@@ -908,6 +910,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun reloadTree() {
         (vulnerabilitiesTree.model as DefaultTreeModel).reload()
     }
+
+    @TestOnly
+    fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode
+
+    @TestOnly
+    fun getTree() = vulnerabilitiesTree
 
     companion object {
         const val OSS_ROOT_TEXT = " Open Source Security"
