@@ -1,9 +1,12 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
+## [2.4.5]
 ### Fixed
 - run CLI download retries in background instead of UI thread
 - validate CLI download with sha-256
+- allow Snyk Code scan for multi-modules project (cause IlligalStateException before)
+### Changed
+- feedback link and message update
 
 ## [2.4.4]
 ### Fixed
