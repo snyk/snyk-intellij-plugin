@@ -10,6 +10,7 @@ import snyk.ItlyLogger
 import snyk.PropertyLoader
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
+import snyk.analytics.AuthenticateButtonIsClicked
 import snyk.analytics.DestinationsOptions
 import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.Identify
@@ -95,6 +96,10 @@ object Iteratively {
 
     fun logPluginIsUninstalled(userId: String, event: PluginIsUninstalled) {
         itly?.pluginIsUninstalled(userId, event)
+    }
+
+    fun logAuthenticateButtonIsClicked(userId: String, event: AuthenticateButtonIsClicked) {
+        itly?.authenticateButtonIsClicked(userId, event)
     }
 
     private fun loadIterativelyEnvironment(): Environment {

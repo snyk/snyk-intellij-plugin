@@ -14,13 +14,13 @@ import java.util.HashMap;
 
 public class Group extends Event {
     private static final String NAME = "group";
-    private static final String ID = "group";
-    private static final String VERSION = "94.0.0";
+  private static final String ID = "group";
+  private static final String VERSION = "100.0.0";
 
     public enum GroupType {
         ORG("org"), GROUP("group"), ACCOUNT("account");
 
-        private String groupType;
+        private final String groupType;
 
         public String getGroupType()
         {

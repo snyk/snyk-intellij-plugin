@@ -142,6 +142,7 @@ class ScanTypesPanel(
             }
         }
     }.apply {
+        name = "scanTypesPanel"
         border = JBUI.Borders.empty(2)
     }
 

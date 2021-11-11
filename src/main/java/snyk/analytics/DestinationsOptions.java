@@ -10,14 +10,14 @@ package snyk.analytics;
 
 public class DestinationsOptions {
 
-    private DestinationsOptions(Builder builder) {
-    }
+  private DestinationsOptions(Builder builder) {
+  }
 
-    public static IBuild builder() {
-        return new Builder();
-    }
+  public static IBuild builder() {
+    return new Builder();
+  }
 
-    public static class Builder implements IBuild {
+  public static class Builder implements IBuild {
         private Builder() {}
 
 

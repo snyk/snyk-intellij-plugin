@@ -1,5 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [Unreleased]
+### Fixed
+### Changed
+- new tool window icon
+- new experimental welcome workflow for a limited audience
+
 ## [2.4.5]
 ### Fixed
 - run CLI download retries in background instead of UI thread
@@ -9,6 +15,7 @@
 - feedback link and message update
 
 ## [2.4.4]
+
 ### Fixed
 - Handle errors when downloading Snyk CLI
 ### Changed

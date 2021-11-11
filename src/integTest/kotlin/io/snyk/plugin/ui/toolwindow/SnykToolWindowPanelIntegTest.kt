@@ -24,7 +24,7 @@ import snyk.iac.IacIssue
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import javax.swing.tree.TreeNode
 
-class SnykToolWindowPanelTest : HeavyPlatformTestCase() {
+class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private val iacGoofJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")
 

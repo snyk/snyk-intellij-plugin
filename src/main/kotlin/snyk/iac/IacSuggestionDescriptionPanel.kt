@@ -139,12 +139,14 @@ class IacSuggestionDescriptionPanel(
         titlePanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, 5)
         val titleLabel = JLabel().apply {
             font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
-            text = " " + if (issue.title.isNotBlank()) issue.title else when (issue.severity) {
-                Severity.CRITICAL -> "Critical Severity"
-                Severity.HIGH -> "High Severity"
-                Severity.MEDIUM -> "Medium Severity"
-                Severity.LOW -> "Low Severity"
-                else -> ""
+            text = " " + issue.title.ifBlank {
+                when (issue.severity) {
+                    Severity.CRITICAL -> "Critical Severity"
+                    Severity.HIGH -> "High Severity"
+                    Severity.MEDIUM -> "Medium Severity"
+                    Severity.LOW -> "Low Severity"
+                    else -> ""
+                }
             }
             icon = SnykIcons.getSeverityIcon(issue.severity, SnykIcons.IconSize.SIZE24)
         }

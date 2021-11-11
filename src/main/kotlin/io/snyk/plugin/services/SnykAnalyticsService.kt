@@ -9,6 +9,7 @@ import io.snyk.plugin.analytics.Iteratively
 import io.snyk.plugin.pluginSettings
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
+import snyk.analytics.AuthenticateButtonIsClicked
 import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.PluginIsInstalled
@@ -133,6 +134,14 @@ class SnykAnalyticsService : Disposable {
 
         catchAll(log, "pluginIsUninstalled") {
             itly.logPluginIsUninstalled(userId, event)
+        }
+    }
+
+    fun logAuthenticateButtonIsClicked(event: AuthenticateButtonIsClicked) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "authenticateButtonIsClicked") {
+            itly.logAuthenticateButtonIsClicked(userId, event)
         }
     }
 

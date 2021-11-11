@@ -60,7 +60,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         )
     }
 
-    override fun getOpenProjects(): Array<Any> = ProjectManager.getInstance().openProjects as Array<Any>
+    override fun getOpenProjects(): Array<Any> = ProjectManager.getInstance().openProjects.toList().toTypedArray()
 
     override fun getFileSize(file: Any): Long = toPsiFile(file).virtualFile.length
 

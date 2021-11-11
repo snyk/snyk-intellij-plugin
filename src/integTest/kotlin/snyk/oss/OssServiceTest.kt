@@ -168,7 +168,10 @@ class OssServiceTest : LightPlatformTestCase() {
         val rawMissedFixedInFieldCliString = getResourceAsString("licence-vulnerabilities.json")
         val cliResult = cli.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString)
         assertTrue(cliResult.isSuccessful())
-        assertNotNull(cliResult.allCliIssues?.find { it.vulnerabilities.any { it.fixedIn == null } })
+        assertNotNull(cliResult.allCliIssues?.find { it ->
+            it.vulnerabilities
+                .any { vulnerability -> vulnerability.fixedIn == null }
+        })
 
         touchAllFields(cliResult)
     }

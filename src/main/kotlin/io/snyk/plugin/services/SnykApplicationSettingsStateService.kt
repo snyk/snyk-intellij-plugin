@@ -70,6 +70,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         XmlSerializerUtil.copyBean(state, this)
     }
 
+    @Suppress("DEPRECATION")
     override fun initializeComponent() {
         super.initializeComponent()
         // migration for old users

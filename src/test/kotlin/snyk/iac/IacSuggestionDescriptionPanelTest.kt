@@ -7,8 +7,7 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.junit.Before
 import org.junit.Test
-import java.awt.Container
-import javax.swing.JButton
+import snyk.UIComponentFinder.getJButtonByText
 
 class IacSuggestionDescriptionPanelTest {
 
@@ -56,21 +55,5 @@ class IacSuggestionDescriptionPanelTest {
         val listener = actualButton!!.actionListeners.first() as IgnoreButtonActionListener
         assertEquals(IgnoreButtonActionListener::class, listener::class)
         assertEquals(issue.id, listener.issueId)
-    }
-
-    private fun getJButtonByText(parent: Container, text: String): JButton? {
-        val components = parent.components
-        var found: JButton? = null
-        for (component in components) {
-            if (component is JButton && text == component.text) {
-                found = component
-            } else if (component is Container) {
-                found = getJButtonByText(component, text)
-            }
-            if (found != null) {
-                break
-            }
-        }
-        return found
     }
 }
