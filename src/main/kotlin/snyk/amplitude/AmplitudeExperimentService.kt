@@ -19,11 +19,11 @@ private val LOG = logger<AmplitudeExperimentService>()
 class AmplitudeExperimentService : Disposable {
     companion object {
         const val CHANGE_AUTHENTICATE_BUTTON = "ide-jetbrains-change-authenticate-button-and-first-time-workflow"
-        const val TEST_GROUP = "TEST"
+        const val TEST_GROUP = "treatment"
+        private val storage: ConcurrentHashMap<String, Variant> = ConcurrentHashMap()
     }
 
     private var apiClient: AmplitudeExperimentApiClient? = null
-    private val storage: ConcurrentHashMap<String, Variant> = ConcurrentHashMap()
     private var user: ExperimentUser = ExperimentUser("")
 
     init {
@@ -49,7 +49,6 @@ class AmplitudeExperimentService : Disposable {
             LOG.warn("Amplitude experiment was not initialized, no results will be fetched for $user")
             return
         }
-
         this.user = user
         val variants = this.apiClient?.allVariants(this.user) ?: emptyMap()
         storeVariants(variants)
