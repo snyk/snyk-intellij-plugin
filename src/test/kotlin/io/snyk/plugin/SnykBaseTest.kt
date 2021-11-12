@@ -3,16 +3,20 @@ package io.snyk.plugin
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.util.messages.MessageBus
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
+import io.snyk.plugin.events.SnykSettingsListener
 import org.junit.After
 import org.junit.Before
 
 open class SnykBaseTest {
-    val project = mockk<Project>()
+    val messageBus = mockk<MessageBus>(relaxed = true)
+    val snykSettingsSyncPublisher = spyk<SnykSettingsListener>()
+    val project = mockk<Project>(relaxed = true)
     val application = mockk<Application>(relaxed = true)
 
     @Before
@@ -20,6 +24,13 @@ open class SnykBaseTest {
         unmockkAll()
         mockkStatic(ApplicationManager::class)
         replaceApplicationWithMockAndSetUnitTestMode()
+        stubMessageBus()
+    }
+
+    private fun stubMessageBus() {
+        every { project.messageBus } returns messageBus
+        every { messageBus.isDisposed } returns false
+        every { messageBus.syncPublisher(SnykSettingsListener.SNYK_SETTINGS_TOPIC) } returns snykSettingsSyncPublisher
     }
 
     @After
