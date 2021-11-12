@@ -68,6 +68,7 @@ class AmplitudeExperimentService : Disposable {
     }
 
     fun isShowScanningReminderEnabled(): Boolean {
+        pluginSettings().usageAnalyticsEnabled || return false
         val variant = storage["intellij-show-scanning-reminder"] ?: return false
 
         val settings = pluginSettings()
@@ -77,6 +78,7 @@ class AmplitudeExperimentService : Disposable {
     }
 
     fun isPartOfExperimentalWelcomeWorkflow(): Boolean {
+        pluginSettings().usageAnalyticsEnabled || return false
         val variant = storage[CHANGE_AUTHENTICATE_BUTTON] ?: return false
         return variant.value == TEST_GROUP
     }
