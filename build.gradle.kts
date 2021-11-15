@@ -33,6 +33,7 @@ dependencies {
     exclude(group = "org.slf4j")
   }
   implementation("ly.iterative.itly:sdk-jvm:1.2.10")
+  implementation("org.testcontainers:testcontainers:1.16.2")
 
   testImplementation("com.squareup.okhttp3:mockwebserver:4.9.2")
   testImplementation("junit:junit:4.13.2") {
