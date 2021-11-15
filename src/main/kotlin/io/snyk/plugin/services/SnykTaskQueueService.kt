@@ -1,5 +1,6 @@
 package io.snyk.plugin.services
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -182,6 +183,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 LOG.debug("IaC scan completed")
+                DaemonCodeAnalyzer.getInstance(project).restart()
             }
         })
     }

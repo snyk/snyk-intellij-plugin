@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -9,9 +10,9 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -67,6 +68,7 @@ import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
+import java.nio.file.Paths
 import java.time.Instant
 import java.util.Objects.nonNull
 import javax.swing.JLabel
@@ -361,8 +363,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                     val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
                         ?: throw IllegalArgumentException(node.toString())
-                    val fileName = iacIssuesForFile.targetFile
-                    val virtualFile = project.guessProjectDir()?.findFileByRelativePath(fileName)
+                    val fileName = iacIssuesForFile.targetFilePath
+                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(fileName))
                     if (virtualFile != null && virtualFile.isValid) {
                         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                         if (document != null) {
@@ -446,6 +448,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentIacError = null
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
+        DaemonCodeAnalyzer.getInstance(project).restart()
 
         ApplicationManager.getApplication().invokeLater {
             doCleanUi()

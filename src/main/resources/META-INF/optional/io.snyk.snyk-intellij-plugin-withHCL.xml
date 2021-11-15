@@ -1,0 +1,5 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <externalAnnotator language="HCL" implementationClass="snyk.iac.annotator.IacHclAnnotator"/>
+  </extensions>
+</idea-plugin>

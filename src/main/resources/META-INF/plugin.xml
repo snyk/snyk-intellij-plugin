@@ -5,6 +5,10 @@
 
   <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.modules.platform</depends>
+  <!-- optional modules -->
+  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withJSON.xml">com.intellij.modules.json</depends>
+  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withHCL.xml">org.intellij.plugins.hcl</depends>
+  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withYAML.xml">org.jetbrains.plugins.yaml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <toolWindow id="Snyk"

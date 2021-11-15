@@ -1,0 +1,14 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09T00:00:00.000Z",
+  "Description": "VPC",
+  "Resources": {
+    "EC2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+      }
+    }
+  }
+}
