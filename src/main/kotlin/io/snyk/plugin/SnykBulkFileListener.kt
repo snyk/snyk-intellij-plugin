@@ -35,6 +35,12 @@ class SnykBulkFileListener : BulkFileListener {
                 VFileCopyEvent::class.java
             )
         )
+
+        if (isContainerEnabled()) {
+            for (project in ProjectUtil.getOpenProjects()) {
+                getKubernetesImageCache(project).extractFromEvents(events)
+            }
+        }
     }
 
     override fun before(events: MutableList<out VFileEvent>) {

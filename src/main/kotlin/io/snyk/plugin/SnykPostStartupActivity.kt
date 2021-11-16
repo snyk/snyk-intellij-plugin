@@ -21,6 +21,7 @@ import snyk.amplitude.AmplitudeExperimentService
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
+import snyk.container.KubernetesImageCache
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
@@ -78,6 +79,10 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         LOG.info("Loading variants for all amplitude experiments")
         val experimentUser = ExperimentUser(publicUserId)
         service<AmplitudeExperimentService>().fetch(experimentUser)
+
+        if (isContainerEnabled()) {
+            getKubernetesImageCache(project).scanProjectForKubernetesFiles()
+        }
     }
 }
 

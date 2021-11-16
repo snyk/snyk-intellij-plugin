@@ -21,6 +21,7 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
+import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
 import snyk.oss.OssService
 import java.io.File
@@ -38,6 +39,8 @@ fun getOssService(project: Project): OssService = project.service()
 fun getIacService(project: Project): IacScanService = project.service()
 
 fun getSnykCode(project: Project): SnykCodeService = project.service()
+
+fun getKubernetesImageCache(project: Project): KubernetesImageCache = project.service()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
@@ -168,6 +171,8 @@ fun controlExternalProcessWithProgressIndicator(
 }
 
 fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", false)
+
+fun isContainerEnabled(): Boolean = Registry.`is`("snyk.preview.container.enabled", false)
 
 fun isNewRefactoredTreeEnabled(): Boolean = Registry.`is`("snyk.preview.new.refactored.tree.enabled", false)
 

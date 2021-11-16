@@ -26,14 +26,13 @@ dependencies {
   implementation("com.atlassian.commonmark:commonmark:0.17.0")
   implementation("com.google.code.gson:gson:2.8.9")
   implementation("com.segment.analytics.java:analytics:3.1.3")
-  implementation("io.sentry:sentry:5.3.0")
+  implementation("io.sentry:sentry:5.4.0")
   implementation("io.snyk.code.sdk:snyk-code-client:2.2.0")
   implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
   implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
     exclude(group = "org.slf4j")
   }
   implementation("ly.iterative.itly:sdk-jvm:1.2.11")
-
   testImplementation("com.squareup.okhttp3:mockwebserver:4.9.2")
   testImplementation("junit:junit:4.13.2") {
     exclude(group = "org.hamcrest")

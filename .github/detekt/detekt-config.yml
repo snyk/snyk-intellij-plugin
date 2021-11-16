@@ -4,3 +4,11 @@
 formatting:
   Indentation:
     continuationIndentSize: 8
+
+complexity:
+  # don't count private & deprecated
+  # add integTest folder to excludes - we can't have too many tests
+  TooManyFunctions:
+    ignorePrivate: true
+    ignoreDeprecated: true
+    excludes: [ '**/integTest/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
