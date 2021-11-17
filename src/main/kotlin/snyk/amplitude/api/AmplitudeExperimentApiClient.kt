@@ -20,8 +20,10 @@ class AmplitudeExperimentApiClient private constructor(
      */
     @Suppress("TooGenericExceptionCaught")
     fun allVariants(user: ExperimentUser): Map<String, Variant> {
-        if (user.userId.isBlank() && user.deviceId.isBlank()) {
-            log.warn("userId and deviceId are empty; amplitude may not resolve identity")
+        if (user.userId.isBlank()) {
+            // when userId is empty, the deviceId will be used.
+            // it is prefilled as a default during object creation of Experiment User
+            log.debug("userId is empty")
         }
         log.debug("Fetch variants for user: $user")
 
