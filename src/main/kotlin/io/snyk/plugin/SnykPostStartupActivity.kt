@@ -71,10 +71,9 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         }
 
         val userToken = settings.token ?: ""
-        var publicUserId = ""
-        if (userToken.isNotBlank()) {
-            publicUserId = service<SnykApiService>().userId ?: ""
-        }
+        val publicUserId = if (userToken.isNotBlank()) {
+            service<SnykApiService>().userId ?: ""
+        } else ""
 
         LOG.info("Loading variants for all amplitude experiments")
         val experimentUser = ExperimentUser(publicUserId)
@@ -89,7 +88,8 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
 private class UninstallListener : PluginStateListener {
     @Suppress("EmptyFunctionBlock")
-    override fun install(descriptor: IdeaPluginDescriptor) {}
+    override fun install(descriptor: IdeaPluginDescriptor) {
+    }
 
     override fun uninstall(descriptor: IdeaPluginDescriptor) {
         if (descriptor.pluginId.idString != PLUGIN_ID) return
