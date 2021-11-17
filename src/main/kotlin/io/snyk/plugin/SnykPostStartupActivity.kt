@@ -30,6 +30,7 @@ private val LOG = logger<SnykPostStartupActivity>()
 class SnykPostStartupActivity : StartupActivity.DumbAware {
 
     private var listenersActivated = false
+    val settings = pluginSettings()
 
     override fun runActivity(project: Project) {
         PluginInstaller.addStateListener(UninstallListener())
@@ -37,7 +38,6 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         // clean up left-overs in case project wasn't properly closed before
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
-        val settings = pluginSettings()
 
         if (!settings.pluginInstalled) {
             settings.pluginInstalled = true
@@ -71,23 +71,25 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         }
 
         val userToken = settings.token ?: ""
-        if (userToken.isNotBlank()) {
-            LOG.info("Loading variants for all amplitude experiments")
-            val publicUserId = service<SnykApiService>().userId ?: ""
-            val experimentUser = ExperimentUser(publicUserId)
-            service<AmplitudeExperimentService>().fetch(experimentUser)
+        val publicUserId = if (userToken.isNotBlank()) {
+            service<SnykApiService>().userId ?: ""
+        } else ""
 
-            if (service<AmplitudeExperimentService>().isShowScanningReminderEnabled()) {
-                SnykBalloonNotifications.showScanningReminder(project)
-                settings.scanningReminderWasShown = true
-            }
+        LOG.info("Loading variants for all amplitude experiments")
+        val experimentUser = ExperimentUser(publicUserId)
+        service<AmplitudeExperimentService>().fetch(experimentUser)
+
+        if (service<AmplitudeExperimentService>().isShowScanningReminderEnabled()) {
+            SnykBalloonNotifications.showScanningReminder(project)
+            settings.scanningReminderWasShown = true
         }
     }
 }
 
 private class UninstallListener : PluginStateListener {
     @Suppress("EmptyFunctionBlock")
-    override fun install(descriptor: IdeaPluginDescriptor) {}
+    override fun install(descriptor: IdeaPluginDescriptor) {
+    }
 
     override fun uninstall(descriptor: IdeaPluginDescriptor) {
         if (descriptor.pluginId.idString != PLUGIN_ID) return

@@ -1,23 +1,27 @@
 package snyk.amplitude
 
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import snyk.amplitude.AmplitudeExperimentService.Companion.CHANGE_AUTHENTICATE_BUTTON
-import snyk.amplitude.AmplitudeExperimentService.Companion.TEST_GROUP
+import snyk.amplitude.AmplitudeExperimentService.Companion.TREATMENT_GROUP
 import snyk.amplitude.api.AmplitudeExperimentApiClient
 import snyk.amplitude.api.ExperimentUser
 import snyk.amplitude.api.Variant
 
 class AmplitudeExperimentServiceTest {
     private val amplitudeApiClientMock = mockk<AmplitudeExperimentApiClient>()
-    private val cut = AmplitudeExperimentService()
-    private val user = ExperimentUser("testUser")
+    private lateinit var cut: AmplitudeExperimentService
+    private lateinit var user: ExperimentUser
 
     private fun variantMap(value: String): MutableMap<String, Variant> {
         val variant = Variant(value, null)
@@ -34,23 +38,32 @@ class AmplitudeExperimentServiceTest {
 
     @Before
     fun setUp() {
-        clearAllMocks()
+        unmockkAll()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { pluginSettings() } returns SnykApplicationSettingsStateService()
+        cut = AmplitudeExperimentService()
         cut.setApiClient(amplitudeApiClientMock)
+        user = ExperimentUser("testUser")
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
-    fun `isPartOfExperimentalWelcomeWorkflow should return true, if user is in the test group`() {
-        val expectedVariants = variantMap(TEST_GROUP)
+    fun `isPartOfExperimentalWelcomeWorkflow should return true, if user is in the treatment group`() {
+        val expectedVariants = variantMap(TREATMENT_GROUP)
         stubApi(expectedVariants)
 
         val isPartOfExperiment = cut.isPartOfExperimentalWelcomeWorkflow()
 
-        assertTrue("Expected user to be part of test group, but wasn't.", isPartOfExperiment)
+        assertTrue("Expected user to be part of treatment group, but wasn't.", isPartOfExperiment)
     }
 
     @Test
     fun `isPartOfExperimentalWelcomeWorkflow should return false, if user is in the control group`() {
-        val expectedVariants = variantMap("anything that is not test group")
+        val expectedVariants = variantMap("anything that is not treatment group")
         stubApi(expectedVariants)
 
         val isPartOfExperiment = cut.isPartOfExperimentalWelcomeWorkflow()
@@ -68,6 +81,11 @@ class AmplitudeExperimentServiceTest {
 
     @Test
     fun `isPartOfExperimentalWelcomeWorkflow should return false, if experiment not found`() {
-        assertFalse("Expected control group, but wasn't.", cut.isPartOfExperimentalWelcomeWorkflow())
+        every { amplitudeApiClientMock.allVariants(any()) } returns emptyMap()
+        cut.fetch(user)
+
+        val partOfExperimentalWelcomeWorkflow = cut.isPartOfExperimentalWelcomeWorkflow()
+
+        assertFalse("Expected control group, but wasn't.", partOfExperimentalWelcomeWorkflow)
     }
 }
