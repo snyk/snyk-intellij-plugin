@@ -1,10 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [Unreleased]
-### Fixed
+## [2.4.6]
 ### Changed
 - new tool window icon
-- new experimental welcome workflow for a limited audience
+- new experimental welcome workflow
 
 ## [2.4.5]
 ### Fixed
