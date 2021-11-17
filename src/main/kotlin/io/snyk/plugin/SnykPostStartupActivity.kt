@@ -72,17 +72,16 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
         val userToken = settings.token ?: ""
         val publicUserId = if (userToken.isNotBlank()) {
+            if (!settings.scanningReminderWasShown) {
+                SnykBalloonNotifications.showScanningReminder(project)
+                settings.scanningReminderWasShown = true
+            }
             service<SnykApiService>().userId ?: ""
         } else ""
 
         LOG.info("Loading variants for all amplitude experiments")
         val experimentUser = ExperimentUser(publicUserId)
         service<AmplitudeExperimentService>().fetch(experimentUser)
-
-        if (!settings.scanningReminderWasShown) {
-            SnykBalloonNotifications.showScanningReminder(project)
-            settings.scanningReminderWasShown = true
-        }
     }
 }
 
