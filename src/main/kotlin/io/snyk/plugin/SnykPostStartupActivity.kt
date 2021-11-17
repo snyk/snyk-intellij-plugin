@@ -79,7 +79,7 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         val experimentUser = ExperimentUser(publicUserId)
         service<AmplitudeExperimentService>().fetch(experimentUser)
 
-        if (service<AmplitudeExperimentService>().isShowScanningReminderEnabled()) {
+        if (!settings.scanningReminderWasShown) {
             SnykBalloonNotifications.showScanningReminder(project)
             settings.scanningReminderWasShown = true
         }
