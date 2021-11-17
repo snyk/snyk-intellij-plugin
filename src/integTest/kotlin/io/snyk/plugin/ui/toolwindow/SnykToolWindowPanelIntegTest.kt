@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
+import UIComponentFinder
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.registry.Registry
@@ -27,6 +28,7 @@ import snyk.common.SnykError
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
+import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
 
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
@@ -41,17 +43,23 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         setupDummyCliFile()
+        // restore modified Registry value
+        isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
+        unmockkStatic("io.snyk.plugin.UtilsKt")
     }
 
     override fun tearDown() {
         unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
+        // restore modified Registry value
+        isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
+        unmockkStatic("io.snyk.plugin.UtilsKt")
         super.tearDown()
     }
 
     private val isIacEnabledRegistryValue = Registry.get("snyk.preview.iac.enabled")
-    private var isIacEnabledOldValue: Boolean = false
+    private val isIacEnabledDefaultValue: Boolean by lazy { isIacEnabledRegistryValue.asBoolean() }
 
     private fun setUpIacTest() {
         val settings = pluginSettings()
@@ -60,13 +68,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = true
 
-        isIacEnabledOldValue = isIacEnabledRegistryValue.asBoolean()
         isIacEnabledRegistryValue.setValue(true)
-    }
-
-    private fun tearDownIacTest() {
-        // restore modified Registry value
-        isIacEnabledRegistryValue.setValue(isIacEnabledOldValue)
     }
 
     @Test
@@ -112,8 +114,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         assertFalse("Medium severity IaC results should NOT be shown after filtering", isMediumSeverityShown())
-
-        tearDownIacTest()
     }
 
     @Test
@@ -141,10 +141,14 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         val descriptionComponents = toolWindowPanel.getDescriptionPanel().components.toList()
-        assertTrue(descriptionComponents.any { it is SnykErrorPanel })
+        val errorPanel = descriptionComponents.find { it is SnykErrorPanel } as SnykErrorPanel?
 
-        // tear Down
-        unmockkStatic("io.snyk.plugin.UtilsKt")
-        tearDownIacTest()
+        assertNotNull(errorPanel)
+
+        val errorMessageTextArea = UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "errorMessageTextArea")
+        val pathTextArea = UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "pathTextArea")
+
+        assertTrue(errorMessageTextArea?.text == iacError.message)
+        assertTrue(pathTextArea?.text == iacError.path)
     }
 }
