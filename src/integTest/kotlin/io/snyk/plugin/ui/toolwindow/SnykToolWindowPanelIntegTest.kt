@@ -45,7 +45,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         setupDummyCliFile()
         // restore modified Registry value
         isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
-        unmockkStatic("io.snyk.plugin.UtilsKt")
     }
 
     override fun tearDown() {
@@ -54,7 +53,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         removeDummyCliFile()
         // restore modified Registry value
         isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
-        unmockkStatic("io.snyk.plugin.UtilsKt")
         super.tearDown()
     }
 
