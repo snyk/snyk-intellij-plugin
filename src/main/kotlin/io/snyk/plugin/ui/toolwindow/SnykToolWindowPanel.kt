@@ -234,6 +234,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         updateTreeRootNodesPresentation()
                         displayEmptyDescription()
                     }
+                    service<SnykAnalyticsService>().logAnalysisIsReady(
+                        AnalysisIsReady.builder()
+                            .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
+                            .ide(AnalysisIsReady.Ide.JETBRAINS)
+                            .result(Result.ERROR)
+                            .build()
+                    )
                 }
 
                 override fun scanningSnykCodeError(snykError: SnykError) {
@@ -391,6 +398,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
                 is RootSecurityIssuesTreeNode, is RootQualityIssuesTreeNode -> {
                     currentSnykCodeError?.let { displaySnykError(it) } ?: displayEmptyDescription()
+                }
+                is RootIacIssuesTreeNode -> {
+                    currentIacError?.let { displaySnykError(it) } ?: displayEmptyDescription()
                 }
                 else -> {
                     displayEmptyDescription()
@@ -575,7 +585,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             rootOssTreeNode.childCount == 0 &&
                 rootSecurityIssuesTreeNode.childCount == 0 &&
-                rootQualityIssuesTreeNode.childCount == 0 -> {
+                rootQualityIssuesTreeNode.childCount == 0 &&
+                rootIacIssuesTreeNode.childCount == 0 -> {
                 displayNoVulnerabilitiesMessage()
             }
             else -> {
@@ -957,6 +968,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     @TestOnly
     fun getTree() = vulnerabilitiesTree
+
+    @TestOnly
+    fun getDescriptionPanel() = descriptionPanel
 
     companion object {
         const val OSS_ROOT_TEXT = " Open Source Security"
