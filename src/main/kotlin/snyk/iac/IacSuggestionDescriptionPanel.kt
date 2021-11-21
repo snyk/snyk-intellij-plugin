@@ -2,6 +2,7 @@ package snyk.iac
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiFile
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -27,6 +28,7 @@ import javax.swing.event.HyperlinkEvent
 
 class IacSuggestionDescriptionPanel(
     val issue: IacIssue,
+    val psiFile: PsiFile?,
     val project: Project
 ) : JPanel() {
 
@@ -61,6 +63,7 @@ class IacSuggestionDescriptionPanel(
     )
 
     init {
+        this.name = "IacSuggestionDescriptionPanel"
         this.layout = GridLayoutManager(10, 1, Insets(20, 10, 20, 20), -1, 10)
 
         this.add(
@@ -175,8 +178,16 @@ class IacSuggestionDescriptionPanel(
     }
 
     private fun createIgnoreButton(panel: JPanel) {
-        val ignoreButton = JButton("Ignore This Issue")
-        ignoreButton.addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue.id, project))
+        val ignoreButton = JButton().apply {
+            if (issue.ignored) {
+                text = IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
+                isEnabled = false
+            } else {
+                text = "Ignore This Issue"
+                addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue, psiFile, project))
+            }
+            name = "ignoreButton"
+        }
         panel.add(
             ignoreButton,
             baseGridConstraints(0)

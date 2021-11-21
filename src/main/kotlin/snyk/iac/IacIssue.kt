@@ -12,4 +12,6 @@ data class IacIssue(
     val resolve: String? = null,
     val references: List<String> = emptyList(),
     val path: List<String> = emptyList()
-)
+) {
+    var ignored = false
+}

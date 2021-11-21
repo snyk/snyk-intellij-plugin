@@ -38,7 +38,7 @@ class IacSuggestionDescriptionPanelTest {
     fun `IacSuggestionDescriptionPanel should have ignore button`() {
         val expectedButtonText = "Ignore This Issue"
 
-        cut = IacSuggestionDescriptionPanel(issue, project)
+        cut = IacSuggestionDescriptionPanel(issue, null, project)
 
         val actualButton = getJButtonByText(cut, expectedButtonText)
         assertNotNull("Didn't find button with text $expectedButtonText", actualButton)
@@ -48,12 +48,12 @@ class IacSuggestionDescriptionPanelTest {
     fun `IacSuggestionDescriptionPanel ignore button should call IacIgnoreService on click`() {
         val expectedButtonText = "Ignore This Issue"
 
-        cut = IacSuggestionDescriptionPanel(issue, project)
+        cut = IacSuggestionDescriptionPanel(issue, null, project)
 
         val actualButton = getJButtonByText(cut, expectedButtonText)
         assertNotNull("Didn't find Ignore Button", actualButton)
         val listener = actualButton!!.actionListeners.first() as IgnoreButtonActionListener
         assertEquals(IgnoreButtonActionListener::class, listener::class)
-        assertEquals(issue.id, listener.issueId)
+        assertEquals(issue.id, listener.issue.id)
     }
 }
