@@ -1,7 +1,10 @@
 package snyk.iac
 
+import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.ui.HyperlinkLabel
+import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
@@ -124,7 +127,7 @@ class IacSuggestionDescriptionPanel(
 
     private fun titlePanel(): JPanel {
         val titlePanel = JPanel()
-        titlePanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, 5)
+        titlePanel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, 5)
 
         val titleLabel = JLabel().apply {
             font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
@@ -144,6 +147,13 @@ class IacSuggestionDescriptionPanel(
         )
 
         titlePanel.add(cwePanel(), baseGridConstraints(1, indent = 0))
+
+        if (issue.title == "Container does not drop all default capabilities") {
+            titlePanel.add(
+                snykLearn(),
+                baseGridConstraints(2, indent = 0)
+            )
+        }
 
         return titlePanel
     }
@@ -174,6 +184,24 @@ class IacSuggestionDescriptionPanel(
         }
 
         panel.add(positionLabel, baseGridConstraints(0, 2, indent = 0))
+
+        return panel
+    }
+
+    private fun snykLearn(): JPanel {
+        val panel = JPanel(GridLayoutManager(1, 2, Insets(10, 0, 0, 0), 0, 0))
+
+        val snykLearnIcon = JBLabel(SnykIcons.SNYK_LEARN)
+        panel.add(snykLearnIcon, baseGridConstraints(0, 0))
+
+        val snykLearnLink = LinkLabel.create("Learn more about Container default capabilities") {
+            BrowserUtil.browse("https://learn.snyk.io/lessons/container-does-not-drop-all-default-capabilities/kubernetes/")
+        }
+        snykLearnLink.icon = AllIcons.Ide.External_link_arrow
+        snykLearnLink.horizontalTextPosition = JLabel.LEFT
+        snykLearnLink.iconTextGap = 0
+
+        panel.add(snykLearnLink, baseGridConstraints(0, 1))
 
         return panel
     }
