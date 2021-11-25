@@ -72,10 +72,6 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
         val userToken = settings.token ?: ""
         val publicUserId = if (userToken.isNotBlank()) {
-            if (!settings.scanningReminderWasShown) {
-                SnykBalloonNotifications.showScanningReminder(project)
-                settings.scanningReminderWasShown = true
-            }
             service<SnykApiService>().userId ?: ""
         } else ""
 
