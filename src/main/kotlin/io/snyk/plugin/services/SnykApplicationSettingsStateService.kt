@@ -56,7 +56,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
     var showFeedbackRequest = true
 
-    // experiment section
     var scanningReminderWasShown: Boolean = false
 
     /**

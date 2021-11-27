@@ -84,22 +84,6 @@ object SnykBalloonNotifications {
         }
     )
 
-    fun showScanningReminder(project: Project) = SnykBalloonNotificationHelper.showInfo(
-        "Scan your project for security vulnerabilities and code issues",
-        project,
-        NotificationAction.createSimpleExpiring("Run scan") {
-            snykToolWindow(project)?.show()
-            project.service<SnykTaskQueueService>().scan()
-            project.service<SnykAnalyticsService>().logAnalysisIsTriggered(
-                AnalysisIsTriggered.builder()
-                    .analysisType(getSelectedProducts(pluginSettings()))
-                    .ide(AnalysisIsTriggered.Ide.JETBRAINS)
-                    .triggeredByUser(true)
-                    .build()
-            )
-        }
-    )
-
     fun showNetworkErrorAlert(project: Project) = SnykBalloonNotificationHelper.showError(
         "$networkErrorAlertMessage Check connection and network settings.",
         project,

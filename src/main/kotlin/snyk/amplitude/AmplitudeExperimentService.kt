@@ -3,7 +3,6 @@ package snyk.amplitude
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.pluginSettings
 import org.jetbrains.annotations.TestOnly
 import snyk.amplitude.api.AmplitudeExperimentApiClient
 import snyk.amplitude.api.AmplitudeExperimentApiClient.Defaults.FALLBACK_VARIANT
@@ -64,15 +63,6 @@ class AmplitudeExperimentService : Disposable {
             storage[key] = variant
         }
         LOG.debug("Stored variants: $variants")
-    }
-
-    fun isShowScanningReminderEnabled(): Boolean {
-        val variant = storage["intellij-show-scanning-reminder"] ?: return false
-
-        val settings = pluginSettings()
-        LOG.debug("Scanning reminder: variant - ${variant.value}, was shown - ${settings.scanningReminderWasShown}")
-
-        return variant.value == "test" && !settings.scanningReminderWasShown
     }
 
     fun isPartOfExperimentalWelcomeWorkflow(): Boolean {

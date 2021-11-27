@@ -78,11 +78,6 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         LOG.info("Loading variants for all amplitude experiments")
         val experimentUser = ExperimentUser(publicUserId)
         service<AmplitudeExperimentService>().fetch(experimentUser)
-
-        if (service<AmplitudeExperimentService>().isShowScanningReminderEnabled()) {
-            SnykBalloonNotifications.showScanningReminder(project)
-            settings.scanningReminderWasShown = true
-        }
     }
 }
 
