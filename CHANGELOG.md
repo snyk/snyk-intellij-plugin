@@ -1,12 +1,23 @@
 # Snyk Vulnerability Scanner Changelog
 
-## [2.4.6]
+## [2.4.7]
+
 ### Changed
+
+- use new Snyk Code API
+- remove scan reminder from experiment
+
+## [2.4.6]
+
+### Changed
+
 - new tool window icon
 - new experimental welcome workflow
 
 ## [2.4.5]
+
 ### Fixed
+
 - run CLI download retries in background instead of UI thread
 - validate CLI download with sha-256
 - allow Snyk Code scan for multi-modules project (cause IlligalStateException before)
