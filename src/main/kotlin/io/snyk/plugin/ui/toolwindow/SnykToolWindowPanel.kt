@@ -14,6 +14,7 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeSpeedSearch
@@ -362,16 +363,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                 }
                 is IacIssueTreeNode -> {
-                    val iacIssue = node.userObject as IacIssue
-                    val scrollPane = wrapWithScrollPane(
-                        IacSuggestionDescriptionPanel(iacIssue, project)
-                    )
-                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
-
                     val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
                         ?: throw IllegalArgumentException(node.toString())
                     val fileName = iacIssuesForFile.targetFilePath
                     val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(fileName))
+                    val psiFile = virtualFile?.let { PsiManager.getInstance(project).findFile(it) }
+
+                    val iacIssue = node.userObject as IacIssue
+                    val scrollPane = wrapWithScrollPane(
+                        IacSuggestionDescriptionPanel(iacIssue, psiFile, project)
+                    )
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
                     if (virtualFile != null && virtualFile.isValid) {
                         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                         if (document != null) {

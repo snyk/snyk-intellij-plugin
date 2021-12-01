@@ -41,8 +41,9 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
         LOG.debug("Received ${issues.size} IacIssue annotations for ${psiFile.virtualFile.name}")
         issues.forEach { iacIssue ->
-            LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
+            if (iacIssue.ignored) return@forEach
 
+            LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
             val severity = when (iacIssue.severity) {
                 CRITICAL -> HighlightSeverity.ERROR
                 HIGH -> HighlightSeverity.WARNING

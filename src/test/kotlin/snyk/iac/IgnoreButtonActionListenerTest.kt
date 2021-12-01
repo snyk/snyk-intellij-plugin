@@ -1,5 +1,6 @@
 package snyk.iac
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import io.mockk.every
@@ -11,6 +12,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -19,7 +21,7 @@ import java.awt.event.ActionEvent
 import javax.swing.JButton
 
 class IgnoreButtonActionListenerTest {
-    private lateinit var issueId: String
+    private lateinit var issue: IacIssue
     private lateinit var project: Project
     private lateinit var service: IgnoreService
     private lateinit var button: JButton
@@ -32,7 +34,17 @@ class IgnoreButtonActionListenerTest {
         service = mockk()
         project = mockk()
         button = JButton("test")
-        issueId = "issueId"
+        issue = IacIssue(
+            "issueId",
+            "issueTitle",
+            "issueSeverity",
+            "issuePublicId",
+            "issueDocumentation",
+            1,
+            "issueIssue",
+            "issueImpact",
+            "issueResolve"
+        )
         button.isEnabled = true
     }
 
@@ -45,7 +57,7 @@ class IgnoreButtonActionListenerTest {
     fun `actionPerformed should submit an IgnoreAction to be run async`() {
         mockkStatic(ProgressManager::class)
         val progressManager = mockk<ProgressManager>()
-        val cut = IgnoreButtonActionListener(service, issueId, project)
+        val cut = IgnoreButtonActionListener(service, issue, null, project)
         val taskSlot = slot<IgnoreButtonActionListener.IgnoreTask>()
 
         every { ProgressManager.getInstance() } returns progressManager
@@ -60,21 +72,26 @@ class IgnoreButtonActionListenerTest {
         assertEquals(taskSlot.captured.project, project)
         assertEquals(taskSlot.captured.e, event)
         assertEquals(taskSlot.captured.ignoreService, service)
-        assertEquals(taskSlot.captured.issueId, issueId)
+        assertEquals(taskSlot.captured.issue, issue)
     }
 
     @Test
-    fun `task should use ignore service to ignore and then disable the button`() {
-        val task = IgnoreButtonActionListener.IgnoreTask(project, service, issueId, event)
+    fun `task should use ignore service to ignore and then mark IacIssue as ignored and disable the button`() {
+        val task = IgnoreButtonActionListener.IgnoreTask(project, service, issue, null, event)
 
-        justRun { service.ignore(issueId) }
+        justRun { service.ignore(issue.id) }
         every { event.source } returns button
+
+        val daemonCodeAnalyzer = mockk<DaemonCodeAnalyzer>()
+        every { DaemonCodeAnalyzer.getInstance(project) } returns daemonCodeAnalyzer
+        justRun { daemonCodeAnalyzer.restart() }
 
         task.run(mockk())
 
-        verify(exactly = 1) { service.ignore(issueId) }
+        verify(exactly = 1) { service.ignore(issue.id) }
 
-        assertEquals("Issue now ignored", button.text)
+        assertEquals(IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT, button.text)
         assertFalse("Expected button to be disabled after ignore action", button.isEnabled)
+        assertTrue("Expected issue to be marked ignored after ignore action", issue.ignored)
     }
 }

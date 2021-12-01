@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow
 
 import UIComponentFinder
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.application.impl.ApplicationInfoImpl
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.HeavyPlatformTestCase
@@ -12,7 +13,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.unmockkStatic
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
@@ -27,7 +27,11 @@ import org.junit.Test
 import snyk.common.SnykError
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
+import snyk.iac.IacSuggestionDescriptionPanel
+import snyk.iac.IgnoreButtonActionListener
+import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
+import javax.swing.JButton
 import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
 
@@ -69,12 +73,9 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         isIacEnabledRegistryValue.setValue(true)
     }
 
-    @Test
-    fun testSeverityFilterForIacResult() {
-        // pre-test setup
+    private fun prepareTreeWithFakeIacResults() {
         setUpIacTest()
 
-        // mock IaC results
         val mockRunner = mockk<ConsoleCommandRunner>()
         every {
             mockRunner.execute(
@@ -86,10 +87,16 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         getIacService(project).setConsoleCommandRunner(mockRunner)
 
+        project.service<SnykTaskQueueService>().scan()
+    }
+
+    @Test
+    fun testSeverityFilterForIacResult() {
+        // pre-test setup
+        prepareTreeWithFakeIacResults()
+
         // actual test run
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
-
-        project.service<SnykTaskQueueService>().scan()
 
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
@@ -143,10 +150,77 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         assertNotNull(errorPanel)
 
-        val errorMessageTextArea = UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "errorMessageTextArea")
+        val errorMessageTextArea =
+            UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "errorMessageTextArea")
         val pathTextArea = UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "pathTextArea")
 
         assertTrue(errorMessageTextArea?.text == iacError.message)
         assertTrue(pathTextArea?.text == iacError.path)
+    }
+
+    fun test_WhenIacIssueIgnored_ThenItMarkedIgnored_AndButtonRemainsDisabled() {
+        // pre-test setup
+        prepareTreeWithFakeIacResults()
+
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        val tree = toolWindowPanel.getTree()
+        PlatformTestUtil.waitWhileBusy(tree)
+
+        // select first IaC issue and ignore it
+        val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
+        val firstIaCFileNode = rootIacIssuesTreeNode.firstChild as? IacFileTreeNode
+        val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
+            ?: throw IllegalStateException()
+        TreeUtil.selectNode(tree, firstIacIssueNode)
+
+        // hack to avoid "File accessed outside allowed roots" check in tests
+        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
+        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
+        ApplicationInfoImpl.setInStressTest(true)
+        try {
+            PlatformTestUtil.waitWhileBusy(tree)
+        } finally {
+            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
+        }
+
+        fun iacDescriptionPanel() =
+            UIComponentFinder.getComponentByName(
+                toolWindowPanel.getDescriptionPanel(),
+                IacSuggestionDescriptionPanel::class,
+                "IacSuggestionDescriptionPanel"
+            ) ?: throw IllegalStateException()
+
+        val ignoreButton = UIComponentFinder.getComponentByName(iacDescriptionPanel(), JButton::class, "ignoreButton")
+            ?: throw IllegalStateException()
+
+        assertFalse(
+            "Issue should NOT be ignored by default",
+            (firstIacIssueNode.userObject as IacIssue).ignored
+        )
+        assertTrue(
+            "Ignore Button should be enabled by default",
+            ignoreButton.isEnabled && ignoreButton.text != IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
+        )
+
+        ignoreButton.doClick()
+
+        // check final state
+        assertTrue(
+            "Issue should be marked as ignored after ignoring",
+            (firstIacIssueNode.userObject as IacIssue).ignored
+        )
+        assertTrue(
+            "Ignore Button should be disabled for ignored issue",
+            !ignoreButton.isEnabled && ignoreButton.text == IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
+        )
+        PlatformTestUtil.waitWhileBusy(tree)
+        TreeUtil.selectNode(tree, firstIacIssueNode.nextNode)
+        PlatformTestUtil.waitWhileBusy(tree)
+        TreeUtil.selectNode(tree, firstIacIssueNode)
+        PlatformTestUtil.waitWhileBusy(tree)
+        assertTrue(
+            "Ignore Button should remain disabled for ignored issue",
+            !ignoreButton.isEnabled && ignoreButton.text == IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
+        )
     }
 }
