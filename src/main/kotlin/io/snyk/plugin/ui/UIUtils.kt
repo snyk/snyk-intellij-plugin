@@ -112,7 +112,7 @@ fun snykCodeAvailabilityPostfix(): String = when {
     else -> ""
 }
 
-fun getReadOnlyClickableHtmlJEditorPane(htmlText: String): JEditorPane {
+fun getReadOnlyClickableHtmlJEditorPane(htmlText: String, font: Font = UIUtil.getLabelFont()): JEditorPane {
     // don't remove that!
     // Some magic (side-effect? customStyleSheet?) happens when JBHtmlEditorKit() initializing
     // that make html tags like <em>, <p>, <ul> etc. be treated properly inside JEditorPane
@@ -127,8 +127,7 @@ fun getReadOnlyClickableHtmlJEditorPane(htmlText: String): JEditorPane {
         preferredSize = Dimension() // this is the key part for shrink/grow.
 
         // add a CSS rule to force body tags to use the default label font
-        // instead of the value in javax.swing.text.html.default.csss
-        val font = UIUtil.getLabelFont()
+        // instead of the value in javax.swing.text.html.default.css
         val fontColor = UIUtil.getTextFieldForeground()
         val bodyRule = UIUtil.displayPropertiesToCSS(font, fontColor) +
             "a { color: #${ColorUtil.toHex(JBUI.CurrentTheme.Link.linkColor())}; }"

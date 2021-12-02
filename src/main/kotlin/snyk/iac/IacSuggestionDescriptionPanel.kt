@@ -11,6 +11,7 @@ import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.buildBoldTitleLabel
+import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
@@ -53,8 +54,9 @@ class IacSuggestionDescriptionPanel(
         )
     }
 
-    private fun panelGridConstraints(row: Int) = baseGridConstraints(
+    private fun panelGridConstraints(row: Int, column: Int = 0) = baseGridConstraints(
         row = row,
+        column = column,
         anchor = GridConstraints.ANCHOR_CENTER,
         fill = GridConstraints.FILL_BOTH,
         HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
@@ -82,7 +84,7 @@ class IacSuggestionDescriptionPanel(
 
         this.add(
             mainBodyPanel(),
-            baseGridConstraints(1, indent = 0)
+            panelGridConstraints(1)
         )
 
         if (!issue.resolve.isNullOrBlank()) {
@@ -96,7 +98,8 @@ class IacSuggestionDescriptionPanel(
     private fun mainBodyPanel(): JPanel {
         val mainBodyPanel = JPanel()
 
-        mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
+        mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 20, 20, 20), 50, -1)
+
 
         fun boldLabel(text: String) = JLabel(text).apply {
             font = io.snyk.plugin.ui.getFont(Font.BOLD, -1, JLabel().font)
@@ -104,34 +107,33 @@ class IacSuggestionDescriptionPanel(
 
         mainBodyPanel.add(
             boldLabel("Description:"),
-            baseGridConstraints(2, 0, indent = 0)
+            baseGridConstraints(0, 0)
         )
         mainBodyPanel.add(
-            JLabel(issue.issue),
-            baseGridConstraints(2, 1)
+            getReadOnlyClickableHtmlJEditorPane(issue.issue),
+            panelGridConstraints(0, 1)
         )
 
         mainBodyPanel.add(
             boldLabel("Impact:"),
-            baseGridConstraints(3, 0, indent = 0)
+            baseGridConstraints(1, 0)
         )
         mainBodyPanel.add(
-            JLabel(issue.impact),
-            baseGridConstraints(3, 1)
+            getReadOnlyClickableHtmlJEditorPane(issue.impact),
+            panelGridConstraints(1, 1)
         )
 
         mainBodyPanel.add(
             boldLabel("Path:"),
-            baseGridConstraints(4, 0, indent = 0)
+            baseGridConstraints(2, 0)
         )
 
-        val pathLabel = JLabel(issue.path.joinToString(" > ")).apply {
-            font = io.snyk.plugin.ui.getFont(-1, -1, JTextArea().font)
-        }
+        val font = getFont(-1, -1, JTextArea().font) ?: UIUtil.getLabelFont()
+        val pathLabel = getReadOnlyClickableHtmlJEditorPane(issue.path.joinToString(" > "), font)
 
         mainBodyPanel.add(
             pathLabel,
-            baseGridConstraints(4, 1)
+            panelGridConstraints(2, 1)
         )
 
         return mainBodyPanel
