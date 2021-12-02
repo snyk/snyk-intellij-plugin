@@ -22,7 +22,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
     private val terraformManifestFile = "terraform-main.tf"
     lateinit var file: VirtualFile
-    lateinit var psiFile: PsiFile
+    private lateinit var psiFile: PsiFile
 
     @Before
     override fun setUp() {
@@ -104,11 +104,8 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             lineNumber = 1,
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
-        val iacIssuesForFile = IacIssuesForFile()
-        iacIssuesForFile.targetFile = terraformManifestFile
-        iacIssuesForFile.targetFilePath = file.path
-        iacIssuesForFile.infrastructureAsCodeIssues = arrayOf(iacIssue)
-        return IacResult(arrayOf(iacIssuesForFile), null)
+        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), terraformManifestFile, file.path, "terraform")
+        return IacResult(listOf(iacIssuesForFile), null)
     }
 
     private fun createIacResultWithIssueOnLine8(): IacResult {
@@ -118,10 +115,8 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             lineNumber = 8,
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
-        val iacIssuesForFile = IacIssuesForFile()
-        iacIssuesForFile.targetFile = terraformManifestFile
-        iacIssuesForFile.infrastructureAsCodeIssues = arrayOf(iacIssue)
-        return IacResult(arrayOf(iacIssuesForFile), null)
+        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), terraformManifestFile, file.path, "terraform")
+        return IacResult(listOf(iacIssuesForFile), null)
     }
 
     private fun createIacResultWithIssueOnLine18(): IacResult {
@@ -131,9 +126,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             lineNumber = 18,
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
-        val iacIssuesForFile = IacIssuesForFile()
-        iacIssuesForFile.targetFile = terraformManifestFile
-        iacIssuesForFile.infrastructureAsCodeIssues = arrayOf(iacIssue)
-        return IacResult(arrayOf(iacIssuesForFile), null)
+        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), terraformManifestFile, file.path, "terraform")
+        return IacResult(listOf(iacIssuesForFile), null)
     }
 }

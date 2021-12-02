@@ -11,6 +11,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
+import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.resetSettings
@@ -45,7 +46,7 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
-        clearAllMocks()
+        unmockkAll()
         resetSettings(project)
         super.tearDown()
     }

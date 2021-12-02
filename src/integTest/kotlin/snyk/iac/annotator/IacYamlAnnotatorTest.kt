@@ -22,7 +22,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
     private val kubernetesManifestFile = "kubernetes-deployment.yaml"
     lateinit var file: VirtualFile
-    lateinit var psiFile: PsiFile
+    private lateinit var psiFile: PsiFile
 
     @Before
     override fun setUp() {
@@ -91,11 +91,9 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
             lineNumber = 18,
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
-        val iacIssuesForFile = IacIssuesForFile()
-        iacIssuesForFile.targetFile = kubernetesManifestFile
-        iacIssuesForFile.targetFilePath = file.path
-        iacIssuesForFile.infrastructureAsCodeIssues = arrayOf(iacIssue)
-        return IacResult(arrayOf(iacIssuesForFile), null)
+        val iacIssuesForFile =
+            IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes")
+        return IacResult(listOf(iacIssuesForFile), null)
     }
 
     private fun createIacResultWithIssueOnLine20(): IacResult {
@@ -105,9 +103,8 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
             lineNumber = 20,
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
-        val iacIssuesForFile = IacIssuesForFile()
-        iacIssuesForFile.targetFile = kubernetesManifestFile
-        iacIssuesForFile.infrastructureAsCodeIssues = arrayOf(iacIssue)
-        return IacResult(arrayOf(iacIssuesForFile), null)
+        val iacIssuesForFile =
+            IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes")
+        return IacResult(listOf(iacIssuesForFile), null)
     }
 }

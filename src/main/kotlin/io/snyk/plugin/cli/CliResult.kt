@@ -1,11 +1,11 @@
 package io.snyk.plugin.cli
 
 import io.snyk.plugin.Severity
-import snyk.common.SnykError
 import java.time.Instant
+import snyk.common.SnykError
 
 abstract class CliResult<CliIssuesForFile>(
-    var allCliIssues: Array<CliIssuesForFile>?,
+    var allCliIssues: List<CliIssuesForFile>?,
     var error: SnykError?
 ) {
 

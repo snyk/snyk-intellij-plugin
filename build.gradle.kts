@@ -38,7 +38,9 @@ dependencies {
     exclude(group = "org.hamcrest")
   }
   testImplementation("org.hamcrest:hamcrest:2.2")
-  testImplementation("io.mockk:mockk:1.12.0")
+  testImplementation("io.mockk:mockk:1.12.1")
+  testImplementation("org.awaitility:awaitility:4.1.1")
+  runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.4.32")
 
   detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.19.0")
 }

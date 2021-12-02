@@ -37,11 +37,11 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val issues = getIssues(psiFile)
 
         LOG.debug("Call apply on ${psiFile.name}")
-        if (issues == null || issues.isEmpty()) return
+        if (issues.isEmpty()) return
 
         LOG.debug("Received ${issues.size} IacIssue annotations for ${psiFile.virtualFile.name}")
         issues.forEach { iacIssue ->
-            if (iacIssue.ignored) return@forEach
+            if (iacIssue.ignored || iacIssue.obsolete) return@forEach
 
             LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
             val severity = when (iacIssue.severity) {

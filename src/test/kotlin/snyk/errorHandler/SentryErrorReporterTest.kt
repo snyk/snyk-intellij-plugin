@@ -2,10 +2,10 @@ package snyk.errorHandler
 
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
 import io.sentry.Sentry
 import io.sentry.protocol.SentryId
@@ -20,7 +20,7 @@ import snyk.pluginInfo
 class SentryErrorReporterTest {
     @Before
     fun setUp() {
-        clearAllMocks()
+        unmockkAll()
         mockkStatic(Sentry::class)
         // never send to Sentry
         every { Sentry.captureException(any()) } returns SentryId()
@@ -28,7 +28,7 @@ class SentryErrorReporterTest {
 
     @After
     fun tearDown() {
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test

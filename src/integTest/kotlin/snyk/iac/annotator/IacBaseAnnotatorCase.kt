@@ -2,8 +2,8 @@ package snyk.iac.annotator
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.replaceService
-import io.mockk.clearAllMocks
 import io.mockk.mockk
+import io.mockk.unmockkAll
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Before
 import java.nio.file.Paths
@@ -23,7 +23,18 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
     @Before
     override fun setUp() {
         super.setUp()
+        unmockkAll()
         project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
-        clearAllMocks()
+    }
+
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    override fun tearDown() {
+        unmockkAll()
+        try {
+            super.tearDown()
+        } catch (e: Exception) {
+            // when tearing down the test case, our File Listener is trying to react on the deletion of the test
+            // files and tries to access the file index that isn't there anymore
+        }
     }
 }
