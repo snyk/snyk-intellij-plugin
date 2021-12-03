@@ -1,9 +1,7 @@
 package io.snyk.plugin.services
 
-import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.getCliFile
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
@@ -11,10 +9,11 @@ import org.junit.Test
 
 class CliAdapterTest : LightPlatformTestCase() {
 
-    private val dummyCliService by lazy {
+    private val dummyCliAdapter by lazy {
         object : CliAdapter<Any>(project) {
             override fun getErrorResult(errorMsg: String): Any = Unit
             override fun convertRawCliStringToCliResult(rawStr: String): Any = Unit
+            override fun buildExtraOptions(): List<String> = emptyList()
         }
     }
 
@@ -34,7 +33,7 @@ class CliAdapterTest : LightPlatformTestCase() {
     fun testIsCliInstalledFailed() {
         removeDummyCliFile()
 
-        val isCliInstalled = dummyCliService.isCliInstalled()
+        val isCliInstalled = dummyCliAdapter.isCliInstalled()
 
         assertFalse(isCliInstalled)
     }
@@ -43,20 +42,9 @@ class CliAdapterTest : LightPlatformTestCase() {
     fun testIsCliInstalledSuccess() {
         setupDummyCliFile()
 
-        val isCliInstalled = dummyCliService.isCliInstalled()
+        val isCliInstalled = dummyCliAdapter.isCliInstalled()
 
         assertTrue(isCliInstalled)
-    }
-
-    @Test
-    fun testBuildCliCommandsListWithDefaults() {
-        setupDummyCliFile()
-
-        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
-
-        assertEquals(getCliFile().absolutePath, defaultCommands[0])
-        assertEquals("fake_cli_command", defaultCommands[1])
-        assertEquals("--json", defaultCommands[2])
     }
 
     @Test
@@ -65,9 +53,9 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().customEndpointUrl = "https://app.snyk.io/api"
 
-        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
+        val defaultCommands = dummyCliAdapter.buildCliCommandsList(listOf("fake_cli_command"))
 
-        assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
+        assertTrue(defaultCommands.contains("--API=https://app.snyk.io/api"))
     }
 
     @Test
@@ -76,9 +64,9 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().ignoreUnknownCA = true
 
-        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
+        val defaultCommands = dummyCliAdapter.buildCliCommandsList(listOf("fake_cli_command"))
 
-        assertEquals("--insecure", defaultCommands[3])
+        assertTrue(defaultCommands.contains("--insecure"))
     }
 
     @Test
@@ -87,75 +75,8 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().organization = "test-org"
 
-        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
+        val defaultCommands = dummyCliAdapter.buildCliCommandsList(listOf("fake_cli_command"))
 
-        assertEquals("--org=test-org", defaultCommands[3])
-    }
-
-    @Test
-    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
-        setupDummyCliFile()
-        pluginSettings().usageAnalyticsEnabled = false
-
-        val cliCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
-
-        assertEquals("--DISABLE_ANALYTICS", cliCommands[3])
-    }
-
-    @Test
-    fun testBuildCliCommandsListWithFileParameter() {
-        setupDummyCliFile()
-
-        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
-
-        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
-
-        assertEquals("--file=package.json", defaultCommands[3])
-    }
-
-    @Test
-    fun testBuildCliCommandsListWithAllParameter() {
-        setupDummyCliFile()
-
-        val settingsStateService = pluginSettings()
-
-        settingsStateService.token = "0000-1111-2222-3333"
-        settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
-        settingsStateService.organization = "test-org"
-        settingsStateService.ignoreUnknownCA = true
-
-        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
-
-        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
-
-        assertAllParameters(defaultCommands)
-    }
-
-    @Test
-    fun testBuildCliCommandsListWithMultiAdditionalParameters() {
-        setupDummyCliFile()
-
-        val settingsStateService = pluginSettings()
-
-        settingsStateService.token = "0000-1111-2222-3333"
-        settingsStateService.customEndpointUrl = "https://app.snyk.io/api"
-        settingsStateService.organization = "test-org"
-        settingsStateService.ignoreUnknownCA = true
-
-        project.service<SnykProjectSettingsStateService>().additionalParameters =
-            "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
-
-        val defaultCommands = dummyCliService.buildCliCommandsList(listOf("fake_cli_command"))
-
-        assertAllParameters(defaultCommands)
-        assertEquals("--configuration-matching='iamaRegex'", defaultCommands[7])
-        assertEquals("--sub-project=snyk", defaultCommands[8])
-    }
-
-    private fun assertAllParameters(defaultCommands: List<String>) {
-        assertEquals("--API=https://app.snyk.io/api", defaultCommands[3])
-        assertEquals("--insecure", defaultCommands[4])
-        assertEquals("--org=test-org", defaultCommands[5])
-        assertEquals("--file=package.json", defaultCommands[6])
+        assertTrue(defaultCommands.contains("--org=test-org"))
     }
 }

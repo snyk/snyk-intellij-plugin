@@ -6,6 +6,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.ConsoleCommandRunner
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.CliAdapter
 import snyk.common.SnykError
 
@@ -49,4 +50,6 @@ class IacScanService(project: Project) : CliAdapter<IacResult>(project) {
 
     private fun isSuccessCliJsonString(jsonStr: String): Boolean =
         jsonStr.contains("\"infrastructureAsCodeIssues\":") && !jsonStr.contains("\"error\":")
+
+    override fun buildExtraOptions(): List<String> = listOf("--json")
 }
