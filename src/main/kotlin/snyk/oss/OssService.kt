@@ -6,6 +6,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.ConsoleCommandRunner
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.CliAdapter
 import snyk.common.SnykError
 
@@ -56,4 +57,22 @@ class OssService(project: Project) : CliAdapter<OssResult>(project) {
 
     private fun isSuccessCliJsonString(jsonStr: String): Boolean =
         jsonStr.contains("\"vulnerabilities\":") && !jsonStr.contains("\"error\":")
+
+    override fun buildExtraOptions(): List<String> {
+        val settings = pluginSettings()
+        val options: MutableList<String> = mutableListOf()
+
+        options.add("--json")
+
+        if (!settings.usageAnalyticsEnabled) {
+            options.add("--DISABLE_ANALYTICS")
+        }
+
+        val additionalParameters = settings.getAdditionalParameters(project)
+
+        if (additionalParameters != null && additionalParameters.trim().isNotEmpty()) {
+            options.addAll(additionalParameters.trim().split(" "))
+        }
+        return options
+    }
 }

@@ -8,6 +8,8 @@ import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.removeDummyCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
@@ -16,6 +18,8 @@ class OssServiceTest : LightPlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
+        resetSettings(project)
+        removeDummyCliFile()
 
         val settingsStateService = pluginSettings()
 
@@ -28,6 +32,58 @@ class OssServiceTest : LightPlatformTestCase() {
         settingsStateService.organization = ""
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = ""
+    }
+
+    override fun tearDown() {
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDefaults() {
+        setupDummyCliFile()
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains(getCliFile().absolutePath))
+        assertTrue(cliCommands.contains("fake_cli_command"))
+        assertTrue(cliCommands.contains("--json"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
+        setupDummyCliFile()
+        pluginSettings().usageAnalyticsEnabled = false
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains("--DISABLE_ANALYTICS"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithFileParameter() {
+        setupDummyCliFile()
+
+        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains("--file=package.json"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithMultiAdditionalParameters() {
+        setupDummyCliFile()
+
+        project.service<SnykProjectSettingsStateService>().additionalParameters =
+            "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains("--file=package.json"))
+        assertTrue(cliCommands.contains("--configuration-matching='iamaRegex'"))
+        assertTrue(cliCommands.contains("--sub-project=snyk"))
     }
 
     @Test

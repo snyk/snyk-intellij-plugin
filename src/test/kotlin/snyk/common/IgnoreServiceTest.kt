@@ -47,9 +47,7 @@ class IgnoreServiceTest {
         val expectedCommands = listOf(
             getCliFile().absolutePath,
             "ignore",
-            "--id=$issueId",
-            "--json",
-            "--DISABLE_ANALYTICS"
+            "--id=$issueId"
         )
         val expectedOutput = ""
         val cut = IgnoreService(project)
@@ -72,9 +70,7 @@ class IgnoreServiceTest {
         val expectedCommands = listOf(
             getCliFile().absolutePath,
             "ignore",
-            "--id=$issueId",
-            "--json",
-            "--DISABLE_ANALYTICS"
+            "--id=$issueId"
         )
         val expectedOutput = "unexpected output"
         val cut = IgnoreService(project)
@@ -99,9 +95,7 @@ class IgnoreServiceTest {
         val expectedCommands = listOf(
             getCliFile().absolutePath,
             "ignore",
-            "--id=$issueId",
-            "--json",
-            "--DISABLE_ANALYTICS"
+            "--id=$issueId"
         )
         val cut = IgnoreService(project)
         cut.setConsoleCommandRunner(commandRunner)

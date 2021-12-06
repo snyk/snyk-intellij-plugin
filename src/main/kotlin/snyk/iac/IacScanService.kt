@@ -49,4 +49,6 @@ class IacScanService(project: Project) : CliAdapter<IacResult>(project) {
 
     private fun isSuccessCliJsonString(jsonStr: String): Boolean =
         jsonStr.contains("\"infrastructureAsCodeIssues\":") && !jsonStr.contains("\"error\":")
+
+    override fun buildExtraOptions(): List<String> = listOf("--json")
 }

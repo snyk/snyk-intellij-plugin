@@ -22,4 +22,6 @@ class IgnoreService(project: Project) : CliAdapter<CliResult>(project) {
             CliResult(2, "Unexpected Output")
         }
     }
+
+    override fun buildExtraOptions(): List<String> = emptyList()
 }

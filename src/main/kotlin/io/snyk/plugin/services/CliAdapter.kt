@@ -26,14 +26,15 @@ abstract class CliAdapter<R>(val project: Project) {
         return getCliFile().exists()
     }
 
-    fun execute(commands: List<String>): R = try {
-        val cmds = buildCliCommandsList(commands)
-        val apiToken = pluginSettings().token ?: ""
-        val rawResultStr = consoleCommandRunner.execute(cmds, projectPath, apiToken, project)
-        convertRawCliStringToCliResult(rawResultStr)
-    } catch (exception: CliNotExistsException) {
-        getErrorResult(exception.message ?: "Snyk CLI not installed.")
-    }
+    fun execute(commands: List<String>): R =
+        try {
+            val cmds = buildCliCommandsList(commands)
+            val apiToken = pluginSettings().token ?: ""
+            val rawResultStr = consoleCommandRunner.execute(cmds, projectPath, apiToken, project)
+            convertRawCliStringToCliResult(rawResultStr)
+        } catch (exception: CliNotExistsException) {
+            getErrorResult(exception.message ?: "Snyk CLI not installed.")
+        }
 
     protected abstract fun getErrorResult(errorMsg: String): R
 
@@ -54,7 +55,6 @@ abstract class CliAdapter<R>(val project: Project) {
         val commands: MutableList<String> = mutableListOf()
         commands.add(getCliCommandPath())
         commands.addAll(cmds)
-        commands.add("--json")
 
         val customEndpoint = settings.customEndpointUrl
         if (customEndpoint != null && customEndpoint.isNotEmpty()) {
@@ -70,20 +70,14 @@ abstract class CliAdapter<R>(val project: Project) {
             commands.add("--org=$organization")
         }
 
-        if (!settings.usageAnalyticsEnabled) {
-            commands.add("--DISABLE_ANALYTICS")
-        }
-
-        val additionalParameters = settings.getAdditionalParameters(project)
-
-        if (additionalParameters != null && additionalParameters.trim().isNotEmpty()) {
-            commands.addAll(additionalParameters.trim().split(" "))
-        }
+        commands.addAll(buildExtraOptions())
 
         logger.debug("Cli parameters: $commands")
 
         return commands.toList()
     }
+
+    abstract fun buildExtraOptions(): List<String>
 
     @TestOnly
     fun setConsoleCommandRunner(newRunner: ConsoleCommandRunner) {
