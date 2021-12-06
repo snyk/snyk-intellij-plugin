@@ -54,14 +54,19 @@ class IacSuggestionDescriptionPanel(
         )
     }
 
-    private fun panelGridConstraints(row: Int, column: Int = 0) = baseGridConstraints(
+    private fun panelGridConstraints(
+        row: Int,
+        column: Int = 0,
+        anchor: Int = GridConstraints.ANCHOR_CENTER,
+        indent: Int = 1
+    ) = baseGridConstraints(
         row = row,
         column = column,
-        anchor = GridConstraints.ANCHOR_CENTER,
+        anchor = anchor,
         fill = GridConstraints.FILL_BOTH,
         HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
         VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-        indent = 0
+        indent = indent
     )
 
     init {
@@ -98,11 +103,11 @@ class IacSuggestionDescriptionPanel(
     private fun mainBodyPanel(): JPanel {
         val mainBodyPanel = JPanel()
 
-        mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 20, 20, 20), 50, -1)
+        mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
 
 
         fun boldLabel(text: String) = JLabel(text).apply {
-            font = io.snyk.plugin.ui.getFont(Font.BOLD, -1, JLabel().font)
+            font = getFont(Font.BOLD, -1, JLabel().font)
         }
 
         mainBodyPanel.add(
@@ -143,7 +148,7 @@ class IacSuggestionDescriptionPanel(
         val titlePanel = JPanel()
         titlePanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, 5)
         val titleLabel = JLabel().apply {
-            font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
+            font = getFont(Font.BOLD, 20, font)
             text = " " + issue.title.ifBlank {
                 when (issue.severity) {
                     Severity.CRITICAL -> "Critical Severity"
@@ -237,7 +242,7 @@ class IacSuggestionDescriptionPanel(
         return HyperlinkLabel().apply {
             this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
             this.toolTipText = toolTipText
-            this.font = io.snyk.plugin.ui.getFont(-1, 14, customFont ?: font)
+            this.font = getFont(-1, 14, customFont ?: font)
             addHyperlinkListener {
                 onClick.invoke(it)
             }
@@ -246,7 +251,7 @@ class IacSuggestionDescriptionPanel(
 
     private fun defaultFontLabel(labelText: String, bold: Boolean = false): JLabel {
         return JLabel().apply {
-            val titleLabelFont: Font? = io.snyk.plugin.ui.getFont(if (bold) Font.BOLD else -1, 14, font)
+            val titleLabelFont: Font? = getFont(if (bold) Font.BOLD else -1, 14, font)
             titleLabelFont?.let { font = it }
             text = labelText
         }
@@ -254,18 +259,17 @@ class IacSuggestionDescriptionPanel(
 
     private fun remediationPanel(resolve: String): JPanel {
         val remediationPanel = JPanel()
-        remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 20, 20, 0), -1, 0)
+        remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 10, 20, 0), -1, -1)
         remediationPanel.background = UIUtil.getTextFieldBackground()
 
-        val resolveMarkdown = markdownToHtml((resolve))
-        val remediationPane = getReadOnlyClickableHtmlJEditorPane(resolveMarkdown).apply {
+        val resolveMarkdown = markdownToHtml(resolve)
+        val whiteBox = getReadOnlyClickableHtmlJEditorPane(
+            resolveMarkdown
+        ).apply {
             isOpaque = false
         }
 
-        remediationPanel.add(
-            remediationPane,
-            panelGridConstraints(1)
-        )
+        remediationPanel.add(whiteBox, panelGridConstraints(row = 1))
 
         return remediationPanel
     }
@@ -281,11 +285,11 @@ class IacSuggestionDescriptionPanel(
 
     private fun remediationPanelWithTitle(remediation: String): JPanel {
         val remediationPanel = JPanel()
-        remediationPanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, -1)
+        remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), 50, -1)
 
         remediationPanel.add(
             buildBoldTitleLabel("Remediation"),
-            panelGridConstraints(
+            baseGridConstraints(
                 row = 0
             )
         )
