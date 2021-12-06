@@ -979,7 +979,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val OSS_ROOT_TEXT = " Open Source Security"
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
-        const val IAC_ROOT_TEXT = " Infrastructure as Code"
+        const val IAC_ROOT_TEXT = " Configuration Issues"
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
         private const val NODE_INITIAL_STATE = -1
