@@ -109,7 +109,7 @@ class IacSuggestionDescriptionPanel(
         mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
 
         mainBodyPanel.add(
-            boldLabel("Description:"),
+            boldLabel("Description"),
             baseGridConstraints(0, 0)
         )
         mainBodyPanel.add(
@@ -118,7 +118,7 @@ class IacSuggestionDescriptionPanel(
         )
 
         mainBodyPanel.add(
-            boldLabel("Impact:"),
+            boldLabel("Impact"),
             baseGridConstraints(1, 0)
         )
         mainBodyPanel.add(
@@ -127,7 +127,7 @@ class IacSuggestionDescriptionPanel(
         )
 
         mainBodyPanel.add(
-            boldLabel("Path:"),
+            boldLabel("Path"),
             baseGridConstraints(2, 0)
         )
 
