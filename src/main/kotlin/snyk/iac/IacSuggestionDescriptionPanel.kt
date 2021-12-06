@@ -10,7 +10,6 @@ import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.Severity
-import io.snyk.plugin.ui.buildBoldTitleLabel
 import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.commonmark.parser.Parser
@@ -100,15 +99,14 @@ class IacSuggestionDescriptionPanel(
         }
     }
 
+    private fun boldLabel(text: String) = JLabel(text).apply {
+        font = getFont(Font.BOLD, -1, JLabel().font)
+    }
+
     private fun mainBodyPanel(): JPanel {
         val mainBodyPanel = JPanel()
 
         mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
-
-
-        fun boldLabel(text: String) = JLabel(text).apply {
-            font = getFont(Font.BOLD, -1, JLabel().font)
-        }
 
         mainBodyPanel.add(
             boldLabel("Description:"),
@@ -288,7 +286,7 @@ class IacSuggestionDescriptionPanel(
         remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), 50, -1)
 
         remediationPanel.add(
-            buildBoldTitleLabel("Remediation"),
+            boldLabel("Remediation"),
             baseGridConstraints(
                 row = 0
             )
