@@ -9,7 +9,7 @@ class IssuesTree(project: Project) : Tree() {
     private val ossIssuesNode = IssueTreeNode("Open Source Security", project)
     private val snykCodeSecurityIssuesNode = IssueTreeNode("Code Security", project)
     private val snykCodeQualityIssuesNode = IssueTreeNode("Code Quality", project)
-    private val iacIssuesNode = IssueTreeNode("Infrastructure as Code", project)
+    private val iacIssuesNode = IssueTreeNode("Configuration Issues", project)
     //private val containerIssuesNode = IssueTreeNode("Container", project)
 
     init {

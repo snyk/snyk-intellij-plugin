@@ -92,7 +92,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
     }
 
     private fun createIacScanAction(): AnAction {
-        return object : ToggleAction("Infrastructure as Code Vulnerabilities") {
+        return object : ToggleAction("Configuration Issues") {
             override fun isSelected(e: AnActionEvent): Boolean = settings.iacScanEnabled
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
