@@ -4,11 +4,14 @@ import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.io.FileUtil.pathsEqual
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
@@ -20,6 +23,9 @@ import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import okhttp3.internal.toImmutableList
+import snyk.iac.IacIssuesForFile
+import snyk.iac.IacResult
 import java.util.function.Predicate
 
 private val LOG = logger<SnykBulkFileListener>()
@@ -30,6 +36,7 @@ class SnykBulkFileListener : BulkFileListener {
         updateCaches(
             events,
             listOf(
+                VFileCreateEvent::class.java,
                 VFileContentChangeEvent::class.java,
                 VFileMoveEvent::class.java,
                 VFileCopyEvent::class.java
@@ -47,6 +54,7 @@ class SnykBulkFileListener : BulkFileListener {
         cleanCaches(
             events,
             listOf(
+                VFileCreateEvent::class.java,
                 VFileContentChangeEvent::class.java,
                 VFileMoveEvent::class.java,
                 VFileCopyEvent::class.java,
@@ -75,19 +83,6 @@ class SnykBulkFileListener : BulkFileListener {
                 if (buildFileChanged != null) {
                     toolWindowPanel.currentOssResults = null
                     LOG.debug("OSS cached results dropped due to changes in: $buildFileChanged")
-                }
-            }
-
-            // clean IaC cached results if needed
-            val currentIacResult = toolWindowPanel.currentIacResult
-            if (currentIacResult != null) {
-                val iacRelatedFileChanged = virtualFilesAffected
-                    .filter { iacFileExtensions.contains(it.extension) }
-                    .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
-                if (iacRelatedFileChanged != null) {
-                    toolWindowPanel.currentIacResult = null
-                    LOG.debug("IaC cached results dropped due to changes in: $iacRelatedFileChanged")
-                    DaemonCodeAnalyzer.getInstance(project).restart()
                 }
             }
 
@@ -128,6 +123,47 @@ class SnykBulkFileListener : BulkFileListener {
         }
     }
 
+    private fun updateIacCache(
+        virtualFilesAffected: Set<VirtualFile>,
+        toolWindowPanel: SnykToolWindowPanel
+    ) {
+        val iacCache = toolWindowPanel.currentIacResult
+        val iacFiles = iacCache?.allCliIssues ?: return
+        val project = toolWindowPanel.project
+
+        runBackgroundableTask("Updating Snyk Infrastructure As Code Cache...", project, true) {
+            var changed = false
+
+            val newIacFileList = iacFiles.toMutableList()
+            virtualFilesAffected
+                .filter { iacFileExtensions.contains(it.extension) }
+                .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
+                .forEach {
+                    changed = true // for new files we need to "dirty" the cache, too
+                    newIacFileList.forEachIndexed { i, iacIssuesForFile ->
+                        if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
+                            val obsoleteIacFile = makeObsolete(iacIssuesForFile)
+                            newIacFileList[i] = obsoleteIacFile
+                        }
+                    }
+                }
+
+            if (changed) {
+                val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
+                toolWindowPanel.currentIacResult = newIacCache
+                toolWindowPanel.displayIacResults(newIacCache)
+                toolWindowPanel.iacScanNeeded = true
+                DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
+            }
+        }
+    }
+
+    private fun makeObsolete(iacIssuesForFile: IacIssuesForFile): IacIssuesForFile {
+        val obsoleteIssueList = iacIssuesForFile.infrastructureAsCodeIssues
+            .map { elem -> elem.copy(obsolete = true) }.toList()
+        return iacIssuesForFile.copy(infrastructureAsCodeIssues = obsoleteIssueList, obsolete = true)
+    }
+
     private fun updateCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<out VFileEvent>>) {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
@@ -137,6 +173,13 @@ class SnykBulkFileListener : BulkFileListener {
                 fileFilter = Predicate { true },
                 classesOfEventsToFilter = classesOfEventsToFilter
             )
+
+            // update IaC cached results if needed
+            val toolWindowPanel = project.service<SnykToolWindowPanel>()
+            val allCliIssues = toolWindowPanel.currentIacResult?.allCliIssues
+            if (allCliIssues != null && allCliIssues.isNotEmpty()) {
+                updateIacCache(virtualFilesAffected, toolWindowPanel)
+            }
 
             // update .dcignore caches if needed
             SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)

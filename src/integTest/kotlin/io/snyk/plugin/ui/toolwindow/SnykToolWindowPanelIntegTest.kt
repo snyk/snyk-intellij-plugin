@@ -152,7 +152,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         val errorMessageTextArea =
             UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "errorMessageTextArea")
-        val pathTextArea = UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "pathTextArea")
+        val pathTextArea = UIComponentFinder.getComponentByName(errorPanel, JTextArea::class, "pathTextArea")
 
         assertTrue(errorMessageTextArea?.text == iacError.message)
         assertTrue(pathTextArea?.text == iacError.path)

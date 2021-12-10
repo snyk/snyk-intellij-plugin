@@ -1,6 +1,6 @@
 package snyk.iac
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import io.mockk.every
@@ -82,9 +82,8 @@ class IgnoreButtonActionListenerTest {
         justRun { service.ignore(issue.id) }
         every { event.source } returns button
 
-        val daemonCodeAnalyzer = mockk<DaemonCodeAnalyzer>()
-        every { DaemonCodeAnalyzer.getInstance(project) } returns daemonCodeAnalyzer
-        justRun { daemonCodeAnalyzer.restart() }
+        mockkStatic(ApplicationManager::class)
+        justRun { ApplicationManager.getApplication().invokeLater(any()) }
 
         task.run(mockk())
 

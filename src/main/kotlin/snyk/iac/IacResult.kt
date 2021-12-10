@@ -1,14 +1,14 @@
 package snyk.iac
 
-import snyk.common.SnykError
 import io.snyk.plugin.cli.CliResult
+import snyk.common.SnykError
 
 class IacResult(
-    allIacVulnerabilities: Array<IacIssuesForFile>?,
+    allIacVulnerabilities: List<IacIssuesForFile>?,
     error: SnykError?
 ) : CliResult<IacIssuesForFile>(allIacVulnerabilities, error) {
 
-    override val issuesCount = allCliIssues?.sumBy { it.uniqueCount }
+    override val issuesCount get() = allCliIssues?.sumBy { it.uniqueCount }
 
     override fun countBySeverity(severity: String): Int? {
         return allCliIssues?.sumBy { issuesForFile ->

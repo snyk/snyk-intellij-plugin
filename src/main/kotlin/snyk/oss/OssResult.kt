@@ -1,10 +1,10 @@
 package snyk.oss
 
-import snyk.common.SnykError
 import io.snyk.plugin.cli.CliResult
+import snyk.common.SnykError
 
 class OssResult(
-    allOssVulnerabilities: Array<OssVulnerabilitiesForFile>?,
+    allOssVulnerabilities: List<OssVulnerabilitiesForFile>?,
     error: SnykError?
 ) : CliResult<OssVulnerabilitiesForFile>(allOssVulnerabilities, error) {
 

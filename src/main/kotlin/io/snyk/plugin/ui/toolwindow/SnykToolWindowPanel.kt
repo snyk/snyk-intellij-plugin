@@ -86,6 +86,7 @@ import javax.swing.tree.TreePath
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
+    var iacScanNeeded: Boolean = false
     private val scrollPaneAlarm = Alarm()
 
     private var descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
@@ -173,6 +174,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                 override fun scanningIacFinished(iacResult: IacResult) {
                     currentIacResult = iacResult
+                    iacScanNeeded = false
                     ApplicationManager.getApplication().invokeLater {
                         displayIacResults(iacResult)
                     }
@@ -228,6 +230,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                 override fun scanningIacError(snykError: SnykError) {
                     currentIacResult = null
+                    iacScanNeeded = false
                     ApplicationManager.getApplication().invokeLater {
                         SnykBalloonNotificationHelper.showError(snykError.message, project)
                         currentIacError = snykError
@@ -459,6 +462,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentSnykCodeError = null
         currentIacResult = null
         currentIacError = null
+        iacScanNeeded = true
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
         DaemonCodeAnalyzer.getInstance(project).restart()
@@ -809,7 +813,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes, selectedNodeUserObject)
     }
 
-    private fun displayIacResults(iacResult: IacResult) {
+    fun displayIacResults(iacResult: IacResult) {
         val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootIacIssuesTreeNode)
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
@@ -966,7 +970,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         (vulnerabilitiesTree.model as DefaultTreeModel).reload()
     }
 
-    @TestOnly
     fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode
 
     @TestOnly

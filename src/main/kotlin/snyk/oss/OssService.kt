@@ -2,6 +2,7 @@ package snyk.oss
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliError
@@ -9,6 +10,7 @@ import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.CliAdapter
 import snyk.common.SnykError
+import java.lang.reflect.Type
 
 /**
  * Wrap work with Snyk CLI for OSS (`test` command).
@@ -29,6 +31,8 @@ class OssService(project: Project) : CliAdapter<OssResult>(project) {
      */
     override fun convertRawCliStringToCliResult(rawStr: String): OssResult =
         try {
+            val ossVulnerabilitiesForFileListType: Type =
+                object : TypeToken<ArrayList<OssVulnerabilitiesForFile>>() {}.type
             when {
                 rawStr == ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER -> {
                     OssResult(null, null)
@@ -37,11 +41,11 @@ class OssService(project: Project) : CliAdapter<OssResult>(project) {
                     OssResult(null, SnykError("CLI fail to produce any output", projectPath))
                 }
                 rawStr.first() == '[' -> {
-                    OssResult(Gson().fromJson(rawStr, Array<OssVulnerabilitiesForFile>::class.java), null)
+                    OssResult(Gson().fromJson(rawStr, ossVulnerabilitiesForFileListType), null)
                 }
                 rawStr.first() == '{' -> {
                     if (isSuccessCliJsonString(rawStr)) {
-                        OssResult(arrayOf(Gson().fromJson(rawStr, OssVulnerabilitiesForFile::class.java)), null)
+                        OssResult(listOf(Gson().fromJson(rawStr, OssVulnerabilitiesForFile::class.java)), null)
                     } else {
                         val cliError = Gson().fromJson(rawStr, CliError::class.java)
                         OssResult(null, SnykError(cliError.message, cliError.path))

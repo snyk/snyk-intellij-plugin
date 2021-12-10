@@ -17,13 +17,18 @@ import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.awaitility.Awaitility.await
 import org.junit.Test
 import snyk.container.KubernetesImageCacheIntegTest
+import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
+import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.oss.OssResult
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 
 @Suppress("FunctionName")
 class SnykBulkFileListenerTest : BasePlatformTestCase() {
@@ -94,16 +99,29 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
 
     @Test
     fun testCurrentIacResults_shouldDropCachedResult_whenIacSupportedFileChanged() {
-        val fakeIacResult = IacResult(null, null)
+        val file = "k8s-deployment.yaml"
+        val filePath = "/src/$file"
+        val iacIssuesForFile = IacIssuesForFile(emptyList(), file, filePath, "npm")
+        val iacVulnerabilities = listOf(iacIssuesForFile)
+        val fakeIacResult = IacResult(iacVulnerabilities, null)
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
         toolWindowPanel.currentIacResult = fakeIacResult
+        val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
+        rootIacIssuesTreeNode.add(IacFileTreeNode(iacIssuesForFile, project))
 
-        myFixture.configureByText("k8s-deployment.yaml", "some text")
+        myFixture.configureByText(file, "some text")
 
-        assertNull(
-            "cached IacResult should be dropped after IaC supported file changed",
-            toolWindowPanel.currentIacResult
-        )
+        await().atMost(2, TimeUnit.SECONDS).until(cacheUpdated(toolWindowPanel, filePath))
+    }
+
+    private fun cacheUpdated(toolWindowPanel: SnykToolWindowPanel, filePath: String): Callable<Boolean> {
+        return Callable {
+            val iacCache = toolWindowPanel.currentIacResult
+            val found =
+                iacCache!!.allCliIssues!!
+                    .firstOrNull { iacFile -> iacFile.targetFilePath == filePath && iacFile.obsolete }
+            return@Callable found != null
+        }
     }
 
     @Test

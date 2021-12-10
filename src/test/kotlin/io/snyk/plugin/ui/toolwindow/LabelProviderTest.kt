@@ -1,12 +1,13 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.ui.components.labels.LinkLabel
-import io.mockk.clearAllMocks
 import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkAll
 import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import javax.swing.JLabel
@@ -14,10 +15,15 @@ import javax.swing.JLabel
 class LabelProviderTest {
     @Before
     fun setUp() {
-        clearAllMocks()
+        unmockkAll()
         // test URL - unfortunately, LinkLabel does not provide an easy way to verify
         // the link action, so we're using a static mock of the create method to check the action
         mockkStatic(LinkLabel::class)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test

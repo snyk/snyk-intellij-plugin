@@ -1,6 +1,5 @@
 package snyk.net
 
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -19,7 +18,7 @@ class HttpClientTest {
 
     @Before
     fun setUp() {
-        clearAllMocks()
+        unmockkAll()
     }
 
     @After
