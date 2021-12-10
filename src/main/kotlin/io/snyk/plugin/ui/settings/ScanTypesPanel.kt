@@ -12,7 +12,9 @@ import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCodeSettingsUrl
+import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
@@ -89,6 +91,27 @@ class ScanTypesPanel(
                     )
                     label("").component.convertIntoHelpHintLabel(
                         "Find and fix insecure configurations in Terraform and Kubernetes code"
+                    )
+                }
+            }
+        }
+        if (isContainerEnabled()) {
+            row {
+                cell {
+                    checkBox(
+                        "Snyk Container vulnerabilities",
+                        { settings.containerScanEnabled },
+                        { enabled ->
+                            settings.containerScanEnabled = enabled
+                            val imagesCache = getKubernetesImageCache(project)
+                            if (enabled) imagesCache.scanProjectForKubernetesFiles() else imagesCache.clear()
+                        },
+                        null
+                    ).component.apply {
+                        name = "containerEnablementCheckBox"
+                    }
+                    label("").component.convertIntoHelpHintLabel(
+                        "Find and fix vulnerabilities in container images and Kubernetes applications"
                     )
                 }
             }

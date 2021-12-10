@@ -34,6 +34,7 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
+import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
@@ -566,6 +567,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ossScanEnable = true
             advisorEnable = true
             iacScanEnabled = isIacEnabled()
+            containerScanEnabled = isContainerEnabled()
             snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: false
             snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: false
         }
