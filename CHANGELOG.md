@@ -1,5 +1,10 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.8]
+### Fixed
+- use Snyk Code API 2.2.1
+- updated dependencies
+
 ## [2.4.7]
 
 ### Changed
