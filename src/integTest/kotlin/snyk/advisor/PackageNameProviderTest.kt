@@ -1,8 +1,19 @@
 package snyk.advisor
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.snyk.plugin.pluginSettings
 
 class PackageNameProviderTest : BasePlatformTestCase() {
+
+    override fun setUp() {
+        super.setUp()
+        pluginSettings().fileListenerEnabled = false
+    }
+
+    override fun tearDown() {
+        super.tearDown()
+        pluginSettings().fileListenerEnabled = true
+    }
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
         .getResource(resourceName)!!.readText(Charsets.UTF_8)

@@ -4,6 +4,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.replaceService
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Before
 import java.nio.file.Paths
@@ -25,6 +26,7 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
         super.setUp()
         unmockkAll()
         project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
+        pluginSettings().fileListenerEnabled = false
     }
 
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
@@ -32,6 +34,7 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
         unmockkAll()
         try {
             super.tearDown()
+            pluginSettings().fileListenerEnabled = true
         } catch (e: Exception) {
             // when tearing down the test case, our File Listener is trying to react on the deletion of the test
             // files and tries to access the file index that isn't there anymore
