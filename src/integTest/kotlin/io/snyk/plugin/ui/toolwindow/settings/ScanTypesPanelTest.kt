@@ -47,100 +47,78 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         isContainerEnabledRegistryValue.setValue(true)
     }
 
-    @Test
-    fun `container scan enablement get from settings`() {
+    private fun getContainerCheckBox(
+        initialValue: Boolean,
+        switchSelection: Boolean
+    ): JBCheckBox {
         setUpContainerTest()
-        val settings = pluginSettings()
-        settings.containerScanEnabled = true
-
+        pluginSettings().containerScanEnabled = initialValue
         val scanTypesPanel = ScanTypesPanel(project, disposable)
         val containerCheckBox =
             getComponentByName(scanTypesPanel.panel, JBCheckBox::class, "containerEnablementCheckBox")
                 ?: throw IllegalStateException("containerEnablementCheckBox not found")
+        if (switchSelection) {
+            containerCheckBox.doClick()
+            scanTypesPanel.panel.apply()
+        }
+        return containerCheckBox
+    }
 
-        assertTrue("", containerCheckBox.isSelected)
+    @Test
+    fun `container scan enablement get from settings`() {
+        val containerCheckBox = getContainerCheckBox(initialValue = true, switchSelection = false)
+
+        assertTrue(
+            "Expected container checkbox `selected` state to be gotten from setting, but wasn't",
+            containerCheckBox.isSelected
+        )
     }
 
     @Test
     fun `container scan enablement set to settings`() {
-        setUpContainerTest()
-        val settings = pluginSettings()
-        settings.containerScanEnabled = true
-        val scanTypesPanel = ScanTypesPanel(project, disposable)
-        val containerCheckBox =
-            getComponentByName(scanTypesPanel.panel, JBCheckBox::class, "containerEnablementCheckBox")
-                ?: throw IllegalStateException("containerEnablementCheckBox not found")
+        getContainerCheckBox(initialValue = true, switchSelection = true)
 
-        containerCheckBox.doClick()
-        scanTypesPanel.panel.apply()
-
-        assertFalse("", settings.containerScanEnabled)
+        assertFalse(
+            "Expected container checkbox `deselected` state to be written to setting, but wasn't",
+            pluginSettings().containerScanEnabled
+        )
     }
 
     @Test
     fun `container scan disablement get from settings`() {
-        setUpContainerTest()
-        val settings = pluginSettings()
-        settings.containerScanEnabled = false
+        val containerCheckBox = getContainerCheckBox(initialValue = false, switchSelection = false)
 
-        val scanTypesPanel = ScanTypesPanel(project, disposable)
-        val containerCheckBox =
-            getComponentByName(scanTypesPanel.panel, JBCheckBox::class, "containerEnablementCheckBox")
-                ?: throw IllegalStateException("containerEnablementCheckBox not found")
-
-        assertFalse("", containerCheckBox.isSelected)
+        assertFalse(
+            "Expected container checkbox `deselected` state to be gotten from setting, but wasn't",
+            containerCheckBox.isSelected)
     }
 
     @Test
     fun `container scan disablement set to settings`() {
-        setUpContainerTest()
-        val settings = pluginSettings()
-        settings.containerScanEnabled = false
-        val scanTypesPanel = ScanTypesPanel(project, disposable)
-        val containerCheckBox =
-            getComponentByName(scanTypesPanel.panel, JBCheckBox::class, "containerEnablementCheckBox")
-                ?: throw IllegalStateException("containerEnablementCheckBox not found")
+        getContainerCheckBox(initialValue = false, switchSelection = true)
 
-        containerCheckBox.doClick()
-        scanTypesPanel.panel.apply()
-
-        assertTrue("", settings.containerScanEnabled)
+        assertTrue(
+            "Expected container checkbox `selected` state to be written to setting, but wasn't",
+            pluginSettings().containerScanEnabled
+        )
     }
 
     @Test
     fun `KubernetesImageCache rescan after container enablement`() {
-        setUpContainerTest()
-        val settings = pluginSettings()
-        settings.containerScanEnabled = false
         mockkStatic("io.snyk.plugin.UtilsKt")
         val spyk = spyk(getKubernetesImageCache(project))
         every { getKubernetesImageCache(project) } returns spyk
-        val scanTypesPanel = ScanTypesPanel(project, disposable)
-        val containerCheckBox =
-            getComponentByName(scanTypesPanel.panel, JBCheckBox::class, "containerEnablementCheckBox")
-                ?: throw IllegalStateException("containerEnablementCheckBox not found")
-
-        containerCheckBox.doClick()
-        scanTypesPanel.panel.apply()
+        getContainerCheckBox(initialValue = false, switchSelection = true)
 
         verify(exactly = 1) { spyk.scanProjectForKubernetesFiles() }
     }
 
     @Test
     fun `KubernetesImageCache clean up after container disablement`() {
-        setUpContainerTest()
-        val settings = pluginSettings()
-        settings.containerScanEnabled = true
         mockkStatic("io.snyk.plugin.UtilsKt")
         val spyk = spyk(getKubernetesImageCache(project))
         every { getKubernetesImageCache(project) } returns spyk
-        val scanTypesPanel = ScanTypesPanel(project, disposable)
-        val containerCheckBox =
-            getComponentByName(scanTypesPanel.panel, JBCheckBox::class, "containerEnablementCheckBox")
-                ?: throw IllegalStateException("containerEnablementCheckBox not found")
-
-        containerCheckBox.doClick()
-        scanTypesPanel.panel.apply()
+        getContainerCheckBox(initialValue = true, switchSelection = true)
 
         verify(exactly = 1) { spyk.clear() }
     }
