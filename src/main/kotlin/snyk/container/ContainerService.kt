@@ -2,6 +2,8 @@ package snyk.container
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.google.gson.reflect.TypeToken
+import com.intellij.internal.statistic.utils.addPluginInfoTo
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
@@ -11,18 +13,19 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.cli.CliError
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.services.CliService
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.CliAdapter
 import snyk.common.SnykError
+import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
+import java.lang.reflect.Type
 import java.nio.file.Paths
 
 private val LOG = logger<ContainerService>()
 
 @Service
-class ContainerService(project: Project) : CliService<ContainerResult>(
-    project = project,
-    cliCommands = listOf("container", "test")
+class ContainerService(project: Project) : CliAdapter<ContainerResult>(
+    project = project
 ) {
 
     fun scan(iacResult: IacResult): ContainerResult {
@@ -48,12 +51,12 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
                             val imageName = lineWithImage.second.trim().replace("image:", "").trim()
                             LOG.info("Found image tag for container scan: $imageName")
 
-                            var commands = buildCliCommandsList()
+                            var commands = buildCliCommandsList(listOf("container", "test"))
                             val mutCommands = commands.toMutableList()
                             mutCommands.add(imageName)
                             commands = mutCommands.toList()
 
-                            val apiToken = getApplicationSettingsStateService().token ?: ""
+                            val apiToken = pluginSettings().token ?: ""
                             val rawResultStr = ConsoleCommandRunner().execute(commands, projectPath, apiToken, project)
                             val result = convertRawCliStringToCliResult(rawResultStr)
                             result.allCliIssues?.forEach {
@@ -76,7 +79,7 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
 
         LOG.warn("container service scan completed")
 
-        return ContainerResult(issuesForFile.toTypedArray(), null)
+        return ContainerResult(issuesForFile, null)
     }
 
     private fun findImageLineNumberOrNull(fileName: String): List<Pair<Int?, String>> {
@@ -178,6 +181,7 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
 
     override fun convertRawCliStringToCliResult(rawStr: String): ContainerResult =
         try {
+            val listType: Type = object : TypeToken<ArrayList<ContainerIssuesForFile>>() {}.type
             when {
                 rawStr == ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER -> {
                     ContainerResult(null, null)
@@ -186,11 +190,11 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
                     ContainerResult(null, SnykError("CLI failed to produce any output", projectPath))
                 }
                 rawStr.first() == '[' -> {
-                    ContainerResult(Gson().fromJson(rawStr, Array<ContainerIssuesForFile>::class.java), null)
+                    ContainerResult(Gson().fromJson(rawStr, listType), null)
                 }
                 rawStr.first() == '{' -> {
                     if (isSuccessCliJsonString(rawStr)) {
-                        ContainerResult(arrayOf(Gson().fromJson(rawStr, ContainerIssuesForFile::class.java)), null)
+                        ContainerResult(listOf(Gson().fromJson(rawStr, ContainerIssuesForFile::class.java)), null)
                     } else {
                         val cliError = Gson().fromJson(rawStr, CliError::class.java)
                         ContainerResult(null, SnykError(cliError.message, cliError.path))
@@ -206,4 +210,8 @@ class ContainerService(project: Project) : CliService<ContainerResult>(
 
     private fun isSuccessCliJsonString(jsonStr: String): Boolean =
         jsonStr.contains("\"vulnerabilities\":") && !jsonStr.contains("\"error\":")
+
+    override fun buildExtraOptions(): List<String> {
+        return emptyList()
+    }
 }

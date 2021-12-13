@@ -6,7 +6,6 @@ import snyk.common.SnykError
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
-import io.snyk.plugin.snykcode.SnykCodeResults
 
 interface SnykScanListener {
     companion object {
@@ -22,8 +21,6 @@ interface SnykScanListener {
 
     fun scanningIacFinished(iacResult: IacResult)
 
-    fun scanningIacFinished(iacResult: IacResult)
-
     fun scanningContainerFinished(containerResult: ContainerResult)
 
     fun scanningOssError(snykError: SnykError)
@@ -31,8 +28,6 @@ interface SnykScanListener {
     fun scanningIacError(snykError: SnykError)
 
     fun scanningSnykCodeError(snykError: SnykError)
-
-    fun scanningIacError(snykError: SnykError)
 
     fun scanningContainerError(error: SnykError)
 }

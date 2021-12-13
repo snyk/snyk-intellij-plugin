@@ -50,7 +50,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
-        assertNull(snykTaskQueueService.ossScanProgressIndicator)
+        assertNull(snykTaskQueueService.getOssScanProgressIndicator())
     }
 
     @Test

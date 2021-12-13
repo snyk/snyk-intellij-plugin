@@ -53,8 +53,8 @@ class SnykTaskQueueService(val project: Project) {
     var iacScanProgressIndicator: ProgressIndicator? = null
 
     fun getOssScanProgressIndicator(): ProgressIndicator? = ossScanProgressIndicator
+
     fun getContainerScanProgressIndicator(): ProgressIndicator? = containerScanProgressIndicator
-        private set
 
     @TestOnly
     fun getTaskQueue() = taskQueue
@@ -196,7 +196,7 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     private fun scheduleContainerScan() {
-        taskQueueIacContainer.run(object : Task.Backgroundable(project, "Snyk Container is scanning", true) {
+        taskQueueIac.run(object : Task.Backgroundable(project, "Snyk Container is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 val toolWindowPanel = project.service<SnykToolWindowPanel>()
                 //if (toolWindowPanel.currentContainerResult != null) return

@@ -21,6 +21,7 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
+import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
 import snyk.oss.OssService
@@ -37,6 +38,8 @@ import javax.net.ssl.X509TrustManager
 fun getOssService(project: Project): OssService = project.service()
 
 fun getIacService(project: Project): IacScanService = project.service()
+
+fun getContainerService(project: Project): ContainerService = project.service()
 
 fun getSnykCode(project: Project): SnykCodeService = project.service()
 
@@ -81,7 +84,7 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().ossScanProgressIndicator
+    val indicator = project.service<SnykTaskQueueService>().getOssScanProgressIndicator()
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
@@ -90,6 +93,11 @@ fun isSnykCodeRunning(project: Project): Boolean =
 
 fun isIacRunning(project: Project): Boolean {
     val indicator = project.service<SnykTaskQueueService>().iacScanProgressIndicator
+    return indicator != null && indicator.isRunning && !indicator.isCanceled
+}
+
+fun isContainerScanRunning(project: Project): Boolean {
+    val indicator = project.service<SnykTaskQueueService>().getContainerScanProgressIndicator()
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 

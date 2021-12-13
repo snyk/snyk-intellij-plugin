@@ -34,9 +34,8 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
+import io.snyk.plugin.isContainerScanRunning
 import io.snyk.plugin.isIacEnabled
-import io.snyk.plugin.isIacRunning
-import io.snyk.plugin.isContainerScanning
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
@@ -62,15 +61,6 @@ import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
-import snyk.iac.IacIssue
-import snyk.iac.IacIssuesForFile
-import snyk.iac.IacResult
-import snyk.iac.IacSuggestionDescriptionPanel
-import snyk.iac.ui.toolwindow.IacFileTreeNode
-import snyk.iac.ui.toolwindow.IacIssueTreeNode
-import snyk.oss.OssResult
-import snyk.oss.Vulnerability
-import snyk.common.SnykError
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForFile
 import snyk.container.ContainerResult
@@ -82,6 +72,8 @@ import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import snyk.iac.IacSuggestionDescriptionPanel
+import snyk.iac.ui.toolwindow.IacFileTreeNode
+import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
@@ -235,14 +227,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     }
                 }
 
-                override fun scanningIacFinished(iacResult: IacResult) {
-                    currentIacResult = iacResult
-                    ApplicationManager.getApplication().invokeLater {
-                        displayIacResults(iacResult)
-                    }
-                    // TODO: Add event logging
-                }
-
                 override fun scanningContainerFinished(containerResult: ContainerResult) {
                     currentContainerResult = containerResult
                     ApplicationManager.getApplication().invokeLater {
@@ -304,21 +288,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     logSnykCodeAnalysisIsReady(Result.ERROR)
                 }
 
-                override fun scanningIacError(snykError: SnykError) {
-                    currentIacResult = null
-                    ApplicationManager.getApplication().invokeLater {
-                        SnykBalloonNotifications.showError(snykError.message, project)
-                        currentIacError = snykError
-                        removeAllChildren(listOf(rootIacIssuesTreeNode))
-                        updateTreeRootNodesPresentation()
-                        displayEmptyDescription()
-                    }
-                }
-
                 override fun scanningContainerError(error: SnykError) {
                     currentContainerResult = null
                     ApplicationManager.getApplication().invokeLater {
-                        SnykBalloonNotifications.showError(error.message, project)
+                        SnykBalloonNotificationHelper.showError(error.message, project)
                         currentContainerError = error
                         removeAllChildren(listOf(rootContainerIssuesTreeNode))
                         updateTreeRootNodesPresentation()
@@ -473,33 +446,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             .build()
                     )
                 }
-                is IacIssueTreeNode -> {
-                    val iacIssue = node.userObject as IacIssue
-                    val scrollPane = wrapWithScrollPane(
-                        IacSuggestionDescriptionPanel(iacIssue)
-                    )
-                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
-
-                    val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
-                        ?: throw IllegalArgumentException(node.toString())
-                    val fileName = iacIssuesForFile.targetFile
-                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(
-                        Paths.get(project.basePath!!, fileName)
-                    )
-                    if (virtualFile != null && virtualFile.isValid) {
-                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                        if (document != null) {
-                            val lineNumber = iacIssue.lineNumber.toInt().let {
-                                val candidate = it - 1 // to 1-based count used in the editor
-                                if (0 <= candidate && candidate < document.lineCount) candidate else 0
-                            }
-                            val lineStartOffset = document.getLineStartOffset(lineNumber)
-
-                            navigateToSource(virtualFile, lineStartOffset)
-                        }
-                    }
-                    // TODO: Add event logging
-                }
                 is ContainerFileTreeNode -> {
                     val containerIssuesForFile = node.userObject as ContainerIssuesForFile
                     val scrollPane = wrapWithScrollPane(
@@ -609,7 +555,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             securityIssuesCount = NODE_INITIAL_STATE,
             qualityIssuesCount = NODE_INITIAL_STATE,
             iacResultsCount = NODE_INITIAL_STATE,
-            containerResultsCount = NODE_INITIAL_STATE
+            containerIssuesCount = NODE_INITIAL_STATE
         )
         reloadTree()
 
@@ -811,7 +757,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val newContainerTreeNodeText = when {
             currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
-            isContainerScanning(project) -> "$CONTAINER_ROOT_TEXT (scanning...)"
+            isContainerScanRunning(project) -> "$CONTAINER_ROOT_TEXT (scanning...)"
             else -> containerIssuesCount?.let { count ->
                 CONTAINER_ROOT_TEXT + when {
                     count == -1 -> ""
