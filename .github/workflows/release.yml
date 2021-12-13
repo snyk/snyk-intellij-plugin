@@ -15,7 +15,15 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
+      - name: Create Github release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        if: ${{ !env.ACT }}
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+
       - name: Publish Plugin
+        if: ${{ !env.ACT }}
         env:
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
           ORG_GRADLE_PROJECT_amplitudeExperimentApiKey: ${{ secrets.AMPLITUDE_EXPERIMENT_API_KEY }}

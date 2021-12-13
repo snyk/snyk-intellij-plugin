@@ -11,7 +11,7 @@ trim_trailing_whitespace = true
 [*.md]
 trim_trailing_whitespace = false
 
-[*.kt]
+[*.{kt,kts}]
 indent_size = 4
 wildcard_import_limit = 999
 ij_kotlin_packages_to_use_import_on_demand = ^
