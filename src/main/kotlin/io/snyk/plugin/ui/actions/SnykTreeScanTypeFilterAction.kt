@@ -8,11 +8,12 @@ import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeAvailable
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import javax.swing.JComponent
 
@@ -21,7 +22,8 @@ import javax.swing.JComponent
  */
 class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
 
     override fun update(e: AnActionEvent) {
         val project = e.project
@@ -30,10 +32,11 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
         return DefaultActionGroup(
-            listOf(
+            listOfNotNull(
                 createOssScanAction(),
                 createSecurityIssuesScanAction(),
-                createQualityIssuesScanAction()
+                createQualityIssuesScanAction(),
+                if (isIacEnabled()) createIacScanAction() else null
             )
         )
     }
@@ -88,6 +91,19 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         }
     }
 
+    private fun createIacScanAction(): AnAction {
+        return object : ToggleAction("Configuration Issues") {
+            override fun isSelected(e: AnActionEvent): Boolean = settings.iacScanEnabled
+
+            override fun setSelected(e: AnActionEvent, state: Boolean) {
+                if (!state && isLastScanTypeDisabling(e)) return
+
+                settings.iacScanEnabled = state
+                fireFiltersChangedEvent(e.project!!)
+            }
+        }
+    }
+
     private fun fireFiltersChangedEvent(project: Project) {
         getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
     }
@@ -96,10 +112,11 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         val onlyOneEnabled = arrayOf(
             settings.ossScanEnable,
             settings.snykCodeSecurityIssuesScanEnable,
-            settings.snykCodeQualityIssuesScanEnable
+            settings.snykCodeQualityIssuesScanEnable,
+            settings.iacScanEnabled
         ).count { it } == 1
         if (onlyOneEnabled) {
-            SnykBalloonNotifications.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)
+            SnykBalloonNotificationHelper.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)
         }
         return onlyOneEnabled
     }

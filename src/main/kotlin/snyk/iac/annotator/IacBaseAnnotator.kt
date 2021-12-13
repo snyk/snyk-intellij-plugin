@@ -37,12 +37,13 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val issues = getIssues(psiFile)
 
         LOG.debug("Call apply on ${psiFile.name}")
-        if (issues == null || issues.isEmpty()) return
+        if (issues.isEmpty()) return
 
         LOG.debug("Received ${issues.size} IacIssue annotations for ${psiFile.virtualFile.name}")
         issues.forEach { iacIssue ->
-            LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
+            if (iacIssue.ignored || iacIssue.obsolete) return@forEach
 
+            LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
             val severity = when (iacIssue.severity) {
                 CRITICAL -> HighlightSeverity.ERROR
                 HIGH -> HighlightSeverity.WARNING
@@ -65,8 +66,8 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             ?: return emptyList()
 
         val iacIssuesForFile = iacResult.allCliIssues?.firstOrNull { iacIssuesForFile ->
-            val iacTargetFilePath = FileUtil.toSystemIndependentName(iacIssuesForFile.targetFile)
-            psiFilePath.contains(iacTargetFilePath)
+            val iacTargetFilePath = FileUtil.toSystemIndependentName(iacIssuesForFile.targetFilePath)
+            psiFilePath == iacTargetFilePath
         }
         LOG.debug("Found IaC issues for file: ${iacIssuesForFile?.targetFile} - ${iacIssuesForFile?.uniqueCount}")
 
@@ -83,8 +84,8 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     fun defaultTextRange(psiFile: PsiFile, iacIssue: IacIssue): TextRange {
         val document = psiFile.viewProvider.document ?: return TextRange.EMPTY_RANGE
 
-        val startOffset = document.getLineStartOffset(iacIssue.lineNumber.toInt() - 1)
-        val endOffset = document.getLineEndOffset(iacIssue.lineNumber.toInt() - 1)
+        val startOffset = document.getLineStartOffset(iacIssue.lineNumber - 1)
+        val endOffset = document.getLineEndOffset(iacIssue.lineNumber - 1)
         return TextRange.create(startOffset, endOffset)
     }
 }

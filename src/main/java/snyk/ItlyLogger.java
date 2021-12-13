@@ -1,4 +1,4 @@
-package snyk.analytics;
+package snyk;
 
 import ly.iterative.itly.Logger;
 import org.jetbrains.annotations.NotNull;

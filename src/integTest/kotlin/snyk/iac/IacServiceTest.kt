@@ -2,14 +2,17 @@ package snyk.iac
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
+import io.mockk.every
+import io.mockk.mockk
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.removeDummyCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
-import org.mockito.Mockito
 
 class IacServiceTest : LightPlatformTestCase() {
 
@@ -22,8 +25,10 @@ class IacServiceTest : LightPlatformTestCase() {
     @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
+        resetSettings(project)
+        removeDummyCliFile()
 
-        val settingsStateService = getApplicationSettingsStateService()
+        val settingsStateService = pluginSettings()
 
         settingsStateService.ignoreUnknownCA = false
         settingsStateService.usageAnalyticsEnabled = true
@@ -36,25 +41,65 @@ class IacServiceTest : LightPlatformTestCase() {
         project.service<SnykProjectSettingsStateService>().additionalParameters = ""
     }
 
+    override fun tearDown() {
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDefaults() {
+        setupDummyCliFile()
+
+        val cliCommands = getIacService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains(getCliFile().absolutePath))
+        assertTrue(cliCommands.contains("fake_cli_command"))
+        assertTrue(cliCommands.contains("--json"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
+        setupDummyCliFile()
+        pluginSettings().usageAnalyticsEnabled = false
+
+        val cliCommands = getIacService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertFalse(cliCommands.contains("--DISABLE_ANALYTICS"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithFileParameter() {
+        setupDummyCliFile()
+
+        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
+
+        val cliCommands = getIacService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertFalse(cliCommands.contains("--file=package.json"))
+    }
+
     @Test
     fun testScanWithErrorResult() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+        val mockRunner = mockk<ConsoleCommandRunner>()
 
         val errorMsg = "Some error here"
         val errorPath = "/Users/user/Desktop/example-npm-project"
-        Mockito
-            .`when`(mockRunner.execute(
+
+        every {
+            mockRunner.execute(
                 listOf(getCliFile().absolutePath, "iac", "test", "--json"),
                 project.basePath!!,
-                project = project))
-            .thenReturn("""
-                    {
-                      "error": "$errorMsg",
-                      "path": "$errorPath"
-                    }
-                """.trimIndent())
+                project = project
+            )
+        } returns """
+            {
+              "error": "$errorMsg",
+              "path": "$errorPath"
+            }
+        """.trimIndent()
 
         getIacService(project).setConsoleCommandRunner(mockRunner)
 
@@ -69,14 +114,15 @@ class IacServiceTest : LightPlatformTestCase() {
     fun testScanWithSuccessfulIacResult() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+        val mockRunner = mockk<ConsoleCommandRunner>()
 
-        Mockito
-            .`when`(mockRunner.execute(
+        every {
+            mockRunner.execute(
                 listOf(getCliFile().absolutePath, "iac", "test", "--json"),
                 project.basePath!!,
-                project = project))
-            .thenReturn(wholeProjectJson)
+                project = project
+            )
+        } returns (wholeProjectJson)
 
         getIacService(project).setConsoleCommandRunner(mockRunner)
 

@@ -1,9 +1,6 @@
-package io.snyk.plugin.services
+package io.snyk.plugin.services.download
 
-import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import com.intellij.ide.BrowserUtil
-import com.intellij.notification.NotificationAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.progress.ProgressIndicator
@@ -11,11 +8,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.tail
-import io.snyk.plugin.ui.SnykBalloonNotifications
-import java.lang.String.format
+import java.io.IOException
 import java.net.URL
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -25,11 +21,11 @@ import java.util.Date
 class SnykCliDownloaderService {
 
     companion object {
-        const val LATEST_RELEASES_URL = "https://api.github.com/repos/snyk/snyk/releases/latest"
-        const val LATEST_RELEASE_DOWNLOAD_URL = "https://github.com/snyk/snyk/releases/download/%s/%s"
-
         const val NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK = 4
     }
+
+    var downloader = CliDownloader()
+    var errorHandler = CliDownloaderErrorHandler()
 
     private val cliDownloadPublisher
         get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
@@ -47,8 +43,12 @@ class SnykCliDownloaderService {
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
         try {
-            val jsonResponseStr = URL(LATEST_RELEASES_URL).readText()
-            latestReleaseInfo = Gson().fromJson(jsonResponseStr, LatestReleaseInfo::class.java)
+            val response = "v" + URL(CliDownloader.LATEST_RELEASES_URL).readText().removeSuffix("\n")
+            latestReleaseInfo = LatestReleaseInfo(
+                tagName = response,
+                url = "https://static.snyk.io/cli/latest/${Platform.current().snykWrapperFileName}",
+                name = response
+            )
         } catch (ignore: Exception) {
         }
 
@@ -66,45 +66,31 @@ class SnykCliDownloaderService {
         val cliFile = getCliFile()
         try {
             val latestRelease = requestLatestReleasesInformation()
-            if (latestRelease == null) {
-                val failedMsg = "Failed to fetch the latest Snyk CLI release info from GitHub. " +
-                    "Please retry in a few minutes or contact support if the issue persists."
-                SnykBalloonNotifications.showError(failedMsg, project,
-                    NotificationAction.createSimple("Retry CLI download") {
-                        this.downloadLatestRelease(indicator, project)
-                    },
-                    NotificationAction.createSimple("Contact support...") {
-                        BrowserUtil.browse("https://snyk.io/contact-us/?utm_source=JETBRAINS_IDE")
-                    })
 
+            if (latestRelease == null) {
+                val failedMsg = "Failed to fetch the latest Snyk CLI release info. " +
+                    "Please retry in a few minutes or contact support if the issue persists."
+                errorHandler.showErrorWithRetryAndContactAction(failedMsg, project)
                 cleanupCliFile = false
                 return
             }
-
-            indicator.text = "Downloading latest Snyk CLI release..."
-
-            val snykWrapperFileName = Platform.current().snykWrapperFileName
-
-            indicator.checkCanceled()
-
             val cliVersion = latestRelease.tagName
 
-            val url = URL(format(LATEST_RELEASE_DOWNLOAD_URL, cliVersion, snykWrapperFileName)).toString()
+            indicator.text = "Downloading latest Snyk CLI release..."
+            indicator.checkCanceled()
 
-            if (cliFile.exists()) {
-                cliFile.delete()
+            try {
+                downloader.downloadFile(cliFile, indicator)
+                pluginSettings().cliVersion = cliVersionNumbers(cliVersion)
+                pluginSettings().lastCheckDate = Date()
+                succeeded = true
+            } catch (e: HttpRequests.HttpStatusException) {
+                errorHandler.handleHttpStatusException(e, project)
+            } catch (e: IOException) {
+                errorHandler.handleIOException(e, indicator, project)
+            } catch (e: ChecksumVerificationException) {
+                errorHandler.handleChecksumVerificationException(e, indicator, project)
             }
-
-            HttpRequests
-                .request(url)
-                .productNameAsUserAgent()
-                .saveToFile(cliFile, indicator)
-
-            cliFile.setExecutable(true)
-
-            getApplicationSettingsStateService().cliVersion = cliVersionNumbers(cliVersion)
-            getApplicationSettingsStateService().lastCheckDate = Date()
-            succeeded = true
         } finally {
             currentProgressIndicator = null
             if (!succeeded && cliFile.exists() && cleanupCliFile) {
@@ -120,7 +106,7 @@ class SnykCliDownloaderService {
 
             indicator.checkCanceled()
 
-            val settings = getApplicationSettingsStateService()
+            val settings = pluginSettings()
 
             if (latestReleaseInfo?.tagName != null &&
                 latestReleaseInfo.tagName.isNotEmpty() &&
@@ -135,7 +121,7 @@ class SnykCliDownloaderService {
     }
 
     fun isFourDaysPassedSinceLastCheck(): Boolean {
-        val previousDate = getApplicationSettingsStateService().getLastCheckDate() ?: return true
+        val previousDate = pluginSettings().getLastCheckDate() ?: return true
 
         return ChronoUnit.DAYS.between(previousDate, LocalDate.now()) >= NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK
     }
@@ -149,7 +135,10 @@ class SnykCliDownloaderService {
             return true
         }
 
-        tailrec fun checkIsNewVersionAvailable(currentCliVersionNumbers: List<String>, newCliVersionNumbers: List<String>): Boolean {
+        tailrec fun checkIsNewVersionAvailable(
+            currentCliVersionNumbers: List<String>,
+            newCliVersionNumbers: List<String>
+        ): Boolean {
             return if (currentCliVersionNumbers.isNotEmpty() && newCliVersionNumbers.isNotEmpty()) {
                 val newVersionNumber = newCliVersionNumbers[0].toInt()
                 val currentVersionNumber = currentCliVersionNumbers[0].toInt()
@@ -179,7 +168,6 @@ class SnykCliDownloaderService {
 }
 
 class LatestReleaseInfo(
-    val id: Long,
     val url: String,
     val name: String,
     @SerializedName("tag_name") val tagName: String

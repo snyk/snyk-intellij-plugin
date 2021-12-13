@@ -17,7 +17,7 @@ import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
-import io.snyk.plugin.services.SnykCliDownloaderService
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import snyk.amplitude.AmplitudeExperimentService

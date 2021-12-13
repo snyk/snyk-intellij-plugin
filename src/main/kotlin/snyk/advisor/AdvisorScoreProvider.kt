@@ -16,7 +16,7 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
 import io.snyk.plugin.analytics.getEcosystem
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.advisor.api.PackageInfo
@@ -37,7 +37,7 @@ class AdvisorScoreProvider(
     private val packageNameProvider = PackageNameProvider(editor)
 
     fun getLineExtensions(lineNumber: Int): Collection<LineExtensionInfo> {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         if (settings.pluginFirstRun || !settings.advisorEnable) {
             return resetAndReturnEmptyList()
         }
@@ -184,7 +184,8 @@ class AdvisorScoreProvider(
 
         /** see [com.intellij.xdebugger.impl.evaluate.XDebuggerEditorLinePainter.getNormalAttributes] */
         private fun getNormalAttributes(): TextAttributes {
-            val attributes = EditorColorsManager.getInstance().globalScheme.getAttributes(DefaultLanguageHighlighterColors.BLOCK_COMMENT)
+            val attributes = EditorColorsManager.getInstance()
+                .globalScheme.getAttributes(DefaultLanguageHighlighterColors.BLOCK_COMMENT)
             return if (attributes == null || attributes.foregroundColor == null) {
                 TextAttributes(
                     JBColor { if (EditorColorsManager.getInstance().isDarkEditor) Color(0x3d8065) else Gray._135 },

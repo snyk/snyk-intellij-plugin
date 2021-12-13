@@ -9,7 +9,7 @@ object SnykIcons {
     private fun getIconFromResources(name: String): ImageIcon = ImageIcon(this::class.java.getResource(name))
 
     @JvmField
-    val TOOL_WINDOW = getIcon("/icons/toolWindowSnyk.svg")
+    val TOOL_WINDOW = getIcon("/icons/snyk-dog.svg")
 
     val LOGO = getIcon("/icons/logo_snyk.png")
 

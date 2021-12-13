@@ -1,5 +1,59 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.7]
+
+### Changed
+
+- use new Snyk Code API
+- remove scan reminder from experiment
+
+## [2.4.6]
+
+### Changed
+
+- new tool window icon
+- new experimental welcome workflow
+
+## [2.4.5]
+
+### Fixed
+
+- run CLI download retries in background instead of UI thread
+- validate CLI download with sha-256
+- allow Snyk Code scan for multi-modules project (cause IlligalStateException before)
+### Changed
+- feedback link and message update
+
+## [2.4.4]
+
+### Fixed
+- Handle errors when downloading Snyk CLI
+### Changed
+- Send missing analytic events by plugin install/uninstall
+- Rename IssueIsViewed analytic event to IssueInTreeIsClicked
+- Show links (Introduced through) only for NPM packages
+- Create Sentry release on plugin release to be able to assign bugs to be fixed in next release
+- Download Snyk CLI from static.snyk.io instead of GitHub releases
+- Use TLS 1.2 as default to communicate with Snyk API
+
+## [2.4.3]
+### Fixed
+- Show correct result in the tree when Snyk Code scan was stopped by user
+- Send analytic events correctly when triggering Snyk Code analysis
+### Changed
+- Increase timeout for Snyk Code scan to 12 minutes. Configurable via 'snyk.timeout.results.waiting' registry key.
+- Make plugin compatible with 2021.3 version
+
+## [2.4.2]
+### Changed
+- Require restarting the IDE when updating or uninstalling the plugin ([GH-182](https://github.com/snyk/snyk-intellij-plugin/issues/182))
+### Fixed
+- Remove IntelliJ API methods that are scheduled for removal in 2021.3
+
+## [2.4.1]
+### Fixed
+- Fix ClassCastException when updating the plugin without rebooting IDE
+
 ## [2.4.0]
 ### Added
 - Allow submitting error reports anonymously to Sentry when exceptions occur

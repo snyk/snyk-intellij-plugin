@@ -1,4 +1,4 @@
-<idea-plugin url="snyk.io">
+<idea-plugin url="snyk.io" require-restart="true">
   <id>io.snyk.snyk-intellij-plugin</id>
   <name>Snyk Vulnerability Scanner</name>
   <vendor url="https://snyk.io">Snyk Ltd.</vendor>
@@ -27,6 +27,26 @@
     <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
 
     <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
+
+    <!-- Registry keys -->
+    <registryKey key="snyk.timeout.results.waiting"
+                 defaultValue="720000"
+                 description="Snyk timeout (milliseconds) to wait for results during scan"/>
+
+    <registryKey key="snyk.preview.iac.enabled"
+                 defaultValue="false"
+                 description="Preview: Enable Snyk Infrastructure as Code product."
+                 restartRequired="true"/>
+
+    <registryKey key="snyk.preview.container.enabled"
+                 defaultValue="false"
+                 description="Preview: Enable Snyk Container product."
+                 restartRequired="true"/>
+
+    <registryKey key="snyk.preview.new.refactored.tree.enabled"
+                 defaultValue="false"
+                 description="Preview: Enable new refactored issues tree."
+                 restartRequired="true"/>
   </extensions>
 
   <actions>

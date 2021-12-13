@@ -11,9 +11,9 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.snykcode.SnykCodeResults
+import snyk.iac.IacResult
 import snyk.common.SnykError
 import snyk.container.ContainerResult
-import snyk.iac.IacResult
 import snyk.oss.OssResult
 
 /**
@@ -44,11 +44,11 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningOssFinished(ossResult: OssResult) = updateActionsPresentation()
 
+                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) = updateActionsPresentation()
+
                 override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
 
                 override fun scanningContainerFinished(containerResult: ContainerResult) = updateActionsPresentation()
-
-                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) = updateActionsPresentation()
 
                 override fun scanningOssError(snykError: SnykError) = updateActionsPresentation()
 

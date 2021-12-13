@@ -9,13 +9,24 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.impl.CoreProgressManager
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.getOssService
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.verify
+import io.sentry.protocol.SentryId
+import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.services.SnykCliDownloaderService
+import io.snyk.plugin.resetSettings
+import io.snyk.plugin.services.download.SnykCliDownloaderService
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import snyk.PLUGIN_ID
+import snyk.errorHandler.SentryErrorReporter
 import java.util.concurrent.TimeUnit
 
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
@@ -67,7 +78,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                         snykCliDownloaderService.isCliDownloading()
                     )
                     // No exception should happened while CLI is downloading and any CLI command is invoked
-                    val commands = getOssService(project).buildCliCommandsList()
+                    val commands = getOssService(project).buildCliCommandsList(listOf("test"))
                     val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
                     assertTrue(
                         "Should be NO output for CLI command while CLI is downloading, but received:\n$output",
@@ -86,5 +97,55 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             Thread.sleep(10) // lets wait till download actually stopped
         }
         assertFalse(cliFile.exists())
+        verify(exactly = 0) { SentryErrorReporter.captureException(any()) }
+    }
+
+    @Test
+    fun testErrorReportedWhenExecutionTimeoutExpire() {
+        service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator(), project)
+        val registryValue = Registry.get("snyk.timeout.results.waiting")
+        val defaultValue = registryValue.asInteger()
+        assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
+        registryValue.setValue(100)
+
+        val commands = getOssService(project).buildCliCommandsList(listOf("test"))
+        val progressManager = ProgressManager.getInstance() as CoreProgressManager
+        val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
+            object : Task.Backgroundable(project, "Test CLI command invocation", true) {
+                override fun run(indicator: ProgressIndicator) {
+                    val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
+                    assertTrue(
+                        "Should get timeout error, but received:\n$output",
+                        output.startsWith("Execution timeout")
+                    )
+                }
+            },
+            EmptyProgressIndicator(),
+            null
+        )
+        testRunFuture.get(1000, TimeUnit.MILLISECONDS)
+
+        verify(exactly = 1) { SentryErrorReporter.captureException(any()) }
+
+        // clean up
+        registryValue.setValue(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS)
+        getCliFile().delete()
+    }
+
+    @Before
+    override fun setUp() {
+        super.setUp()
+        // don't report to Sentry when running this test
+        unmockkAll()
+        resetSettings(project)
+        mockkObject(SentryErrorReporter)
+        every { SentryErrorReporter.captureException(any()) } returns SentryId()
+    }
+
+    @After
+    override fun tearDown() {
+        unmockkAll()
+        resetSettings(project)
+        super.tearDown()
     }
 }

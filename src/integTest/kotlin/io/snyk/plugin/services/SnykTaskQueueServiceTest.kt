@@ -4,15 +4,35 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
-import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getOssService
+import io.snyk.plugin.getIacService
+import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.removeDummyCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Test
-import org.mockito.Mockito
+import snyk.iac.IacResult
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
+
+    override fun setUp() {
+        super.setUp()
+        unmockkAll()
+        resetSettings(project)
+    }
+
+    override fun tearDown() {
+        unmockkAll()
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
+    }
 
     @Test
     fun testSnykTaskQueueService() {
@@ -30,7 +50,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
-        assertNull(snykTaskQueueService.getOssScanProgressIndicator())
+        assertNull(snykTaskQueueService.ossScanProgressIndicator)
     }
 
     @Test
@@ -41,7 +61,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
 
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         settings.ossScanEnable = true
 
         snykTaskQueueService.scan()
@@ -68,7 +88,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     @Test
     fun testSastEnablementCheckInScan() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
         settings.ossScanEnable = false
         settings.snykCodeSecurityIssuesScanEnable = true
         settings.snykCodeQualityIssuesScanEnable = true
@@ -80,5 +100,30 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         assertNull(settings.sastOnServerEnabled)
         assertFalse(settings.snykCodeSecurityIssuesScanEnable)
         assertFalse(settings.snykCodeQualityIssuesScanEnable)
+    }
+
+    @Test
+    fun testIacScanTriggeredAndProduceResults() {
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        val settings = pluginSettings()
+        settings.ossScanEnable = false
+        settings.snykCodeSecurityIssuesScanEnable = false
+        settings.snykCodeQualityIssuesScanEnable = false
+        settings.iacScanEnabled = true
+
+        val fakeIacResult = IacResult(null, null)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isIacEnabled() } returns true
+        every { getIacService(project).isCliInstalled() } returns true
+        every { getIacService(project).scan() } returns fakeIacResult
+
+        snykTaskQueueService.scan()
+
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        assertEquals(fakeIacResult, toolWindowPanel.currentIacResult)
+
+        unmockkStatic("io.snyk.plugin.UtilsKt")
     }
 }

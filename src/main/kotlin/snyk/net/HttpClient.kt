@@ -1,5 +1,10 @@
 package snyk.net
 
+import com.intellij.ide.BrowserUtil
+import com.intellij.notification.NotificationAction
+import io.snyk.plugin.getSSLContext
+import io.snyk.plugin.getX509TrustManager
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.security.SecureRandom
@@ -25,22 +30,38 @@ class HttpClient(
     var connectTimeout: Long = 30,
     var readTimeout: Long = 60,
     var writeTimeout: Long = 60,
-    var disableSslVerification: Boolean = false,
+    private var disableSslVerification: Boolean = false,
     var interceptors: List<Interceptor> = listOf()
 ) {
+    companion object {
+        const val BALLOON_MESSAGE_ILLEGAL_STATE_EXCEPTION =
+            "Could not initialize SSL security to communicate with the Snyk services (%s)."
+    }
+
     fun build(): OkHttpClient {
-        val httpClientBuilder = OkHttpClient.Builder()
-            .connectTimeout(connectTimeout, TimeUnit.SECONDS)
-            .readTimeout(readTimeout, TimeUnit.SECONDS)
-            .writeTimeout(writeTimeout, TimeUnit.SECONDS)
+        try {
+            val httpClientBuilder = OkHttpClient.Builder()
+                .connectTimeout(connectTimeout, TimeUnit.SECONDS)
+                .readTimeout(readTimeout, TimeUnit.SECONDS)
+                .writeTimeout(writeTimeout, TimeUnit.SECONDS)
+                .sslSocketFactory(getSSLContext().socketFactory, getX509TrustManager())
+            httpClientBuilder.interceptors().addAll(interceptors)
 
-        httpClientBuilder.interceptors().addAll(interceptors)
+            if (disableSslVerification) {
+                httpClientBuilder.ignoreAllSslErrors()
+            }
 
-        if (disableSslVerification) {
-            httpClientBuilder.ignoreAllSslErrors()
+            return httpClientBuilder.build()
+        } catch (e: IllegalStateException) {
+            val message = String.format(BALLOON_MESSAGE_ILLEGAL_STATE_EXCEPTION, e.localizedMessage)
+            SnykBalloonNotificationHelper.showError(
+                message,
+                null,
+                NotificationAction.createSimple("Contact support...") {
+                    BrowserUtil.browse("https://snyk.io/contact-us/?utm_source=JETBRAINS_IDE")
+                })
+            throw e
         }
-
-        return httpClientBuilder.build()
     }
 }
 
@@ -51,7 +72,7 @@ private fun OkHttpClient.Builder.ignoreAllSslErrors() {
         override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
     }
 
-    val insecureSocketFactory = SSLContext.getInstance("TLS").apply {
+    val insecureSocketFactory = SSLContext.getInstance("TLSv1.2").apply {
         val trustAllCertificates = arrayOf<TrustManager>(unsafeTrustManager)
         init(null, trustAllCertificates, SecureRandom())
     }.socketFactory

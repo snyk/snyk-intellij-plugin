@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.POST
+import kotlin.math.roundToInt
 
 /**
  * An endpoint to get information about the scoring system for packages.
@@ -33,7 +34,7 @@ data class PackageInfo(
     val error: String?
 ){
     val normalizedScore: Int
-        get() = (score * 100).toInt()
+        get() = (score * 100).roundToInt()
 }
 
 data class PackageInfoLabels(

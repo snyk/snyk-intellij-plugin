@@ -1,5 +1,9 @@
 package snyk.amplitude.api
 
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.snyk.plugin.pluginSettings
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.buffer
@@ -8,12 +12,14 @@ import org.hamcrest.collection.IsMapWithSize.aMapWithSize
 import org.hamcrest.collection.IsMapWithSize.anEmptyMap
 import org.hamcrest.core.IsEqual.equalTo
 import org.hamcrest.core.IsNull.notNullValue
+import org.junit.After
 import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import snyk.net.HttpClient
 import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 class AmplitudeExperimentApiClientTest {
     @JvmField
@@ -34,6 +40,14 @@ class AmplitudeExperimentApiClientTest {
             apiKey = "",
             httpClient = mockHttpClient
         )
+        unmockkAll()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { pluginSettings().userAnonymousId } returns UUID.randomUUID().toString()
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test

@@ -5,6 +5,7 @@ import ai.deepcode.javaclient.core.PlatformDependentUtilsBase
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -13,11 +14,11 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import snyk.common.SnykError
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.common.SnykError
 import java.util.function.Consumer
 
 class PDU private constructor() : PlatformDependentUtilsBase() {
@@ -39,30 +40,27 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         val projectPath = psiFile.project.basePath
             ?: throw IllegalStateException("No Project base Path found for file $psiFile")
         // `ignoreCase = true` needed due to https://youtrack.jetbrains.com/issue/IDEA-268081
-        val projectBasedPath = absolutePath.replaceFirst(projectPath, "", ignoreCase = true)
-        if (projectBasedPath == absolutePath ) {
-            throw IllegalStateException("projectBasedPath is not valid:\n" +
-                "  psiFile.virtualFile.path = $absolutePath\n" +
-                "  psiFile.project.basePath = $projectPath")
-        }
-        return projectBasedPath
+        return absolutePath.replaceFirst(projectPath, "", ignoreCase = true)
     }
 
     override fun getFileByDeepcodedPath(path: String, project: Any): Any? {
         val prj = toProject(project)
         val absolutePath = prj.basePath + if (path.startsWith("/")) path else "/$path"
         val virtualFile = LocalFileSystem.getInstance().findFileByPath(absolutePath)
+            ?: LocalFileSystem.getInstance().findFileByPath(path)
         if (virtualFile == null) {
-            SCLogger.instance.logWarn("VirtualFile not found for: $absolutePath")
+            SCLogger.instance.logWarn("VirtualFile not found for: $absolutePath or $path")
             return null
         }
         return RunUtils.computeInReadActionInSmartMode(
             prj,
-            Computable { PsiManager.getInstance(prj).findFile(virtualFile) }
+            Computable {
+                if (virtualFile.isValid) PsiManager.getInstance(prj).findFile(virtualFile) else null
+            }
         )
     }
 
-    override fun getOpenProjects(): Array<Any> = ProjectManager.getInstance().openProjects as Array<Any>
+    override fun getOpenProjects(): Array<Any> = ProjectManager.getInstance().openProjects.toList().toTypedArray()
 
     override fun getFileSize(file: Any): Long = toPsiFile(file).virtualFile.length
 
@@ -147,21 +145,25 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     override fun showInfo(message: String, project: Any?) {
-        runForProject(project, Consumer { prj -> SnykBalloonNotifications.showInfo(message, prj) })
+        runForProject(project, Consumer { prj -> SnykBalloonNotificationHelper.showInfo(message, prj) })
     }
 
     override fun showWarn(message: String, project: Any?, wasWarnShown: Boolean) {
-        runForProject(project, Consumer { prj ->
-            SnykBalloonNotifications.showWarn(message, prj)
-            getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
-                SnykError(message, prj.basePath ?: "")
-            )
-        })
+        if (!wasWarnShown) {
+            runForProject(project, Consumer { prj ->
+                SnykBalloonNotificationHelper.showWarn(message, prj)
+                getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
+                    SnykError(message, prj.basePath ?: "")
+                )
+            })
+        } else {
+            logger.debug(message)
+        }
     }
 
     override fun showError(message: String, project: Any?) {
         runForProject(project, Consumer { prj ->
-            SnykBalloonNotifications.showError(message, prj)
+            SnykBalloonNotificationHelper.showError(message, prj)
             getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
                 SnykError(message, prj.basePath ?: "")
             )
@@ -177,6 +179,8 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     companion object {
+        private val logger = logger<PDU>()
+
         fun toPsiFile(file: Any): PsiFile {
             require(file is PsiFile) { "file should be PsiFile instance" }
             return file

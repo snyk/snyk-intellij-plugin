@@ -1,3 +1,5 @@
+@file:JvmName("UtilsKt")
+
 package io.snyk.plugin
 
 import com.intellij.openapi.Disposable
@@ -5,6 +7,7 @@ import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.util.Alarm
@@ -12,30 +15,36 @@ import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.SnykCliDownloaderService
 import io.snyk.plugin.services.SnykCodeService
 import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
-import snyk.container.ContainerService
-import snyk.iac.IacService
+import snyk.container.KubernetesImageCache
+import snyk.iac.IacScanService
 import snyk.oss.OssService
 import java.io.File
 import java.net.URL
+import java.security.KeyStore
 import java.util.Objects.nonNull
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 fun getOssService(project: Project): OssService = project.service()
 
-fun getIacService(project: Project): IacService = project.service()
-
-fun getContainerService(project: Project): ContainerService = project.service()
+fun getIacService(project: Project): IacScanService = project.service()
 
 fun getSnykCode(project: Project): SnykCodeService = project.service()
 
+fun getKubernetesImageCache(project: Project): KubernetesImageCache = project.service()
+
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
-fun getApplicationSettingsStateService(): SnykApplicationSettingsStateService = service()
+fun pluginSettings(): SnykApplicationSettingsStateService = service()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
@@ -72,7 +81,7 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().getOssScanProgressIndicator()
+    val indicator = project.service<SnykTaskQueueService>().ossScanProgressIndicator
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
@@ -80,21 +89,12 @@ fun isSnykCodeRunning(project: Project): Boolean =
     AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
 
 fun isIacRunning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().getIacScanProgressIndicator()
+    val indicator = project.service<SnykTaskQueueService>().iacScanProgressIndicator
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
-fun isContainerScanning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().getContainerScanProgressIndicator()
-    return indicator != null && indicator.isRunning && !indicator.isCanceled
-}
-
-fun isScanRunning(project: Project): Boolean {
-    return isOssRunning(project) ||
-        isSnykCodeRunning(project) ||
-        isIacRunning(project) ||
-        isContainerScanning(project)
-}
+fun isScanRunning(project: Project): Boolean =
+    isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
 
 fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
 
@@ -116,7 +116,7 @@ private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
         customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
 
 fun getSnykCodeSettingsUrl(): String {
-    val endpoint = getApplicationSettingsStateService().customEndpointUrl
+    val endpoint = pluginSettings().customEndpointUrl
     val baseUrl = if (endpoint.isNullOrEmpty()) {
         "https://app.snyk.io"
     } else {
@@ -133,7 +133,7 @@ private fun String.removeTrailingSlashes(): String = this.replace(Regex("/+$"), 
 
 // check sastEnablement in a loop with rising timeout
 fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
-    val settings = getApplicationSettingsStateService()
+    val settings = pluginSettings()
     val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
 
     var currentAttempt = 1
@@ -145,7 +145,7 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
             if (settings.sastOnServerEnabled == true) {
                 onSuccess.invoke()
             } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
-                currentAttempt++;
+                currentAttempt++
                 alarm.addRequest(checkIfSastEnabled, 2000 * currentAttempt)
             }
         }
@@ -168,4 +168,39 @@ fun controlExternalProcessWithProgressIndicator(
         }
     }
     checkCancelled.invoke()
+}
+
+fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", false)
+
+fun isContainerEnabled(): Boolean = Registry.`is`("snyk.preview.container.enabled", false)
+
+fun isNewRefactoredTreeEnabled(): Boolean = Registry.`is`("snyk.preview.new.refactored.tree.enabled", false)
+
+fun getWaitForResultsTimeout(): Long =
+    Registry.intValue(
+        "snyk.timeout.results.waiting",
+        DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
+    ).toLong()
+
+const val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MIN = 12L
+val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS =
+    TimeUnit.MILLISECONDS.convert(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MIN, TimeUnit.MINUTES).toInt()
+
+fun getSSLContext(): SSLContext {
+    val trustManager = getX509TrustManager()
+    val sslContext = SSLContext.getInstance("TLSv1.2")
+    sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
+    return sslContext
+}
+
+fun getX509TrustManager(): X509TrustManager {
+    val trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(
+        TrustManagerFactory.getDefaultAlgorithm()
+    )
+    trustManagerFactory.init(null as KeyStore?)
+    val trustManagers: Array<TrustManager> = trustManagerFactory.trustManagers
+    check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
+        ("Unexpected default trust managers:${trustManagers.contentToString()}")
+    }
+    return trustManagers[0] as X509TrustManager
 }

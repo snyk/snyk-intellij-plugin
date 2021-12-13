@@ -6,11 +6,14 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.analytics.Iteratively
-import io.snyk.plugin.getApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
+import snyk.analytics.AuthenticateButtonIsClicked
 import snyk.analytics.HealthScoreIsClicked
-import snyk.analytics.IssueIsViewed
+import snyk.analytics.IssueInTreeIsClicked
+import snyk.analytics.PluginIsInstalled
+import snyk.analytics.PluginIsUninstalled
 import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 
@@ -18,7 +21,8 @@ import snyk.analytics.WelcomeIsViewed
 class SnykAnalyticsService : Disposable {
     private val log = logger<SnykAnalyticsService>()
     private val itly = Iteratively
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
 
     private var userId = ""
 
@@ -97,13 +101,13 @@ class SnykAnalyticsService : Disposable {
         }
     }
 
-    fun logIssueIsViewed(event: IssueIsViewed) {
+    fun logIssueInTreeIsClicked(event: IssueInTreeIsClicked) {
         if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
 
-        catchAll(log, "issueIsViewed") {
-            itly.logIssueIsViewed(userId, event)
+        catchAll(log, "issueInTreeIsClicked") {
+            itly.logIssueInTreeIsClicked(userId, event)
         }
     }
 
@@ -114,6 +118,30 @@ class SnykAnalyticsService : Disposable {
 
         catchAll(log, "healthScoreIsClicked") {
             itly.logHealthScoreIsClicked(userId, event)
+        }
+    }
+
+    fun logPluginIsInstalled(event: PluginIsInstalled) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "pluginIsInstalled") {
+            itly.logPluginIsInstalled(userId, event)
+        }
+    }
+
+    fun logPluginIsUninstalled(event: PluginIsUninstalled) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "pluginIsUninstalled") {
+            itly.logPluginIsUninstalled(userId, event)
+        }
+    }
+
+    fun logAuthenticateButtonIsClicked(event: AuthenticateButtonIsClicked) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "authenticateButtonIsClicked") {
+            itly.logAuthenticateButtonIsClicked(userId, event)
         }
     }
 

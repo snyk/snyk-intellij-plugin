@@ -10,14 +10,16 @@ import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getSnykCodeSettingsUrl
+import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeAvailable
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.awt.Component
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -31,7 +33,9 @@ class ScanTypesPanel(
     cliScanComments: String? = null,
     private val simplifyForOnboardPanel: Boolean = false
 ) {
-    private val settings = getApplicationSettingsStateService()
+    private val settings
+        get() = pluginSettings()
+
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
 
     private var snykCodeCheckbox: JBCheckBox? = null
@@ -49,12 +53,12 @@ class ScanTypesPanel(
     val panel = panel {
         row {
             cell {
-                val ossCheckbox = checkBox(
+                checkBox(
                     "Snyk Open Source vulnerabilities",
                     { settings.ossScanEnable },
                     { settings.ossScanEnable = it },
                     cliScanComments
-                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                )
                 label("").component.convertIntoHelpHintLabel(
                     "Find and automatically fix open source vulnerabilities"
                 )
@@ -67,11 +71,26 @@ class ScanTypesPanel(
                     { settings.advisorEnable },
                     { settings.advisorEnable = it },
                     null
-                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                )
                 label("").component.convertIntoHelpHintLabel(
                     "Discover the health (maintenance, community, popularity & security)\n" +
                         "status of your open source packages"
                 )
+            }
+        }
+        if (isIacEnabled()) {
+            row {
+                cell {
+                    checkBox(
+                        "Snyk Infrastructure as Code issues",
+                        { settings.iacScanEnabled },
+                        { settings.iacScanEnabled = it },
+                        null
+                    )
+                    label("").component.convertIntoHelpHintLabel(
+                        "Find and fix insecure configurations in Terraform and Kubernetes code"
+                    )
+                }
             }
         }
         row {
@@ -80,7 +99,7 @@ class ScanTypesPanel(
                     SNYK_CODE_SECURITY_ISSUES,
                     { settings.snykCodeSecurityIssuesScanEnable },
                     { settings.snykCodeSecurityIssuesScanEnable = it }
-                ).withLeftGap(2) // needed due to bug with selection: left side is cut
+                )
                     .component
                 label("").component.convertIntoHelpHintLabel(
                     "Find and fix vulnerabilities in your application code in real time"
@@ -122,6 +141,9 @@ class ScanTypesPanel(
                     .withLargeLeftGap()
             }
         }
+    }.apply {
+        name = "scanTypesPanel"
+        border = JBUI.Borders.empty(2)
     }
 
     private fun JLabel.convertIntoHelpHintLabel(text: String) {
@@ -134,7 +156,7 @@ class ScanTypesPanel(
     inner class ShowHintMouseAdapter(val component: Component, val text: String) : MouseAdapter() {
         override fun mouseClicked(e: MouseEvent?) {
             currentHint?.hide()
-            currentHint = SnykBalloonNotifications.showInfoBalloonForComponent(text, component, true)
+            currentHint = SnykBalloonNotificationHelper.showInfoBalloonForComponent(text, component, true)
         }
     }
 

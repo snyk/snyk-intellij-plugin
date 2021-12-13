@@ -1,26 +1,37 @@
 package snyk.iac
 
-class IacIssuesForFile {
-    lateinit var infrastructureAsCodeIssues: Array<IacIssue>
-    lateinit var targetFile: String
-    lateinit var packageManager: String
+import com.google.gson.annotations.Expose
 
+data class IacIssuesForFile(
+    val infrastructureAsCodeIssues: List<IacIssue>,
+    val targetFile: String,
+    val targetFilePath: String,
+    val packageManager: String,
+    @Expose val obsolete: Boolean = false
+) {
     val uniqueCount: Int get() = infrastructureAsCodeIssues.groupBy { it.id }.size
-}
 
-class IacIssue {
-    lateinit var id: String
-    lateinit var title: String
-    lateinit var severity: String
+    @Suppress("DuplicatedCode")
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-    lateinit var publicId: String
-    lateinit var documentation: String
-    lateinit var lineNumber: Integer
+        other as IacIssuesForFile
 
-    lateinit var issue: String
-    lateinit var impact: String
-    var resolve: String? = null
+        if (infrastructureAsCodeIssues != other.infrastructureAsCodeIssues) return false
+        if (targetFile != other.targetFile) return false
+        if (targetFilePath != other.targetFilePath) return false
+        if (packageManager != other.packageManager) return false
 
-    lateinit var references: List<String>
-    lateinit var path: List<String>
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = infrastructureAsCodeIssues.hashCode()
+        result = 31 * result + targetFile.hashCode()
+        result = 31 * result + targetFilePath.hashCode()
+        result = 31 * result + packageManager.hashCode()
+        return result
+    }
+
 }

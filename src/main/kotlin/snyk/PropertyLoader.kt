@@ -2,6 +2,7 @@ package snyk
 
 import com.intellij.openapi.diagnostic.logger
 import snyk.PropertyLoader.PropertyKeys.ENVIRONMENT
+import snyk.PropertyLoader.PropertyKeys.SEGMENT_ANALYTICS_WRITE_KEY
 import snyk.PropertyLoader.PropertyKeys.SENTRY_DSN
 import java.io.IOException
 import java.util.Properties
@@ -34,6 +35,15 @@ object PropertyLoader {
         loadedValue ?: defaultValue
     }
 
+    val segmentWriteKey: String by lazy {
+        val loadedValue = properties.getProperty(SEGMENT_ANALYTICS_WRITE_KEY)
+        val defaultValue = ""
+        if (loadedValue == null) {
+            logMissingProperty(SEGMENT_ANALYTICS_WRITE_KEY, defaultValue)
+        }
+        loadedValue ?: defaultValue
+    }
+
     /**
      * The Sentry DSN
      */
@@ -55,6 +65,7 @@ object PropertyLoader {
      */
     private object PropertyKeys {
         const val ENVIRONMENT = "environment"
+        const val SEGMENT_ANALYTICS_WRITE_KEY = "segment.analytics.write-key"
         const val SENTRY_DSN = "sentry.dsn"
     }
 }

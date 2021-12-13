@@ -37,6 +37,8 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = false
+    var iacScanEnabled: Boolean = false
+
     var sastOnServerEnabled: Boolean? = null
     var usageAnalyticsEnabled = true
     var crashReportingEnabled = true
@@ -48,12 +50,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     var lastCheckDate: Date? = null
     var pluginFirstRun = true
+    var pluginInstalled = false
     // Instant could not be used here due to serialisation Exception
     var pluginFirstInstallTime: Date = Date.from(Instant.now())
-    var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now()) // we'll give 2 weeks to evaluate initially
+    var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
     var showFeedbackRequest = true
 
-    // experiment section
     var scanningReminderWasShown: Boolean = false
 
     /**
@@ -67,6 +69,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         XmlSerializerUtil.copyBean(state, this)
     }
 
+    @Suppress("DEPRECATION")
     override fun initializeComponent() {
         super.initializeComponent()
         // migration for old users
@@ -91,6 +94,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     }
 
     fun setLastCheckDate(localDate: LocalDateTime) {
-        this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant());
+        this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant())
     }
 }

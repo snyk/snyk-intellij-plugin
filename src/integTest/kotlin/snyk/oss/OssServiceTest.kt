@@ -2,21 +2,26 @@ package snyk.oss
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
+import io.mockk.every
+import io.mockk.mockk
 import io.snyk.plugin.cli.ConsoleCommandRunner
-import io.snyk.plugin.getApplicationSettingsStateService
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.removeDummyCliFile
+import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
-import org.mockito.Mockito
 
 class OssServiceTest : LightPlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
+        resetSettings(project)
+        removeDummyCliFile()
 
-        val settingsStateService = getApplicationSettingsStateService()
+        val settingsStateService = pluginSettings()
 
         settingsStateService.ignoreUnknownCA = false
         settingsStateService.usageAnalyticsEnabled = true
@@ -27,6 +32,58 @@ class OssServiceTest : LightPlatformTestCase() {
         settingsStateService.organization = ""
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = ""
+    }
+
+    override fun tearDown() {
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDefaults() {
+        setupDummyCliFile()
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains(getCliFile().absolutePath))
+        assertTrue(cliCommands.contains("fake_cli_command"))
+        assertTrue(cliCommands.contains("--json"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
+        setupDummyCliFile()
+        pluginSettings().usageAnalyticsEnabled = false
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains("--DISABLE_ANALYTICS"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithFileParameter() {
+        setupDummyCliFile()
+
+        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains("--file=package.json"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithMultiAdditionalParameters() {
+        setupDummyCliFile()
+
+        project.service<SnykProjectSettingsStateService>().additionalParameters =
+            "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
+
+        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains("--file=package.json"))
+        assertTrue(cliCommands.contains("--configuration-matching='iamaRegex'"))
+        assertTrue(cliCommands.contains("--sub-project=snyk"))
     }
 
     @Test
@@ -57,17 +114,17 @@ class OssServiceTest : LightPlatformTestCase() {
     fun testScanWithErrorResult() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+        val mockRunner = mockk<ConsoleCommandRunner>()
 
-        Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
-            .thenReturn("""
-                    {
-                      "ok": false,
-                      "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
-                      "path": "/Users/user/Desktop/example-npm-project"
-                    }
-                """.trimIndent())
+        every {
+            mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
+        } returns """
+              {
+                  "ok": false,
+                  "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
+                  "path": "/Users/user/Desktop/example-npm-project"
+              }
+            """.trimIndent()
 
         getOssService(project).setConsoleCommandRunner(mockRunner)
 
@@ -84,11 +141,11 @@ class OssServiceTest : LightPlatformTestCase() {
     fun testScanWithSuccessfulCliResult() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+        val mockRunner = mockk<ConsoleCommandRunner>()
 
-        Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
-            .thenReturn(getResourceAsString("group-vulnerabilities-test.json"))
+        every {
+            mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
+        } returns getResourceAsString("group-vulnerabilities-test.json")
 
         getOssService(project).setConsoleCommandRunner(mockRunner)
 
@@ -109,11 +166,11 @@ class OssServiceTest : LightPlatformTestCase() {
     fun testScanWithLicenseVulnerabilities() {
         setupDummyCliFile()
 
-        val mockRunner = Mockito.mock(ConsoleCommandRunner::class.java)
+        val mockRunner = mockk<ConsoleCommandRunner>()
 
-        Mockito
-            .`when`(mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project))
-            .thenReturn(getResourceAsString("licence-vulnerabilities.json"))
+        every {
+            mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
+        } returns getResourceAsString("licence-vulnerabilities.json")
 
         getOssService(project).setConsoleCommandRunner(mockRunner)
 
@@ -167,7 +224,10 @@ class OssServiceTest : LightPlatformTestCase() {
         val rawMissedFixedInFieldCliString = getResourceAsString("licence-vulnerabilities.json")
         val cliResult = cli.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString)
         assertTrue(cliResult.isSuccessful())
-        assertNotNull(cliResult.allCliIssues?.find { it.vulnerabilities.any { it.fixedIn == null } })
+        assertNotNull(cliResult.allCliIssues?.find { it ->
+            it.vulnerabilities
+                .any { vulnerability -> vulnerability.fixedIn == null }
+        })
 
         touchAllFields(cliResult)
     }
@@ -205,14 +265,14 @@ class OssServiceTest : LightPlatformTestCase() {
         touchAllFields(cliResult)
     }
 
-    private  fun touchAllFields(ossResultToCheck: OssResult) {
+    private fun touchAllFields(ossResultToCheck: OssResult) {
         ossResultToCheck.allCliIssues?.forEach {
             it.displayTargetFile
             it.packageManager
             it.projectName
             it.uniqueCount
             it.vulnerabilities.forEach { vuln ->
-                with(vuln){
+                with(vuln) {
                     id
                     license
                     identifiers?.CVE

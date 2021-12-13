@@ -2,13 +2,13 @@ package io.snyk.plugin.ui.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
-import io.snyk.plugin.getApplicationSettingsStateService
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 
 abstract class SnykTreeSeverityFilterActionBase : ToggleAction() {
 
     protected fun isLastSeverityDisabling(e: AnActionEvent): Boolean {
-        val settings = getApplicationSettingsStateService()
+        val settings = pluginSettings()
 
         val onlyOneEnabled = arrayOf(
             settings.criticalSeverityEnabled,
@@ -18,7 +18,10 @@ abstract class SnykTreeSeverityFilterActionBase : ToggleAction() {
         ).count { it } == 1
 
         if (onlyOneEnabled) {
-            SnykBalloonNotifications.showWarnBalloonAtEventPlace("At least one Severity type should be selected", e)
+            SnykBalloonNotificationHelper.showWarnBalloonAtEventPlace(
+                "At least one Severity type should be selected",
+                e
+            )
         }
 
         return onlyOneEnabled

@@ -11,7 +11,9 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
-import io.snyk.plugin.ui.SnykBalloonNotifications
+import io.snyk.plugin.getWaitForResultsTimeout
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
 import java.nio.charset.Charset
 
@@ -38,7 +40,9 @@ open class ConsoleCommandRunner {
             OSProcessHandler(generalCommandLine)
         } catch (e: ExecutionException) {
             //  if CLI is still downloading (or temporarily blocked by Antivirus) we'll get ProcessNotCreatedException
-            SnykBalloonNotifications.showWarn("Not able to run CLI, try again later.", project)
+            val message = "Not able to run CLI, try again later."
+            SnykBalloonNotificationHelper.showWarn(message, project)
+            logger.warn(message, e)
             return ""
         }
         val parentIndicator = ProgressManager.getInstance().progressIndicator
@@ -63,7 +67,17 @@ open class ConsoleCommandRunner {
         }
 
         logger.debug("Execute ScriptRunnerUtil.getProcessOutput(...)")
-        val processOutput = ScriptRunnerUtil.getProcessOutput(processHandler, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
+        val timeout = getWaitForResultsTimeout()
+        val processOutput = try {
+            ScriptRunnerUtil.getProcessOutput(
+                processHandler,
+                ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER,
+                timeout
+            )
+        } catch (e: ExecutionException) {
+            SentryErrorReporter.captureException(e)
+            "Execution timeout [${timeout / 1000} sec] is reached with NO results produced"
+        }
 
         return if (wasProcessTerminated) PROCESS_CANCELLED_BY_USER else processOutput
     }

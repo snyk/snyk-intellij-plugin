@@ -3,7 +3,7 @@ package snyk.amplitude
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.getApplicationSettingsStateService
+import org.jetbrains.annotations.TestOnly
 import snyk.amplitude.api.AmplitudeExperimentApiClient
 import snyk.amplitude.api.AmplitudeExperimentApiClient.Defaults.FALLBACK_VARIANT
 import snyk.amplitude.api.ExperimentUser
@@ -16,8 +16,13 @@ private val LOG = logger<AmplitudeExperimentService>()
 
 @Service
 class AmplitudeExperimentService : Disposable {
+    companion object {
+        const val CHANGE_AUTHENTICATE_BUTTON = "ide-jetbrains-change-authenticate-button-and-first-time-workflow"
+        const val TREATMENT_GROUP = "treatment"
+        private val storage: ConcurrentHashMap<String, Variant> = ConcurrentHashMap()
+    }
+
     private var apiClient: AmplitudeExperimentApiClient? = null
-    private val storage: ConcurrentHashMap<String, Variant> = ConcurrentHashMap()
     private var user: ExperimentUser = ExperimentUser("")
 
     init {
@@ -43,7 +48,6 @@ class AmplitudeExperimentService : Disposable {
             LOG.warn("Amplitude experiment was not initialized, no results will be fetched for $user")
             return
         }
-
         this.user = user
         val variants = this.apiClient?.allVariants(this.user) ?: emptyMap()
         storeVariants(variants)
@@ -61,12 +65,13 @@ class AmplitudeExperimentService : Disposable {
         LOG.debug("Stored variants: $variants")
     }
 
-    fun isShowScanningReminderEnabled(): Boolean {
-        val variant = storage["intellij-show-scanning-reminder"] ?: return false
+    fun isPartOfExperimentalWelcomeWorkflow(): Boolean {
+        val variant = storage[CHANGE_AUTHENTICATE_BUTTON] ?: return false
+        return variant.value == TREATMENT_GROUP
+    }
 
-        val settings = getApplicationSettingsStateService()
-        LOG.debug("Scanning reminder: variant - ${variant.value}, was shown - ${settings.scanningReminderWasShown}")
-
-        return variant.value == "test" && !settings.scanningReminderWasShown
+    @TestOnly
+    fun setApiClient(apiClient: AmplitudeExperimentApiClient) {
+        this.apiClient = apiClient
     }
 }

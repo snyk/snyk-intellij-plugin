@@ -76,6 +76,7 @@ class SnykErrorPanel(snykError: SnykError) : JPanel() {
         pathTextArea.isOpaque = false
         pathTextArea.isEditable = false
         pathTextArea.background = UIUtil.getPanelBackground()
+        pathTextArea.name = "pathTextArea"
 
         pathPanel.add(ScrollPaneFactory.createScrollPane(pathTextArea, true),
             GridConstraints(
@@ -134,6 +135,7 @@ class SnykErrorPanel(snykError: SnykError) : JPanel() {
         errorMessageTextArea.isOpaque = false
         errorMessageTextArea.isEditable = false
         errorMessageTextArea.background = UIUtil.getPanelBackground()
+        errorMessageTextArea.name = "errorMessageTextArea"
 
         messagePanel.add(ScrollPaneFactory.createScrollPane(errorMessageTextArea, true),
             GridConstraints(

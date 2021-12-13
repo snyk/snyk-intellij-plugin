@@ -7,6 +7,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import io.snyk.plugin.resetSettings
 import java.io.File
 import java.io.FileNotFoundException
 
@@ -17,7 +18,13 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
+        resetSettings(project)
         ModuleRootModificationUtil.addContentRoot(module, project.basePath!!)
+    }
+
+    override fun tearDown() {
+        resetSettings(project)
+        super.tearDown()
     }
 
     fun testGenericDcIgnoreAddedOnProjectOpening() {

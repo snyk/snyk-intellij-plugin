@@ -23,25 +23,26 @@ repositories {
 }
 
 dependencies {
-  implementation("com.atlassian.commonmark:commonmark:0.15.2")
-  implementation("com.google.code.gson:gson:2.8.6")
-  implementation("com.segment.analytics.java:analytics:3.1.0")
-  implementation("io.sentry:sentry:5.1.2")
-  implementation("io.snyk.code.sdk:snyk-code-client:2.1.10")
-  implementation("ly.iterative.itly:plugin-iteratively:1.2.7")
-  implementation("ly.iterative.itly:plugin-schema-validator:1.2.7") {
+  implementation("org.commonmark:commonmark:0.18.1")
+  implementation("com.google.code.gson:gson:2.8.9")
+  implementation("com.segment.analytics.java:analytics:3.1.3")
+  implementation("io.sentry:sentry:5.4.3")
+  implementation("io.snyk.code.sdk:snyk-code-client:2.2.0")
+  implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
+  implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
     exclude(group = "org.slf4j")
   }
-  implementation("ly.iterative.itly:sdk-jvm:1.2.7")
-
-  testImplementation("com.squareup.okhttp3:mockwebserver:4.9.1")
-  testImplementation("junit:junit:4.13") {
+  implementation("ly.iterative.itly:sdk-jvm:1.2.11")
+  testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+  testImplementation("junit:junit:4.13.2") {
     exclude(group = "org.hamcrest")
   }
   testImplementation("org.hamcrest:hamcrest:2.2")
-  testImplementation("org.mockito:mockito-core:3.5.2")
+  testImplementation("io.mockk:mockk:1.12.1")
+  testImplementation("org.awaitility:awaitility:4.1.1")
+  runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.4.32")
 
-  detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
+  detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.19.0")
 }
 
 // configuration for gradle-intellij-plugin plugin.
@@ -92,7 +93,6 @@ tasks {
       val tokens = mapOf(
         "amplitude.experiment.api-key" to amplitudeExperimentApiKey,
         "environment" to environment,
-        "iteratively.analytics.environment" to environment,
         "segment.analytics.write-key" to segmentWriteKey,
         "sentry.dsn" to sentryDsnKey
       )
