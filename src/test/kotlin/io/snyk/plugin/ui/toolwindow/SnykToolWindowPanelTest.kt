@@ -123,6 +123,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { settings.pluginFirstRun } returns true
         mockkStatic(Registry::class)
         every { Registry.`is`("snyk.preview.iac.enabled", false) } returns true
+        every { Registry.`is`("snyk.preview.container.enabled", false) } returns true
 
         SnykToolWindowPanel(project)
 
@@ -130,6 +131,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
             snykApiServiceMock.sastOnServerEnabled
             settings.sastOnServerEnabled = true
             settings.iacScanEnabled = true
+            settings.containerScanEnabled = true
             settings.advisorEnable = true
             settings.ossScanEnable = true
             settings.snykCodeSecurityIssuesScanEnable = true
