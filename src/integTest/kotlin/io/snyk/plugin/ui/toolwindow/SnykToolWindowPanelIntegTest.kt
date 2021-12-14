@@ -11,17 +11,21 @@ import com.intellij.testFramework.TestActionEvent
 import com.intellij.util.ui.tree.TreeUtil
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.setupDummyCliFile
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
 import org.junit.Test
 import snyk.common.SnykError
@@ -35,6 +39,7 @@ import javax.swing.JButton
 import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
 
+@Suppress("FunctionName")
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private val iacGoofJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")
@@ -88,6 +93,58 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         getIacService(project).setConsoleCommandRunner(mockRunner)
 
         project.service<SnykTaskQueueService>().scan()
+    }
+
+    @Test
+    fun `test should not display error when no OSS supported file found`() {
+        mockkObject(SnykBalloonNotificationHelper)
+
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        val snykError = SnykError("Could not detect supported target files in", project.basePath.toString())
+        val snykErrorControl = SnykError("control", project.basePath.toString())
+
+        toolWindowPanel.snykScanListener.scanningOssError(snykErrorControl)
+        toolWindowPanel.snykScanListener.scanningOssError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(snykErrorControl.message, project)
+            SnykBalloonNotificationHelper.showInfo(snykError.message, project)
+        }
+        assertTrue(toolWindowPanel.currentOssError == null)
+        assertTrue(toolWindowPanel.currentOssResults == null)
+        assertEquals(SnykToolWindowPanel.OSS_ROOT_TEXT, toolWindowPanel.getRootOssIssuesTreeNode().userObject)
+    }
+
+    @Test
+    fun `test should display '(error)' in OSS root tree node when result is empty and error occurs`() {
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        val snykError = SnykError("an error", project.basePath.toString())
+        toolWindowPanel.snykScanListener.scanningOssError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        assertTrue(toolWindowPanel.currentOssError == snykError)
+        assertTrue(toolWindowPanel.currentOssResults == null)
+        assertEquals(
+            SnykToolWindowPanel.OSS_ROOT_TEXT + " (error)",
+            toolWindowPanel.getRootOssIssuesTreeNode().userObject
+        )
+    }
+
+    @Test
+    fun `test should display 'scanning' in OSS root tree node when it is scanning`() {
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isOssRunning(project) } returns true
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        toolWindowPanel.updateTreeRootNodesPresentation(null, 0, 0, 0)
+        assertTrue(toolWindowPanel.currentOssResults == null)
+        assertEquals(
+            SnykToolWindowPanel.OSS_ROOT_TEXT + " (scanning...)",
+            toolWindowPanel.getRootOssIssuesTreeNode().userObject
+        )
     }
 
     @Test

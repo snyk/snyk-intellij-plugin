@@ -5,6 +5,7 @@ import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.runBackgroundableTask
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.FileUtil.pathsEqual
 import com.intellij.openapi.vfs.VirtualFile
@@ -33,34 +34,38 @@ private val LOG = logger<SnykBulkFileListener>()
 class SnykBulkFileListener : BulkFileListener {
 
     override fun after(events: MutableList<out VFileEvent>) {
-        updateCaches(
-            events,
-            listOf(
-                VFileCreateEvent::class.java,
-                VFileContentChangeEvent::class.java,
-                VFileMoveEvent::class.java,
-                VFileCopyEvent::class.java
+        if (isFileListenerEnabled()) {
+            updateCaches(
+                events,
+                listOf(
+                    VFileCreateEvent::class.java,
+                    VFileContentChangeEvent::class.java,
+                    VFileMoveEvent::class.java,
+                    VFileCopyEvent::class.java
+                )
             )
-        )
 
-        if (isContainerEnabled()) {
-            for (project in ProjectUtil.getOpenProjects()) {
-                getKubernetesImageCache(project).extractFromEvents(events)
+            if (isContainerEnabled()) {
+                for (project in ProjectUtil.getOpenProjects()) {
+                    getKubernetesImageCache(project).extractFromEvents(events)
+                }
             }
         }
     }
 
     override fun before(events: MutableList<out VFileEvent>) {
-        cleanCaches(
-            events,
-            listOf(
-                VFileCreateEvent::class.java,
-                VFileContentChangeEvent::class.java,
-                VFileMoveEvent::class.java,
-                VFileCopyEvent::class.java,
-                VFileDeleteEvent::class.java
+        if (isFileListenerEnabled()) {
+            cleanCaches(
+                events,
+                listOf(
+                    VFileCreateEvent::class.java,
+                    VFileContentChangeEvent::class.java,
+                    VFileMoveEvent::class.java,
+                    VFileCopyEvent::class.java,
+                    VFileDeleteEvent::class.java
+                )
             )
-        )
+        }
     }
 
     private fun cleanCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<*>>) {
@@ -132,28 +137,30 @@ class SnykBulkFileListener : BulkFileListener {
         val project = toolWindowPanel.project
 
         runBackgroundableTask("Updating Snyk Infrastructure As Code Cache...", project, true) {
-            var changed = false
+            DumbService.getInstance(project).runReadActionInSmartMode {
+                var changed = false
 
-            val newIacFileList = iacFiles.toMutableList()
-            virtualFilesAffected
-                .filter { iacFileExtensions.contains(it.extension) }
-                .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
-                .forEach {
-                    changed = true // for new files we need to "dirty" the cache, too
-                    newIacFileList.forEachIndexed { i, iacIssuesForFile ->
-                        if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
-                            val obsoleteIacFile = makeObsolete(iacIssuesForFile)
-                            newIacFileList[i] = obsoleteIacFile
+                val newIacFileList = iacFiles.toMutableList()
+                virtualFilesAffected
+                    .filter { iacFileExtensions.contains(it.extension) }
+                    .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
+                    .forEach {
+                        changed = true // for new files we need to "dirty" the cache, too
+                        newIacFileList.forEachIndexed { i, iacIssuesForFile ->
+                            if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
+                                val obsoleteIacFile = makeObsolete(iacIssuesForFile)
+                                newIacFileList[i] = obsoleteIacFile
+                            }
                         }
                     }
-                }
 
-            if (changed) {
-                val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
-                toolWindowPanel.currentIacResult = newIacCache
-                toolWindowPanel.displayIacResults(newIacCache)
-                toolWindowPanel.iacScanNeeded = true
-                DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
+                if (changed) {
+                    val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
+                    toolWindowPanel.currentIacResult = newIacCache
+                    toolWindowPanel.displayIacResults(newIacCache)
+                    toolWindowPanel.iacScanNeeded = true
+                    DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
+                }
             }
         }
     }

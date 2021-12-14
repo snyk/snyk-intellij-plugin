@@ -174,6 +174,8 @@ fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", false)
 
 fun isContainerEnabled(): Boolean = Registry.`is`("snyk.preview.container.enabled", false)
 
+fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
+
 fun isNewRefactoredTreeEnabled(): Boolean = Registry.`is`("snyk.preview.new.refactored.tree.enabled", false)
 
 fun getWaitForResultsTimeout(): Long =

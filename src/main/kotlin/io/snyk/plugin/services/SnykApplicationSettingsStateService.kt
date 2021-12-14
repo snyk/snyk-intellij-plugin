@@ -23,6 +23,7 @@ import java.util.UUID
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
+    var fileListenerEnabled: Boolean = true
     var token: String? = null
     var customEndpointUrl: String? = null
     var organization: String? = null
