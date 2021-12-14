@@ -2,7 +2,8 @@
 
 ## [2.4.8]
 ### Fixed
-- use Snyk Code API 2.2.1
+- don't show an error, when no supported package manager was found for Snyk OSS
+- use Snyk Code API 2.2.1, gives support to automatically handling empty files
 - updated dependencies
 
 ## [2.4.7]
