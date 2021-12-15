@@ -15,6 +15,8 @@ fix advice:
 - **Code Quality** - code quality issues in your own code.
 - **Open Source Advisor** - health test for the direct dependencies you are using. Including: popularity, maintenance, risk & community insights.
 
+**Snyk detects the critical vulnerability Log4Shell, which was found in the open source Java library log4j-core - a component of one of the most popular Java logging frameworks, Log4J. The vulnerability was categorized as Critical with a CVSS score of 10, and with a mature exploit level.**
+
 ### Useful links
 
 - This plugin works with projects written in Java, JavaScript, .NET and many more languages. See the [full list of languages and package managers Snyk supports](https://snyk.co/ucWSd)
