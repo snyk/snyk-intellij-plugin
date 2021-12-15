@@ -4,8 +4,8 @@ import io.snyk.plugin.Severity
 import java.time.Instant
 import snyk.common.SnykError
 
-abstract class CliResult<CliIssuesForFile>(
-    var allCliIssues: List<CliIssuesForFile>?,
+abstract class CliResult<CliIssues>(
+    var allCliIssues: List<CliIssues>?,
     var error: SnykError?
 ) {
 

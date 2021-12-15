@@ -62,6 +62,7 @@ import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
+import snyk.container.ContainerResult
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -87,11 +88,9 @@ import javax.swing.tree.TreePath
  */
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
-
     var iacScanNeeded: Boolean = false
     var snykScanListener: SnykScanListener
     private val scrollPaneAlarm = Alarm()
-
     private var descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
 
     var currentOssResults: OssResult? = null
@@ -102,6 +101,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             return field
         }
+
+    var currentContainerResult: ContainerResult? = null
+    var currentContainerError: SnykError? = null
 
     var currentOssError: SnykError? = null
 
@@ -191,6 +193,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 )
             }
 
+            override fun scanningContainerFinished(containerResult: ContainerResult) {
+                currentContainerResult = containerResult
+                ApplicationManager.getApplication().invokeLater {
+                    // todo display container results
+                }
+                service<SnykAnalyticsService>().logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(Result.SUCCESS)
+                        .build()
+                )
+            }
+
             private fun logSnykCodeAnalysisIsReady(result: Result) {
                 fun doLogSnykCodeAnalysisIsReady(analysisType: AnalysisIsReady.AnalysisType) {
                     service<SnykAnalyticsService>().logAnalysisIsReady(
@@ -256,6 +272,24 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(Result.ERROR)
+                        .build()
+                )
+            }
+
+            override fun scanningContainerError(snykError: SnykError) {
+                currentContainerResult = null
+                ApplicationManager.getApplication().invokeLater {
+                    SnykBalloonNotificationHelper.showError(snykError.message, project)
+                    currentContainerError = snykError
+                    removeAllChildren(listOf(rootContainerIssuesTreeNode))
+                    updateTreeRootNodesPresentation()
+                    displayEmptyDescription()
+                }
+                service<SnykAnalyticsService>().logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
                         .ide(AnalysisIsReady.Ide.JETBRAINS)
                         .result(Result.ERROR)
                         .build()

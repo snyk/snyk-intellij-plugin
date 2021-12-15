@@ -5,7 +5,7 @@ import junit.framework.TestCase.assertTrue
 import org.junit.Test
 
 class YAMLImageExtractorTest {
-    val yaml =
+    private val yaml =
         """
         apiVersion: asdf
         kind: CronJob

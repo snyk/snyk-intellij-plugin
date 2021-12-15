@@ -23,6 +23,7 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
+import snyk.container.ContainerService
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.amplitude.AmplitudeExperimentService
 import snyk.container.KubernetesImageCache
@@ -49,6 +50,8 @@ fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.s
 fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.serviceIfNotDisposed()
 
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
+
+fun getContainerService(project: Project): ContainerService = project.service()
 
 fun getAmplitudeExperimentService(project: Project): AmplitudeExperimentService? = project.serviceIfNotDisposed()
 

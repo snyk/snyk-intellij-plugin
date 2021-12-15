@@ -20,6 +20,7 @@ import org.awaitility.Awaitility.await
 import org.junit.Test
 import snyk.container.KubernetesImageCache
 import snyk.container.KubernetesImageCacheIntegTest
+import snyk.container.TestYamls
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import snyk.iac.ui.toolwindow.IacFileTreeNode
@@ -168,7 +169,7 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
             val file = PsiManager.getInstance(project).findFile(virtualFile)
             require(file != null)
             PsiDocumentManager.getInstance(project).getDocument(file)
-                ?.setText(KubernetesImageCacheIntegTest().podYaml())
+                ?.setText(TestYamls.podYaml())
         }
         FileDocumentManager.getInstance().saveAllDocuments()
 
@@ -178,7 +179,7 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         assertNotEmpty(kubernetesWorkloadFiles)
         assertEquals(1, kubernetesWorkloadFiles.size)
         assertEquals(path, kubernetesWorkloadFiles.first().psiFile.virtualFile.toNioPath())
-        assertEquals("nginx:1.14.2", kubernetesWorkloadFiles.first().image)
+        assertEquals("nginx:1.16.0", kubernetesWorkloadFiles.first().image)
         virtualFile.toNioPath().delete(true)
     }
 
@@ -189,7 +190,7 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
 
         ApplicationManager.getApplication().runWriteAction {
             PsiDocumentManager.getInstance(project).getDocument(file)
-                ?.setText(KubernetesImageCacheIntegTest().podYaml())
+                ?.setText(TestYamls.podYaml())
         }
         FileDocumentManager.getInstance().saveAllDocuments()
         assertNotEmpty(imageCache.getKubernetesWorkloadImages())

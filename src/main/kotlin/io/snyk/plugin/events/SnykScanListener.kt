@@ -1,10 +1,11 @@
 package io.snyk.plugin.events
 
 import com.intellij.util.messages.Topic
-import snyk.common.SnykError
-import snyk.oss.OssResult
 import io.snyk.plugin.snykcode.SnykCodeResults
+import snyk.common.SnykError
+import snyk.container.ContainerResult
 import snyk.iac.IacResult
+import snyk.oss.OssResult
 
 interface SnykScanListener {
     companion object {
@@ -25,4 +26,8 @@ interface SnykScanListener {
     fun scanningIacError(snykError: SnykError)
 
     fun scanningSnykCodeError(snykError: SnykError)
+
+    fun scanningContainerFinished(containerResult: ContainerResult)
+
+    fun scanningContainerError(snykError: SnykError)
 }
