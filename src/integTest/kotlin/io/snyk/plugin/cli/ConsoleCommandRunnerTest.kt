@@ -20,8 +20,10 @@ import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
+import io.snyk.plugin.setupDummyCliFile
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -135,9 +137,10 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     @Before
     override fun setUp() {
         super.setUp()
-        // don't report to Sentry when running this test
         unmockkAll()
         resetSettings(project)
+        setupDummyCliFile()
+        // don't report to Sentry when running this test
         mockkObject(SentryErrorReporter)
         every { SentryErrorReporter.captureException(any()) } returns SentryId()
     }
@@ -146,6 +149,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     override fun tearDown() {
         unmockkAll()
         resetSettings(project)
+        removeDummyCliFile()
         super.tearDown()
     }
 }
