@@ -121,11 +121,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     private val rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
+    private val rootContainerIssuesTreeNode = RootContainerIssuesTreeNode(project)
     val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
         if (isIacEnabled()) rootTreeNode.add(rootIacIssuesTreeNode)
+        if (isContainerEnabled()) rootTreeNode.add(rootContainerIssuesTreeNode)
         Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -618,11 +620,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
-    /** Params value:
+    /**
+     * public only for Tests
+     * Params value:
      *   `null` - if not qualify for `scanning` or `error` state then do NOT change previous value
      *   `NODE_INITIAL_STATE` - initial state (clean all postfixes)
      */
-    @TestOnly
     fun updateTreeRootNodesPresentation(
         ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
@@ -1000,6 +1003,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     fun getTree() = vulnerabilitiesTree
 
     @TestOnly
+    fun getRootNode() = rootTreeNode
+
+    @TestOnly
     fun getDescriptionPanel() = descriptionPanel
 
     companion object {
@@ -1007,6 +1013,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
         const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
         const val IAC_ROOT_TEXT = " Configuration Issues"
+        const val CONTAINER_ROOT_TEXT = " Container Vulnerabilities"
+
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         const val NO_OSS_FILES = "Could not detect supported target files in"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
@@ -1025,6 +1033,9 @@ class RootQualityIssuesTreeNode(project: Project) :
 
 class RootIacIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project)
+
+class RootContainerIssuesTreeNode(project: Project) :
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CONTAINER_ROOT_TEXT, project)
 
 open class ProjectBasedDefaultMutableTreeNode(userObject: Any, val project: Project) :
     DefaultMutableTreeNode(userObject)
