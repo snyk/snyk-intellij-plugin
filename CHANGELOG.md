@@ -1,5 +1,9 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.9]
+### Changed
+- updated README with Log4Shell detection note
+
 ## [2.4.8]
 ### Fixed
 - don't show an error, when no supported package manager was found for Snyk OSS
@@ -123,7 +127,7 @@
 
 ## [2.1.6]
 ### Fixed
-- Fix [Exception when Settings panel invoked](https://github.com/snyk/snyk-intellij-plugin/issues/121) 
+- Fix [Exception when Settings panel invoked](https://github.com/snyk/snyk-intellij-plugin/issues/121)
 
 ## [2.1.5]
 ### Changed
