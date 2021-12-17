@@ -104,7 +104,7 @@ class ScanTypesPanel(
                         { enabled ->
                             settings.containerScanEnabled = enabled
                             val imagesCache = getKubernetesImageCache(project)
-                            if (enabled) imagesCache.scanProjectForKubernetesFiles() else imagesCache.clear()
+                            if (enabled) imagesCache?.scanProjectForKubernetesFiles() else imagesCache?.clear()
                         },
                         null
                     ).component.apply {

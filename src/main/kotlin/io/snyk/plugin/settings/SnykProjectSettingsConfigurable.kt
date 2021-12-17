@@ -4,6 +4,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getSnykProjectSettingsStateService
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isProjectSettingsAvailable
@@ -59,10 +61,10 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         snykSettingsDialog.saveScanTypeChanges()
 
         if (isProjectSettingsAvailable(project)) {
-            project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
+            getSnykProjectSettingsStateService(project)?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        project.service<SnykToolWindowPanel>().cleanUiAndCaches()
+        getSnykToolWindowPanel(project)?.cleanUiAndCaches()
         getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
     }
 
@@ -86,5 +88,5 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
     private fun isAdditionalParametersModified(): Boolean =
         isProjectSettingsAvailable(project)
-            && snykSettingsDialog.getAdditionalParameters() != project.service<SnykProjectSettingsStateService>().additionalParameters
+            && snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsStateService(project)?.additionalParameters
 }

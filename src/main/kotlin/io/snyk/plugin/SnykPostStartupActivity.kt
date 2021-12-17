@@ -12,7 +12,6 @@ import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
-import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -21,7 +20,6 @@ import snyk.amplitude.AmplitudeExperimentService
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
-import snyk.container.KubernetesImageCache
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
@@ -59,7 +57,7 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         SnykCodeIgnoreInfoHolder.instance.createDcIgnoreIfNeeded(project)
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
-            project.service<SnykTaskQueueService>().downloadLatestRelease()
+            getSnykTaskQueueService(project)?.downloadLatestRelease()
         }
 
         val feedbackRequestShownMoreThenTwoWeeksAgo =
@@ -81,7 +79,7 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         service<AmplitudeExperimentService>().fetch(experimentUser)
 
         if (isContainerEnabled()) {
-            getKubernetesImageCache(project).scanProjectForKubernetesFiles()
+            getKubernetesImageCache(project)?.scanProjectForKubernetesFiles()
         }
     }
 }

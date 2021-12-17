@@ -15,12 +15,16 @@ import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.SnykCodeService
+import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.amplitude.AmplitudeExperimentService
 import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
 import snyk.oss.OssService
@@ -34,13 +38,25 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
-fun getOssService(project: Project): OssService = project.service()
+fun getOssService(project: Project): OssService? = project.serviceIfNotDisposed()
 
-fun getIacService(project: Project): IacScanService = project.service()
+fun getIacService(project: Project): IacScanService? = project.serviceIfNotDisposed()
 
-fun getSnykCode(project: Project): SnykCodeService = project.service()
+fun getSnykCode(project: Project): SnykCodeService? = project.serviceIfNotDisposed()
 
-fun getKubernetesImageCache(project: Project): KubernetesImageCache = project.service()
+fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.serviceIfNotDisposed()
+
+fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.serviceIfNotDisposed()
+
+fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
+
+fun getAmplitudeExperimentService(project: Project): AmplitudeExperimentService? = project.serviceIfNotDisposed()
+
+fun getSnykCliAuthenticationService(project: Project): SnykCliAuthenticationService? = project.serviceIfNotDisposed()
+
+fun getSnykCliDownloaderService(project: Project): SnykCliDownloaderService? = project.serviceIfNotDisposed()
+
+fun getSnykProjectSettingsStateService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
@@ -53,6 +69,10 @@ fun isProjectSettingsAvailable(project: Project?) = nonNull(project) && !project
 fun snykToolWindow(project: Project): ToolWindow? {
     return ToolWindowManager.getInstance(project).getToolWindow(SnykToolWindowFactory.SNYK_TOOL_WINDOW)
 }
+
+// see project.service<T>() in com.intellij.openapi.components
+private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? =
+    if (this.isDisposed) null else getService(T::class.java)
 
 fun <L> getSyncPublisher(project: Project, topic: Topic<L>): L? {
     val messageBus = project.messageBus
@@ -81,7 +101,7 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().ossScanProgressIndicator
+    val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
@@ -89,7 +109,7 @@ fun isSnykCodeRunning(project: Project): Boolean =
     AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
 
 fun isIacRunning(project: Project): Boolean {
-    val indicator = project.service<SnykTaskQueueService>().iacScanProgressIndicator
+    val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 

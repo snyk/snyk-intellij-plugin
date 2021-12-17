@@ -7,18 +7,16 @@ import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.ui.settings.ScanTypesPanel
-import snyk.amplitude.AmplitudeExperimentService
 import snyk.analytics.AnalysisIsTriggered
 import javax.swing.SwingConstants
 
 class OnboardPanel(project: Project) {
     private val disposable = Disposer.newDisposable()
-    private val amplitudeExperimentService = project.service<AmplitudeExperimentService>()
 
     private val scanTypesPanel by lazy {
         return@lazy ScanTypesPanel(
@@ -65,6 +63,6 @@ class OnboardPanel(project: Project) {
                 .build()
         )
 
-        project.service<SnykTaskQueueService>().scan()
+        getSnykTaskQueueService(project)?.scan()
     }
 }

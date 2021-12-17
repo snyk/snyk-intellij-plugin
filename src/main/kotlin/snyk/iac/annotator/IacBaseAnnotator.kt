@@ -3,7 +3,6 @@ package snyk.iac.annotator
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
@@ -13,7 +12,7 @@ import io.snyk.plugin.Severity.Companion.CRITICAL
 import io.snyk.plugin.Severity.Companion.HIGH
 import io.snyk.plugin.Severity.Companion.LOW
 import io.snyk.plugin.Severity.Companion.MEDIUM
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import io.snyk.plugin.getSnykToolWindowPanel
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
 
@@ -28,7 +27,7 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     fun getIssues(psiFile: PsiFile): List<IacIssue> {
         LOG.debug("Calling doAnnotate on ${psiFile.name}")
 
-        val iacResult = psiFile.project.service<SnykToolWindowPanel>().currentIacResult ?: return emptyList()
+        val iacResult = getSnykToolWindowPanel(psiFile.project)?.currentIacResult ?: return emptyList()
         ProgressManager.checkCanceled()
         return getIssuesForFile(psiFile, iacResult)
     }

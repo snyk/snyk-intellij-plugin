@@ -31,6 +31,8 @@ import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getAmplitudeExperimentService
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
@@ -515,7 +517,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         when {
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> {
-                if (project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow()) {
+                if (getAmplitudeExperimentService(project)?.isPartOfExperimentalWelcomeWorkflow() == true) {
                     pluginSettings().pluginFirstRun = false
                     enableProductsAccordingToServerSetting()
                     getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
@@ -538,8 +540,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 .build()
         )
 
-        val taskQueueService = project.service<SnykTaskQueueService>()
-        taskQueueService.scan()
+        getSnykTaskQueueService(project)?.scan()
     }
 
     fun displayAuthPanel() {
@@ -720,7 +721,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         val statePanel = StatePanel(
             "Scanning project for vulnerabilities...",
             "Stop Scanning",
-            Runnable { project.service<SnykTaskQueueService>().stopScan() }
+            Runnable { getSnykTaskQueueService(project)?.stopScan() }
         )
 
         descriptionPanel.add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)

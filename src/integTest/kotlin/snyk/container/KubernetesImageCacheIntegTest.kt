@@ -13,7 +13,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     override fun setUp() {
         super.setUp()
         cut = project.service()
-        getKubernetesImageCache(project).clear()
+        getKubernetesImageCache(project)?.clear()
     }
 
     @Test

@@ -37,6 +37,7 @@ class SnykAuthPanelTest {
         val messageBus = mockk<MessageBus>(relaxed = true)
         every { application.messageBus } returns messageBus
         every { project.messageBus } returns messageBus
+        every { project.isDisposed } returns false
         every { messageBus.syncPublisher(SNYK_SETTINGS_TOPIC) } returns mockk(relaxed = true)
         every { messageBus.isDisposed } returns false
         every { application.getService(SnykApplicationSettingsStateService::class.java) } returns mockk(relaxed = true)

@@ -40,11 +40,14 @@ class OssServiceTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
+    private val ossService: OssService
+        get() = getOssService(project) ?: throw IllegalStateException("OSS service should be available")
+
     @Test
     fun testBuildCliCommandsListWithDefaults() {
         setupDummyCliFile()
 
-        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains(getCliFile().absolutePath))
         assertTrue(cliCommands.contains("fake_cli_command"))
@@ -56,7 +59,7 @@ class OssServiceTest : LightPlatformTestCase() {
         setupDummyCliFile()
         pluginSettings().usageAnalyticsEnabled = false
 
-        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains("--DISABLE_ANALYTICS"))
     }
@@ -67,7 +70,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains("--file=package.json"))
     }
@@ -79,7 +82,7 @@ class OssServiceTest : LightPlatformTestCase() {
         project.service<SnykProjectSettingsStateService>().additionalParameters =
             "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
 
-        val cliCommands = getOssService(project).buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains("--file=package.json"))
         assertTrue(cliCommands.contains("--configuration-matching='iamaRegex'"))
@@ -88,7 +91,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testGroupVulnerabilities() {
-        val cli = getOssService(project)
+        val cli = ossService
 
         val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
 
@@ -100,7 +103,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testGroupVulnerabilitiesForGoof() {
-        val cli = getOssService(project)
+        val cli = ossService
 
         val cliResult = cli.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-goof-test.json"))
 
@@ -126,9 +129,9 @@ class OssServiceTest : LightPlatformTestCase() {
               }
             """.trimIndent()
 
-        getOssService(project).setConsoleCommandRunner(mockRunner)
+        ossService.setConsoleCommandRunner(mockRunner)
 
-        val cliResult = getOssService(project).scan()
+        val cliResult = ossService.scan()
 
         assertFalse(cliResult.isSuccessful())
         assertEquals(
@@ -147,9 +150,9 @@ class OssServiceTest : LightPlatformTestCase() {
             mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
         } returns getResourceAsString("group-vulnerabilities-test.json")
 
-        getOssService(project).setConsoleCommandRunner(mockRunner)
+        ossService.setConsoleCommandRunner(mockRunner)
 
-        val cliResult = getOssService(project).scan()
+        val cliResult = ossService.scan()
 
         assertTrue(cliResult.isSuccessful())
 
@@ -172,9 +175,9 @@ class OssServiceTest : LightPlatformTestCase() {
             mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
         } returns getResourceAsString("licence-vulnerabilities.json")
 
-        getOssService(project).setConsoleCommandRunner(mockRunner)
+        ossService.setConsoleCommandRunner(mockRunner)
 
-        val cliResult = getOssService(project).scan()
+        val cliResult = ossService.scan()
 
         assertTrue(cliResult.isSuccessful())
 
@@ -186,17 +189,16 @@ class OssServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToCliResult() {
-        val cli = getOssService(project)
 
-        val sigleObjectCliResult = cli
+        val sigleObjectCliResult = ossService
             .convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
         assertTrue(sigleObjectCliResult.isSuccessful())
 
-        val arrayObjectCliResult = cli
+        val arrayObjectCliResult = ossService
             .convertRawCliStringToCliResult(getResourceAsString("vulnerabilities-array-cli-result.json"))
         assertTrue(arrayObjectCliResult.isSuccessful())
 
-        val jsonErrorCliResult = cli.convertRawCliStringToCliResult("""
+        val jsonErrorCliResult = ossService.convertRawCliStringToCliResult("""
                     {
                       "ok": false,
                       "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
@@ -208,7 +210,7 @@ class OssServiceTest : LightPlatformTestCase() {
             jsonErrorCliResult.error!!.message)
         assertEquals("/Users/user/Desktop/example-npm-project", jsonErrorCliResult.error!!.path)
 
-        val rawErrorCliResult = cli.convertRawCliStringToCliResult("""
+        val rawErrorCliResult = ossService.convertRawCliStringToCliResult("""
                     Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.
                 """.trimIndent())
         assertFalse(rawErrorCliResult.isSuccessful())
@@ -219,10 +221,9 @@ class OssServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringWithLicenseVulnsToCliResult() {
-        val cli = getOssService(project)
 
         val rawMissedFixedInFieldCliString = getResourceAsString("licence-vulnerabilities.json")
-        val cliResult = cli.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString)
+        val cliResult = ossService.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString)
         assertTrue(cliResult.isSuccessful())
         assertNotNull(cliResult.allCliIssues?.find { it ->
             it.vulnerabilities
@@ -234,17 +235,13 @@ class OssServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToCliResultWithEmptyRawString() {
-        val cli = getOssService(project)
-
-        val cliResult = cli.convertRawCliStringToCliResult("")
+    val cliResult = ossService.convertRawCliStringToCliResult("")
         assertFalse(cliResult.isSuccessful())
     }
 
     @Test
     fun testConvertRawCliStringToCliResultWithMissformedJson() {
-        val cli = getOssService(project)
-
-        val cliResult = cli.convertRawCliStringToCliResult("""
+        val cliResult = ossService.convertRawCliStringToCliResult("""
                     {
                       "ok": false,
                       "error": ["could not be","array here"],
@@ -256,10 +253,8 @@ class OssServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToCliResultFieldsInitialisation() {
-        val cli = getOssService(project)
-
         val rawCliString = getResourceAsString("group-vulnerabilities-goof-test.json")
-        val cliResult = cli.convertRawCliStringToCliResult(rawCliString)
+        val cliResult = ossService.convertRawCliStringToCliResult(rawCliString)
         assertTrue(cliResult.isSuccessful())
 
         touchAllFields(cliResult)
