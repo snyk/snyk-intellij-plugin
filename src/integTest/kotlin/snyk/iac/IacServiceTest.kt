@@ -47,11 +47,14 @@ class IacServiceTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
+    private val iacService: IacScanService
+        get() = getIacService(project) ?: throw IllegalStateException("IaC service should be available")
+
     @Test
     fun testBuildCliCommandsListWithDefaults() {
         setupDummyCliFile()
 
-        val cliCommands = getIacService(project).buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = iacService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains(getCliFile().absolutePath))
         assertTrue(cliCommands.contains("fake_cli_command"))
@@ -63,7 +66,7 @@ class IacServiceTest : LightPlatformTestCase() {
         setupDummyCliFile()
         pluginSettings().usageAnalyticsEnabled = false
 
-        val cliCommands = getIacService(project).buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = iacService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertFalse(cliCommands.contains("--DISABLE_ANALYTICS"))
     }
@@ -74,7 +77,7 @@ class IacServiceTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val cliCommands = getIacService(project).buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = iacService.buildCliCommandsList(listOf("fake_cli_command"))
 
         assertFalse(cliCommands.contains("--file=package.json"))
     }
@@ -101,9 +104,9 @@ class IacServiceTest : LightPlatformTestCase() {
             }
         """.trimIndent()
 
-        getIacService(project).setConsoleCommandRunner(mockRunner)
+        iacService.setConsoleCommandRunner(mockRunner)
 
-        val iacResult = getIacService(project).scan()
+        val iacResult = iacService.scan()
 
         assertFalse(iacResult.isSuccessful())
         assertEquals(errorMsg, iacResult.error!!.message)
@@ -124,9 +127,9 @@ class IacServiceTest : LightPlatformTestCase() {
             )
         } returns (wholeProjectJson)
 
-        getIacService(project).setConsoleCommandRunner(mockRunner)
+        iacService.setConsoleCommandRunner(mockRunner)
 
-        val iacResult = getIacService(project).scan()
+        val iacResult = iacService.scan()
 
         assertTrue(iacResult.isSuccessful())
 
@@ -140,8 +143,6 @@ class IacServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToIacResult() {
-        val iacService = getIacService(project)
-
         val singleObjectIacResult = iacService.convertRawCliStringToCliResult(singleFileJson)
         assertTrue(singleObjectIacResult.isSuccessful())
 
@@ -168,17 +169,13 @@ class IacServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToIacResultWithEmptyRawString() {
-        val cli = getIacService(project)
-
-        val cliResult = cli.convertRawCliStringToCliResult("")
+        val cliResult = iacService.convertRawCliStringToCliResult("")
         assertFalse(cliResult.isSuccessful())
     }
 
     @Test
     fun testConvertRawCliStringToIacResultWithMissformedJson() {
-        val cli = getIacService(project)
-
-        val cliResult = cli.convertRawCliStringToCliResult("""
+        val cliResult = iacService.convertRawCliStringToCliResult("""
                     {
                       "ok": false,
                       "error": ["could not be","array here"],
@@ -190,8 +187,6 @@ class IacServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToIacResultFieldsInitialisation() {
-        val iacService = getIacService(project)
-
         val iacResult = iacService.convertRawCliStringToCliResult(wholeProjectJson)
         assertTrue(iacResult.isSuccessful())
 

@@ -5,15 +5,15 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import snyk.common.SnykError
-import snyk.oss.OssResult
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.snykcode.SnykCodeResults
+import snyk.common.SnykError
 import snyk.iac.IacResult
+import snyk.oss.OssResult
 
 /**
  * IntelliJ ToolWindow for Snyk plugin.
@@ -23,15 +23,13 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
     private val actionToolbar: ActionToolbar
 
     init {
-        val toolWindowPanel = project.service<SnykToolWindowPanel>()
-
         val actionManager = ActionManager.getInstance()
         val actionGroup = actionManager.getAction("io.snyk.plugin.ActionBar") as ActionGroup
         actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, false)
         initialiseToolbar()
         toolbar = actionToolbar.component
 
-        setContent(toolWindowPanel)
+        getSnykToolWindowPanel(project)?.let { setContent(it) }
     }
 
     private fun initialiseToolbar() {

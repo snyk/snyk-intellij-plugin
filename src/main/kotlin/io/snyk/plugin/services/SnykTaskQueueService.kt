@@ -16,6 +16,7 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCode
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeRunning
@@ -23,7 +24,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.oss.OssResult
@@ -73,7 +73,7 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (settings.ossScanEnable) {
-                    if (!getOssService(project).isCliInstalled()) downloadLatestRelease()
+                    if (getOssService(project)?.isCliInstalled() == false) downloadLatestRelease()
                     scheduleOssScan()
                 }
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
@@ -81,7 +81,7 @@ class SnykTaskQueueService(val project: Project) {
                 }
                 if (isIacEnabled() && settings.iacScanEnabled) {
                     //fixme: downloadLatestRelease() should check if downloading is in process
-                    if (!getIacService(project).isCliInstalled()) downloadLatestRelease()
+                    if (getIacService(project)?.isCliInstalled() == false) downloadLatestRelease()
                     scheduleIacScan()
                 }
             }
@@ -94,7 +94,7 @@ class SnykTaskQueueService(val project: Project) {
                 settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
                 when (settings.sastOnServerEnabled) {
                     true -> {
-                        getSnykCode(project).scan()
+                        getSnykCode(project)?.scan()
                         scanPublisher?.scanningStarted()
                     }
                     false -> {
@@ -122,15 +122,15 @@ class SnykTaskQueueService(val project: Project) {
     private fun scheduleOssScan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk Open Source is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
-                if (!getOssService(project).isCliInstalled()) return
+                val ossService = getOssService(project) ?: return
+                if (!ossService.isCliInstalled()) return
 
-                val toolWindowPanel = project.service<SnykToolWindowPanel>()
-                if (toolWindowPanel.currentOssResults != null) return
+                if (getSnykToolWindowPanel(project)?.currentOssResults != null) return
 
                 ossScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
-                val ossResult: OssResult = getOssService(project).scan()
+                val ossResult: OssResult = ossService.scan()
 
                 ossScanProgressIndicator = null
                 if (project.isDisposed) return
@@ -155,14 +155,14 @@ class SnykTaskQueueService(val project: Project) {
             true
         ) {
             override fun run(indicator: ProgressIndicator) {
-                val toolWindowPanel = project.service<SnykToolWindowPanel>()
+                val toolWindowPanel = getSnykToolWindowPanel(project) ?: return
                 if (toolWindowPanel.currentIacResult != null && !toolWindowPanel.iacScanNeeded) return
                 LOG.debug("Starting IaC scan")
                 iacScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
                 toolWindowPanel.currentIacResult = null
-                val iacResult = getIacService(project).scan()
+                val iacResult = getIacService(project)?.scan() ?: return
 
                 iacScanProgressIndicator = null
                 if (project.isDisposed) return
@@ -194,7 +194,7 @@ class SnykTaskQueueService(val project: Project) {
                 val cliDownloader = service<SnykCliDownloaderService>()
                 if (project.isDisposed) return
 
-                if (!getOssService(project).isCliInstalled()) {
+                if (getOssService(project)?.isCliInstalled() == false) {
                     cliDownloader.downloadLatestRelease(indicator, project)
                 } else {
                     cliDownloader.cliSilentAutoUpdate(indicator, project)

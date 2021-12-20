@@ -2,7 +2,6 @@ package io.snyk.plugin
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.impl.ProjectUtil
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.DumbService
@@ -18,7 +17,6 @@ import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
@@ -47,7 +45,7 @@ class SnykBulkFileListener : BulkFileListener {
 
             if (isContainerEnabled()) {
                 for (project in ProjectUtil.getOpenProjects()) {
-                    getKubernetesImageCache(project).extractFromEvents(events)
+                    getKubernetesImageCache(project)?.extractFromEvents(events)
                 }
             }
         }
@@ -78,10 +76,10 @@ class SnykBulkFileListener : BulkFileListener {
                 classesOfEventsToFilter = classesOfEventsToFilter
             )
 
-            val toolWindowPanel = project.service<SnykToolWindowPanel>()
+            val toolWindowPanel = getSnykToolWindowPanel(project)
 
             // clean OSS cached results if needed
-            if (toolWindowPanel.currentOssResults != null) {
+            if (toolWindowPanel?.currentOssResults != null) {
                 val buildFileChanged = virtualFilesAffected
                     .filter { supportedBuildFiles.contains(it.name) }
                     .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
@@ -113,8 +111,8 @@ class SnykBulkFileListener : BulkFileListener {
                         virtualFilesAffected.any { it.isDirectory && vFile.path.startsWith(it.path) }
                 }
 
-            if (filesToRemoveFromCache.isNotEmpty())
-                project.service<SnykTaskQueueService>().scheduleRunnable("Snyk Code is updating caches...") {
+            if (filesToRemoveFromCache.isNotEmpty()) {
+                getSnykTaskQueueService(project)?.scheduleRunnable("Snyk Code is updating caches...") {
                     if (filesToRemoveFromCache.size > 10) {
                         // bulk files change event (like `git checkout`) - better to drop cache and perform full rescan later
                         AnalysisData.instance.removeProjectFromCaches(project)
@@ -122,7 +120,7 @@ class SnykBulkFileListener : BulkFileListener {
                         AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
                     }
                 }
-
+            }
             // clean .dcignore caches if needed
             SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
         }
@@ -182,8 +180,8 @@ class SnykBulkFileListener : BulkFileListener {
             )
 
             // update IaC cached results if needed
-            val toolWindowPanel = project.service<SnykToolWindowPanel>()
-            val allCliIssues = toolWindowPanel.currentIacResult?.allCliIssues
+            val toolWindowPanel = getSnykToolWindowPanel(project)
+            val allCliIssues = toolWindowPanel?.currentIacResult?.allCliIssues
             if (allCliIssues != null && allCliIssues.isNotEmpty()) {
                 updateIacCache(virtualFilesAffected, toolWindowPanel)
             }

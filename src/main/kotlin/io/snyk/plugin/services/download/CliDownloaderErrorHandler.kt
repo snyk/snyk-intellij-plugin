@@ -2,13 +2,13 @@ package io.snyk.plugin.services.download
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.notification.NotificationAction
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
 
@@ -17,7 +17,7 @@ class CliDownloaderErrorHandler {
         SnykBalloonNotificationHelper.showError(message, project,
             NotificationAction.createSimple("Retry CLI download") {
                 runBackgroundableTask("Retry Snyk CLI Download", project, true) {
-                    project.service<SnykCliDownloaderService>().downloadLatestRelease(it, project)
+                    getSnykCliDownloaderService(project)?.downloadLatestRelease(it, project)
                 }
             },
             NotificationAction.createSimple("Contact support...") {

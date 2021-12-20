@@ -38,7 +38,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     fun testSnykTaskQueueService() {
         setupDummyCliFile()
 
-        val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
         snykTaskQueueService.scan()
         // needed due to luck of disposing services by Idea test framework (bug?)
@@ -59,7 +59,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         if (cliFile.exists()) cliFile.delete()
         assertFalse(cliFile.exists())
 
-        val snykTaskQueueService = project!!.service<SnykTaskQueueService>()
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
         val settings = pluginSettings()
         settings.ossScanEnable = true
@@ -115,8 +115,8 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isIacEnabled() } returns true
-        every { getIacService(project).isCliInstalled() } returns true
-        every { getIacService(project).scan() } returns fakeIacResult
+        every { getIacService(project)?.isCliInstalled() } returns true
+        every { getIacService(project)?.scan() } returns fakeIacResult
 
         snykTaskQueueService.scan()
 

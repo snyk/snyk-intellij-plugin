@@ -12,17 +12,18 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getAmplitudeExperimentService
+import io.snyk.plugin.getSnykCliAuthenticationService
+import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykCliAuthenticationService
-import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.addAndGetCenteredPanel
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.getStandardLayout
-import snyk.amplitude.AmplitudeExperimentService
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.AuthenticateButtonIsClicked
 import snyk.analytics.AuthenticateButtonIsClicked.EventSource
@@ -36,7 +37,6 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
-    private var amplitudeExperimentService = project.service<AmplitudeExperimentService>()
 
     init {
         name = "authPanel"
@@ -44,9 +44,9 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
             override fun actionPerformed(e: ActionEvent?) {
                 val analytics = service<SnykAnalyticsService>()
                 analytics.logAuthenticateButtonIsClicked(authenticateEvent())
-                project.service<SnykToolWindowPanel>().cleanUiAndCaches()
+                getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
-                val token = project.service<SnykCliAuthenticationService>().authenticate()
+                val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 pluginSettings().token = token
                 SnykCodeParams.instance.sessionToken = token
 
@@ -54,14 +54,14 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                 if (userId.isNotBlank()) {
                     analytics.setUserId(userId)
                     analytics.identify()
-                    amplitudeExperimentService.fetch(ExperimentUser(userId))
+                    getAmplitudeExperimentService(project)?.fetch(ExperimentUser(userId))
                 }
                 getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
             }
         }).apply {
-            isEnabled = !project.service<SnykCliDownloaderService>().isCliDownloading()
+            isEnabled = getSnykCliDownloaderService(project)?.isCliDownloading() == false
         }
-        if (!amplitudeExperimentService.isPartOfExperimentalWelcomeWorkflow()) {
+        if (getAmplitudeExperimentService(project)?.isPartOfExperimentalWelcomeWorkflow() == false) {
             layout = GridLayoutManager(4, 1, Insets(0, 0, 0, 0), -1, -1)
             add(JLabel(SnykIcons.LOGO), baseGridConstraints(0))
             add(boldLabel("Welcome to Snyk for JetBrains!"), baseGridConstraints(1))
@@ -102,7 +102,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun descriptionLabelText(): String {
-        if (amplitudeExperimentService.isPartOfExperimentalWelcomeWorkflow()) {
+        if (getAmplitudeExperimentService(project)?.isPartOfExperimentalWelcomeWorkflow() == true) {
             return """
         |<html><ol>
         |  <li align="left">Authenticate to Snyk.io</li>
@@ -116,7 +116,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun authenticateButtonText(): String {
-        if (amplitudeExperimentService.isPartOfExperimentalWelcomeWorkflow()) {
+        if (getAmplitudeExperimentService(project)?.isPartOfExperimentalWelcomeWorkflow() == true) {
             return "Test code now"
         }
         return "Connect your IDE to Snyk"

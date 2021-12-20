@@ -12,11 +12,11 @@ import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
@@ -78,7 +78,7 @@ class SnykSettingsDialog(
         receiveTokenButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
                 snykProjectSettingsConfigurable.apply()
-                val token = project.service<SnykCliAuthenticationService>().authenticate()
+                val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 tokenTextField.text = token
 
                 val analytics = service<SnykAnalyticsService>()

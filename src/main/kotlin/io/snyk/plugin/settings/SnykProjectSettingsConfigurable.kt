@@ -1,18 +1,17 @@
 package io.snyk.plugin.settings
 
-import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.getSnykProjectSettingsService
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
-import io.snyk.plugin.services.SnykProjectSettingsStateService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.toSnykCodeApiUrl
 import io.snyk.plugin.ui.SnykSettingsDialog
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
@@ -59,10 +58,10 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         snykSettingsDialog.saveScanTypeChanges()
 
         if (isProjectSettingsAvailable(project)) {
-            project.service<SnykProjectSettingsStateService>().additionalParameters = snykSettingsDialog.getAdditionalParameters()
+            getSnykProjectSettingsService(project)?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        project.service<SnykToolWindowPanel>().cleanUiAndCaches()
+        getSnykToolWindowPanel(project)?.cleanUiAndCaches()
         getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
     }
 
@@ -84,7 +83,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     private fun isCrashReportingModified(): Boolean =
         snykSettingsDialog.isCrashReportingEnabled() != applicationSettingsStateService.crashReportingEnabled
 
-    private fun isAdditionalParametersModified(): Boolean =
-        isProjectSettingsAvailable(project)
-            && snykSettingsDialog.getAdditionalParameters() != project.service<SnykProjectSettingsStateService>().additionalParameters
+    private fun isAdditionalParametersModified(): Boolean = isProjectSettingsAvailable(project) &&
+        snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(project)?.additionalParameters
 }

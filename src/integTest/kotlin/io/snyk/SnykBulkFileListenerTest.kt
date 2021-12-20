@@ -13,12 +13,12 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
 import com.intellij.util.io.exists
-import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
 import org.junit.Test
+import snyk.container.KubernetesImageCache
 import snyk.container.KubernetesImageCacheIntegTest
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit
 @Suppress("FunctionName")
 class SnykBulkFileListenerTest : BasePlatformTestCase() {
 
-    private val imageCache get() = getKubernetesImageCache(project)
+    private val imageCache get() = project.service<KubernetesImageCache>()
 
     override fun setUp() {
         super.setUp()

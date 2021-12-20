@@ -1,11 +1,10 @@
 package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeIgnoreInfoHolderBase
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
-import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.File
 
@@ -26,7 +25,7 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
     fun updateIgnoreFileCachesIfAffected(project: Project, virtualFilesToCheck: Collection<VirtualFile>) {
         val ignoreFilesChanged = getIgnoreFiles(project, virtualFilesToCheck)
         for (ignoreFile in ignoreFilesChanged) {
-            project.service<SnykTaskQueueService>().scheduleRunnable(
+            getSnykTaskQueueService(project)?.scheduleRunnable(
                 "updating caches for: ${PDU.instance.getFilePath(ignoreFile)}"
             ) { progress ->
                 update_ignoreFileContent(ignoreFile, progress)

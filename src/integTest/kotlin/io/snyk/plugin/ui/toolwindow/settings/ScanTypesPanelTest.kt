@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow.settings
 
 import UIComponentFinder.getComponentByName
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatform4TestCase
@@ -16,6 +17,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import org.junit.Test
+import snyk.container.KubernetesImageCache
 
 @Suppress("FunctionName")
 class ScanTypesPanelTest : LightPlatform4TestCase() {
@@ -37,6 +39,8 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
         super.tearDown()
     }
+
+    private val imageCache get() = project.service<KubernetesImageCache>()
 
     private lateinit var disposable: Disposable
 
@@ -106,7 +110,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
     @Test
     fun `KubernetesImageCache rescan after container enablement`() {
         mockkStatic("io.snyk.plugin.UtilsKt")
-        val spyk = spyk(getKubernetesImageCache(project))
+        val spyk = spyk(imageCache)
         every { getKubernetesImageCache(project) } returns spyk
         getContainerCheckBox(initialValue = false, switchSelection = true)
 
@@ -116,7 +120,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
     @Test
     fun `KubernetesImageCache clean up after container disablement`() {
         mockkStatic("io.snyk.plugin.UtilsKt")
-        val spyk = spyk(getKubernetesImageCache(project))
+        val spyk = spyk(imageCache)
         every { getKubernetesImageCache(project) } returns spyk
         getContainerCheckBox(initialValue = true, switchSelection = true)
 

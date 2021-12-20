@@ -100,7 +100,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             )
         } returns (iacGoofJson)
 
-        getIacService(project).setConsoleCommandRunner(mockRunner)
+        getIacService(project)?.setConsoleCommandRunner(mockRunner)
 
         project.service<SnykTaskQueueService>().scan()
     }
@@ -198,8 +198,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val iacResultWithError = IacResult(null, iacError)
 
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { getIacService(project).isCliInstalled() } returns true
-        every { getIacService(project).scan() } returns iacResultWithError
+        every { getIacService(project)?.isCliInstalled() } returns true
+        every { getIacService(project)?.scan() } returns iacResultWithError
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
