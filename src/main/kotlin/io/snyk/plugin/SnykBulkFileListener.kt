@@ -111,7 +111,7 @@ class SnykBulkFileListener : BulkFileListener {
                         virtualFilesAffected.any { it.isDirectory && vFile.path.startsWith(it.path) }
                 }
 
-            if (filesToRemoveFromCache.isNotEmpty())
+            if (filesToRemoveFromCache.isNotEmpty()) {
                 getSnykTaskQueueService(project)?.scheduleRunnable("Snyk Code is updating caches...") {
                     if (filesToRemoveFromCache.size > 10) {
                         // bulk files change event (like `git checkout`) - better to drop cache and perform full rescan later
@@ -120,7 +120,7 @@ class SnykBulkFileListener : BulkFileListener {
                         AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
                     }
                 }
-
+            }
             // clean .dcignore caches if needed
             SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
         }

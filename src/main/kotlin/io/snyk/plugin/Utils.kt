@@ -56,7 +56,7 @@ fun getSnykCliAuthenticationService(project: Project): SnykCliAuthenticationServ
 
 fun getSnykCliDownloaderService(project: Project): SnykCliDownloaderService? = project.serviceIfNotDisposed()
 
-fun getSnykProjectSettingsStateService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
+fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
