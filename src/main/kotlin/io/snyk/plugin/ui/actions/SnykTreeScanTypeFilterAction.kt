@@ -9,6 +9,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
@@ -36,7 +37,8 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
                 createOssScanAction(),
                 createSecurityIssuesScanAction(),
                 createQualityIssuesScanAction(),
-                if (isIacEnabled()) createIacScanAction() else null
+                if (isIacEnabled()) createIacScanAction() else null,
+                if (isContainerEnabled()) createContainerScanAction() else null
             )
         )
     }
@@ -104,6 +106,19 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         }
     }
 
+    private fun createContainerScanAction(): AnAction {
+        return object : ToggleAction("Container Vulnerabilities") {
+            override fun isSelected(e: AnActionEvent): Boolean = settings.containerScanEnabled
+
+            override fun setSelected(e: AnActionEvent, state: Boolean) {
+                if (!state && isLastScanTypeDisabling(e)) return
+
+                settings.containerScanEnabled = state
+                fireFiltersChangedEvent(e.project!!)
+            }
+        }
+    }
+
     private fun fireFiltersChangedEvent(project: Project) {
         getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
     }
@@ -113,7 +128,8 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
             settings.ossScanEnable,
             settings.snykCodeSecurityIssuesScanEnable,
             settings.snykCodeQualityIssuesScanEnable,
-            settings.iacScanEnabled
+            settings.iacScanEnabled,
+            settings.containerScanEnabled
         ).count { it } == 1
         if (onlyOneEnabled) {
             SnykBalloonNotificationHelper.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)

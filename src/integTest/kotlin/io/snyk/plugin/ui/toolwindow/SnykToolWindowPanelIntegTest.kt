@@ -54,6 +54,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         setupDummyCliFile()
         // restore modified Registry value
         isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
+        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
     }
 
     override fun tearDown() {
@@ -62,11 +63,15 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         removeDummyCliFile()
         // restore modified Registry value
         isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
+        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
         super.tearDown()
     }
 
     private val isIacEnabledRegistryValue = Registry.get("snyk.preview.iac.enabled")
     private val isIacEnabledDefaultValue: Boolean by lazy { isIacEnabledRegistryValue.asBoolean() }
+
+    private val isContainerEnabledRegistryValue = Registry.get("snyk.preview.container.enabled")
+    private val isContainerEnabledDefaultValue: Boolean by lazy { isContainerEnabledRegistryValue.asBoolean() }
 
     private fun setUpIacTest() {
         val settings = pluginSettings()
@@ -74,8 +79,13 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = true
+        settings.containerScanEnabled = false
 
         isIacEnabledRegistryValue.setValue(true)
+    }
+
+    private fun setUpContainerTest() {
+        isContainerEnabledRegistryValue.setValue(true)
     }
 
     private fun prepareTreeWithFakeIacResults() {
@@ -279,5 +289,29 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             "Ignore Button should remain disabled for ignored issue",
             !ignoreButton.isEnabled && ignoreButton.text == IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
         )
+    }
+
+    @Test
+    fun `test all root nodes are shown`() {
+        setUpIacTest()
+        setUpContainerTest()
+
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        val tree = toolWindowPanel.getTree()
+        PlatformTestUtil.waitWhileBusy(tree)
+
+        val rootNode = toolWindowPanel.getRootNode()
+        setOf(
+            SnykToolWindowPanel.OSS_ROOT_TEXT,
+            SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT,
+            SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT,
+            SnykToolWindowPanel.IAC_ROOT_TEXT,
+            SnykToolWindowPanel.CONTAINER_ROOT_TEXT
+        ).forEach {
+            assertTrue(
+                "Root node for [$it] not found",
+                TreeUtil.findNodeWithObject(rootNode, it) != null
+            )
+        }
     }
 }
