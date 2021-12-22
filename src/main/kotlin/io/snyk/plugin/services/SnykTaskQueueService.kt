@@ -117,8 +117,8 @@ class SnykTaskQueueService(val project: Project) {
     private fun scheduleContainerScan() {
         taskQueueIac.run(object : Task.Backgroundable(project, "Snyk Container is scanning...", true) {
             override fun run(indicator: ProgressIndicator) {
-                val toolWindowPanel = project.service<SnykToolWindowPanel>()
-                if (toolWindowPanel.currentContainerResult != null) return
+                val toolWindowPanel = getSnykToolWindowPanel(project)
+                if (toolWindowPanel?.currentContainerResult != null) return
                 logger.debug("Starting Container scan")
                 containerScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
