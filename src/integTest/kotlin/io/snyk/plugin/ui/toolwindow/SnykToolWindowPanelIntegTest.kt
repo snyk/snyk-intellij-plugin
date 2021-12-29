@@ -19,6 +19,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
@@ -198,7 +199,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val iacResultWithError = IacResult(null, iacError)
 
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { getIacService(project)?.isCliInstalled() } returns true
+        every { isCliInstalled() } returns true
         every { getIacService(project)?.scan() } returns iacResultWithError
 
         // actual test run

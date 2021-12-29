@@ -1,6 +1,7 @@
 package io.snyk.plugin.services
 
 import com.intellij.testFramework.LightPlatformTestCase
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
@@ -33,7 +34,7 @@ class CliAdapterTest : LightPlatformTestCase() {
     fun testIsCliInstalledFailed() {
         removeDummyCliFile()
 
-        val isCliInstalled = dummyCliAdapter.isCliInstalled()
+        val isCliInstalled = isCliInstalled()
 
         assertFalse(isCliInstalled)
     }
@@ -42,7 +43,7 @@ class CliAdapterTest : LightPlatformTestCase() {
     fun testIsCliInstalledSuccess() {
         setupDummyCliFile()
 
-        val isCliInstalled = dummyCliAdapter.isCliInstalled()
+        val isCliInstalled = isCliInstalled()
 
         assertTrue(isCliInstalled)
     }
@@ -53,7 +54,7 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().customEndpointUrl = "https://app.snyk.io/api"
 
-        val defaultCommands = dummyCliAdapter.buildCliCommandsList(listOf("fake_cli_command"))
+        val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(defaultCommands.contains("--API=https://app.snyk.io/api"))
     }
@@ -64,7 +65,7 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().ignoreUnknownCA = true
 
-        val defaultCommands = dummyCliAdapter.buildCliCommandsList(listOf("fake_cli_command"))
+        val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(defaultCommands.contains("--insecure"))
     }
@@ -75,7 +76,7 @@ class CliAdapterTest : LightPlatformTestCase() {
 
         pluginSettings().organization = "test-org"
 
-        val defaultCommands = dummyCliAdapter.buildCliCommandsList(listOf("fake_cli_command"))
+        val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(defaultCommands.contains("--org=test-org"))
     }

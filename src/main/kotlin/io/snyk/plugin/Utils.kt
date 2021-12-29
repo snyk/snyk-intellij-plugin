@@ -51,7 +51,7 @@ fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.s
 
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
 
-fun getContainerService(project: Project): ContainerService = project.service()
+fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
 
 fun getAmplitudeExperimentService(project: Project): AmplitudeExperimentService? = project.serviceIfNotDisposed()
 
@@ -62,6 +62,8 @@ fun getSnykCliDownloaderService(project: Project): SnykCliDownloaderService? = p
 fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
+
+fun isCliInstalled(): Boolean = getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = service()
 

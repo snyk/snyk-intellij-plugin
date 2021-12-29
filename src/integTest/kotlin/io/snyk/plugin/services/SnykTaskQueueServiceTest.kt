@@ -10,6 +10,7 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.pluginSettings
@@ -117,7 +118,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isIacEnabled() } returns true
-        every { getIacService(project)?.isCliInstalled() } returns true
+        every { isCliInstalled() } returns true
         every { getIacService(project)?.scan() } returns fakeIacResult
 
         snykTaskQueueService.scan()
@@ -141,8 +142,8 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isContainerEnabled() } returns true
-        every { getContainerService(project).scan() } returns fakeContainerResult
-        every { getContainerService(project).isCliInstalled() } returns true
+        every { getContainerService(project)?.scan() } returns fakeContainerResult
+        every { isCliInstalled() } returns true
 
         snykTaskQueueService.scan()
 

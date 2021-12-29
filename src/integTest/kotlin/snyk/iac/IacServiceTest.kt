@@ -54,7 +54,7 @@ class IacServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithDefaults() {
         setupDummyCliFile()
 
-        val cliCommands = iacService.buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = iacService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains(getCliFile().absolutePath))
         assertTrue(cliCommands.contains("fake_cli_command"))
@@ -66,7 +66,7 @@ class IacServiceTest : LightPlatformTestCase() {
         setupDummyCliFile()
         pluginSettings().usageAnalyticsEnabled = false
 
-        val cliCommands = iacService.buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = iacService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertFalse(cliCommands.contains("--DISABLE_ANALYTICS"))
     }
@@ -77,7 +77,7 @@ class IacServiceTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val cliCommands = iacService.buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = iacService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertFalse(cliCommands.contains("--file=package.json"))
     }

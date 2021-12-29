@@ -44,7 +44,7 @@ object YAMLImageExtractor {
     }
 
     private fun getFileLines(psiFile: PsiFile) =
-        psiFile.viewProvider.document?.text?.split("\n") ?: emptyList()
+        psiFile.viewProvider.document?.text?.lines() ?: emptyList()
 
     private fun isKubernetes(psiFile: PsiFile): Boolean = isKubernetes(getFileLines(psiFile))
 

@@ -94,30 +94,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private var descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
 
     var currentOssResults: OssResult? = null
-        get() {
-            val prevTimeStamp = field?.timeStamp ?: Instant.MIN
-            if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
-                field = null
-            }
-            return field
-        }
-
-    var currentContainerResult: ContainerResult? = null
-    var currentContainerError: SnykError? = null
-
+        get() = if (field?.isExpired() == false) field else null
     var currentOssError: SnykError? = null
 
-    var currentSnykCodeError: SnykError? = null
+    var currentContainerResult: ContainerResult? = null
+        get() = if (field?.isExpired() == false) field else null
+    var currentContainerError: SnykError? = null
 
     var currentIacResult: IacResult? = null
-        get() {
-            val prevTimeStamp = field?.timeStamp ?: Instant.MIN
-            if (prevTimeStamp.plusSeconds(60 * 24) < Instant.now()) {
-                field = null
-            }
-            return field
-        }
+        get() = if (field?.isExpired() == false) field else null
     var currentIacError: SnykError? = null
+
+    var currentSnykCodeError: SnykError? = null
 
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -197,6 +185,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 currentContainerResult = containerResult
                 ApplicationManager.getApplication().invokeLater {
                     // todo display container results
+                    displayNoVulnerabilitiesMessage() // remove after implementation
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -354,16 +343,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(wasOssRunning: Boolean, wasSnykCodeRunning: Boolean, wasIacRunning: Boolean) =
-                    ApplicationManager.getApplication().invokeLater {
-                        updateTreeRootNodesPresentation(
-                            ossResultsCount = if (wasOssRunning) NODE_INITIAL_STATE else null,
-                            securityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
-                            qualityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
-                            iacResultsCount = if (wasIacRunning) NODE_INITIAL_STATE else null
-                        )
-                        displayEmptyDescription()
-                    }
+                override fun stopped(
+                    wasOssRunning: Boolean,
+                    wasSnykCodeRunning: Boolean,
+                    wasIacRunning: Boolean,
+                    wasContainerRunning: Boolean
+                ) = ApplicationManager.getApplication().invokeLater {
+                    updateTreeRootNodesPresentation(
+                        ossResultsCount = if (wasOssRunning) NODE_INITIAL_STATE else null,
+                        securityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
+                        qualityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
+                        iacResultsCount = if (wasIacRunning) NODE_INITIAL_STATE else null
+                    // todo containerResultsCount
+                    )
+                    displayEmptyDescription()
+                }
             })
     }
 
@@ -515,6 +509,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentIacResult = null
         currentIacError = null
         iacScanNeeded = true
+        currentContainerResult = null
+        currentContainerError = null
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
         DaemonCodeAnalyzer.getInstance(project).restart()
@@ -580,8 +576,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun displayAuthPanel() {
         removeAll()
-        val amplitudeExperimentService: AmplitudeExperimentService = project.service()
-        if (amplitudeExperimentService.isPartOfExperimentalWelcomeWorkflow()) {
+        val amplitudeExperimentService = getAmplitudeExperimentService(project)
+        if (amplitudeExperimentService?.isPartOfExperimentalWelcomeWorkflow() == true) {
             val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
             add(splitter, BorderLayout.CENTER)
             splitter.firstComponent = TreePanel(vulnerabilitiesTree)

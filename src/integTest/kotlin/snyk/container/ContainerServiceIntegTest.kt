@@ -17,9 +17,11 @@ import snyk.container.TestYamls.podYaml
 class ContainerServiceIntegTest : LightPlatform4TestCase() {
     private lateinit var cut: ContainerService
     private val containerResultWithRemediationJson = javaClass.classLoader
-        .getResource(("container-test-result-with-remediation.json"))!!.readText(Charsets.UTF_8)
+        .getResource(("container-test-results/nginx-with-remediation.json"))!!.readText(Charsets.UTF_8)
     private val containerResultJson = javaClass.classLoader
-        .getResource(("container-test-result.json"))!!.readText(Charsets.UTF_8)
+        .getResource(("container-test-results/nginx-no-remediation.json"))!!.readText(Charsets.UTF_8)
+    private val containerResultForFewImagesJson = javaClass.classLoader
+        .getResource(("container-test-results/debian-nginx_critical_only.json"))!!.readText(Charsets.UTF_8)
 
     override fun setUp() {
         super.setUp()
@@ -35,7 +37,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `test scan should take all images from KubernetesImageCache and scan them using the CLI`() {
+    fun `take image from KubernetesImageCache and scan it using the CLI`() {
         val (expectedResult, containerResult) = executeScan(containerResultWithRemediationJson)
 
         val actualCliIssues = containerResult.allCliIssues!!
@@ -54,7 +56,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `test scan should take all images from KubernetesImageCache and scan them using the CLI, no remediation`() {
+    fun `take image from KubernetesImageCache and scan it using the CLI, no remediation`() {
         val (expectedResult, containerResult) = executeScan(containerResultJson)
 
         val actualCliIssues = containerResult.allCliIssues!!
@@ -88,5 +90,42 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         cut.setKubernetesImageCache(cache)
         cache.extractFromFile(file.virtualFile)
         return cache
+    }
+
+    @Test
+    fun `take all images from KubernetesImageCache and scan them using the CLI`() {
+        // create KubernetesImageCache mock
+        val cache = spyk(KubernetesImageCache(project))
+        val fakePsiFile = createFile("fake.file", "")
+        every { cache.getKubernetesWorkloadImages() } returns
+            setOf(
+                KubernetesWorkloadImage("debian", fakePsiFile),
+                KubernetesWorkloadImage("fake-image-name", fakePsiFile),
+                KubernetesWorkloadImage("nginx", fakePsiFile)
+            )
+        cut.setKubernetesImageCache(cache)
+        // create CLI mock
+        val mockkRunner = mockk<ConsoleCommandRunner>()
+        every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultForFewImagesJson
+        cut.setConsoleCommandRunner(mockkRunner)
+
+        val containerResult = cut.scan()
+
+        verify { cache.getKubernetesWorkloadImages() }
+        verify {
+            cut.execute(
+                listOf("container", "test", "debian", "fake-image-name", "nginx")
+            )
+        }
+        assertTrue("Container scan should succeed", containerResult.isSuccessful())
+        val allCliIssues = containerResult.allCliIssues
+        assertTrue("Images with issues should be found", allCliIssues != null)
+        allCliIssues!!
+        assertTrue(
+            "2 images (debian and nginx) with issues should be found",
+            allCliIssues.size == 2 &&
+                allCliIssues.any { it.imageName == "debian" } &&
+                allCliIssues.any { it.imageName == "nginx" }
+        )
     }
 }

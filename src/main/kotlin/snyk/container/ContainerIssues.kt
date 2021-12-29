@@ -7,8 +7,9 @@ data class ContainerIssuesForImage(
     val vulnerabilities: List<ContainerIssue>,
     val projectName: String,
     val docker: Docker,
+    val error: String?,
     @SerializedName("path") val imageName: String,
-    val baseImageRemediationInfo: BaseImageRemediationInfo? = null,
+    @Expose val baseImageRemediationInfo: BaseImageRemediationInfo? = null,
     @Expose val workloadImage: KubernetesWorkloadImage? = null
 ) {
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
