@@ -13,8 +13,8 @@ import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -55,7 +55,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         return RunUtils.computeInReadActionInSmartMode(
             prj,
             Computable {
-                if (virtualFile.isValid) PsiManager.getInstance(prj).findFile(virtualFile) else null
+                if (virtualFile.isValid) findPsiFileIgnoringExceptions(virtualFile, prj) else null
             }
         )
     }

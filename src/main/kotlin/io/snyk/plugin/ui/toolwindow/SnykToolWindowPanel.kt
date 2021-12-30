@@ -14,7 +14,6 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeSpeedSearch
@@ -31,6 +30,7 @@ import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSyncPublisher
@@ -388,7 +388,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ?: throw IllegalArgumentException(node.toString())
                     val fileName = iacIssuesForFile.targetFilePath
                     val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(fileName))
-                    val psiFile = virtualFile?.let { PsiManager.getInstance(project).findFile(it) }
+                    val psiFile = virtualFile?.let { findPsiFileIgnoringExceptions(it, project) }
 
                     val iacIssue = node.userObject as IacIssue
                     val scrollPane = wrapWithScrollPane(
