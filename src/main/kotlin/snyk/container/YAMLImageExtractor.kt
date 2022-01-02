@@ -4,7 +4,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
+import io.snyk.plugin.findPsiFileIgnoringExceptions
 import java.util.stream.Collectors
 import kotlin.streams.toList
 
@@ -27,7 +27,7 @@ object YAMLImageExtractor {
             }.toList()
 
     fun extractFromFile(file: VirtualFile, project: Project): Set<KubernetesWorkloadImage> {
-        val psiFile = PsiManager.getInstance(project).findFile(file)
+        val psiFile = findPsiFileIgnoringExceptions(file, project)
         if (psiFile == null || file.isDirectory || !file.isValid) return emptySet()
 
         return extractImages(psiFile)

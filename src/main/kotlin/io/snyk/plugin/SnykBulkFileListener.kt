@@ -16,7 +16,6 @@ import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
@@ -90,10 +89,9 @@ class SnykBulkFileListener : BulkFileListener {
             }
 
             // if SnykCode analysis is running then re-run it (with updated files)
-            val manager = PsiManager.getInstance(project)
             val supportedFileChanged = virtualFilesAffected
                 .filter { it.isValid }
-                .mapNotNull { manager.findFile(it) }
+                .mapNotNull { findPsiFileIgnoringExceptions(it, project) }
                 .any { SnykCodeUtils.instance.isSupportedFileFormat(it) }
             val isSnykCodeRunning = AnalysisData.instance.isUpdateAnalysisInProgress(project)
 

@@ -8,8 +8,11 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.registry.Registry
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
@@ -226,3 +229,10 @@ fun getX509TrustManager(): X509TrustManager {
     }
     return trustManagers[0] as X509TrustManager
 }
+
+fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): PsiFile? =
+    try {
+        PsiManager.getInstance(project).findFile(virtualFile)
+    } catch (ignored: Throwable) {
+        null
+    }
