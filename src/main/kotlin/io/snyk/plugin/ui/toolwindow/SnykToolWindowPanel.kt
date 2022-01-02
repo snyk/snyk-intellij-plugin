@@ -53,7 +53,6 @@ import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.TestOnly
-import snyk.amplitude.AmplitudeExperimentService
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
@@ -73,7 +72,6 @@ import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.nio.file.Paths
-import java.time.Instant
 import java.util.Objects.nonNull
 import javax.swing.JLabel
 import javax.swing.JPanel
