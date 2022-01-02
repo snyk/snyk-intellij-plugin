@@ -1,10 +1,12 @@
 package io.snyk.plugin.ui.toolwindow
 
 import UIComponentFinder
+import com.intellij.mock.MockPsiFile
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.impl.ApplicationInfoImpl
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.registry.Registry
+import com.intellij.psi.PsiManager
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.TestActionEvent
@@ -18,7 +20,9 @@ import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.pluginSettings
@@ -30,6 +34,14 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
 import org.junit.Test
 import snyk.common.SnykError
+import snyk.container.ContainerIssue
+import snyk.container.ContainerIssuesForImage
+import snyk.container.ContainerResult
+import snyk.container.ContainerService
+import snyk.container.Docker
+import snyk.container.KubernetesWorkloadImage
+import snyk.container.ui.BaseImageRemediationDetailPanel
+import snyk.container.ui.ContainerImageTreeNode
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
 import snyk.iac.IacSuggestionDescriptionPanel
@@ -37,6 +49,7 @@ import snyk.iac.IgnoreButtonActionListener
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import javax.swing.JButton
+import javax.swing.JLabel
 import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
 
@@ -44,6 +57,8 @@ import javax.swing.tree.TreeNode
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private val iacGoofJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")
+    private val containerResultWithRemediationJson =
+        getResourceAsString("container-test-results/nginx-with-remediation.json")
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
         .getResource(resourceName)!!.readText(Charsets.UTF_8)
@@ -86,6 +101,13 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     private fun setUpContainerTest() {
+        val settings = pluginSettings()
+        settings.ossScanEnable = false
+        settings.snykCodeSecurityIssuesScanEnable = false
+        settings.snykCodeQualityIssuesScanEnable = false
+        settings.iacScanEnabled = false
+        settings.containerScanEnabled = true
+
         isContainerEnabledRegistryValue.setValue(true)
     }
 
@@ -314,5 +336,165 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 TreeUtil.findNodeWithObject(rootNode, it) != null
             )
         }
+    }
+
+    @Test
+    fun `test container error shown`() {
+        // pre-test setup
+        setUpContainerTest()
+
+        // mock Container results
+        val containerError = SnykError("fake error", "fake path")
+        val containerResultWithError = ContainerResult(null, containerError)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isCliInstalled() } returns true
+        every { getContainerService(project)?.scan() } returns containerResultWithError
+
+        // actual test run
+        project.service<SnykTaskQueueService>().scan()
+
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        assertEquals(containerError, toolWindowPanel.currentContainerError)
+
+        TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        val descriptionComponents = toolWindowPanel.getDescriptionPanel().components.toList()
+        val errorPanel = descriptionComponents.find { it is SnykErrorPanel } as? SnykErrorPanel
+
+        assertNotNull(errorPanel)
+
+        val errorMessageTextArea =
+            UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "errorMessageTextArea")
+        val pathTextArea = UIComponentFinder.getComponentByName(errorPanel, JTextArea::class, "pathTextArea")
+
+        assertTrue(errorMessageTextArea?.text == containerError.message)
+        assertTrue(pathTextArea?.text == containerError.path)
+    }
+
+    @Test
+    fun `test container image nodes with description shown`() {
+        // pre-test setup
+        setUpContainerTest()
+        // mock Container results
+        val containerResult = ContainerResult(
+            listOf(
+                ContainerIssuesForImage(
+                    listOf(ContainerIssue(
+                        id = "fakeId1",
+                        title = "fakeTitle1",
+                        description = "fakeDescription1",
+                        severity = "low",
+                        from = emptyList(),
+                        packageManager = "fakePackageManager1"
+                    )),
+                    "fake project name",
+                    Docker(),
+                    null,
+                    "fake-image-name1"
+                ),
+                ContainerIssuesForImage(
+                    listOf(ContainerIssue(
+                        id = "fakeId2",
+                        title = "fakeTitle2",
+                        description = "fakeDescription2",
+                        severity = "low",
+                        from = emptyList(),
+                        packageManager = "fakePackageManager2"
+                    )),
+                    "fake project name",
+                    Docker(),
+                    null,
+                    "fake-image-name2"
+                )
+            ),
+            null
+        )
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isCliInstalled() } returns true
+        every { getContainerService(project)?.scan() } returns containerResult
+
+        // actual test run
+        project.service<SnykTaskQueueService>().scan()
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        // Assertions
+        assertEquals(containerResult, toolWindowPanel.currentContainerResult)
+
+        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+        assertTrue("2 images with issues should be found", rootContainerNode.childCount == 2)
+        assertTrue(
+            "`fake-image-name1` should be found",
+            ((rootContainerNode.firstChild as ContainerImageTreeNode).userObject as ContainerIssuesForImage)
+                .imageName == "fake-image-name1"
+        )
+        assertTrue(
+            "`fake-image-name2` should be found",
+            ((rootContainerNode.lastChild as ContainerImageTreeNode).userObject as ContainerIssuesForImage)
+                .imageName == "fake-image-name2"
+        )
+
+        TreeUtil.selectNode(toolWindowPanel.getTree(), rootContainerNode.firstChild)
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        val baseImageRemediationDetailPanel = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            BaseImageRemediationDetailPanel::class,
+            "BaseImageRemediationDetailPanel"
+        )
+        assertNotNull(baseImageRemediationDetailPanel)
+    }
+
+    @Test
+    fun `test container image nodes with remediation description shown`() {
+        // pre-test setup
+        setUpContainerTest()
+        // mock Container results
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isCliInstalled() } returns true
+        every { getKubernetesImageCache(project)?.getKubernetesWorkloadImages() } returns setOf(
+            KubernetesWorkloadImage("ignored_image_name", MockPsiFile(PsiManager.getInstance(project)))
+        )
+        val containerService = ContainerService(project)
+        val mockkRunner = mockk<ConsoleCommandRunner>()
+        every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultWithRemediationJson
+        containerService.setConsoleCommandRunner(mockkRunner)
+        every { getContainerService(project)?.scan() } returns containerService.scan()
+
+        // actual test run
+        project.service<SnykTaskQueueService>().scan()
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+        TreeUtil.selectNode(toolWindowPanel.getTree(), rootContainerNode.firstChild)
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        // Assertions
+        val currentImageValueLabel = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JLabel::class,
+            BaseImageRemediationDetailPanel.CURRENT_IMAGE
+        )
+        assertNotNull(currentImageValueLabel)
+        assertTrue("current image incorrect", currentImageValueLabel?.text == "nginx:1.16.0")
+
+        val minorUpgradeValueLabel = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JLabel::class,
+            BaseImageRemediationDetailPanel.MINOR_UPGRADES
+        )
+        assertNotNull(minorUpgradeValueLabel)
+        assertTrue("minor upgrades incorrect", minorUpgradeValueLabel?.text == "nginx:1.20.2")
+
+        val alternativeUpgradeValueLabel = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JLabel::class,
+            BaseImageRemediationDetailPanel.ALTERNATIVE_UPGRADES
+        )
+        assertNotNull(alternativeUpgradeValueLabel)
+        assertTrue("alternative upgrades incorrect", alternativeUpgradeValueLabel?.text == "nginx:1-perl")
     }
 }

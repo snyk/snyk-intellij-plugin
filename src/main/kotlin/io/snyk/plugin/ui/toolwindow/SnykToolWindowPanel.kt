@@ -13,6 +13,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -25,6 +26,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.analytics.getIssueSeverityOrNull
 import io.snyk.plugin.analytics.getIssueType
 import io.snyk.plugin.analytics.getSelectedProducts
+import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
@@ -37,6 +39,7 @@ import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isContainerEnabled
+import io.snyk.plugin.isContainerRunning
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
@@ -61,7 +64,11 @@ import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
+import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
+import snyk.container.KubernetesImageCache
+import snyk.container.ui.BaseImageRemediationDetailPanel
+import snyk.container.ui.ContainerImageTreeNode
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -182,8 +189,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             override fun scanningContainerFinished(containerResult: ContainerResult) {
                 currentContainerResult = containerResult
                 ApplicationManager.getApplication().invokeLater {
-                    // todo display container results
-                    displayNoVulnerabilitiesMessage() // remove after implementation
+                    displayContainerResults(containerResult)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -351,8 +357,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ossResultsCount = if (wasOssRunning) NODE_INITIAL_STATE else null,
                         securityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
                         qualityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
-                        iacResultsCount = if (wasIacRunning) NODE_INITIAL_STATE else null
-                    // todo containerResultsCount
+                        iacResultsCount = if (wasIacRunning) NODE_INITIAL_STATE else null,
+                        containerResultsCount = if (wasContainerRunning) NODE_INITIAL_STATE else null
                     )
                     displayEmptyDescription()
                 }
@@ -443,6 +449,29 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             .build()
                     )
                 }
+                is ContainerImageTreeNode -> {
+                    val issuesForImage = node.userObject as ContainerIssuesForImage
+                    val scrollPane = wrapWithScrollPane(
+                        BaseImageRemediationDetailPanel(project, issuesForImage)
+                    )
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+
+                    val targetImage = project.service<KubernetesImageCache>()
+                        .getKubernetesWorkloadImages()
+                        .find { it.image == issuesForImage.imageName }
+                    val psiFile = targetImage?.psiFile
+                    val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
+                    if (psiFile != null && psiFile.isValid && line != null) {
+                        val document = PsiDocumentManager.getInstance(project).getDocument(psiFile)
+                        if (document != null) {
+                            val lineNumber = if (0 <= line && line < document.lineCount) line else 0
+                            val lineStartOffset = document.getLineStartOffset(lineNumber)
+                            navigateToSource(psiFile.virtualFile, lineStartOffset)
+                        }
+                    }
+                    // TODO: Add image click event logging ?
+                }
+                // todo: is ContainerIssueTreeNode -> {
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
                 }
@@ -451,6 +480,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
                 is RootIacIssuesTreeNode -> {
                     currentIacError?.let { displaySnykError(it) } ?: displayEmptyDescription()
+                }
+                is RootContainerIssuesTreeNode -> {
+                    currentContainerError?.let { displaySnykError(it) } ?: displayEmptyDescription()
                 }
                 else -> {
                     displayEmptyDescription()
@@ -659,6 +691,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         securityIssuesCount: Int? = null,
         qualityIssuesCount: Int? = null,
         iacResultsCount: Int? = null,
+        containerResultsCount: Int? = null,
         addHMLPostfix: String = ""
     ) {
         val settings = pluginSettings()
@@ -720,6 +753,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         }
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
+
+        val newContainerTreeNodeText = when {
+            currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
+            isContainerRunning(project) && settings.containerScanEnabled -> "$CONTAINER_ROOT_TEXT (scanning...)"
+            else -> containerResultsCount?.let { count ->
+                CONTAINER_ROOT_TEXT + when {
+                    count == NODE_INITIAL_STATE -> ""
+                    count == 0 -> NO_ISSUES_FOUND_TEXT
+                    count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
+                    else -> throw IllegalStateException()
+                }
+            }
+        }
+        newContainerTreeNodeText?.let { rootContainerIssuesTreeNode.userObject = it }
     }
 
     private fun displayNoVulnerabilitiesMessage() {
@@ -893,6 +940,30 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         smartReloadRootNode(rootIacIssuesTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
     }
 
+    fun displayContainerResults(containerResult: ContainerResult) {
+        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootContainerIssuesTreeNode)
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+
+        rootContainerIssuesTreeNode.removeAllChildren()
+
+        if (pluginSettings().containerScanEnabled && containerResult.allCliIssues != null) {
+            containerResult.allCliIssues!!.forEach { issuesForImage ->
+                if (issuesForImage.vulnerabilities.isNotEmpty()) {
+                    val imageTreeNode = ContainerImageTreeNode(issuesForImage, project)
+                    rootContainerIssuesTreeNode.add(imageTreeNode)
+                    // todo: display issues here
+                }
+            }
+        }
+
+        updateTreeRootNodesPresentation(
+            containerResultsCount = containerResult.issuesCount,
+            addHMLPostfix = buildHMLpostfix(containerResult)
+        )
+
+        smartReloadRootNode(rootContainerIssuesTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
+    }
+
     private fun buildHMLpostfix(snykCodeResults: SnykCodeResults): String =
         buildHMLpostfix(
             errorsCount = snykCodeResults.totalErrorsCount,
@@ -900,20 +971,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             infosCount = snykCodeResults.totalInfosCount
         )
 
-    private fun buildHMLpostfix(ossResult: OssResult): String =
+    private fun buildHMLpostfix(cliResult: CliResult<*>): String =
         buildHMLpostfix(
-            ossResult.criticalSeveritiesCount(),
-            ossResult.highSeveritiesCount(),
-            ossResult.mediumSeveritiesCount(),
-            ossResult.lowSeveritiesCount()
-        )
-
-    private fun buildHMLpostfix(iacResult: IacResult): String =
-        buildHMLpostfix(
-            iacResult.criticalSeveritiesCount(),
-            iacResult.highSeveritiesCount(),
-            iacResult.mediumSeveritiesCount(),
-            iacResult.lowSeveritiesCount()
+            cliResult.criticalSeveritiesCount(),
+            cliResult.highSeveritiesCount(),
+            cliResult.mediumSeveritiesCount(),
+            cliResult.lowSeveritiesCount()
         )
 
     private fun buildHMLpostfix(criticalCount: Int = 0, errorsCount: Int, warnsCount: Int, infosCount: Int): String {
@@ -1022,7 +1085,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         (vulnerabilitiesTree.model as DefaultTreeModel).reload()
     }
 
+    @TestOnly
     fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode
+
+    @TestOnly
+    fun getRootContainerIssuesTreeNode() = rootContainerIssuesTreeNode
 
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
