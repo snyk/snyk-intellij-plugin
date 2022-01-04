@@ -5,7 +5,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.cli.CliNotExistsException
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import org.jetbrains.annotations.TestOnly
 
@@ -20,11 +20,6 @@ abstract class CliAdapter<R>(val project: Project) {
 
     protected val projectPath: String = project.basePath
         ?: throw IllegalStateException("Scan should not be performed on Default project (with `null` project base dir)")
-
-    fun isCliInstalled(): Boolean {
-        logger.debug("Check whether Snyk CLI is installed by plugin in: ${getPluginPath()}")
-        return getCliFile().exists()
-    }
 
     fun execute(commands: List<String>): R =
         try {
@@ -48,7 +43,7 @@ abstract class CliAdapter<R>(val project: Project) {
      * Build list of commands for run Snyk CLI command.
      * @return List<String>
      */
-    fun buildCliCommandsList(cmds: List<String>): List<String> {
+    private fun buildCliCommandsList(cmds: List<String>): List<String> {
         logger.debug("Enter buildCliCommandsList")
         val settings = pluginSettings()
 
@@ -76,6 +71,10 @@ abstract class CliAdapter<R>(val project: Project) {
 
         return commands.toList()
     }
+
+    @Suppress("FunctionName")
+    @TestOnly
+    fun buildCliCommandsList_TEST_ONLY(cmds: List<String>): List<String> = buildCliCommandsList(cmds)
 
     abstract fun buildExtraOptions(): List<String>
 

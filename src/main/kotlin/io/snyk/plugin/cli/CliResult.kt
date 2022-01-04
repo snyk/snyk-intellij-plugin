@@ -1,15 +1,18 @@
 package io.snyk.plugin.cli
 
 import io.snyk.plugin.Severity
-import java.time.Instant
 import snyk.common.SnykError
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
-abstract class CliResult<CliIssuesForFile>(
-    var allCliIssues: List<CliIssuesForFile>?,
+abstract class CliResult<CliIssues>(
+    var allCliIssues: List<CliIssues>?,
     var error: SnykError?
 ) {
 
-    val timeStamp: Instant = Instant.now()
+    private val timeStamp: Instant = Instant.now()
+
+    fun isExpired(): Boolean = timeStamp.plus(1, ChronoUnit.DAYS) < Instant.now()
 
     fun isSuccessful(): Boolean = error == null
 

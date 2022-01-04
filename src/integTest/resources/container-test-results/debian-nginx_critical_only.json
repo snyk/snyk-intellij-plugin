@@ -1,0 +1,5318 @@
+[
+  {
+    "vulnerabilities": [
+      {
+        "title": "Use After Free",
+        "credit": [
+          ""
+        ],
+        "packageName": "glibc",
+        "language": "linux",
+        "packageManager": "debian:11",
+        "description": "## NVD Description\n<i> **Note:** </i>\n<i> Versions mentioned in the description apply to the upstream `glibc` package. </i>\n\nThe mq_notify function in the GNU C Library (aka glibc) versions 2.32 and 2.33 has a use-after-free. It may use the notification thread attributes object (passed through its struct sigevent parameter) after it has been freed by the caller, leading to a denial of service (application crash) or possibly unspecified other impact.\n## Remediation\nThere is no fixed version for `Debian:11` `glibc`.\n## References\n- [ADVISORY](https://security-tracker.debian.org/tracker/CVE-2021-33574)\n- [CONFIRM](https://security.netapp.com/advisory/ntap-20210629-0005/)\n- [FEDORA](https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/)\n- [GENTOO](https://security.gentoo.org/glsa/202107-07)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896#c1)\n",
+        "identifiers": {
+          "ALTERNATIVE": [],
+          "CVE": [
+            "CVE-2021-33574"
+          ],
+          "CWE": [
+            "CWE-416"
+          ]
+        },
+        "severity": "critical",
+        "severityWithCritical": "critical",
+        "socialTrendAlert": false,
+        "cvssScore": 9.8,
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "patches": [],
+        "references": [
+          {
+            "title": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2021-33574"
+          },
+          {
+            "title": "CONFIRM",
+            "url": "https://security.netapp.com/advisory/ntap-20210629-0005/"
+          },
+          {
+            "title": "FEDORA",
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/"
+          },
+          {
+            "title": "GENTOO",
+            "url": "https://security.gentoo.org/glsa/202107-07"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896%23c1"
+          }
+        ],
+        "creationTime": "2021-05-26T15:11:38.773280Z",
+        "modificationTime": "2021-12-04T14:20:17.969879Z",
+        "publicationTime": "2021-05-26T15:11:38.561943Z",
+        "disclosureTime": "2021-05-25T22:15:00Z",
+        "id": "SNYK-DEBIAN11-GLIBC-1296898",
+        "malicious": false,
+        "nvdSeverity": "critical",
+        "relativeImportance": "not yet assigned",
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "from": [
+          "docker-image|debian@latest",
+          "glibc/libc-bin@2.31-13+deb11u2"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "glibc/libc-bin",
+        "version": "2.31-13+deb11u2"
+      },
+      {
+        "title": "Use After Free",
+        "credit": [
+          ""
+        ],
+        "packageName": "glibc",
+        "language": "linux",
+        "packageManager": "debian:11",
+        "description": "## NVD Description\n<i> **Note:** </i>\n<i> Versions mentioned in the description apply to the upstream `glibc` package. </i>\n\nThe mq_notify function in the GNU C Library (aka glibc) versions 2.32 and 2.33 has a use-after-free. It may use the notification thread attributes object (passed through its struct sigevent parameter) after it has been freed by the caller, leading to a denial of service (application crash) or possibly unspecified other impact.\n## Remediation\nThere is no fixed version for `Debian:11` `glibc`.\n## References\n- [ADVISORY](https://security-tracker.debian.org/tracker/CVE-2021-33574)\n- [CONFIRM](https://security.netapp.com/advisory/ntap-20210629-0005/)\n- [FEDORA](https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/)\n- [GENTOO](https://security.gentoo.org/glsa/202107-07)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896#c1)\n",
+        "identifiers": {
+          "ALTERNATIVE": [],
+          "CVE": [
+            "CVE-2021-33574"
+          ],
+          "CWE": [
+            "CWE-416"
+          ]
+        },
+        "severity": "critical",
+        "severityWithCritical": "critical",
+        "socialTrendAlert": false,
+        "cvssScore": 9.8,
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "patches": [],
+        "references": [
+          {
+            "title": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2021-33574"
+          },
+          {
+            "title": "CONFIRM",
+            "url": "https://security.netapp.com/advisory/ntap-20210629-0005/"
+          },
+          {
+            "title": "FEDORA",
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/"
+          },
+          {
+            "title": "GENTOO",
+            "url": "https://security.gentoo.org/glsa/202107-07"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896%23c1"
+          }
+        ],
+        "creationTime": "2021-05-26T15:11:38.773280Z",
+        "modificationTime": "2021-12-04T14:20:17.969879Z",
+        "publicationTime": "2021-05-26T15:11:38.561943Z",
+        "disclosureTime": "2021-05-25T22:15:00Z",
+        "id": "SNYK-DEBIAN11-GLIBC-1296898",
+        "malicious": false,
+        "nvdSeverity": "critical",
+        "relativeImportance": "not yet assigned",
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "from": [
+          "docker-image|debian@latest",
+          "meta-common-packages@meta",
+          "glibc/libc6@2.31-13+deb11u2"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "glibc/libc6",
+        "version": "2.31-13+deb11u2"
+      }
+    ],
+    "ok": false,
+    "dependencyCount": 97,
+    "org": "artsiom.chapialiou",
+    "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.22.1\nignore: {}\npatch: {}\n",
+    "isPrivate": true,
+    "licensesPolicy": {
+      "severities": {},
+      "orgLicenseRules": {
+        "AGPL-1.0": {
+          "licenseType": "AGPL-1.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "AGPL-3.0": {
+          "licenseType": "AGPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "Artistic-1.0": {
+          "licenseType": "Artistic-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "Artistic-2.0": {
+          "licenseType": "Artistic-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CDDL-1.0": {
+          "licenseType": "CDDL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CPOL-1.02": {
+          "licenseType": "CPOL-1.02",
+          "severity": "high",
+          "instructions": ""
+        },
+        "EPL-1.0": {
+          "licenseType": "EPL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "GPL-2.0": {
+          "licenseType": "GPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "GPL-3.0": {
+          "licenseType": "GPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "LGPL-2.0": {
+          "licenseType": "LGPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1": {
+          "licenseType": "LGPL-2.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0": {
+          "licenseType": "LGPL-3.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-1.1": {
+          "licenseType": "MPL-1.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-2.0": {
+          "licenseType": "MPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MS-RL": {
+          "licenseType": "MS-RL",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "SimPL-2.0": {
+          "licenseType": "SimPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        }
+      }
+    },
+    "packageManager": "deb",
+    "ignoreSettings": null,
+    "docker": {
+      "baseImage": "debian:11.2",
+      "baseImageRemediation": {
+        "code": "NO_REMEDIATION_AVAILABLE",
+        "advice": [
+          {
+            "message": "According to our scan, you are currently using the most secure version of the selected base image",
+            "bold": true
+          }
+        ]
+      }
+    },
+    "summary": "2 critical severity vulnerable dependency paths",
+    "severityThreshold": "critical",
+    "filesystemPolicy": false,
+    "filtered": {
+      "ignore": [],
+      "patch": []
+    },
+    "uniqueCount": 1,
+    "projectName": "docker-image|debian",
+    "platform": "linux/amd64",
+    "scanResult": {
+      "facts": [
+        {
+          "type": "depGraph",
+          "data": {
+            "schemaVersion": "1.2.0",
+            "pkgManager": {
+              "name": "deb",
+              "repositories": [
+                {
+                  "alias": "debian:11"
+                }
+              ]
+            },
+            "pkgs": [
+              {
+                "id": "docker-image|debian@latest",
+                "info": {
+                  "name": "docker-image|debian",
+                  "version": "latest"
+                }
+              },
+              {
+                "id": "audit/libaudit-common@1:3.0-2",
+                "info": {
+                  "name": "audit/libaudit-common",
+                  "version": "1:3.0-2"
+                }
+              },
+              {
+                "id": "libcap-ng/libcap-ng0@0.7.9-2.2+b1",
+                "info": {
+                  "name": "libcap-ng/libcap-ng0",
+                  "version": "0.7.9-2.2+b1"
+                }
+              },
+              {
+                "id": "audit/libaudit1@1:3.0-2",
+                "info": {
+                  "name": "audit/libaudit1",
+                  "version": "1:3.0-2"
+                }
+              },
+              {
+                "id": "libsemanage/libsemanage-common@3.1-1",
+                "info": {
+                  "name": "libsemanage/libsemanage-common",
+                  "version": "3.1-1"
+                }
+              },
+              {
+                "id": "libsepol/libsepol1@3.1-1",
+                "info": {
+                  "name": "libsepol/libsepol1",
+                  "version": "3.1-1"
+                }
+              },
+              {
+                "id": "libsemanage/libsemanage1@3.1-1+b2",
+                "info": {
+                  "name": "libsemanage/libsemanage1",
+                  "version": "3.1-1+b2"
+                }
+              },
+              {
+                "id": "db5.3/libdb5.3@5.3.28+dfsg1-0.8",
+                "info": {
+                  "name": "db5.3/libdb5.3",
+                  "version": "5.3.28+dfsg1-0.8"
+                }
+              },
+              {
+                "id": "e2fsprogs/libcom-err2@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/libcom-err2",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "krb5/libk5crypto3@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libk5crypto3",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "keyutils/libkeyutils1@1.6.1-2",
+                "info": {
+                  "name": "keyutils/libkeyutils1",
+                  "version": "1.6.1-2"
+                }
+              },
+              {
+                "id": "openssl/libssl1.1@1.1.1k-1+deb11u1",
+                "info": {
+                  "name": "openssl/libssl1.1",
+                  "version": "1.1.1k-1+deb11u1"
+                }
+              },
+              {
+                "id": "krb5/libkrb5-3@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libkrb5-3",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libgssapi-krb5-2",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "libtirpc/libtirpc-common@1.3.1-1",
+                "info": {
+                  "name": "libtirpc/libtirpc-common",
+                  "version": "1.3.1-1"
+                }
+              },
+              {
+                "id": "libtirpc/libtirpc3@1.3.1-1",
+                "info": {
+                  "name": "libtirpc/libtirpc3",
+                  "version": "1.3.1-1"
+                }
+              },
+              {
+                "id": "libnsl/libnsl2@1.3.0-2",
+                "info": {
+                  "name": "libnsl/libnsl2",
+                  "version": "1.3.0-2"
+                }
+              },
+              {
+                "id": "pam/libpam0g@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam0g",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "pam/libpam-modules-bin@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam-modules-bin",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "pam/libpam-modules@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam-modules",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "shadow/passwd@1:4.8.1-1",
+                "info": {
+                  "name": "shadow/passwd",
+                  "version": "1:4.8.1-1"
+                }
+              },
+              {
+                "id": "adduser@3.118",
+                "info": {
+                  "name": "adduser",
+                  "version": "3.118"
+                }
+              },
+              {
+                "id": "gcc-10/libstdc++6@10.2.1-6",
+                "info": {
+                  "name": "gcc-10/libstdc++6",
+                  "version": "10.2.1-6"
+                }
+              },
+              {
+                "id": "libgcrypt20@1.8.7-6",
+                "info": {
+                  "name": "libgcrypt20",
+                  "version": "1.8.7-6"
+                }
+              },
+              {
+                "id": "libzstd/libzstd1@1.4.8+dfsg-2.1",
+                "info": {
+                  "name": "libzstd/libzstd1",
+                  "version": "1.4.8+dfsg-2.1"
+                }
+              },
+              {
+                "id": "lz4/liblz4-1@1.9.3-2",
+                "info": {
+                  "name": "lz4/liblz4-1",
+                  "version": "1.9.3-2"
+                }
+              },
+              {
+                "id": "systemd/libsystemd0@247.3-6",
+                "info": {
+                  "name": "systemd/libsystemd0",
+                  "version": "247.3-6"
+                }
+              },
+              {
+                "id": "systemd/libudev1@247.3-6",
+                "info": {
+                  "name": "systemd/libudev1",
+                  "version": "247.3-6"
+                }
+              },
+              {
+                "id": "xxhash/libxxhash0@0.8.0-2",
+                "info": {
+                  "name": "xxhash/libxxhash0",
+                  "version": "0.8.0-2"
+                }
+              },
+              {
+                "id": "apt/libapt-pkg6.0@2.2.4",
+                "info": {
+                  "name": "apt/libapt-pkg6.0",
+                  "version": "2.2.4"
+                }
+              },
+              {
+                "id": "debian-archive-keyring@2021.1.1",
+                "info": {
+                  "name": "debian-archive-keyring",
+                  "version": "2021.1.1"
+                }
+              },
+              {
+                "id": "libgpg-error/libgpg-error0@1.38-2",
+                "info": {
+                  "name": "libgpg-error/libgpg-error0",
+                  "version": "1.38-2"
+                }
+              },
+              {
+                "id": "gnupg2/gpgv@2.2.27-2",
+                "info": {
+                  "name": "gnupg2/gpgv",
+                  "version": "2.2.27-2"
+                }
+              },
+              {
+                "id": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1",
+                "info": {
+                  "name": "gmp/libgmp10",
+                  "version": "2:6.2.1+dfsg-1+deb11u1"
+                }
+              },
+              {
+                "id": "libunistring/libunistring2@0.9.10-4",
+                "info": {
+                  "name": "libunistring/libunistring2",
+                  "version": "0.9.10-4"
+                }
+              },
+              {
+                "id": "libidn2/libidn2-0@2.3.0-5",
+                "info": {
+                  "name": "libidn2/libidn2-0",
+                  "version": "2.3.0-5"
+                }
+              },
+              {
+                "id": "libtasn1-6@4.16.0-2",
+                "info": {
+                  "name": "libtasn1-6",
+                  "version": "4.16.0-2"
+                }
+              },
+              {
+                "id": "nettle/libnettle8@3.7.3-1",
+                "info": {
+                  "name": "nettle/libnettle8",
+                  "version": "3.7.3-1"
+                }
+              },
+              {
+                "id": "nettle/libhogweed6@3.7.3-1",
+                "info": {
+                  "name": "nettle/libhogweed6",
+                  "version": "3.7.3-1"
+                }
+              },
+              {
+                "id": "libffi/libffi7@3.3-6",
+                "info": {
+                  "name": "libffi/libffi7",
+                  "version": "3.3-6"
+                }
+              },
+              {
+                "id": "p11-kit/libp11-kit0@0.23.22-1",
+                "info": {
+                  "name": "p11-kit/libp11-kit0",
+                  "version": "0.23.22-1"
+                }
+              },
+              {
+                "id": "gnutls28/libgnutls30@3.7.1-5",
+                "info": {
+                  "name": "gnutls28/libgnutls30",
+                  "version": "3.7.1-5"
+                }
+              },
+              {
+                "id": "libseccomp/libseccomp2@2.5.1-1+deb11u1",
+                "info": {
+                  "name": "libseccomp/libseccomp2",
+                  "version": "2.5.1-1+deb11u1"
+                }
+              },
+              {
+                "id": "apt@2.2.4",
+                "info": {
+                  "name": "apt",
+                  "version": "2.2.4"
+                }
+              },
+              {
+                "id": "attr/libattr1@1:2.4.48-6",
+                "info": {
+                  "name": "attr/libattr1",
+                  "version": "1:2.4.48-6"
+                }
+              },
+              {
+                "id": "mawk@1.3.4.20200120-2",
+                "info": {
+                  "name": "mawk",
+                  "version": "1.3.4.20200120-2"
+                }
+              },
+              {
+                "id": "base-files@11.1+deb11u2",
+                "info": {
+                  "name": "base-files",
+                  "version": "11.1+deb11u2"
+                }
+              },
+              {
+                "id": "cdebconf/libdebconfclient0@0.260",
+                "info": {
+                  "name": "cdebconf/libdebconfclient0",
+                  "version": "0.260"
+                }
+              },
+              {
+                "id": "base-passwd@3.5.51",
+                "info": {
+                  "name": "base-passwd",
+                  "version": "3.5.51"
+                }
+              },
+              {
+                "id": "debianutils@4.11.2",
+                "info": {
+                  "name": "debianutils",
+                  "version": "4.11.2"
+                }
+              },
+              {
+                "id": "ncurses/libtinfo6@6.2+20201114-2",
+                "info": {
+                  "name": "ncurses/libtinfo6",
+                  "version": "6.2+20201114-2"
+                }
+              },
+              {
+                "id": "bash/bash@5.1-2+b3",
+                "info": {
+                  "name": "bash/bash",
+                  "version": "5.1-2+b3"
+                }
+              },
+              {
+                "id": "coreutils/coreutils@8.32-4+b1",
+                "info": {
+                  "name": "coreutils/coreutils",
+                  "version": "8.32-4+b1"
+                }
+              },
+              {
+                "id": "dash@0.5.11+git20200708+dd9ef66-5",
+                "info": {
+                  "name": "dash",
+                  "version": "0.5.11+git20200708+dd9ef66-5"
+                }
+              },
+              {
+                "id": "diffutils@1:3.7-5",
+                "info": {
+                  "name": "diffutils",
+                  "version": "1:3.7-5"
+                }
+              },
+              {
+                "id": "e2fsprogs/libext2fs2@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/libext2fs2",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "e2fsprogs/libss2@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/libss2",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "e2fsprogs/logsave@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/logsave",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "util-linux/libblkid1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libblkid1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/libuuid1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libuuid1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "e2fsprogs@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "findutils@4.8.0-1",
+                "info": {
+                  "name": "findutils",
+                  "version": "4.8.0-1"
+                }
+              },
+              {
+                "id": "gcc-9/gcc-9-base@9.3.0-22",
+                "info": {
+                  "name": "gcc-9/gcc-9-base",
+                  "version": "9.3.0-22"
+                }
+              },
+              {
+                "id": "glibc/libc-bin@2.31-13+deb11u2",
+                "info": {
+                  "name": "glibc/libc-bin",
+                  "version": "2.31-13+deb11u2"
+                }
+              },
+              {
+                "id": "pcre3/libpcre3@2:8.39-13",
+                "info": {
+                  "name": "pcre3/libpcre3",
+                  "version": "2:8.39-13"
+                }
+              },
+              {
+                "id": "grep@3.6-1",
+                "info": {
+                  "name": "grep",
+                  "version": "3.6-1"
+                }
+              },
+              {
+                "id": "gzip@1.10-4",
+                "info": {
+                  "name": "gzip",
+                  "version": "1.10-4"
+                }
+              },
+              {
+                "id": "hostname@3.23",
+                "info": {
+                  "name": "hostname",
+                  "version": "3.23"
+                }
+              },
+              {
+                "id": "init-system-helpers@1.60",
+                "info": {
+                  "name": "init-system-helpers",
+                  "version": "1.60"
+                }
+              },
+              {
+                "id": "lsb/lsb-base@11.1.0",
+                "info": {
+                  "name": "lsb/lsb-base",
+                  "version": "11.1.0"
+                }
+              },
+              {
+                "id": "acl/libacl1@2.2.53-10",
+                "info": {
+                  "name": "acl/libacl1",
+                  "version": "2.2.53-10"
+                }
+              },
+              {
+                "id": "bzip2/libbz2-1.0@1.0.8-4",
+                "info": {
+                  "name": "bzip2/libbz2-1.0",
+                  "version": "1.0.8-4"
+                }
+              },
+              {
+                "id": "debconf@1.5.77",
+                "info": {
+                  "name": "debconf",
+                  "version": "1.5.77"
+                }
+              },
+              {
+                "id": "dpkg@1.20.9",
+                "info": {
+                  "name": "dpkg",
+                  "version": "1.20.9"
+                }
+              },
+              {
+                "id": "gcc-10/gcc-10-base@10.2.1-6",
+                "info": {
+                  "name": "gcc-10/gcc-10-base",
+                  "version": "10.2.1-6"
+                }
+              },
+              {
+                "id": "gcc-10/libgcc-s1@10.2.1-6",
+                "info": {
+                  "name": "gcc-10/libgcc-s1",
+                  "version": "10.2.1-6"
+                }
+              },
+              {
+                "id": "glibc/libc6@2.31-13+deb11u2",
+                "info": {
+                  "name": "glibc/libc6",
+                  "version": "2.31-13+deb11u2"
+                }
+              },
+              {
+                "id": "krb5/libkrb5support0@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libkrb5support0",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "libselinux/libselinux1@3.1-3",
+                "info": {
+                  "name": "libselinux/libselinux1",
+                  "version": "3.1-3"
+                }
+              },
+              {
+                "id": "libxcrypt/libcrypt1@1:4.4.18-4",
+                "info": {
+                  "name": "libxcrypt/libcrypt1",
+                  "version": "1:4.4.18-4"
+                }
+              },
+              {
+                "id": "pcre2/libpcre2-8-0@10.36-2",
+                "info": {
+                  "name": "pcre2/libpcre2-8-0",
+                  "version": "10.36-2"
+                }
+              },
+              {
+                "id": "perl/perl-base@5.32.1-4+deb11u2",
+                "info": {
+                  "name": "perl/perl-base",
+                  "version": "5.32.1-4+deb11u2"
+                }
+              },
+              {
+                "id": "tar@1.34+dfsg-1",
+                "info": {
+                  "name": "tar",
+                  "version": "1.34+dfsg-1"
+                }
+              },
+              {
+                "id": "xz-utils/liblzma5@5.2.5-2",
+                "info": {
+                  "name": "xz-utils/liblzma5",
+                  "version": "5.2.5-2"
+                }
+              },
+              {
+                "id": "zlib/zlib1g@1:1.2.11.dfsg-2",
+                "info": {
+                  "name": "zlib/zlib1g",
+                  "version": "1:1.2.11.dfsg-2"
+                }
+              },
+              {
+                "id": "meta-common-packages@meta",
+                "info": {
+                  "name": "meta-common-packages",
+                  "version": "meta"
+                }
+              },
+              {
+                "id": "ncurses/ncurses-base@6.2+20201114-2",
+                "info": {
+                  "name": "ncurses/ncurses-base",
+                  "version": "6.2+20201114-2"
+                }
+              },
+              {
+                "id": "ncurses/ncurses-bin@6.2+20201114-2",
+                "info": {
+                  "name": "ncurses/ncurses-bin",
+                  "version": "6.2+20201114-2"
+                }
+              },
+              {
+                "id": "pam/libpam-runtime@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam-runtime",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "sed@4.7-1",
+                "info": {
+                  "name": "sed",
+                  "version": "4.7-1"
+                }
+              },
+              {
+                "id": "shadow/login@1:4.8.1-1",
+                "info": {
+                  "name": "shadow/login",
+                  "version": "1:4.8.1-1"
+                }
+              },
+              {
+                "id": "sysvinit/sysvinit-utils@2.96-7",
+                "info": {
+                  "name": "sysvinit/sysvinit-utils",
+                  "version": "2.96-7"
+                }
+              },
+              {
+                "id": "tzdata@2021a-1+deb11u2",
+                "info": {
+                  "name": "tzdata",
+                  "version": "2021a-1+deb11u2"
+                }
+              },
+              {
+                "id": "util-linux@2.36.1-8",
+                "info": {
+                  "name": "util-linux",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/bsdutils@1:2.36.1-8",
+                "info": {
+                  "name": "util-linux/bsdutils",
+                  "version": "1:2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/libmount1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libmount1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/libsmartcols1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libsmartcols1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/mount@2.36.1-8",
+                "info": {
+                  "name": "util-linux/mount",
+                  "version": "2.36.1-8"
+                }
+              }
+            ],
+            "graph": {
+              "rootNodeId": "root-node",
+              "nodes": [
+                {
+                  "nodeId": "root-node",
+                  "pkgId": "docker-image|debian@latest",
+                  "deps": [
+                    {
+                      "nodeId": "adduser@3.118|1"
+                    },
+                    {
+                      "nodeId": "apt@2.2.4"
+                    },
+                    {
+                      "nodeId": "apt/libapt-pkg6.0@2.2.4|2"
+                    },
+                    {
+                      "nodeId": "attr/libattr1@1:2.4.48-6"
+                    },
+                    {
+                      "nodeId": "audit/libaudit-common@1:3.0-2"
+                    },
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|2"
+                    },
+                    {
+                      "nodeId": "base-files@11.1+deb11u2|1"
+                    },
+                    {
+                      "nodeId": "base-passwd@3.5.51"
+                    },
+                    {
+                      "nodeId": "bash/bash@5.1-2+b3"
+                    },
+                    {
+                      "nodeId": "cdebconf/libdebconfclient0@0.260"
+                    },
+                    {
+                      "nodeId": "coreutils/coreutils@8.32-4+b1"
+                    },
+                    {
+                      "nodeId": "dash@0.5.11+git20200708+dd9ef66-5"
+                    },
+                    {
+                      "nodeId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8"
+                    },
+                    {
+                      "nodeId": "debian-archive-keyring@2021.1.1"
+                    },
+                    {
+                      "nodeId": "debianutils@4.11.2"
+                    },
+                    {
+                      "nodeId": "diffutils@1:3.7-5"
+                    },
+                    {
+                      "nodeId": "e2fsprogs@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libext2fs2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libss2@1.46.2-2|2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/logsave@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "findutils@4.8.0-1"
+                    },
+                    {
+                      "nodeId": "gcc-10/libstdc++6@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "gcc-9/gcc-9-base@9.3.0-22"
+                    },
+                    {
+                      "nodeId": "glibc/libc-bin@2.31-13+deb11u2"
+                    },
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "gnupg2/gpgv@2.2.27-2|2"
+                    },
+                    {
+                      "nodeId": "gnutls28/libgnutls30@3.7.1-5|2"
+                    },
+                    {
+                      "nodeId": "grep@3.6-1"
+                    },
+                    {
+                      "nodeId": "gzip@1.10-4"
+                    },
+                    {
+                      "nodeId": "hostname@3.23"
+                    },
+                    {
+                      "nodeId": "init-system-helpers@1.60"
+                    },
+                    {
+                      "nodeId": "keyutils/libkeyutils1@1.6.1-2"
+                    },
+                    {
+                      "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "krb5/libk5crypto3@1.18.3-6+deb11u1"
+                    },
+                    {
+                      "nodeId": "krb5/libkrb5-3@1.18.3-6+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1"
+                    },
+                    {
+                      "nodeId": "libffi/libffi7@3.3-6"
+                    },
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|1"
+                    },
+                    {
+                      "nodeId": "libgpg-error/libgpg-error0@1.38-2"
+                    },
+                    {
+                      "nodeId": "libidn2/libidn2-0@2.3.0-5|2"
+                    },
+                    {
+                      "nodeId": "libnsl/libnsl2@1.3.0-2|2"
+                    },
+                    {
+                      "nodeId": "libseccomp/libseccomp2@2.5.1-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "libsemanage/libsemanage-common@3.1-1"
+                    },
+                    {
+                      "nodeId": "libsemanage/libsemanage1@3.1-1+b2|2"
+                    },
+                    {
+                      "nodeId": "libsepol/libsepol1@3.1-1"
+                    },
+                    {
+                      "nodeId": "libtasn1-6@4.16.0-2"
+                    },
+                    {
+                      "nodeId": "libtirpc/libtirpc-common@1.3.1-1"
+                    },
+                    {
+                      "nodeId": "libtirpc/libtirpc3@1.3.1-1|2"
+                    },
+                    {
+                      "nodeId": "libunistring/libunistring2@0.9.10-4"
+                    },
+                    {
+                      "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1"
+                    },
+                    {
+                      "nodeId": "lsb/lsb-base@11.1.0"
+                    },
+                    {
+                      "nodeId": "lz4/liblz4-1@1.9.3-2"
+                    },
+                    {
+                      "nodeId": "mawk@1.3.4.20200120-2"
+                    },
+                    {
+                      "nodeId": "meta-common-packages@meta"
+                    },
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "ncurses/ncurses-base@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "ncurses/ncurses-bin@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "nettle/libhogweed6@3.7.3-1|2"
+                    },
+                    {
+                      "nodeId": "nettle/libnettle8@3.7.3-1"
+                    },
+                    {
+                      "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "p11-kit/libp11-kit0@0.23.22-1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-modules-bin@1.4.0-9+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "pcre3/libpcre3@2:8.39-13"
+                    },
+                    {
+                      "nodeId": "sed@4.7-1"
+                    },
+                    {
+                      "nodeId": "shadow/login@1:4.8.1-1|1"
+                    },
+                    {
+                      "nodeId": "shadow/passwd@1:4.8.1-1|2"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    },
+                    {
+                      "nodeId": "systemd/libudev1@247.3-6"
+                    },
+                    {
+                      "nodeId": "sysvinit/sysvinit-utils@2.96-7"
+                    },
+                    {
+                      "nodeId": "tzdata@2021a-1+deb11u2"
+                    },
+                    {
+                      "nodeId": "util-linux@2.36.1-8|1"
+                    },
+                    {
+                      "nodeId": "util-linux/bsdutils@1:2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libmount1@2.36.1-8|1"
+                    },
+                    {
+                      "nodeId": "util-linux/libsmartcols1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libuuid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/mount@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "xxhash/libxxhash0@0.8.0-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "audit/libaudit-common@1:3.0-2",
+                  "pkgId": "audit/libaudit-common@1:3.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1",
+                  "pkgId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "audit/libaudit1@1:3.0-2|1",
+                  "pkgId": "audit/libaudit1@1:3.0-2",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit-common@1:3.0-2"
+                    },
+                    {
+                      "nodeId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "audit/libaudit1@1:3.0-2|2",
+                  "pkgId": "audit/libaudit1@1:3.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libsemanage/libsemanage-common@3.1-1",
+                  "pkgId": "libsemanage/libsemanage-common@3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libsepol/libsepol1@3.1-1",
+                  "pkgId": "libsepol/libsepol1@3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libsemanage/libsemanage1@3.1-1+b2|1",
+                  "pkgId": "libsemanage/libsemanage1@3.1-1+b2",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|2"
+                    },
+                    {
+                      "nodeId": "libsemanage/libsemanage-common@3.1-1"
+                    },
+                    {
+                      "nodeId": "libsepol/libsepol1@3.1-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libsemanage/libsemanage1@3.1-1+b2|2",
+                  "pkgId": "libsemanage/libsemanage1@3.1-1+b2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8",
+                  "pkgId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/libcom-err2@1.46.2-2",
+                  "pkgId": "e2fsprogs/libcom-err2@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "krb5/libk5crypto3@1.18.3-6+deb11u1",
+                  "pkgId": "krb5/libk5crypto3@1.18.3-6+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "keyutils/libkeyutils1@1.6.1-2",
+                  "pkgId": "keyutils/libkeyutils1@1.6.1-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1",
+                  "pkgId": "openssl/libssl1.1@1.1.1k-1+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "krb5/libkrb5-3@1.18.3-6+deb11u1|1",
+                  "pkgId": "krb5/libkrb5-3@1.18.3-6+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "keyutils/libkeyutils1@1.6.1-2"
+                    },
+                    {
+                      "nodeId": "krb5/libk5crypto3@1.18.3-6+deb11u1"
+                    },
+                    {
+                      "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "krb5/libkrb5-3@1.18.3-6+deb11u1|2",
+                  "pkgId": "krb5/libkrb5-3@1.18.3-6+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|1",
+                  "pkgId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "krb5/libk5crypto3@1.18.3-6+deb11u1"
+                    },
+                    {
+                      "nodeId": "krb5/libkrb5-3@1.18.3-6+deb11u1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|2",
+                  "pkgId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libtirpc/libtirpc-common@1.3.1-1",
+                  "pkgId": "libtirpc/libtirpc-common@1.3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libtirpc/libtirpc3@1.3.1-1|1",
+                  "pkgId": "libtirpc/libtirpc3@1.3.1-1",
+                  "deps": [
+                    {
+                      "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "libtirpc/libtirpc-common@1.3.1-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libtirpc/libtirpc3@1.3.1-1|2",
+                  "pkgId": "libtirpc/libtirpc3@1.3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libnsl/libnsl2@1.3.0-2|1",
+                  "pkgId": "libnsl/libnsl2@1.3.0-2",
+                  "deps": [
+                    {
+                      "nodeId": "libtirpc/libtirpc3@1.3.1-1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libnsl/libnsl2@1.3.0-2|2",
+                  "pkgId": "libnsl/libnsl2@1.3.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|1",
+                  "pkgId": "pam/libpam0g@1.4.0-9+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|2",
+                  "pkgId": "pam/libpam0g@1.4.0-9+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-modules-bin@1.4.0-9+deb11u1|1",
+                  "pkgId": "pam/libpam-modules-bin@1.4.0-9+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-modules-bin@1.4.0-9+deb11u1|2",
+                  "pkgId": "pam/libpam-modules-bin@1.4.0-9+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|1",
+                  "pkgId": "pam/libpam-modules@1.4.0-9+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|2"
+                    },
+                    {
+                      "nodeId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8"
+                    },
+                    {
+                      "nodeId": "libnsl/libnsl2@1.3.0-2|1"
+                    },
+                    {
+                      "nodeId": "libtirpc/libtirpc3@1.3.1-1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-modules-bin@1.4.0-9+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|2",
+                  "pkgId": "pam/libpam-modules@1.4.0-9+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "shadow/passwd@1:4.8.1-1|1",
+                  "pkgId": "shadow/passwd@1:4.8.1-1",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|1"
+                    },
+                    {
+                      "nodeId": "libsemanage/libsemanage1@3.1-1+b2|1"
+                    },
+                    {
+                      "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "shadow/passwd@1:4.8.1-1|2",
+                  "pkgId": "shadow/passwd@1:4.8.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "adduser@3.118|1",
+                  "pkgId": "adduser@3.118",
+                  "deps": [
+                    {
+                      "nodeId": "shadow/passwd@1:4.8.1-1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "adduser@3.118|2",
+                  "pkgId": "adduser@3.118",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gcc-10/libstdc++6@10.2.1-6",
+                  "pkgId": "gcc-10/libstdc++6@10.2.1-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libgcrypt20@1.8.7-6|1",
+                  "pkgId": "libgcrypt20@1.8.7-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libgcrypt20@1.8.7-6|2",
+                  "pkgId": "libgcrypt20@1.8.7-6",
+                  "deps": [
+                    {
+                      "nodeId": "libgpg-error/libgpg-error0@1.38-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1",
+                  "pkgId": "libzstd/libzstd1@1.4.8+dfsg-2.1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "lz4/liblz4-1@1.9.3-2",
+                  "pkgId": "lz4/liblz4-1@1.9.3-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "systemd/libsystemd0@247.3-6|1",
+                  "pkgId": "systemd/libsystemd0@247.3-6",
+                  "deps": [
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|1"
+                    },
+                    {
+                      "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1"
+                    },
+                    {
+                      "nodeId": "lz4/liblz4-1@1.9.3-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "systemd/libsystemd0@247.3-6|2",
+                  "pkgId": "systemd/libsystemd0@247.3-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "systemd/libudev1@247.3-6",
+                  "pkgId": "systemd/libudev1@247.3-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "xxhash/libxxhash0@0.8.0-2",
+                  "pkgId": "xxhash/libxxhash0@0.8.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "apt/libapt-pkg6.0@2.2.4|1",
+                  "pkgId": "apt/libapt-pkg6.0@2.2.4",
+                  "deps": [
+                    {
+                      "nodeId": "gcc-10/libstdc++6@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|1"
+                    },
+                    {
+                      "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1"
+                    },
+                    {
+                      "nodeId": "lz4/liblz4-1@1.9.3-2"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|1"
+                    },
+                    {
+                      "nodeId": "systemd/libudev1@247.3-6"
+                    },
+                    {
+                      "nodeId": "xxhash/libxxhash0@0.8.0-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "apt/libapt-pkg6.0@2.2.4|2",
+                  "pkgId": "apt/libapt-pkg6.0@2.2.4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "debian-archive-keyring@2021.1.1",
+                  "pkgId": "debian-archive-keyring@2021.1.1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libgpg-error/libgpg-error0@1.38-2",
+                  "pkgId": "libgpg-error/libgpg-error0@1.38-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gnupg2/gpgv@2.2.27-2|1",
+                  "pkgId": "gnupg2/gpgv@2.2.27-2",
+                  "deps": [
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|2"
+                    },
+                    {
+                      "nodeId": "libgpg-error/libgpg-error0@1.38-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "gnupg2/gpgv@2.2.27-2|2",
+                  "pkgId": "gnupg2/gpgv@2.2.27-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1",
+                  "pkgId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libunistring/libunistring2@0.9.10-4",
+                  "pkgId": "libunistring/libunistring2@0.9.10-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libidn2/libidn2-0@2.3.0-5|1",
+                  "pkgId": "libidn2/libidn2-0@2.3.0-5",
+                  "deps": [
+                    {
+                      "nodeId": "libunistring/libunistring2@0.9.10-4"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libidn2/libidn2-0@2.3.0-5|2",
+                  "pkgId": "libidn2/libidn2-0@2.3.0-5",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libtasn1-6@4.16.0-2",
+                  "pkgId": "libtasn1-6@4.16.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "nettle/libnettle8@3.7.3-1",
+                  "pkgId": "nettle/libnettle8@3.7.3-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "nettle/libhogweed6@3.7.3-1|1",
+                  "pkgId": "nettle/libhogweed6@3.7.3-1",
+                  "deps": [
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "nettle/libnettle8@3.7.3-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "nettle/libhogweed6@3.7.3-1|2",
+                  "pkgId": "nettle/libhogweed6@3.7.3-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libffi/libffi7@3.3-6",
+                  "pkgId": "libffi/libffi7@3.3-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "p11-kit/libp11-kit0@0.23.22-1|1",
+                  "pkgId": "p11-kit/libp11-kit0@0.23.22-1",
+                  "deps": [
+                    {
+                      "nodeId": "libffi/libffi7@3.3-6"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "p11-kit/libp11-kit0@0.23.22-1|2",
+                  "pkgId": "p11-kit/libp11-kit0@0.23.22-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gnutls28/libgnutls30@3.7.1-5|1",
+                  "pkgId": "gnutls28/libgnutls30@3.7.1-5",
+                  "deps": [
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "libidn2/libidn2-0@2.3.0-5|1"
+                    },
+                    {
+                      "nodeId": "libtasn1-6@4.16.0-2"
+                    },
+                    {
+                      "nodeId": "libunistring/libunistring2@0.9.10-4"
+                    },
+                    {
+                      "nodeId": "nettle/libhogweed6@3.7.3-1|1"
+                    },
+                    {
+                      "nodeId": "nettle/libnettle8@3.7.3-1"
+                    },
+                    {
+                      "nodeId": "p11-kit/libp11-kit0@0.23.22-1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "gnutls28/libgnutls30@3.7.1-5|2",
+                  "pkgId": "gnutls28/libgnutls30@3.7.1-5",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libseccomp/libseccomp2@2.5.1-1+deb11u1",
+                  "pkgId": "libseccomp/libseccomp2@2.5.1-1+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "apt@2.2.4",
+                  "pkgId": "apt@2.2.4",
+                  "deps": [
+                    {
+                      "nodeId": "adduser@3.118|2"
+                    },
+                    {
+                      "nodeId": "apt/libapt-pkg6.0@2.2.4|1"
+                    },
+                    {
+                      "nodeId": "debian-archive-keyring@2021.1.1"
+                    },
+                    {
+                      "nodeId": "gcc-10/libstdc++6@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "gnupg2/gpgv@2.2.27-2|1"
+                    },
+                    {
+                      "nodeId": "gnutls28/libgnutls30@3.7.1-5|1"
+                    },
+                    {
+                      "nodeId": "libseccomp/libseccomp2@2.5.1-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "attr/libattr1@1:2.4.48-6",
+                  "pkgId": "attr/libattr1@1:2.4.48-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "mawk@1.3.4.20200120-2",
+                  "pkgId": "mawk@1.3.4.20200120-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "base-files@11.1+deb11u2|1",
+                  "pkgId": "base-files@11.1+deb11u2",
+                  "deps": [
+                    {
+                      "nodeId": "mawk@1.3.4.20200120-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "base-files@11.1+deb11u2|2",
+                  "pkgId": "base-files@11.1+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "cdebconf/libdebconfclient0@0.260",
+                  "pkgId": "cdebconf/libdebconfclient0@0.260",
+                  "deps": []
+                },
+                {
+                  "nodeId": "base-passwd@3.5.51",
+                  "pkgId": "base-passwd@3.5.51",
+                  "deps": [
+                    {
+                      "nodeId": "cdebconf/libdebconfclient0@0.260"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "debianutils@4.11.2",
+                  "pkgId": "debianutils@4.11.2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "ncurses/libtinfo6@6.2+20201114-2",
+                  "pkgId": "ncurses/libtinfo6@6.2+20201114-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "bash/bash@5.1-2+b3",
+                  "pkgId": "bash/bash@5.1-2+b3",
+                  "deps": [
+                    {
+                      "nodeId": "base-files@11.1+deb11u2|2"
+                    },
+                    {
+                      "nodeId": "debianutils@4.11.2"
+                    },
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "coreutils/coreutils@8.32-4+b1",
+                  "pkgId": "coreutils/coreutils@8.32-4+b1",
+                  "deps": [
+                    {
+                      "nodeId": "attr/libattr1@1:2.4.48-6"
+                    },
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "dash@0.5.11+git20200708+dd9ef66-5",
+                  "pkgId": "dash@0.5.11+git20200708+dd9ef66-5",
+                  "deps": [
+                    {
+                      "nodeId": "debianutils@4.11.2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "diffutils@1:3.7-5",
+                  "pkgId": "diffutils@1:3.7-5",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/libext2fs2@1.46.2-2",
+                  "pkgId": "e2fsprogs/libext2fs2@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/libss2@1.46.2-2|1",
+                  "pkgId": "e2fsprogs/libss2@1.46.2-2",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "e2fsprogs/libss2@1.46.2-2|2",
+                  "pkgId": "e2fsprogs/libss2@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/logsave@1.46.2-2",
+                  "pkgId": "e2fsprogs/logsave@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/libblkid1@2.36.1-8",
+                  "pkgId": "util-linux/libblkid1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/libuuid1@2.36.1-8",
+                  "pkgId": "util-linux/libuuid1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs@1.46.2-2",
+                  "pkgId": "e2fsprogs@1.46.2-2",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libext2fs2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libss2@1.46.2-2|1"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/logsave@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libuuid1@2.36.1-8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "findutils@4.8.0-1",
+                  "pkgId": "findutils@4.8.0-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gcc-9/gcc-9-base@9.3.0-22",
+                  "pkgId": "gcc-9/gcc-9-base@9.3.0-22",
+                  "deps": []
+                },
+                {
+                  "nodeId": "glibc/libc-bin@2.31-13+deb11u2",
+                  "pkgId": "glibc/libc-bin@2.31-13+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pcre3/libpcre3@2:8.39-13",
+                  "pkgId": "pcre3/libpcre3@2:8.39-13",
+                  "deps": []
+                },
+                {
+                  "nodeId": "grep@3.6-1",
+                  "pkgId": "grep@3.6-1",
+                  "deps": [
+                    {
+                      "nodeId": "pcre3/libpcre3@2:8.39-13"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "gzip@1.10-4",
+                  "pkgId": "gzip@1.10-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "hostname@3.23",
+                  "pkgId": "hostname@3.23",
+                  "deps": []
+                },
+                {
+                  "nodeId": "init-system-helpers@1.60",
+                  "pkgId": "init-system-helpers@1.60",
+                  "deps": []
+                },
+                {
+                  "nodeId": "lsb/lsb-base@11.1.0",
+                  "pkgId": "lsb/lsb-base@11.1.0",
+                  "deps": []
+                },
+                {
+                  "nodeId": "acl/libacl1@2.2.53-10",
+                  "pkgId": "acl/libacl1@2.2.53-10",
+                  "deps": []
+                },
+                {
+                  "nodeId": "bzip2/libbz2-1.0@1.0.8-4",
+                  "pkgId": "bzip2/libbz2-1.0@1.0.8-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "debconf@1.5.77",
+                  "pkgId": "debconf@1.5.77",
+                  "deps": []
+                },
+                {
+                  "nodeId": "dpkg@1.20.9",
+                  "pkgId": "dpkg@1.20.9",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gcc-10/gcc-10-base@10.2.1-6",
+                  "pkgId": "gcc-10/gcc-10-base@10.2.1-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gcc-10/libgcc-s1@10.2.1-6",
+                  "pkgId": "gcc-10/libgcc-s1@10.2.1-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "glibc/libc6@2.31-13+deb11u2",
+                  "pkgId": "glibc/libc6@2.31-13+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "krb5/libkrb5support0@1.18.3-6+deb11u1",
+                  "pkgId": "krb5/libkrb5support0@1.18.3-6+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libselinux/libselinux1@3.1-3",
+                  "pkgId": "libselinux/libselinux1@3.1-3",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libxcrypt/libcrypt1@1:4.4.18-4",
+                  "pkgId": "libxcrypt/libcrypt1@1:4.4.18-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pcre2/libpcre2-8-0@10.36-2",
+                  "pkgId": "pcre2/libpcre2-8-0@10.36-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "perl/perl-base@5.32.1-4+deb11u2",
+                  "pkgId": "perl/perl-base@5.32.1-4+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "tar@1.34+dfsg-1",
+                  "pkgId": "tar@1.34+dfsg-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "xz-utils/liblzma5@5.2.5-2",
+                  "pkgId": "xz-utils/liblzma5@5.2.5-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "zlib/zlib1g@1:1.2.11.dfsg-2",
+                  "pkgId": "zlib/zlib1g@1:1.2.11.dfsg-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "meta-common-packages@meta",
+                  "pkgId": "meta-common-packages@meta",
+                  "deps": [
+                    {
+                      "nodeId": "acl/libacl1@2.2.53-10"
+                    },
+                    {
+                      "nodeId": "bzip2/libbz2-1.0@1.0.8-4"
+                    },
+                    {
+                      "nodeId": "debconf@1.5.77"
+                    },
+                    {
+                      "nodeId": "dpkg@1.20.9"
+                    },
+                    {
+                      "nodeId": "gcc-10/gcc-10-base@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "gcc-10/libgcc-s1@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "glibc/libc6@2.31-13+deb11u2"
+                    },
+                    {
+                      "nodeId": "krb5/libkrb5support0@1.18.3-6+deb11u1"
+                    },
+                    {
+                      "nodeId": "libselinux/libselinux1@3.1-3"
+                    },
+                    {
+                      "nodeId": "libxcrypt/libcrypt1@1:4.4.18-4"
+                    },
+                    {
+                      "nodeId": "pcre2/libpcre2-8-0@10.36-2"
+                    },
+                    {
+                      "nodeId": "perl/perl-base@5.32.1-4+deb11u2"
+                    },
+                    {
+                      "nodeId": "tar@1.34+dfsg-1"
+                    },
+                    {
+                      "nodeId": "xz-utils/liblzma5@5.2.5-2"
+                    },
+                    {
+                      "nodeId": "zlib/zlib1g@1:1.2.11.dfsg-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "ncurses/ncurses-base@6.2+20201114-2",
+                  "pkgId": "ncurses/ncurses-base@6.2+20201114-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "ncurses/ncurses-bin@6.2+20201114-2",
+                  "pkgId": "ncurses/ncurses-bin@6.2+20201114-2",
+                  "deps": [
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|1",
+                  "pkgId": "pam/libpam-runtime@1.4.0-9+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|2",
+                  "pkgId": "pam/libpam-runtime@1.4.0-9+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "sed@4.7-1",
+                  "pkgId": "sed@4.7-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "shadow/login@1:4.8.1-1|1",
+                  "pkgId": "shadow/login@1:4.8.1-1",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "shadow/login@1:4.8.1-1|2",
+                  "pkgId": "shadow/login@1:4.8.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "sysvinit/sysvinit-utils@2.96-7",
+                  "pkgId": "sysvinit/sysvinit-utils@2.96-7",
+                  "deps": [
+                    {
+                      "nodeId": "lsb/lsb-base@11.1.0"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "tzdata@2021a-1+deb11u2",
+                  "pkgId": "tzdata@2021a-1+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux@2.36.1-8|1",
+                  "pkgId": "util-linux@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux@2.36.1-8|2",
+                  "pkgId": "util-linux@2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2|2"
+                    },
+                    {
+                      "nodeId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1"
+                    },
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "shadow/login@1:4.8.1-1|2"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    },
+                    {
+                      "nodeId": "systemd/libudev1@247.3-6"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libmount1@2.36.1-8|2"
+                    },
+                    {
+                      "nodeId": "util-linux/libsmartcols1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libuuid1@2.36.1-8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "util-linux/bsdutils@1:2.36.1-8",
+                  "pkgId": "util-linux/bsdutils@1:2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "util-linux/libmount1@2.36.1-8|1",
+                  "pkgId": "util-linux/libmount1@2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "util-linux/libmount1@2.36.1-8|2",
+                  "pkgId": "util-linux/libmount1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/libsmartcols1@2.36.1-8",
+                  "pkgId": "util-linux/libsmartcols1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/mount@2.36.1-8",
+                  "pkgId": "util-linux/mount@2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "util-linux@2.36.1-8|2"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libmount1@2.36.1-8|2"
+                    },
+                    {
+                      "nodeId": "util-linux/libsmartcols1@2.36.1-8"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "imageId",
+          "data": "sha256:6f4986d78878699c680b97e3d7a2fd131bf4def477f1abad9a9edcb5d99cda3c"
+        },
+        {
+          "type": "imageLayers",
+          "data": [
+            "0e29546d541cdbd309281d21a73a9d1db78665c1b95b74f32b009e0b77a6e1e3\\layer.tar"
+          ]
+        },
+        {
+          "type": "rootFs",
+          "data": [
+            "sha256:11936051f93baf5a4fb090a8fa0999309b8173556f7826598e235e8a82127bce"
+          ]
+        },
+        {
+          "type": "imageOsReleasePrettyName",
+          "data": "Debian GNU/Linux 11 (bullseye)"
+        }
+      ],
+      "target": {
+        "image": "docker-image|debian"
+      },
+      "identity": {
+        "type": "deb",
+        "args": {
+          "platform": "linux/amd64"
+        }
+      }
+    },
+    "path": "debian"
+  },
+  {
+    "vulnerabilities": [
+      {
+        "title": "Double Free",
+        "credit": [
+          ""
+        ],
+        "packageName": "curl",
+        "language": "linux",
+        "packageManager": "debian:11",
+        "description": "## NVD Description\n<i> **Note:** </i>\n<i> Versions mentioned in the description apply to the upstream `curl` package. </i>\n\nWhen sending data to an MQTT server, libcurl &lt;= 7.73.0 and 7.78.0 could in some circumstances erroneously keep a pointer to an already freed memory area and both use that again in a subsequent call to send data and also free it *again*.\n## Remediation\nThere is no fixed version for `Debian:11` `curl`.\n## References\n- [ADVISORY](https://security-tracker.debian.org/tracker/CVE-2021-22945)\n- [FEDORA](https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RWLEC6YVEM2HWUBX67SDGPSY4CQB72OE/)\n- [MISC](https://hackerone.com/reports/1269242)\n- [MISC](https://www.oracle.com/security-alerts/cpuoct2021.html)\n",
+        "identifiers": {
+          "ALTERNATIVE": [],
+          "CVE": [
+            "CVE-2021-22945"
+          ],
+          "CWE": [
+            "CWE-415"
+          ]
+        },
+        "severity": "critical",
+        "severityWithCritical": "critical",
+        "socialTrendAlert": false,
+        "cvssScore": 9.1,
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H",
+        "patches": [],
+        "references": [
+          {
+            "title": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2021-22945"
+          },
+          {
+            "title": "FEDORA",
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RWLEC6YVEM2HWUBX67SDGPSY4CQB72OE/"
+          },
+          {
+            "title": "MISC",
+            "url": "https://hackerone.com/reports/1269242"
+          },
+          {
+            "title": "MISC",
+            "url": "https://www.oracle.com/security-alerts/cpuoct2021.html"
+          }
+        ],
+        "creationTime": "2021-09-15T14:06:42.596682Z",
+        "modificationTime": "2021-12-18T13:13:32.753552Z",
+        "publicationTime": "2021-09-15T14:03:30.963820Z",
+        "disclosureTime": "2021-09-23T13:15:00Z",
+        "id": "SNYK-DEBIAN11-CURL-1585150",
+        "malicious": false,
+        "nvdSeverity": "critical",
+        "relativeImportance": "not yet assigned",
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "from": [
+          "docker-image|nginx@latest",
+          "curl@7.74.0-1.3+deb11u1",
+          "curl/libcurl4@7.74.0-1.3+deb11u1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "curl/libcurl4",
+        "version": "7.74.0-1.3+deb11u1"
+      },
+      {
+        "title": "Double Free",
+        "credit": [
+          ""
+        ],
+        "packageName": "curl",
+        "language": "linux",
+        "packageManager": "debian:11",
+        "description": "## NVD Description\n<i> **Note:** </i>\n<i> Versions mentioned in the description apply to the upstream `curl` package. </i>\n\nWhen sending data to an MQTT server, libcurl &lt;= 7.73.0 and 7.78.0 could in some circumstances erroneously keep a pointer to an already freed memory area and both use that again in a subsequent call to send data and also free it *again*.\n## Remediation\nThere is no fixed version for `Debian:11` `curl`.\n## References\n- [ADVISORY](https://security-tracker.debian.org/tracker/CVE-2021-22945)\n- [FEDORA](https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RWLEC6YVEM2HWUBX67SDGPSY4CQB72OE/)\n- [MISC](https://hackerone.com/reports/1269242)\n- [MISC](https://www.oracle.com/security-alerts/cpuoct2021.html)\n",
+        "identifiers": {
+          "ALTERNATIVE": [],
+          "CVE": [
+            "CVE-2021-22945"
+          ],
+          "CWE": [
+            "CWE-415"
+          ]
+        },
+        "severity": "critical",
+        "severityWithCritical": "critical",
+        "socialTrendAlert": false,
+        "cvssScore": 9.1,
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H",
+        "patches": [],
+        "references": [
+          {
+            "title": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2021-22945"
+          },
+          {
+            "title": "FEDORA",
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RWLEC6YVEM2HWUBX67SDGPSY4CQB72OE/"
+          },
+          {
+            "title": "MISC",
+            "url": "https://hackerone.com/reports/1269242"
+          },
+          {
+            "title": "MISC",
+            "url": "https://www.oracle.com/security-alerts/cpuoct2021.html"
+          }
+        ],
+        "creationTime": "2021-09-15T14:06:42.596682Z",
+        "modificationTime": "2021-12-18T13:13:32.753552Z",
+        "publicationTime": "2021-09-15T14:03:30.963820Z",
+        "disclosureTime": "2021-09-23T13:15:00Z",
+        "id": "SNYK-DEBIAN11-CURL-1585150",
+        "malicious": false,
+        "nvdSeverity": "critical",
+        "relativeImportance": "not yet assigned",
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "from": [
+          "docker-image|nginx@latest",
+          "curl@7.74.0-1.3+deb11u1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "curl",
+        "version": "7.74.0-1.3+deb11u1"
+      },
+      {
+        "title": "Use After Free",
+        "credit": [
+          ""
+        ],
+        "packageName": "glibc",
+        "language": "linux",
+        "packageManager": "debian:11",
+        "description": "## NVD Description\n<i> **Note:** </i>\n<i> Versions mentioned in the description apply to the upstream `glibc` package. </i>\n\nThe mq_notify function in the GNU C Library (aka glibc) versions 2.32 and 2.33 has a use-after-free. It may use the notification thread attributes object (passed through its struct sigevent parameter) after it has been freed by the caller, leading to a denial of service (application crash) or possibly unspecified other impact.\n## Remediation\nThere is no fixed version for `Debian:11` `glibc`.\n## References\n- [ADVISORY](https://security-tracker.debian.org/tracker/CVE-2021-33574)\n- [CONFIRM](https://security.netapp.com/advisory/ntap-20210629-0005/)\n- [FEDORA](https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/)\n- [GENTOO](https://security.gentoo.org/glsa/202107-07)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896#c1)\n",
+        "identifiers": {
+          "ALTERNATIVE": [],
+          "CVE": [
+            "CVE-2021-33574"
+          ],
+          "CWE": [
+            "CWE-416"
+          ]
+        },
+        "severity": "critical",
+        "severityWithCritical": "critical",
+        "socialTrendAlert": false,
+        "cvssScore": 9.8,
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "patches": [],
+        "references": [
+          {
+            "title": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2021-33574"
+          },
+          {
+            "title": "CONFIRM",
+            "url": "https://security.netapp.com/advisory/ntap-20210629-0005/"
+          },
+          {
+            "title": "FEDORA",
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/"
+          },
+          {
+            "title": "GENTOO",
+            "url": "https://security.gentoo.org/glsa/202107-07"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896%23c1"
+          }
+        ],
+        "creationTime": "2021-05-26T15:11:38.773280Z",
+        "modificationTime": "2021-12-04T14:20:17.969879Z",
+        "publicationTime": "2021-05-26T15:11:38.561943Z",
+        "disclosureTime": "2021-05-25T22:15:00Z",
+        "id": "SNYK-DEBIAN11-GLIBC-1296898",
+        "malicious": false,
+        "nvdSeverity": "critical",
+        "relativeImportance": "not yet assigned",
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "from": [
+          "docker-image|nginx@latest",
+          "glibc/libc-bin@2.31-13+deb11u2"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "glibc/libc-bin",
+        "version": "2.31-13+deb11u2"
+      },
+      {
+        "title": "Use After Free",
+        "credit": [
+          ""
+        ],
+        "packageName": "glibc",
+        "language": "linux",
+        "packageManager": "debian:11",
+        "description": "## NVD Description\n<i> **Note:** </i>\n<i> Versions mentioned in the description apply to the upstream `glibc` package. </i>\n\nThe mq_notify function in the GNU C Library (aka glibc) versions 2.32 and 2.33 has a use-after-free. It may use the notification thread attributes object (passed through its struct sigevent parameter) after it has been freed by the caller, leading to a denial of service (application crash) or possibly unspecified other impact.\n## Remediation\nThere is no fixed version for `Debian:11` `glibc`.\n## References\n- [ADVISORY](https://security-tracker.debian.org/tracker/CVE-2021-33574)\n- [CONFIRM](https://security.netapp.com/advisory/ntap-20210629-0005/)\n- [FEDORA](https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/)\n- [GENTOO](https://security.gentoo.org/glsa/202107-07)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896)\n- [MISC](https://sourceware.org/bugzilla/show_bug.cgi?id=27896#c1)\n",
+        "identifiers": {
+          "ALTERNATIVE": [],
+          "CVE": [
+            "CVE-2021-33574"
+          ],
+          "CWE": [
+            "CWE-416"
+          ]
+        },
+        "severity": "critical",
+        "severityWithCritical": "critical",
+        "socialTrendAlert": false,
+        "cvssScore": 9.8,
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+        "patches": [],
+        "references": [
+          {
+            "title": "ADVISORY",
+            "url": "https://security-tracker.debian.org/tracker/CVE-2021-33574"
+          },
+          {
+            "title": "CONFIRM",
+            "url": "https://security.netapp.com/advisory/ntap-20210629-0005/"
+          },
+          {
+            "title": "FEDORA",
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/RBUUWUGXVILQXVWEOU7N42ICHPJNAEUP/"
+          },
+          {
+            "title": "GENTOO",
+            "url": "https://security.gentoo.org/glsa/202107-07"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896"
+          },
+          {
+            "title": "MISC",
+            "url": "https://sourceware.org/bugzilla/show_bug.cgi?id=27896%23c1"
+          }
+        ],
+        "creationTime": "2021-05-26T15:11:38.773280Z",
+        "modificationTime": "2021-12-04T14:20:17.969879Z",
+        "publicationTime": "2021-05-26T15:11:38.561943Z",
+        "disclosureTime": "2021-05-25T22:15:00Z",
+        "id": "SNYK-DEBIAN11-GLIBC-1296898",
+        "malicious": false,
+        "nvdSeverity": "critical",
+        "relativeImportance": "not yet assigned",
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "from": [
+          "docker-image|nginx@latest",
+          "meta-common-packages@meta",
+          "glibc/libc6@2.31-13+deb11u2"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "glibc/libc6",
+        "version": "2.31-13+deb11u2"
+      }
+    ],
+    "ok": false,
+    "dependencyCount": 143,
+    "org": "artsiom.chapialiou",
+    "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.22.1\nignore: {}\npatch: {}\n",
+    "isPrivate": true,
+    "licensesPolicy": {
+      "severities": {},
+      "orgLicenseRules": {
+        "AGPL-1.0": {
+          "licenseType": "AGPL-1.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "AGPL-3.0": {
+          "licenseType": "AGPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "Artistic-1.0": {
+          "licenseType": "Artistic-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "Artistic-2.0": {
+          "licenseType": "Artistic-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CDDL-1.0": {
+          "licenseType": "CDDL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CPOL-1.02": {
+          "licenseType": "CPOL-1.02",
+          "severity": "high",
+          "instructions": ""
+        },
+        "EPL-1.0": {
+          "licenseType": "EPL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "GPL-2.0": {
+          "licenseType": "GPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "GPL-3.0": {
+          "licenseType": "GPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "LGPL-2.0": {
+          "licenseType": "LGPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1": {
+          "licenseType": "LGPL-2.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0": {
+          "licenseType": "LGPL-3.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-1.1": {
+          "licenseType": "MPL-1.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-2.0": {
+          "licenseType": "MPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MS-RL": {
+          "licenseType": "MS-RL",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "SimPL-2.0": {
+          "licenseType": "SimPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        }
+      }
+    },
+    "packageManager": "deb",
+    "ignoreSettings": null,
+    "docker": {
+      "baseImage": "nginx:1.21.4",
+      "baseImageRemediation": {
+        "code": "NO_REMEDIATION_AVAILABLE",
+        "advice": [
+          {
+            "message": "According to our scan, you are currently using the most secure version of the selected base image",
+            "bold": true
+          }
+        ]
+      }
+    },
+    "summary": "4 critical severity vulnerable dependency paths",
+    "severityThreshold": "critical",
+    "filesystemPolicy": false,
+    "filtered": {
+      "ignore": [],
+      "patch": []
+    },
+    "uniqueCount": 2,
+    "projectName": "docker-image|nginx",
+    "platform": "linux/amd64",
+    "scanResult": {
+      "facts": [
+        {
+          "type": "depGraph",
+          "data": {
+            "schemaVersion": "1.2.0",
+            "pkgManager": {
+              "name": "deb",
+              "repositories": [
+                {
+                  "alias": "debian:11"
+                }
+              ]
+            },
+            "pkgs": [
+              {
+                "id": "docker-image|nginx@latest",
+                "info": {
+                  "name": "docker-image|nginx",
+                  "version": "latest"
+                }
+              },
+              {
+                "id": "adduser@3.118",
+                "info": {
+                  "name": "adduser",
+                  "version": "3.118"
+                }
+              },
+              {
+                "id": "gcc-10/libstdc++6@10.2.1-6",
+                "info": {
+                  "name": "gcc-10/libstdc++6",
+                  "version": "10.2.1-6"
+                }
+              },
+              {
+                "id": "libgcrypt20@1.8.7-6",
+                "info": {
+                  "name": "libgcrypt20",
+                  "version": "1.8.7-6"
+                }
+              },
+              {
+                "id": "libzstd/libzstd1@1.4.8+dfsg-2.1",
+                "info": {
+                  "name": "libzstd/libzstd1",
+                  "version": "1.4.8+dfsg-2.1"
+                }
+              },
+              {
+                "id": "lz4/liblz4-1@1.9.3-2",
+                "info": {
+                  "name": "lz4/liblz4-1",
+                  "version": "1.9.3-2"
+                }
+              },
+              {
+                "id": "systemd/libsystemd0@247.3-6",
+                "info": {
+                  "name": "systemd/libsystemd0",
+                  "version": "247.3-6"
+                }
+              },
+              {
+                "id": "systemd/libudev1@247.3-6",
+                "info": {
+                  "name": "systemd/libudev1",
+                  "version": "247.3-6"
+                }
+              },
+              {
+                "id": "xxhash/libxxhash0@0.8.0-2",
+                "info": {
+                  "name": "xxhash/libxxhash0",
+                  "version": "0.8.0-2"
+                }
+              },
+              {
+                "id": "apt/libapt-pkg6.0@2.2.4",
+                "info": {
+                  "name": "apt/libapt-pkg6.0",
+                  "version": "2.2.4"
+                }
+              },
+              {
+                "id": "debian-archive-keyring@2021.1.1",
+                "info": {
+                  "name": "debian-archive-keyring",
+                  "version": "2021.1.1"
+                }
+              },
+              {
+                "id": "libgpg-error/libgpg-error0@1.38-2",
+                "info": {
+                  "name": "libgpg-error/libgpg-error0",
+                  "version": "1.38-2"
+                }
+              },
+              {
+                "id": "gnupg2/gpgv@2.2.27-2",
+                "info": {
+                  "name": "gnupg2/gpgv",
+                  "version": "2.2.27-2"
+                }
+              },
+              {
+                "id": "gnutls28/libgnutls30@3.7.1-5",
+                "info": {
+                  "name": "gnutls28/libgnutls30",
+                  "version": "3.7.1-5"
+                }
+              },
+              {
+                "id": "libseccomp/libseccomp2@2.5.1-1+deb11u1",
+                "info": {
+                  "name": "libseccomp/libseccomp2",
+                  "version": "2.5.1-1+deb11u1"
+                }
+              },
+              {
+                "id": "apt@2.2.4",
+                "info": {
+                  "name": "apt",
+                  "version": "2.2.4"
+                }
+              },
+              {
+                "id": "mawk@1.3.4.20200120-2",
+                "info": {
+                  "name": "mawk",
+                  "version": "1.3.4.20200120-2"
+                }
+              },
+              {
+                "id": "base-files@11.1+deb11u2",
+                "info": {
+                  "name": "base-files",
+                  "version": "11.1+deb11u2"
+                }
+              },
+              {
+                "id": "cdebconf/libdebconfclient0@0.260",
+                "info": {
+                  "name": "cdebconf/libdebconfclient0",
+                  "version": "0.260"
+                }
+              },
+              {
+                "id": "base-passwd@3.5.51",
+                "info": {
+                  "name": "base-passwd",
+                  "version": "3.5.51"
+                }
+              },
+              {
+                "id": "debianutils@4.11.2",
+                "info": {
+                  "name": "debianutils",
+                  "version": "4.11.2"
+                }
+              },
+              {
+                "id": "ncurses/libtinfo6@6.2+20201114-2",
+                "info": {
+                  "name": "ncurses/libtinfo6",
+                  "version": "6.2+20201114-2"
+                }
+              },
+              {
+                "id": "bash/bash@5.1-2+b3",
+                "info": {
+                  "name": "bash/bash",
+                  "version": "5.1-2+b3"
+                }
+              },
+              {
+                "id": "openssl/libssl1.1@1.1.1k-1+deb11u1",
+                "info": {
+                  "name": "openssl/libssl1.1",
+                  "version": "1.1.1k-1+deb11u1"
+                }
+              },
+              {
+                "id": "openssl@1.1.1k-1+deb11u1",
+                "info": {
+                  "name": "openssl",
+                  "version": "1.1.1k-1+deb11u1"
+                }
+              },
+              {
+                "id": "ca-certificates@20210119",
+                "info": {
+                  "name": "ca-certificates",
+                  "version": "20210119"
+                }
+              },
+              {
+                "id": "brotli/libbrotli1@1.0.9-2+b2",
+                "info": {
+                  "name": "brotli/libbrotli1",
+                  "version": "1.0.9-2+b2"
+                }
+              },
+              {
+                "id": "e2fsprogs/libcom-err2@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/libcom-err2",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "krb5/libk5crypto3@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libk5crypto3",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "keyutils/libkeyutils1@1.6.1-2",
+                "info": {
+                  "name": "keyutils/libkeyutils1",
+                  "version": "1.6.1-2"
+                }
+              },
+              {
+                "id": "krb5/libkrb5-3@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libkrb5-3",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libgssapi-krb5-2",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "libunistring/libunistring2@0.9.10-4",
+                "info": {
+                  "name": "libunistring/libunistring2",
+                  "version": "0.9.10-4"
+                }
+              },
+              {
+                "id": "libidn2/libidn2-0@2.3.0-5",
+                "info": {
+                  "name": "libidn2/libidn2-0",
+                  "version": "2.3.0-5"
+                }
+              },
+              {
+                "id": "libpsl/libpsl5@0.21.0-1.2",
+                "info": {
+                  "name": "libpsl/libpsl5",
+                  "version": "0.21.0-1.2"
+                }
+              },
+              {
+                "id": "libssh2/libssh2-1@1.9.0-2",
+                "info": {
+                  "name": "libssh2/libssh2-1",
+                  "version": "1.9.0-2"
+                }
+              },
+              {
+                "id": "nghttp2/libnghttp2-14@1.43.0-1",
+                "info": {
+                  "name": "nghttp2/libnghttp2-14",
+                  "version": "1.43.0-1"
+                }
+              },
+              {
+                "id": "db5.3/libdb5.3@5.3.28+dfsg1-0.8",
+                "info": {
+                  "name": "db5.3/libdb5.3",
+                  "version": "5.3.28+dfsg1-0.8"
+                }
+              },
+              {
+                "id": "cyrus-sasl2/libsasl2-modules-db@2.1.27+dfsg-2.1",
+                "info": {
+                  "name": "cyrus-sasl2/libsasl2-modules-db",
+                  "version": "2.1.27+dfsg-2.1"
+                }
+              },
+              {
+                "id": "cyrus-sasl2/libsasl2-2@2.1.27+dfsg-2.1",
+                "info": {
+                  "name": "cyrus-sasl2/libsasl2-2",
+                  "version": "2.1.27+dfsg-2.1"
+                }
+              },
+              {
+                "id": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1",
+                "info": {
+                  "name": "gmp/libgmp10",
+                  "version": "2:6.2.1+dfsg-1+deb11u1"
+                }
+              },
+              {
+                "id": "libtasn1-6@4.16.0-2",
+                "info": {
+                  "name": "libtasn1-6",
+                  "version": "4.16.0-2"
+                }
+              },
+              {
+                "id": "nettle/libnettle8@3.7.3-1",
+                "info": {
+                  "name": "nettle/libnettle8",
+                  "version": "3.7.3-1"
+                }
+              },
+              {
+                "id": "nettle/libhogweed6@3.7.3-1",
+                "info": {
+                  "name": "nettle/libhogweed6",
+                  "version": "3.7.3-1"
+                }
+              },
+              {
+                "id": "libffi/libffi7@3.3-6",
+                "info": {
+                  "name": "libffi/libffi7",
+                  "version": "3.3-6"
+                }
+              },
+              {
+                "id": "p11-kit/libp11-kit0@0.23.22-1",
+                "info": {
+                  "name": "p11-kit/libp11-kit0",
+                  "version": "0.23.22-1"
+                }
+              },
+              {
+                "id": "openldap/libldap-2.4-2@2.4.57+dfsg-3",
+                "info": {
+                  "name": "openldap/libldap-2.4-2",
+                  "version": "2.4.57+dfsg-3"
+                }
+              },
+              {
+                "id": "rtmpdump/librtmp1@2.4+20151223.gitfa8646d.1-2+b2",
+                "info": {
+                  "name": "rtmpdump/librtmp1",
+                  "version": "2.4+20151223.gitfa8646d.1-2+b2"
+                }
+              },
+              {
+                "id": "curl/libcurl4@7.74.0-1.3+deb11u1",
+                "info": {
+                  "name": "curl/libcurl4",
+                  "version": "7.74.0-1.3+deb11u1"
+                }
+              },
+              {
+                "id": "curl@7.74.0-1.3+deb11u1",
+                "info": {
+                  "name": "curl",
+                  "version": "7.74.0-1.3+deb11u1"
+                }
+              },
+              {
+                "id": "dash@0.5.11+git20200708+dd9ef66-5",
+                "info": {
+                  "name": "dash",
+                  "version": "0.5.11+git20200708+dd9ef66-5"
+                }
+              },
+              {
+                "id": "diffutils@1:3.7-5",
+                "info": {
+                  "name": "diffutils",
+                  "version": "1:3.7-5"
+                }
+              },
+              {
+                "id": "e2fsprogs/libext2fs2@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/libext2fs2",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "e2fsprogs/libss2@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/libss2",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "e2fsprogs/logsave@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs/logsave",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "util-linux/libblkid1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libblkid1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/libuuid1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libuuid1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "e2fsprogs@1.46.2-2",
+                "info": {
+                  "name": "e2fsprogs",
+                  "version": "1.46.2-2"
+                }
+              },
+              {
+                "id": "findutils@4.8.0-1",
+                "info": {
+                  "name": "findutils",
+                  "version": "4.8.0-1"
+                }
+              },
+              {
+                "id": "gcc-9/gcc-9-base@9.3.0-22",
+                "info": {
+                  "name": "gcc-9/gcc-9-base",
+                  "version": "9.3.0-22"
+                }
+              },
+              {
+                "id": "gettext/gettext-base@0.21-4",
+                "info": {
+                  "name": "gettext/gettext-base",
+                  "version": "0.21-4"
+                }
+              },
+              {
+                "id": "glibc/libc-bin@2.31-13+deb11u2",
+                "info": {
+                  "name": "glibc/libc-bin",
+                  "version": "2.31-13+deb11u2"
+                }
+              },
+              {
+                "id": "pcre3/libpcre3@2:8.39-13",
+                "info": {
+                  "name": "pcre3/libpcre3",
+                  "version": "2:8.39-13"
+                }
+              },
+              {
+                "id": "grep@3.6-1",
+                "info": {
+                  "name": "grep",
+                  "version": "3.6-1"
+                }
+              },
+              {
+                "id": "gzip@1.10-4",
+                "info": {
+                  "name": "gzip",
+                  "version": "1.10-4"
+                }
+              },
+              {
+                "id": "hostname@3.23",
+                "info": {
+                  "name": "hostname",
+                  "version": "3.23"
+                }
+              },
+              {
+                "id": "init-system-helpers@1.60",
+                "info": {
+                  "name": "init-system-helpers",
+                  "version": "1.60"
+                }
+              },
+              {
+                "id": "acl/libacl1@2.2.53-10",
+                "info": {
+                  "name": "acl/libacl1",
+                  "version": "2.2.53-10"
+                }
+              },
+              {
+                "id": "audit/libaudit-common@1:3.0-2",
+                "info": {
+                  "name": "audit/libaudit-common",
+                  "version": "1:3.0-2"
+                }
+              },
+              {
+                "id": "audit/libaudit1@1:3.0-2",
+                "info": {
+                  "name": "audit/libaudit1",
+                  "version": "1:3.0-2"
+                }
+              },
+              {
+                "id": "bzip2/libbz2-1.0@1.0.8-4",
+                "info": {
+                  "name": "bzip2/libbz2-1.0",
+                  "version": "1.0.8-4"
+                }
+              },
+              {
+                "id": "debconf@1.5.77",
+                "info": {
+                  "name": "debconf",
+                  "version": "1.5.77"
+                }
+              },
+              {
+                "id": "dpkg@1.20.9",
+                "info": {
+                  "name": "dpkg",
+                  "version": "1.20.9"
+                }
+              },
+              {
+                "id": "gcc-10/gcc-10-base@10.2.1-6",
+                "info": {
+                  "name": "gcc-10/gcc-10-base",
+                  "version": "10.2.1-6"
+                }
+              },
+              {
+                "id": "gcc-10/libgcc-s1@10.2.1-6",
+                "info": {
+                  "name": "gcc-10/libgcc-s1",
+                  "version": "10.2.1-6"
+                }
+              },
+              {
+                "id": "glibc/libc6@2.31-13+deb11u2",
+                "info": {
+                  "name": "glibc/libc6",
+                  "version": "2.31-13+deb11u2"
+                }
+              },
+              {
+                "id": "krb5/libkrb5support0@1.18.3-6+deb11u1",
+                "info": {
+                  "name": "krb5/libkrb5support0",
+                  "version": "1.18.3-6+deb11u1"
+                }
+              },
+              {
+                "id": "libcap-ng/libcap-ng0@0.7.9-2.2+b1",
+                "info": {
+                  "name": "libcap-ng/libcap-ng0",
+                  "version": "0.7.9-2.2+b1"
+                }
+              },
+              {
+                "id": "libselinux/libselinux1@3.1-3",
+                "info": {
+                  "name": "libselinux/libselinux1",
+                  "version": "3.1-3"
+                }
+              },
+              {
+                "id": "libxcrypt/libcrypt1@1:4.4.18-4",
+                "info": {
+                  "name": "libxcrypt/libcrypt1",
+                  "version": "1:4.4.18-4"
+                }
+              },
+              {
+                "id": "pcre2/libpcre2-8-0@10.36-2",
+                "info": {
+                  "name": "pcre2/libpcre2-8-0",
+                  "version": "10.36-2"
+                }
+              },
+              {
+                "id": "perl/perl-base@5.32.1-4+deb11u2",
+                "info": {
+                  "name": "perl/perl-base",
+                  "version": "5.32.1-4+deb11u2"
+                }
+              },
+              {
+                "id": "tar@1.34+dfsg-1",
+                "info": {
+                  "name": "tar",
+                  "version": "1.34+dfsg-1"
+                }
+              },
+              {
+                "id": "xz-utils/liblzma5@5.2.5-2",
+                "info": {
+                  "name": "xz-utils/liblzma5",
+                  "version": "5.2.5-2"
+                }
+              },
+              {
+                "id": "zlib/zlib1g@1:1.2.11.dfsg-2",
+                "info": {
+                  "name": "zlib/zlib1g",
+                  "version": "1:1.2.11.dfsg-2"
+                }
+              },
+              {
+                "id": "meta-common-packages@meta",
+                "info": {
+                  "name": "meta-common-packages",
+                  "version": "meta"
+                }
+              },
+              {
+                "id": "ncurses/ncurses-base@6.2+20201114-2",
+                "info": {
+                  "name": "ncurses/ncurses-base",
+                  "version": "6.2+20201114-2"
+                }
+              },
+              {
+                "id": "ncurses/ncurses-bin@6.2+20201114-2",
+                "info": {
+                  "name": "ncurses/ncurses-bin",
+                  "version": "6.2+20201114-2"
+                }
+              },
+              {
+                "id": "libsemanage/libsemanage-common@3.1-1",
+                "info": {
+                  "name": "libsemanage/libsemanage-common",
+                  "version": "3.1-1"
+                }
+              },
+              {
+                "id": "libsepol/libsepol1@3.1-1",
+                "info": {
+                  "name": "libsepol/libsepol1",
+                  "version": "3.1-1"
+                }
+              },
+              {
+                "id": "libsemanage/libsemanage1@3.1-1+b2",
+                "info": {
+                  "name": "libsemanage/libsemanage1",
+                  "version": "3.1-1+b2"
+                }
+              },
+              {
+                "id": "libtirpc/libtirpc-common@1.3.1-1",
+                "info": {
+                  "name": "libtirpc/libtirpc-common",
+                  "version": "1.3.1-1"
+                }
+              },
+              {
+                "id": "libtirpc/libtirpc3@1.3.1-1",
+                "info": {
+                  "name": "libtirpc/libtirpc3",
+                  "version": "1.3.1-1"
+                }
+              },
+              {
+                "id": "libnsl/libnsl2@1.3.0-2",
+                "info": {
+                  "name": "libnsl/libnsl2",
+                  "version": "1.3.0-2"
+                }
+              },
+              {
+                "id": "pam/libpam0g@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam0g",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "pam/libpam-modules-bin@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam-modules-bin",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "pam/libpam-modules@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam-modules",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "shadow/passwd@1:4.8.1-1",
+                "info": {
+                  "name": "shadow/passwd",
+                  "version": "1:4.8.1-1"
+                }
+              },
+              {
+                "id": "lsb/lsb-base@11.1.0",
+                "info": {
+                  "name": "lsb/lsb-base",
+                  "version": "11.1.0"
+                }
+              },
+              {
+                "id": "nginx@1.21.4-1~bullseye",
+                "info": {
+                  "name": "nginx",
+                  "version": "1.21.4-1~bullseye"
+                }
+              },
+              {
+                "id": "geoip/libgeoip1@1.6.12-7",
+                "info": {
+                  "name": "geoip/libgeoip1",
+                  "version": "1.6.12-7"
+                }
+              },
+              {
+                "id": "nginx-module-geoip@1.21.4-1~bullseye",
+                "info": {
+                  "name": "nginx-module-geoip",
+                  "version": "1.21.4-1~bullseye"
+                }
+              },
+              {
+                "id": "expat/libexpat1@2.2.10-2",
+                "info": {
+                  "name": "expat/libexpat1",
+                  "version": "2.2.10-2"
+                }
+              },
+              {
+                "id": "fonts-dejavu/fonts-dejavu-core@2.37-2",
+                "info": {
+                  "name": "fonts-dejavu/fonts-dejavu-core",
+                  "version": "2.37-2"
+                }
+              },
+              {
+                "id": "attr/libattr1@1:2.4.48-6",
+                "info": {
+                  "name": "attr/libattr1",
+                  "version": "1:2.4.48-6"
+                }
+              },
+              {
+                "id": "coreutils/coreutils@8.32-4+b1",
+                "info": {
+                  "name": "coreutils/coreutils",
+                  "version": "8.32-4+b1"
+                }
+              },
+              {
+                "id": "sensible-utils@0.0.14",
+                "info": {
+                  "name": "sensible-utils",
+                  "version": "0.0.14"
+                }
+              },
+              {
+                "id": "ucf@3.0043",
+                "info": {
+                  "name": "ucf",
+                  "version": "3.0043"
+                }
+              },
+              {
+                "id": "fontconfig/fontconfig-config@2.13.1-4.2",
+                "info": {
+                  "name": "fontconfig/fontconfig-config",
+                  "version": "2.13.1-4.2"
+                }
+              },
+              {
+                "id": "libpng1.6/libpng16-16@1.6.37-3",
+                "info": {
+                  "name": "libpng1.6/libpng16-16",
+                  "version": "1.6.37-3"
+                }
+              },
+              {
+                "id": "freetype/libfreetype6@2.10.4+dfsg-1",
+                "info": {
+                  "name": "freetype/libfreetype6",
+                  "version": "2.10.4+dfsg-1"
+                }
+              },
+              {
+                "id": "fontconfig/libfontconfig1@2.13.1-4.2",
+                "info": {
+                  "name": "fontconfig/libfontconfig1",
+                  "version": "2.13.1-4.2"
+                }
+              },
+              {
+                "id": "libjpeg-turbo/libjpeg62-turbo@1:2.0.6-4",
+                "info": {
+                  "name": "libjpeg-turbo/libjpeg62-turbo",
+                  "version": "1:2.0.6-4"
+                }
+              },
+              {
+                "id": "libwebp/libwebp6@0.6.1-2.1",
+                "info": {
+                  "name": "libwebp/libwebp6",
+                  "version": "0.6.1-2.1"
+                }
+              },
+              {
+                "id": "libx11/libx11-data@2:1.7.2-1",
+                "info": {
+                  "name": "libx11/libx11-data",
+                  "version": "2:1.7.2-1"
+                }
+              },
+              {
+                "id": "libxau/libxau6@1:1.0.9-1",
+                "info": {
+                  "name": "libxau/libxau6",
+                  "version": "1:1.0.9-1"
+                }
+              },
+              {
+                "id": "libmd/libmd0@1.0.3-3",
+                "info": {
+                  "name": "libmd/libmd0",
+                  "version": "1.0.3-3"
+                }
+              },
+              {
+                "id": "libbsd/libbsd0@0.11.3-1",
+                "info": {
+                  "name": "libbsd/libbsd0",
+                  "version": "0.11.3-1"
+                }
+              },
+              {
+                "id": "libxdmcp/libxdmcp6@1:1.1.2-3",
+                "info": {
+                  "name": "libxdmcp/libxdmcp6",
+                  "version": "1:1.1.2-3"
+                }
+              },
+              {
+                "id": "libxcb/libxcb1@1.14-3",
+                "info": {
+                  "name": "libxcb/libxcb1",
+                  "version": "1.14-3"
+                }
+              },
+              {
+                "id": "libx11/libx11-6@2:1.7.2-1",
+                "info": {
+                  "name": "libx11/libx11-6",
+                  "version": "2:1.7.2-1"
+                }
+              },
+              {
+                "id": "libxpm/libxpm4@1:3.5.12-1",
+                "info": {
+                  "name": "libxpm/libxpm4",
+                  "version": "1:3.5.12-1"
+                }
+              },
+              {
+                "id": "jbigkit/libjbig0@2.1-3.1+b2",
+                "info": {
+                  "name": "jbigkit/libjbig0",
+                  "version": "2.1-3.1+b2"
+                }
+              },
+              {
+                "id": "libdeflate/libdeflate0@1.7-1",
+                "info": {
+                  "name": "libdeflate/libdeflate0",
+                  "version": "1.7-1"
+                }
+              },
+              {
+                "id": "tiff/libtiff5@4.2.0-1",
+                "info": {
+                  "name": "tiff/libtiff5",
+                  "version": "4.2.0-1"
+                }
+              },
+              {
+                "id": "libgd2/libgd3@2.3.0-2",
+                "info": {
+                  "name": "libgd2/libgd3",
+                  "version": "2.3.0-2"
+                }
+              },
+              {
+                "id": "nginx-module-image-filter@1.21.4-1~bullseye",
+                "info": {
+                  "name": "nginx-module-image-filter",
+                  "version": "1.21.4-1~bullseye"
+                }
+              },
+              {
+                "id": "readline/readline-common@8.1-1",
+                "info": {
+                  "name": "readline/readline-common",
+                  "version": "8.1-1"
+                }
+              },
+              {
+                "id": "readline/libreadline8@8.1-1",
+                "info": {
+                  "name": "readline/libreadline8",
+                  "version": "8.1-1"
+                }
+              },
+              {
+                "id": "nginx-module-njs@1.21.4+0.7.0-1~bullseye",
+                "info": {
+                  "name": "nginx-module-njs",
+                  "version": "1.21.4+0.7.0-1~bullseye"
+                }
+              },
+              {
+                "id": "icu/libicu67@67.1-7",
+                "info": {
+                  "name": "icu/libicu67",
+                  "version": "67.1-7"
+                }
+              },
+              {
+                "id": "libxml2@2.9.10+dfsg-6.7",
+                "info": {
+                  "name": "libxml2",
+                  "version": "2.9.10+dfsg-6.7"
+                }
+              },
+              {
+                "id": "libxslt/libxslt1.1@1.1.34-4",
+                "info": {
+                  "name": "libxslt/libxslt1.1",
+                  "version": "1.1.34-4"
+                }
+              },
+              {
+                "id": "nginx-module-xslt@1.21.4-1~bullseye",
+                "info": {
+                  "name": "nginx-module-xslt",
+                  "version": "1.21.4-1~bullseye"
+                }
+              },
+              {
+                "id": "pam/libpam-runtime@1.4.0-9+deb11u1",
+                "info": {
+                  "name": "pam/libpam-runtime",
+                  "version": "1.4.0-9+deb11u1"
+                }
+              },
+              {
+                "id": "sed@4.7-1",
+                "info": {
+                  "name": "sed",
+                  "version": "4.7-1"
+                }
+              },
+              {
+                "id": "shadow/login@1:4.8.1-1",
+                "info": {
+                  "name": "shadow/login",
+                  "version": "1:4.8.1-1"
+                }
+              },
+              {
+                "id": "sysvinit/sysvinit-utils@2.96-7",
+                "info": {
+                  "name": "sysvinit/sysvinit-utils",
+                  "version": "2.96-7"
+                }
+              },
+              {
+                "id": "tzdata@2021a-1+deb11u2",
+                "info": {
+                  "name": "tzdata",
+                  "version": "2021a-1+deb11u2"
+                }
+              },
+              {
+                "id": "util-linux@2.36.1-8",
+                "info": {
+                  "name": "util-linux",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/bsdutils@1:2.36.1-8",
+                "info": {
+                  "name": "util-linux/bsdutils",
+                  "version": "1:2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/libmount1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libmount1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/libsmartcols1@2.36.1-8",
+                "info": {
+                  "name": "util-linux/libsmartcols1",
+                  "version": "2.36.1-8"
+                }
+              },
+              {
+                "id": "util-linux/mount@2.36.1-8",
+                "info": {
+                  "name": "util-linux/mount",
+                  "version": "2.36.1-8"
+                }
+              }
+            ],
+            "graph": {
+              "rootNodeId": "root-node",
+              "nodes": [
+                {
+                  "nodeId": "root-node",
+                  "pkgId": "docker-image|nginx@latest",
+                  "deps": [
+                    {
+                      "nodeId": "apt@2.2.4"
+                    },
+                    {
+                      "nodeId": "apt/libapt-pkg6.0@2.2.4|2"
+                    },
+                    {
+                      "nodeId": "base-files@11.1+deb11u2|1"
+                    },
+                    {
+                      "nodeId": "base-passwd@3.5.51"
+                    },
+                    {
+                      "nodeId": "bash/bash@5.1-2+b3"
+                    },
+                    {
+                      "nodeId": "ca-certificates@20210119"
+                    },
+                    {
+                      "nodeId": "cdebconf/libdebconfclient0@0.260"
+                    },
+                    {
+                      "nodeId": "curl@7.74.0-1.3+deb11u1"
+                    },
+                    {
+                      "nodeId": "dash@0.5.11+git20200708+dd9ef66-5"
+                    },
+                    {
+                      "nodeId": "debian-archive-keyring@2021.1.1"
+                    },
+                    {
+                      "nodeId": "debianutils@4.11.2"
+                    },
+                    {
+                      "nodeId": "diffutils@1:3.7-5"
+                    },
+                    {
+                      "nodeId": "e2fsprogs@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libext2fs2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libss2@1.46.2-2|2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/logsave@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "findutils@4.8.0-1"
+                    },
+                    {
+                      "nodeId": "gcc-9/gcc-9-base@9.3.0-22"
+                    },
+                    {
+                      "nodeId": "gettext/gettext-base@0.21-4"
+                    },
+                    {
+                      "nodeId": "glibc/libc-bin@2.31-13+deb11u2"
+                    },
+                    {
+                      "nodeId": "gnupg2/gpgv@2.2.27-2|2"
+                    },
+                    {
+                      "nodeId": "grep@3.6-1"
+                    },
+                    {
+                      "nodeId": "gzip@1.10-4"
+                    },
+                    {
+                      "nodeId": "hostname@3.23"
+                    },
+                    {
+                      "nodeId": "init-system-helpers@1.60"
+                    },
+                    {
+                      "nodeId": "libseccomp/libseccomp2@2.5.1-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "lz4/liblz4-1@1.9.3-2"
+                    },
+                    {
+                      "nodeId": "mawk@1.3.4.20200120-2"
+                    },
+                    {
+                      "nodeId": "meta-common-packages@meta"
+                    },
+                    {
+                      "nodeId": "ncurses/ncurses-base@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "ncurses/ncurses-bin@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "nginx@1.21.4-1~bullseye|1"
+                    },
+                    {
+                      "nodeId": "nginx-module-geoip@1.21.4-1~bullseye"
+                    },
+                    {
+                      "nodeId": "nginx-module-image-filter@1.21.4-1~bullseye"
+                    },
+                    {
+                      "nodeId": "nginx-module-njs@1.21.4+0.7.0-1~bullseye"
+                    },
+                    {
+                      "nodeId": "nginx-module-xslt@1.21.4-1~bullseye"
+                    },
+                    {
+                      "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "sed@4.7-1"
+                    },
+                    {
+                      "nodeId": "shadow/login@1:4.8.1-1|1"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    },
+                    {
+                      "nodeId": "systemd/libudev1@247.3-6"
+                    },
+                    {
+                      "nodeId": "sysvinit/sysvinit-utils@2.96-7"
+                    },
+                    {
+                      "nodeId": "tzdata@2021a-1+deb11u2"
+                    },
+                    {
+                      "nodeId": "util-linux@2.36.1-8|1"
+                    },
+                    {
+                      "nodeId": "util-linux/bsdutils@1:2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libmount1@2.36.1-8|1"
+                    },
+                    {
+                      "nodeId": "util-linux/libsmartcols1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/mount@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "xxhash/libxxhash0@0.8.0-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "adduser@3.118|1",
+                  "pkgId": "adduser@3.118",
+                  "deps": []
+                },
+                {
+                  "nodeId": "adduser@3.118|2",
+                  "pkgId": "adduser@3.118",
+                  "deps": [
+                    {
+                      "nodeId": "shadow/passwd@1:4.8.1-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "gcc-10/libstdc++6@10.2.1-6",
+                  "pkgId": "gcc-10/libstdc++6@10.2.1-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libgcrypt20@1.8.7-6|1",
+                  "pkgId": "libgcrypt20@1.8.7-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libgcrypt20@1.8.7-6|2",
+                  "pkgId": "libgcrypt20@1.8.7-6",
+                  "deps": [
+                    {
+                      "nodeId": "libgpg-error/libgpg-error0@1.38-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1",
+                  "pkgId": "libzstd/libzstd1@1.4.8+dfsg-2.1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "lz4/liblz4-1@1.9.3-2",
+                  "pkgId": "lz4/liblz4-1@1.9.3-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "systemd/libsystemd0@247.3-6|1",
+                  "pkgId": "systemd/libsystemd0@247.3-6",
+                  "deps": [
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|1"
+                    },
+                    {
+                      "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1"
+                    },
+                    {
+                      "nodeId": "lz4/liblz4-1@1.9.3-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "systemd/libsystemd0@247.3-6|2",
+                  "pkgId": "systemd/libsystemd0@247.3-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "systemd/libudev1@247.3-6",
+                  "pkgId": "systemd/libudev1@247.3-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "xxhash/libxxhash0@0.8.0-2",
+                  "pkgId": "xxhash/libxxhash0@0.8.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "apt/libapt-pkg6.0@2.2.4|1",
+                  "pkgId": "apt/libapt-pkg6.0@2.2.4",
+                  "deps": [
+                    {
+                      "nodeId": "gcc-10/libstdc++6@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|1"
+                    },
+                    {
+                      "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1"
+                    },
+                    {
+                      "nodeId": "lz4/liblz4-1@1.9.3-2"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|1"
+                    },
+                    {
+                      "nodeId": "systemd/libudev1@247.3-6"
+                    },
+                    {
+                      "nodeId": "xxhash/libxxhash0@0.8.0-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "apt/libapt-pkg6.0@2.2.4|2",
+                  "pkgId": "apt/libapt-pkg6.0@2.2.4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "debian-archive-keyring@2021.1.1",
+                  "pkgId": "debian-archive-keyring@2021.1.1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libgpg-error/libgpg-error0@1.38-2",
+                  "pkgId": "libgpg-error/libgpg-error0@1.38-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gnupg2/gpgv@2.2.27-2|1",
+                  "pkgId": "gnupg2/gpgv@2.2.27-2",
+                  "deps": [
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|1"
+                    },
+                    {
+                      "nodeId": "libgpg-error/libgpg-error0@1.38-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "gnupg2/gpgv@2.2.27-2|2",
+                  "pkgId": "gnupg2/gpgv@2.2.27-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gnutls28/libgnutls30@3.7.1-5|1",
+                  "pkgId": "gnutls28/libgnutls30@3.7.1-5",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gnutls28/libgnutls30@3.7.1-5|2",
+                  "pkgId": "gnutls28/libgnutls30@3.7.1-5",
+                  "deps": [
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "libidn2/libidn2-0@2.3.0-5|2"
+                    },
+                    {
+                      "nodeId": "libtasn1-6@4.16.0-2"
+                    },
+                    {
+                      "nodeId": "libunistring/libunistring2@0.9.10-4"
+                    },
+                    {
+                      "nodeId": "nettle/libhogweed6@3.7.3-1|1"
+                    },
+                    {
+                      "nodeId": "nettle/libnettle8@3.7.3-1"
+                    },
+                    {
+                      "nodeId": "p11-kit/libp11-kit0@0.23.22-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libseccomp/libseccomp2@2.5.1-1+deb11u1",
+                  "pkgId": "libseccomp/libseccomp2@2.5.1-1+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "apt@2.2.4",
+                  "pkgId": "apt@2.2.4",
+                  "deps": [
+                    {
+                      "nodeId": "adduser@3.118|1"
+                    },
+                    {
+                      "nodeId": "apt/libapt-pkg6.0@2.2.4|1"
+                    },
+                    {
+                      "nodeId": "debian-archive-keyring@2021.1.1"
+                    },
+                    {
+                      "nodeId": "gcc-10/libstdc++6@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "gnupg2/gpgv@2.2.27-2|1"
+                    },
+                    {
+                      "nodeId": "gnutls28/libgnutls30@3.7.1-5|1"
+                    },
+                    {
+                      "nodeId": "libseccomp/libseccomp2@2.5.1-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "mawk@1.3.4.20200120-2",
+                  "pkgId": "mawk@1.3.4.20200120-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "base-files@11.1+deb11u2|1",
+                  "pkgId": "base-files@11.1+deb11u2",
+                  "deps": [
+                    {
+                      "nodeId": "mawk@1.3.4.20200120-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "base-files@11.1+deb11u2|2",
+                  "pkgId": "base-files@11.1+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "cdebconf/libdebconfclient0@0.260",
+                  "pkgId": "cdebconf/libdebconfclient0@0.260",
+                  "deps": []
+                },
+                {
+                  "nodeId": "base-passwd@3.5.51",
+                  "pkgId": "base-passwd@3.5.51",
+                  "deps": [
+                    {
+                      "nodeId": "cdebconf/libdebconfclient0@0.260"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "debianutils@4.11.2",
+                  "pkgId": "debianutils@4.11.2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "ncurses/libtinfo6@6.2+20201114-2",
+                  "pkgId": "ncurses/libtinfo6@6.2+20201114-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "bash/bash@5.1-2+b3",
+                  "pkgId": "bash/bash@5.1-2+b3",
+                  "deps": [
+                    {
+                      "nodeId": "base-files@11.1+deb11u2|2"
+                    },
+                    {
+                      "nodeId": "debianutils@4.11.2"
+                    },
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1",
+                  "pkgId": "openssl/libssl1.1@1.1.1k-1+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "openssl@1.1.1k-1+deb11u1",
+                  "pkgId": "openssl@1.1.1k-1+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "ca-certificates@20210119",
+                  "pkgId": "ca-certificates@20210119",
+                  "deps": [
+                    {
+                      "nodeId": "openssl@1.1.1k-1+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "brotli/libbrotli1@1.0.9-2+b2",
+                  "pkgId": "brotli/libbrotli1@1.0.9-2+b2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/libcom-err2@1.46.2-2",
+                  "pkgId": "e2fsprogs/libcom-err2@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "krb5/libk5crypto3@1.18.3-6+deb11u1",
+                  "pkgId": "krb5/libk5crypto3@1.18.3-6+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "keyutils/libkeyutils1@1.6.1-2",
+                  "pkgId": "keyutils/libkeyutils1@1.6.1-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "krb5/libkrb5-3@1.18.3-6+deb11u1",
+                  "pkgId": "krb5/libkrb5-3@1.18.3-6+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "keyutils/libkeyutils1@1.6.1-2"
+                    },
+                    {
+                      "nodeId": "krb5/libk5crypto3@1.18.3-6+deb11u1"
+                    },
+                    {
+                      "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|1",
+                  "pkgId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "krb5/libk5crypto3@1.18.3-6+deb11u1"
+                    },
+                    {
+                      "nodeId": "krb5/libkrb5-3@1.18.3-6+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|2",
+                  "pkgId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libunistring/libunistring2@0.9.10-4",
+                  "pkgId": "libunistring/libunistring2@0.9.10-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libidn2/libidn2-0@2.3.0-5|1",
+                  "pkgId": "libidn2/libidn2-0@2.3.0-5",
+                  "deps": [
+                    {
+                      "nodeId": "libunistring/libunistring2@0.9.10-4"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libidn2/libidn2-0@2.3.0-5|2",
+                  "pkgId": "libidn2/libidn2-0@2.3.0-5",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libpsl/libpsl5@0.21.0-1.2",
+                  "pkgId": "libpsl/libpsl5@0.21.0-1.2",
+                  "deps": [
+                    {
+                      "nodeId": "libidn2/libidn2-0@2.3.0-5|2"
+                    },
+                    {
+                      "nodeId": "libunistring/libunistring2@0.9.10-4"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libssh2/libssh2-1@1.9.0-2",
+                  "pkgId": "libssh2/libssh2-1@1.9.0-2",
+                  "deps": [
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "nghttp2/libnghttp2-14@1.43.0-1",
+                  "pkgId": "nghttp2/libnghttp2-14@1.43.0-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8",
+                  "pkgId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "cyrus-sasl2/libsasl2-modules-db@2.1.27+dfsg-2.1",
+                  "pkgId": "cyrus-sasl2/libsasl2-modules-db@2.1.27+dfsg-2.1",
+                  "deps": [
+                    {
+                      "nodeId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "cyrus-sasl2/libsasl2-2@2.1.27+dfsg-2.1",
+                  "pkgId": "cyrus-sasl2/libsasl2-2@2.1.27+dfsg-2.1",
+                  "deps": [
+                    {
+                      "nodeId": "cyrus-sasl2/libsasl2-modules-db@2.1.27+dfsg-2.1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1",
+                  "pkgId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libtasn1-6@4.16.0-2",
+                  "pkgId": "libtasn1-6@4.16.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "nettle/libnettle8@3.7.3-1",
+                  "pkgId": "nettle/libnettle8@3.7.3-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "nettle/libhogweed6@3.7.3-1|1",
+                  "pkgId": "nettle/libhogweed6@3.7.3-1",
+                  "deps": [
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "nettle/libnettle8@3.7.3-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "nettle/libhogweed6@3.7.3-1|2",
+                  "pkgId": "nettle/libhogweed6@3.7.3-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libffi/libffi7@3.3-6",
+                  "pkgId": "libffi/libffi7@3.3-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "p11-kit/libp11-kit0@0.23.22-1",
+                  "pkgId": "p11-kit/libp11-kit0@0.23.22-1",
+                  "deps": [
+                    {
+                      "nodeId": "libffi/libffi7@3.3-6"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "openldap/libldap-2.4-2@2.4.57+dfsg-3",
+                  "pkgId": "openldap/libldap-2.4-2@2.4.57+dfsg-3",
+                  "deps": [
+                    {
+                      "nodeId": "cyrus-sasl2/libsasl2-2@2.1.27+dfsg-2.1"
+                    },
+                    {
+                      "nodeId": "gnutls28/libgnutls30@3.7.1-5|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "rtmpdump/librtmp1@2.4+20151223.gitfa8646d.1-2+b2",
+                  "pkgId": "rtmpdump/librtmp1@2.4+20151223.gitfa8646d.1-2+b2",
+                  "deps": [
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "gnutls28/libgnutls30@3.7.1-5|1"
+                    },
+                    {
+                      "nodeId": "nettle/libhogweed6@3.7.3-1|2"
+                    },
+                    {
+                      "nodeId": "nettle/libnettle8@3.7.3-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "curl/libcurl4@7.74.0-1.3+deb11u1",
+                  "pkgId": "curl/libcurl4@7.74.0-1.3+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "brotli/libbrotli1@1.0.9-2+b2"
+                    },
+                    {
+                      "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "libidn2/libidn2-0@2.3.0-5|1"
+                    },
+                    {
+                      "nodeId": "libpsl/libpsl5@0.21.0-1.2"
+                    },
+                    {
+                      "nodeId": "libssh2/libssh2-1@1.9.0-2"
+                    },
+                    {
+                      "nodeId": "nghttp2/libnghttp2-14@1.43.0-1"
+                    },
+                    {
+                      "nodeId": "openldap/libldap-2.4-2@2.4.57+dfsg-3"
+                    },
+                    {
+                      "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "rtmpdump/librtmp1@2.4+20151223.gitfa8646d.1-2+b2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "curl@7.74.0-1.3+deb11u1",
+                  "pkgId": "curl@7.74.0-1.3+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "curl/libcurl4@7.74.0-1.3+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "dash@0.5.11+git20200708+dd9ef66-5",
+                  "pkgId": "dash@0.5.11+git20200708+dd9ef66-5",
+                  "deps": [
+                    {
+                      "nodeId": "debianutils@4.11.2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "diffutils@1:3.7-5",
+                  "pkgId": "diffutils@1:3.7-5",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/libext2fs2@1.46.2-2",
+                  "pkgId": "e2fsprogs/libext2fs2@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/libss2@1.46.2-2|1",
+                  "pkgId": "e2fsprogs/libss2@1.46.2-2",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "e2fsprogs/libss2@1.46.2-2|2",
+                  "pkgId": "e2fsprogs/libss2@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs/logsave@1.46.2-2",
+                  "pkgId": "e2fsprogs/logsave@1.46.2-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/libblkid1@2.36.1-8",
+                  "pkgId": "util-linux/libblkid1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/libuuid1@2.36.1-8",
+                  "pkgId": "util-linux/libuuid1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "e2fsprogs@1.46.2-2",
+                  "pkgId": "e2fsprogs@1.46.2-2",
+                  "deps": [
+                    {
+                      "nodeId": "e2fsprogs/libcom-err2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libext2fs2@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/libss2@1.46.2-2|1"
+                    },
+                    {
+                      "nodeId": "e2fsprogs/logsave@1.46.2-2"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libuuid1@2.36.1-8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "findutils@4.8.0-1",
+                  "pkgId": "findutils@4.8.0-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gcc-9/gcc-9-base@9.3.0-22",
+                  "pkgId": "gcc-9/gcc-9-base@9.3.0-22",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gettext/gettext-base@0.21-4",
+                  "pkgId": "gettext/gettext-base@0.21-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "glibc/libc-bin@2.31-13+deb11u2",
+                  "pkgId": "glibc/libc-bin@2.31-13+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pcre3/libpcre3@2:8.39-13",
+                  "pkgId": "pcre3/libpcre3@2:8.39-13",
+                  "deps": []
+                },
+                {
+                  "nodeId": "grep@3.6-1",
+                  "pkgId": "grep@3.6-1",
+                  "deps": [
+                    {
+                      "nodeId": "pcre3/libpcre3@2:8.39-13"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "gzip@1.10-4",
+                  "pkgId": "gzip@1.10-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "hostname@3.23",
+                  "pkgId": "hostname@3.23",
+                  "deps": []
+                },
+                {
+                  "nodeId": "init-system-helpers@1.60",
+                  "pkgId": "init-system-helpers@1.60",
+                  "deps": []
+                },
+                {
+                  "nodeId": "acl/libacl1@2.2.53-10",
+                  "pkgId": "acl/libacl1@2.2.53-10",
+                  "deps": []
+                },
+                {
+                  "nodeId": "audit/libaudit-common@1:3.0-2",
+                  "pkgId": "audit/libaudit-common@1:3.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "audit/libaudit1@1:3.0-2",
+                  "pkgId": "audit/libaudit1@1:3.0-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "bzip2/libbz2-1.0@1.0.8-4",
+                  "pkgId": "bzip2/libbz2-1.0@1.0.8-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "debconf@1.5.77",
+                  "pkgId": "debconf@1.5.77",
+                  "deps": []
+                },
+                {
+                  "nodeId": "dpkg@1.20.9",
+                  "pkgId": "dpkg@1.20.9",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gcc-10/gcc-10-base@10.2.1-6",
+                  "pkgId": "gcc-10/gcc-10-base@10.2.1-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "gcc-10/libgcc-s1@10.2.1-6",
+                  "pkgId": "gcc-10/libgcc-s1@10.2.1-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "glibc/libc6@2.31-13+deb11u2",
+                  "pkgId": "glibc/libc6@2.31-13+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "krb5/libkrb5support0@1.18.3-6+deb11u1",
+                  "pkgId": "krb5/libkrb5support0@1.18.3-6+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1",
+                  "pkgId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libselinux/libselinux1@3.1-3",
+                  "pkgId": "libselinux/libselinux1@3.1-3",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libxcrypt/libcrypt1@1:4.4.18-4",
+                  "pkgId": "libxcrypt/libcrypt1@1:4.4.18-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pcre2/libpcre2-8-0@10.36-2",
+                  "pkgId": "pcre2/libpcre2-8-0@10.36-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "perl/perl-base@5.32.1-4+deb11u2",
+                  "pkgId": "perl/perl-base@5.32.1-4+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "tar@1.34+dfsg-1",
+                  "pkgId": "tar@1.34+dfsg-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "xz-utils/liblzma5@5.2.5-2",
+                  "pkgId": "xz-utils/liblzma5@5.2.5-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "zlib/zlib1g@1:1.2.11.dfsg-2",
+                  "pkgId": "zlib/zlib1g@1:1.2.11.dfsg-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "meta-common-packages@meta",
+                  "pkgId": "meta-common-packages@meta",
+                  "deps": [
+                    {
+                      "nodeId": "acl/libacl1@2.2.53-10"
+                    },
+                    {
+                      "nodeId": "audit/libaudit-common@1:3.0-2"
+                    },
+                    {
+                      "nodeId": "audit/libaudit1@1:3.0-2"
+                    },
+                    {
+                      "nodeId": "bzip2/libbz2-1.0@1.0.8-4"
+                    },
+                    {
+                      "nodeId": "debconf@1.5.77"
+                    },
+                    {
+                      "nodeId": "dpkg@1.20.9"
+                    },
+                    {
+                      "nodeId": "gcc-10/gcc-10-base@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "gcc-10/libgcc-s1@10.2.1-6"
+                    },
+                    {
+                      "nodeId": "glibc/libc6@2.31-13+deb11u2"
+                    },
+                    {
+                      "nodeId": "krb5/libkrb5support0@1.18.3-6+deb11u1"
+                    },
+                    {
+                      "nodeId": "libcap-ng/libcap-ng0@0.7.9-2.2+b1"
+                    },
+                    {
+                      "nodeId": "libselinux/libselinux1@3.1-3"
+                    },
+                    {
+                      "nodeId": "libxcrypt/libcrypt1@1:4.4.18-4"
+                    },
+                    {
+                      "nodeId": "pcre2/libpcre2-8-0@10.36-2"
+                    },
+                    {
+                      "nodeId": "perl/perl-base@5.32.1-4+deb11u2"
+                    },
+                    {
+                      "nodeId": "tar@1.34+dfsg-1"
+                    },
+                    {
+                      "nodeId": "xz-utils/liblzma5@5.2.5-2"
+                    },
+                    {
+                      "nodeId": "zlib/zlib1g@1:1.2.11.dfsg-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "ncurses/ncurses-base@6.2+20201114-2",
+                  "pkgId": "ncurses/ncurses-base@6.2+20201114-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "ncurses/ncurses-bin@6.2+20201114-2",
+                  "pkgId": "ncurses/ncurses-bin@6.2+20201114-2",
+                  "deps": [
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libsemanage/libsemanage-common@3.1-1",
+                  "pkgId": "libsemanage/libsemanage-common@3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libsepol/libsepol1@3.1-1",
+                  "pkgId": "libsepol/libsepol1@3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libsemanage/libsemanage1@3.1-1+b2",
+                  "pkgId": "libsemanage/libsemanage1@3.1-1+b2",
+                  "deps": [
+                    {
+                      "nodeId": "libsemanage/libsemanage-common@3.1-1"
+                    },
+                    {
+                      "nodeId": "libsepol/libsepol1@3.1-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libtirpc/libtirpc-common@1.3.1-1",
+                  "pkgId": "libtirpc/libtirpc-common@1.3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libtirpc/libtirpc3@1.3.1-1|1",
+                  "pkgId": "libtirpc/libtirpc3@1.3.1-1",
+                  "deps": [
+                    {
+                      "nodeId": "krb5/libgssapi-krb5-2@1.18.3-6+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "libtirpc/libtirpc-common@1.3.1-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libtirpc/libtirpc3@1.3.1-1|2",
+                  "pkgId": "libtirpc/libtirpc3@1.3.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libnsl/libnsl2@1.3.0-2",
+                  "pkgId": "libnsl/libnsl2@1.3.0-2",
+                  "deps": [
+                    {
+                      "nodeId": "libtirpc/libtirpc3@1.3.1-1|1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam0g@1.4.0-9+deb11u1",
+                  "pkgId": "pam/libpam0g@1.4.0-9+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "pam/libpam-modules-bin@1.4.0-9+deb11u1",
+                  "pkgId": "pam/libpam-modules-bin@1.4.0-9+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|1",
+                  "pkgId": "pam/libpam-modules@1.4.0-9+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "db5.3/libdb5.3@5.3.28+dfsg1-0.8"
+                    },
+                    {
+                      "nodeId": "libnsl/libnsl2@1.3.0-2"
+                    },
+                    {
+                      "nodeId": "libtirpc/libtirpc3@1.3.1-1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-modules-bin@1.4.0-9+deb11u1"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|2",
+                  "pkgId": "pam/libpam-modules@1.4.0-9+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "shadow/passwd@1:4.8.1-1",
+                  "pkgId": "shadow/passwd@1:4.8.1-1",
+                  "deps": [
+                    {
+                      "nodeId": "libsemanage/libsemanage1@3.1-1+b2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|1"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "lsb/lsb-base@11.1.0",
+                  "pkgId": "lsb/lsb-base@11.1.0",
+                  "deps": []
+                },
+                {
+                  "nodeId": "nginx@1.21.4-1~bullseye|1",
+                  "pkgId": "nginx@1.21.4-1~bullseye",
+                  "deps": [
+                    {
+                      "nodeId": "adduser@3.118|2"
+                    },
+                    {
+                      "nodeId": "lsb/lsb-base@11.1.0"
+                    },
+                    {
+                      "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "pcre3/libpcre3@2:8.39-13"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "nginx@1.21.4-1~bullseye|2",
+                  "pkgId": "nginx@1.21.4-1~bullseye",
+                  "deps": []
+                },
+                {
+                  "nodeId": "geoip/libgeoip1@1.6.12-7",
+                  "pkgId": "geoip/libgeoip1@1.6.12-7",
+                  "deps": []
+                },
+                {
+                  "nodeId": "nginx-module-geoip@1.21.4-1~bullseye",
+                  "pkgId": "nginx-module-geoip@1.21.4-1~bullseye",
+                  "deps": [
+                    {
+                      "nodeId": "geoip/libgeoip1@1.6.12-7"
+                    },
+                    {
+                      "nodeId": "nginx@1.21.4-1~bullseye|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "expat/libexpat1@2.2.10-2",
+                  "pkgId": "expat/libexpat1@2.2.10-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "fonts-dejavu/fonts-dejavu-core@2.37-2",
+                  "pkgId": "fonts-dejavu/fonts-dejavu-core@2.37-2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "attr/libattr1@1:2.4.48-6",
+                  "pkgId": "attr/libattr1@1:2.4.48-6",
+                  "deps": []
+                },
+                {
+                  "nodeId": "coreutils/coreutils@8.32-4+b1",
+                  "pkgId": "coreutils/coreutils@8.32-4+b1",
+                  "deps": [
+                    {
+                      "nodeId": "attr/libattr1@1:2.4.48-6"
+                    },
+                    {
+                      "nodeId": "gmp/libgmp10@2:6.2.1+dfsg-1+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "sensible-utils@0.0.14",
+                  "pkgId": "sensible-utils@0.0.14",
+                  "deps": []
+                },
+                {
+                  "nodeId": "ucf@3.0043",
+                  "pkgId": "ucf@3.0043",
+                  "deps": [
+                    {
+                      "nodeId": "coreutils/coreutils@8.32-4+b1"
+                    },
+                    {
+                      "nodeId": "sensible-utils@0.0.14"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "fontconfig/fontconfig-config@2.13.1-4.2",
+                  "pkgId": "fontconfig/fontconfig-config@2.13.1-4.2",
+                  "deps": [
+                    {
+                      "nodeId": "fonts-dejavu/fonts-dejavu-core@2.37-2"
+                    },
+                    {
+                      "nodeId": "ucf@3.0043"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libpng1.6/libpng16-16@1.6.37-3",
+                  "pkgId": "libpng1.6/libpng16-16@1.6.37-3",
+                  "deps": []
+                },
+                {
+                  "nodeId": "freetype/libfreetype6@2.10.4+dfsg-1|1",
+                  "pkgId": "freetype/libfreetype6@2.10.4+dfsg-1",
+                  "deps": [
+                    {
+                      "nodeId": "brotli/libbrotli1@1.0.9-2+b2"
+                    },
+                    {
+                      "nodeId": "libpng1.6/libpng16-16@1.6.37-3"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "freetype/libfreetype6@2.10.4+dfsg-1|2",
+                  "pkgId": "freetype/libfreetype6@2.10.4+dfsg-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "fontconfig/libfontconfig1@2.13.1-4.2",
+                  "pkgId": "fontconfig/libfontconfig1@2.13.1-4.2",
+                  "deps": [
+                    {
+                      "nodeId": "expat/libexpat1@2.2.10-2"
+                    },
+                    {
+                      "nodeId": "fontconfig/fontconfig-config@2.13.1-4.2"
+                    },
+                    {
+                      "nodeId": "freetype/libfreetype6@2.10.4+dfsg-1|1"
+                    },
+                    {
+                      "nodeId": "util-linux/libuuid1@2.36.1-8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libjpeg-turbo/libjpeg62-turbo@1:2.0.6-4",
+                  "pkgId": "libjpeg-turbo/libjpeg62-turbo@1:2.0.6-4",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libwebp/libwebp6@0.6.1-2.1",
+                  "pkgId": "libwebp/libwebp6@0.6.1-2.1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libx11/libx11-data@2:1.7.2-1",
+                  "pkgId": "libx11/libx11-data@2:1.7.2-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libxau/libxau6@1:1.0.9-1",
+                  "pkgId": "libxau/libxau6@1:1.0.9-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libmd/libmd0@1.0.3-3",
+                  "pkgId": "libmd/libmd0@1.0.3-3",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libbsd/libbsd0@0.11.3-1",
+                  "pkgId": "libbsd/libbsd0@0.11.3-1",
+                  "deps": [
+                    {
+                      "nodeId": "libmd/libmd0@1.0.3-3"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libxdmcp/libxdmcp6@1:1.1.2-3",
+                  "pkgId": "libxdmcp/libxdmcp6@1:1.1.2-3",
+                  "deps": [
+                    {
+                      "nodeId": "libbsd/libbsd0@0.11.3-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libxcb/libxcb1@1.14-3",
+                  "pkgId": "libxcb/libxcb1@1.14-3",
+                  "deps": [
+                    {
+                      "nodeId": "libxau/libxau6@1:1.0.9-1"
+                    },
+                    {
+                      "nodeId": "libxdmcp/libxdmcp6@1:1.1.2-3"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libx11/libx11-6@2:1.7.2-1",
+                  "pkgId": "libx11/libx11-6@2:1.7.2-1",
+                  "deps": [
+                    {
+                      "nodeId": "libx11/libx11-data@2:1.7.2-1"
+                    },
+                    {
+                      "nodeId": "libxcb/libxcb1@1.14-3"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libxpm/libxpm4@1:3.5.12-1",
+                  "pkgId": "libxpm/libxpm4@1:3.5.12-1",
+                  "deps": [
+                    {
+                      "nodeId": "libx11/libx11-6@2:1.7.2-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "jbigkit/libjbig0@2.1-3.1+b2",
+                  "pkgId": "jbigkit/libjbig0@2.1-3.1+b2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libdeflate/libdeflate0@1.7-1",
+                  "pkgId": "libdeflate/libdeflate0@1.7-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "tiff/libtiff5@4.2.0-1",
+                  "pkgId": "tiff/libtiff5@4.2.0-1",
+                  "deps": [
+                    {
+                      "nodeId": "jbigkit/libjbig0@2.1-3.1+b2"
+                    },
+                    {
+                      "nodeId": "libdeflate/libdeflate0@1.7-1"
+                    },
+                    {
+                      "nodeId": "libjpeg-turbo/libjpeg62-turbo@1:2.0.6-4"
+                    },
+                    {
+                      "nodeId": "libwebp/libwebp6@0.6.1-2.1"
+                    },
+                    {
+                      "nodeId": "libzstd/libzstd1@1.4.8+dfsg-2.1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libgd2/libgd3@2.3.0-2",
+                  "pkgId": "libgd2/libgd3@2.3.0-2",
+                  "deps": [
+                    {
+                      "nodeId": "fontconfig/libfontconfig1@2.13.1-4.2"
+                    },
+                    {
+                      "nodeId": "freetype/libfreetype6@2.10.4+dfsg-1|2"
+                    },
+                    {
+                      "nodeId": "libjpeg-turbo/libjpeg62-turbo@1:2.0.6-4"
+                    },
+                    {
+                      "nodeId": "libpng1.6/libpng16-16@1.6.37-3"
+                    },
+                    {
+                      "nodeId": "libwebp/libwebp6@0.6.1-2.1"
+                    },
+                    {
+                      "nodeId": "libxpm/libxpm4@1:3.5.12-1"
+                    },
+                    {
+                      "nodeId": "tiff/libtiff5@4.2.0-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "nginx-module-image-filter@1.21.4-1~bullseye",
+                  "pkgId": "nginx-module-image-filter@1.21.4-1~bullseye",
+                  "deps": [
+                    {
+                      "nodeId": "libgd2/libgd3@2.3.0-2"
+                    },
+                    {
+                      "nodeId": "nginx@1.21.4-1~bullseye|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "readline/readline-common@8.1-1",
+                  "pkgId": "readline/readline-common@8.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "readline/libreadline8@8.1-1",
+                  "pkgId": "readline/libreadline8@8.1-1",
+                  "deps": [
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "readline/readline-common@8.1-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "nginx-module-njs@1.21.4+0.7.0-1~bullseye",
+                  "pkgId": "nginx-module-njs@1.21.4+0.7.0-1~bullseye",
+                  "deps": [
+                    {
+                      "nodeId": "nginx@1.21.4-1~bullseye|2"
+                    },
+                    {
+                      "nodeId": "openssl/libssl1.1@1.1.1k-1+deb11u1"
+                    },
+                    {
+                      "nodeId": "pcre3/libpcre3@2:8.39-13"
+                    },
+                    {
+                      "nodeId": "readline/libreadline8@8.1-1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "icu/libicu67@67.1-7",
+                  "pkgId": "icu/libicu67@67.1-7",
+                  "deps": [
+                    {
+                      "nodeId": "gcc-10/libstdc++6@10.2.1-6"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libxml2@2.9.10+dfsg-6.7|1",
+                  "pkgId": "libxml2@2.9.10+dfsg-6.7",
+                  "deps": [
+                    {
+                      "nodeId": "icu/libicu67@67.1-7"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "libxml2@2.9.10+dfsg-6.7|2",
+                  "pkgId": "libxml2@2.9.10+dfsg-6.7",
+                  "deps": []
+                },
+                {
+                  "nodeId": "libxslt/libxslt1.1@1.1.34-4",
+                  "pkgId": "libxslt/libxslt1.1@1.1.34-4",
+                  "deps": [
+                    {
+                      "nodeId": "libgcrypt20@1.8.7-6|1"
+                    },
+                    {
+                      "nodeId": "libxml2@2.9.10+dfsg-6.7|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "nginx-module-xslt@1.21.4-1~bullseye",
+                  "pkgId": "nginx-module-xslt@1.21.4-1~bullseye",
+                  "deps": [
+                    {
+                      "nodeId": "libxml2@2.9.10+dfsg-6.7|1"
+                    },
+                    {
+                      "nodeId": "libxslt/libxslt1.1@1.1.34-4"
+                    },
+                    {
+                      "nodeId": "nginx@1.21.4-1~bullseye|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|1",
+                  "pkgId": "pam/libpam-runtime@1.4.0-9+deb11u1",
+                  "deps": [
+                    {
+                      "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|2",
+                  "pkgId": "pam/libpam-runtime@1.4.0-9+deb11u1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "sed@4.7-1",
+                  "pkgId": "sed@4.7-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "shadow/login@1:4.8.1-1|1",
+                  "pkgId": "shadow/login@1:4.8.1-1",
+                  "deps": [
+                    {
+                      "nodeId": "pam/libpam-modules@1.4.0-9+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam-runtime@1.4.0-9+deb11u1|2"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "shadow/login@1:4.8.1-1|2",
+                  "pkgId": "shadow/login@1:4.8.1-1",
+                  "deps": []
+                },
+                {
+                  "nodeId": "sysvinit/sysvinit-utils@2.96-7",
+                  "pkgId": "sysvinit/sysvinit-utils@2.96-7",
+                  "deps": [
+                    {
+                      "nodeId": "lsb/lsb-base@11.1.0"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "tzdata@2021a-1+deb11u2",
+                  "pkgId": "tzdata@2021a-1+deb11u2",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux@2.36.1-8|1",
+                  "pkgId": "util-linux@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux@2.36.1-8|2",
+                  "pkgId": "util-linux@2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "ncurses/libtinfo6@6.2+20201114-2"
+                    },
+                    {
+                      "nodeId": "pam/libpam0g@1.4.0-9+deb11u1"
+                    },
+                    {
+                      "nodeId": "shadow/login@1:4.8.1-1|2"
+                    },
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    },
+                    {
+                      "nodeId": "systemd/libudev1@247.3-6"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libmount1@2.36.1-8|2"
+                    },
+                    {
+                      "nodeId": "util-linux/libsmartcols1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libuuid1@2.36.1-8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "util-linux/bsdutils@1:2.36.1-8",
+                  "pkgId": "util-linux/bsdutils@1:2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "systemd/libsystemd0@247.3-6|2"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "util-linux/libmount1@2.36.1-8|1",
+                  "pkgId": "util-linux/libmount1@2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    }
+                  ]
+                },
+                {
+                  "nodeId": "util-linux/libmount1@2.36.1-8|2",
+                  "pkgId": "util-linux/libmount1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/libsmartcols1@2.36.1-8",
+                  "pkgId": "util-linux/libsmartcols1@2.36.1-8",
+                  "deps": []
+                },
+                {
+                  "nodeId": "util-linux/mount@2.36.1-8",
+                  "pkgId": "util-linux/mount@2.36.1-8",
+                  "deps": [
+                    {
+                      "nodeId": "util-linux@2.36.1-8|2"
+                    },
+                    {
+                      "nodeId": "util-linux/libblkid1@2.36.1-8"
+                    },
+                    {
+                      "nodeId": "util-linux/libmount1@2.36.1-8|2"
+                    },
+                    {
+                      "nodeId": "util-linux/libsmartcols1@2.36.1-8"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "imageId",
+          "data": "sha256:f6987c8d6ed59543e9f34327c23e12141c9bad1916421278d720047ccc8e1bee"
+        },
+        {
+          "type": "imageLayers",
+          "data": [
+            "a2abf6c4d29d43a4bf9fbb769f524d0fb36a2edab49819c1bf3e76f409f953ea\\layer.tar",
+            "f3409a9a9e730560d36920acff18d72e3844f321aee9d72ef08f61130994a2ce\\layer.tar",
+            "9919a6cbae9c582bc6273e36c9b132764806821d0106fef42cafcc5b3dcdcc98\\layer.tar",
+            "fc1ce43285d7c956b08b79423f67d7f5a2e7e5600c05adebc0b714e14f4b6ab5\\layer.tar",
+            "1f01ab49921651661f6b8e7070efcefedd4e105bd93e61772949ec237db4d382\\layer.tar",
+            "13cfaf79ff6d9ef25e31f808ad832cfab681c7b64c32ea4e3851e3e5bfae4aca\\layer.tar"
+          ]
+        },
+        {
+          "type": "imageLabels",
+          "data": {
+            "maintainer": "NGINX Docker Maintainers <docker-maint@nginx.com>"
+          }
+        },
+        {
+          "type": "rootFs",
+          "data": [
+            "sha256:2edcec3590a4ec7f40cf0743c15d78fb39d8326bc029073b41ef9727da6c851f",
+            "sha256:5f5f780b24de8669bd35762bdd3c6937d34f07e271ff53f305ba65b51a461e67",
+            "sha256:4270b63061e507825dd9ecc50fe1cfc23951641a51ef7233f2d72b669eaf1bba",
+            "sha256:32359d2cd6cda64bf19da14c35f003030fe33090d884c72dcba50926bf44c171",
+            "sha256:4ded77d16e76e1a5fd06b255e70cc9d7df0694d592fe9741865f064d5f787865",
+            "sha256:51a4ac025eb47b33ac682d95e1abace559f3c63cd658e9bc53316352ac2a3446"
+          ]
+        },
+        {
+          "type": "imageOsReleasePrettyName",
+          "data": "Debian GNU/Linux 11 (bullseye)"
+        }
+      ],
+      "target": {
+        "image": "docker-image|nginx"
+      },
+      "identity": {
+        "type": "deb",
+        "args": {
+          "platform": "linux/amd64"
+        }
+      }
+    },
+    "path": "nginx"
+  }
+]

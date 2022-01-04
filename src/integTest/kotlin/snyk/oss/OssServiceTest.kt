@@ -47,7 +47,7 @@ class OssServiceTest : LightPlatformTestCase() {
     fun testBuildCliCommandsListWithDefaults() {
         setupDummyCliFile()
 
-        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains(getCliFile().absolutePath))
         assertTrue(cliCommands.contains("fake_cli_command"))
@@ -59,7 +59,7 @@ class OssServiceTest : LightPlatformTestCase() {
         setupDummyCliFile()
         pluginSettings().usageAnalyticsEnabled = false
 
-        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains("--DISABLE_ANALYTICS"))
     }
@@ -70,7 +70,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
 
-        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains("--file=package.json"))
     }
@@ -82,7 +82,7 @@ class OssServiceTest : LightPlatformTestCase() {
         project.service<SnykProjectSettingsStateService>().additionalParameters =
             "--file=package.json --configuration-matching='iamaRegex' --sub-project=snyk"
 
-        val cliCommands = ossService.buildCliCommandsList(listOf("fake_cli_command"))
+        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
         assertTrue(cliCommands.contains("--file=package.json"))
         assertTrue(cliCommands.contains("--configuration-matching='iamaRegex'"))
