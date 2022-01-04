@@ -1,5 +1,10 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.10]
+### Fixed
+- avoid AlreadyDisposedException due to Project disposal before using project's service
+- ignore exceptions in PsiManager.findFile()
+
 ## [2.4.9]
 ### Changed
 - updated README with Log4Shell detection note
