@@ -761,7 +761,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 CONTAINER_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
+                    count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
                     else -> throw IllegalStateException()
                 }
             }
