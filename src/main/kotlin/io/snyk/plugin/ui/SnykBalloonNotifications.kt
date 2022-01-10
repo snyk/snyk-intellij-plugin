@@ -77,7 +77,7 @@ object SnykBalloonNotifications {
         project,
         NotificationAction.createSimpleExpiring("Schedule a meeting") {
             pluginSettings().showFeedbackRequest = false
-            BrowserUtil.browse("https://calendly.com/andy-gongea-snyk/50min")
+            BrowserUtil.browse("https://calendly.com/snyk-georgi/45min")
         },
         NotificationAction.createSimpleExpiring("Don’t show again") {
             pluginSettings().showFeedbackRequest = false
