@@ -2,13 +2,12 @@ package snyk.advisor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import snyk.advisor.api.AdvisorApiClient
 import snyk.advisor.api.PackageInfo
 
@@ -17,16 +16,27 @@ class AdvisorServiceImpl : AdvisorService, Disposable {
 
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
 
-    private val apiClient by lazy {
+    private var savedToken: String? = pluginSettings().token
+
+    private var apiClient: AdvisorApiClient? = createAdvisorApiClient(pluginSettings().token)
+
+    private fun getApiClient(): AdvisorApiClient? {
+        val actualToken = pluginSettings().token
+        if (actualToken != savedToken) {
+            savedToken = actualToken
+            apiClient = createAdvisorApiClient(token = actualToken)
+        }
+        return apiClient
+    }
+
+    private fun createAdvisorApiClient(token: String?): AdvisorApiClient? =
         //TODO(pavel): customize parameter here
-        val token = service<SnykApplicationSettingsStateService>().token
-        return@lazy if (token.isNullOrBlank()) {
+        if (token.isNullOrBlank()) {
             log.warn("Token cannot be empty")
             null
         } else {
             AdvisorApiClient.create(token = token)
         }
-    }
 
     override fun requestPackageInfos(project: Project?,
                                      packageManager: AdvisorPackageManager,
@@ -36,7 +46,7 @@ class AdvisorServiceImpl : AdvisorService, Disposable {
                                      onFailGetInfo: (name: String) -> Unit) {
         object : Task.Backgroundable(project, "Retrieving Advisor info", true) {
             override fun run(indicator: ProgressIndicator) {
-                val infos = apiClient?.getPackagesInfo(packageManager, packageNames)
+                val infos = getApiClient()?.getPackagesInfo(packageManager, packageNames)
                 if (infos == null) {
                     packageNames.forEach { onFailGetInfo(it) }
                     return
