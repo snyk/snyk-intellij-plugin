@@ -47,7 +47,7 @@ class LabelProvider {
         return createLinkLabel(URL("$cveBaseUrl=$cve"), cve)
     }
 
-    private fun createLinkLabel(url: URL, text: String): LinkLabel<*> {
+    fun createLinkLabel(url: URL, text: String): LinkLabel<*> {
         val openLinkAction = OpenLinkAction(url)
         return LinkLabel.create(text, openLinkAction)
     }
