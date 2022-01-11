@@ -31,7 +31,9 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
 
     override fun getFilePath(file: Any): String = toPsiFile(file).virtualFile.path
 
-    override fun getDirPath(file: Any): String = toPsiFile(file).virtualFile.parent.path
+    override fun getDirPath(file: Any): String = toPsiFile(file).virtualFile.let {
+        it.parent?.path ?: it.path // root dir case
+    }
 
     override fun getProjectBasedFilePath(file: Any): String {
         val psiFile = toPsiFile(file)
