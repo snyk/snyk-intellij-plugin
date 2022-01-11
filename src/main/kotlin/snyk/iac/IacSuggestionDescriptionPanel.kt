@@ -101,9 +101,8 @@ class IacSuggestionDescriptionPanel(
                 panelGridConstraints(6)
             )
         }
-        if (issue.references.isNotEmpty()) {
-            this.add(addIssueReferences(), panelGridConstraints(row = 7))
-        }
+
+        addIssueReferences()
     }
 
     private fun boldLabel(text: String) = JLabel(text).apply {
@@ -277,22 +276,25 @@ class IacSuggestionDescriptionPanel(
         return remediationPanel
     }
 
-    private fun addIssueReferences(): JPanel {
-        val panel = JPanel()
-        panel.layout = GridLayoutManager(
-            issue.references.size + 1,
-            1,
-            Insets(20, 0, 20, 0),
-            50,
-            -1
-        )
+    private fun addIssueReferences() {
+        val referenceRowCount = if (issue.references.isNotEmpty()) issue.references.size + 1 else 0
+        if (referenceRowCount > 0) {
+            val panel = JPanel()
+            panel.layout = GridLayoutManager(
+                referenceRowCount + 1,
+                1,
+                Insets(20, 0, 20, 0),
+                50,
+                -1
+            )
 
-        panel.add(boldLabel("References"), baseGridConstraints(row = 1))
-        issue.references.forEachIndexed { index, s ->
-            val label = labelProvider.createLinkLabel(URL(s), s)
-            panel.add(label, baseGridConstraints(2 + index))
+            panel.add(boldLabel("References"), baseGridConstraints(row = 1))
+            issue.references.forEachIndexed { index, s ->
+                val label = labelProvider.createLinkLabel(URL(s), s)
+                panel.add(label, baseGridConstraints(2 + index))
+            }
+            this.add(panel, panelGridConstraints(row = 7))
         }
-        return panel
     }
 
     private fun markdownToHtml(sourceStr: String): String {
