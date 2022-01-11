@@ -10,6 +10,7 @@ import junit.framework.TestCase.assertTrue
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.net.URL
 import javax.swing.JLabel
 
 class LabelProviderTest {
@@ -90,6 +91,18 @@ class LabelProviderTest {
         assertEquals(cvssText, output.text)
 
         verifyLinkLabelCreated(LabelProvider.cvssBaseUrl + "#$cvssId")
+    }
+
+    @Test
+    fun `getLinkLabel should provide a label with a clickable link`() {
+        val url = "https://snyk.io/reference"
+        val text = "reference"
+
+        val label: JLabel = LabelProvider().createLinkLabel(URL(url), text)
+
+        assertTrue("Expected LinkLabel, but got ${label::class}", label is LinkLabel<*>)
+        assertEquals(text, label.text)
+        verifyLinkLabelCreated(url)
     }
 
     private fun verifyLinkLabelCreated(expectedUrl: String) {

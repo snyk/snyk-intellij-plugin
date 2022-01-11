@@ -12,6 +12,7 @@ import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
+import io.snyk.plugin.ui.toolwindow.LabelProvider
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.common.IgnoreService
@@ -20,6 +21,7 @@ import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
+import java.net.URL
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -31,6 +33,8 @@ class IacSuggestionDescriptionPanel(
     val psiFile: PsiFile?,
     val project: Project
 ) : JPanel() {
+
+    private val labelProvider = LabelProvider()
 
     private fun baseGridConstraints(
         row: Int,
@@ -97,6 +101,8 @@ class IacSuggestionDescriptionPanel(
                 panelGridConstraints(6)
             )
         }
+
+        addIssueReferences()
     }
 
     private fun boldLabel(text: String) = JLabel(text).apply {
@@ -230,15 +236,13 @@ class IacSuggestionDescriptionPanel(
     }
 
     private fun linkLabel(
-        beforeLinkText: String = "",
         linkText: String,
-        afterLinkText: String = "",
         toolTipText: String,
         customFont: Font? = null,
         onClick: (HyperlinkEvent) -> Unit
     ): HyperlinkLabel {
         return HyperlinkLabel().apply {
-            this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
+            this.setHyperlinkText("", linkText, "")
             this.toolTipText = toolTipText
             this.font = getFont(-1, 14, customFont ?: font)
             addHyperlinkListener {
@@ -270,6 +274,27 @@ class IacSuggestionDescriptionPanel(
         remediationPanel.add(whiteBox, panelGridConstraints(row = 1))
 
         return remediationPanel
+    }
+
+    private fun addIssueReferences() {
+        val referenceRowCount = if (issue.references.isNotEmpty()) issue.references.size + 1 else 0
+        if (referenceRowCount > 0) {
+            val panel = JPanel()
+            panel.layout = GridLayoutManager(
+                referenceRowCount + 1,
+                1,
+                Insets(20, 0, 20, 0),
+                50,
+                -1
+            )
+
+            panel.add(boldLabel("References"), baseGridConstraints(row = 1))
+            issue.references.forEachIndexed { index, s ->
+                val label = labelProvider.createLinkLabel(URL(s), s)
+                panel.add(label, baseGridConstraints(2 + index))
+            }
+            this.add(panel, panelGridConstraints(row = 7))
+        }
     }
 
     private fun markdownToHtml(sourceStr: String): String {

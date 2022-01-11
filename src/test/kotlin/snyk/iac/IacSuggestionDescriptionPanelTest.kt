@@ -7,6 +7,7 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import snyk.UIComponentFinder
 import snyk.UIComponentFinder.getJButtonByText
 
 class IacSuggestionDescriptionPanelTest {
@@ -27,7 +28,7 @@ class IacSuggestionDescriptionPanelTest {
             "TestIssue",
             "TestImpact",
             "TestResolve",
-            listOf("Test Reference 1", "Test reference 2"),
+            listOf("https://TestReference1", "https://TestReference2"),
             listOf("Test Path 1", "Test Path 2")
         )
         project = mockk()
@@ -55,5 +56,15 @@ class IacSuggestionDescriptionPanelTest {
         val listener = actualButton!!.actionListeners.first() as IgnoreButtonActionListener
         assertEquals(IgnoreButtonActionListener::class, listener::class)
         assertEquals(issue.id, listener.issue.id)
+    }
+
+    @Test
+    fun `IacSuggestionDescriptionPanel should surface references`() {
+        cut = IacSuggestionDescriptionPanel(issue, null, project)
+
+        issue.references.stream().forEach {
+            val label = UIComponentFinder.getJLabelByText(cut, it)
+            assertNotNull("Didn't find reference $it", label)
+        }
     }
 }
