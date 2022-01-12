@@ -45,7 +45,9 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
             LOG.debug("container service scan fail")
             return tempResult
         }
-        LOG.debug("container scan: images with vulns [${tempResult.allCliIssues?.size}], issues [${tempResult.issuesCount}] ")
+        LOG.debug(
+            "container scan: images with vulns [${tempResult.allCliIssues?.size}], issues [${tempResult.issuesCount}] "
+        )
 
         tempResult.allCliIssues?.forEach {
             val baseImageRemediationInfo = convertRemediation(it.docker.baseImageRemediation)

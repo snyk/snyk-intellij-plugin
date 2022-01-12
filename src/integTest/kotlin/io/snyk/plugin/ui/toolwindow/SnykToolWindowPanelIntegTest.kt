@@ -426,16 +426,16 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertEquals(containerResult, toolWindowPanel.currentContainerResult)
 
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
-        assertTrue("2 images with issues should be found", rootContainerNode.childCount == 2)
-        assertTrue(
+        assertEquals("2 images with issues should be found", 2, rootContainerNode.childCount)
+        assertEquals(
             "`fake-image-name1` should be found",
-            ((rootContainerNode.firstChild as ContainerImageTreeNode).userObject as ContainerIssuesForImage)
-                .imageName == "fake-image-name1"
+            "fake-image-name1",
+            ((rootContainerNode.firstChild as ContainerImageTreeNode).userObject as ContainerIssuesForImage).imageName
         )
-        assertTrue(
+        assertEquals(
             "`fake-image-name2` should be found",
-            ((rootContainerNode.lastChild as ContainerImageTreeNode).userObject as ContainerIssuesForImage)
-                .imageName == "fake-image-name2"
+            "fake-image-name2",
+            ((rootContainerNode.lastChild as ContainerImageTreeNode).userObject as ContainerIssuesForImage).imageName
         )
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), rootContainerNode.firstChild)
@@ -479,7 +479,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             BaseImageRemediationDetailPanel.CURRENT_IMAGE
         )
         assertNotNull(currentImageValueLabel)
-        assertTrue("current image incorrect", currentImageValueLabel?.text == "nginx:1.16.0")
+        assertEquals("current image incorrect", "nginx:1.16.0", currentImageValueLabel?.text)
 
         val minorUpgradeValueLabel = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
@@ -487,7 +487,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             BaseImageRemediationDetailPanel.MINOR_UPGRADES
         )
         assertNotNull(minorUpgradeValueLabel)
-        assertTrue("minor upgrades incorrect", minorUpgradeValueLabel?.text == "nginx:1.20.2")
+        assertEquals("minor upgrades incorrect", "nginx:1.20.2", minorUpgradeValueLabel?.text)
 
         val alternativeUpgradeValueLabel = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
@@ -495,6 +495,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             BaseImageRemediationDetailPanel.ALTERNATIVE_UPGRADES
         )
         assertNotNull(alternativeUpgradeValueLabel)
-        assertTrue("alternative upgrades incorrect", alternativeUpgradeValueLabel?.text == "nginx:1-perl")
+        assertEquals("alternative upgrades incorrect", "nginx:1-perl", alternativeUpgradeValueLabel?.text)
     }
 }

@@ -706,7 +706,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         count == NODE_INITIAL_STATE -> ""
                         count == 0 -> NO_ISSUES_FOUND_TEXT
                         count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
-                        else -> throw IllegalStateException()
+                        else -> throw IllegalStateException("ResultsCount is meaningful")
                     }
                 }
             }
@@ -720,7 +720,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
-                    else -> throw IllegalStateException()
+                    else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
         }
@@ -734,7 +734,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
-                    else -> throw IllegalStateException()
+                    else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
         }
@@ -748,7 +748,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
-                    else -> throw IllegalStateException()
+                    else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
         }
@@ -762,7 +762,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
-                    else -> throw IllegalStateException()
+                    else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
         }
