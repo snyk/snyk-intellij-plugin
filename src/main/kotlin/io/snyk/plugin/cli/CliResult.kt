@@ -10,9 +10,9 @@ abstract class CliResult<CliIssues>(
     var error: SnykError?
 ) {
 
-    private val timeStamp: Instant = Instant.now()
+    private val timestamp: Instant = Instant.now()
 
-    fun isExpired(): Boolean = timeStamp.plus(1, ChronoUnit.DAYS) < Instant.now()
+    fun isExpired(): Boolean = timestamp.plus(1, ChronoUnit.DAYS) < Instant.now()
 
     fun isSuccessful(): Boolean = error == null
 

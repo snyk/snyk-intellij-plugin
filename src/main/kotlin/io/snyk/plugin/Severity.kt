@@ -31,10 +31,19 @@ class Severity {
 
         fun getColor(severity: String): Color =
             when (severity) {
-                CRITICAL -> Color.decode("#AD1A1A")
-                HIGH -> Color.decode("#C75450")
-                MEDIUM -> Color.decode("#EDA200")
-                LOW -> Color.decode("#6E6E6E")
+                CRITICAL -> Color.decode("#9E261E")
+                HIGH -> Color.decode("#9B3D15")
+                MEDIUM -> Color.decode("#925C1E")
+                LOW -> Color.decode("#585675")
+                else -> UIUtil.getPanelBackground()
+            }
+
+        fun getBgColor(severity: String): Color =
+            when (severity) {
+                CRITICAL -> Color.decode("#FFDAD8")
+                HIGH -> Color.decode("#FFDBCC")
+                MEDIUM -> Color.decode("#FFE8CD")
+                LOW -> Color.decode("#EEEEEE")
                 else -> UIUtil.getPanelBackground()
             }
     }

@@ -121,6 +121,11 @@ fun isIacRunning(project: Project): Boolean {
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
+fun isContainerRunning(project: Project): Boolean {
+    val indicator = getSnykTaskQueueService(project)?.containerScanProgressIndicator
+    return indicator != null && indicator.isRunning && !indicator.isCanceled
+}
+
 fun isScanRunning(project: Project): Boolean =
     isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
 

@@ -37,16 +37,19 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
         val images = imageCache?.getKubernetesWorkloadImages() ?: emptySet()
         val imageNames = images.map { it.image }
         LOG.debug("container scan requested for ${imageNames.size} images: $imageNames")
-
-        val result = execute(commands + imageNames)
-        if (!result.isSuccessful()) {
-            LOG.debug("container service scan fail")
-            return result
+        if (imageNames.isEmpty()) {
+            return ContainerResult(emptyList(), null)
         }
+        val tempResult = execute(commands + imageNames)
+        if (!tempResult.isSuccessful()) {
+            LOG.debug("container service scan fail")
+            return tempResult
+        }
+        LOG.debug(
+            "container scan: images with vulns [${tempResult.allCliIssues?.size}], issues [${tempResult.issuesCount}] "
+        )
 
-        LOG.debug("container scan: images with vulns [${result.allCliIssues?.size}], issues [${result.issuesCount}] ")
-
-        result.allCliIssues?.forEach {
+        tempResult.allCliIssues?.forEach {
             val baseImageRemediationInfo = convertRemediation(it.docker.baseImageRemediation)
 
             val enrichedContainerIssuesForImage = it.copy(
