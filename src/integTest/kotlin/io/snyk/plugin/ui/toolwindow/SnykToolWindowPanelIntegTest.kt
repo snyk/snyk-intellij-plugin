@@ -142,12 +142,38 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(snykErrorControl.message, project)
-            SnykBalloonNotificationHelper.showInfo(snykError.message, project)
+            SnykBalloonNotificationHelper.showError(any(), project)
         }
         assertTrue(toolWindowPanel.currentOssError == null)
         assertTrue(toolWindowPanel.currentOssResults == null)
-        assertEquals(SnykToolWindowPanel.OSS_ROOT_TEXT, toolWindowPanel.getRootOssIssuesTreeNode().userObject)
+        assertEquals(
+            SnykToolWindowPanel.OSS_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_PACKAGE_MANAGER_FOUND,
+            toolWindowPanel.getRootOssIssuesTreeNode().userObject
+        )
+    }
+
+    @Test
+    fun `test should not display error when no IAC supported file found`() {
+        mockkObject(SnykBalloonNotificationHelper)
+
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        val snykError = SnykError("Could not find any valid IaC files", project.basePath.toString())
+        val snykErrorControl = SnykError("control", project.basePath.toString())
+
+        toolWindowPanel.snykScanListener.scanningIacError(snykErrorControl)
+        toolWindowPanel.snykScanListener.scanningIacError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(any(), project)
+        }
+
+        assertTrue(toolWindowPanel.currentIacError == null)
+        assertEquals(
+            SnykToolWindowPanel.IAC_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND,
+            toolWindowPanel.getRootIacIssuesTreeNode().userObject
+        )
     }
 
     @Test
