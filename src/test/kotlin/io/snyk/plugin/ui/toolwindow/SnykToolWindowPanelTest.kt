@@ -62,8 +62,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `should display experimental auth panel if user in test group`() {
-        every { amplitudeExperimentationServiceMock.isPartOfExperimentalWelcomeWorkflow() } returns true
+    fun `should display auth panel `() {
         every { settings.pluginFirstRun } returns true
 
         cut = SnykToolWindowPanel(project)
@@ -75,19 +74,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `should not display experimental auth panel if user in control group`() {
-        every { amplitudeExperimentationServiceMock.isPartOfExperimentalWelcomeWorkflow() } returns false
-        every { settings.pluginFirstRun } returns true
-
-        cut = SnykToolWindowPanel(project)
-
-        val authPanel = UIComponentFinder.getJPanelByName(cut, "authPanel")
-        assertEquals(CenterOneComponentPanel::class, authPanel!!.parent::class)
-    }
-
-    @Test
-    fun `should not display onboarding panel and run scan directly if if user in test group`() {
-        every { amplitudeExperimentationServiceMock.isPartOfExperimentalWelcomeWorkflow() } returns true
+    fun `should not display onboarding panel and run scan directly`() {
         every { settings.token } returns "test-token"
         every { settings.pluginFirstRun } returns true
         justRun { taskQueueService.scan() }
@@ -104,21 +91,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `should not display experimental onboarding panel if user in control group`() {
-        every { amplitudeExperimentationServiceMock.isPartOfExperimentalWelcomeWorkflow() } returns false
-        every { settings.pluginFirstRun } returns true
-        cut = SnykToolWindowPanel(project)
-
-        cut.displayPluginFirstRunPanel()
-
-        val onboardingPanel = UIComponentFinder.getJPanelByName(cut, "onboardingPanel")
-        assertNotNull(onboardingPanel)
-        assertEquals(CenterOneComponentPanel::class, onboardingPanel!!.parent::class)
-    }
-
-    @Test
-    fun `should automatically enable products if paid test group user`() {
-        every { amplitudeExperimentationServiceMock.isPartOfExperimentalWelcomeWorkflow() } returns true
+    fun `should automatically enable products`() {
         every { settings.token } returns "test-token"
         every { settings.pluginFirstRun } returns true
         mockkStatic(Registry::class)

@@ -31,7 +31,6 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
-import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
@@ -546,15 +545,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         when {
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> {
-                if (getAmplitudeExperimentService(project)?.isPartOfExperimentalWelcomeWorkflow() == true) {
-                    pluginSettings().pluginFirstRun = false
-                    enableProductsAccordingToServerSetting()
-                    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
-                    displayTreeAndDescriptionPanels()
-                    triggerScan()
-                } else {
-                    displayPluginFirstRunPanel()
-                }
+                pluginSettings().pluginFirstRun = false
+                enableProductsAccordingToServerSetting()
+                getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
+                displayTreeAndDescriptionPanels()
+                triggerScan()
             }
             else -> displayTreeAndDescriptionPanels()
         }
@@ -574,15 +569,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun displayAuthPanel() {
         removeAll()
-        val amplitudeExperimentService = getAmplitudeExperimentService(project)
-        if (amplitudeExperimentService?.isPartOfExperimentalWelcomeWorkflow() == true) {
-            val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
-            add(splitter, BorderLayout.CENTER)
-            splitter.firstComponent = TreePanel(vulnerabilitiesTree)
-            splitter.secondComponent = SnykAuthPanel(project)
-        } else {
-            add(CenterOneComponentPanel(SnykAuthPanel(project)), BorderLayout.CENTER)
-        }
+        val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
+        add(splitter, BorderLayout.CENTER)
+        splitter.firstComponent = TreePanel(vulnerabilitiesTree)
+        splitter.secondComponent = SnykAuthPanel(project)
         revalidate()
 
         service<SnykAnalyticsService>().logWelcomeIsViewed(

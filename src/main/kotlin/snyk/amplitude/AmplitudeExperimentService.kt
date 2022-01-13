@@ -17,8 +17,6 @@ private val LOG = logger<AmplitudeExperimentService>()
 @Service
 class AmplitudeExperimentService : Disposable {
     companion object {
-        const val CHANGE_AUTHENTICATE_BUTTON = "ide-jetbrains-change-authenticate-button-and-first-time-workflow"
-        const val TREATMENT_GROUP = "treatment"
         private val storage: ConcurrentHashMap<String, Variant> = ConcurrentHashMap()
     }
 
@@ -63,11 +61,6 @@ class AmplitudeExperimentService : Disposable {
             storage[key] = variant
         }
         LOG.debug("Stored variants: $variants")
-    }
-
-    fun isPartOfExperimentalWelcomeWorkflow(): Boolean {
-        val variant = storage[CHANGE_AUTHENTICATE_BUTTON] ?: return false
-        return variant.value == TREATMENT_GROUP
     }
 
     @TestOnly
