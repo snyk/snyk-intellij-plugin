@@ -37,9 +37,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var ossScanEnable: Boolean = true
     var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
-    var snykCodeQualityIssuesScanEnable: Boolean = false
+    var snykCodeQualityIssuesScanEnable: Boolean = true
     var iacScanEnabled: Boolean = true
-    var containerScanEnabled: Boolean = false
+    var containerScanEnabled: Boolean = true
 
     var sastOnServerEnabled: Boolean? = null
     var usageAnalyticsEnabled = true

@@ -105,8 +105,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
             settings.sastOnServerEnabled = true
             settings.iacScanEnabled = true
             settings.containerScanEnabled = true
-            settings.advisorEnable = true
-            settings.ossScanEnable = true
             settings.snykCodeSecurityIssuesScanEnable = true
             settings.snykCodeQualityIssuesScanEnable = true
         }

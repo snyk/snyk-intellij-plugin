@@ -35,9 +35,6 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
-    companion object {
-        const val AUTHENTICATE_BUTTON_TEXT = "Test code now"
-    }
 
     init {
         name = "authPanel"
@@ -107,4 +104,8 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
     }
 
     override fun dispose() {}
+
+    companion object {
+        const val AUTHENTICATE_BUTTON_TEXT = "Test code now"
+    }
 }

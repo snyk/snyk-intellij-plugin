@@ -26,9 +26,9 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
-import snyk.container.ContainerService
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.amplitude.AmplitudeExperimentService
+import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
 import snyk.oss.OssService
@@ -198,9 +198,10 @@ fun controlExternalProcessWithProgressIndicator(
     checkCancelled.invoke()
 }
 
-fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", false)
+fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", pluginSettings().iacScanEnabled)
 
-fun isContainerEnabled(): Boolean = Registry.`is`("snyk.preview.container.enabled", false)
+fun isContainerEnabled(): Boolean =
+    Registry.`is`("snyk.preview.container.enabled", pluginSettings().containerScanEnabled)
 
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 

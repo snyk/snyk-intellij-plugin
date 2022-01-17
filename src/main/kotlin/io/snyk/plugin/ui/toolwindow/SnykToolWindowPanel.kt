@@ -56,7 +56,6 @@ import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.IssueInTreeIsClicked
-import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
@@ -582,28 +581,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         )
     }
 
-    fun displayPluginFirstRunPanel() {
-        removeAll()
-        val onboardPanel = OnboardPanel(project)
-        add(CenterOneComponentPanel(onboardPanel.panel), BorderLayout.CENTER)
-        revalidate()
-
-        service<SnykAnalyticsService>().logProductSelectionIsViewed(
-            ProductSelectionIsViewed.builder()
-                .ide(ProductSelectionIsViewed.Ide.JETBRAINS)
-                .build()
-        )
-    }
-
     private fun enableProductsAccordingToServerSetting() {
         pluginSettings().apply {
             sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
-            ossScanEnable = true
-            advisorEnable = true
             iacScanEnabled = isIacEnabled()
             containerScanEnabled = isContainerEnabled()
-            snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: false
-            snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: false
+            snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeSecurityIssuesScanEnable
+            snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeQualityIssuesScanEnable
         }
     }
 
