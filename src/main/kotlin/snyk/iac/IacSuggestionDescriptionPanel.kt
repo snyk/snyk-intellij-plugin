@@ -1,24 +1,24 @@
 package snyk.iac
 
-import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
-import com.intellij.ui.HyperlinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.Severity
+import io.snyk.plugin.ui.baseGridConstraints
+import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
+import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
+import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.LabelProvider
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.common.IgnoreService
-import java.awt.Color
 import java.awt.Component
-import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
 import java.net.URL
@@ -26,7 +26,6 @@ import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
-import javax.swing.event.HyperlinkEvent
 
 class IacSuggestionDescriptionPanel(
     val issue: IacIssue,
@@ -36,42 +35,6 @@ class IacSuggestionDescriptionPanel(
 
     private val labelProvider = LabelProvider()
 
-    private fun baseGridConstraints(
-        row: Int,
-        column: Int = 0,
-        rowSpan: Int = 1,
-        colSpan: Int = 1,
-        anchor: Int = GridConstraints.ANCHOR_WEST,
-        fill: Int = GridConstraints.FILL_NONE,
-        HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
-        VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
-        minimumSize: Dimension? = null,
-        preferredSize: Dimension? = null,
-        maximumSize: Dimension? = null,
-        indent: Int = 1,
-        useParentLayout: Boolean = false
-    ): GridConstraints {
-        return GridConstraints(
-            row, column, rowSpan, colSpan, anchor, fill, HSizePolicy, VSizePolicy, minimumSize, preferredSize,
-            maximumSize, indent, useParentLayout
-        )
-    }
-
-    private fun panelGridConstraints(
-        row: Int,
-        column: Int = 0,
-        anchor: Int = GridConstraints.ANCHOR_CENTER,
-        indent: Int = 1
-    ) = baseGridConstraints(
-        row = row,
-        column = column,
-        anchor = anchor,
-        fill = GridConstraints.FILL_BOTH,
-        HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-        VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-        indent = indent
-    )
-
     init {
         this.name = "IacSuggestionDescriptionPanel"
         this.layout = GridLayoutManager(10, 1, Insets(20, 10, 20, 20), -1, 10)
@@ -79,8 +42,7 @@ class IacSuggestionDescriptionPanel(
         this.add(
             Spacer(),
             baseGridConstraints(
-                9,
-                anchor = GridConstraints.ANCHOR_CENTER,
+                row = 9,
                 fill = GridConstraints.FILL_VERTICAL,
                 HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
                 VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
@@ -117,7 +79,7 @@ class IacSuggestionDescriptionPanel(
 
         mainBodyPanel.add(
             boldLabel("Description"),
-            baseGridConstraints(0, 0)
+            baseGridConstraintsAnchorWest(0, 0)
         )
         mainBodyPanel.add(
             getReadOnlyClickableHtmlJEditorPane(issue.issue),
@@ -126,7 +88,7 @@ class IacSuggestionDescriptionPanel(
 
         mainBodyPanel.add(
             boldLabel("Impact"),
-            baseGridConstraints(1, 0)
+            baseGridConstraintsAnchorWest(1, 0)
         )
         mainBodyPanel.add(
             getReadOnlyClickableHtmlJEditorPane(issue.impact),
@@ -135,7 +97,7 @@ class IacSuggestionDescriptionPanel(
 
         mainBodyPanel.add(
             boldLabel("Path"),
-            baseGridConstraints(2, 0)
+            baseGridConstraintsAnchorWest(2, 0)
         )
 
         val font = getFont(-1, -1, JTextArea().font) ?: UIUtil.getLabelFont()
@@ -168,10 +130,10 @@ class IacSuggestionDescriptionPanel(
 
         titlePanel.add(
             titleLabel,
-            baseGridConstraints(0)
+            baseGridConstraintsAnchorWest(0)
         )
 
-        titlePanel.add(cwePanel(), baseGridConstraints(row = 1, column = 0, indent = 0))
+        titlePanel.add(cwePanel(), baseGridConstraintsAnchorWest(row = 1, column = 0, indent = 0))
         titlePanel.add(
             topButtonPanel(),
             baseGridConstraints(row = 0, column = 1, anchor = GridConstraints.ANCHOR_EAST, indent = 0)
@@ -202,63 +164,15 @@ class IacSuggestionDescriptionPanel(
         }
         panel.add(
             ignoreButton,
-            baseGridConstraints(0)
+            baseGridConstraintsAnchorWest(0)
         )
     }
 
-    private fun cwePanel(): Component {
-        val panel = JPanel()
-
-        panel.layout = GridLayoutManager(1, 3, Insets(0, 0, 0, 0), 5, 0)
-
-        panel.add(
-            JLabel("Issue"),
-            baseGridConstraints(0)
-        )
-
-        panel.add(
-            defaultFontLabel(" | ").apply {
-                this.foreground = Color(this.foreground.red, this.foreground.green, this.foreground.blue, 50)
-            },
-            baseGridConstraints(0, column = 1, indent = 0)
-        )
-
-        val positionLabel = linkLabel(
-            linkText = issue.id,
-            toolTipText = "Click to open description in the Browser"
-        ) {
-            val url = issue.documentation
-            BrowserUtil.open(url)
-        }
-
-        panel.add(positionLabel, baseGridConstraints(0, 2, indent = 0))
-
-        return panel
-    }
-
-    private fun linkLabel(
-        linkText: String,
-        toolTipText: String,
-        customFont: Font? = null,
-        onClick: (HyperlinkEvent) -> Unit
-    ): HyperlinkLabel {
-        return HyperlinkLabel().apply {
-            this.setHyperlinkText("", linkText, "")
-            this.toolTipText = toolTipText
-            this.font = getFont(-1, 14, customFont ?: font)
-            addHyperlinkListener {
-                onClick.invoke(it)
-            }
-        }
-    }
-
-    private fun defaultFontLabel(labelText: String, bold: Boolean = false): JLabel {
-        return JLabel().apply {
-            val titleLabelFont: Font? = getFont(if (bold) Font.BOLD else -1, 14, font)
-            titleLabelFont?.let { font = it }
-            text = labelText
-        }
-    }
+    private fun cwePanel()= descriptionHeaderPanel(
+        issueNaming = "Issue",
+        id = issue.id,
+        idUrl = issue.documentation
+    )
 
     private fun remediationPanel(resolve: String): JPanel {
         val remediationPanel = JPanel()
@@ -284,10 +198,10 @@ class IacSuggestionDescriptionPanel(
                 issue.references.size + 2, 1, Insets(20, 0, 20, 0), 50, -1
             )
 
-            panel.add(boldLabel("References"), baseGridConstraints(row = 1))
+            panel.add(boldLabel("References"), baseGridConstraintsAnchorWest(row = 1))
             issue.references.forEachIndexed { index, s ->
                 val label = labelProvider.createLinkLabel(URL(s), s)
-                panel.add(label, baseGridConstraints(2 + index))
+                panel.add(label, baseGridConstraintsAnchorWest(2 + index))
             }
             return panel
         }
@@ -309,7 +223,7 @@ class IacSuggestionDescriptionPanel(
 
         remediationPanel.add(
             boldLabel("Remediation"),
-            baseGridConstraints(
+            baseGridConstraintsAnchorWest(
                 row = 0
             )
         )

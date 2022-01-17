@@ -11,13 +11,15 @@ import com.intellij.uiDesigner.core.Spacer
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.ui.baseGridConstraints
+import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
+import io.snyk.plugin.ui.panelGridConstraints
 import snyk.container.BaseImageInfo
 import snyk.container.BaseImageVulnerabilities
 import snyk.container.ContainerIssuesForImage
 import snyk.container.KubernetesWorkloadImage
 import java.awt.Color
 import java.awt.Component
-import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
 import javax.swing.JComponent
@@ -41,8 +43,7 @@ class BaseImageRemediationDetailPanel(
         this.add(
             Spacer(),
             baseGridConstraints(
-                9,
-                anchor = GridConstraints.ANCHOR_CENTER,
+                row = 9,
                 fill = GridConstraints.FILL_VERTICAL,
                 HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
                 VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
@@ -70,12 +71,12 @@ class BaseImageRemediationDetailPanel(
 
         panel.add(
             JLabel("Recommendations for upgrading the base image"),
-            baseGridConstraints(0)
+            baseGridConstraintsAnchorWest(0)
         )
 
         panel.add(
             innerRemediationInfoPanel(),
-            baseGridConstraints(1)
+            baseGridConstraintsAnchorWest(1)
         )
 
         return panel
@@ -104,47 +105,17 @@ class BaseImageRemediationDetailPanel(
             JLabel(title).apply {
                 font = io.snyk.plugin.ui.getFont(Font.BOLD, -1, JLabel().font)
             },
-            baseGridConstraints(row, 0, indent = 0)
+            baseGridConstraintsAnchorWest(row, 0, indent = 0)
         )
         panel.add(
             JLabel(info.name).apply {
                 name = title
             },
-            baseGridConstraints(row, 1, indent = 5)
+            baseGridConstraintsAnchorWest(row, 1, indent = 5)
         )
         panel.add(
             getVulnerabilitiesCHMLpanel(info.vulnerabilities),
-            baseGridConstraints(row, 2, indent = 5)
-        )
-    }
-
-    private fun panelGridConstraints(row: Int) = baseGridConstraints(
-        row = row,
-        anchor = GridConstraints.ANCHOR_CENTER,
-        fill = GridConstraints.FILL_BOTH,
-        HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-        VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-        indent = 0
-    )
-
-    private fun baseGridConstraints(
-        row: Int,
-        column: Int = 0,
-        rowSpan: Int = 1,
-        colSpan: Int = 1,
-        anchor: Int = GridConstraints.ANCHOR_WEST,
-        fill: Int = GridConstraints.FILL_NONE,
-        HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
-        VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
-        minimumSize: Dimension? = null,
-        preferredSize: Dimension? = null,
-        maximumSize: Dimension? = null,
-        indent: Int = 1,
-        useParentLayout: Boolean = false
-    ): GridConstraints {
-        return GridConstraints(
-            row, column, rowSpan, colSpan, anchor, fill, HSizePolicy, VSizePolicy, minimumSize, preferredSize,
-            maximumSize, indent, useParentLayout
+            baseGridConstraintsAnchorWest(row, 2, indent = 5)
         )
     }
 
@@ -156,19 +127,19 @@ class BaseImageRemediationDetailPanel(
 
         panel.add(
             getSeverityCountItem(vulnerabilities.critical, Severity.CRITICAL),
-            baseGridConstraints(0, column = 0, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 0, indent = 0)
         )
         panel.add(
             getSeverityCountItem(vulnerabilities.high, Severity.HIGH),
-            baseGridConstraints(0, column = 1, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 1, indent = 0)
         )
         panel.add(
             getSeverityCountItem(vulnerabilities.medium, Severity.MEDIUM),
-            baseGridConstraints(0, column = 2, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 2, indent = 0)
         )
         panel.add(
             getSeverityCountItem(vulnerabilities.low, Severity.LOW),
-            baseGridConstraints(0, column = 3, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 3, indent = 0)
         )
 
         return panel
@@ -184,13 +155,13 @@ class BaseImageRemediationDetailPanel(
                 font = io.snyk.plugin.ui.getFont(Font.BOLD, 14, JTextArea().font)
                 foreground = baseColor
             },
-            baseGridConstraints(0, column = 0, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 0, indent = 0)
         )
         panel.add(
             JLabel(" ").apply {
                 icon = SnykIcons.getSeverityIcon(severity)
             },
-            baseGridConstraints(0, column = 1, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 1, indent = 0)
         )
 
         panel.isOpaque = true
@@ -211,12 +182,12 @@ class BaseImageRemediationDetailPanel(
 
         titlePanel.add(
             titleLabel,
-            baseGridConstraints(0)
+            baseGridConstraintsAnchorWest(0)
         )
 
         titlePanel.add(
             secondRowTitlePanel(),
-            baseGridConstraints(1)
+            baseGridConstraintsAnchorWest(1)
         )
 
         return titlePanel
@@ -231,13 +202,13 @@ class BaseImageRemediationDetailPanel(
 
         panel.add(
             JLabel("Image"),
-            baseGridConstraints(0, column = 0, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 0, indent = 0)
         )
         addSeparator(panel, 1)
 
         panel.add(
             JLabel("${imageIssues.uniqueCount} vulnerabilities"),
-            baseGridConstraints(0, column = 2, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = 2, indent = 0)
         )
         addSeparator(panel, 3)
 
@@ -248,7 +219,7 @@ class BaseImageRemediationDetailPanel(
                 LinkLabel.create(targetFileName) {
                     navigateToTargetFile(file, line - 1) // to 1-based count used in the editor
                 },
-                baseGridConstraints(0, column = 4 + index, indent = 0)
+                baseGridConstraintsAnchorWest(0, column = 4 + index, indent = 0)
             )
         }
         return panel
@@ -272,7 +243,7 @@ class BaseImageRemediationDetailPanel(
     private fun addSeparator(panel: JPanel, column: Int) {
         panel.add(
             JLabel("|").apply { makeOpaque(this, 50) },
-            baseGridConstraints(0, column = column, indent = 0)
+            baseGridConstraintsAnchorWest(0, column = column, indent = 0)
         )
     }
 

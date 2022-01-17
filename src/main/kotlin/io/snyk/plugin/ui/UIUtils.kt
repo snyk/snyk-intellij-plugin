@@ -10,12 +10,15 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.ui.toolwindow.LabelProvider
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.Container
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
 import javax.swing.ImageIcon
+import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -164,8 +167,8 @@ fun baseGridConstraints(
     colSpan: Int = 1,
     anchor: Int = GridConstraints.ANCHOR_CENTER,
     fill: Int = GridConstraints.FILL_NONE,
-    hSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
-    vSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
+    HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
+    VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
     minimumSize: Dimension? = null,
     preferredSize: Dimension? = null,
     maximumSize: Dimension? = null,
@@ -173,7 +176,110 @@ fun baseGridConstraints(
     useParentLayout: Boolean = false
 ): GridConstraints {
     return GridConstraints(
-        row, column, rowSpan, colSpan, anchor, fill, hSizePolicy, vSizePolicy, minimumSize, preferredSize,
+        row, column, rowSpan, colSpan, anchor, fill, HSizePolicy, VSizePolicy, minimumSize, preferredSize,
         maximumSize, indent, useParentLayout
+    )
+}
+
+fun baseGridConstraintsAnchorWest(
+    row: Int,
+    column: Int = 0,
+    fill: Int = GridConstraints.FILL_NONE,
+    HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
+    VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
+    indent: Int = 1
+): GridConstraints = baseGridConstraints(
+    row = row,
+    column = column,
+    anchor = GridConstraints.ANCHOR_WEST,
+    fill = fill,
+    HSizePolicy = HSizePolicy,
+    VSizePolicy = VSizePolicy,
+    indent = indent
+)
+
+fun panelGridConstraints(
+    row: Int,
+    column: Int = 0
+) = baseGridConstraints(
+    row = row,
+    column = column,
+    fill = GridConstraints.FILL_BOTH,
+    HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
+    VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
+    indent = 0
+)
+
+fun descriptionHeaderPanel(
+    issueNaming: String,
+    cwes: List<String> = emptyList(),
+    cves: List<String> = emptyList(),
+    cvssScore: String? = null,
+    cvsSv3: String? = null,
+    id: String,
+    idUrl: String?= null
+): JPanel {
+    val panel = JPanel()
+
+    val columnCount = 1 + // name label
+        cwes.size * 2 + // CWEs with `|`
+        cves.size * 2 + // CVEs with `|`
+        2 + // CVSS
+        2 // Snyk description
+    panel.layout = GridLayoutManager(1, columnCount, Insets(0, 0, 0, 0), 5, 0)
+
+    panel.add(
+        JLabel(issueNaming),
+        baseGridConstraintsAnchorWest(0)
+    )
+
+    val labelProvider = LabelProvider()
+
+    var lastColumn =
+        addRowOfItemsToPanel(panel, 0, cwes.map { cwe -> labelProvider.getCWELabel(cwe) })
+
+    lastColumn =
+        addRowOfItemsToPanel(panel, lastColumn, cves.map { cve -> labelProvider.getCVELabel(cve) })
+
+    if (cvssScore != null && cvsSv3 != null) {
+        val label = listOf(labelProvider.getCVSSLabel("CVSS $cvssScore", cvsSv3))
+        lastColumn = addRowOfItemsToPanel(panel, lastColumn, label)
+    }
+
+    val label = listOf(labelProvider.getVulnerabilityLabel(id.toUpperCase(), idUrl))
+    addRowOfItemsToPanel(panel, lastColumn, label)
+
+    return panel
+}
+
+fun addRowOfItemsToPanel(
+    panel: JPanel,
+    startingColumn: Int,
+    items: List<JLabel>,
+    separator: String = " | ",
+    firstSeparator: Boolean = true,
+    opaqueSeparator: Boolean = true
+): Int {
+    var currentColumn = startingColumn
+    items.forEach { item ->
+        if (currentColumn != startingColumn || firstSeparator) {
+            currentColumn++
+            panel.add(
+                JLabel(separator).apply { if (opaqueSeparator) makeOpaque(this, 50) },
+                baseGridConstraints(0, column = currentColumn, indent = 0)
+            )
+        }
+        currentColumn++
+        panel.add(item, baseGridConstraints(0, column = currentColumn, indent = 0))
+    }
+    return currentColumn
+}
+
+private fun makeOpaque(component: JComponent, alpha: Int) {
+    component.foreground = Color(
+        component.foreground.red,
+        component.foreground.green,
+        component.foreground.blue,
+        alpha
     )
 }

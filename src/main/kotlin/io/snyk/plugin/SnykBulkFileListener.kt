@@ -69,6 +69,8 @@ class SnykBulkFileListener : BulkFileListener {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
+            // todo: clean Container cached results
+
             val virtualFilesAffected = getAffectedVirtualFiles(
                 events,
                 fileFilter = Predicate { true },

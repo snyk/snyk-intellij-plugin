@@ -23,7 +23,7 @@ class IacSuggestionDescriptionPanelTest {
             "TestTitle",
             "TestSeverity",
             "IacTestIssuePublicString",
-            "Test Documentation",
+            "https://TestDocumentation",
             123,
             "TestIssue",
             "TestImpact",
