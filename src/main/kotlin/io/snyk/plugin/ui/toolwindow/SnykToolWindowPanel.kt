@@ -224,9 +224,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 var ossResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
                     if (snykError.message.startsWith(NO_OSS_FILES)) {
-                        SnykBalloonNotificationHelper.showInfo(snykError.message, project)
                         currentOssError = null
-                        ossResultsCount = NODE_INITIAL_STATE
+                        ossResultsCount = NODE_NOT_SUPPORTED_STATE
                     } else {
                         SnykBalloonNotificationHelper.showError(snykError.message, project)
                         if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
@@ -255,11 +254,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             override fun scanningIacError(snykError: SnykError) {
                 currentIacResult = null
                 iacScanNeeded = false
+                var iacResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
-                    SnykBalloonNotificationHelper.showError(snykError.message, project)
-                    currentIacError = snykError
+                    currentIacError = if (snykError.message.startsWith(NO_IAC_FILES)) {
+                        iacResultsCount = NODE_NOT_SUPPORTED_STATE
+                        null
+                    } else {
+                        SnykBalloonNotificationHelper.showError(snykError.message, project)
+                        snykError
+                    }
                     removeAllChildren(listOf(rootIacIssuesTreeNode))
-                    updateTreeRootNodesPresentation()
+                    updateTreeRootNodesPresentation(iacResultsCount = iacResultsCount)
                     displayEmptyDescription()
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
@@ -706,6 +711,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         count == NODE_INITIAL_STATE -> ""
                         count == 0 -> NO_ISSUES_FOUND_TEXT
                         count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
+                        count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_PACKAGE_MANAGER_FOUND
                         else -> throw IllegalStateException("ResultsCount is meaningful")
                     }
                 }
@@ -748,6 +754,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
+                    count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_IAC_FILES_FOUND
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
@@ -1112,8 +1119,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         const val NO_OSS_FILES = "Could not detect supported target files in"
+        const val NO_IAC_FILES = "Could not find any valid IaC files"
+        const val NO_SUPPORTED_IAC_FILES_FOUND = "- No supported IaC files found"
+        const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = "- No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
         private const val NODE_INITIAL_STATE = -1
+        private const val NODE_NOT_SUPPORTED_STATE = -2
     }
 }
 

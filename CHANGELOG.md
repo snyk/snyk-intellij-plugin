@@ -1,12 +1,23 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.11]
+
+### Feat
+
+- don't show balloon notifications if a Snyk product does not find supported files
+- enable new onboarding workflow for all users
+
 ## [2.4.10]
+
 ### Fixed
+
 - avoid AlreadyDisposedException due to Project disposal before using project's service
 - ignore exceptions in PsiManager.findFile()
 
 ## [2.4.9]
+
 ### Changed
+
 - updated README with Log4Shell detection note
 
 ## [2.4.8]
