@@ -33,7 +33,6 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
-import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
@@ -60,7 +59,6 @@ import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.IssueInTreeIsClicked
-import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
@@ -583,15 +581,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         when {
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> {
-                if (getAmplitudeExperimentService(project)?.isPartOfExperimentalWelcomeWorkflow() == true) {
-                    pluginSettings().pluginFirstRun = false
-                    enableProductsAccordingToServerSetting()
-                    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
-                    displayTreeAndDescriptionPanels()
-                    triggerScan()
-                } else {
-                    displayPluginFirstRunPanel()
-                }
+                pluginSettings().pluginFirstRun = false
+                enableProductsAccordingToServerSetting()
+                getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
+                displayTreeAndDescriptionPanels()
+                triggerScan()
             }
             else -> displayTreeAndDescriptionPanels()
         }
@@ -611,15 +605,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun displayAuthPanel() {
         removeAll()
-        val amplitudeExperimentService = getAmplitudeExperimentService(project)
-        if (amplitudeExperimentService?.isPartOfExperimentalWelcomeWorkflow() == true) {
-            val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
-            add(splitter, BorderLayout.CENTER)
-            splitter.firstComponent = TreePanel(vulnerabilitiesTree)
-            splitter.secondComponent = SnykAuthPanel(project)
-        } else {
-            add(CenterOneComponentPanel(SnykAuthPanel(project)), BorderLayout.CENTER)
-        }
+        val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
+        add(splitter, BorderLayout.CENTER)
+        splitter.firstComponent = TreePanel(vulnerabilitiesTree)
+        splitter.secondComponent = SnykAuthPanel(project)
         revalidate()
 
         service<SnykAnalyticsService>().logWelcomeIsViewed(
@@ -629,28 +618,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         )
     }
 
-    fun displayPluginFirstRunPanel() {
-        removeAll()
-        val onboardPanel = OnboardPanel(project)
-        add(CenterOneComponentPanel(onboardPanel.panel), BorderLayout.CENTER)
-        revalidate()
-
-        service<SnykAnalyticsService>().logProductSelectionIsViewed(
-            ProductSelectionIsViewed.builder()
-                .ide(ProductSelectionIsViewed.Ide.JETBRAINS)
-                .build()
-        )
-    }
-
     private fun enableProductsAccordingToServerSetting() {
         pluginSettings().apply {
             sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
-            ossScanEnable = true
-            advisorEnable = true
             iacScanEnabled = isIacEnabled()
             containerScanEnabled = isContainerEnabled()
-            snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: false
-            snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: false
+            snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeSecurityIssuesScanEnable
+            snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeQualityIssuesScanEnable
         }
     }
 

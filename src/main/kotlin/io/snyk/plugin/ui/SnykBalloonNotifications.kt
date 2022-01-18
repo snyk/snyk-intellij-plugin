@@ -4,7 +4,6 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationType
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -13,16 +12,12 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.util.Alarm
-import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.snykToolWindow
 import io.snyk.plugin.startSastEnablementCheckLoop
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper.GROUP
-import snyk.analytics.AnalysisIsTriggered
 import java.awt.event.MouseEvent
 
 object SnykBalloonNotifications {

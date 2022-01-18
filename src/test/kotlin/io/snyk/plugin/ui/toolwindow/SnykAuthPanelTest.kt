@@ -51,40 +51,16 @@ class SnykAuthPanelTest {
     }
 
     @Test
-    fun `should display right authenticate button text when in control group`() {
-        every { project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow() } returns false
-
+    fun `should display right authenticate button text`() {
         val cut = SnykAuthPanel(project)
-        val searchString = cut.authenticateButtonText()
-        val jButton = UIComponentFinder.getJButtonByText(cut, searchString)
-        assertNotNull(jButton)
-        assertEquals("Connect your IDE to Snyk", jButton!!.text)
-    }
-
-    @Test
-    fun `should display right authenticate button text when in test group`() {
-        every { project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow() } returns true
-
-        val cut = SnykAuthPanel(project)
-        val searchString = cut.authenticateButtonText()
+        val searchString = SnykAuthPanel.AUTHENTICATE_BUTTON_TEXT
         val jButton = UIComponentFinder.getJButtonByText(cut, searchString)
         assertNotNull(jButton)
         assertEquals("Test code now", jButton!!.text)
     }
 
     @Test
-    fun `should display right description label when in control group`() {
-        every { project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow() } returns false
-
-        val cut = SnykAuthPanel(project)
-
-        val jLabel = UIComponentFinder.getJLabelByText(cut, "Please authenticate to Snyk and connect your IDE")
-        assertNotNull(jLabel)
-    }
-
-    @Test
-    fun `should display right description label when in test group`() {
-        every { project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow() } returns true
+    fun `should display right description label`() {
         val expectedText = """
         |<html><ol>
         |  <li align="left">Authenticate to Snyk.io</li>
@@ -101,26 +77,11 @@ class SnykAuthPanelTest {
     }
 
     @Test
-    fun `should send tracking to amplitude on authenticate button press if in test group`() {
-        every { project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow() } returns true
+    fun `should send tracking to amplitude on authenticate button press`() {
         stubAuthenticationButtonServiceInteractions()
 
         val cut = SnykAuthPanel(project)
-        val authenticateButton = UIComponentFinder.getJButtonByText(cut, "Test code now")
-        assertNotNull(authenticateButton)
-
-        authenticateButton!!.action.actionPerformed(mockk())
-
-        verify { analyticsService.logAuthenticateButtonIsClicked(any()) }
-    }
-
-    @Test
-    fun `should send tracking to amplitude on authenticate button press if in control group`() {
-        every { project.service<AmplitudeExperimentService>().isPartOfExperimentalWelcomeWorkflow() } returns false
-        stubAuthenticationButtonServiceInteractions()
-
-        val cut = SnykAuthPanel(project)
-        val authenticateButton = UIComponentFinder.getJButtonByText(cut, "Connect your IDE to Snyk")
+        val authenticateButton = UIComponentFinder.getJButtonByText(cut, SnykAuthPanel.AUTHENTICATE_BUTTON_TEXT)
         assertNotNull(authenticateButton)
 
         authenticateButton!!.action.actionPerformed(mockk())
