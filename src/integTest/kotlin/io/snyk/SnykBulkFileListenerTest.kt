@@ -19,7 +19,6 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
 import org.junit.Test
 import snyk.container.KubernetesImageCache
-import snyk.container.KubernetesImageCacheIntegTest
 import snyk.container.TestYamls
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult

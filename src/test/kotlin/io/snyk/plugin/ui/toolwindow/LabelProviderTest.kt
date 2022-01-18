@@ -100,7 +100,6 @@ class LabelProviderTest {
 
         val label: JLabel = LabelProvider().createLinkLabel(URL(url), text)
 
-        assertTrue("Expected LinkLabel, but got ${label::class}", label is LinkLabel<*>)
         assertEquals(text, label.text)
         verifyLinkLabelCreated(url)
     }
