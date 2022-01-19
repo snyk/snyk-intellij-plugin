@@ -142,7 +142,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test annotation message should display vulnerabilty count 1 for severity critical and remediation`() {
+    fun `test annotation message should display vulnerability count 1 for severity critical and remediation`() {
         val expected = "Snyk found 1 vulnerability. Upgrade image to a newer version"
         val image = createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_CRITICAL)
             .copy(baseImageRemediationInfo = dummyBaseRemediationInfo())
