@@ -3,6 +3,7 @@
 package snyk.container.annotator
 
 import com.google.gson.Gson
+import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.application.WriteAction
@@ -160,6 +161,20 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
             cut.annotationMessage(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_LOW))
 
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `test apply should add a quickfix if remediation advice available`() {
+        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
+        every { toolWindowPanel.currentContainerResult } returns createContainerResultWithIssueOnLine21()
+        every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify {
+            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
+            builderMock.withFix(any())
+        }
     }
 
     private fun dummyBaseRemediationInfo() = BaseImageRemediationInfo(
