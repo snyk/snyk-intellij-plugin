@@ -9,9 +9,14 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.hamcrest.collection.IsCollectionWithSize.hasSize
 import org.junit.Assert.assertThat
 import org.junit.Before
@@ -24,8 +29,9 @@ import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
 import snyk.container.Docker
 import snyk.container.KubernetesWorkloadImage
+import java.nio.file.Paths
 
-class ContainerYamlAnnotatorTest : ContainerBaseAnnotatorCase() {
+class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     private lateinit var cut: ContainerYamlAnnotator
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
@@ -37,12 +43,37 @@ class ContainerYamlAnnotatorTest : ContainerBaseAnnotatorCase() {
     lateinit var file: VirtualFile
     private lateinit var psiFile: PsiFile
 
+    val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
+
+    override fun getTestDataPath(): String {
+        val resource = ContainerYamlAnnotator::class.java.getResource("/test-fixtures/container/annotator")
+        requireNotNull(resource) { "Make sure that the resource $resource exists!" }
+        return Paths.get(resource.toURI()).toString()
+    }
+
+    override fun isWriteActionRequired(): Boolean = true
+
     @Before
     override fun setUp() {
         super.setUp()
+        unmockkAll()
+        project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
+        pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(kubernetesManifestFile)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
         cut = ContainerYamlAnnotator()
+    }
+
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    override fun tearDown() {
+        unmockkAll()
+        try {
+            super.tearDown()
+            pluginSettings().fileListenerEnabled = true
+        } catch (e: Exception) {
+            // when tearing down the test case, our File Listener is trying to react on the deletion of the test
+            // files and tries to access the file index that isn't there anymore
+        }
     }
 
     @Test
