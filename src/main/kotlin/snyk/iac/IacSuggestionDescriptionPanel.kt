@@ -23,6 +23,7 @@ import snyk.common.IgnoreService
 import java.awt.Component
 import java.awt.Font
 import java.awt.Insets
+import java.net.MalformedURLException
 import java.net.URL
 import javax.swing.JButton
 import javax.swing.JLabel
@@ -188,7 +189,11 @@ class IacSuggestionDescriptionPanel(
 
             panel.add(boldLabel("References"), baseGridConstraintsAnchorWest(row = 1))
             issue.references.forEachIndexed { index, s ->
-                val label = labelProvider.createLinkLabel(URL(s), s)
+                val label = try {
+                     labelProvider.createLinkLabel(URL(s), s)
+                } catch (e: MalformedURLException) {
+                    JLabel(s)
+                }
                 panel.add(label, baseGridConstraintsAnchorWest(2 + index))
             }
             return panel
