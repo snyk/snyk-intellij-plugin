@@ -177,7 +177,7 @@ class ContainerYamlAnnotatorTest : ContainerBaseAnnotatorCase() {
         severity: String = ContainerYamlAnnotator.SEVERITY_CRITICAL
     ): ContainerIssuesForImage {
         val containerIssue = ContainerIssue("", "", "", severity, packageManager = "npm", from = emptyList())
-        val vulnerabilities = listOf(containerIssue)
+        val vulnerabilities = listOf(containerIssue, containerIssue.copy()) // force the tests to filter duplicates
         val docker = Docker(null)
         return ContainerIssuesForImage(vulnerabilities, "test", docker, null, "nginx:1.16.0", null)
     }

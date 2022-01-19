@@ -36,7 +36,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         if (issuesForImages.isEmpty()) return
 
         issuesForImages.forEach { forImage ->
-            if (forImage.ignored || forImage.obsolete) return@forEach
+            if (forImage.ignored || forImage.obsolete) return
 
             val severity = severity(forImage)
 
@@ -60,7 +60,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     fun annotationMessage(image: ContainerIssuesForImage): String {
-        val severities = image.vulnerabilities.groupBy { it.severity }
+        val severities = image.vulnerabilities.distinctBy { it.id }.groupBy { it.severity }
         val criticalCount = severities[SEVERITY_CRITICAL]?.size ?: 0
         val highCount = severities[SEVERITY_HIGH]?.size ?: 0
         val mediumCount = severities[SEVERITY_MEDIUM]?.size ?: 0
