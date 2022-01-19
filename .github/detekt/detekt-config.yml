@@ -12,11 +12,3 @@ complexity:
     ignorePrivate: true
     ignoreDeprecated: true
     excludes: [ '**/integTest/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
-
-  MagicNumber:
-    ignorePropertyDeclaration: true
-    ignoreLocalVariableDeclaration: true
-    ignoreEnums: true
-    ignoreRanges: true
-    excludes: [ '**/integTest/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
-
