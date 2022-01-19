@@ -60,24 +60,15 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     fun annotationMessage(image: ContainerIssuesForImage): String {
-        val severities = image.vulnerabilities.distinctBy { it.id }.groupBy { it.severity }
-        val criticalCount = severities[SEVERITY_CRITICAL]?.size ?: 0
-        val highCount = severities[SEVERITY_HIGH]?.size ?: 0
-        val mediumCount = severities[SEVERITY_MEDIUM]?.size ?: 0
-        val lowCount = severities[SEVERITY_LOW]?.size ?: 0
+        val severities = image.vulnerabilities.distinctBy { it.id }
+        val total = severities.size
+        val vulnerabilityString = if (total == 1) "vulnerability" else "vulnerabilities"
         return buildString {
             val remediationString = when {
-                image.baseImageRemediationInfo != null -> " Remediation available."
+                image.baseImageRemediationInfo != null -> "Upgrade image to a newer version"
                 else -> ""
             }
-            append(
-                "Snyk - Vulnerabilities found. " +
-                    "Critical: $criticalCount, " +
-                    "High: $highCount, " +
-                    "Medium: $mediumCount, " +
-                    "Low: $lowCount." +
-                    remediationString
-            )
+            append("Snyk found $total $vulnerabilityString. $remediationString")
         }
     }
 

@@ -112,7 +112,7 @@ class ContainerYamlAnnotatorTest : ContainerBaseAnnotatorCase() {
 
     @Test
     fun `test annotation message should display vulnerabiltiy count 1 for severity critical and remediation`() {
-        val expected = "Snyk - Vulnerabilities found. Critical: 1, High: 0, Medium: 0, Low: 0. Remediation available."
+        val expected = "Snyk found 1 vulnerability. Upgrade image to a newer version"
         val image = createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_CRITICAL)
             .copy(baseImageRemediationInfo = dummyBaseRemediationInfo())
 
@@ -122,30 +122,8 @@ class ContainerYamlAnnotatorTest : ContainerBaseAnnotatorCase() {
     }
 
     @Test
-    fun `test annotation message should display vulnerabiltiy count 1 for severity high and remediation`() {
-        val expected = "Snyk - Vulnerabilities found. Critical: 0, High: 1, Medium: 0, Low: 0. Remediation available."
-        val image = createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_HIGH)
-            .copy(baseImageRemediationInfo = dummyBaseRemediationInfo())
-
-        val actual = cut.annotationMessage(image)
-
-        assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `test annotation message should display vulnerabiltiy count 1 for severity medium and remediation`() {
-        val expected = "Snyk - Vulnerabilities found. Critical: 0, High: 0, Medium: 1, Low: 0. Remediation available."
-        val image = createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_MEDIUM)
-            .copy(baseImageRemediationInfo = dummyBaseRemediationInfo())
-
-        val actual = cut.annotationMessage(image)
-
-        assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `test annotation message should display vulnerabiltiy count 1 for severity low and no remediation`() {
-        val expected = "Snyk - Vulnerabilities found. Critical: 0, High: 0, Medium: 0, Low: 1."
+    fun `test annotation message should display vulnerabiltiy count and no remediation`() {
+        val expected = "Snyk found 1 vulnerability. "
         val actual =
             cut.annotationMessage(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_LOW))
         assertEquals(expected, actual)
