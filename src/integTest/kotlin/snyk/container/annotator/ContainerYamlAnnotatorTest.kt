@@ -24,6 +24,7 @@ import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
 import snyk.container.BaseImageInfo
+import snyk.container.BaseImageRemediation
 import snyk.container.BaseImageRemediationInfo
 import snyk.container.BaseImageVulnerabilities
 import snyk.container.ContainerIssue
@@ -178,14 +179,40 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         }
     }
 
-    private fun dummyBaseRemediationInfo() = BaseImageRemediationInfo(
+    @Test
+    fun `test apply should not add a quickfix if remediation advice base image different`() {
+        val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", psiFile, 21))
+        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
+        val imageForIssues = createContainerImageForIssuesWithSeverity().copy(
+            baseImageRemediationInfo = dummyBaseRemediationInfo(imageName = "NotAnImage:0.1.1"),
+            docker = dummyDocker(),
+            workloadImages = workloadImages
+        )
+        val containerResult = createContainerResultWithIssueOnLine21()
+        containerResult.allCliIssues = listOf(imageForIssues)
+        every { toolWindowPanel.currentContainerResult } returns containerResult
+        every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify {
+            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
+        }
+        verify(exactly = 0) { builderMock.withFix(any()) }
+    }
+
+    private fun dummyDocker(): Docker {
+        return Docker(BaseImageRemediation("REMEDIATION_AVAILABLE", emptyList()))
+    }
+
+    private fun dummyBaseRemediationInfo(imageName: String = "nginx") = BaseImageRemediationInfo(
         currentImage = BaseImageInfo(
             "nginx",
             BaseImageVulnerabilities(1, 0, 0, 0)
         ),
         majorUpgrades = null,
         alternativeUpgrades = null,
-        minorUpgrades = BaseImageInfo("nginx", BaseImageVulnerabilities(0, 0, 0, 0))
+        minorUpgrades = BaseImageInfo("$imageName:1.21.2", BaseImageVulnerabilities(0, 0, 0, 0))
     )
 
     private fun createContainerResultWithIssueOnLine21(): ContainerResult {
