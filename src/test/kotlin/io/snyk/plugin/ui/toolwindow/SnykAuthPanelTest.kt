@@ -65,7 +65,7 @@ class SnykAuthPanelTest {
         |<html><ol>
         |  <li align="left">Authenticate to Snyk.io</li>
         |  <li align="left">Analyze code for issues and vulnerabilities</li>
-        |  <li align="left">Improve you code and upgrade dependencies</li>
+        |  <li align="left">Improve your code and upgrade dependencies</li>
         |</ol>
         |</html>
         """.trimMargin()
