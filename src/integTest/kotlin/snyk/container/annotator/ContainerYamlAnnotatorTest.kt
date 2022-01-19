@@ -16,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.hamcrest.collection.IsCollectionWithSize.hasSize
@@ -193,9 +194,16 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         )
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
+        val baseImageRemediationInfo =
+            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
 
         val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", psiFile, 21))
-        containerResult.allCliIssues = listOf(firstContainerIssuesForImage.copy(workloadImages = workloadImages))
+        containerResult.allCliIssues = listOf(
+            firstContainerIssuesForImage.copy(
+                workloadImages = workloadImages,
+                baseImageRemediationInfo = baseImageRemediationInfo
+            )
+        )
         return containerResult
     }
 

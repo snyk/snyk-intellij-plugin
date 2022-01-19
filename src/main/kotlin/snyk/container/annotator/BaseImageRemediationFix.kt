@@ -16,7 +16,7 @@ class BaseImageRemediationFix(
     private val containerIssuesForImage: ContainerIssuesForImage,
     private val range: TextRange
 ) : IntentionAction {
-    var imageNameToFix: CharSequence
+    private var imageNameToFix: CharSequence
     private val logger = logger<BaseImageRemediationFix>()
 
     init {
@@ -54,14 +54,16 @@ class BaseImageRemediationFix(
         }
     }
 
-    private fun determineTargetImage(imageRemediationInfo: BaseImageRemediationInfo): String {
-        return if (imageRemediationInfo.majorUpgrades != null) {
-            imageRemediationInfo.majorUpgrades.name
-        } else if (imageRemediationInfo.minorUpgrades != null) {
-            imageRemediationInfo.minorUpgrades.name
-        } else if (imageRemediationInfo.alternativeUpgrades != null) {
-            imageRemediationInfo.alternativeUpgrades.name
-        } else
-            throw IllegalStateException("No remediation image found even though it should be there.")
+    companion object {
+        fun determineTargetImage(imageRemediationInfo: BaseImageRemediationInfo): String {
+            return if (imageRemediationInfo.majorUpgrades != null) {
+                imageRemediationInfo.majorUpgrades.name
+            } else if (imageRemediationInfo.minorUpgrades != null) {
+                imageRemediationInfo.minorUpgrades.name
+            } else if (imageRemediationInfo.alternativeUpgrades != null) {
+                imageRemediationInfo.alternativeUpgrades.name
+            } else
+                throw IllegalStateException("At this point of time we should always have remediation info.")
+        }
     }
 }
