@@ -151,7 +151,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             EmptyProgressIndicator(),
             null
         )
-        testRunFuture.get(1000, TimeUnit.MILLISECONDS)
+        testRunFuture.get(5000, TimeUnit.MILLISECONDS)
 
         verify(exactly = 1) { SentryErrorReporter.captureException(any()) }
 
