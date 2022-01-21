@@ -130,18 +130,22 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
     @Test
     fun testErrorReportedWhenExecutionTimeoutExpire() {
-        service<SnykCliDownloaderService>().downloadLatestRelease(EmptyProgressIndicator(), project)
         val registryValue = Registry.get("snyk.timeout.results.waiting")
         val defaultValue = registryValue.asInteger()
         assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
-        registryValue.setValue(10)
+        registryValue.setValue(1)
+        val seconds = "3"
+        val sleepCommand = if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            listOf("timeout", seconds)
+        } else {
+            listOf("/bin/sleep", seconds)
+        }
 
-        val commands = ossService.buildCliCommandsList_TEST_ONLY(listOf("test"))
         val progressManager = ProgressManager.getInstance() as CoreProgressManager
         val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
             object : Task.Backgroundable(project, "Test CLI command invocation", true) {
                 override fun run(indicator: ProgressIndicator) {
-                    val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
+                    val output = ConsoleCommandRunner().execute(sleepCommand, getPluginPath(), "", project)
                     assertTrue(
                         "Should get timeout error, but received:\n$output",
                         output.startsWith("Execution timeout")
@@ -151,7 +155,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             EmptyProgressIndicator(),
             null
         )
-        testRunFuture.get(5000, TimeUnit.MILLISECONDS)
+        testRunFuture.get(30000, TimeUnit.MILLISECONDS)
 
         verify(exactly = 1) { SentryErrorReporter.captureException(any()) }
 
