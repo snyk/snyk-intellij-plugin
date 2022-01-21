@@ -56,7 +56,7 @@ class CliDownloaderTest {
     }
 
     @Test
-    fun `should not delete file if download fails`() {
+    fun `should not delete file if checksum verification fails`() {
         val testFile = createTempFile()
         testFile.deleteOnExit()
         val dummyContent = "test test test".toByteArray()
