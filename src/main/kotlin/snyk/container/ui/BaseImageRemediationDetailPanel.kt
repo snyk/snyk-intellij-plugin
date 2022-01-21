@@ -45,8 +45,8 @@ class BaseImageRemediationDetailPanel(
             baseGridConstraints(
                 row = 9,
                 fill = GridConstraints.FILL_VERTICAL,
-                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
+                hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                vSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
                 indent = 0
             )
         )

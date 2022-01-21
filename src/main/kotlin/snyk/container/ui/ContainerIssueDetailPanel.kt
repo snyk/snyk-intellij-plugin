@@ -31,8 +31,8 @@ class ContainerIssueDetailPanel(
             baseGridConstraints(
                 row = 9,
                 fill = GridConstraints.FILL_VERTICAL,
-                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
+                hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                vSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
                 indent = 0
             )
         )
@@ -90,7 +90,7 @@ class ContainerIssueDetailPanel(
         cwes = issue.identifiers?.cwe ?: emptyList(),
         cves = issue.identifiers?.cve ?: emptyList(),
         cvssScore = issue.cvssScore,
-        cvsSv3 = issue.CVSSv3,
+        cvssV3 = issue.cvssV3,
         id = issue.id
     )
 

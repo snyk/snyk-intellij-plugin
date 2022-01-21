@@ -47,10 +47,14 @@ class LabelProvider {
         return createLinkLabel(URL("$cveBaseUrl=$cve"), cve)
     }
 
-    fun createLinkLabel(url: URL, text: String): LinkLabel<*> {
+    fun createLinkLabel(
+        url: URL,
+        text: String,
+        customToolTipText: String = "Click to open description in the Browser"
+    ): LinkLabel<*> {
         val openLinkAction = OpenLinkAction(url)
         return LinkLabel.create(text, openLinkAction).apply {
-            toolTipText = "Click to open description in the Browser"
+            toolTipText = customToolTipText
         }
     }
 }
