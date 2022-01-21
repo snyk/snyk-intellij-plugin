@@ -72,7 +72,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         assertTrue(downloadedFile.exists())
         assertEquals(cutSpy.getLatestReleaseInfo()!!.tagName, "v" + pluginSettings().cliVersion)
 
-        verify { downloader.downloadFile(cliFile, indicator) }
+        verify { downloader.downloadFile(cliFile, any(), indicator) }
         verify { downloader.verifyChecksum(any(), any()) }
         downloadedFile.delete()
     }
@@ -101,13 +101,13 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val exceptionMessage = "Read Timed Out"
         val ioException = SocketTimeoutException(exceptionMessage)
 
-        every { downloader.downloadFile(any(), any()) } throws ioException
+        every { downloader.downloadFile(any(), any(), any()) } throws ioException
         justRun { errorHandler.handleIOException(ioException, indicator, project) }
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify {
-            downloader.downloadFile(any(), any())
+            downloader.downloadFile(any(), any(), any())
             errorHandler.handleIOException(ioException, indicator, project)
         }
     }
@@ -116,13 +116,13 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     fun testDownloadLatestCliReleaseShouldHandleHttpStatusException() {
         val httpStatusException = HttpRequests.HttpStatusException("status bad", HttpStatus.SC_GATEWAY_TIMEOUT, "url")
 
-        every { downloader.downloadFile(any(), any()) } throws httpStatusException
+        every { downloader.downloadFile(any(), any(), any()) } throws httpStatusException
         justRun { errorHandler.handleHttpStatusException(httpStatusException, project) }
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify {
-            downloader.downloadFile(any(), any())
+            downloader.downloadFile(any(), any(), any())
             errorHandler.handleHttpStatusException(httpStatusException, project)
         }
     }

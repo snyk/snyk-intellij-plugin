@@ -255,8 +255,8 @@ class SnykTaskQueueService(val project: Project) {
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI presence", true) {
             override fun run(indicator: ProgressIndicator) {
                 cliDownloadPublisher.checkCliExistsStarted()
-                val cliDownloader = service<SnykCliDownloaderService>()
                 if (project.isDisposed) return
+                val cliDownloader = service<SnykCliDownloaderService>()
 
                 if (!isCliInstalled()) {
                     cliDownloader.downloadLatestRelease(indicator, project)

@@ -37,6 +37,25 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     private val ossService: OssService
         get() = getOssService(project) ?: throw IllegalStateException("OSS service should be available")
 
+    @Before
+    override fun setUp() {
+        super.setUp()
+        unmockkAll()
+        resetSettings(project)
+        setupDummyCliFile()
+        // don't report to Sentry when running this test
+        mockkObject(SentryErrorReporter)
+        every { SentryErrorReporter.captureException(any()) } returns SentryId()
+    }
+
+    @After
+    override fun tearDown() {
+        unmockkAll()
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
+    }
+
     @Test
     fun testSetupCliEnvironmentVariables() {
         val generalCommandLine = GeneralCommandLine("")
@@ -51,6 +70,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         assertEquals("2020.2", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"])
     }
 
+    @Suppress("SwallowedException")
     @Test
     fun testCommandExecutionRequestWhileCliIsDownloading() {
         val cliFile = getCliFile()
@@ -76,20 +96,22 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
             object : Task.Backgroundable(project, "Test CLI command invocation", true) {
                 override fun run(indicator: ProgressIndicator) {
-                    while (!cliFile.exists()) {
+                    while (!snykCliDownloaderService.isCliDownloading()) {
                         Thread.sleep(10) // lets wait till actual download begin
                     }
                     assertTrue(
                         "Downloading of CLI should be in progress at this stage.",
                         snykCliDownloaderService.isCliDownloading()
                     )
-                    // No exception should happened while CLI is downloading and any CLI command is invoked
-                    val commands = ossService.buildCliCommandsList_TEST_ONLY(listOf("test"))
-                    val output = ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
-                    assertTrue(
-                        "Should be NO output for CLI command while CLI is downloading, but received:\n$output",
-                        output.isEmpty()
-                    )
+                    // CLINotExistsException should happen while CLI is not there,
+                    // but downloading and any CLI command is invoked
+                    try {
+                        val commands = ossService.buildCliCommandsList_TEST_ONLY(listOf("test"))
+                        ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
+                        fail("Should have thrown CliNotExistsException, as the CLI is still downloading.")
+                    } catch (e: CliNotExistsException) {
+                        // this is expected and actually desired
+                    }
                 }
             },
             EmptyProgressIndicator(),
@@ -112,7 +134,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val registryValue = Registry.get("snyk.timeout.results.waiting")
         val defaultValue = registryValue.asInteger()
         assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
-        registryValue.setValue(100)
+        registryValue.setValue(10)
 
         val commands = ossService.buildCliCommandsList_TEST_ONLY(listOf("test"))
         val progressManager = ProgressManager.getInstance() as CoreProgressManager
@@ -136,24 +158,5 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         // clean up
         registryValue.setValue(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS)
         getCliFile().delete()
-    }
-
-    @Before
-    override fun setUp() {
-        super.setUp()
-        unmockkAll()
-        resetSettings(project)
-        setupDummyCliFile()
-        // don't report to Sentry when running this test
-        mockkObject(SentryErrorReporter)
-        every { SentryErrorReporter.captureException(any()) } returns SentryId()
-    }
-
-    @After
-    override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
     }
 }
