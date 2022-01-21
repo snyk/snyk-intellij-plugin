@@ -2,7 +2,6 @@ package io.snyk.plugin.ui
 
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.ColorUtil
-import com.intellij.ui.ScrollPaneFactory
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBHtmlEditorKit
@@ -10,16 +9,17 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
-import java.awt.BorderLayout
+import io.snyk.plugin.ui.toolwindow.LabelProvider
+import java.awt.Color
 import java.awt.Container
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
 import javax.swing.ImageIcon
+import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.JTextArea
 import javax.swing.text.html.HTMLDocument
 
 fun boldLabel(title: String): JLabel {
@@ -62,48 +62,21 @@ fun buildBoldTitleLabel(title: String): JLabel {
     return bold16pxLabel
 }
 
-fun buildTwoLabelsPanel(title: String, text: String): JPanel {
-    val titleLabel = JLabel()
-    val vulnerableModuleLabelFont: Font? = getFont(Font.BOLD, -1, titleLabel.font)
-
-    if (vulnerableModuleLabelFont != null) {
-        titleLabel.font = vulnerableModuleLabelFont
-    }
-
-    titleLabel.text = title
-
-    val wrapPanel = JPanel()
-
-    wrapPanel.add(titleLabel)
-    wrapPanel.add(JLabel(text))
-
-    return wrapPanel
-}
-
-fun buildTextAreaWithLabelPanel(title: String, text: String): JPanel {
-    val titleLabel = JLabel()
-    val vulnerableModuleLabelFont: Font? = getFont(Font.BOLD, -1, titleLabel.font)
-
-    if (vulnerableModuleLabelFont != null) {
-        titleLabel.font = vulnerableModuleLabelFont
-    }
-
-    titleLabel.text = title
-
-    val wrapPanel = JPanel(BorderLayout())
-
-    wrapPanel.add(titleLabel, BorderLayout.WEST)
-
-    val textArea = JTextArea(text)
-    textArea.lineWrap = true
-    textArea.wrapStyleWord = true
-    textArea.isOpaque = false
-    textArea.isEditable = false
-    textArea.background = UIUtil.getPanelBackground()
-
-    wrapPanel.add(ScrollPaneFactory.createScrollPane(textArea, true), BorderLayout.CENTER)
-
-    return wrapPanel
+fun insertTitleAndResizableTextIntoPanelColumns(
+    panel: JPanel,
+    row: Int,
+    title: String,
+    htmlText: String,
+    textFont: Font = UIUtil.getLabelFont()
+) {
+    panel.add(
+        boldLabel(title),
+        baseGridConstraints(row, 0, anchor = GridConstraints.ANCHOR_NORTHWEST)
+    )
+    panel.add(
+        getReadOnlyClickableHtmlJEditorPane(htmlText, textFont, noBorder = true),
+        panelGridConstraints(row, 1)
+    )
 }
 
 fun snykCodeAvailabilityPostfix(): String = when {
@@ -112,7 +85,11 @@ fun snykCodeAvailabilityPostfix(): String = when {
     else -> ""
 }
 
-fun getReadOnlyClickableHtmlJEditorPane(htmlText: String, font: Font = UIUtil.getLabelFont()): JEditorPane {
+fun getReadOnlyClickableHtmlJEditorPane(
+    htmlText: String,
+    font: Font = UIUtil.getLabelFont(),
+    noBorder: Boolean = false
+): JEditorPane {
     // don't remove that!
     // Some magic (side-effect? customStyleSheet?) happens when JBHtmlEditorKit() initializing
     // that make html tags like <em>, <p>, <ul> etc. be treated properly inside JEditorPane
@@ -133,10 +110,15 @@ fun getReadOnlyClickableHtmlJEditorPane(htmlText: String, font: Font = UIUtil.ge
             "a { color: #${ColorUtil.toHex(JBUI.CurrentTheme.Link.linkColor())}; }"
         (document as HTMLDocument).styleSheet.addRule(bodyRule)
 
+        (document as HTMLDocument).styleSheet.addRule(
+            "h1, h2, h3, h4 { font-size: 1.1em; margin-bottom: 0em; }"
+        )
+
         // open clicked link in browser
         addHyperlinkListener {
             BrowserHyperlinkListener.INSTANCE.hyperlinkUpdate(it)
         }
+        if (noBorder) border = null
     }
 }
 
@@ -175,5 +157,108 @@ fun baseGridConstraints(
     return GridConstraints(
         row, column, rowSpan, colSpan, anchor, fill, hSizePolicy, vSizePolicy, minimumSize, preferredSize,
         maximumSize, indent, useParentLayout
+    )
+}
+
+fun baseGridConstraintsAnchorWest(
+    row: Int,
+    column: Int = 0,
+    fill: Int = GridConstraints.FILL_NONE,
+    hSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
+    vSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
+    indent: Int = 1
+): GridConstraints = baseGridConstraints(
+    row = row,
+    column = column,
+    anchor = GridConstraints.ANCHOR_WEST,
+    fill = fill,
+    hSizePolicy = hSizePolicy,
+    vSizePolicy = vSizePolicy,
+    indent = indent
+)
+
+fun panelGridConstraints(
+    row: Int,
+    column: Int = 0
+) = baseGridConstraints(
+    row = row,
+    column = column,
+    fill = GridConstraints.FILL_BOTH,
+    hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
+    vSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
+    indent = 0
+)
+
+fun descriptionHeaderPanel(
+    issueNaming: String,
+    cwes: List<String> = emptyList(),
+    cves: List<String> = emptyList(),
+    cvssScore: String? = null,
+    cvssV3: String? = null,
+    id: String,
+    idUrl: String? = null
+): JPanel {
+    val panel = JPanel()
+
+    val columnCount = 1 + // name label
+        cwes.size * 2 + // CWEs with `|`
+        cves.size * 2 + // CVEs with `|`
+        2 + // CVSS
+        2 // Snyk description
+    panel.layout = GridLayoutManager(1, columnCount, Insets(0, 0, 0, 0), 5, 0)
+
+    panel.add(
+        JLabel(issueNaming),
+        baseGridConstraintsAnchorWest(0)
+    )
+
+    val labelProvider = LabelProvider()
+
+    var lastColumn =
+        addRowOfItemsToPanel(panel, 0, cwes.map { cwe -> labelProvider.getCWELabel(cwe) })
+
+    lastColumn =
+        addRowOfItemsToPanel(panel, lastColumn, cves.map { cve -> labelProvider.getCVELabel(cve) })
+
+    if (cvssScore != null && cvssV3 != null) {
+        val label = listOf(labelProvider.getCVSSLabel("CVSS $cvssScore", cvssV3))
+        lastColumn = addRowOfItemsToPanel(panel, lastColumn, label)
+    }
+
+    val label = listOf(labelProvider.getVulnerabilityLabel(id.toUpperCase(), idUrl))
+    addRowOfItemsToPanel(panel, lastColumn, label)
+
+    return panel
+}
+
+fun addRowOfItemsToPanel(
+    panel: JPanel,
+    startingColumn: Int,
+    items: List<JLabel>,
+    separator: String = " | ",
+    firstSeparator: Boolean = true,
+    opaqueSeparator: Boolean = true
+): Int {
+    var currentColumn = startingColumn
+    items.forEach { item ->
+        if (currentColumn != startingColumn || firstSeparator) {
+            currentColumn++
+            panel.add(
+                JLabel(separator).apply { if (opaqueSeparator) makeOpaque(this, 50) },
+                baseGridConstraints(0, column = currentColumn, indent = 0)
+            )
+        }
+        currentColumn++
+        panel.add(item, baseGridConstraints(0, column = currentColumn, indent = 0))
+    }
+    return currentColumn
+}
+
+private fun makeOpaque(component: JComponent, alpha: Int) {
+    component.foreground = Color(
+        component.foreground.red,
+        component.foreground.green,
+        component.foreground.blue,
+        alpha
     )
 }

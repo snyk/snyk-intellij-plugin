@@ -62,11 +62,14 @@ import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.SnykError
+import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
 import snyk.container.KubernetesImageCache
 import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
+import snyk.container.ui.ContainerIssueDetailPanel
+import snyk.container.ui.ContainerIssueTreeNode
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -474,7 +477,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     }
                     // TODO: Add image click event logging ?
                 }
-                // todo: is ContainerIssueTreeNode -> {
+                is ContainerIssueTreeNode -> {
+                    val containerIssue = node.userObject as ContainerIssue
+                    val scrollPane = wrapWithScrollPane(ContainerIssueDetailPanel(containerIssue))
+                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+                    // TODO: Add event logging
+                }
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
                 }
@@ -932,7 +940,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
                     val imageTreeNode = ContainerImageTreeNode(issuesForImage, project)
                     rootContainerIssuesTreeNode.add(imageTreeNode)
-                    // todo: display issues here
+
+                    issuesForImage.vulnerabilities
+                        .filter { isSeverityFilterPassed(it.severity) }
+                        .sortedByDescending { Severity.getIndex(it.severity) }
+                        .forEach {
+                            imageTreeNode.add(ContainerIssueTreeNode(it, project))
+                        }
                 }
             }
         }

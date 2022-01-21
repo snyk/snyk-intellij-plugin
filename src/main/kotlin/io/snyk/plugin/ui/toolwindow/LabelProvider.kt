@@ -34,9 +34,9 @@ class LabelProvider {
         return createLinkLabel(URL("$cweBaseUrl/${cwe.removePrefix("CWE-")}.html"), cwe)
     }
 
-    fun getVulnerabilityLabel(id: String): JLabel {
-
-        return createLinkLabel(URL("$vulnerabilityBaseUrl/$id"), id)
+    fun getVulnerabilityLabel(id: String, idUrl: String? = null): JLabel {
+        val url = idUrl ?: "$vulnerabilityBaseUrl/$id"
+        return createLinkLabel(URL(url), id)
     }
 
     fun getCVSSLabel(text: String, id: String): JLabel {
@@ -47,8 +47,14 @@ class LabelProvider {
         return createLinkLabel(URL("$cveBaseUrl=$cve"), cve)
     }
 
-    fun createLinkLabel(url: URL, text: String): LinkLabel<*> {
+    fun createLinkLabel(
+        url: URL,
+        text: String,
+        customToolTipText: String = "Click to open description in the Browser"
+    ): LinkLabel<*> {
         val openLinkAction = OpenLinkAction(url)
-        return LinkLabel.create(text, openLinkAction)
+        return LinkLabel.create(text, openLinkAction).apply {
+            toolTipText = customToolTipText
+        }
     }
 }

@@ -82,6 +82,18 @@ class LabelProviderTest {
     }
 
     @Test
+    fun `getVulnerability should provide a label with a explicit link if provided`() {
+        val id = "VULN123"
+        val url = "https://some.link"
+
+        val output: JLabel = LabelProvider().getVulnerabilityLabel(id, url)
+
+        assertEquals(LinkLabel::class, output::class)
+        assertEquals(id, output.text)
+        verifyLinkLabelCreated(url)
+    }
+
+    @Test
     fun `getCVSSLabel should provide a label with a clickable link to the CVSS scoring calculator for this score`() {
         val cvssText = "package"
         val cvssId = "1"

@@ -33,6 +33,7 @@ data class ContainerIssue(
     val severity: String,
     val identifiers: Identifiers? = null,
     val cvssScore: String? = null,
+    @SerializedName("CVSSv3") val cvssV3: String? = null,
     val nearestFixedInVersion: String? = null,
     val from: List<String>,
     val packageManager: String

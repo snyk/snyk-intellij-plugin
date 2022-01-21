@@ -42,6 +42,8 @@ import snyk.container.Docker
 import snyk.container.KubernetesWorkloadImage
 import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
+import snyk.container.ui.ContainerIssueDetailPanel
+import snyk.container.ui.ContainerIssueTreeNode
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
 import snyk.iac.IacSuggestionDescriptionPanel
@@ -100,7 +102,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         isIacEnabledRegistryValue.setValue(true)
     }
 
-    private fun setUpContainerTest() {
+    private fun setUpContainerTest(containerResultStub: ContainerResult?) {
         val settings = pluginSettings()
         settings.ossScanEnable = false
         settings.snykCodeSecurityIssuesScanEnable = false
@@ -109,6 +111,12 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         settings.containerScanEnabled = true
 
         isContainerEnabledRegistryValue.setValue(true)
+
+        if (containerResultStub != null) {
+            mockkStatic("io.snyk.plugin.UtilsKt")
+            every { isCliInstalled() } returns true
+            every { getContainerService(project)?.scan() } returns containerResultStub
+        }
     }
 
     private fun prepareTreeWithFakeIacResults() {
@@ -127,6 +135,44 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         project.service<SnykTaskQueueService>().scan()
     }
+
+    private val fakeContainerIssue1 = ContainerIssue(
+        id = "fakeId1",
+        title = "fakeTitle1",
+        description = "fakeDescription1",
+        severity = "low",
+        from = emptyList(),
+        packageManager = "fakePackageManager1"
+    )
+
+    private val fakeContainerIssue2 = ContainerIssue(
+        id = "fakeId2",
+        title = "fakeTitle2",
+        description = "fakeDescription2",
+        severity = "low",
+        from = emptyList(),
+        packageManager = "fakePackageManager2"
+    )
+
+    private val fakeContainerResult = ContainerResult(
+        listOf(
+            ContainerIssuesForImage(
+                listOf(fakeContainerIssue1),
+                "fake project name",
+                Docker(),
+                null,
+                "fake-image-name1"
+            ),
+            ContainerIssuesForImage(
+                listOf(fakeContainerIssue2),
+                "fake project name",
+                Docker(),
+                null,
+                "fake-image-name2"
+            )
+        ),
+        null
+    )
 
     @Test
     fun `test should not display error when no OSS supported file found`() {
@@ -343,7 +389,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test all root nodes are shown`() {
         setUpIacTest()
-        setUpContainerTest()
+        setUpContainerTest(null)
 
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
         val tree = toolWindowPanel.getTree()
@@ -366,16 +412,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test container error shown`() {
-        // pre-test setup
-        setUpContainerTest()
-
         // mock Container results
         val containerError = SnykError("fake error", "fake path")
         val containerResultWithError = ContainerResult(null, containerError)
 
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns true
-        every { getContainerService(project)?.scan() } returns containerResultWithError
+        setUpContainerTest(containerResultWithError)
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
@@ -404,44 +445,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test container image nodes with description shown`() {
         // pre-test setup
-        setUpContainerTest()
-        // mock Container results
-        val containerResult = ContainerResult(
-            listOf(
-                ContainerIssuesForImage(
-                    listOf(ContainerIssue(
-                        id = "fakeId1",
-                        title = "fakeTitle1",
-                        description = "fakeDescription1",
-                        severity = "low",
-                        from = emptyList(),
-                        packageManager = "fakePackageManager1"
-                    )),
-                    "fake project name",
-                    Docker(),
-                    null,
-                    "fake-image-name1"
-                ),
-                ContainerIssuesForImage(
-                    listOf(ContainerIssue(
-                        id = "fakeId2",
-                        title = "fakeTitle2",
-                        description = "fakeDescription2",
-                        severity = "low",
-                        from = emptyList(),
-                        packageManager = "fakePackageManager2"
-                    )),
-                    "fake project name",
-                    Docker(),
-                    null,
-                    "fake-image-name2"
-                )
-            ),
-            null
-        )
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns true
-        every { getContainerService(project)?.scan() } returns containerResult
+        setUpContainerTest(fakeContainerResult)
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
@@ -449,7 +453,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         // Assertions
-        assertEquals(containerResult, toolWindowPanel.currentContainerResult)
+        assertEquals(fakeContainerResult, toolWindowPanel.currentContainerResult)
 
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
         assertEquals("2 images with issues should be found", 2, rootContainerNode.childCount)
@@ -475,12 +479,41 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     @Test
-    fun `test container image nodes with remediation description shown`() {
+    fun `test container issue nodes with description shown`() {
         // pre-test setup
-        setUpContainerTest()
+        setUpContainerTest(fakeContainerResult)
+
+        // actual test run
+        project.service<SnykTaskQueueService>().scan()
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        // Assertions
+        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+        val issueNode =
+            (rootContainerNode.firstChild as? ContainerImageTreeNode)?.firstChild as? ContainerIssueTreeNode
+        assertNotNull("Container issue node should be found in the Tree", issueNode)
+        issueNode!!
+        assertEquals(
+            "`fake container issue` should be inside Container issue node",
+            fakeContainerIssue1,
+            issueNode.userObject as ContainerIssue
+        )
+
+        TreeUtil.selectNode(toolWindowPanel.getTree(), issueNode)
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        val containerIssueDetailPanel = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            ContainerIssueDetailPanel::class,
+            "ContainerIssueDetailPanel"
+        )
+        assertNotNull("ContainerIssueDetailPanel should be shown on issue node selection", containerIssueDetailPanel)
+    }
+
+    @Test
+    fun `test container image nodes with remediation description shown`() {
         // mock Container results
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns true
         every { getKubernetesImageCache(project)?.getKubernetesWorkloadImages() } returns setOf(
             KubernetesWorkloadImage("ignored_image_name", MockPsiFile(PsiManager.getInstance(project)))
         )
@@ -488,7 +521,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val mockkRunner = mockk<ConsoleCommandRunner>()
         every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultWithRemediationJson
         containerService.setConsoleCommandRunner(mockkRunner)
-        every { getContainerService(project)?.scan() } returns containerService.scan()
+
+        setUpContainerTest(containerService.scan())
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
