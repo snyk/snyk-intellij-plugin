@@ -10,9 +10,11 @@ import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
+import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
+import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.LabelProvider
 import org.commonmark.parser.Parser
@@ -68,44 +70,30 @@ class IacSuggestionDescriptionPanel(
         }
     }
 
-    private fun boldLabel(text: String) = JLabel(text).apply {
-        font = getFont(Font.BOLD, -1, JLabel().font)
-    }
-
     private fun mainBodyPanel(): JPanel {
         val mainBodyPanel = JPanel()
-
         mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
 
-        mainBodyPanel.add(
-            boldLabel("Description"),
-            baseGridConstraintsAnchorWest(0, 0)
-        )
-        mainBodyPanel.add(
-            getReadOnlyClickableHtmlJEditorPane(issue.issue),
-            panelGridConstraints(0, 1)
+        insertTitleAndResizableTextIntoPanelColumns(
+            panel = mainBodyPanel,
+            row = 0,
+            title = "Description",
+            htmlText = issue.issue
         )
 
-        mainBodyPanel.add(
-            boldLabel("Impact"),
-            baseGridConstraintsAnchorWest(1, 0)
-        )
-        mainBodyPanel.add(
-            getReadOnlyClickableHtmlJEditorPane(issue.impact),
-            panelGridConstraints(1, 1)
+        insertTitleAndResizableTextIntoPanelColumns(
+            panel = mainBodyPanel,
+            row = 1,
+            title = "Impact",
+            htmlText = issue.impact
         )
 
-        mainBodyPanel.add(
-            boldLabel("Path"),
-            baseGridConstraintsAnchorWest(2, 0)
-        )
-
-        val font = getFont(-1, -1, JTextArea().font) ?: UIUtil.getLabelFont()
-        val pathLabel = getReadOnlyClickableHtmlJEditorPane(issue.path.joinToString(" > "), font)
-
-        mainBodyPanel.add(
-            pathLabel,
-            panelGridConstraints(2, 1)
+        insertTitleAndResizableTextIntoPanelColumns(
+            panel = mainBodyPanel,
+            row = 2,
+            title = "Path",
+            htmlText = issue.path.joinToString(" > "),
+            textFont = getFont(-1, -1, JTextArea().font) ?: UIUtil.getLabelFont()
         )
 
         return mainBodyPanel
@@ -168,7 +156,7 @@ class IacSuggestionDescriptionPanel(
         )
     }
 
-    private fun cwePanel()= descriptionHeaderPanel(
+    private fun cwePanel() = descriptionHeaderPanel(
         issueNaming = "Issue",
         id = issue.id,
         idUrl = issue.documentation
@@ -223,16 +211,12 @@ class IacSuggestionDescriptionPanel(
 
         remediationPanel.add(
             boldLabel("Remediation"),
-            baseGridConstraintsAnchorWest(
-                row = 0
-            )
+            baseGridConstraintsAnchorWest(row = 0)
         )
 
         remediationPanel.add(
             remediationPanel(remediation),
-            panelGridConstraints(
-                row = 1
-            )
+            panelGridConstraints(row = 1)
         )
 
         return remediationPanel

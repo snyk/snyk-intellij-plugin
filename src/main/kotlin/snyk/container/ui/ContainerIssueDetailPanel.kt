@@ -9,13 +9,13 @@ import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
+import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.container.ContainerIssue
 import java.awt.Font
 import java.awt.Insets
-import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
 
@@ -96,46 +96,30 @@ class ContainerIssueDetailPanel(
 
     private fun mainPanel(): JPanel {
         val panel = JPanel(
-            GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
+            GridLayoutManager(2, 2, Insets(20, 0, 20, 0), 50, -1)
         )
 
-        fun boldLabel(text: String) =
-            JLabel(text).apply { font = io.snyk.plugin.ui.getFont(Font.BOLD, -1, JLabel().font) }
-
-        val introducedThroughPane = introducedThroughPane()
-        if (introducedThroughPane != null) {
-            panel.add(
-                boldLabel("Introduced through:"),
-                baseGridConstraintsAnchorWest(3, 0)
-            )
-            panel.add(
-                introducedThroughPane,
-                panelGridConstraints(3, 1)
+        val introducedThrough = issue.from
+        if (introducedThrough.isNotEmpty()) {
+            insertTitleAndResizableTextIntoPanelColumns(
+                panel = panel,
+                row = 0,
+                title = "Introduced through:",
+                htmlText = introducedThrough.joinToString(separator = ", ")
             )
         }
 
-        if (!issue.nearestFixedInVersion.isNullOrBlank()) {
-            panel.add(
-                boldLabel("Fixed in: "),
-                baseGridConstraintsAnchorWest(4, 0)
-            )
-            panel.add(
-                JLabel(issue.nearestFixedInVersion),
-                baseGridConstraintsAnchorWest(4, 1)
+        val fixedInText = issue.nearestFixedInVersion
+        if (!fixedInText.isNullOrBlank()) {
+            insertTitleAndResizableTextIntoPanelColumns(
+                panel = panel,
+                row = 1,
+                title = "Fixed in:",
+                htmlText = fixedInText
             )
         }
 
         return panel
-    }
-
-    private fun introducedThroughPane(): JEditorPane? {
-        val introducedThrough = issue.from
-        if (introducedThrough.isEmpty()) {
-            return null
-        }
-        val introducedThroughAsHtml: String = introducedThrough.joinToString(separator = ", ") { it }
-
-        return getReadOnlyClickableHtmlJEditorPane(introducedThroughAsHtml)
     }
 
     private fun overviewPanel(): JPanel {
