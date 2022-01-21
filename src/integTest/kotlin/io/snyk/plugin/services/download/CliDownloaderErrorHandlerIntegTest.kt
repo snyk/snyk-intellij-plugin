@@ -53,11 +53,12 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
 
     fun testHandleIOExceptionShouldRetryDownloadAndShowBalloonIfItFails() {
         val e = IOException("Expected Test Exception, don't panic")
-        every { cliDownloaderMock.downloadFile(any(), any()) } throws e
+        every { cliDownloaderMock.expectedSha() } returns "test"
+        every { cliDownloaderMock.downloadFile(any(), any(), any()) } throws e
 
         cut.handleIOException(e, indicator, projectSpy)
 
-        verify(exactly = 1) { cliDownloaderMock.downloadFile(getCliFile(), indicator) }
+        verify(exactly = 1) { cliDownloaderMock.downloadFile(getCliFile(), any(), indicator) }
         verify(exactly = 1) { progressManager.run(any<Task.Backgroundable>()) }
         verify(exactly = 1) {
             SnykBalloonNotificationHelper.showError(
@@ -68,11 +69,12 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
 
     fun testHandleChecksumVerificationExceptionShouldRetryDownloadAndShowBalloonIfItFails() {
         val e = ChecksumVerificationException("Expected Test Exception, don't panic")
-        every { cliDownloaderMock.downloadFile(any(), any()) } throws e
+        every { cliDownloaderMock.expectedSha() } returns "test"
+        every { cliDownloaderMock.downloadFile(any(), any(), any()) } throws e
 
         cut.handleChecksumVerificationException(e, indicator, projectSpy)
 
-        verify(exactly = 1) { cliDownloaderMock.downloadFile(getCliFile(), indicator) }
+        verify(exactly = 1) { cliDownloaderMock.downloadFile(getCliFile(), any(), indicator) }
         verify(exactly = 1) { progressManager.run(any<Task.Backgroundable>()) }
         verify(exactly = 1) {
             SnykBalloonNotificationHelper.showError(

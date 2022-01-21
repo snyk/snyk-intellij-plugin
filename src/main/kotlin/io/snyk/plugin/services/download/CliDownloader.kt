@@ -5,6 +5,8 @@ import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
 import java.io.File
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import javax.xml.bind.DatatypeConverter
 
@@ -30,24 +32,38 @@ class CliDownloader {
         }
     }
 
-    fun downloadFile(cliFile: File, indicator: ProgressIndicator): File {
-        val snykWrapperFileName = Platform.current().snykWrapperFileName
-        val url = URL(java.lang.String.format(LATEST_RELEASE_DOWNLOAD_URL, snykWrapperFileName)).toString()
+    fun downloadFile(cliFile: File, expectedSha: String, indicator: ProgressIndicator): File {
+        indicator.checkCanceled()
+        val downloadFile = File.createTempFile(cliFile.name, ".download")
+        downloadFile.deleteOnExit()
 
-        if (cliFile.exists()) {
-            cliFile.delete()
-        }
-
-        val shaUrl = URL(String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName))
-        val expectedSha = shaUrl.readText(Charsets.UTF_8).split(" ")[0]
-
+        val url =
+            URL(java.lang.String.format(LATEST_RELEASE_DOWNLOAD_URL, Platform.current().snykWrapperFileName)).toString()
+        indicator.checkCanceled()
         HttpRequests
             .request(url)
             .productNameAsUserAgent()
-            .saveToFile(cliFile, indicator)
+            .saveToFile(downloadFile, indicator)
 
-        verifyChecksum(expectedSha, cliFile.readBytes())
+        indicator.checkCanceled()
+        verifyChecksum(expectedSha, downloadFile.readBytes())
+
+        indicator.checkCanceled()
+        if (cliFile.exists()) {
+            cliFile.delete()
+        }
+        Files.move(
+            downloadFile.toPath(),
+            cliFile.toPath(),
+            StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING
+        )
         cliFile.setExecutable(true)
         return cliFile
+    }
+
+    fun expectedSha(): String {
+        val shaUrl = URL(String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName))
+        return shaUrl.readText(Charsets.UTF_8).split(" ")[0]
     }
 }

@@ -57,12 +57,9 @@ class SnykCliDownloaderService {
 
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
         cliDownloadPublisher.cliDownloadStarted()
-
         indicator.isIndeterminate = true
         currentProgressIndicator = indicator
         var succeeded = false
-        var cleanupCliFile = true
-
         val cliFile = getCliFile()
         try {
             val latestRelease = requestLatestReleasesInformation()
@@ -71,7 +68,6 @@ class SnykCliDownloaderService {
                 val failedMsg = "Failed to fetch the latest Snyk CLI release info. " +
                     "Please retry in a few minutes or contact support if the issue persists."
                 errorHandler.showErrorWithRetryAndContactAction(failedMsg, project)
-                cleanupCliFile = false
                 return
             }
             val cliVersion = latestRelease.tagName
@@ -80,7 +76,7 @@ class SnykCliDownloaderService {
             indicator.checkCanceled()
 
             try {
-                downloader.downloadFile(cliFile, indicator)
+                downloader.downloadFile(cliFile, downloader.expectedSha(), indicator)
                 pluginSettings().cliVersion = cliVersionNumbers(cliVersion)
                 pluginSettings().lastCheckDate = Date()
                 succeeded = true
@@ -93,9 +89,6 @@ class SnykCliDownloaderService {
             }
         } finally {
             currentProgressIndicator = null
-            if (!succeeded && cliFile.exists() && cleanupCliFile) {
-                cliFile.delete()
-            }
             cliDownloadPublisher.cliDownloadFinished(succeeded)
         }
     }

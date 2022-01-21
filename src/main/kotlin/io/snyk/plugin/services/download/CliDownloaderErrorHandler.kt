@@ -34,7 +34,7 @@ class CliDownloaderErrorHandler {
             try {
                 // not using the service here to not causing an endless recursion (the service triggers a retry)
                 val downloader = project.getService(SnykCliDownloaderService::class.java).downloader
-                downloader.downloadFile(getCliFile(), indicator)
+                downloader.downloadFile(getCliFile(), downloader.expectedSha(), indicator)
             } catch (throwable: Throwable) { // we must catch throwable as IntelliJ could throw AssertionError
                 // IntelliJ throws an exception if we log an error, and in this case it is just the retry that failed
                 logger<CliDownloaderErrorHandler>().warn("Retry of downloading the Snyk CLI failed.", throwable)

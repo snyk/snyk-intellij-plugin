@@ -1,11 +1,31 @@
 package io.snyk.plugin.services.download
 
+import com.intellij.util.Url
+import com.intellij.util.io.HttpRequests
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase.fail
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
 
 class CliDownloaderTest {
+    @Before
+    fun setUp() {
+        unmockkAll()
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
     @Test
     fun `calculateSha256 should verify the SHA of a given file and return false if no match`() {
         val filePath = "src/test/resources/dummy-binary"
@@ -33,5 +53,28 @@ class CliDownloaderTest {
     @Test
     fun `should download sha256 from base url`() {
         assertEquals("${CliDownloader.BASE_URL}/cli/latest/%s.sha256", CliDownloader.SHA256_DOWNLOAD_URL)
+    }
+
+    @Test
+    fun `should not delete file if checksum verification fails`() {
+        val testFile = createTempFile()
+        testFile.deleteOnExit()
+        val dummyContent = "test test test".toByteArray()
+        Files.write(testFile.toPath(), dummyContent)
+        val cut = CliDownloader()
+        val expectedSha = cut.calculateSha256("wrong sha".toByteArray())
+        mockkStatic(HttpRequests::class)
+        justRun {
+            HttpRequests.request(any<Url>()).productNameAsUserAgent().saveToFile(any(), any())
+        }
+
+        try {
+            cut.downloadFile(testFile, expectedSha, mockk(relaxed = true))
+            fail("Should have thrown ChecksumVerificationException")
+        } catch (e: ChecksumVerificationException) {
+            assertTrue("testFile should still exist, as $e was thrown", testFile.exists())
+        } finally {
+            testFile.delete()
+        }
     }
 }
