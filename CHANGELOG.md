@@ -2,10 +2,18 @@
 
 ## [2.4.11]
 
-### Feat
+### Changed
 
-- don't show balloon notifications if a Snyk product does not find supported files
 - enable new onboarding workflow for all users
+- feedback link with new address
+
+### Fixed
+
+- don't delete CLI before download has finished successfully
+- don't show balloon notifications if a Snyk product does not find supported files
+- UI fixes for detail panel in Snyk view
+- recreate API client on token change for Snyk Advisor
+- several other bug fixes
 
 ## [2.4.10]
 
