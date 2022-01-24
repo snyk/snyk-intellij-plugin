@@ -44,7 +44,7 @@ class BaseImageRemediationFix(
     }
 
     override fun invoke(project: Project, editor: Editor?, file: PsiFile) {
-        logger.warn("BaseImageRemediationFix invoke starting...")
+        logger.debug("BaseImageRemediationFix invoke starting...")
 
         val doc = editor?.document!!
         WriteCommandAction.runWriteCommandAction(project) {
@@ -56,14 +56,12 @@ class BaseImageRemediationFix(
 
     companion object {
         fun determineTargetImage(imageRemediationInfo: BaseImageRemediationInfo): String {
-            return if (imageRemediationInfo.majorUpgrades != null) {
-                imageRemediationInfo.majorUpgrades.name
-            } else if (imageRemediationInfo.minorUpgrades != null) {
-                imageRemediationInfo.minorUpgrades.name
-            } else if (imageRemediationInfo.alternativeUpgrades != null) {
-                imageRemediationInfo.alternativeUpgrades.name
-            } else
-                throw IllegalStateException("At this point of time we should always have remediation info.")
+            return when {
+                imageRemediationInfo.majorUpgrades != null -> imageRemediationInfo.majorUpgrades.name
+                imageRemediationInfo.minorUpgrades != null -> imageRemediationInfo.minorUpgrades.name
+                imageRemediationInfo.alternativeUpgrades != null -> imageRemediationInfo.alternativeUpgrades.name
+                else -> throw IllegalStateException("At this point of time we should always have remediation info.")
+            }
         }
     }
 }
