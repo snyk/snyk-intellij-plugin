@@ -42,17 +42,18 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
 
         val actualCliIssues = containerResult.allCliIssues!!
         assertTrue(actualCliIssues.isNotEmpty())
-        val first = actualCliIssues.first()
-        assertTrue("BaseRemeditation should not be null", null != first.baseImageRemediationInfo)
-        val baseImageRemediationInfo = first.baseImageRemediationInfo!!
+        val actualFirstImage = actualCliIssues.first()
+        assertTrue("BaseRemeditation should not be null", null != actualFirstImage.baseImageRemediationInfo)
+        val actualRemediation = actualFirstImage.baseImageRemediationInfo!!
         assertTrue(
             "Should have found a minor upgrade remediation",
-            baseImageRemediationInfo.minorUpgrades != null
+            actualRemediation.minorUpgrades != null
         )
-        assertTrue(baseImageRemediationInfo.majorUpgrades == null)
-        assertEquals(expectedResult.allCliIssues!!.first().imageName, first.imageName)
-        assertEquals(expectedResult.allCliIssues!!.first().imageName, baseImageRemediationInfo.currentImage!!.name)
-        assertEquals(8, first.workloadImage!!.lineNumber)
+        assertTrue(actualRemediation.majorUpgrades == null)
+        val expectedImageName = expectedResult.allCliIssues!!.first().imageName
+        assertEquals(expectedImageName, actualFirstImage.imageName)
+        assertEquals(expectedImageName, actualRemediation.currentImage!!.name)
+        assertEquals(8, actualFirstImage.workloadImages.first().lineNumber)
     }
 
     @Test

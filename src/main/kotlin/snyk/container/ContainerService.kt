@@ -49,11 +49,10 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
             "container scan: images with vulns [${tempResult.allCliIssues?.size}], issues [${tempResult.issuesCount}] "
         )
 
-        tempResult.allCliIssues?.forEach {
-            val baseImageRemediationInfo = convertRemediation(it.docker.baseImageRemediation)
-
-            val enrichedContainerIssuesForImage = it.copy(
-                workloadImage = images.find { image -> image.image == it.imageName },
+        tempResult.allCliIssues?.forEach { forImage ->
+            val baseImageRemediationInfo = convertRemediation(forImage.docker.baseImageRemediation)
+            val enrichedContainerIssuesForImage = forImage.copy(
+                workloadImages = images.filter { it.image == forImage.imageName },
                 baseImageRemediationInfo = baseImageRemediationInfo
             )
             containerIssueImageList.add(enrichedContainerIssuesForImage)
