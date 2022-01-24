@@ -5,6 +5,7 @@ import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
 import java.io.File
 import java.net.URL
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
@@ -34,32 +35,48 @@ class CliDownloader {
 
     fun downloadFile(cliFile: File, expectedSha: String, indicator: ProgressIndicator): File {
         indicator.checkCanceled()
-        val downloadFile = File.createTempFile(cliFile.name, ".download")
-        downloadFile.deleteOnExit()
+        val downloadFile = File(cliFile.name + ".${System.currentTimeMillis()}.download")
+        try {
+            downloadFile.deleteOnExit()
 
-        val url =
-            URL(java.lang.String.format(LATEST_RELEASE_DOWNLOAD_URL, Platform.current().snykWrapperFileName)).toString()
-        indicator.checkCanceled()
-        HttpRequests
-            .request(url)
-            .productNameAsUserAgent()
-            .saveToFile(downloadFile, indicator)
+            val url =
+                URL(
+                    java.lang.String.format(
+                        LATEST_RELEASE_DOWNLOAD_URL,
+                        Platform.current().snykWrapperFileName
+                    )
+                ).toString()
+            indicator.checkCanceled()
+            HttpRequests
+                .request(url)
+                .productNameAsUserAgent()
+                .saveToFile(downloadFile, indicator)
 
-        indicator.checkCanceled()
-        verifyChecksum(expectedSha, downloadFile.readBytes())
+            indicator.checkCanceled()
+            verifyChecksum(expectedSha, downloadFile.readBytes())
 
-        indicator.checkCanceled()
-        if (cliFile.exists()) {
-            cliFile.delete()
+            indicator.checkCanceled()
+            if (cliFile.exists()) {
+                cliFile.delete()
+            }
+            try {
+                Files.move(
+                    downloadFile.toPath(),
+                    cliFile.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING
+                )
+            } catch (e: AtomicMoveNotSupportedException) {
+                // fallback to renameTo
+                downloadFile.renameTo(cliFile)
+            }
+            cliFile.setExecutable(true)
+            return cliFile
+        } finally {
+            if (downloadFile.exists()) {
+                downloadFile.delete()
+            }
         }
-        Files.move(
-            downloadFile.toPath(),
-            cliFile.toPath(),
-            StandardCopyOption.ATOMIC_MOVE,
-            StandardCopyOption.REPLACE_EXISTING
-        )
-        cliFile.setExecutable(true)
-        return cliFile
     }
 
     fun expectedSha(): String {
