@@ -2,7 +2,7 @@ name: Weekly Release
 
 on:
   schedule:
-    - cron: '0 10 * * 3'  # every wednesday at 10 am
+    - cron: '0 10 * * 1'  # every Monday at 10 am UTC
 
 jobs:
   create-release-tag:
