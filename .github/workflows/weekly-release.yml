@@ -1,6 +1,7 @@
 name: Weekly Release
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 10 * * 1'  # every Monday at 10 am UTC
 
