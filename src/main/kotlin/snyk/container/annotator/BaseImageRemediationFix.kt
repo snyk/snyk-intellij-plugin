@@ -2,7 +2,7 @@ package snyk.container.annotator
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.intention.IntentionAction
-import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -47,7 +47,7 @@ class BaseImageRemediationFix(
         logger.debug("BaseImageRemediationFix invoke starting...")
 
         val doc = editor?.document!!
-        WriteCommandAction.runWriteCommandAction(project) {
+        WriteAction.run<RuntimeException> {
             doc.replaceString(range.startOffset, range.endOffset, imageNameToFix)
             FileContentUtil.reparseOpenedFiles()
             DaemonCodeAnalyzer.getInstance(project).restart(file)
