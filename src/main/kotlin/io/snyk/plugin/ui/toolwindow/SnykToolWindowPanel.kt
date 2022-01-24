@@ -481,7 +481,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val containerIssue = node.userObject as ContainerIssue
                     val scrollPane = wrapWithScrollPane(ContainerIssueDetailPanel(containerIssue))
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
-                    // TODO: Add event logging
+                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                        IssueInTreeIsClicked.builder()
+                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
+                            .issueId(containerIssue.id)
+                            .issueType(IssueInTreeIsClicked.IssueType.CONTAINER_VULNERABILITY)
+                            .severity(containerIssue.getIssueSeverityOrNull())
+                            .build()
+                    )
                 }
                 is RootOssTreeNode -> {
                     currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
