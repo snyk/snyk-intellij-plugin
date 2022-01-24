@@ -46,7 +46,7 @@ class BaseImageRemediationFix(
     override fun invoke(project: Project, editor: Editor?, file: PsiFile) {
         logger.debug("BaseImageRemediationFix invoke starting...")
 
-        val doc = editor?.document!!
+        val doc = editor!!.document
         WriteAction.run<RuntimeException> {
             doc.replaceString(range.startOffset, range.endOffset, imageNameToFix)
             FileContentUtil.reparseOpenedFiles()
