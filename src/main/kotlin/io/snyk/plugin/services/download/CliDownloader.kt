@@ -35,7 +35,7 @@ class CliDownloader {
 
     fun downloadFile(cliFile: File, expectedSha: String, indicator: ProgressIndicator): File {
         indicator.checkCanceled()
-        val downloadFile = File(cliFile.name + ".${System.currentTimeMillis()}.download")
+        val downloadFile = File.createTempFile(cliFile.name, ".download", cliFile.parentFile)
         try {
             downloadFile.deleteOnExit()
 
@@ -67,7 +67,7 @@ class CliDownloader {
                     StandardCopyOption.REPLACE_EXISTING
                 )
             } catch (e: AtomicMoveNotSupportedException) {
-                // fallback to renameTo
+                // fallback to renameTo because of e
                 downloadFile.renameTo(cliFile)
             }
             cliFile.setExecutable(true)
