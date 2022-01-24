@@ -12,6 +12,7 @@ import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_QUALITY_ISSUE
 import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_SECURITY_VULNERABILITY
 import snyk.analytics.IssueInTreeIsClicked.IssueType.LICENCE_ISSUE
 import snyk.analytics.IssueInTreeIsClicked.IssueType.OPEN_SOURCE_VULNERABILITY
+import snyk.container.ContainerIssue
 import snyk.iac.IacIssue
 import snyk.oss.Vulnerability
 
@@ -31,6 +32,10 @@ fun Vulnerability.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
 }
 
 fun IacIssue.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
+    return mapIssueSeverity(severity)
+}
+
+fun ContainerIssue.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
     return mapIssueSeverity(severity)
 }
 
