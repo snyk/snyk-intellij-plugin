@@ -3,6 +3,7 @@
 package snyk.container.annotator
 
 import com.google.gson.Gson
+import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.application.WriteAction
@@ -15,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.hamcrest.collection.IsCollectionWithSize.hasSize
@@ -22,6 +24,7 @@ import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
 import snyk.container.BaseImageInfo
+import snyk.container.BaseImageRemediation
 import snyk.container.BaseImageRemediationInfo
 import snyk.container.BaseImageVulnerabilities
 import snyk.container.ContainerIssue
@@ -142,7 +145,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test annotation message should display vulnerabiltiy count 1 for severity critical and remediation`() {
+    fun `test annotation message should display vulnerability count 1 for severity critical and remediation`() {
         val expected = "Snyk found 1 vulnerability. Upgrade image to a newer version"
         val image = createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_CRITICAL)
             .copy(baseImageRemediationInfo = dummyBaseRemediationInfo())
@@ -153,21 +156,63 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test annotation message should display vulnerabiltiy count and no remediation`() {
+    fun `test annotation message should display vulnerability count and no remediation`() {
         val expected = "Snyk found 1 vulnerability. "
+
         val actual =
             cut.annotationMessage(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_LOW))
+
         assertEquals(expected, actual)
     }
 
-    private fun dummyBaseRemediationInfo() = BaseImageRemediationInfo(
+    @Test
+    fun `test apply should add a quickfix if remediation advice available`() {
+        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
+        every { toolWindowPanel.currentContainerResult } returns createContainerResultWithIssueOnLine21()
+        every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify {
+            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
+            builderMock.withFix(any())
+        }
+    }
+
+    @Test
+    fun `test apply should not add a quickfix if remediation advice base image different`() {
+        val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", psiFile, 21))
+        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
+        val imageForIssues = createContainerImageForIssuesWithSeverity().copy(
+            baseImageRemediationInfo = dummyBaseRemediationInfo(imageName = "NotAnImage:0.1.1"),
+            docker = dummyDocker(),
+            workloadImages = workloadImages
+        )
+        val containerResult = createContainerResultWithIssueOnLine21()
+        containerResult.allCliIssues = listOf(imageForIssues)
+        every { toolWindowPanel.currentContainerResult } returns containerResult
+        every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify {
+            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
+        }
+        verify(exactly = 0) { builderMock.withFix(any()) }
+    }
+
+    private fun dummyDocker(): Docker {
+        return Docker(BaseImageRemediation("REMEDIATION_AVAILABLE", emptyList()))
+    }
+
+    private fun dummyBaseRemediationInfo(imageName: String = "nginx") = BaseImageRemediationInfo(
         currentImage = BaseImageInfo(
             "nginx",
             BaseImageVulnerabilities(1, 0, 0, 0)
         ),
         majorUpgrades = null,
         alternativeUpgrades = null,
-        minorUpgrades = BaseImageInfo("nginx", BaseImageVulnerabilities(0, 0, 0, 0))
+        minorUpgrades = BaseImageInfo("$imageName:1.21.2", BaseImageVulnerabilities(0, 0, 0, 0))
     )
 
     private fun createContainerResultWithIssueOnLine21(): ContainerResult {
@@ -176,9 +221,16 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         )
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
+        val baseImageRemediationInfo =
+            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
 
         val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", psiFile, 21))
-        containerResult.allCliIssues = listOf(firstContainerIssuesForImage.copy(workloadImages = workloadImages))
+        containerResult.allCliIssues = listOf(
+            firstContainerIssuesForImage.copy(
+                workloadImages = workloadImages,
+                baseImageRemediationInfo = baseImageRemediationInfo
+            )
+        )
         return containerResult
     }
 

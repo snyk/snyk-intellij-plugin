@@ -61,7 +61,7 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
         return ContainerResult(containerIssueImageList, null)
     }
 
-    private fun convertRemediation(baseImageRemediation: BaseImageRemediation?): BaseImageRemediationInfo? {
+    fun convertRemediation(baseImageRemediation: BaseImageRemediation?): BaseImageRemediationInfo? {
         if (baseImageRemediation == null || !baseImageRemediation.isRemediationAvailable()) return null
 
         // current image always first

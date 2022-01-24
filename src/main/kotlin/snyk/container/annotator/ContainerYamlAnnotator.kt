@@ -40,10 +40,25 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             val severity = severity(forImage)
 
             val workloadImage = forImage.workloadImages.first { it.psiFile == psiFile }
-            holder.newAnnotation(severity, annotationMessage(forImage))
-                .range(textRange(psiFile, workloadImage.lineNumber, forImage.imageName))
-                .create()
+            val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
+            val annotationBuilder = holder.newAnnotation(severity, annotationMessage(forImage)).range(textRange)
+            if (shouldAddQuickFix(forImage)) {
+                val intentionAction = BaseImageRemediationFix(forImage, textRange)
+                annotationBuilder.withFix(intentionAction)
+            }
+            annotationBuilder.create()
         }
+    }
+
+    private fun shouldAddQuickFix(forImage: ContainerIssuesForImage): Boolean {
+        val baseImageRemediation = forImage.docker.baseImageRemediation
+        if (baseImageRemediation == null || !baseImageRemediation.isRemediationAvailable()) return false
+        if (forImage.baseImageRemediationInfo == null) return false
+
+        val baseImageName = forImage.imageName.split(":")[0]
+        val imageNameToFix =
+            BaseImageRemediationFix.determineTargetImage(forImage.baseImageRemediationInfo).split(":")[0]
+        return baseImageName == imageNameToFix
     }
 
     fun severity(forImage: ContainerIssuesForImage): HighlightSeverity {
