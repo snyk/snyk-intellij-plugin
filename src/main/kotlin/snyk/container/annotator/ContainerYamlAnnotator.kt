@@ -8,7 +8,6 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykToolWindowPanel
-import org.jetbrains.annotations.TestOnly
 import snyk.container.ContainerIssuesForImage
 
 class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
@@ -47,7 +46,6 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         }
     }
 
-    @TestOnly
     fun severity(forImage: ContainerIssuesForImage): HighlightSeverity {
         val severities = forImage.vulnerabilities.groupBy { it.severity }
         return when {
