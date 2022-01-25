@@ -1,4 +1,4 @@
-name: Weekly Release
+name: Release
 
 on:
   workflow_dispatch:
@@ -35,34 +35,38 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "::set-output name=tagName::$(./gradlew release)"
+          ./gradlew release
+          echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
 
       - name: Create Tag - Dry Run
         id: createTagDry
         if: ${{ env.ACT }}
-        run: echo "::set-output name=tagName::$(./gradlew release -Prelease.dryRun)"
+        run: |
+          ./gradlew release -Prelease.dryRun
+          echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
 
       - name: Create Github release
         uses: "marvinpinto/action-automatic-releases@latest"
         if: ${{ !env.ACT }}
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: { { steps.createTag.outputs.tagName } }
           prerelease: false
 
-      - name: Publish Plugin
-        if: ${{ !env.ACT }}
-        env:
-          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
-          ORG_GRADLE_PROJECT_amplitudeExperimentApiKey: ${{ secrets.AMPLITUDE_EXPERIMENT_API_KEY }}
-          ORG_GRADLE_PROJECT_environment: "PRODUCTION"
-          ORG_GRADLE_PROJECT_iterativelyEnvironment: "PRODUCTION"
-          ORG_GRADLE_PROJECT_segmentWriteKey: ${{ secrets.SEGMENT_WRITE_KEY }}
-        run: ./gradlew publishPlugin
-
-      - name: Create Sentry release
-        uses: getsentry/action-release@v1
-        if: ${{ !env.ACT }}
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+#      - name: Publish Plugin
+#        if: ${{ !env.ACT }}
+#        env:
+#          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+#          ORG_GRADLE_PROJECT_amplitudeExperimentApiKey: ${{ secrets.AMPLITUDE_EXPERIMENT_API_KEY }}
+#          ORG_GRADLE_PROJECT_environment: "PRODUCTION"
+#          ORG_GRADLE_PROJECT_iterativelyEnvironment: "PRODUCTION"
+#          ORG_GRADLE_PROJECT_segmentWriteKey: ${{ secrets.SEGMENT_WRITE_KEY }}
+#        run: ./gradlew publishPlugin
+#
+#      - name: Create Sentry release
+#        uses: getsentry/action-release@v1
+#        if: ${{ !env.ACT }}
+#        env:
+#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
