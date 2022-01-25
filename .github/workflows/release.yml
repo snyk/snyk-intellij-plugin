@@ -50,7 +50,7 @@ jobs:
         if: ${{ !env.ACT }}
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: { { steps.createTag.outputs.tagName } }
+          automatic_release_tag: {{ steps.createTag.outputs.tagName }}
           prerelease: false
 
 #      - name: Publish Plugin
