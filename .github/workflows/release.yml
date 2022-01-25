@@ -35,12 +35,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "::set-output name=tagName::$(./gradlew release)"
+          ./gradlew release
+          echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
 
       - name: Create Tag - Dry Run
         id: createTagDry
         if: ${{ env.ACT }}
-        run: echo "::set-output name=tagName::$(./gradlew release -Prelease.dryRun)"
+        run: |
+          ./gradlew release -Prelease.dryRun
+          echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
 
       - name: Create Github release
         uses: "marvinpinto/action-automatic-releases@latest"
