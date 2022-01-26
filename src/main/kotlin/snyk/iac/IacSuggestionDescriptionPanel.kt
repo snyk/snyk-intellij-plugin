@@ -221,7 +221,7 @@ class IacSuggestionDescriptionPanel(
 
         remediationPanel.add(
             remediationPanel(remediation),
-            panelGridConstraints(row = 1)
+            panelGridConstraints(row = 1, indent = 1)
         )
 
         return remediationPanel

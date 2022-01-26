@@ -1,5 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.12]
+
+### Fixed
+
+- align IaC description panel inner indentations
+
 ## [2.4.11]
 
 ### Changed
