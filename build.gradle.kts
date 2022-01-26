@@ -28,7 +28,7 @@ dependencies {
     implementation("org.commonmark:commonmark:0.18.1")
     implementation("com.google.code.gson:gson:2.8.9")
     implementation("com.segment.analytics.java:analytics:3.1.3")
-    implementation("io.sentry:sentry:5.4.3")
+    implementation("io.sentry:sentry:5.6.0")
     implementation("io.snyk.code.sdk:snyk-code-client:2.2.1")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
     implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
@@ -40,7 +40,7 @@ dependencies {
         exclude(group = "org.hamcrest")
     }
     testImplementation("org.hamcrest:hamcrest:2.2")
-    testImplementation("io.mockk:mockk:1.12.1")
+    testImplementation("io.mockk:mockk:1.12.2")
     testImplementation("org.awaitility:awaitility:4.1.1")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.4.32")
 
