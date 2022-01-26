@@ -5,7 +5,6 @@
 ### Fixed
 
 - align IaC description panel inner indentations
-- update dependencies
 
 ## [2.4.11]
 
