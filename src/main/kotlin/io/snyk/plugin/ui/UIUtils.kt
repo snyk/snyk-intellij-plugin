@@ -179,14 +179,15 @@ fun baseGridConstraintsAnchorWest(
 
 fun panelGridConstraints(
     row: Int,
-    column: Int = 0
+    column: Int = 0,
+    indent: Int = 0
 ) = baseGridConstraints(
     row = row,
     column = column,
     fill = GridConstraints.FILL_BOTH,
     hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
     vSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-    indent = 0
+    indent = indent
 )
 
 fun descriptionHeaderPanel(
