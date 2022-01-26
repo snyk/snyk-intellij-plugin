@@ -6,6 +6,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.calcRelativeToProjectPath
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.NotNull
@@ -35,7 +36,16 @@ class IgnoreButtonActionListener(
     ) : Task.Backgroundable(project, "Ignoring issue...") {
         override fun run(@NotNull progressIndicator: ProgressIndicator) {
             try {
-                ignoreService.ignore(issue.id)
+                if (psiFile != null) {
+                    val path = ignoreService.buildPath(
+                        issue,
+                        calcRelativeToProjectPath(psiFile.virtualFile, project).replace(".../", "")
+                    )
+                    ignoreService.ignoreInstance(issue.id, path)
+                } else {
+                    ignoreService.ignore(issue.id)
+                }
+
                 issue.ignored = true
                 (e?.source as? JButton)?.apply {
                     isEnabled = false
