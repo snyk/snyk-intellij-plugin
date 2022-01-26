@@ -14,6 +14,10 @@
 
 - align IaC description panel inner indentations
 
+### Changed
+- needs new Snyk CLI executable for ignore functionality
+- ignore issue now provides path to CLI instead of ignoring an issue project-wide 
+
 ## [2.4.11]
 
 ### Changed
