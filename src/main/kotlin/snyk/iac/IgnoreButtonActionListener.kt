@@ -36,15 +36,14 @@ class IgnoreButtonActionListener(
     ) : Task.Backgroundable(project, "Ignoring issue...") {
         override fun run(@NotNull progressIndicator: ProgressIndicator) {
             try {
-                if (psiFile != null) {
-                    val path = ignoreService.buildPath(
-                        issue,
-                        calcRelativeToProjectPath(psiFile.virtualFile, project).replace(".../", "")
-                    )
-                    ignoreService.ignoreInstance(issue.id, path)
+                val relativeFilePath = if (psiFile != null) {
+                    calcRelativeToProjectPath(psiFile.virtualFile, project).replace(".../", "")
                 } else {
-                    ignoreService.ignore(issue.id)
+                    "*"
                 }
+
+                val path = ignoreService.buildPath(issue, relativeFilePath)
+                ignoreService.ignoreInstance(issue.id, path)
 
                 issue.ignored = true
                 (e?.source as? JButton)?.apply {

@@ -78,25 +78,6 @@ class IgnoreButtonActionListenerTest {
     }
 
     @Test
-    fun `task should use ignore service to ignore and then mark IacIssue as ignored and disable the button`() {
-        val task = IgnoreButtonActionListener.IgnoreTask(project, service, issue, null, event)
-
-        justRun { service.ignore(issue.id) }
-        every { event.source } returns button
-
-        mockkStatic(ApplicationManager::class)
-        justRun { ApplicationManager.getApplication().invokeLater(any()) }
-
-        task.run(mockk())
-
-        verify(exactly = 1) { service.ignore(issue.id) }
-
-        assertEquals(IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT, button.text)
-        assertFalse("Expected button to be disabled after ignore action", button.isEnabled)
-        assertTrue("Expected issue to be marked ignored after ignore action", issue.ignored)
-    }
-
-    @Test
     fun `task should use ignore service to ignore instance and mark issue as ignored and disable the button`() {
         val mockPsiFile = mockk<PsiFile>(relaxed = true)
         val task = IgnoreButtonActionListener.IgnoreTask(project, service, issue, mockPsiFile, event)
