@@ -3,7 +3,8 @@
 ## [2.4.17]
 
 ### Changed
-
+- Snyk Open Source: added editor annotations
+- Snyk Open Source: added quickfix capability for some package manager
 - 2022.2 EAP support
 
 ### Fixed

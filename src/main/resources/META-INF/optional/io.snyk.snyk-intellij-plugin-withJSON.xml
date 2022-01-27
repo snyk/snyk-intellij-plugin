@@ -1,5 +1,6 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
     <externalAnnotator language="JSON" implementationClass="snyk.iac.annotator.IacJsonAnnotator"/>
+    <externalAnnotator language="JSON" implementationClass="snyk.oss.annotator.OSSDefaultAnnotator"/>
   </extensions>
 </idea-plugin>

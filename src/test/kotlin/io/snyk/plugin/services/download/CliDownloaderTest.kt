@@ -70,7 +70,7 @@ class CliDownloaderTest {
         val expectedSha = cut.calculateSha256("wrong sha".toByteArray())
         mockkStatic(HttpRequests::class)
         justRun {
-            HttpRequests.request(any<Url>()).productNameAsUserAgent().saveToFile(any(), any())
+            HttpRequests.request(any<Url>()).productNameAsUserAgent().saveToFile(any<File>(), any())
         }
 
         try {

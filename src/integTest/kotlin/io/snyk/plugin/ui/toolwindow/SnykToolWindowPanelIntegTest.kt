@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow
 import UIComponentFinder
 import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.application.ex.ApplicationManagerEx
 import com.intellij.openapi.application.impl.ApplicationInfoImpl
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.HeavyPlatformTestCase
@@ -314,7 +315,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
         val firstIaCFileNode = rootIacIssuesTreeNode.firstChild as? IacFileTreeNode
         val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
-            ?: throw IllegalStateException()
+            ?: throw IllegalStateException("IacIssueNode should not be null")
         TreeUtil.selectNode(tree, firstIacIssueNode)
 
         // hack to avoid "File accessed outside allowed roots" check in tests
@@ -332,10 +333,10 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 toolWindowPanel.getDescriptionPanel(),
                 IacSuggestionDescriptionPanel::class,
                 "IacSuggestionDescriptionPanel"
-            ) ?: throw IllegalStateException()
+            ) ?: throw IllegalStateException("IacSuggestionDescriptionPanel should not be null")
 
         val ignoreButton = UIComponentFinder.getComponentByName(iacDescriptionPanel(), JButton::class, "ignoreButton")
-            ?: throw IllegalStateException()
+            ?: throw IllegalStateException("IgnoreButton should not be null")
 
         assertFalse(
             "Issue should NOT be ignored by default",

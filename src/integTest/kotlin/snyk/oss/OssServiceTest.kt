@@ -270,8 +270,8 @@ class OssServiceTest : LightPlatformTestCase() {
                 with(vuln) {
                     id
                     license
-                    identifiers?.CVE
-                    identifiers?.CWE
+                    identifiers?.cve
+                    identifiers?.cwe
                     title
                     description
                     language
@@ -281,7 +281,7 @@ class OssServiceTest : LightPlatformTestCase() {
                     name
                     version
                     exploit
-                    CVSSv3
+                    cvssV3
                     cvssScore
                     fixedIn
                     from

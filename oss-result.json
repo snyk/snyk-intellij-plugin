@@ -1,0 +1,813 @@
+{
+  "vulnerabilities": [
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:L",
+      "alternativeIds": [],
+      "creationTime": "2020-12-04T11:58:40.054903Z",
+      "credit": [
+        "Bartosz Baranowski"
+      ],
+      "cvssScore": 8.2,
+      "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection. A flaw was found in FasterXML Jackson Databind, where it does not have entity expansion secured properly in the `DOMDeserializer` class. The highest threat from this vulnerability is data integrity.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\n\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\n\nFor example, below is a sample XML document, containing an XML element- username.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n   <username>John</username>\n</xml>\n```\n\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<!DOCTYPE foo [\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\n   <username>&xxe;</username>\n</xml>\n```\n\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.6.7.4, 2.9.10.7, 2.10.5.1 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/2589)\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1887664)\n",
+      "disclosureTime": "2020-12-04T11:54:03Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.6.7.4",
+        "2.9.10.7",
+        "2.10.5.1"
+      ],
+      "functions": [
+        {
+          "functionId": {
+            "className": "DOMSerializer",
+            "filePath": "com/fasterxml/jackson/databind/ext/DOMSerializer.java",
+            "functionName": "<init>"
+          },
+          "version": [
+            "[2.6.0,2.6.7.4)",
+            "[2.9.0,2.9.10.7)",
+            "[2.10.0, 2.10.5.1)"
+          ]
+        }
+      ],
+      "functions_new": [
+        {
+          "functionId": {
+            "className": "com.fasterxml.jackson.databind.ext.DOMSerializer",
+            "functionName": "<init>"
+          },
+          "version": [
+            "[2.6.0,2.6.7.4)",
+            "[2.9.0,2.9.10.7)",
+            "[2.10.0, 2.10.5.1)"
+          ]
+        }
+      ],
+      "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302",
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-25649"
+        ],
+        "CWE": [
+          "CWE-611"
+        ],
+        "GHSA": [
+          "GHSA-288c-cq4h-88gq"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "jackson-databind",
+        "groupId": "com.fasterxml.jackson.core"
+      },
+      "modificationTime": "2020-12-13T13:51:18.668871Z",
+      "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+      "packageManager": "maven",
+      "packageName": "com.fasterxml.jackson.core:jackson-databind",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2020-12-04T15:22:52Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59"
+        },
+        {
+          "title": "GitHub Issue",
+          "url": "https://github.com/FasterXML/jackson-databind/issues/2589"
+        },
+        {
+          "title": "RedHat Bugzilla Bug",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1887664"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.6.0,2.6.7.4)",
+          "[2.9.0,2.9.10.7)",
+          "[2.10.0, 2.10.5.1)"
+        ]
+      },
+      "severity": "high",
+      "severityWithCritical": "high",
+      "socialTrendAlert": false,
+      "title": "XML External Entity (XXE) Injection",
+      "from": [
+        "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+        "ly.iterative.itly:plugin-iteratively@1.2.11",
+        "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.10.4"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2021-12-26T12:13:09.437997Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.9,
+      "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) when using JDK serialization to serialize and deserialize `JsonNode` values.\r\nIt is possible for the attacker to send a 4-byte length payload, with a value of `Integer.MAX_VALUE` , that will eventually cause large buffer allocation and out of heap memory.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.13.1, 2.12.6 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/3328)\n",
+      "disclosureTime": "2021-12-25T19:19:59Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.13.1",
+        "2.12.6"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-2326698",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "jackson-databind",
+        "groupId": "com.fasterxml.jackson.core"
+      },
+      "modificationTime": "2021-12-26T15:34:31.799357Z",
+      "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+      "packageManager": "maven",
+      "packageName": "com.fasterxml.jackson.core:jackson-databind",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-12-26T15:34:31Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb"
+        },
+        {
+          "title": "GitHub Issue",
+          "url": "https://github.com/FasterXML/jackson-databind/issues/3328"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.13.0,2.13.1)",
+          "[2.10.0.pr1,2.12.6)"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+        "ly.iterative.itly:plugin-iteratively@1.2.11",
+        "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.10.4"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:L",
+      "alternativeIds": [],
+      "creationTime": "2020-12-04T11:58:40.054903Z",
+      "credit": [
+        "Bartosz Baranowski"
+      ],
+      "cvssScore": 8.2,
+      "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection. A flaw was found in FasterXML Jackson Databind, where it does not have entity expansion secured properly in the `DOMDeserializer` class. The highest threat from this vulnerability is data integrity.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\n\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\n\nFor example, below is a sample XML document, containing an XML element- username.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n   <username>John</username>\n</xml>\n```\n\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<!DOCTYPE foo [\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\n   <username>&xxe;</username>\n</xml>\n```\n\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.6.7.4, 2.9.10.7, 2.10.5.1 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/2589)\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1887664)\n",
+      "disclosureTime": "2020-12-04T11:54:03Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.6.7.4",
+        "2.9.10.7",
+        "2.10.5.1"
+      ],
+      "functions": [
+        {
+          "functionId": {
+            "className": "DOMSerializer",
+            "filePath": "com/fasterxml/jackson/databind/ext/DOMSerializer.java",
+            "functionName": "<init>"
+          },
+          "version": [
+            "[2.6.0,2.6.7.4)",
+            "[2.9.0,2.9.10.7)",
+            "[2.10.0, 2.10.5.1)"
+          ]
+        }
+      ],
+      "functions_new": [
+        {
+          "functionId": {
+            "className": "com.fasterxml.jackson.databind.ext.DOMSerializer",
+            "functionName": "<init>"
+          },
+          "version": [
+            "[2.6.0,2.6.7.4)",
+            "[2.9.0,2.9.10.7)",
+            "[2.10.0, 2.10.5.1)"
+          ]
+        }
+      ],
+      "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302",
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-25649"
+        ],
+        "CWE": [
+          "CWE-611"
+        ],
+        "GHSA": [
+          "GHSA-288c-cq4h-88gq"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "jackson-databind",
+        "groupId": "com.fasterxml.jackson.core"
+      },
+      "modificationTime": "2020-12-13T13:51:18.668871Z",
+      "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+      "packageManager": "maven",
+      "packageName": "com.fasterxml.jackson.core:jackson-databind",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2020-12-04T15:22:52Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59"
+        },
+        {
+          "title": "GitHub Issue",
+          "url": "https://github.com/FasterXML/jackson-databind/issues/2589"
+        },
+        {
+          "title": "RedHat Bugzilla Bug",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1887664"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.6.0,2.6.7.4)",
+          "[2.9.0,2.9.10.7)",
+          "[2.10.0, 2.10.5.1)"
+        ]
+      },
+      "severity": "high",
+      "severityWithCritical": "high",
+      "socialTrendAlert": false,
+      "title": "XML External Entity (XXE) Injection",
+      "from": [
+        "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+        "ly.iterative.itly:plugin-iteratively@1.2.11",
+        "com.fasterxml.jackson.module:jackson-module-kotlin@2.10.4",
+        "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.10.4"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2021-12-26T12:13:09.437997Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.9,
+      "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) when using JDK serialization to serialize and deserialize `JsonNode` values.\r\nIt is possible for the attacker to send a 4-byte length payload, with a value of `Integer.MAX_VALUE` , that will eventually cause large buffer allocation and out of heap memory.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.13.1, 2.12.6 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/3328)\n",
+      "disclosureTime": "2021-12-25T19:19:59Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.13.1",
+        "2.12.6"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-2326698",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "jackson-databind",
+        "groupId": "com.fasterxml.jackson.core"
+      },
+      "modificationTime": "2021-12-26T15:34:31.799357Z",
+      "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+      "packageManager": "maven",
+      "packageName": "com.fasterxml.jackson.core:jackson-databind",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-12-26T15:34:31Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb"
+        },
+        {
+          "title": "GitHub Issue",
+          "url": "https://github.com/FasterXML/jackson-databind/issues/3328"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.13.0,2.13.1)",
+          "[2.10.0.pr1,2.12.6)"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+        "ly.iterative.itly:plugin-iteratively@1.2.11",
+        "com.fasterxml.jackson.module:jackson-module-kotlin@2.10.4",
+        "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.10.4"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:L",
+      "alternativeIds": [],
+      "creationTime": "2020-12-04T11:58:40.054903Z",
+      "credit": [
+        "Bartosz Baranowski"
+      ],
+      "cvssScore": 8.2,
+      "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection. A flaw was found in FasterXML Jackson Databind, where it does not have entity expansion secured properly in the `DOMDeserializer` class. The highest threat from this vulnerability is data integrity.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\n\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\n\nFor example, below is a sample XML document, containing an XML element- username.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n   <username>John</username>\n</xml>\n```\n\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<!DOCTYPE foo [\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\n   <username>&xxe;</username>\n</xml>\n```\n\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.6.7.4, 2.9.10.7, 2.10.5.1 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/2589)\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1887664)\n",
+      "disclosureTime": "2020-12-04T11:54:03Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.6.7.4",
+        "2.9.10.7",
+        "2.10.5.1"
+      ],
+      "functions": [
+        {
+          "functionId": {
+            "className": "DOMSerializer",
+            "filePath": "com/fasterxml/jackson/databind/ext/DOMSerializer.java",
+            "functionName": "<init>"
+          },
+          "version": [
+            "[2.6.0,2.6.7.4)",
+            "[2.9.0,2.9.10.7)",
+            "[2.10.0, 2.10.5.1)"
+          ]
+        }
+      ],
+      "functions_new": [
+        {
+          "functionId": {
+            "className": "com.fasterxml.jackson.databind.ext.DOMSerializer",
+            "functionName": "<init>"
+          },
+          "version": [
+            "[2.6.0,2.6.7.4)",
+            "[2.9.0,2.9.10.7)",
+            "[2.10.0, 2.10.5.1)"
+          ]
+        }
+      ],
+      "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302",
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-25649"
+        ],
+        "CWE": [
+          "CWE-611"
+        ],
+        "GHSA": [
+          "GHSA-288c-cq4h-88gq"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "jackson-databind",
+        "groupId": "com.fasterxml.jackson.core"
+      },
+      "modificationTime": "2020-12-13T13:51:18.668871Z",
+      "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+      "packageManager": "maven",
+      "packageName": "com.fasterxml.jackson.core:jackson-databind",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2020-12-04T15:22:52Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59"
+        },
+        {
+          "title": "GitHub Issue",
+          "url": "https://github.com/FasterXML/jackson-databind/issues/2589"
+        },
+        {
+          "title": "RedHat Bugzilla Bug",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1887664"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.6.0,2.6.7.4)",
+          "[2.9.0,2.9.10.7)",
+          "[2.10.0, 2.10.5.1)"
+        ]
+      },
+      "severity": "high",
+      "severityWithCritical": "high",
+      "socialTrendAlert": false,
+      "title": "XML External Entity (XXE) Injection",
+      "from": [
+        "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+        "ly.iterative.itly:plugin-schema-validator@1.2.11",
+        "com.networknt:json-schema-validator@1.0.45",
+        "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.10.4"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2021-12-26T12:13:09.437997Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.9,
+      "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) when using JDK serialization to serialize and deserialize `JsonNode` values.\r\nIt is possible for the attacker to send a 4-byte length payload, with a value of `Integer.MAX_VALUE` , that will eventually cause large buffer allocation and out of heap memory.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.13.1, 2.12.6 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/3328)\n",
+      "disclosureTime": "2021-12-25T19:19:59Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.13.1",
+        "2.12.6"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-2326698",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "jackson-databind",
+        "groupId": "com.fasterxml.jackson.core"
+      },
+      "modificationTime": "2021-12-26T15:34:31.799357Z",
+      "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+      "packageManager": "maven",
+      "packageName": "com.fasterxml.jackson.core:jackson-databind",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-12-26T15:34:31Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb"
+        },
+        {
+          "title": "GitHub Issue",
+          "url": "https://github.com/FasterXML/jackson-databind/issues/3328"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.13.0,2.13.1)",
+          "[2.10.0.pr1,2.12.6)"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+        "ly.iterative.itly:plugin-schema-validator@1.2.11",
+        "com.networknt:json-schema-validator@1.0.45",
+        "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.10.4"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 58,
+  "org": "bastian.doetsch",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.22.1\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": {
+    "severities": {},
+    "orgLicenseRules": {
+      "AGPL-1.0": {
+        "licenseType": "AGPL-1.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "AGPL-3.0": {
+        "licenseType": "AGPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "Artistic-1.0": {
+        "licenseType": "Artistic-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "Artistic-2.0": {
+        "licenseType": "Artistic-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CDDL-1.0": {
+        "licenseType": "CDDL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CPOL-1.02": {
+        "licenseType": "CPOL-1.02",
+        "severity": "high",
+        "instructions": ""
+      },
+      "EPL-1.0": {
+        "licenseType": "EPL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "GPL-2.0": {
+        "licenseType": "GPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "GPL-3.0": {
+        "licenseType": "GPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "LGPL-2.0": {
+        "licenseType": "LGPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-2.1": {
+        "licenseType": "LGPL-2.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-3.0": {
+        "licenseType": "LGPL-3.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-1.1": {
+        "licenseType": "MPL-1.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-2.0": {
+        "licenseType": "MPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MS-RL": {
+        "licenseType": "MS-RL",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "SimPL-2.0": {
+        "licenseType": "SimPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      }
+    }
+  },
+  "packageManager": "gradle",
+  "ignoreSettings": null,
+  "summary": "6 vulnerable dependency paths",
+  "remediation": {
+    "unresolved": [
+      {
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:L",
+        "alternativeIds": [],
+        "creationTime": "2020-12-04T11:58:40.054903Z",
+        "credit": [
+          "Bartosz Baranowski"
+        ],
+        "cvssScore": 8.2,
+        "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to XML External Entity (XXE) Injection. A flaw was found in FasterXML Jackson Databind, where it does not have entity expansion secured properly in the `DOMDeserializer` class. The highest threat from this vulnerability is data integrity.\n\n## Details\nXXE Injection is a type of attack against an application that parses XML input.\nXML is a markup language that defines a set of rules for encoding documents in a format that is both human-readable and machine-readable. By default, many XML processors allow specification of an external entity, a URI that is dereferenced and evaluated during XML processing. When an XML document is being parsed, the parser can make a request and include the content at the specified URI inside of the XML document.\n\nAttacks can include disclosing local files, which may contain sensitive data such as passwords or private user data, using file: schemes or relative paths in the system identifier.\n\nFor example, below is a sample XML document, containing an XML element- username.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n   <username>John</username>\n</xml>\n```\n\nAn external XML entity - `xxe`, is defined using a system identifier and present within a DOCTYPE header. These entities can access local or remote content. For example the below code contains an external XML entity that would fetch the content of  `/etc/passwd` and display it to the user rendered by `username`.\n\n```\n<xml>\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<!DOCTYPE foo [\n   <!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>\n   <username>&xxe;</username>\n</xml>\n```\n\nOther XXE Injection attacks can access local resources that may not stop returning data, possibly impacting application availability and leading to Denial of Service.\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.6.7.4, 2.9.10.7, 2.10.5.1 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/2589)\n- [RedHat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1887664)\n",
+        "disclosureTime": "2020-12-04T11:54:03Z",
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "2.6.7.4",
+          "2.9.10.7",
+          "2.10.5.1"
+        ],
+        "functions": [
+          {
+            "functionId": {
+              "className": "DOMSerializer",
+              "filePath": "com/fasterxml/jackson/databind/ext/DOMSerializer.java",
+              "functionName": "<init>"
+            },
+            "version": [
+              "[2.6.0,2.6.7.4)",
+              "[2.9.0,2.9.10.7)",
+              "[2.10.0, 2.10.5.1)"
+            ]
+          }
+        ],
+        "functions_new": [
+          {
+            "functionId": {
+              "className": "com.fasterxml.jackson.databind.ext.DOMSerializer",
+              "functionName": "<init>"
+            },
+            "version": [
+              "[2.6.0,2.6.7.4)",
+              "[2.9.0,2.9.10.7)",
+              "[2.10.0, 2.10.5.1)"
+            ]
+          }
+        ],
+        "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-1048302",
+        "identifiers": {
+          "CVE": [
+            "CVE-2020-25649"
+          ],
+          "CWE": [
+            "CWE-611"
+          ],
+          "GHSA": [
+            "GHSA-288c-cq4h-88gq"
+          ]
+        },
+        "language": "java",
+        "malicious": false,
+        "mavenModuleName": {
+          "artifactId": "jackson-databind",
+          "groupId": "com.fasterxml.jackson.core"
+        },
+        "modificationTime": "2020-12-13T13:51:18.668871Z",
+        "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+        "packageManager": "maven",
+        "packageName": "com.fasterxml.jackson.core:jackson-databind",
+        "patches": [],
+        "proprietary": false,
+        "publicationTime": "2020-12-04T15:22:52Z",
+        "references": [
+          {
+            "title": "GitHub Commit",
+            "url": "https://github.com/FasterXML/jackson-databind/commit/612f971b78c60202e9cd75a299050c8f2d724a59"
+          },
+          {
+            "title": "GitHub Issue",
+            "url": "https://github.com/FasterXML/jackson-databind/issues/2589"
+          },
+          {
+            "title": "RedHat Bugzilla Bug",
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1887664"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[2.6.0,2.6.7.4)",
+            "[2.9.0,2.9.10.7)",
+            "[2.10.0, 2.10.5.1)"
+          ]
+        },
+        "severity": "high",
+        "severityWithCritical": "high",
+        "socialTrendAlert": false,
+        "title": "XML External Entity (XXE) Injection",
+        "from": [
+          "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+          "ly.iterative.itly:plugin-schema-validator@1.2.11",
+          "com.networknt:json-schema-validator@1.0.45",
+          "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "com.fasterxml.jackson.core:jackson-databind",
+        "version": "2.10.4"
+      },
+      {
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H",
+        "alternativeIds": [],
+        "creationTime": "2021-12-26T12:13:09.437997Z",
+        "credit": [
+          "Unknown"
+        ],
+        "cvssScore": 5.9,
+        "description": "## Overview\n[com.fasterxml.jackson.core:jackson-databind](https://github.com/FasterXML/jackson-databind) is a library which contains the general-purpose data-binding functionality and tree-model for Jackson Data Processor.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS) when using JDK serialization to serialize and deserialize `JsonNode` values.\r\nIt is possible for the attacker to send a 4-byte length payload, with a value of `Integer.MAX_VALUE` , that will eventually cause large buffer allocation and out of heap memory.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `com.fasterxml.jackson.core:jackson-databind` to version 2.13.1, 2.12.6 or higher.\n## References\n- [GitHub Commit](https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb)\n- [GitHub Issue](https://github.com/FasterXML/jackson-databind/issues/3328)\n",
+        "disclosureTime": "2021-12-25T19:19:59Z",
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "2.13.1",
+          "2.12.6"
+        ],
+        "functions": [],
+        "functions_new": [],
+        "id": "SNYK-JAVA-COMFASTERXMLJACKSONCORE-2326698",
+        "identifiers": {
+          "CVE": [],
+          "CWE": [
+            "CWE-400"
+          ]
+        },
+        "language": "java",
+        "malicious": false,
+        "mavenModuleName": {
+          "artifactId": "jackson-databind",
+          "groupId": "com.fasterxml.jackson.core"
+        },
+        "modificationTime": "2021-12-26T15:34:31.799357Z",
+        "moduleName": "com.fasterxml.jackson.core:jackson-databind",
+        "packageManager": "maven",
+        "packageName": "com.fasterxml.jackson.core:jackson-databind",
+        "patches": [],
+        "proprietary": false,
+        "publicationTime": "2021-12-26T15:34:31Z",
+        "references": [
+          {
+            "title": "GitHub Commit",
+            "url": "https://github.com/FasterXML/jackson-databind/commit/3ccde7d938fea547e598fdefe9a82cff37fed5cb"
+          },
+          {
+            "title": "GitHub Issue",
+            "url": "https://github.com/FasterXML/jackson-databind/issues/3328"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[2.13.0,2.13.1)",
+            "[2.10.0.pr1,2.12.6)"
+          ]
+        },
+        "severity": "medium",
+        "severityWithCritical": "medium",
+        "socialTrendAlert": false,
+        "title": "Denial of Service (DoS)",
+        "from": [
+          "snyk-intellij-plugin@2.4.11-SNAPSHOT",
+          "ly.iterative.itly:plugin-schema-validator@1.2.11",
+          "com.networknt:json-schema-validator@1.0.45",
+          "com.fasterxml.jackson.core:jackson-databind@2.10.4"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "com.fasterxml.jackson.core:jackson-databind",
+        "version": "2.10.4"
+      }
+    ],
+    "upgrade": {},
+    "patch": {},
+    "ignore": {},
+    "pin": {}
+  },
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 2,
+  "targetFile": "build.gradle.kts",
+  "projectName": "snyk-intellij-plugin",
+  "displayTargetFile": "build.gradle.kts",
+  "path": "/Users/bdoetsch/workspace/snyk-intellij-plugin"
+}

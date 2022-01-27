@@ -9,12 +9,19 @@
   <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withJSON.xml">com.intellij.modules.json</depends>
   <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withHCL.xml">org.intellij.plugins.hcl</depends>
   <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withYAML.xml">org.jetbrains.plugins.yaml</depends>
+  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withXML.xml">com.intellij.modules.xml</depends>
+  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withGo.xml">org.jetbrains.plugins.go</depends>
+  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withGroovy.xml">org.jetbrains.plugins.groovy</depends>
+  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withKotlin.xml">org.jetbrains.kotlin</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <toolWindow id="Snyk"
                 anchor="bottom"
                 icon="SnykIcons.TOOL_WINDOW"
                 factoryClass="io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory"/>
+
+    <externalAnnotator language="TEXT" implementationClass="snyk.oss.annotator.OSSDefaultAnnotator"/>
+    <externalAnnotator language="" implementationClass="snyk.oss.annotator.OSSDefaultAnnotator"/>
 
     <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
     <postStartupActivity implementation="snyk.WelcomeNotifyActivity"/>
@@ -37,6 +44,7 @@
                  defaultValue="false"
                  description="Preview: Enable new refactored issues tree."
                  restartRequired="true"/>
+
   </extensions>
 
   <actions>
@@ -82,6 +90,5 @@
               text="Low Severity"
               description="Snyk: Show Low severity issues"/>
     </group>
-
   </actions>
 </idea-plugin>

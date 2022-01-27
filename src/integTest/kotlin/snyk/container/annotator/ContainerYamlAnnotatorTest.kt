@@ -23,6 +23,10 @@ import org.hamcrest.collection.IsCollectionWithSize.hasSize
 import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
+import snyk.common.SeverityConstants.SEVERITY_CRITICAL
+import snyk.common.SeverityConstants.SEVERITY_HIGH
+import snyk.common.SeverityConstants.SEVERITY_LOW
+import snyk.common.SeverityConstants.SEVERITY_MEDIUM
 import snyk.container.BaseImageInfo
 import snyk.container.BaseImageRemediation
 import snyk.container.BaseImageRemediationInfo
@@ -108,25 +112,25 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test severity with at least one critical should return error`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_CRITICAL))
+        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_CRITICAL))
         assertEquals(HighlightSeverity.ERROR.javaClass, severity.javaClass)
     }
 
     @Test
     fun `test severity with at least one high should return warning`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_HIGH))
+        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_HIGH))
         assertEquals(HighlightSeverity.WARNING.javaClass, severity.javaClass)
     }
 
     @Test
     fun `test severity with at least one medium should return weak warning`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_MEDIUM))
+        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_MEDIUM))
         assertEquals(HighlightSeverity.WEAK_WARNING.javaClass, severity.javaClass)
     }
 
     @Test
     fun `test severity with at least one low should return info`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_LOW))
+        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_LOW))
         assertEquals(HighlightSeverity.INFORMATION.javaClass, severity.javaClass)
     }
 
@@ -147,7 +151,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test annotation message should display vulnerability count 1 for severity critical and remediation`() {
         val expected = "Snyk found 1 vulnerability. Upgrade image to a newer version"
-        val image = createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_CRITICAL)
+        val image = createContainerImageForIssuesWithSeverity(SEVERITY_CRITICAL)
             .copy(baseImageRemediationInfo = dummyBaseRemediationInfo())
 
         val actual = cut.annotationMessage(image)
@@ -160,7 +164,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         val expected = "Snyk found 1 vulnerability. "
 
         val actual =
-            cut.annotationMessage(createContainerImageForIssuesWithSeverity(ContainerYamlAnnotator.SEVERITY_LOW))
+            cut.annotationMessage(createContainerImageForIssuesWithSeverity(SEVERITY_LOW))
 
         assertEquals(expected, actual)
     }
@@ -235,7 +239,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     }
 
     private fun createContainerImageForIssuesWithSeverity(
-        severity: String = ContainerYamlAnnotator.SEVERITY_CRITICAL
+        severity: String = SEVERITY_CRITICAL
     ): ContainerIssuesForImage {
         val containerIssue = ContainerIssue("", "", "", severity, packageManager = "npm", from = emptyList())
         val vulnerabilities = listOf(containerIssue, containerIssue.copy()) // force the tests to filter duplicates
