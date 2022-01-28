@@ -49,17 +49,6 @@ class CliAdapterTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testBuildCliCommandsListWithCustomEndpointParameter() {
-        setupDummyCliFile()
-
-        pluginSettings().customEndpointUrl = "https://app.snyk.io/api"
-
-        val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
-
-        assertTrue(defaultCommands.contains("--API=https://app.snyk.io/api"))
-    }
-
-    @Test
     fun testBuildCliCommandsListWithInsecureParameter() {
         setupDummyCliFile()
 

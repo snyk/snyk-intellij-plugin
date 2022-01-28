@@ -51,11 +51,6 @@ abstract class CliAdapter<R>(val project: Project) {
         commands.add(getCliCommandPath())
         commands.addAll(cmds)
 
-        val customEndpoint = settings.customEndpointUrl
-        if (customEndpoint != null && customEndpoint.isNotEmpty()) {
-            commands.add("--API=$customEndpoint")
-        }
-
         if (settings.ignoreUnknownCA) {
             commands.add("--insecure")
         }
