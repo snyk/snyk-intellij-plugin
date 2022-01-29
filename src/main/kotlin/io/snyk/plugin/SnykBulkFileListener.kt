@@ -165,8 +165,7 @@ class SnykBulkFileListener : BulkFileListener {
     ) {
         if (virtualFilesAffected.isEmpty()) return
         val toolWindowPanel = getSnykToolWindowPanel(project)
-        val iacFiles = toolWindowPanel?.currentIacResult?.allCliIssues
-        if (iacFiles == null || iacFiles.isEmpty()) return
+        val iacFiles = toolWindowPanel?.currentIacResult?.allCliIssues ?: return
 
         var changed = false
 
@@ -186,8 +185,8 @@ class SnykBulkFileListener : BulkFileListener {
 
         if (changed) {
             val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
+            newIacCache.iacScanNeeded = true
             toolWindowPanel.currentIacResult = newIacCache
-            toolWindowPanel.iacScanNeeded = true
             ApplicationManager.getApplication().invokeLater {
                 toolWindowPanel.displayIacResults(newIacCache)
             }

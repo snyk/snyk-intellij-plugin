@@ -94,7 +94,6 @@ import javax.swing.tree.TreePath
  */
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
-    var iacScanNeeded: Boolean = false
     var snykScanListener: SnykScanListener
     private val scrollPaneAlarm = Alarm()
     private var descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
@@ -174,7 +173,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             override fun scanningIacFinished(iacResult: IacResult) {
                 currentIacResult = iacResult
-                iacScanNeeded = false
                 ApplicationManager.getApplication().invokeLater {
                     displayIacResults(iacResult)
                 }
@@ -254,7 +252,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             override fun scanningIacError(snykError: SnykError) {
                 currentIacResult = null
-                iacScanNeeded = false
                 var iacResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
                     currentIacError = if (snykError.message.startsWith(NO_IAC_FILES)) {
@@ -556,7 +553,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentSnykCodeError = null
         currentIacResult = null
         currentIacError = null
-        iacScanNeeded = true
         currentContainerResult = null
         currentContainerError = null
         AnalysisData.instance.resetCachesAndTasks(project)
