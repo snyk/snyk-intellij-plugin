@@ -20,6 +20,7 @@ import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
@@ -54,6 +55,22 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         resetSettings(project)
         removeDummyCliFile()
         super.tearDown()
+    }
+
+    @Test
+    fun testSetupCliEnvironmentVariablesWithCustomEndpoint() {
+        val oldEndpoint = pluginSettings().customEndpointUrl
+        try {
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedEndpoint = "https://customerTestEndpoint"
+            pluginSettings().customEndpointUrl = expectedEndpoint
+
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine,"")
+
+            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+        } finally {
+            pluginSettings().customEndpointUrl = oldEndpoint
+        }
     }
 
     @Test

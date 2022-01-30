@@ -12,6 +12,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
@@ -85,15 +86,18 @@ open class ConsoleCommandRunner {
     /**
      * Setup environment variables for CLI.
      */
-    fun setupCliEnvironmentVariables(generalCommandLine: GeneralCommandLine, apiToken: String) {
+    fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
         if (apiToken.isNotEmpty()) {
-            generalCommandLine.environment["SNYK_TOKEN"] = apiToken
+            commandLine.environment["SNYK_TOKEN"] = apiToken
         }
-
-        generalCommandLine.environment["SNYK_INTEGRATION_NAME"] = pluginInfo.integrationName
-        generalCommandLine.environment["SNYK_INTEGRATION_VERSION"] = pluginInfo.integrationVersion
-        generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment
-        generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"] = pluginInfo.integrationEnvironmentVersion
+        val customEndpoint = pluginSettings().customEndpointUrl
+        if (customEndpoint != null && customEndpoint.isNotEmpty()) {
+            commandLine.environment["SNYK_API"] = customEndpoint
+        }
+        commandLine.environment["SNYK_INTEGRATION_NAME"] = pluginInfo.integrationName
+        commandLine.environment["SNYK_INTEGRATION_VERSION"] = pluginInfo.integrationVersion
+        commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment
+        commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"] = pluginInfo.integrationEnvironmentVersion
     }
 
     companion object {
