@@ -104,10 +104,13 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
 
         myFixture.configureByText(file, "some text")
 
-        await().atMost(2, TimeUnit.SECONDS).until { cacheUpdated(filePath) }
+        await().atMost(2, TimeUnit.SECONDS).until { cacheInvalidatedForFilePath(filePath) }
     }
 
-    private fun cacheUpdated(filePath: String?): Boolean {
+    /**
+     * `filePath == null` is the case when we want to check if _any_ IaC file with issues been marked as obsolete
+     */
+    private fun cacheInvalidatedForFilePath(filePath: String?): Boolean {
         val iacCachedIssues = project.service<SnykToolWindowPanel>().currentIacResult!!.allCliIssues!!
         return iacCachedIssues.any { iacFile ->
             (filePath == null || iacFile.targetFilePath == filePath) && iacFile.obsolete
@@ -137,7 +140,10 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         myFixture.addFileToProject("new.yaml", "some text")
 
         assertTrue(isIacUpdateNeeded())
-        assertFalse(cacheUpdated(null))
+        assertFalse(
+            "None of IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(null)
+        )
     }
 
     @Test
@@ -153,7 +159,10 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         }
 
         assertTrue(isIacUpdateNeeded())
-        assertFalse(cacheUpdated(null))
+        assertFalse(
+            "None of IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(null)
+        )
     }
 
     @Test
@@ -167,12 +176,14 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
 
         ApplicationManager.getApplication().runWriteAction {
             val moveToDirVirtualFile = originalFile.virtualFile.parent.createChildDirectory(null, "subdir")
-            require(moveToDirVirtualFile != null)
             originalFile.virtualFile.move(null, moveToDirVirtualFile)
         }
 
         assertTrue(isIacUpdateNeeded())
-        assertTrue(cacheUpdated(originalFilePath))
+        assertTrue(
+            "Moved IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(originalFilePath)
+        )
     }
 
     @Test
@@ -188,7 +199,10 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         }
 
         assertTrue(isIacUpdateNeeded())
-        assertTrue(cacheUpdated(originalFile.virtualFile.path))
+        assertTrue(
+            "Deleted IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(originalFile.virtualFile.path)
+        )
     }
 
     @Test

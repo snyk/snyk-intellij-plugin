@@ -1,5 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.13]
+
+### Fixed
+
+- caches update and cleaning
+
 ## [2.4.12]
 
 ### Fixed
