@@ -2,9 +2,9 @@ package io.snyk.plugin
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.progress.runBackgroundableTask
-import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.FileUtil.pathsEqual
 import com.intellij.openapi.vfs.VirtualFile
@@ -20,7 +20,6 @@ import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import okhttp3.internal.toImmutableList
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -28,6 +27,32 @@ import java.util.function.Predicate
 
 private val LOG = logger<SnykBulkFileListener>()
 
+/**
+ * For our caches we need following events for file: Create, Change, Delete
+ * Also in our caches we need next type of actions: _add_ _update_ _clean_
+ * Note: Current implementation meaning:
+ *  add - mark results as invalid anymore (i.e. next scan attempt should run scan and not use cache)
+ *  update - mark item(file) result as obsolete (i.e. next scan attempt should run scan and not use cache)
+ *  clean - mark item(file) result as obsolete (i.e. next scan attempt should run scan and not use cache)
+ *
+ * BulkFileListener provide next events: Create, ContentChange, Move, Copy, Delete
+ * Also in `before` state we have access to old files.
+ * While in `after` state we have access for new/updated files too (but old might not exist anymore)
+ *
+ * Next mapping/interpretation for BulkFileListener type of events should be used:
+ * Create
+ *  - addressed at `after` state, new file processed to _add_ caches
+ * ContentChange
+ *  - addressed at `after` state, new file processed to _update_ caches
+ * Move
+ *  - addressed at `before` state, old file processed to _clean_ caches
+ *  - addressed at `after` state, new file processed to _add_ caches
+ * Copy
+ *  - addressed at `after` state, new file processed to _add_ caches
+ * Delete
+ *  - addressed at `before` state, old file processed to _clean_ caches
+ *
+ */
 class SnykBulkFileListener : BulkFileListener {
 
     override fun after(events: MutableList<out VFileEvent>) {
@@ -69,11 +94,8 @@ class SnykBulkFileListener : BulkFileListener {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
-            // todo: clean Container cached results
-
             val virtualFilesAffected = getAffectedVirtualFiles(
                 events,
-                fileFilter = Predicate { true },
                 classesOfEventsToFilter = classesOfEventsToFilter
             )
 
@@ -123,43 +145,52 @@ class SnykBulkFileListener : BulkFileListener {
             }
             // clean .dcignore caches if needed
             SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
+
+            // clean IaC cached results for deleted/moved files
+            updateIacCache(
+                getAffectedVirtualFiles(
+                    events,
+                    classesOfEventsToFilter = listOf(VFileDeleteEvent::class.java, VFileMoveEvent::class.java)
+                ),
+                project
+            )
+
+            // todo: clean Container cached results for deleted/moved files
         }
     }
 
     private fun updateIacCache(
         virtualFilesAffected: Set<VirtualFile>,
-        toolWindowPanel: SnykToolWindowPanel
+        project: Project
     ) {
-        val iacCache = toolWindowPanel.currentIacResult
-        val iacFiles = iacCache?.allCliIssues ?: return
-        val project = toolWindowPanel.project
+        if (virtualFilesAffected.isEmpty()) return
+        val toolWindowPanel = getSnykToolWindowPanel(project)
+        val iacFiles = toolWindowPanel?.currentIacResult?.allCliIssues ?: return
 
-        runBackgroundableTask("Updating Snyk Infrastructure As Code Cache...", project, true) {
-            DumbService.getInstance(project).runReadActionInSmartMode {
-                var changed = false
+        var changed = false
 
-                val newIacFileList = iacFiles.toMutableList()
-                virtualFilesAffected
-                    .filter { iacFileExtensions.contains(it.extension) }
-                    .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
-                    .forEach {
-                        changed = true // for new files we need to "dirty" the cache, too
-                        newIacFileList.forEachIndexed { i, iacIssuesForFile ->
-                            if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
-                                val obsoleteIacFile = makeObsolete(iacIssuesForFile)
-                                newIacFileList[i] = obsoleteIacFile
-                            }
-                        }
+        val newIacFileList = iacFiles.toMutableList()
+        virtualFilesAffected
+            .filter { iacFileExtensions.contains(it.extension) }
+            .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
+            .forEach {
+                changed = true // for new files we need to "dirty" the cache, too
+                newIacFileList.forEachIndexed { i, iacIssuesForFile ->
+                    if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
+                        val obsoleteIacFile = makeObsolete(iacIssuesForFile)
+                        newIacFileList[i] = obsoleteIacFile
                     }
-
-                if (changed) {
-                    val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
-                    toolWindowPanel.currentIacResult = newIacCache
-                    toolWindowPanel.displayIacResults(newIacCache)
-                    toolWindowPanel.iacScanNeeded = true
-                    DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
                 }
             }
+
+        if (changed) {
+            val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
+            newIacCache.iacScanNeeded = true
+            toolWindowPanel.currentIacResult = newIacCache
+            ApplicationManager.getApplication().invokeLater {
+                toolWindowPanel.displayIacResults(newIacCache)
+            }
+            DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
         }
     }
 
@@ -175,30 +206,35 @@ class SnykBulkFileListener : BulkFileListener {
 
             val virtualFilesAffected = getAffectedVirtualFiles(
                 events,
-                fileFilter = Predicate { true },
+                eventToVirtualFileTransformer = {
+                    when (it) {
+                        is VFileCopyEvent -> it.findCreatedFile()
+                        is VFileMoveEvent -> if (it.newParent.isValid) it.newParent.findChild(it.file.name) else null
+                        else -> it.file
+                    }
+                },
                 classesOfEventsToFilter = classesOfEventsToFilter
             )
 
             // update IaC cached results if needed
-            val toolWindowPanel = getSnykToolWindowPanel(project)
-            val allCliIssues = toolWindowPanel?.currentIacResult?.allCliIssues
-            if (allCliIssues != null && allCliIssues.isNotEmpty()) {
-                updateIacCache(virtualFilesAffected, toolWindowPanel)
-            }
+            updateIacCache(virtualFilesAffected, project)
 
             // update .dcignore caches if needed
             SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
+
+            //todo: update Container cached results if needed
         }
     }
 
     private fun getAffectedVirtualFiles(
         events: List<VFileEvent>,
-        fileFilter: Predicate<VirtualFile>,
+        eventToVirtualFileTransformer: (VFileEvent) -> VirtualFile? = { it.file },
+        fileFilter: Predicate<VirtualFile> = Predicate { true },
         classesOfEventsToFilter: Collection<Class<*>>
     ): Set<VirtualFile> {
         return events.asSequence()
             .filter { event -> instanceOf(event, classesOfEventsToFilter) }
-            .mapNotNull(VFileEvent::getFile)
+            .mapNotNull(eventToVirtualFileTransformer)
             .filter(fileFilter::test)
             .toSet()
     }

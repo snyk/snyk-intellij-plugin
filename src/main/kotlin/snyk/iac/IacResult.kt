@@ -8,6 +8,8 @@ class IacResult(
     error: SnykError?
 ) : CliResult<IacIssuesForFile>(allIacVulnerabilities, error) {
 
+    var iacScanNeeded: Boolean = false
+
     override val issuesCount get() = allCliIssues?.sumBy { it.uniqueCount }
 
     override fun countBySeverity(severity: String): Int? {

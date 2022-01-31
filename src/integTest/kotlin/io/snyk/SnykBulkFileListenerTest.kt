@@ -27,7 +27,6 @@ import snyk.oss.OssResult
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
 @Suppress("FunctionName")
@@ -101,6 +100,27 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     fun testCurrentIacResults_shouldDropCachedResult_whenIacSupportedFileChanged() {
         val file = "k8s-deployment.yaml"
         val filePath = "/src/$file"
+        createFakeIacResultInCache(file, filePath)
+
+        myFixture.configureByText(file, "some text")
+
+        await().atMost(2, TimeUnit.SECONDS).until { cacheInvalidatedForFilePath(filePath) }
+    }
+
+    /**
+     * `filePath == null` is the case when we want to check if _any_ IaC file with issues been marked as obsolete
+     */
+    private fun cacheInvalidatedForFilePath(filePath: String?): Boolean {
+        val iacCachedIssues = project.service<SnykToolWindowPanel>().currentIacResult!!.allCliIssues!!
+        return iacCachedIssues.any { iacFile ->
+            (filePath == null || iacFile.targetFilePath == filePath) && iacFile.obsolete
+        }
+    }
+
+    private fun isIacUpdateNeeded(): Boolean =
+        project.service<SnykToolWindowPanel>().currentIacResult?.iacScanNeeded ?: true
+
+    private fun createFakeIacResultInCache(file: String, filePath: String) {
         val iacIssuesForFile = IacIssuesForFile(emptyList(), file, filePath, "npm")
         val iacVulnerabilities = listOf(iacIssuesForFile)
         val fakeIacResult = IacResult(iacVulnerabilities, null)
@@ -108,20 +128,81 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         toolWindowPanel.currentIacResult = fakeIacResult
         val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
         rootIacIssuesTreeNode.add(IacFileTreeNode(iacIssuesForFile, project))
-
-        myFixture.configureByText(file, "some text")
-
-        await().atMost(2, TimeUnit.SECONDS).until(cacheUpdated(toolWindowPanel, filePath))
     }
 
-    private fun cacheUpdated(toolWindowPanel: SnykToolWindowPanel, filePath: String): Callable<Boolean> {
-        return Callable {
-            val iacCache = toolWindowPanel.currentIacResult
-            val found =
-                iacCache!!.allCliIssues!!
-                    .firstOrNull { iacFile -> iacFile.targetFilePath == filePath && iacFile.obsolete }
-            return@Callable found != null
+    @Test
+    fun `test current IacResults should mark IacScanNeeded when IaC supported file CREATED`() {
+        val existingFile = "existing.yaml"
+        createFakeIacResultInCache(existingFile, "/src/$existingFile")
+
+        assertFalse(isIacUpdateNeeded())
+
+        myFixture.addFileToProject("new.yaml", "some text")
+
+        assertTrue(isIacUpdateNeeded())
+        assertFalse(
+            "None of IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(null)
+        )
+    }
+
+    @Test
+    fun `test current IacResults should mark IacScanNeeded when IaC supported file COPIED`() {
+        val originalFileName = "existing.yaml"
+        val originalFile = myFixture.addFileToProject(originalFileName, "some text")
+        createFakeIacResultInCache(originalFileName, originalFile.virtualFile.path)
+
+        assertFalse(isIacUpdateNeeded())
+
+        ApplicationManager.getApplication().runWriteAction {
+            originalFile.virtualFile.copy(null, originalFile.virtualFile.parent, "copied.yaml")
         }
+
+        assertTrue(isIacUpdateNeeded())
+        assertFalse(
+            "None of IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(null)
+        )
+    }
+
+    @Test
+    fun `test current IacResults should drop cache and mark IacScanNeeded when IaC supported file MOVED`() {
+        val originalFileName = "existing.yaml"
+        val originalFile = myFixture.addFileToProject(originalFileName, "some text")
+        val originalFilePath = originalFile.virtualFile.path
+        createFakeIacResultInCache(originalFileName, originalFilePath)
+
+        assertFalse(isIacUpdateNeeded())
+
+        ApplicationManager.getApplication().runWriteAction {
+            val moveToDirVirtualFile = originalFile.virtualFile.parent.createChildDirectory(null, "subdir")
+            originalFile.virtualFile.move(null, moveToDirVirtualFile)
+        }
+
+        assertTrue(isIacUpdateNeeded())
+        assertTrue(
+            "Moved IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(originalFilePath)
+        )
+    }
+
+    @Test
+    fun `test current IacResults should drop cache and mark IacScanNeeded when IaC supported file DELETED`() {
+        val originalFileName = "existing.yaml"
+        val originalFile = myFixture.addFileToProject(originalFileName, "some text")
+        createFakeIacResultInCache(originalFileName, originalFile.virtualFile.path)
+
+        assertFalse(isIacUpdateNeeded())
+
+        ApplicationManager.getApplication().runWriteAction {
+            originalFile.virtualFile.delete(null)
+        }
+
+        assertTrue(isIacUpdateNeeded())
+        assertTrue(
+            "Deleted IaC file with issues should been marked as obsolete here",
+            cacheInvalidatedForFilePath(originalFile.virtualFile.path)
+        )
     }
 
     @Test
@@ -151,15 +232,18 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         )
     }
 
-    @Test
-    fun `test should update image cache when yaml file is changed`() {
-        setUpContainerTest()
+    private fun createNewFileInProjectRoot(name: String): File {
         val projectPath = Paths.get(project.basePath!!)
         if (!projectPath.exists()) {
             projectPath.createDirectories()
         }
-        val path = Paths.get(project.basePath + File.separator + "kubernetes-test.yaml")
-        path.toFile().createNewFile()
+        return File(project.basePath + File.separator + name).apply { createNewFile() }
+    }
+
+    @Test
+    fun `test should update image cache when yaml file is changed`() {
+        setUpContainerTest()
+        val path = createNewFileInProjectRoot("kubernetes-test.yaml").toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
         val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
         require(virtualFile != null)
@@ -183,7 +267,7 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test should delete from cache when yaml file is deleted`() {
+    fun `test Container should delete images from cache when yaml file is deleted`() {
         setUpContainerTest()
         val file = myFixture.addFileToProject("kubernetes-test.yaml", "")
 

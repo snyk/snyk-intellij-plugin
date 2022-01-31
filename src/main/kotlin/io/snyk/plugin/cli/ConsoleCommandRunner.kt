@@ -52,7 +52,7 @@ open class ConsoleCommandRunner {
         processHandler.addProcessListener(object : ProcessAdapter() {
             override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                 if (firstLine) {
-                    logger.debug("Executing: \"${event.text}\"")
+                    logger.debug("Executing:\n${event.text}")
                     firstLine = false
                 }
                 outputConsumer(event.text)

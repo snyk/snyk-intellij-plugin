@@ -218,7 +218,7 @@ class SnykTaskQueueService(val project: Project) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return
                 val toolWindowPanel = getSnykToolWindowPanel(project) ?: return
-                if (toolWindowPanel.currentIacResult != null && !toolWindowPanel.iacScanNeeded) return
+                if (toolWindowPanel.currentIacResult?.iacScanNeeded == false) return
                 logger.debug("Starting IaC scan")
                 iacScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
