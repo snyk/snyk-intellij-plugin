@@ -5,6 +5,8 @@
 ### Fixed
 
 - caches update and cleaning
+- InvocationTargetException on project-less authentication
+- memory leak in Authentication panel
 
 ## [2.4.12]
 

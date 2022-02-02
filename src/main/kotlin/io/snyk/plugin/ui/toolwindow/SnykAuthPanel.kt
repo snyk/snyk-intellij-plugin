@@ -83,7 +83,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                 }
 
                 override fun cliDownloadFinished(succeed: Boolean) {
-                    authButton.isEnabled = true
+                    authButton.isEnabled = succeed
                 }
             })
     }

@@ -11,6 +11,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiDocumentManager
@@ -594,9 +595,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             settings.pluginFirstRun -> {
                 pluginSettings().pluginFirstRun = false
                 enableProductsAccordingToServerSetting()
-                getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
                 displayTreeAndDescriptionPanels()
-                triggerScan()
+                // don't trigger scan for Default project i.e. no project opened state
+                if (project.basePath != null) triggerScan()
             }
             else -> displayTreeAndDescriptionPanels()
         }
@@ -619,7 +620,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
         add(splitter, BorderLayout.CENTER)
         splitter.firstComponent = TreePanel(vulnerabilitiesTree)
-        splitter.secondComponent = SnykAuthPanel(project)
+        val authPanel = SnykAuthPanel(project)
+        Disposer.register(this, authPanel)
+        splitter.secondComponent = authPanel
         revalidate()
 
         service<SnykAnalyticsService>().logWelcomeIsViewed(
