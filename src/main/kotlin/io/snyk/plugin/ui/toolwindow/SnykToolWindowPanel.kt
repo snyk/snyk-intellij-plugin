@@ -571,7 +571,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ossResultsCount = NODE_INITIAL_STATE,
             securityIssuesCount = NODE_INITIAL_STATE,
             qualityIssuesCount = NODE_INITIAL_STATE,
-            iacResultsCount = NODE_INITIAL_STATE
+            iacResultsCount = NODE_INITIAL_STATE,
+            containerResultsCount = NODE_INITIAL_STATE
         )
         reloadTree()
 

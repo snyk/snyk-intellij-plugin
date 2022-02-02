@@ -33,18 +33,18 @@ class YAMLImageExtractorTest {
     fun `isKubernetesFile should return false if apiVersion and kind not set`() {
         var fakeYamlList = yamlList.toMutableList()
         fakeYamlList.removeAt(0)
-        assertFalse(YAMLImageExtractor.isKubernetes(fakeYamlList))
+        assertFalse(YAMLImageExtractor.isKubernetesFileContent(fakeYamlList))
 
         fakeYamlList = yamlList.toMutableList()
         fakeYamlList.removeAt(1)
-        assertFalse(YAMLImageExtractor.isKubernetes(fakeYamlList))
+        assertFalse(YAMLImageExtractor.isKubernetesFileContent(fakeYamlList))
 
         fakeYamlList.removeAt(0)
-        assertFalse(YAMLImageExtractor.isKubernetes(fakeYamlList))
+        assertFalse(YAMLImageExtractor.isKubernetesFileContent(fakeYamlList))
     }
 
     @Test
     fun `isKubernetesFile should return true if apiVersion and kind are set`() {
-        assertTrue(YAMLImageExtractor.isKubernetes(yamlList))
+        assertTrue(YAMLImageExtractor.isKubernetesFileContent(yamlList))
     }
 }

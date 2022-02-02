@@ -20,6 +20,7 @@ import org.awaitility.Awaitility.await
 import org.junit.Test
 import snyk.container.KubernetesImageCache
 import snyk.container.TestYamls
+import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import snyk.iac.ui.toolwindow.IacFileTreeNode
@@ -121,7 +122,13 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         project.service<SnykToolWindowPanel>().currentIacResult?.iacScanNeeded ?: true
 
     private fun createFakeIacResultInCache(file: String, filePath: String) {
-        val iacIssuesForFile = IacIssuesForFile(emptyList(), file, filePath, "npm")
+        val iacIssue = IacIssue(
+            id = "SNYK-CC-TF-74",
+            title = "Credentials are configured via provider attributes",
+            lineNumber = 1,
+            severity = "", publicId = "", documentation = "", issue = "", impact = ""
+        )
+        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), file, filePath, "npm")
         val iacVulnerabilities = listOf(iacIssuesForFile)
         val fakeIacResult = IacResult(iacVulnerabilities, null)
         val toolWindowPanel = project.service<SnykToolWindowPanel>()

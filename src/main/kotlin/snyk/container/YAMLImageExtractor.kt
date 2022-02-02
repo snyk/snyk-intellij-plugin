@@ -46,9 +46,13 @@ object YAMLImageExtractor {
     private fun getFileLines(psiFile: PsiFile) =
         psiFile.viewProvider.document?.text?.lines() ?: emptyList()
 
-    private fun isKubernetes(psiFile: PsiFile): Boolean = isKubernetes(getFileLines(psiFile))
+    fun isKubernetes(psiFile: PsiFile): Boolean =
+        isKubernetesFileExtension(psiFile) && isKubernetesFileContent(getFileLines(psiFile))
 
-    internal fun isKubernetes(lines: List<String>): Boolean {
+    private fun isKubernetesFileExtension(psiFile: PsiFile): Boolean =
+        psiFile.virtualFile.extension == "yaml"
+
+    internal fun isKubernetesFileContent(lines: List<String>): Boolean {
         val normalizedLines =
             lines
                 .map { line -> line.trim() }

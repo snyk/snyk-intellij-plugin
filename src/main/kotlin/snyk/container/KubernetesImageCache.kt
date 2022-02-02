@@ -53,6 +53,7 @@ class KubernetesImageCache(val project: Project) {
         }
     }
 
+    // todo: recheck logic here, also do we need to handle VFileMoveEvent too?
     fun extractFromEvents(events: MutableList<out VFileEvent>) {
         for (e in events) {
             val file = e.file ?: continue

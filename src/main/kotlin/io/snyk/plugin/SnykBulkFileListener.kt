@@ -21,6 +21,9 @@ import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import okhttp3.internal.toImmutableList
+import snyk.container.ContainerIssuesForImage
+import snyk.container.ContainerResult
+import snyk.container.YAMLImageExtractor
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import java.util.function.Predicate
@@ -72,6 +75,39 @@ class SnykBulkFileListener : BulkFileListener {
                     getKubernetesImageCache(project)?.extractFromEvents(events)
                 }
             }
+        }
+    }
+
+    private fun updateCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<out VFileEvent>>) {
+        for (project in ProjectUtil.getOpenProjects()) {
+            if (project.isDisposed) continue
+
+            val virtualFilesAffected = getAffectedVirtualFiles(
+                events,
+                eventToVirtualFileTransformer = {
+                    when (it) {
+                        is VFileCopyEvent -> it.findCreatedFile()
+                        is VFileMoveEvent -> if (it.newParent.isValid) it.newParent.findChild(it.file.name) else null
+                        else -> it.file
+                    }
+                },
+                classesOfEventsToFilter = classesOfEventsToFilter
+            )
+
+            // update IaC cached results if needed
+            updateIacCache(virtualFilesAffected, project)
+
+            // update .dcignore caches if needed
+            SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
+
+            // update Container cached results for Container related files
+            updateContainerCache(
+                containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
+                    val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
+                    YAMLImageExtractor.isKubernetes(psiFile)
+                },
+                project = project
+            )
         }
     }
 
@@ -146,18 +182,28 @@ class SnykBulkFileListener : BulkFileListener {
             // clean .dcignore caches if needed
             SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
 
+            val virtualFilesDeletedOrMoved = getAffectedVirtualFiles(
+                events,
+                classesOfEventsToFilter = listOf(VFileDeleteEvent::class.java, VFileMoveEvent::class.java)
+            )
             // clean IaC cached results for deleted/moved files
             updateIacCache(
-                getAffectedVirtualFiles(
-                    events,
-                    classesOfEventsToFilter = listOf(VFileDeleteEvent::class.java, VFileMoveEvent::class.java)
-                ),
+                virtualFilesDeletedOrMoved,
                 project
             )
-
-            // todo: clean Container cached results for deleted/moved files
+            // clean Container cached results for Container related deleted/moved files
+            val kubernetesWorkloadFilesFromCache =
+                getKubernetesImageCache(project)?.getKubernetesWorkloadFilesFromCache() ?: emptySet()
+            updateContainerCache(
+                containerRelatedVirtualFilesAffected = virtualFilesDeletedOrMoved.filter {
+                    kubernetesWorkloadFilesFromCache.contains(it)
+                },
+                project = project
+            )
         }
     }
+
+    /****************************** Common/Util methods **************************/
 
     private fun updateIacCache(
         virtualFilesAffected: Set<VirtualFile>,
@@ -194,37 +240,47 @@ class SnykBulkFileListener : BulkFileListener {
         }
     }
 
-    private fun makeObsolete(iacIssuesForFile: IacIssuesForFile): IacIssuesForFile {
-        val obsoleteIssueList = iacIssuesForFile.infrastructureAsCodeIssues
-            .map { elem -> elem.copy(obsolete = true) }.toList()
-        return iacIssuesForFile.copy(infrastructureAsCodeIssues = obsoleteIssueList, obsolete = true)
-    }
+    private fun makeObsolete(iacIssuesForFile: IacIssuesForFile): IacIssuesForFile =
+        iacIssuesForFile.copy(
+            infrastructureAsCodeIssues = iacIssuesForFile.infrastructureAsCodeIssues
+                .map { elem -> elem.copy(obsolete = true) }
+        )
 
-    private fun updateCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<out VFileEvent>>) {
-        for (project in ProjectUtil.getOpenProjects()) {
-            if (project.isDisposed) continue
+    private fun updateContainerCache(
+        containerRelatedVirtualFilesAffected: List<VirtualFile>,
+        project: Project
+    ) {
+        if (containerRelatedVirtualFilesAffected.isEmpty()) return
+        val toolWindowPanel = getSnykToolWindowPanel(project)
+        val containerIssuesForImages = toolWindowPanel?.currentContainerResult?.allCliIssues ?: return
 
-            val virtualFilesAffected = getAffectedVirtualFiles(
-                events,
-                eventToVirtualFileTransformer = {
-                    when (it) {
-                        is VFileCopyEvent -> it.findCreatedFile()
-                        is VFileMoveEvent -> if (it.newParent.isValid) it.newParent.findChild(it.file.name) else null
-                        else -> it.file
-                    }
-                },
-                classesOfEventsToFilter = classesOfEventsToFilter
-            )
+        val psiFilesAffected =
+            containerRelatedVirtualFilesAffected.mapNotNull { findPsiFileIgnoringExceptions(it, project) }
+        var changed = psiFilesAffected.isNotEmpty()
+        val newContainerIssuesForImagesList = containerIssuesForImages.map { issuesForImage ->
+            if (issuesForImage.workloadImages.any { psiFilesAffected.contains(it.psiFile) }) {
+                makeObsolete(issuesForImage)
+            } else {
+                issuesForImage
+            }
+        }
 
-            // update IaC cached results if needed
-            updateIacCache(virtualFilesAffected, project)
-
-            // update .dcignore caches if needed
-            SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
-
-            //todo: update Container cached results if needed
+        if (changed) {
+            val newContainerCache = ContainerResult(newContainerIssuesForImagesList, null)
+            newContainerCache.rescanNeeded = true
+            toolWindowPanel.currentContainerResult = newContainerCache
+            ApplicationManager.getApplication().invokeLater {
+                toolWindowPanel.displayContainerResults(newContainerCache)
+            }
+            DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
         }
     }
+
+    private fun makeObsolete(containerIssuesForImage: ContainerIssuesForImage): ContainerIssuesForImage =
+        containerIssuesForImage.copy(
+            vulnerabilities = containerIssuesForImage.vulnerabilities
+                .map { elem -> elem.copy(obsolete = true) }
+        )
 
     private fun getAffectedVirtualFiles(
         events: List<VFileEvent>,
