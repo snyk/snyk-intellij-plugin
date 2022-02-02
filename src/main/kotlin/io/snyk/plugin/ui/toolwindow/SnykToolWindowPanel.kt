@@ -34,6 +34,7 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
+import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
@@ -101,14 +102,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     var currentOssResults: OssResult? = null
         get() = if (field?.isExpired() == false) field else null
+
     var currentOssError: SnykError? = null
 
     var currentContainerResult: ContainerResult? = null
         get() = if (field?.isExpired() == false) field else null
+
     var currentContainerError: SnykError? = null
 
     var currentIacResult: IacResult? = null
         get() = if (field?.isExpired() == false) field else null
+
     var currentIacError: SnykError? = null
 
     var currentSnykCodeError: SnykError? = null
@@ -149,6 +153,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 currentOssError = null
                 currentSnykCodeError = null
                 currentIacError = null
+                currentContainerError = null
                 ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
             }
 
@@ -556,8 +561,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentIacError = null
         currentContainerResult = null
         currentContainerError = null
+
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
+
+        if (isContainerEnabled()) {
+            getKubernetesImageCache(project)?.let {
+                it.clear()
+                it.scanProjectForKubernetesFiles()
+            }
+        }
+
         DaemonCodeAnalyzer.getInstance(project).restart()
 
         ApplicationManager.getApplication().invokeLater {
@@ -1057,7 +1071,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     ) {
         val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
 
-        displayEmptyDescription()
         reloadTreeNode(nodeToReload)
         userObjectsForExpandedChildren?.let {
             it.forEach { userObject ->
@@ -1069,7 +1082,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         } ?: expandRecursively(nodeToReload)
 
         selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
-        updateDescriptionPanelBySelectedTreeNode()
     }
 
     private fun reloadTreeNode(nodeToReload: DefaultMutableTreeNode) {

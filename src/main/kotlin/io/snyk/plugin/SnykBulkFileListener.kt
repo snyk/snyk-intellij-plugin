@@ -213,23 +213,22 @@ class SnykBulkFileListener : BulkFileListener {
         val toolWindowPanel = getSnykToolWindowPanel(project)
         val iacFiles = toolWindowPanel?.currentIacResult?.allCliIssues ?: return
 
-        var changed = false
-
         val newIacFileList = iacFiles.toMutableList()
-        virtualFilesAffected
+        val iacRelatedvirtualFilesAffected = virtualFilesAffected
             .filter { iacFileExtensions.contains(it.extension) }
             .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
-            .forEach {
-                changed = true // for new files we need to "dirty" the cache, too
-                newIacFileList.forEachIndexed { i, iacIssuesForFile ->
-                    if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
-                        val obsoleteIacFile = makeObsolete(iacIssuesForFile)
-                        newIacFileList[i] = obsoleteIacFile
-                    }
+        val changed = iacRelatedvirtualFilesAffected.isNotEmpty() // for new files we need to "dirty" the cache, too
+        iacRelatedvirtualFilesAffected.forEach {
+            newIacFileList.forEachIndexed { i, iacIssuesForFile ->
+                if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
+                    val obsoleteIacFile = makeObsolete(iacIssuesForFile)
+                    newIacFileList[i] = obsoleteIacFile
                 }
             }
+        }
 
         if (changed) {
+            LOG.debug("update IaC cache for $iacRelatedvirtualFilesAffected")
             val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
             newIacCache.iacScanNeeded = true
             toolWindowPanel.currentIacResult = newIacCache
@@ -251,12 +250,13 @@ class SnykBulkFileListener : BulkFileListener {
         project: Project
     ) {
         if (containerRelatedVirtualFilesAffected.isEmpty()) return
+        LOG.debug("update Container cache for $containerRelatedVirtualFilesAffected")
         val toolWindowPanel = getSnykToolWindowPanel(project)
         val containerIssuesForImages = toolWindowPanel?.currentContainerResult?.allCliIssues ?: return
 
         val psiFilesAffected =
             containerRelatedVirtualFilesAffected.mapNotNull { findPsiFileIgnoringExceptions(it, project) }
-        var changed = psiFilesAffected.isNotEmpty()
+        val changed = psiFilesAffected.isNotEmpty()
         val newContainerIssuesForImagesList = containerIssuesForImages.map { issuesForImage ->
             if (issuesForImage.workloadImages.any { psiFilesAffected.contains(it.psiFile) }) {
                 makeObsolete(issuesForImage)

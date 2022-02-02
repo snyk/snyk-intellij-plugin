@@ -125,6 +125,7 @@ class SnykTaskQueueService(val project: Project) {
                 containerScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
+                toolWindowPanel.currentContainerResult = null
                 val containerResult = try {
                     getContainerService(project)?.scan()
                 } finally {
