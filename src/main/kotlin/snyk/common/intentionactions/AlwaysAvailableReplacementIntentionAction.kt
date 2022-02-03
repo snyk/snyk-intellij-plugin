@@ -9,17 +9,16 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.FileContentUtil
 
+
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
     val replacementText: String,
-    private val intentionText: String = "Change to ",
-    private val familyName: String = "Snyk"
+    private val intentionText: String = intentionDefaultTextPrefix,
+    private val familyName: String = intentionDefaultFamilyName
 ) : IntentionAction {
-
     override fun startInWriteAction(): Boolean {
         return true
     }
-
     override fun getText(): String {
         return intentionText + replacementText
     }
@@ -39,6 +38,11 @@ class AlwaysAvailableReplacementIntentionAction(
             FileContentUtil.reparseOpenedFiles()
             DaemonCodeAnalyzer.getInstance(project).restart()
         }
+    }
+
+    companion object {
+        private const val intentionDefaultTextPrefix = "Change to "
+        private const val intentionDefaultFamilyName = "Snyk"
     }
 }
 
