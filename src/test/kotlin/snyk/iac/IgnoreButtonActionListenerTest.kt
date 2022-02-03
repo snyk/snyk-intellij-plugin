@@ -3,6 +3,8 @@ package snyk.iac
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.calcRelativeToProjectPath
+import com.intellij.psi.PsiFile
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -76,18 +78,27 @@ class IgnoreButtonActionListenerTest {
     }
 
     @Test
-    fun `task should use ignore service to ignore and then mark IacIssue as ignored and disable the button`() {
-        val task = IgnoreButtonActionListener.IgnoreTask(project, service, issue, null, event)
+    fun `task should use ignore service to ignore instance and mark issue as ignored and disable the button`() {
+        val mockPsiFile = mockk<PsiFile>(relaxed = true)
+        val task = IgnoreButtonActionListener.IgnoreTask(project, service, issue, mockPsiFile, event)
 
-        justRun { service.ignore(issue.id) }
+        justRun { service.ignoreInstance(issue.id, any()) }
+        mockkStatic("com.intellij.openapi.project.ProjectUtil")
+        val relativeFilePath = ".../test/test.yaml"
+        every { calcRelativeToProjectPath(any(), any()) } returns relativeFilePath
+        val sanitizedFilePath = relativeFilePath.replace(".../", "")
+        val path = "$sanitizedFilePath > test > segment2"
+        every { service.buildPath(any(), any()) } returns path
         every { event.source } returns button
-
         mockkStatic(ApplicationManager::class)
         justRun { ApplicationManager.getApplication().invokeLater(any()) }
 
         task.run(mockk())
 
-        verify(exactly = 1) { service.ignore(issue.id) }
+        verify(exactly = 1) {
+            service.buildPath(issue, sanitizedFilePath)
+            service.ignoreInstance(issue.id, path)
+        }
 
         assertEquals(IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT, button.text)
         assertFalse("Expected button to be disabled after ignore action", button.isEnabled)

@@ -4,15 +4,22 @@
 
 ### Fixed
 
-- caches update and cleaning
+- Caches update and cleaning
 - InvocationTargetException on project-less authentication
-- memory leak in Authentication panel
+- Memory leak in Authentication panel
+
+### Changed
+- Ignoring issues in Snyk IaC now ignores the instance of the issue instead of all instances of the issue type.
 
 ## [2.4.12]
 
 ### Fixed
 
 - align IaC description panel inner indentations
+
+### Changed
+- needs new Snyk CLI executable for ignore functionality
+- ignore issue now provides path to CLI instead of ignoring an issue project-wide 
 
 ## [2.4.11]
 
