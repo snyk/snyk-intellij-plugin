@@ -70,7 +70,20 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
         val range = mockRange(-1, Int.MAX_VALUE, -1, Int.MAX_VALUE)
         val issue = createSnykCodeResultWithIssues(range)[0]
         val expectedStart = 0
-        val expectedEnd = 243
+        val expectedEnd = 0
+        val expectedRange = TextRange(expectedStart, expectedEnd)
+
+        val actualRange = cut.textRange(psiFile, issue.ranges[0])
+
+        assertEquals(expectedRange, actualRange)
+    }
+
+    @Test
+    fun `test textRange should use document to determine boundary limits with startRow above document limit`() {
+        val range = mockRange(Int.MAX_VALUE, -1, Int.MAX_VALUE, Int.MAX_VALUE)
+        val issue = createSnykCodeResultWithIssues(range)[0]
+        val expectedStart = 0
+        val expectedEnd = 0
         val expectedRange = TextRange(expectedStart, expectedEnd)
 
         val actualRange = cut.textRange(psiFile, issue.ranges[0])

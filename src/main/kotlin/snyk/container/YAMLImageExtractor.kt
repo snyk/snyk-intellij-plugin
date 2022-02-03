@@ -8,7 +8,7 @@ import io.snyk.plugin.findPsiFileIgnoringExceptions
 
 object YAMLImageExtractor {
     private val logger = Logger.getInstance(javaClass.name)
-    private val imageRegEx = "(?<=image:)(\\s*[a-zA-Z0-9./\\-_]+)(:)?([a-zA-Z0-9./\\-_]+)?".toRegex()
+    private val imageRegEx = "(?<=([-\\s]image:))(\\s*[a-zA-Z0-9./\\-_]+)(:)?([a-zA-Z0-9./\\-_]+)?".toRegex()
 
     private fun extractImages(file: PsiFile): Set<KubernetesWorkloadImage> {
         return if (!isKubernetes(file)) emptySet() else extractImagesFromText(file)
@@ -39,7 +39,7 @@ object YAMLImageExtractor {
     fun extractFromFile(file: VirtualFile, project: Project): Set<KubernetesWorkloadImage> {
         val psiFile = findPsiFileIgnoringExceptions(file, project)
         if (psiFile == null || file.isDirectory || !file.isValid) {
-            logger.warn("no psi file found for ${file.path}")
+            logger.debug("no psi file found for ${file.path}")
             return emptySet()
         }
 

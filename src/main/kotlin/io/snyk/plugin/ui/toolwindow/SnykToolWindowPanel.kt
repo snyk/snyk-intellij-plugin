@@ -256,6 +256,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         updateTreeRootNodesPresentation(ossResultsCount)
                         displayEmptyDescription()
                     }
+                    refreshAnnotationsForOpenFiles(project)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -280,6 +281,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     removeAllChildren(listOf(rootIacIssuesTreeNode))
                     updateTreeRootNodesPresentation(iacResultsCount = iacResultsCount)
                     displayEmptyDescription()
+                    refreshAnnotationsForOpenFiles(project)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -298,6 +300,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     removeAllChildren(listOf(rootContainerIssuesTreeNode))
                     updateTreeRootNodesPresentation()
                     displayEmptyDescription()
+                    refreshAnnotationsForOpenFiles(project)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -315,6 +318,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     removeAllChildren(listOf(rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode))
                     updateTreeRootNodesPresentation()
                     displayEmptyDescription()
+                    refreshAnnotationsForOpenFiles(project)
                 }
                 logSnykCodeAnalysisIsReady(Result.ERROR)
             }
