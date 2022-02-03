@@ -74,7 +74,7 @@ class IgnoreServiceTest {
             getCliFile().absolutePath,
             "ignore",
             "--id=$issueId",
-            "--path='$path'"
+            "--path=$path"
         )
         val expectedOutput = ""
         val cut = IgnoreService(project)

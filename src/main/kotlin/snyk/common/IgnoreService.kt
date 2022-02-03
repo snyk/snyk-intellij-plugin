@@ -15,7 +15,7 @@ class IgnoreService(project: Project) : CliAdapter<CliResult>(project) {
     }
 
     fun ignoreInstance(issueId: String, path: String) {
-        val result = execute(listOf("ignore", "--id=$issueId", "--path='$path'"))
+        val result = execute(listOf("ignore", "--id=$issueId", "--path=$path"))
         if (result.exitCode > 0) {
             throw IgnoreException("Unexpected error (${result.exitCode}) when ignoring $issueId.")
         }
