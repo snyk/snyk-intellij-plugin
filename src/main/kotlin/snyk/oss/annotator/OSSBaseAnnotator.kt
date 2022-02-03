@@ -47,7 +47,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
         return ossResult?.allCliIssues
             ?.filter { AnnotatorHelper.isFileSupported(fileName) }
-            ?.firstOrNull { fileName.endsWith(it.displayTargetFile) }
+            ?.firstOrNull { fileName.endsWith(it.displayTargetFile.replace("-lock","")) }
     }
 
     open fun annotationMessage(vulnerability: Vulnerability): String {

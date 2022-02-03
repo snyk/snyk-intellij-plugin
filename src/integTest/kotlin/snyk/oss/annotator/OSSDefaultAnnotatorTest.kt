@@ -28,9 +28,9 @@ import java.nio.file.Paths
 class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
     private var cut = OSSDefaultAnnotator()
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
-    private val fileName = "build.gradle.kts"
+    private val fileName = "package.json"
     private val ossResult =
-        javaClass.classLoader.getResource("oss-test-results/oss-result-gradle-kts.json")!!.readText(Charsets.UTF_8)
+        javaClass.classLoader.getResource("oss-test-results/oss-result-package.json")!!.readText(Charsets.UTF_8)
 
     private lateinit var file: VirtualFile
     private lateinit var psiFile: PsiFile
@@ -84,7 +84,7 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
         val issues = cut.getIssuesForFile(psiFile)
 
         assertNotEquals(null, issues)
-        assertThat(issues!!.vulnerabilities, IsCollectionWithSize.hasSize(6))
+        assertThat(issues!!.vulnerabilities.distinctBy { it.id }, IsCollectionWithSize.hasSize(90))
     }
 
     @Test
@@ -100,8 +100,8 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
     fun `test textRange`() {
         val ossResult = createOssResultWithIssues()
         val issue = ossResult.allCliIssues!!.first().vulnerabilities[0]
-        val expectedStart = 1115
-        val expectedEnd = 1158
+        val expectedStart = 489
+        val expectedEnd = 505
         val expectedRange = TextRange(expectedStart, expectedEnd)
 
         val actualRange = cut.textRange(psiFile, issue)
@@ -128,10 +128,24 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
-        verify {
-            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
-        }
         verify(exactly = 0) { builderMock.withFix(any()) }
+    }
+
+    @Test
+    fun `test apply should not trigger if theres a dedicated annotator`() {
+        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
+        val result = createOssResultWithIssues()
+        every { toolWindowPanel.currentOssResults } returns result
+        val notToBeAnnotatedFile = myFixture.copyFileToProject("build.gradle.kts")
+        val notToBeAnnotatedPsiFile =
+            WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(notToBeAnnotatedFile)!! }
+
+        cut.apply(notToBeAnnotatedPsiFile, Unit, annotationHolderMock)
+
+        verify(exactly = 0) {
+            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
+            builderMock.withFix(any())
+        }
     }
 
     private fun createOssResultWithIssues(): OssResult =
