@@ -80,9 +80,16 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     open fun getFixVersion(remediation: OssVulnerabilitiesForFile.Remediation?, vulnerability: Vulnerability): String {
-        val upgradeKey = getIntroducingPackage(vulnerability) + "@" + getIntroducingPackageVersion(vulnerability)
-        val upgrade = remediation?.upgrade?.get(upgradeKey)
+        val upgrade = getUpgradeProposal(vulnerability, remediation)
         return upgrade?.upgradeTo?.split("@")?.get(1) ?: ""
+    }
+
+    open fun getUpgradeProposal(
+        vulnerability: Vulnerability,
+        remediation: OssVulnerabilitiesForFile.Remediation?
+    ): OssVulnerabilitiesForFile.Upgrade? {
+        val upgradeKey = getIntroducingPackage(vulnerability) + "@" + getIntroducingPackageVersion(vulnerability)
+        return remediation?.upgrade?.get(upgradeKey)
     }
 
     open fun textRange(psiFile: PsiFile, vulnerability: Vulnerability): TextRange {

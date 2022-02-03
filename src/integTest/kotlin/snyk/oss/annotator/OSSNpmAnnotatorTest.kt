@@ -1,18 +1,15 @@
 package snyk.oss.annotator
 
 import com.google.gson.Gson
-import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.patterns.uast.capture
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.replaceService
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.unmockkAll
@@ -103,7 +100,7 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
     fun `test textRange`() {
         val ossResult = createOssResultWithIssues()
         val issue = ossResult.allCliIssues!!.first().vulnerabilities[0]
-        val expectedStart = 167
+        val expectedStart = 156
         val expectedEnd = 174
         val expectedRange = TextRange(expectedStart, expectedEnd)
 

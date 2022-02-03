@@ -5,9 +5,11 @@ import com.intellij.json.psi.JsonStringLiteral
 import com.intellij.json.psi.impl.JsonRecursiveElementVisitor
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import com.intellij.psi.util.siblings
+import com.intellij.psi.PsiWhiteSpace
+import org.jetbrains.kotlin.psi.psiUtil.getNextSiblingIgnoringWhitespace
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
@@ -44,35 +46,31 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
         remediation: OssVulnerabilitiesForFile.Remediation?,
         vulnerability: Vulnerability
     ): String {
-        val fixVersion = super.getFixVersion(remediation, vulnerability)
-        return if (fixVersion.isNotBlank()) {
-            "\"$fixVersion\""
-        } else {
-            fixVersion
-        }
+        val upgrade = getUpgradeProposal(vulnerability, remediation)
+        val split = upgrade?.upgradeTo?.split("@") ?: return ""
+        return "\"${split[0]}\": \"${split[1]}\""
     }
 
     internal class NpmRecursiveVisitor(
-        private val packageName: String, private val artifactVersion: String
+        private val artifactName: String, private val artifactVersion: String
     ) : JsonRecursiveElementVisitor() {
 
         var foundTextRange: TextRange = TextRange.EMPTY_RANGE
 
         override fun visitElement(element: PsiElement) {
             if (isSearchedDependency(element)) {
-                val siblings = element.siblings()
-                siblings.forEach {
-                    if (it is JsonStringLiteral && it.value == artifactVersion) {
-                        this.foundTextRange = TextRange(it.textRange.startOffset, it.textRange.endOffset)
-                        return
-                    }
-                }
+                val value = element.getNextSiblingIgnoringWhitespace(false)
+                    ?.getNextSiblingIgnoringWhitespace(false) ?: return
+                this.foundTextRange = TextRange(element.textRange.startOffset, value.textRange.endOffset)
+                return
             }
             super.visitElement(element)
         }
 
         private fun isSearchedDependency(element: PsiElement): Boolean {
-            return element is JsonStringLiteral && element.value == packageName
+            return element !is PsiComment && element !is PsiWhiteSpace
+                && element is JsonStringLiteral
+                && element.value == artifactName
         }
     }
 }
