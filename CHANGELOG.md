@@ -2,6 +2,9 @@
 
 ## [2.4.13]
 
+### Changed
+- Use IntelliJ http(s) proxy settings for all remote connections
+
 ### Fixed
 
 - Caches update and cleaning
