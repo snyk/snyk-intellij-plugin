@@ -135,7 +135,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             null
         )
 
-        testRunFuture.get(5000, TimeUnit.MILLISECONDS)
+        testRunFuture.get(30000, TimeUnit.MILLISECONDS)
         // we have to stop CLI download process otherwise partially downloaded CLI file will be visible in other tests
         downloadIndicator?.cancel()
         while (snykCliDownloaderService.isCliDownloading()) {
