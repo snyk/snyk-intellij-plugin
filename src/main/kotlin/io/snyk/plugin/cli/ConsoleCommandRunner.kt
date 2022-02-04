@@ -10,6 +10,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.util.net.HttpConfigurable
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
@@ -98,6 +99,10 @@ open class ConsoleCommandRunner {
         commandLine.environment["SNYK_INTEGRATION_VERSION"] = pluginInfo.integrationVersion
         commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment
         commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"] = pluginInfo.integrationEnvironmentVersion
+        val proxySettings = HttpConfigurable.getInstance()
+        if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxySettings.PROXY_HOST.isNotEmpty()) {
+            commandLine.environment["https_proxy"] = "http://${proxySettings.PROXY_HOST}:${proxySettings.PROXY_PORT}"
+        }
     }
 
     companion object {

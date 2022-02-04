@@ -11,6 +11,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.impl.CoreProgressManager
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatformTestCase
+import com.intellij.util.net.HttpConfigurable
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
@@ -65,11 +66,35 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             val expectedEndpoint = "https://customerTestEndpoint"
             pluginSettings().customEndpointUrl = expectedEndpoint
 
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine,"")
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
             assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
         } finally {
             pluginSettings().customEndpointUrl = oldEndpoint
+        }
+    }
+
+    @Test
+    fun testSetupCliEnvironmentVariablesWithProxy() {
+        val httpConfigurable = HttpConfigurable.getInstance()
+        val originalProxyHost = httpConfigurable.PROXY_HOST
+        val originalProxyPort = httpConfigurable.PROXY_PORT
+        val originalUseProxy = httpConfigurable.USE_HTTP_PROXY
+        try {
+            httpConfigurable.PROXY_PORT = 3128
+            httpConfigurable.PROXY_HOST = "testProxy"
+            httpConfigurable.USE_HTTP_PROXY = true
+
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedProxy = "http://testProxy:3128"
+
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+            assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
+        } finally {
+            httpConfigurable.USE_HTTP_PROXY = originalUseProxy
+            httpConfigurable.PROXY_HOST = originalProxyHost
+            httpConfigurable.PROXY_PORT = originalProxyPort
         }
     }
 
