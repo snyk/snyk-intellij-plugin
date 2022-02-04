@@ -15,35 +15,14 @@ jobs:
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1
 
-  testWindows:
-    name: Test Windows
-    needs: gradleValidation
-    runs-on: windows-latest
-    steps:
-      - name: Fetch Sources
-        uses: actions/checkout@v2
-
-      - name: Setup Java
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-
-      - name: Setup Gradle Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-
-      - name: Run Tests
-        run: ./gradlew clean check -x detekt
-
   test:
     name: Test
     needs: gradleValidation
-    runs-on: ubuntu-18.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
