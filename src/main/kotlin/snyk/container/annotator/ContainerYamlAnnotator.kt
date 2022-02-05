@@ -8,6 +8,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykToolWindowPanel
 import snyk.container.ContainerIssuesForImage
@@ -21,8 +22,10 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     // save all changes on disk to update caches through SnykBulkFileListener
     override fun doAnnotate(collectedInfo: PsiFile?) {
         logger.debug("doAnnotate on ${collectedInfo?.name}")
+        val psiFile = collectedInfo ?: return
+        val document = PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile) ?: return
         ApplicationManager.getApplication().invokeAndWait {
-            FileDocumentManager.getInstance().saveAllDocuments()
+            FileDocumentManager.getInstance().saveDocument(document)
         }
     }
 
