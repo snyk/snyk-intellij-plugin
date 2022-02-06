@@ -101,13 +101,15 @@ class SnykBulkFileListener : BulkFileListener {
             SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
 
             // update Container cached results for Container related files
-            updateContainerCache(
-                containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
-                    val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
-                    YAMLImageExtractor.isKubernetes(psiFile)
-                },
-                project = project
-            )
+            if (isContainerEnabled()) {
+                updateContainerCache(
+                    containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
+                        val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
+                        YAMLImageExtractor.isKubernetes(psiFile)
+                    },
+                    project = project
+                )
+            }
         }
     }
 
@@ -192,14 +194,16 @@ class SnykBulkFileListener : BulkFileListener {
                 project
             )
             // clean Container cached results for Container related deleted/moved files
-            val kubernetesWorkloadFilesFromCache =
-                getKubernetesImageCache(project)?.getKubernetesWorkloadFilesFromCache() ?: emptySet()
-            updateContainerCache(
-                containerRelatedVirtualFilesAffected = virtualFilesDeletedOrMoved.filter {
-                    kubernetesWorkloadFilesFromCache.contains(it)
-                },
-                project = project
-            )
+            if (isContainerEnabled()) {
+                val kubernetesWorkloadFilesFromCache =
+                    getKubernetesImageCache(project)?.getKubernetesWorkloadFilesFromCache() ?: emptySet()
+                updateContainerCache(
+                    containerRelatedVirtualFilesAffected = virtualFilesDeletedOrMoved.filter {
+                        kubernetesWorkloadFilesFromCache.contains(it)
+                    },
+                    project = project
+                )
+            }
         }
     }
 
