@@ -108,8 +108,8 @@ open class ConsoleCommandRunner {
                     proxySettings.getPromptedAuthentication(proxyHost, "Snyk: Please enter your proxy password")
                 authentication = auth.userName + ":" + String(auth.password) + "@"
             }
+            commandLine.environment["http_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
             commandLine.environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
-
         }
     }
 
