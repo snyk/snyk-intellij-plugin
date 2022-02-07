@@ -100,8 +100,16 @@ open class ConsoleCommandRunner {
         commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment
         commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"] = pluginInfo.integrationEnvironmentVersion
         val proxySettings = HttpConfigurable.getInstance()
-        if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxySettings.PROXY_HOST.isNotEmpty()) {
-            commandLine.environment["https_proxy"] = "http://${proxySettings.PROXY_HOST}:${proxySettings.PROXY_PORT}"
+        val proxyHost = proxySettings.PROXY_HOST
+        if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxyHost.isNotEmpty()) {
+            var authentication = ""
+            if (proxySettings.PROXY_AUTHENTICATION) {
+                val auth =
+                    proxySettings.getPromptedAuthentication(proxyHost, "Snyk: Please enter your proxy password")
+                authentication = auth.userName + ":" + String(auth.password) + "@"
+            }
+            commandLine.environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
+
         }
     }
 

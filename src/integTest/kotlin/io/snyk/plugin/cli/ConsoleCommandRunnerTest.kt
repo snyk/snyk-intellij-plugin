@@ -75,7 +75,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testSetupCliEnvironmentVariablesWithProxy() {
+    fun testSetupCliEnvironmentVariablesWithProxyWithoutAuth() {
         val httpConfigurable = HttpConfigurable.getInstance()
         val originalProxyHost = httpConfigurable.PROXY_HOST
         val originalProxyPort = httpConfigurable.PROXY_PORT
@@ -95,6 +95,40 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             httpConfigurable.USE_HTTP_PROXY = originalUseProxy
             httpConfigurable.PROXY_HOST = originalProxyHost
             httpConfigurable.PROXY_PORT = originalProxyPort
+        }
+    }
+
+    @Test
+    fun testSetupCliEnvironmentVariablesWithProxyWithAuth() {
+        val httpConfigurable = HttpConfigurable.getInstance()
+        val originalProxyHost = httpConfigurable.PROXY_HOST
+        val originalProxyPort = httpConfigurable.PROXY_PORT
+        val originalUseProxy = httpConfigurable.USE_HTTP_PROXY
+        val originalProxyAuthentication = httpConfigurable.PROXY_AUTHENTICATION
+        val originalLogin = httpConfigurable.proxyLogin
+        val originalPassword = httpConfigurable.plainProxyPassword
+        try {
+            httpConfigurable.PROXY_PORT = 3128
+            httpConfigurable.PROXY_HOST = "testProxy"
+            httpConfigurable.USE_HTTP_PROXY = true
+            httpConfigurable.PROXY_AUTHENTICATION = true
+            httpConfigurable.proxyLogin = "testLogin"
+            httpConfigurable.plainProxyPassword = "testPassword"
+
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedProxy = "http://${httpConfigurable.proxyLogin}:${httpConfigurable.plainProxyPassword}@" +
+                "${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
+
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+            assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
+        } finally {
+            httpConfigurable.USE_HTTP_PROXY = originalUseProxy
+            httpConfigurable.PROXY_HOST = originalProxyHost
+            httpConfigurable.PROXY_PORT = originalProxyPort
+            httpConfigurable.PROXY_AUTHENTICATION = originalProxyAuthentication
+            httpConfigurable.proxyLogin = originalLogin
+            httpConfigurable.plainProxyPassword = originalPassword
         }
     }
 
