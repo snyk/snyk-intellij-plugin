@@ -17,19 +17,19 @@ fix advice:
 
 **Snyk detects the critical vulnerability Log4Shell, which was found in the open source Java library log4j-core - a component of one of the most popular Java logging frameworks, Log4J. The vulnerability was categorized as Critical with a CVSS score of 10, and with a mature exploit level.**
 
-### Proxy Setup
-If you are a behind a proxy, please configure the proxy in the IDE. Currently, http and https proxies are supported by the plugin.
-
-### Environment setup
-The plugin uses the Snyk CLI to perform vulnerability scans. In order for this to function correctly, 
-certain environment variables need to be set.
-
-1. `JAVA_HOME` to analyse Java JVM-based projects via Snyk CLI
-2. `PATH` to find maven when analysing Maven projects, to find python for python projects, etc
-
 ### Useful links
 
 - This plugin works with projects written in Java, JavaScript, .NET and many more languages. See the [full list of languages and package managers Snyk supports](https://snyk.co/ucWSd)
 - [Bug tracker](https://github.com/snyk/snyk-intellij-plugin/issues)
 
 <!-- Plugin description end -->
+
+### Proxy Setup
+If you are a behind a proxy, please configure the proxy in the IDE. Currently, http and https proxies are supported by the plugin.
+
+### Environment setup
+The plugin uses the Snyk CLI to perform vulnerability scans. In order for this to function correctly,
+certain environment variables need to be set.
+
+1. `JAVA_HOME` to analyse Java JVM-based projects via Snyk CLI
+2. `PATH` to find maven when analysing Maven projects, to find python for python projects, etc
