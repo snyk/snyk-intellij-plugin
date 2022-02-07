@@ -9,7 +9,7 @@ import snyk.oss.annotator.AnnotatorHelper.hasDedicatedAnnotator
 open class OSSDefaultAnnotator : OSSBaseAnnotator() {
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         // only trigger if no dedicated annotators available
-        if (hasDedicatedAnnotator(psiFile.virtualFile.presentableUrl)) return
+        if (hasDedicatedAnnotator(psiFile.virtualFile.path)) return
         super.apply(psiFile, annotationResult, holder)
     }
 

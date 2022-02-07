@@ -15,13 +15,13 @@ object AnnotatorHelper {
         }
     }
 
-    fun hasDedicatedAnnotator(fileName: String) =
-        fileName.endsWith("pom.xml") ||
-            fileName.endsWith("go.mod") ||
-            fileName.endsWith("build.gradle") ||
-            fileName.endsWith("build.gradle.kts")
+    fun hasDedicatedAnnotator(filePath: String) =
+        filePath.endsWith("pom.xml") ||
+            filePath.endsWith("go.mod") ||
+            filePath.endsWith("build.gradle") ||
+            filePath.endsWith("build.gradle.kts")
 
-    fun isFileSupported(fileName: String): Boolean =
+    fun isFileSupported(filePath: String): Boolean =
         listOf(
             "arn.lock",
             "package-lock.json",
@@ -47,5 +47,5 @@ object AnnotatorHelper {
             "poetry.lock",
             "mix.exs",
             "mix.lock"
-        ).stream().anyMatch { s -> fileName.toLowerCase().endsWith(s.toLowerCase()) }
+        ).any { filePath.toLowerCase().endsWith(it) }
 }

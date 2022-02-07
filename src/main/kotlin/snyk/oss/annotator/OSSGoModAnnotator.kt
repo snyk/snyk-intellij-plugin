@@ -6,7 +6,7 @@ import snyk.oss.Vulnerability
 
 class OSSGoModAnnotator : OSSBaseAnnotator() {
     override fun lineMatches(psiFile: PsiFile, line: String, vulnerability: Vulnerability): Boolean {
-        val fileName = psiFile.virtualFile.presentableUrl
+        val fileName = psiFile.virtualFile.path
         return fileName.endsWith("go.mod") && !line.endsWith("// indirect") &&
             super.lineMatches(psiFile, line, vulnerability)
     }

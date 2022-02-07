@@ -10,7 +10,6 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.FileContentUtil
 
-
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
     val replacementText: String,
@@ -33,7 +32,7 @@ class AlwaysAvailableReplacementIntentionAction(
     }
 
     override fun invoke(project: Project, editor: Editor?, file: PsiFile) {
-        val doc = editor!!.document
+        val doc = editor?.document ?: return
         WriteAction.run<RuntimeException> {
             doc.replaceString(range.startOffset, range.endOffset, replacementText)
             FileContentUtil.reparseOpenedFiles()

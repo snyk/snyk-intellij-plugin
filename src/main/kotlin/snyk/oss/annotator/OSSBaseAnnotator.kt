@@ -3,6 +3,8 @@ package snyk.oss.annotator
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
@@ -16,15 +18,23 @@ import kotlin.math.max
 abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile = file
-    override fun doAnnotate(collectedInfo: PsiFile?): Unit = Unit
+    override fun doAnnotate(psiFile: PsiFile?) {
+        val filePath = psiFile?.virtualFile?.path ?: return
+
+        if (AnnotatorHelper.isFileSupported(filePath)) {
+            val document = psiFile.viewProvider.document ?: return
+            ApplicationManager.getApplication().invokeAndWait {
+                FileDocumentManager.getInstance().saveDocument(document)
+            }
+        }
+    }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
-        val issues = getIssuesForFile(psiFile)
-        val remediation = issues?.remediation
+        val issues = getIssuesForFile(psiFile) ?: return
+        val remediation = issues.remediation
 
-        issues?.vulnerabilities
-            ?.distinctBy { it.id }
-            ?.forEach { vulnerability ->
+        issues.vulnerabilities
+            .forEach { vulnerability ->
                 if (vulnerability.ignored || vulnerability.obsolete) return@forEach
 
                 val severity = severity(vulnerability)
@@ -40,14 +50,14 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     open fun getIssuesForFile(psiFile: PsiFile): OssVulnerabilitiesForFile? {
-        val ossResult = getSnykToolWindowPanel(psiFile.project)?.currentOssResults
-        val fileName = psiFile.virtualFile.presentableUrl
+        val ossResult = getSnykToolWindowPanel(psiFile.project)?.currentOssResults ?: return null
+        val filePath = psiFile.virtualFile?.path ?: return null
+        !AnnotatorHelper.isFileSupported(filePath) && return null
 
         ProgressManager.checkCanceled()
 
-        return ossResult?.allCliIssues
-            ?.filter { AnnotatorHelper.isFileSupported(fileName) }
-            ?.firstOrNull { fileName.endsWith(it.displayTargetFile.replace("-lock","")) }
+        return ossResult.allCliIssues
+            ?.firstOrNull { filePath.endsWith(it.displayTargetFile.replace("-lock", "")) }
     }
 
     open fun annotationMessage(vulnerability: Vulnerability): String {
@@ -111,7 +121,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         max(0, line.indexOf(getIntroducingPackage(vulnerability)))
 
     open fun getIntroducingPackage(vulnerability: Vulnerability): String {
-        return if (vulnerability.from.isEmpty()) {
+        return if (hasNoIntroducingPackage(vulnerability)) {
             vulnerability.packageName
         } else {
             vulnerability.from[1].split("@")[0]
@@ -119,12 +129,15 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     open fun getIntroducingPackageVersion(vulnerability: Vulnerability): String {
-        return if (vulnerability.from.isEmpty()) {
+        return if (hasNoIntroducingPackage(vulnerability)) {
             vulnerability.version
         } else {
             vulnerability.from[1].split("@")[1]
         }
     }
+
+    private fun hasNoIntroducingPackage(vulnerability: Vulnerability) =
+        vulnerability.from.isEmpty() || vulnerability.from.size < 2
 
     open fun lineMatches(psiFile: PsiFile, line: String, vulnerability: Vulnerability): Boolean =
         line.contains(getIntroducingPackage(vulnerability))

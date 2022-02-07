@@ -20,7 +20,8 @@ class OSSMavenAnnotator : OSSBaseAnnotator() {
 
     override fun fixRange(psiFile: PsiFile, vulnerability: Vulnerability): TextRange {
         val textRange = super.textRange(psiFile, vulnerability)
-        val text = psiFile.viewProvider.document?.text!!
+        val text = psiFile.viewProvider.document?.text ?: return TextRange.EMPTY_RANGE // this should never happen
+
         val currentVersion = getIntroducingPackageVersion(vulnerability)
         val endOfDependencyBlock = text.substring(textRange.endOffset).indexOf("</dependency>")
         val searchedVersionLocation = text.substring(textRange.endOffset).indexOf(currentVersion)
