@@ -2,14 +2,15 @@
 
 ## [2.4.13]
 
+### Changed
+- Use IntelliJ http(s) proxy settings for all remote connections
+- Ignoring issues in Snyk IaC now ignores the instance of the issue instead of all instances of the issue type.
+
 ### Fixed
 
 - Caches update and cleaning
 - InvocationTargetException on project-less authentication
 - Memory leak in Authentication panel
-
-### Changed
-- Ignoring issues in Snyk IaC now ignores the instance of the issue instead of all instances of the issue type.
 
 ## [2.4.12]
 

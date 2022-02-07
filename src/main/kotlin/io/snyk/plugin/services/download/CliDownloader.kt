@@ -80,7 +80,7 @@ class CliDownloader {
     }
 
     fun expectedSha(): String {
-        val shaUrl = URL(String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName))
-        return shaUrl.readText(Charsets.UTF_8).split(" ")[0]
+        val url = String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName)
+        return HttpRequests.request(url).forceHttps(true).readString().split(" ")[0]
     }
 }

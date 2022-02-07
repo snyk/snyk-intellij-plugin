@@ -23,3 +23,13 @@ fix advice:
 - [Bug tracker](https://github.com/snyk/snyk-intellij-plugin/issues)
 
 <!-- Plugin description end -->
+
+### Proxy Setup
+If you are a behind a proxy, please configure the proxy in the IDE. Currently, http and https proxies are supported by the plugin.
+
+### Environment setup
+The plugin uses the Snyk CLI to perform vulnerability scans. In order for this to function correctly,
+certain environment variables need to be set.
+
+1. `JAVA_HOME` to analyse Java JVM-based projects via Snyk CLI
+2. `PATH` to find maven when analysing Maven projects, to find python for python projects, etc

@@ -43,7 +43,8 @@ class SnykCliDownloaderService {
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
         try {
-            val response = "v" + URL(CliDownloader.LATEST_RELEASES_URL).readText().removeSuffix("\n")
+            val result = HttpRequests.request(CliDownloader.LATEST_RELEASES_URL).readString()
+            val response = "v" + result.removeSuffix("\n")
             latestReleaseInfo = LatestReleaseInfo(
                 tagName = response,
                 url = "https://static.snyk.io/cli/latest/${Platform.current().snykWrapperFileName}",
