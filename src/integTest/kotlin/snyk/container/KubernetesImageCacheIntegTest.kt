@@ -32,8 +32,8 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
 
     @Test
     fun `extractFromFile should find yaml files and extract images`() {
-        val file = createFile(fileName, podYaml())
-        cut.extractFromFile(file.virtualFile)
+        val file = createFile(fileName, podYaml()).virtualFile
+        cut.extractFromFile(file)
         val images = cut.getKubernetesWorkloadImages()
 
         assertEquals(1, images.size)

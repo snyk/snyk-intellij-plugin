@@ -1,9 +1,9 @@
 package snyk.container.ui
 
 import com.intellij.ide.util.PsiNavigationSupport
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiFile
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -196,7 +196,7 @@ class BaseImageRemediationDetailPanel(
     private fun secondRowTitlePanel(): Component {
         val panel = JPanel()
 
-        val affectedFile2Line = targetImages.map { Pair(it.psiFile, it.lineNumber) }
+        val affectedFile2Line = targetImages.map { Pair(it.virtualFile, it.lineNumber) }
         val columnCount = 5 + affectedFile2Line.count()
         panel.layout = GridLayoutManager(1, columnCount, Insets(0, 0, 0, 0), 5, 0)
 
@@ -225,15 +225,15 @@ class BaseImageRemediationDetailPanel(
         return panel
     }
 
-    private fun navigateToTargetFile(file: PsiFile, line: Int) {
+    private fun navigateToTargetFile(file: VirtualFile, line: Int) {
         if (file.isValid) {
-            val document = PsiDocumentManager.getInstance(project).getDocument(file)
+            val document = FileDocumentManager.getInstance().getDocument(file)
             if (document != null) {
                 val lineNumber = if (0 <= line && line < document.lineCount) line else 0
                 val lineStartOffset = document.getLineStartOffset(lineNumber)
                 PsiNavigationSupport.getInstance().createNavigatable(
                     project,
-                    file.virtualFile,
+                    file,
                     lineStartOffset
                 ).navigate(false)
             }

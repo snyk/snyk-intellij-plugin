@@ -13,7 +13,7 @@ data class ContainerIssuesForImage(
     @Expose val workloadImages: List<KubernetesWorkloadImage> = emptyList()
 ) {
     val obsolete: Boolean get() = vulnerabilities.any { it.obsolete }
-    val ignored: Boolean get() =  vulnerabilities.all { it.ignored }
+    val ignored: Boolean get() = vulnerabilities.all { it.ignored }
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
 }
 

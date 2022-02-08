@@ -36,7 +36,6 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isContainerEnabled
@@ -468,14 +467,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val targetImage = project.service<KubernetesImageCache>()
                         .getKubernetesWorkloadImages()
                         .find { it.image == issuesForImage.imageName }
-                    val psiFile = targetImage?.psiFile
+                    val virtualFile = targetImage?.virtualFile
                     val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
-                    if (psiFile != null && psiFile.isValid && line != null) {
-                        val document = PsiDocumentManager.getInstance(project).getDocument(psiFile)
+                    if (virtualFile != null && virtualFile.isValid && line != null) {
+                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                         if (document != null) {
                             val lineNumber = if (0 <= line && line < document.lineCount) line else 0
                             val lineStartOffset = document.getLineStartOffset(lineNumber)
-                            navigateToSource(psiFile.virtualFile, lineStartOffset)
+                            navigateToSource(virtualFile, lineStartOffset)
                         }
                     }
                     // TODO: Add image click event logging ?

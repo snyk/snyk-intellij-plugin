@@ -97,12 +97,12 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
     fun `take all images from KubernetesImageCache and scan them using the CLI`() {
         // create KubernetesImageCache mock
         val cache = spyk(KubernetesImageCache(project))
-        val fakePsiFile = createFile("fake.file", "")
+        val fakeVirtualFile = createFile("fake.file", "").virtualFile
         every { cache.getKubernetesWorkloadImages() } returns
             setOf(
-                KubernetesWorkloadImage("debian", fakePsiFile),
-                KubernetesWorkloadImage("fake-image-name", fakePsiFile),
-                KubernetesWorkloadImage("nginx", fakePsiFile)
+                KubernetesWorkloadImage("debian", fakeVirtualFile),
+                KubernetesWorkloadImage("fake-image-name", fakeVirtualFile),
+                KubernetesWorkloadImage("nginx", fakeVirtualFile)
             )
         cut.setKubernetesImageCache(cache)
         // create CLI mock

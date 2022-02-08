@@ -33,7 +33,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val containerResult = getSnykToolWindowPanel(psiFile.project)?.currentContainerResult
         ProgressManager.checkCanceled()
         return containerResult?.allCliIssues
-            ?.filter { forImage -> forImage.workloadImages.find { it.psiFile == psiFile } != null }
+            ?.filter { forImage -> forImage.workloadImages.find { it.virtualFile == psiFile.virtualFile } != null }
             ?: emptyList()
     }
 
@@ -45,7 +45,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
             val severity = severity(forImage)
 
-            val workloadImage = forImage.workloadImages.first { it.psiFile == psiFile }
+            val workloadImage = forImage.workloadImages.first { it.virtualFile == psiFile.virtualFile }
             val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
             val annotationBuilder = holder.newAnnotation(severity, annotationMessage(forImage)).range(textRange)
             if (shouldAddQuickFix(forImage)) {

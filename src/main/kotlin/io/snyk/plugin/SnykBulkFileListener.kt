@@ -15,6 +15,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
+import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
@@ -26,7 +27,6 @@ import snyk.container.ContainerResult
 import snyk.container.YAMLImageExtractor
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
-import java.util.function.Predicate
 
 private val LOG = logger<SnykBulkFileListener>()
 
@@ -50,6 +50,9 @@ private val LOG = logger<SnykBulkFileListener>()
  * Move
  *  - addressed at `before` state, old file processed to _clean_ caches
  *  - addressed at `after` state, new file processed to _add_ caches
+ * Rename
+ *  - addressed at `before` state, old file processed to _clean_ caches
+ *  - addressed at `after` state, new file processed to _add_ caches
  * Copy
  *  - addressed at `after` state, new file processed to _add_ caches
  * Delete
@@ -58,64 +61,16 @@ private val LOG = logger<SnykBulkFileListener>()
  */
 class SnykBulkFileListener : BulkFileListener {
 
-    override fun after(events: MutableList<out VFileEvent>) {
-        if (isFileListenerEnabled()) {
-            updateCaches(
-                events,
-                listOf(
-                    VFileCreateEvent::class.java,
-                    VFileContentChangeEvent::class.java,
-                    VFileMoveEvent::class.java,
-                    VFileCopyEvent::class.java
-                )
-            )
+    /****************************** Before **************************/
 
-            if (isContainerEnabled()) {
-                for (project in ProjectUtil.getOpenProjects()) {
-                    getKubernetesImageCache(project)?.extractFromEvents(events)
-                }
-            }
-        }
-    }
+    override fun before(events: MutableList<out VFileEvent>) {
+        if (!isFileListenerEnabled()) return
 
-    private fun updateCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<out VFileEvent>>) {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
-            val virtualFilesAffected = getAffectedVirtualFiles(
-                events,
-                eventToVirtualFileTransformer = {
-                    when (it) {
-                        is VFileCopyEvent -> it.findCreatedFile()
-                        is VFileMoveEvent -> if (it.newParent.isValid) it.newParent.findChild(it.file.name) else null
-                        else -> it.file
-                    }
-                },
-                classesOfEventsToFilter = classesOfEventsToFilter
-            )
-
-            // update IaC cached results if needed
-            updateIacCache(virtualFilesAffected, project)
-
-            // update .dcignore caches if needed
-            SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
-
-            // update Container cached results for Container related files
-            if (isContainerEnabled()) {
-                updateContainerCache(
-                    containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
-                        val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
-                        YAMLImageExtractor.isKubernetes(psiFile)
-                    },
-                    project = project
-                )
-            }
-        }
-    }
-
-    override fun before(events: MutableList<out VFileEvent>) {
-        if (isFileListenerEnabled()) {
-            cleanCaches(
+            cleanOssAndSnykcodeCaches(
+                project,
                 events,
                 listOf(
                     VFileCreateEvent::class.java,
@@ -125,86 +80,161 @@ class SnykBulkFileListener : BulkFileListener {
                     VFileDeleteEvent::class.java
                 )
             )
+
+            val virtualFilesDeletedOrMovedOrRenamed = getAffectedVirtualFiles(
+                events,
+                classesOfEventsToFilter = listOf(
+                    VFileDeleteEvent::class.java,
+                    VFileMoveEvent::class.java,
+                    VFilePropertyChangeEvent::class.java
+                ),
+                eventsFilter = { (it as? VFilePropertyChangeEvent)?.isRename != false }
+            )
+            if (virtualFilesDeletedOrMovedOrRenamed.isEmpty()) return
+            // clean IaC cached results for deleted/moved/renamed files
+            updateIacCache(
+                virtualFilesDeletedOrMovedOrRenamed,
+                project
+            )
+            // clean Container cached results for Container related deleted/moved/renamed files
+            if (isContainerEnabled()) {
+                val imageCache = getKubernetesImageCache(project)
+                val kubernetesWorkloadFilesFromCache = imageCache?.getKubernetesWorkloadFilesFromCache() ?: emptySet()
+                val containerRelatedVirtualFilesAffected = virtualFilesDeletedOrMovedOrRenamed.filter {
+                    kubernetesWorkloadFilesFromCache.contains(it)
+                }
+                imageCache?.cleanCache(virtualFilesDeletedOrMovedOrRenamed)
+                updateContainerCache(containerRelatedVirtualFilesAffected, project)
+            }
         }
     }
 
-    private fun cleanCaches(events: List<VFileEvent>, classesOfEventsToFilter: Collection<Class<*>>) {
+    private fun cleanOssAndSnykcodeCaches(
+        project: Project,
+        events: List<VFileEvent>,
+        classesOfEventsToFilter: Collection<Class<*>>
+    ) {
+        val virtualFilesAffected = getAffectedVirtualFiles(
+            events,
+            classesOfEventsToFilter = classesOfEventsToFilter
+        )
+
+        val toolWindowPanel = getSnykToolWindowPanel(project)
+
+        // clean OSS cached results if needed
+        if (toolWindowPanel?.currentOssResults != null) {
+            val buildFileChanged = virtualFilesAffected
+                .filter { supportedBuildFiles.contains(it.name) }
+                .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
+            if (buildFileChanged != null) {
+                toolWindowPanel.currentOssResults = null
+                LOG.debug("OSS cached results dropped due to changes in: $buildFileChanged")
+            }
+        }
+
+        // if SnykCode analysis is running then re-run it (with updated files)
+        val supportedFileChanged = virtualFilesAffected
+            .filter { it.isValid }
+            .mapNotNull { findPsiFileIgnoringExceptions(it, project) }
+            .any { SnykCodeUtils.instance.isSupportedFileFormat(it) }
+        val isSnykCodeRunning = AnalysisData.instance.isUpdateAnalysisInProgress(project)
+
+        if (supportedFileChanged && isSnykCodeRunning) {
+            RunUtils.instance.rescanInBackgroundCancellableDelayed(project, 0, false, false)
+        }
+
+        // remove changed files from SnykCode cache
+        val allCachedFiles = AnalysisData.instance.getAllCachedFiles(project)
+        val filesToRemoveFromCache = allCachedFiles
+            .filter { cachedPsiFile ->
+                val vFile = (cachedPsiFile as PsiFile).virtualFile
+                vFile in virtualFilesAffected ||
+                    // Directory containing cached file is deleted/moved
+                    virtualFilesAffected.any { it.isDirectory && vFile.path.startsWith(it.path) }
+            }
+
+        if (filesToRemoveFromCache.isNotEmpty()) {
+            getSnykTaskQueueService(project)?.scheduleRunnable("Snyk Code is updating caches...") {
+                if (filesToRemoveFromCache.size > 10) {
+                    // bulk files change event (like `git checkout`) - better to drop cache and perform full rescan later
+                    AnalysisData.instance.removeProjectFromCaches(project)
+                } else {
+                    AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
+                }
+            }
+        }
+        // clean .dcignore caches if needed
+        SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
+    }
+
+    /****************************** After **************************/
+
+    override fun after(events: MutableList<out VFileEvent>) {
+        if (!isFileListenerEnabled()) return
+
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
 
+            updateOssAndSnykcodeCaches(
+                project,
+                events,
+                listOf(
+                    VFileCreateEvent::class.java,
+                    VFileContentChangeEvent::class.java,
+                    VFileMoveEvent::class.java,
+                    VFileCopyEvent::class.java
+                )
+            )
+
             val virtualFilesAffected = getAffectedVirtualFiles(
                 events,
-                classesOfEventsToFilter = classesOfEventsToFilter
+                eventToVirtualFileTransformer = { transformEventToNewVirtualFile(it) },
+                classesOfEventsToFilter = listOf(
+                    VFileCreateEvent::class.java,
+                    VFileContentChangeEvent::class.java,
+                    VFileMoveEvent::class.java,
+                    VFileCopyEvent::class.java,
+                    VFilePropertyChangeEvent::class.java
+                ),
+                eventsFilter = { (it as? VFilePropertyChangeEvent)?.isRename != false }
             )
+            if (virtualFilesAffected.isEmpty()) return
 
-            val toolWindowPanel = getSnykToolWindowPanel(project)
+            // update IaC cached results if needed
+            updateIacCache(virtualFilesAffected, project)
 
-            // clean OSS cached results if needed
-            if (toolWindowPanel?.currentOssResults != null) {
-                val buildFileChanged = virtualFilesAffected
-                    .filter { supportedBuildFiles.contains(it.name) }
-                    .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
-                if (buildFileChanged != null) {
-                    toolWindowPanel.currentOssResults = null
-                    LOG.debug("OSS cached results dropped due to changes in: $buildFileChanged")
-                }
-            }
-
-            // if SnykCode analysis is running then re-run it (with updated files)
-            val supportedFileChanged = virtualFilesAffected
-                .filter { it.isValid }
-                .mapNotNull { findPsiFileIgnoringExceptions(it, project) }
-                .any { SnykCodeUtils.instance.isSupportedFileFormat(it) }
-            val isSnykCodeRunning = AnalysisData.instance.isUpdateAnalysisInProgress(project)
-
-            if (supportedFileChanged && isSnykCodeRunning) {
-                RunUtils.instance.rescanInBackgroundCancellableDelayed(project, 0, false, false)
-            }
-
-            // remove changed files from SnykCode cache
-            val allCachedFiles = AnalysisData.instance.getAllCachedFiles(project)
-            val filesToRemoveFromCache = allCachedFiles
-                .filter { cachedPsiFile ->
-                    val vFile = (cachedPsiFile as PsiFile).virtualFile
-                    vFile in virtualFilesAffected ||
-                        // Directory containing cached file is deleted/moved
-                        virtualFilesAffected.any { it.isDirectory && vFile.path.startsWith(it.path) }
-                }
-
-            if (filesToRemoveFromCache.isNotEmpty()) {
-                getSnykTaskQueueService(project)?.scheduleRunnable("Snyk Code is updating caches...") {
-                    if (filesToRemoveFromCache.size > 10) {
-                        // bulk files change event (like `git checkout`) - better to drop cache and perform full rescan later
-                        AnalysisData.instance.removeProjectFromCaches(project)
-                    } else {
-                        AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
-                    }
-                }
-            }
-            // clean .dcignore caches if needed
-            SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(project, virtualFilesAffected)
-
-            val virtualFilesDeletedOrMoved = getAffectedVirtualFiles(
-                events,
-                classesOfEventsToFilter = listOf(VFileDeleteEvent::class.java, VFileMoveEvent::class.java)
-            )
-            // clean IaC cached results for deleted/moved files
-            updateIacCache(
-                virtualFilesDeletedOrMoved,
-                project
-            )
-            // clean Container cached results for Container related deleted/moved files
+            // update Container cached results for Container related files
             if (isContainerEnabled()) {
-                val kubernetesWorkloadFilesFromCache =
-                    getKubernetesImageCache(project)?.getKubernetesWorkloadFilesFromCache() ?: emptySet()
-                updateContainerCache(
-                    containerRelatedVirtualFilesAffected = virtualFilesDeletedOrMoved.filter {
-                        kubernetesWorkloadFilesFromCache.contains(it)
-                    },
-                    project = project
-                )
+                getKubernetesImageCache(project)?.updateCache(virtualFilesAffected)
+                val containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
+                    val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
+                    YAMLImageExtractor.isKubernetes(psiFile)
+                }
+                updateContainerCache(containerRelatedVirtualFilesAffected, project)
             }
         }
+    }
+
+    private fun transformEventToNewVirtualFile(e: VFileEvent): VirtualFile? =
+        when (e) {
+            is VFileCopyEvent -> e.findCreatedFile()
+            is VFileMoveEvent -> if (e.newParent.isValid) e.newParent.findChild(e.file.name) else null
+            else -> e.file
+        }
+
+    private fun updateOssAndSnykcodeCaches(
+        project: Project,
+        events: List<VFileEvent>,
+        classesOfEventsToFilter: Collection<Class<out VFileEvent>>
+    ) {
+        val virtualFilesAffected = getAffectedVirtualFiles(
+            events,
+            eventToVirtualFileTransformer = { transformEventToNewVirtualFile(it) },
+            classesOfEventsToFilter = classesOfEventsToFilter
+        )
+
+        // update .dcignore caches if needed
+        SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(project, virtualFilesAffected)
     }
 
     /****************************** Common/Util methods **************************/
@@ -258,26 +288,21 @@ class SnykBulkFileListener : BulkFileListener {
         val toolWindowPanel = getSnykToolWindowPanel(project)
         val containerIssuesForImages = toolWindowPanel?.currentContainerResult?.allCliIssues ?: return
 
-        val psiFilesAffected =
-            containerRelatedVirtualFilesAffected.mapNotNull { findPsiFileIgnoringExceptions(it, project) }
-        val changed = psiFilesAffected.isNotEmpty()
         val newContainerIssuesForImagesList = containerIssuesForImages.map { issuesForImage ->
-            if (issuesForImage.workloadImages.any { psiFilesAffected.contains(it.psiFile) }) {
+            if (issuesForImage.workloadImages.any { containerRelatedVirtualFilesAffected.contains(it.virtualFile) }) {
                 makeObsolete(issuesForImage)
             } else {
                 issuesForImage
             }
         }
 
-        if (changed) {
-            val newContainerCache = ContainerResult(newContainerIssuesForImagesList, null)
-            newContainerCache.rescanNeeded = true
-            toolWindowPanel.currentContainerResult = newContainerCache
-            ApplicationManager.getApplication().invokeLater {
-                toolWindowPanel.displayContainerResults(newContainerCache)
-            }
-            DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
+        val newContainerCache = ContainerResult(newContainerIssuesForImagesList, null)
+        newContainerCache.rescanNeeded = true
+        toolWindowPanel.currentContainerResult = newContainerCache
+        ApplicationManager.getApplication().invokeLater {
+            toolWindowPanel.displayContainerResults(newContainerCache)
         }
+        DaemonCodeAnalyzer.getInstance(toolWindowPanel.project).restart()
     }
 
     private fun makeObsolete(containerIssuesForImage: ContainerIssuesForImage): ContainerIssuesForImage =
@@ -289,13 +314,14 @@ class SnykBulkFileListener : BulkFileListener {
     private fun getAffectedVirtualFiles(
         events: List<VFileEvent>,
         eventToVirtualFileTransformer: (VFileEvent) -> VirtualFile? = { it.file },
-        fileFilter: Predicate<VirtualFile> = Predicate { true },
-        classesOfEventsToFilter: Collection<Class<*>>
+        classesOfEventsToFilter: Collection<Class<*>>,
+        eventsFilter: (VFileEvent) -> Boolean = { true }
     ): Set<VirtualFile> {
         return events.asSequence()
             .filter { event -> instanceOf(event, classesOfEventsToFilter) }
+            .filter { eventsFilter.invoke(it) }
             .mapNotNull(eventToVirtualFileTransformer)
-            .filter(fileFilter::test)
+            .filter(VirtualFile::isValid)
             .toSet()
     }
 

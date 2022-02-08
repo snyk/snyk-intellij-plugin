@@ -20,7 +20,7 @@ object YAMLImageExtractor {
             if (line.trim().startsWith("image:")) {
                 val imageName = extractImageNameFromLine(line)
                 // we report line numbers with a start index of 1 elsewhere (e.g. IaC)
-                val image = KubernetesWorkloadImage(imageName, psiFile, lineNumber + 1)
+                val image = KubernetesWorkloadImage(imageName, psiFile.virtualFile, lineNumber + 1)
                 extractedImages.add(image)
                 logger.debug("Found image $image")
             }

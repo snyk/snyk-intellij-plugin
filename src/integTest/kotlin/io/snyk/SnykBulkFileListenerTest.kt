@@ -197,6 +197,26 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     }
 
     @Test
+    fun `test current IacResults should drop cache and mark IacScanNeeded when IaC supported file RENAMED`() {
+        val originalFileName = "existing.yaml"
+        val originalFile = myFixture.addFileToProject(originalFileName, "some text")
+        val originalFilePath = originalFile.virtualFile.path
+        createFakeIacResultInCache(originalFileName, originalFilePath)
+
+        assertFalse(isIacUpdateNeeded())
+
+        ApplicationManager.getApplication().runWriteAction {
+            originalFile.virtualFile.rename(null, "renamed_filename.txt")
+        }
+
+        assertTrue(isIacUpdateNeeded())
+        assertTrue(
+            "Renamed IaC file with issues should been marked as obsolete here",
+            iacCacheInvalidatedForFilePath(originalFilePath)
+        )
+    }
+
+    @Test
     fun `test current IacResults should drop cache and mark IacScanNeeded when IaC supported file DELETED`() {
         val originalFileName = "existing.yaml"
         val originalFile = myFixture.addFileToProject(originalFileName, "some text")
@@ -282,7 +302,7 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         assertNotNull(kubernetesWorkloadFiles)
         assertNotEmpty(kubernetesWorkloadFiles)
         assertEquals(1, kubernetesWorkloadFiles.size)
-        assertEquals(path, kubernetesWorkloadFiles.first().psiFile.virtualFile.toNioPath())
+        assertEquals(path, kubernetesWorkloadFiles.first().virtualFile.toNioPath())
         assertEquals("nginx:1.16.0", kubernetesWorkloadFiles.first().image)
         virtualFile.toNioPath().delete(true)
     }
@@ -312,7 +332,8 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     private fun containerCacheInvalidatedForFile(psiFile: PsiFile?): Boolean {
         val containerCachedIssues = project.service<SnykToolWindowPanel>().currentContainerResult!!.allCliIssues!!
         return containerCachedIssues.any { issuesForImage ->
-            (psiFile == null || issuesForImage.workloadImages.any { it.psiFile == psiFile }) && issuesForImage.obsolete
+            (psiFile == null || issuesForImage.workloadImages.any { it.virtualFile == psiFile.virtualFile }) &&
+                issuesForImage.obsolete
         }
     }
 
@@ -337,7 +358,7 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
             imageName = "nginx",
             workloadImages = listOf(KubernetesWorkloadImage(
                 image = "nginx",
-                psiFile = addedPsiFile
+                virtualFile = addedPsiFile.virtualFile
             ))
         )
         val fakeContainerResult = ContainerResult(listOf(issuesForImage), null)
@@ -418,6 +439,25 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         assertTrue(isContainerUpdateNeeded())
         assertTrue(
             "Moved Container file with issues should been marked as obsolete here",
+            containerCacheInvalidatedForFile(originalFile)
+        )
+    }
+
+    @Test
+    fun `test ContainerResults should drop cache and mark rescanNeeded when Container supported file RENAMED`() {
+        setUpContainerTest()
+        val originalFile = myFixture.addFileToProject("existing.yaml", TestYamls.podYaml())
+        createFakeContainerResultInCache(originalFile)
+
+        assertFalse(isContainerUpdateNeeded())
+
+        ApplicationManager.getApplication().runWriteAction {
+            originalFile.virtualFile.rename(null, "renamed_filename.txt")
+        }
+
+        assertTrue(isContainerUpdateNeeded())
+        assertTrue(
+            "Renamed Container file with issues should been marked as obsolete here",
             containerCacheInvalidatedForFile(originalFile)
         )
     }

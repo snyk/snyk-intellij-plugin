@@ -43,7 +43,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         javaClass.classLoader.getResource("container-test-results/nginx-with-remediation.json")!!
             .readText(Charsets.UTF_8)
 
-    lateinit var file: VirtualFile
+    lateinit var virtualFile: VirtualFile
     private lateinit var psiFile: PsiFile
 
     val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
@@ -62,8 +62,8 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         unmockkAll()
         project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
         pluginSettings().fileListenerEnabled = false
-        file = myFixture.copyFileToProject(kubernetesManifestFile)
-        psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
+        virtualFile = myFixture.copyFileToProject(kubernetesManifestFile)
+        psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(virtualFile)!! }
         cut = ContainerYamlAnnotator()
     }
 
@@ -181,7 +181,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test apply should not add a quickfix if remediation advice base image different`() {
-        val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", psiFile, 21))
+        val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 21))
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val imageForIssues = createContainerImageForIssuesWithSeverity().copy(
             baseImageRemediationInfo = dummyBaseRemediationInfo(imageName = "NotAnImage:0.1.1"),
@@ -224,7 +224,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         val baseImageRemediationInfo =
             getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
 
-        val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", psiFile, 21))
+        val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 21))
         containerResult.allCliIssues = listOf(
             firstContainerIssuesForImage.copy(
                 workloadImages = workloadImages,

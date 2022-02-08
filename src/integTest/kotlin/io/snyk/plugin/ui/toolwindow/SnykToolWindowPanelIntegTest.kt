@@ -1,12 +1,11 @@
 package io.snyk.plugin.ui.toolwindow
 
 import UIComponentFinder
-import com.intellij.mock.MockPsiFile
+import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.impl.ApplicationInfoImpl
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.registry.Registry
-import com.intellij.psi.PsiManager
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.TestActionEvent
@@ -515,7 +514,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         // mock Container results
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { getKubernetesImageCache(project)?.getKubernetesWorkloadImages() } returns setOf(
-            KubernetesWorkloadImage("ignored_image_name", MockPsiFile(PsiManager.getInstance(project)))
+            KubernetesWorkloadImage("ignored_image_name", MockVirtualFile("fake_virtual_file"))
         )
         val containerService = ContainerService(project)
         val mockkRunner = mockk<ConsoleCommandRunner>()
