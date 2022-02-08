@@ -13,6 +13,8 @@ fix advice:
 - **Open Source Security** - known vulnerabilities in both the direct and in-direct (transitive) open source dependencies you are pulling into the project.
 - **Code Security** - security weaknesses identified in your own code.
 - **Code Quality** - code quality issues in your own code.
+- **Configuration Issues** - misconfigurations in Terraform, CloudFormation, Kubernetes, and ARM templates.
+- **Container Vulnerabilities** - vulnerabilities in your container images found in Kubernetes workload files.
 - **Open Source Advisor** - health test for the direct dependencies you are using. Including: popularity, maintenance, risk & community insights.
 
 **Snyk detects the critical vulnerability Log4Shell, which was found in the open source Java library log4j-core - a component of one of the most popular Java logging frameworks, Log4J. The vulnerability was categorized as Critical with a CVSS score of 10, and with a mature exploit level.**
