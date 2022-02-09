@@ -4,6 +4,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -22,9 +23,11 @@ import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.awaitility.Awaitility.await
 import org.junit.Test
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
+import java.util.concurrent.TimeUnit
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
@@ -32,6 +35,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
     }
 
     override fun tearDown() {
@@ -138,6 +142,12 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testContainerScanTriggeredAndProduceResults() {
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isContainerEnabled() } returns true
+        every { isCliInstalled() } returns true
+        val fakeContainerResult = ContainerResult(null, null)
+        every { getContainerService(project)?.scan() } returns fakeContainerResult
+
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         val settings = pluginSettings()
         settings.ossScanEnable = false
@@ -146,17 +156,14 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.iacScanEnabled = false
         settings.containerScanEnabled = true
 
-        val fakeContainerResult = ContainerResult(null, null)
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isContainerEnabled() } returns true
-        every { getContainerService(project)?.scan() } returns fakeContainerResult
-        every { isCliInstalled() } returns true
+        assertEquals(null, toolWindowPanel.currentContainerResult)
 
         snykTaskQueueService.scan()
 
-        val toolWindowPanel = project.service<SnykToolWindowPanel>()
-
-        assertEquals(fakeContainerResult, toolWindowPanel.currentContainerResult)
+        await().atMost(2, TimeUnit.SECONDS).until {
+            toolWindowPanel.currentContainerResult != null
+        }
     }
 }

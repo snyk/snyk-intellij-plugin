@@ -37,7 +37,9 @@ class IgnoreButtonActionListener(
         override fun run(@NotNull progressIndicator: ProgressIndicator) {
             try {
                 val relativeFilePath = if (psiFile != null) {
-                    calcRelativeToProjectPath(psiFile.virtualFile, project).replace(".../", "")
+                    calcRelativeToProjectPath(psiFile.virtualFile, project)
+                        .replace(".../", "")
+                        .replace("…/", "")
                 } else {
                     "*"
                 }

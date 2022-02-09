@@ -4,7 +4,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiDocumentManager
@@ -45,13 +44,11 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         resetSettings(project)
-        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
     }
 
     override fun tearDown() {
         resetSettings(project)
         removeDummyCliFile()
-        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
         super.tearDown()
     }
 
@@ -265,12 +262,9 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     /********************* Container **********************/
 
     private val imageCache get() = project.service<KubernetesImageCache>()
-    private val isContainerEnabledRegistryValue = Registry.get("snyk.preview.container.enabled")
-    private val isContainerEnabledDefaultValue: Boolean by lazy { isContainerEnabledRegistryValue.asBoolean() }
 
     private fun setUpContainerTest() {
         imageCache.clear()
-        isContainerEnabledRegistryValue.setValue(true)
     }
 
     private fun createNewFileInProjectRoot(name: String): File {

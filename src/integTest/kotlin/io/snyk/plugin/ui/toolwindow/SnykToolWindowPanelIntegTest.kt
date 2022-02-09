@@ -5,7 +5,6 @@ import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.impl.ApplicationInfoImpl
 import com.intellij.openapi.components.service
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.TestActionEvent
@@ -69,26 +68,14 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         setupDummyCliFile()
-        // restore modified Registry value
-        isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
-        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
     }
 
     override fun tearDown() {
         unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
-        // restore modified Registry value
-        isIacEnabledRegistryValue.setValue(isIacEnabledDefaultValue)
-        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
         super.tearDown()
     }
-
-    private val isIacEnabledRegistryValue = Registry.get("snyk.preview.iac.enabled")
-    private val isIacEnabledDefaultValue: Boolean by lazy { isIacEnabledRegistryValue.asBoolean() }
-
-    private val isContainerEnabledRegistryValue = Registry.get("snyk.preview.container.enabled")
-    private val isContainerEnabledDefaultValue: Boolean by lazy { isContainerEnabledRegistryValue.asBoolean() }
 
     private fun setUpIacTest() {
         val settings = pluginSettings()
@@ -97,8 +84,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = true
         settings.containerScanEnabled = false
-
-        isIacEnabledRegistryValue.setValue(true)
     }
 
     private fun setUpContainerTest(containerResultStub: ContainerResult?) {
@@ -108,8 +93,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = false
         settings.containerScanEnabled = true
-
-        isContainerEnabledRegistryValue.setValue(true)
 
         if (containerResultStub != null) {
             mockkStatic("io.snyk.plugin.UtilsKt")

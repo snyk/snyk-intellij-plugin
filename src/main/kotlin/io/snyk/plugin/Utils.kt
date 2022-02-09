@@ -203,10 +203,9 @@ fun controlExternalProcessWithProgressIndicator(
     checkCancelled.invoke()
 }
 
-fun isIacEnabled(): Boolean = Registry.`is`("snyk.preview.iac.enabled", pluginSettings().iacScanEnabled)
+fun isIacEnabled(): Boolean = true
 
-fun isContainerEnabled(): Boolean =
-    Registry.`is`("snyk.preview.container.enabled", pluginSettings().containerScanEnabled)
+fun isContainerEnabled(): Boolean = true
 
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 

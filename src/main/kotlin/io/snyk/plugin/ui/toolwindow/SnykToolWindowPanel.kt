@@ -14,7 +14,6 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -649,8 +648,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun enableProductsAccordingToServerSetting() {
         pluginSettings().apply {
             sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
-            iacScanEnabled = isIacEnabled()
-            containerScanEnabled = isContainerEnabled()
+            iacScanEnabled = true
+            containerScanEnabled = true
             snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeSecurityIssuesScanEnable
             snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeQualityIssuesScanEnable
         }
