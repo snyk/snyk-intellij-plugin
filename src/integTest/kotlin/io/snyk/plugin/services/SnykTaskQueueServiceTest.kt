@@ -4,6 +4,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -34,6 +35,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
     }
 
     override fun tearDown() {
@@ -154,11 +156,14 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.iacScanEnabled = false
         settings.containerScanEnabled = true
 
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        assertEquals(null, toolWindowPanel.currentContainerResult)
+
         snykTaskQueueService.scan()
 
-        val toolWindowPanel = project.service<SnykToolWindowPanel>()
         await().atMost(2, TimeUnit.SECONDS).until {
-            fakeContainerResult == toolWindowPanel.currentContainerResult
+            toolWindowPanel.currentContainerResult != null
         }
     }
 }
