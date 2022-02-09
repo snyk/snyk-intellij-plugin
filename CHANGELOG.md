@@ -1,8 +1,16 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.14]
+
+### Changed
+
+- Make Snyk Container generally available
+- Make Snyk Infrastructure as Code generally available
+
 ## [2.4.13]
 
 ### Changed
+
 - Use IntelliJ http(s) proxy settings for all remote connections
 - Ignoring issues in Snyk IaC now ignores the instance of the issue instead of all instances of the issue type.
 
