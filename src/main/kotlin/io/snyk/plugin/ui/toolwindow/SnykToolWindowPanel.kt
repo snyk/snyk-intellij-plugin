@@ -34,8 +34,8 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
+import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isContainerEnabled
@@ -101,14 +101,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     var currentOssResults: OssResult? = null
         get() = if (field?.isExpired() == false) field else null
+
     var currentOssError: SnykError? = null
 
     var currentContainerResult: ContainerResult? = null
         get() = if (field?.isExpired() == false) field else null
+
     var currentContainerError: SnykError? = null
 
     var currentIacResult: IacResult? = null
         get() = if (field?.isExpired() == false) field else null
+
     var currentIacError: SnykError? = null
 
     var currentSnykCodeError: SnykError? = null
@@ -149,6 +152,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 currentOssError = null
                 currentSnykCodeError = null
                 currentIacError = null
+                currentContainerError = null
                 ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
             }
 
@@ -463,14 +467,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val targetImage = project.service<KubernetesImageCache>()
                         .getKubernetesWorkloadImages()
                         .find { it.image == issuesForImage.imageName }
-                    val psiFile = targetImage?.psiFile
+                    val virtualFile = targetImage?.virtualFile
                     val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
-                    if (psiFile != null && psiFile.isValid && line != null) {
-                        val document = PsiDocumentManager.getInstance(project).getDocument(psiFile)
+                    if (virtualFile != null && virtualFile.isValid && line != null) {
+                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                         if (document != null) {
                             val lineNumber = if (0 <= line && line < document.lineCount) line else 0
                             val lineStartOffset = document.getLineStartOffset(lineNumber)
-                            navigateToSource(psiFile.virtualFile, lineStartOffset)
+                            navigateToSource(virtualFile, lineStartOffset)
                         }
                     }
                     // TODO: Add image click event logging ?
@@ -556,8 +560,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         currentIacError = null
         currentContainerResult = null
         currentContainerError = null
+
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
+
+        if (isContainerEnabled()) {
+            getKubernetesImageCache(project)?.let {
+                it.clear()
+                it.scanProjectForKubernetesFiles()
+            }
+        }
+
         DaemonCodeAnalyzer.getInstance(project).restart()
 
         ApplicationManager.getApplication().invokeLater {
@@ -571,7 +584,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ossResultsCount = NODE_INITIAL_STATE,
             securityIssuesCount = NODE_INITIAL_STATE,
             qualityIssuesCount = NODE_INITIAL_STATE,
-            iacResultsCount = NODE_INITIAL_STATE
+            iacResultsCount = NODE_INITIAL_STATE,
+            containerResultsCount = NODE_INITIAL_STATE
         )
         reloadTree()
 
@@ -1056,7 +1070,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     ) {
         val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
 
-        displayEmptyDescription()
         reloadTreeNode(nodeToReload)
         userObjectsForExpandedChildren?.let {
             it.forEach { userObject ->
@@ -1068,7 +1081,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         } ?: expandRecursively(nodeToReload)
 
         selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
-        updateDescriptionPanelBySelectedTreeNode()
     }
 
     private fun reloadTreeNode(nodeToReload: DefaultMutableTreeNode) {

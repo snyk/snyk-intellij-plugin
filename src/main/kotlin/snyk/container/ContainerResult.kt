@@ -9,6 +9,8 @@ class ContainerResult(containerVulnerabilities: List<ContainerIssuesForImage>?, 
         error
     ) {
 
+    var rescanNeeded: Boolean = false
+
     override val issuesCount: Int? get() = allCliIssues?.sumBy { it.uniqueCount }
 
     override fun countBySeverity(severity: String): Int? {

@@ -3,9 +3,12 @@ package snyk.container.annotator
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykToolWindowPanel
 import snyk.container.ContainerIssuesForImage
@@ -13,33 +16,36 @@ import snyk.container.ContainerIssuesForImage
 class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     private val logger = logger<ContainerYamlAnnotator>()
 
-    // overrides needed for the Annotator to invoke apply(). We don't do anything here
+    // override needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile? = file
-    override fun doAnnotate(collectedInfo: PsiFile?): Unit = Unit
+
+    // save all changes on disk to update caches through SnykBulkFileListener
+    override fun doAnnotate(collectedInfo: PsiFile?) {
+        logger.debug("doAnnotate on ${collectedInfo?.name}")
+        val psiFile = collectedInfo ?: return
+        val document = PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile) ?: return
+        ApplicationManager.getApplication().invokeAndWait {
+            FileDocumentManager.getInstance().saveDocument(document)
+        }
+    }
 
     fun getContainerIssuesForImages(psiFile: PsiFile): List<ContainerIssuesForImage> {
-        logger.debug("Calling doAnnotate on ${psiFile.name}")
-
         val containerResult = getSnykToolWindowPanel(psiFile.project)?.currentContainerResult
-
         ProgressManager.checkCanceled()
-
         return containerResult?.allCliIssues
-            ?.filter { forImage -> forImage.workloadImages.find { it.psiFile == psiFile } != null }
+            ?.filter { forImage -> forImage.workloadImages.find { it.virtualFile == psiFile.virtualFile } != null }
             ?: emptyList()
     }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
+        logger.debug("apply on ${psiFile.name}")
         val issuesForImages = getContainerIssuesForImages(psiFile)
-
-        if (issuesForImages.isEmpty()) return
-
         issuesForImages.forEach { forImage ->
             if (forImage.ignored || forImage.obsolete) return
 
             val severity = severity(forImage)
 
-            val workloadImage = forImage.workloadImages.first { it.psiFile == psiFile }
+            val workloadImage = forImage.workloadImages.first { it.virtualFile == psiFile.virtualFile }
             val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
             val annotationBuilder = holder.newAnnotation(severity, annotationMessage(forImage)).range(textRange)
             if (shouldAddQuickFix(forImage)) {

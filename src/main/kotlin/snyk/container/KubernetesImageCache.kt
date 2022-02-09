@@ -7,11 +7,6 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.jetbrains.rd.util.concurrentMapOf
 
 @Service
@@ -42,33 +37,15 @@ class KubernetesImageCache(val project: Project) {
     fun getKubernetesWorkloadImageNamesFromCache(): Set<String> =
         getKubernetesWorkloadImages().map { v -> v.image }.toSet()
 
-    private fun fileDeleted(event: VFileEvent): Boolean = event is VFileDeleteEvent
-
-    private fun fileContentChanged(event: VFileEvent): Boolean {
-        return when (event) {
-            is VFileContentChangeEvent -> true
-            is VFileCreateEvent -> true
-            is VFileCopyEvent -> true
-            else -> false
+    fun cleanCache(files: Set<VirtualFile>) {
+        files.forEach { file ->
+            images.remove(file)
+            logger.debug("removed $file from cache")
         }
     }
 
-    fun extractFromEvents(events: MutableList<out VFileEvent>) {
-        for (e in events) {
-            val file = e.file ?: continue
-
-            if (fileDeleted(e)) {
-                images.remove(file)
-                logger.debug("removed $file from cache")
-            }
-            if (fileContentChanged(e)) {
-                fileContentChanged(file)
-            }
-        }
-    }
-
-    private fun fileContentChanged(file: VirtualFile) {
-        if (file.isValid) {
+    fun updateCache(files: Set<VirtualFile>) {
+        files.forEach { file ->
             extractFromFile(file)
         }
     }

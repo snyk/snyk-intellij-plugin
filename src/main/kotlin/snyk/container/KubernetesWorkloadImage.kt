@@ -1,5 +1,5 @@
 package snyk.container
 
-import com.intellij.psi.PsiFile
+import com.intellij.openapi.vfs.VirtualFile
 
-data class KubernetesWorkloadImage(val image: String, val psiFile: PsiFile, val lineNumber: Int = 0)
+data class KubernetesWorkloadImage(val image: String, val virtualFile: VirtualFile, val lineNumber: Int = 0)

@@ -3,10 +3,13 @@ package snyk.iac.annotator
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity.Companion.CRITICAL
 import io.snyk.plugin.Severity.Companion.HIGH
@@ -20,13 +23,20 @@ private val LOG = logger<IacBaseAnnotator>()
 
 abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
-    // overrides needed for the Annotator to invoke apply(). We don't do anything here
+    // override needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile? = file
-    override fun doAnnotate(collectedInfo: PsiFile?): Unit = Unit
+
+    // save all changes on disk to update caches through SnykBulkFileListener
+    override fun doAnnotate(collectedInfo: PsiFile?) {
+        LOG.debug("Calling doAnnotate on ${collectedInfo?.name}")
+        val psiFile = collectedInfo ?: return
+        val document = PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile) ?: return
+        ApplicationManager.getApplication().invokeAndWait {
+            FileDocumentManager.getInstance().saveDocument(document)
+        }
+    }
 
     fun getIssues(psiFile: PsiFile): List<IacIssue> {
-        LOG.debug("Calling doAnnotate on ${psiFile.name}")
-
         val iacResult = getSnykToolWindowPanel(psiFile.project)?.currentIacResult ?: return emptyList()
         ProgressManager.checkCanceled()
         return getIssuesForFile(psiFile, iacResult)

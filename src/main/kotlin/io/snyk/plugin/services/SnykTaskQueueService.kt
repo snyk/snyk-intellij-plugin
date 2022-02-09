@@ -120,11 +120,12 @@ class SnykTaskQueueService(val project: Project) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return
                 val toolWindowPanel = getSnykToolWindowPanel(project) ?: return
-                if (toolWindowPanel.currentContainerResult != null) return
+                if (toolWindowPanel.currentContainerResult?.rescanNeeded == false) return
                 logger.debug("Starting Container scan")
                 containerScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
+                toolWindowPanel.currentContainerResult = null
                 val containerResult = try {
                     getContainerService(project)?.scan()
                 } finally {

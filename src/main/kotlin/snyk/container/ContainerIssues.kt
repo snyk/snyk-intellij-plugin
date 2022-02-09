@@ -10,10 +10,10 @@ data class ContainerIssuesForImage(
     val error: String?,
     @SerializedName("path") val imageName: String,
     @Expose val baseImageRemediationInfo: BaseImageRemediationInfo? = null,
-    @Expose val workloadImages: List<KubernetesWorkloadImage> = emptyList(),
-    @Expose val obsolete: Boolean = false,
-    @Expose val ignored: Boolean = false
+    @Expose val workloadImages: List<KubernetesWorkloadImage> = emptyList()
 ) {
+    val obsolete: Boolean get() = vulnerabilities.any { it.obsolete }
+    val ignored: Boolean get() = vulnerabilities.all { it.ignored }
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
 }
 
@@ -38,7 +38,9 @@ data class ContainerIssue(
     @SerializedName("CVSSv3") val cvssV3: String? = null,
     val nearestFixedInVersion: String? = null,
     val from: List<String>,
-    val packageManager: String
+    val packageManager: String,
+    @Expose val obsolete: Boolean = false,
+    @Expose val ignored: Boolean = false
 )
 
 data class Identifiers(

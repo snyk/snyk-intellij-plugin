@@ -20,7 +20,7 @@ object YAMLImageExtractor {
             if (line.trim().startsWith("image:")) {
                 val imageName = extractImageNameFromLine(line)
                 // we report line numbers with a start index of 1 elsewhere (e.g. IaC)
-                val image = KubernetesWorkloadImage(imageName, psiFile, lineNumber + 1)
+                val image = KubernetesWorkloadImage(imageName, psiFile.virtualFile, lineNumber + 1)
                 extractedImages.add(image)
                 logger.debug("Found image $image")
             }
@@ -46,9 +46,13 @@ object YAMLImageExtractor {
     private fun getFileLines(psiFile: PsiFile) =
         psiFile.viewProvider.document?.text?.lines() ?: emptyList()
 
-    private fun isKubernetes(psiFile: PsiFile): Boolean = isKubernetes(getFileLines(psiFile))
+    fun isKubernetes(psiFile: PsiFile): Boolean =
+        isKubernetesFileExtension(psiFile) && isKubernetesFileContent(getFileLines(psiFile))
 
-    internal fun isKubernetes(lines: List<String>): Boolean {
+    private fun isKubernetesFileExtension(psiFile: PsiFile): Boolean =
+        psiFile.virtualFile.extension == "yaml"
+
+    internal fun isKubernetesFileContent(lines: List<String>): Boolean {
         val normalizedLines =
             lines
                 .map { line -> line.trim() }
