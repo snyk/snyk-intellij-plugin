@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.replaceService
 import com.intellij.ui.OnePixelSplitter
@@ -9,9 +8,7 @@ import com.intellij.ui.treeStructure.Tree
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
@@ -94,9 +91,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     fun `should automatically enable products`() {
         every { settings.token } returns "test-token"
         every { settings.pluginFirstRun } returns true
-        mockkStatic(Registry::class)
-        every { Registry.`is`("snyk.preview.iac.enabled", false) } returns true
-        every { Registry.`is`("snyk.preview.container.enabled", false) } returns true
 
         SnykToolWindowPanel(project)
 
@@ -108,7 +102,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
             settings.snykCodeSecurityIssuesScanEnable = true
             settings.snykCodeQualityIssuesScanEnable = true
         }
-        unmockkStatic(Registry::class)
     }
 
     private fun findOnePixelSplitter(vulnerabilityTree: Tree): Container? {

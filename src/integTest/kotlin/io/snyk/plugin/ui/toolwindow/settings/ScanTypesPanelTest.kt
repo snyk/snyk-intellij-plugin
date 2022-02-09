@@ -4,7 +4,6 @@ import UIComponentFinder.getComponentByName
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.ui.components.JBCheckBox
 import io.mockk.every
@@ -27,16 +26,12 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         unmockkAll()
         resetSettings(project)
         disposable = Disposer.newDisposable()
-        // restore modified Registry value
-        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
     }
 
     override fun tearDown() {
         unmockkAll()
         resetSettings(project)
         disposable.dispose()
-        // restore modified Registry value
-        isContainerEnabledRegistryValue.setValue(isContainerEnabledDefaultValue)
         super.tearDown()
     }
 
@@ -44,18 +39,10 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     private lateinit var disposable: Disposable
 
-    private val isContainerEnabledRegistryValue = Registry.get("snyk.preview.container.enabled")
-    private val isContainerEnabledDefaultValue: Boolean by lazy { isContainerEnabledRegistryValue.asBoolean() }
-
-    private fun setUpContainerTest() {
-        isContainerEnabledRegistryValue.setValue(true)
-    }
-
     private fun getContainerCheckBox(
         initialValue: Boolean,
         switchSelection: Boolean
     ): JBCheckBox {
-        setUpContainerTest()
         pluginSettings().containerScanEnabled = initialValue
         val scanTypesPanel = ScanTypesPanel(project, disposable)
         val containerCheckBox =
