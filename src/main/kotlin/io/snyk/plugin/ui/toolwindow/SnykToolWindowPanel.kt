@@ -132,6 +132,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
+    private var smartReloadMode = false
+
     init {
         vulnerabilitiesTree.cellRenderer = VulnerabilityTreeCellRenderer()
 
@@ -140,8 +142,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         chooseMainPanelToDisplay()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
+            val capturedSmartReloadModeValue = smartReloadMode
             ApplicationManager.getApplication().invokeLater {
-                updateDescriptionPanelBySelectedTreeNode()
+                updateDescriptionPanelBySelectedTreeNode(capturedSmartReloadModeValue)
             }
         }
 
@@ -327,6 +330,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         displaySnykCodeResults(snykCodeResults)
                         currentOssResults?.let { displayVulnerabilities(it) }
                         currentIacResult?.let { displayIacResults(it) }
+                        currentContainerResult?.let { displayContainerResults(it) }
                     }
                 }
             })
@@ -372,7 +376,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             })
     }
 
-    private fun updateDescriptionPanelBySelectedTreeNode() {
+    private fun updateDescriptionPanelBySelectedTreeNode(smartReloadMode: Boolean) {
         descriptionPanel.removeAll()
 
         val selectionPath = vulnerabilitiesTree.selectionPath
@@ -387,7 +391,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
                     val issue = groupedVulns.first()
-                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueId(issue.id)
@@ -413,7 +417,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
                     }
 
-                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueId(suggestion.id)
@@ -447,7 +451,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             navigateToSource(virtualFile, lineStartOffset)
                         }
                     }
-                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueId(iacIssue.id)
@@ -482,7 +486,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val containerIssue = node.userObject as ContainerIssue
                     val scrollPane = wrapWithScrollPane(ContainerIssueDetailPanel(containerIssue))
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
-                    service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueId(containerIssue.id)
@@ -674,10 +678,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             isCliDownloading() -> {
                 displayDownloadMessage()
             }
-            rootOssTreeNode.childCount == 0 &&
-                rootSecurityIssuesTreeNode.childCount == 0 &&
-                rootQualityIssuesTreeNode.childCount == 0 &&
-                rootIacIssuesTreeNode.childCount == 0 -> {
+            noIssuesInAnyProductFound() -> {
                 displayNoVulnerabilitiesMessage()
             }
             else -> {
@@ -685,6 +686,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         }
     }
+
+    private fun noIssuesInAnyProductFound() = rootOssTreeNode.childCount == 0 &&
+        rootSecurityIssuesTreeNode.childCount == 0 &&
+        rootQualityIssuesTreeNode.childCount == 0 &&
+        rootIacIssuesTreeNode.childCount == 0 &&
+        rootContainerIssuesTreeNode.childCount == 0
 
     /**
      * public only for Tests
@@ -1067,8 +1074,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         userObjectsForExpandedChildren: List<Any>?,
         selectedNodeUserObject: Any?
     ) {
+        smartReloadMode = true
         val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
 
+        displayEmptyDescription()
         reloadTreeNode(nodeToReload)
         userObjectsForExpandedChildren?.let {
             it.forEach { userObject ->
@@ -1080,6 +1089,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         } ?: expandRecursively(nodeToReload)
 
         selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
+        // we need to update Description panel in case if no selection was made before
+        updateDescriptionPanelBySelectedTreeNode(smartReloadMode)
+        smartReloadMode = false
     }
 
     private fun reloadTreeNode(nodeToReload: DefaultMutableTreeNode) {

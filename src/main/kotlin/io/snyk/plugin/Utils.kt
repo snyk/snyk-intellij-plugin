@@ -127,7 +127,7 @@ fun isContainerRunning(project: Project): Boolean {
 }
 
 fun isScanRunning(project: Project): Boolean =
-    isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
+    isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project) || isContainerRunning(project)
 
 fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
 
