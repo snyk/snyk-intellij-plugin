@@ -3,9 +3,12 @@ package snyk.container.annotator
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykToolWindowPanel
 import snyk.container.ContainerIssuesForImage
@@ -16,7 +19,15 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     // override needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile? = file
 
-    override fun doAnnotate(collectedInfo: PsiFile?) {}
+    // save all changes on disk to update caches through SnykBulkFileListener
+    override fun doAnnotate(collectedInfo: PsiFile?) {
+        logger.debug("doAnnotate on ${collectedInfo?.name}")
+        val psiFile = collectedInfo ?: return
+        val document = PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile) ?: return
+        ApplicationManager.getApplication().invokeLater {
+            FileDocumentManager.getInstance().saveDocument(document)
+        }
+    }
 
     fun getContainerIssuesForImages(psiFile: PsiFile): List<ContainerIssuesForImage> {
         val containerResult = getSnykToolWindowPanel(psiFile.project)?.currentContainerResult
