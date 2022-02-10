@@ -16,7 +16,6 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     // override needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile? = file
 
-    // save all changes on disk to update caches through SnykBulkFileListener
     override fun doAnnotate(collectedInfo: PsiFile?) {}
 
     fun getContainerIssuesForImages(psiFile: PsiFile): List<ContainerIssuesForImage> {
