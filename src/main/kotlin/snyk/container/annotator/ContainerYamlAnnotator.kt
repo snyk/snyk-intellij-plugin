@@ -24,7 +24,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         logger.debug("doAnnotate on ${collectedInfo?.name}")
         val psiFile = collectedInfo ?: return
         val document = PsiDocumentManager.getInstance(psiFile.project).getDocument(psiFile) ?: return
-        ApplicationManager.getApplication().invokeAndWait {
+        ApplicationManager.getApplication().invokeLater {
             FileDocumentManager.getInstance().saveDocument(document)
         }
     }

@@ -1,5 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.16]
+
+### Fixed
+
+- Fix exception in IaC and Container annotators
+
 ## [2.4.15]
 
 ### Fixed
