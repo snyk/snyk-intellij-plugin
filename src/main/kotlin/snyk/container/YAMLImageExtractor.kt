@@ -58,6 +58,7 @@ object YAMLImageExtractor {
                 .map { line -> line.trim() }
                 .filter { line -> line.isNotBlank() }
                 .filter { line -> !line.startsWith("#") }
+                .filter { line -> !line.startsWith("---") }
 
         if (normalizedLines.size > 1) {
             return normalizedLines[0].startsWith("apiVersion:") &&
