@@ -4,7 +4,8 @@
 
 ### Fixed
 
-- Caret is wrongly jumping to the last selected line in the Tree when editing file with issues.
+- Recognition of k8s YAML files started with `---`
+- Caret is wrongly jumping to the last selected line in the Tree when editing file with issues
 
 ## [2.4.14]
 

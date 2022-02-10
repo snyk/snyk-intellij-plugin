@@ -7,6 +7,10 @@ import org.junit.Test
 class YAMLImageExtractorTest {
     private val yaml =
         """
+        --- # comment1
+        # comment2
+          # comment3
+
         apiVersion: asdf
         kind: CronJob
         metadata:
@@ -32,14 +36,14 @@ class YAMLImageExtractorTest {
     @Test
     fun `isKubernetesFile should return false if apiVersion and kind not set`() {
         var fakeYamlList = yamlList.toMutableList()
-        fakeYamlList.removeAt(0)
+        fakeYamlList.removeIf { it.startsWith("apiVersion:") }
         assertFalse(YAMLImageExtractor.isKubernetesFileContent(fakeYamlList))
 
         fakeYamlList = yamlList.toMutableList()
-        fakeYamlList.removeAt(1)
+        fakeYamlList.removeIf { it.startsWith("kind:") }
         assertFalse(YAMLImageExtractor.isKubernetesFileContent(fakeYamlList))
 
-        fakeYamlList.removeAt(0)
+        fakeYamlList.removeIf { it.startsWith("apiVersion:") }
         assertFalse(YAMLImageExtractor.isKubernetesFileContent(fakeYamlList))
     }
 
