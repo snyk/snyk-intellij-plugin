@@ -69,10 +69,10 @@ jobs:
           ORG_GRADLE_PROJECT_segmentWriteKey: ${{ secrets.SEGMENT_WRITE_KEY }}
         run: ./gradlew publishPlugin
 
-      - name: Create Sentry release
-        uses: getsentry/action-release@v1
-        if: ${{ !env.ACT }}
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+#      - name: Create Sentry release
+#        uses: getsentry/action-release@v1
+#        if: ${{ !env.ACT }}
+#        env:
+#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
