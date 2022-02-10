@@ -1,5 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.15]
+
+### Fixed
+
+- Caret is wrongly jumping to the last selected line in the Tree when editing file with issues.
+
 ## [2.4.14]
 
 ### Changed

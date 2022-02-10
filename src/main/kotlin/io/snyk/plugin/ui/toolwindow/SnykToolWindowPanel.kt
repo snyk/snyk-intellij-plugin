@@ -413,7 +413,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
-                    if (psiFile.virtualFile.isValid) {
+                    if (!smartReloadMode && psiFile.virtualFile.isValid) {
                         navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
                     }
 
@@ -439,7 +439,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
-                    if (virtualFile != null && virtualFile.isValid) {
+                    if (!smartReloadMode && virtualFile != null && virtualFile.isValid) {
                         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                         if (document != null) {
                             val lineNumber = iacIssue.lineNumber.let {
@@ -472,7 +472,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .find { it.image == issuesForImage.imageName }
                     val virtualFile = targetImage?.virtualFile
                     val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
-                    if (virtualFile != null && virtualFile.isValid && line != null) {
+                    if (!smartReloadMode && virtualFile != null && virtualFile.isValid && line != null) {
                         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                         if (document != null) {
                             val lineNumber = if (0 <= line && line < document.lineCount) line else 0
