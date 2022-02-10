@@ -10,9 +10,9 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.tail
 import java.io.IOException
-import java.net.URL
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
@@ -43,7 +43,7 @@ class SnykCliDownloaderService {
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
         try {
-            val result = HttpRequests.request(CliDownloader.LATEST_RELEASES_URL).readString()
+            val result = createRequest(CliDownloader.LATEST_RELEASES_URL).readString()
             val response = "v" + result.removeSuffix("\n")
             latestReleaseInfo = LatestReleaseInfo(
                 tagName = response,

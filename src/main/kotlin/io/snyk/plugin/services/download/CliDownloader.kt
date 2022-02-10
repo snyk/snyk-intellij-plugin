@@ -1,8 +1,8 @@
 package io.snyk.plugin.services.download
 
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import java.io.File
 import java.net.URL
 import java.nio.file.AtomicMoveNotSupportedException
@@ -39,18 +39,10 @@ class CliDownloader {
         try {
             downloadFile.deleteOnExit()
 
-            val url =
-                URL(
-                    java.lang.String.format(
-                        LATEST_RELEASE_DOWNLOAD_URL,
-                        Platform.current().snykWrapperFileName
-                    )
-                ).toString()
+            val url = URL(String.format(LATEST_RELEASE_DOWNLOAD_URL, Platform.current().snykWrapperFileName)).toString()
+
             indicator.checkCanceled()
-            HttpRequests
-                .request(url)
-                .productNameAsUserAgent()
-                .saveToFile(downloadFile, indicator)
+            createRequest(url).saveToFile(downloadFile, indicator)
 
             indicator.checkCanceled()
             verifyChecksum(expectedSha, downloadFile.readBytes())
@@ -81,6 +73,7 @@ class CliDownloader {
 
     fun expectedSha(): String {
         val url = String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName)
-        return HttpRequests.request(url).forceHttps(true).readString().split(" ")[0]
+        val request = createRequest(url)
+        return request.readString().split(" ")[0]
     }
 }

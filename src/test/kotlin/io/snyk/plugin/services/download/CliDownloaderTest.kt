@@ -2,10 +2,13 @@ package io.snyk.plugin.services.download
 
 import com.intellij.util.Url
 import com.intellij.util.io.HttpRequests
+import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
 import junit.framework.TestCase.fail
@@ -19,6 +22,8 @@ class CliDownloaderTest {
     @Before
     fun setUp() {
         unmockkAll()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { pluginSettings() } returns SnykApplicationSettingsStateService()
     }
 
     @After
