@@ -36,16 +36,17 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         issues.vulnerabilities
             .forEach { vulnerability ->
                 if (vulnerability.ignored || vulnerability.obsolete) return@forEach
-
-                val severity = severity(vulnerability)
                 val textRange = textRange(psiFile, vulnerability)
-                val annotationBuilder =
-                    holder.newAnnotation(severity, annotationMessage(vulnerability)).range(textRange)
-                val fixRange = fixRange(psiFile, vulnerability)
-                if (fixRange != TextRange.EMPTY_RANGE && remediation != null && remediation.upgrade.isNotEmpty()) {
-                    addQuickFix(psiFile, vulnerability, annotationBuilder, fixRange, remediation)
+                val severity = severity(vulnerability)
+                if (textRange != TextRange.EMPTY_RANGE) {
+                    val annotationBuilder =
+                        holder.newAnnotation(severity, annotationMessage(vulnerability)).range(textRange)
+                    val fixRange = fixRange(psiFile, vulnerability)
+                    if (fixRange != TextRange.EMPTY_RANGE && remediation != null && remediation.upgrade.isNotEmpty()) {
+                        addQuickFix(psiFile, vulnerability, annotationBuilder, fixRange, remediation)
+                    }
+                    annotationBuilder.create()
                 }
-                annotationBuilder.create()
             }
     }
 

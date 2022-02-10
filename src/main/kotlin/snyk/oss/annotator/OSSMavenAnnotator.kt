@@ -1,14 +1,15 @@
 package snyk.oss.annotator
 
+import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.XmlRecursiveElementVisitor
+import com.intellij.psi.util.siblings
+import com.intellij.psi.xml.XmlTag
 import snyk.oss.Vulnerability
 
 class OSSMavenAnnotator : OSSBaseAnnotator() {
-
-    override fun lineMatches(psiFile: PsiFile, line: String, vulnerability: Vulnerability) =
-        psiFile.virtualFile.name == "pom.xml" &&
-            line.contains("<artifactId>${getIntroducingPackage(vulnerability)}</artifactId>")
 
     override fun getIntroducingPackage(vulnerability: Vulnerability): String {
         return super.getIntroducingPackage(vulnerability).split(":")[1].replace("\"", "")
@@ -19,20 +20,36 @@ class OSSMavenAnnotator : OSSBaseAnnotator() {
     }
 
     override fun fixRange(psiFile: PsiFile, vulnerability: Vulnerability): TextRange {
-        val textRange = super.textRange(psiFile, vulnerability)
-        val text = psiFile.viewProvider.document?.text ?: return TextRange.EMPTY_RANGE // this should never happen
-
+        if (psiFile.fileType !is XmlFileType || psiFile.name != "pom.xml") return TextRange.EMPTY_RANGE
         val currentVersion = getIntroducingPackageVersion(vulnerability)
-        val endOfDependencyBlock = text.substring(textRange.endOffset).indexOf("</dependency>")
-        val searchedVersionLocation = text.substring(textRange.endOffset).indexOf(currentVersion)
+        val artifactName = getIntroducingPackage(vulnerability)
+        val visitor = MavenRecursiveVisitor(artifactName, currentVersion)
+        psiFile.accept(visitor)
+        return visitor.foundTextRange
+    }
 
-        // only add quickfix if the version is explicit within dependency - no resolution of variables
-        return if (searchedVersionLocation == -1 || searchedVersionLocation > endOfDependencyBlock) {
-            TextRange.EMPTY_RANGE
-        } else {
-            val versionStart = textRange.endOffset + searchedVersionLocation
-            val versionEnd = versionStart + currentVersion.length
-            TextRange(versionStart, versionEnd)
+    internal class MavenRecursiveVisitor(
+        private val artifactName: String, private val artifactVersion: String
+    ) : XmlRecursiveElementVisitor() {
+
+        var foundTextRange: TextRange = TextRange.EMPTY_RANGE
+
+        override fun visitElement(element: PsiElement) {
+            if (isSearchedDependency(element)) {
+                val siblings = element.siblings()
+                siblings.forEach {
+                    if (it is XmlTag && it.name == "version" && it.value.text == artifactVersion) {
+                        this.foundTextRange = TextRange(it.value.textRange.startOffset, it.value.textRange.endOffset)
+                        return
+                    }
+                }
+            }
+            super.visitElement(element)
+        }
+
+        private fun isSearchedDependency(element: PsiElement): Boolean {
+            return element is XmlTag && element.name == "artifactId" && element.value.text == artifactName
+                && element.parent is XmlTag && (element.parent as XmlTag).name == "dependency"
         }
     }
 }
