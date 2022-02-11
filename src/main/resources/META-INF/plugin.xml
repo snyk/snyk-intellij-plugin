@@ -20,9 +20,6 @@
                 icon="SnykIcons.TOOL_WINDOW"
                 factoryClass="io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory"/>
 
-    <externalAnnotator language="TEXT" implementationClass="snyk.oss.annotator.OSSDefaultAnnotator"/>
-    <externalAnnotator language="" implementationClass="snyk.oss.annotator.OSSDefaultAnnotator"/>
-
     <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
     <postStartupActivity implementation="snyk.WelcomeNotifyActivity"/>
 

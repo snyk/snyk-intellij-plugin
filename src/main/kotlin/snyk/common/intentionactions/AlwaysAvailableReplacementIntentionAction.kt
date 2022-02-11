@@ -2,12 +2,12 @@ package snyk.common.intentionactions
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.intention.IntentionAction
-import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import com.intellij.util.DocumentUtil
 import com.intellij.util.FileContentUtil
 
 class AlwaysAvailableReplacementIntentionAction(
@@ -33,7 +33,7 @@ class AlwaysAvailableReplacementIntentionAction(
 
     override fun invoke(project: Project, editor: Editor?, file: PsiFile) {
         val doc = editor?.document ?: return
-        WriteAction.run<RuntimeException> {
+        DocumentUtil.writeInRunUndoTransparentAction {
             doc.replaceString(range.startOffset, range.endOffset, replacementText)
             FileContentUtil.reparseOpenedFiles()
             // save all changes on disk to update caches through SnykBulkFileListener
