@@ -23,7 +23,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
         if (AnnotatorHelper.isFileSupported(filePath)) {
             val document = psiFile.viewProvider.document ?: return
-            ApplicationManager.getApplication().invokeAndWait {
+            ApplicationManager.getApplication().invokeLater {
                 FileDocumentManager.getInstance().saveDocument(document)
             }
         }
