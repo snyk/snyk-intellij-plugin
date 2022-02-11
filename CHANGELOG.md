@@ -1,5 +1,11 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.17]
+
+### Changed
+
+- 2022.2 EAP support
+
 ## [2.4.16]
 
 ### Fixed
