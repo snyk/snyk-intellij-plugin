@@ -12,7 +12,6 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
 import org.junit.Before
 import org.junit.Test
-import snyk.oss.annotator.OSSDefaultAnnotator
 import java.nio.file.Paths
 
 @Suppress("FunctionName")
@@ -29,7 +28,8 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     private lateinit var psiFile: PsiFile
 
     override fun getTestDataPath(): String {
-        val resource = OSSDefaultAnnotator::class.java.getResource("/test-fixtures/oss/annotator")
+        val resource = AlwaysAvailableReplacementIntentionAction::class.java
+            .getResource("/test-fixtures/oss/annotator")
         requireNotNull(resource) { "Make sure that the resource $resource exists!" }
         return Paths.get(resource.toURI()).toString()
     }

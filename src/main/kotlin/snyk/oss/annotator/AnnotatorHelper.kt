@@ -15,12 +15,6 @@ object AnnotatorHelper {
         }
     }
 
-    fun hasDedicatedAnnotator(filePath: String) =
-        filePath.endsWith("pom.xml") ||
-            filePath.endsWith("go.mod") ||
-            filePath.endsWith("build.gradle") ||
-            filePath.endsWith("build.gradle.kts")
-
     fun isFileSupported(filePath: String): Boolean =
         listOf(
             "arn.lock",

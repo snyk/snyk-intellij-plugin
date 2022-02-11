@@ -25,8 +25,8 @@ import snyk.oss.OssVulnerabilitiesForFile
 import java.nio.file.Paths
 
 @Suppress("DuplicatedCode", "FunctionName")
-class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
-    private var cut = OSSDefaultAnnotator()
+class OSSNpmAnnotatorTest : BasePlatformTestCase() {
+    private var cut = OSSNpmAnnotator()
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
     private val fileName = "package.json"
     private val ossResult =
@@ -38,7 +38,7 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
     private val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
 
     override fun getTestDataPath(): String {
-        val resource = OSSDefaultAnnotator::class.java.getResource("/test-fixtures/oss/annotator")
+        val resource = OSSNpmAnnotator::class.java.getResource("/test-fixtures/oss/annotator")
         requireNotNull(resource) { "Make sure that the resource $resource exists!" }
         return Paths.get(resource.toURI()).toString()
     }
@@ -53,7 +53,7 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-        cut = OSSDefaultAnnotator()
+        cut = OSSNpmAnnotator()
     }
 
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
@@ -84,7 +84,7 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
         val issues = cut.getIssuesForFile(psiFile)
 
         assertNotEquals(null, issues)
-        assertThat(issues!!.vulnerabilities.distinctBy { it.id }, IsCollectionWithSize.hasSize(90))
+        assertThat(issues!!.vulnerabilities.distinctBy { it.id }, IsCollectionWithSize.hasSize(1))
     }
 
     @Test
@@ -100,8 +100,8 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
     fun `test textRange`() {
         val ossResult = createOssResultWithIssues()
         val issue = ossResult.allCliIssues!!.first().vulnerabilities[0]
-        val expectedStart = 489
-        val expectedEnd = 505
+        val expectedStart = 167
+        val expectedEnd = 174
         val expectedRange = TextRange(expectedStart, expectedEnd)
 
         val actualRange = cut.textRange(psiFile, issue)
@@ -120,7 +120,7 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test apply should not add a quickfix`() {
+    fun `test apply should add a quickfix`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createOssResultWithIssues()
         every { toolWindowPanel.currentOssResults } returns result
@@ -128,24 +128,7 @@ class OSSDefaultAnnotatorTest : BasePlatformTestCase() {
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
-        verify(exactly = 0) { builderMock.withFix(any()) }
-    }
-
-    @Test
-    fun `test apply should not trigger if theres a dedicated annotator`() {
-        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
-        val result = createOssResultWithIssues()
-        every { toolWindowPanel.currentOssResults } returns result
-        val notToBeAnnotatedFile = myFixture.copyFileToProject("build.gradle.kts")
-        val notToBeAnnotatedPsiFile =
-            WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(notToBeAnnotatedFile)!! }
-
-        cut.apply(notToBeAnnotatedPsiFile, Unit, annotationHolderMock)
-
-        verify(exactly = 0) {
-            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
-            builderMock.withFix(any())
-        }
+        verify(exactly = 1) { builderMock.withFix(any()) }
     }
 
     private fun createOssResultWithIssues(): OssResult =
