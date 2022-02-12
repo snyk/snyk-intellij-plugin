@@ -93,8 +93,11 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     fun defaultTextRange(psiFile: PsiFile, iacIssue: IacIssue): TextRange {
         val document = psiFile.viewProvider.document ?: return TextRange.EMPTY_RANGE
 
-        val startOffset = document.getLineStartOffset(iacIssue.lineNumber - 1)
-        val endOffset = document.getLineEndOffset(iacIssue.lineNumber - 1)
+        val lineNumber = iacIssue.lineNumber - 1
+        if (lineNumber < 0 || document.lineCount <= lineNumber) return TextRange.EMPTY_RANGE
+
+        val startOffset = document.getLineStartOffset(lineNumber)
+        val endOffset = document.getLineEndOffset(lineNumber)
         return TextRange.create(startOffset, endOffset)
     }
 }

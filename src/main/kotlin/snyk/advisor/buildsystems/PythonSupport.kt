@@ -8,10 +8,10 @@ class PythonSupport(private val editor: Editor) {
 
     // see https://pip.pypa.io/en/stable/cli/pip_install/#requirements-file-format
     fun getPackageName(lineNumber: Int): String? {
+        val document = editor.document
+        if (lineNumber < 0 || document.lineCount <= lineNumber) return null
         // current line is continuation of previous line -> no package name could be here
-        if (lineNumber > 1 && getLineText(lineNumber - 1).endsWith("\\")) {
-            return null
-        }
+        if (lineNumber > 1 && getLineText(lineNumber - 1).endsWith("\\")) return null
         val lineText = getLineText(lineNumber)
 
         return findPackageName(lineText)

@@ -18,6 +18,7 @@ class NpmSupport(private val editor: Editor) {
         val document = editor.document
         val project = editor.project ?: return null
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return null
+        if (lineNumber < 0 || document.lineCount <= lineNumber) return null
         val lineStartElement = psiFile.findElementAt(document.getLineStartOffset(lineNumber))
             ?: return null
 
