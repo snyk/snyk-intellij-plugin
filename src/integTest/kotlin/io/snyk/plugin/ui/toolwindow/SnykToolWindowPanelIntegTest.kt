@@ -71,10 +71,13 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
+        try {
+            unmockkAll()
+            resetSettings(project)
+            removeDummyCliFile()
+        } finally {
+            super.tearDown()
+        }
     }
 
     private fun setUpIacTest() {
@@ -314,7 +317,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
         val firstIaCFileNode = rootIacIssuesTreeNode.firstChild as? IacFileTreeNode
         val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
-            ?: throw IllegalStateException()
+            ?: throw IllegalStateException("IacIssueNode should not be null")
         TreeUtil.selectNode(tree, firstIacIssueNode)
 
         // hack to avoid "File accessed outside allowed roots" check in tests
@@ -332,10 +335,10 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 toolWindowPanel.getDescriptionPanel(),
                 IacSuggestionDescriptionPanel::class,
                 "IacSuggestionDescriptionPanel"
-            ) ?: throw IllegalStateException()
+            ) ?: throw IllegalStateException("IacSuggestionDescriptionPanel should not be null")
 
         val ignoreButton = UIComponentFinder.getComponentByName(iacDescriptionPanel(), JButton::class, "ignoreButton")
-            ?: throw IllegalStateException()
+            ?: throw IllegalStateException("IgnoreButton should not be null")
 
         assertFalse(
             "Issue should NOT be ignored by default",

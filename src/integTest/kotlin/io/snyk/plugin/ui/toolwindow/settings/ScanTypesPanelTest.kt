@@ -2,16 +2,17 @@ package io.snyk.plugin.ui.toolwindow.settings
 
 import UIComponentFinder.getComponentByName
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.ui.components.JBCheckBox
 import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.settings.ScanTypesPanel
@@ -20,6 +21,7 @@ import snyk.container.KubernetesImageCache
 
 @Suppress("FunctionName")
 class ScanTypesPanelTest : LightPlatform4TestCase() {
+    private lateinit var disposable: Disposable
 
     override fun setUp() {
         super.setUp()
@@ -29,15 +31,22 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
     }
 
     override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        disposable.dispose()
-        super.tearDown()
+        try {
+            unmockkAll()
+            resetSettings(project)
+            disposable.dispose()
+        } finally {
+            super.tearDown()
+        }
     }
 
-    private val imageCache get() = project.service<KubernetesImageCache>()
-
-    private lateinit var disposable: Disposable
+    private fun setUpContainerScanTypePanelTests(): KubernetesImageCache {
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val cacheMock = mockk<KubernetesImageCache>(relaxed = true)
+        every { isSnykCodeAvailable(any()) } returns false
+        every { getKubernetesImageCache(project) } returns cacheMock
+        return cacheMock
+    }
 
     private fun getContainerCheckBox(
         initialValue: Boolean,
@@ -57,6 +66,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan enablement get from settings`() {
+        setUpContainerScanTypePanelTests()
         val containerCheckBox = getContainerCheckBox(initialValue = true, switchSelection = false)
 
         assertTrue(
@@ -67,6 +77,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan enablement set to settings`() {
+        setUpContainerScanTypePanelTests()
         getContainerCheckBox(initialValue = true, switchSelection = true)
 
         assertFalse(
@@ -77,6 +88,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan disablement get from settings`() {
+        setUpContainerScanTypePanelTests()
         val containerCheckBox = getContainerCheckBox(initialValue = false, switchSelection = false)
 
         assertFalse(
@@ -86,6 +98,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan disablement set to settings`() {
+        setUpContainerScanTypePanelTests()
         getContainerCheckBox(initialValue = false, switchSelection = true)
 
         assertTrue(
@@ -94,23 +107,24 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         )
     }
 
+
     @Test
     fun `KubernetesImageCache rescan after container enablement`() {
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        val spyk = spyk(imageCache)
-        every { getKubernetesImageCache(project) } returns spyk
+        val cacheMock = setUpContainerScanTypePanelTests()
+        justRun { cacheMock.scanProjectForKubernetesFiles() }
+
         getContainerCheckBox(initialValue = false, switchSelection = true)
 
-        verify(exactly = 1) { spyk.scanProjectForKubernetesFiles() }
+        verify(exactly = 1) { cacheMock.scanProjectForKubernetesFiles() }
     }
 
     @Test
     fun `KubernetesImageCache clean up after container disablement`() {
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        val spyk = spyk(imageCache)
-        every { getKubernetesImageCache(project) } returns spyk
+        val cacheMock = setUpContainerScanTypePanelTests()
+        justRun { cacheMock.clear() }
+
         getContainerCheckBox(initialValue = true, switchSelection = true)
 
-        verify(exactly = 1) { spyk.clear() }
+        verify(exactly = 1) { cacheMock.clear() }
     }
 }

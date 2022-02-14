@@ -54,8 +54,11 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     }
 
     override fun tearDown() {
-        unmockkAll()
-        super.tearDown()
+        try {
+            unmockkAll()
+        } finally {
+            super.tearDown()
+        }
     }
 
     @Test

@@ -11,6 +11,10 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykToolWindowPanel
+import snyk.common.SeverityConstants.SEVERITY_CRITICAL
+import snyk.common.SeverityConstants.SEVERITY_HIGH
+import snyk.common.SeverityConstants.SEVERITY_LOW
+import snyk.common.SeverityConstants.SEVERITY_MEDIUM
 import snyk.container.ContainerIssuesForImage
 
 class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
@@ -101,12 +105,5 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val text = document.getText(lineRange)
         val lineOffSet = startOffset + text.indexOf(imageName)
         return TextRange.create(lineOffSet, lineOffSet + imageName.length)
-    }
-
-    companion object {
-        const val SEVERITY_CRITICAL = "critical"
-        const val SEVERITY_HIGH = "high"
-        const val SEVERITY_MEDIUM = "medium"
-        const val SEVERITY_LOW = "low"
     }
 }

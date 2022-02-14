@@ -35,9 +35,12 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
+        try {
+            resetSettings(project)
+            removeDummyCliFile()
+        } finally {
+            super.tearDown()
+        }
     }
 
     private val ossService: OssService
@@ -270,8 +273,8 @@ class OssServiceTest : LightPlatformTestCase() {
                 with(vuln) {
                     id
                     license
-                    identifiers?.CVE
-                    identifiers?.CWE
+                    identifiers?.cve
+                    identifiers?.cwe
                     title
                     description
                     language
@@ -281,7 +284,7 @@ class OssServiceTest : LightPlatformTestCase() {
                     name
                     version
                     exploit
-                    CVSSv3
+                    cvssV3
                     cvssScore
                     fixedIn
                     from

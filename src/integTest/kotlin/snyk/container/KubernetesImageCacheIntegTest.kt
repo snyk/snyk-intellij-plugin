@@ -3,6 +3,7 @@ package snyk.container
 import com.intellij.openapi.components.service
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.LightPlatform4TestCase
+import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
 import org.junit.Test
 import snyk.container.TestYamls.cronJobYaml
@@ -26,8 +27,17 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     private lateinit var cut: KubernetesImageCache
     override fun setUp() {
         super.setUp()
+        unmockkAll()
         cut = project.service()
         getKubernetesImageCache(project)?.clear()
+    }
+
+    override fun tearDown() {
+        try {
+            unmockkAll()
+        } finally {
+            super.tearDown()
+        }
     }
 
     @Test

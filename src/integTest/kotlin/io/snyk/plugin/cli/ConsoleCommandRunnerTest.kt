@@ -52,10 +52,13 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
     @After
     override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
+        try {
+            unmockkAll()
+            resetSettings(project)
+            removeDummyCliFile()
+        } finally {
+            super.tearDown()
+        }
     }
 
     @Test
