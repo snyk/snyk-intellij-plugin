@@ -21,8 +21,6 @@ import snyk.container.KubernetesImageCache
 
 @Suppress("FunctionName")
 class ScanTypesPanelTest : LightPlatform4TestCase() {
-    private var cacheMock: KubernetesImageCache = mockk()
-
     private lateinit var disposable: Disposable
 
     override fun setUp() {
@@ -30,7 +28,6 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         unmockkAll()
         resetSettings(project)
         disposable = Disposer.newDisposable()
-        setUpContainerScanTypePanelTests()
     }
 
     override fun tearDown() {
@@ -43,11 +40,12 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         }
     }
 
-    private fun setUpContainerScanTypePanelTests() {
+    private fun setUpContainerScanTypePanelTests(): KubernetesImageCache {
         mockkStatic("io.snyk.plugin.UtilsKt")
-        cacheMock = mockk(relaxed = true)
+        val cacheMock = mockk<KubernetesImageCache>(relaxed = true)
         every { isSnykCodeAvailable(any()) } returns false
         every { getKubernetesImageCache(project) } returns cacheMock
+        return cacheMock
     }
 
     private fun getContainerCheckBox(
@@ -68,6 +66,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan enablement get from settings`() {
+        setUpContainerScanTypePanelTests()
         val containerCheckBox = getContainerCheckBox(initialValue = true, switchSelection = false)
 
         assertTrue(
@@ -78,6 +77,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan enablement set to settings`() {
+        setUpContainerScanTypePanelTests()
         getContainerCheckBox(initialValue = true, switchSelection = true)
 
         assertFalse(
@@ -88,6 +88,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan disablement get from settings`() {
+        setUpContainerScanTypePanelTests()
         val containerCheckBox = getContainerCheckBox(initialValue = false, switchSelection = false)
 
         assertFalse(
@@ -97,6 +98,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `container scan disablement set to settings`() {
+        setUpContainerScanTypePanelTests()
         getContainerCheckBox(initialValue = false, switchSelection = true)
 
         assertTrue(
@@ -108,6 +110,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `KubernetesImageCache rescan after container enablement`() {
+        val cacheMock = setUpContainerScanTypePanelTests()
         justRun { cacheMock.scanProjectForKubernetesFiles() }
 
         getContainerCheckBox(initialValue = false, switchSelection = true)
@@ -117,6 +120,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `KubernetesImageCache clean up after container disablement`() {
+        val cacheMock = setUpContainerScanTypePanelTests()
         justRun { cacheMock.clear() }
 
         getContainerCheckBox(initialValue = true, switchSelection = true)
