@@ -7,6 +7,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.XmlRecursiveElementVisitor
 import com.intellij.psi.util.siblings
 import com.intellij.psi.xml.XmlTag
+import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 
 class OSSMavenAnnotator : OSSBaseAnnotator() {
@@ -17,6 +18,15 @@ class OSSMavenAnnotator : OSSBaseAnnotator() {
 
     override fun textRange(psiFile: PsiFile, vulnerability: Vulnerability): TextRange {
         return fixRange(psiFile, vulnerability)
+    }
+
+    override fun getFixVersion(
+        remediation: OssVulnerabilitiesForFile.Remediation?,
+        vulnerability: Vulnerability
+    ): String {
+        // we need to use the super class, as we need the group for finding the upgrade
+        val key = super.getIntroducingPackage(vulnerability) + "@" + super.getIntroducingPackageVersion(vulnerability)
+        return remediation?.upgrade?.get(key)?.upgradeTo?.split("@")?.get(1) ?: ""
     }
 
     override fun fixRange(psiFile: PsiFile, vulnerability: Vulnerability): TextRange {

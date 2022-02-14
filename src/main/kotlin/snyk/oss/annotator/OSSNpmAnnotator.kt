@@ -22,11 +22,10 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
     }
 
     override fun getFixVersion(
-        remediation: OssVulnerabilitiesForFile.Remediation,
+        remediation: OssVulnerabilitiesForFile.Remediation?,
         vulnerability: Vulnerability
     ): String {
-        val upgrade = remediation.upgrade[vulnerability.from[1]]
-        val fixVersion = upgrade?.upgradeTo?.split("@")?.get(1) ?: ""
+        val fixVersion = super.getFixVersion(remediation, vulnerability)
         return "\"$fixVersion\""
     }
 

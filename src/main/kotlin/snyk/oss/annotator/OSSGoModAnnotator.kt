@@ -12,7 +12,7 @@ class OSSGoModAnnotator : OSSBaseAnnotator() {
     }
 
     override fun getFixVersion(
-        remediation: OssVulnerabilitiesForFile.Remediation,
+        remediation: OssVulnerabilitiesForFile.Remediation?,
         vulnerability: Vulnerability
     ): String {
         return super.getFixVersion(remediation, vulnerability).replace("@", " v")

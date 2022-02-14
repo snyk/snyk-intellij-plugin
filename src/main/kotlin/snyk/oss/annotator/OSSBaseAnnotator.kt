@@ -31,7 +31,6 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         val issues = getIssuesForFile(psiFile) ?: return
-        val remediation = issues.remediation
 
         issues.vulnerabilities
             .forEach { vulnerability ->
@@ -42,8 +41,9 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
                     val annotationBuilder =
                         holder.newAnnotation(severity, annotationMessage(vulnerability)).range(textRange)
                     val fixRange = fixRange(psiFile, vulnerability)
-                    if (fixRange != TextRange.EMPTY_RANGE && remediation != null && remediation.upgrade.isNotEmpty()) {
-                        addQuickFix(psiFile, vulnerability, annotationBuilder, fixRange, remediation)
+                    val fixVersion = getFixVersion(issues.remediation, vulnerability)
+                    if (fixRange != TextRange.EMPTY_RANGE && fixVersion.isNotBlank()) {
+                        addQuickFix(psiFile, vulnerability, annotationBuilder, fixRange, fixVersion)
                     }
                     annotationBuilder.create()
                 }
@@ -53,7 +53,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     open fun getIssuesForFile(psiFile: PsiFile): OssVulnerabilitiesForFile? {
         val ossResult = getSnykToolWindowPanel(psiFile.project)?.currentOssResults ?: return null
         val filePath = psiFile.virtualFile?.path ?: return null
-        !AnnotatorHelper.isFileSupported(filePath) && return null
+        if (!AnnotatorHelper.isFileSupported(filePath)) return null
 
         ProgressManager.checkCanceled()
 
@@ -72,16 +72,16 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         vulnerability: Vulnerability,
         annotationBuilder: AnnotationBuilder,
         textRange: TextRange,
-        remediation: OssVulnerabilitiesForFile.Remediation
+        fixVersion: String
     ) {
-        val replacementText = getFixVersion(remediation, vulnerability)
-        if (replacementText.isNotBlank()) {
-            annotationBuilder.withFix(AlwaysAvailableReplacementIntentionAction(textRange, replacementText))
+        if (fixVersion.isNotBlank()) {
+            annotationBuilder.withFix(AlwaysAvailableReplacementIntentionAction(textRange, fixVersion))
         }
     }
 
-    open fun getFixVersion(remediation: OssVulnerabilitiesForFile.Remediation, vulnerability: Vulnerability): String {
-        val upgrade = remediation.upgrade[vulnerability.from[1]]
+    open fun getFixVersion(remediation: OssVulnerabilitiesForFile.Remediation?, vulnerability: Vulnerability): String {
+        val upgradeKey = getIntroducingPackage(vulnerability) + "@" + getIntroducingPackageVersion(vulnerability)
+        val upgrade = remediation?.upgrade?.get(upgradeKey)
         return upgrade?.upgradeTo?.split("@")?.get(1) ?: ""
     }
 

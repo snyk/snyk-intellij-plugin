@@ -11,7 +11,6 @@
   <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withYAML.xml">org.jetbrains.plugins.yaml</depends>
   <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withXML.xml">com.intellij.modules.xml</depends>
   <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withGo.xml">org.jetbrains.plugins.go</depends>
-  <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withGroovy.xml">org.jetbrains.plugins.groovy</depends>
   <depends optional="true" config-file="optional/io.snyk.snyk-intellij-plugin-withKotlin.xml">org.jetbrains.kotlin</depends>
 
   <extensions defaultExtensionNs="com.intellij">

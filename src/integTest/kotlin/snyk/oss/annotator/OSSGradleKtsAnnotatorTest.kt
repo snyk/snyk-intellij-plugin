@@ -17,6 +17,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.jetbrains.kotlin.psi.KtFile
 import org.junit.Before
 import org.junit.Test
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
@@ -26,25 +27,20 @@ import snyk.oss.Vulnerability
 import java.nio.file.Paths
 
 @Suppress("DuplicatedCode", "FunctionName")
-class OSSGradleAnnotatorTest : BasePlatformTestCase() {
-    private var cut = OSSGradleAnnotator()
+class OSSGradleKtsAnnotatorTest : BasePlatformTestCase() {
+    private var cut = OSSGradleKtsAnnotator()
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
-    private val buildGradleFilename = "build.gradle"
     private val buildGradleKtsFilename = "build.gradle.kts"
-    private val ossResultGradle =
-        javaClass.classLoader.getResource("oss-test-results/oss-result-gradle.json")!!.readText(Charsets.UTF_8)
     private val ossResultGradleKts =
         javaClass.classLoader.getResource("oss-test-results/oss-result-gradle-kts.json")!!.readText(Charsets.UTF_8)
 
-    private lateinit var virtualFileBuildGradle: VirtualFile
     private lateinit var virtualFileBuildGradleKts: VirtualFile
-    private lateinit var buildGradle: PsiFile
-    private lateinit var buildGradleKts: PsiFile
+    private lateinit var buildGradleKts: KtFile
 
     private val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
 
     override fun getTestDataPath(): String {
-        val resource = OSSGradleAnnotator::class.java.getResource("/test-fixtures/oss/annotator")
+        val resource = OSSGradleKtsAnnotator::class.java.getResource("/test-fixtures/oss/annotator")
         requireNotNull(resource) { "Make sure that the resource $resource exists!" }
         return Paths.get(resource.toURI()).toString()
     }
@@ -57,13 +53,11 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
         unmockkAll()
         project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
         pluginSettings().fileListenerEnabled = false
-        virtualFileBuildGradle = myFixture.copyFileToProject(buildGradleFilename)
         virtualFileBuildGradleKts = myFixture.copyFileToProject(buildGradleKtsFilename)
-        buildGradle = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(virtualFileBuildGradle)!! }
-        buildGradleKts = WriteAction.computeAndWait<PsiFile, Throwable> {
-            psiManager.findFile(virtualFileBuildGradleKts)!!
+        buildGradleKts = WriteAction.computeAndWait<KtFile, Throwable> {
+            psiManager.findFile(virtualFileBuildGradleKts)!! as KtFile
         }
-        cut = OSSGradleAnnotator()
+        cut = OSSGradleKtsAnnotator()
     }
 
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
@@ -79,57 +73,12 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test gradle apply should trigger newAnnotation call`() {
-        every { toolWindowPanel.currentOssResults } returns createGradleOssResultWithIssues()
-
-        cut.apply(buildGradle, Unit, annotationHolderMock)
-
-        verify { annotationHolderMock.newAnnotation(any(), any()) }
-    }
-
-    @Test
     fun `test gradle-kts apply should trigger newAnnotation call`() {
         every { toolWindowPanel.currentOssResults } returns createGradleKtsOssResultWithIssues()
 
         cut.apply(buildGradleKts, Unit, annotationHolderMock)
 
-        verify { annotationHolderMock.newAnnotation(any(), any()) }
-    }
-
-    @Test
-    fun `test textRange for Gradle pom`() {
-        val ossResult = createGradleOssResultWithIssues()
-        val vulnerabilities = ossResult.allCliIssues!![0].vulnerabilities
-
-        var issue = vulnerabilities[0]
-        var expectedStart = 721
-        var expectedEnd = 752
-        checkRangeFinding(expectedStart, expectedEnd, issue)
-
-        issue = vulnerabilities[1]
-        expectedStart = 875
-        expectedEnd = 891
-        checkRangeFinding(expectedStart, expectedEnd, issue)
-
-        issue = vulnerabilities[2]
-        expectedStart = 774
-        expectedEnd = 816
-        checkRangeFinding(expectedStart, expectedEnd, issue)
-
-        issue = vulnerabilities[3]
-        expectedStart = 774
-        expectedEnd = 816
-        checkRangeFinding(expectedStart, expectedEnd, issue)
-
-        issue = vulnerabilities[4]
-        expectedStart = 774
-        expectedEnd = 816
-        checkRangeFinding(expectedStart, expectedEnd, issue)
-
-        issue = vulnerabilities[5]
-        expectedStart = 774
-        expectedEnd = 816
-        checkRangeFinding(expectedStart, expectedEnd, issue)
+        verify(exactly = 5) { annotationHolderMock.newAnnotation(any(), any()) }
     }
 
     @Test
@@ -137,28 +86,28 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
         val ossResult = createGradleKtsOssResultWithIssues()
         val vulnerabilities = ossResult.allCliIssues!![0].vulnerabilities
 
-        var issue = vulnerabilities[0]
+        var issue = vulnerabilities[0] // org.jetbrains.kotlin:kotlin-test-junit")
         var expectedStart = 980
-        var expectedEnd = 1020
+        var expectedEnd = 1018
         checkRangeFinding(expectedStart, expectedEnd, issue, buildGradleKts)
 
-        issue = vulnerabilities[1]
+        issue = vulnerabilities[1] // org.apache.logging.log4j:log4j-core:2.14.1
         expectedStart = 664
         expectedEnd = 706
         checkRangeFinding(expectedStart, expectedEnd, issue, buildGradleKts)
 
-        issue = vulnerabilities[2]
+        issue = vulnerabilities[2] // org.apache.logging.log4j:log4j-core:2.14.1
         expectedStart = 664
         expectedEnd = 706
         checkRangeFinding(expectedStart, expectedEnd, issue, buildGradleKts)
 
         issue = vulnerabilities[3]
-        expectedStart = 664
+        expectedStart = 664 // org.apache.logging.log4j:log4j-core:2.14.1
         expectedEnd = 706
         checkRangeFinding(expectedStart, expectedEnd, issue, buildGradleKts)
 
         issue = vulnerabilities[4]
-        expectedStart = 664
+        expectedStart = 664 // org.apache.logging.log4j:log4j-core:2.14.1
         expectedEnd = 706
         checkRangeFinding(expectedStart, expectedEnd, issue, buildGradleKts)
     }
@@ -167,7 +116,7 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
         expectedStart: Int,
         expectedEnd: Int,
         issue: Vulnerability,
-        psiFile: PsiFile = buildGradle
+        psiFile: PsiFile = buildGradleKts
     ) {
         val expectedRange = TextRange(expectedStart, expectedEnd)
         val actualRange = cut.textRange(psiFile, issue)
@@ -176,7 +125,7 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test annotation message should contain issue title`() {
-        val vulnerability = createGradleOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
+        val vulnerability = createGradleKtsOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
         val expected = "Snyk: ${vulnerability.title} in ${vulnerability.name}"
 
         val actual = cut.annotationMessage(vulnerability)
@@ -185,27 +134,7 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test apply should add a quickfix if upgradePath available and introducing dep is in pom`() {
-        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
-        val result = createGradleOssResultWithIssues()
-        val capturedIntentionSlot = slot<IntentionAction>()
-        every { toolWindowPanel.currentOssResults } returns result
-        every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
-        every { builderMock.withFix(capture(capturedIntentionSlot)) } returns builderMock
-
-        cut.apply(buildGradle, Unit, annotationHolderMock)
-
-        assertTrue(capturedIntentionSlot.captured is AlwaysAvailableReplacementIntentionAction)
-        val action = capturedIntentionSlot.captured as AlwaysAvailableReplacementIntentionAction
-        assertEquals(TextRange(810, 816), action.range)
-        assertEquals("2.17.1", action.replacementText)
-        verify {
-            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
-        }
-    }
-
-    @Test
-    fun `test gradle kts apply should add a quickfix if upgradePath available and introducing dep is in pom`() {
+    fun `test gradle kts apply should add a quickfix if upgradePath available and introducing dep is in gradle kts`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createGradleKtsOssResultWithIssues()
         val capturedIntentionSlot = slot<IntentionAction>()
@@ -222,10 +151,8 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
         verify {
             annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
         }
+        verify(exactly = 4) { builderMock.withFix(any()) }
     }
-
-    private fun createGradleOssResultWithIssues(): OssResult =
-        OssResult(listOf(Gson().fromJson(ossResultGradle, OssVulnerabilitiesForFile::class.java)), null)
 
     private fun createGradleKtsOssResultWithIssues(): OssResult =
         OssResult(listOf(Gson().fromJson(ossResultGradleKts, OssVulnerabilitiesForFile::class.java)), null)
