@@ -1,6 +1,5 @@
 package snyk.common.intentionactions
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -8,7 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.DocumentUtil
-import com.intellij.util.FileContentUtil
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
@@ -35,10 +34,9 @@ class AlwaysAvailableReplacementIntentionAction(
         val doc = editor?.document ?: return
         DocumentUtil.writeInRunUndoTransparentAction {
             doc.replaceString(range.startOffset, range.endOffset, replacementText)
-            FileContentUtil.reparseOpenedFiles()
             // save all changes on disk to update caches through SnykBulkFileListener
             FileDocumentManager.getInstance().saveDocument(doc)
-            DaemonCodeAnalyzer.getInstance(project).restart(file)
+            refreshAnnotationsForOpenFiles(project)
         }
     }
 

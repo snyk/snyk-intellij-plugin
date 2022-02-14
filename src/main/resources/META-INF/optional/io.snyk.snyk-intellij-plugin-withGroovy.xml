@@ -1,0 +1,5 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <externalAnnotator language="Groovy" implementationClass="snyk.oss.annotator.OSSGradleKtsAnnotator"/>
+  </extensions>
+</idea-plugin>

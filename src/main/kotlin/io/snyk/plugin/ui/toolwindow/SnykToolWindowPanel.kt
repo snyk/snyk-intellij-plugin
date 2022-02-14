@@ -45,6 +45,7 @@ import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
@@ -160,7 +161,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             override fun scanningOssFinished(ossResult: OssResult) {
                 currentOssResults = ossResult
-                ApplicationManager.getApplication().invokeLater { displayVulnerabilities(ossResult) }
+                ApplicationManager.getApplication().invokeLater {
+                    displayVulnerabilities(ossResult)
+                    refreshAnnotationsForOpenFiles(project)
+                }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)

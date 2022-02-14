@@ -2,9 +2,11 @@
 
 package io.snyk.plugin
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.registry.Registry
@@ -14,6 +16,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
+import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykApiService
@@ -246,3 +249,14 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
     } catch (ignored: Throwable) {
         null
     }
+
+fun refreshAnnotationsForOpenFiles(project: Project) {
+    val openFiles = FileEditorManager.getInstance(project).openFiles
+    FileContentUtil.reparseFiles(project, openFiles.asList(), true)
+    openFiles.forEach {
+        val psiFile = findPsiFileIgnoringExceptions(it, project)
+        if (psiFile != null) {
+            DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+        }
+    }
+}

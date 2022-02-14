@@ -22,7 +22,7 @@ class OSSGradleKtsAnnotator : OSSBaseAnnotator() {
         psiFile: PsiFile,
         vulnerability: Vulnerability
     ): Pair<TextRange, TextRange> {
-        if (psiFile.name != "build.gradle.kts") return Pair(
+        if (!psiFile.name.startsWith("build.gradle")) return Pair(
             TextRange.EMPTY_RANGE,
             TextRange.EMPTY_RANGE
         )
