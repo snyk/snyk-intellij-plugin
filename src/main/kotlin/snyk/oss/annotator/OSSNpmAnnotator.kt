@@ -26,7 +26,11 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
         vulnerability: Vulnerability
     ): String {
         val fixVersion = super.getFixVersion(remediation, vulnerability)
-        return "\"$fixVersion\""
+        return if (fixVersion.isNotBlank()) {
+            "\"$fixVersion\""
+        } else {
+            fixVersion
+        }
     }
 
     internal class NpmRecursiveVisitor(
