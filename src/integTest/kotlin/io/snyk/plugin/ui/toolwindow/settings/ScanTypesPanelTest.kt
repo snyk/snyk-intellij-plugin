@@ -7,11 +7,14 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.ui.components.JBCheckBox
 import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.settings.ScanTypesPanel
@@ -20,11 +23,13 @@ import snyk.container.KubernetesImageCache
 
 @Suppress("FunctionName")
 class ScanTypesPanelTest : LightPlatform4TestCase() {
+    private lateinit var cacheMock: KubernetesImageCache
 
     override fun setUp() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        cacheMock = setUpContainerScanTypePanelTests()
         disposable = Disposer.newDisposable()
     }
 
@@ -32,12 +37,22 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         unmockkAll()
         resetSettings(project)
         disposable.dispose()
-        super.tearDown()
+        try {
+            super.tearDown()
+        } catch (e: Exception) {
+            // ignore
+        }
     }
 
-    private val imageCache get() = project.service<KubernetesImageCache>()
-
     private lateinit var disposable: Disposable
+
+    private fun setUpContainerScanTypePanelTests(): KubernetesImageCache {
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val cacheMock = mockk<KubernetesImageCache>(relaxed = true)
+        every { isSnykCodeAvailable(any()) } returns false
+        every { getKubernetesImageCache(project) } returns cacheMock
+        return cacheMock
+    }
 
     private fun getContainerCheckBox(
         initialValue: Boolean,
@@ -94,23 +109,22 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         )
     }
 
+
     @Test
     fun `KubernetesImageCache rescan after container enablement`() {
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        val spyk = spyk(imageCache)
-        every { getKubernetesImageCache(project) } returns spyk
+        justRun { cacheMock.scanProjectForKubernetesFiles() }
+
         getContainerCheckBox(initialValue = false, switchSelection = true)
 
-        verify(exactly = 1) { spyk.scanProjectForKubernetesFiles() }
+        verify(exactly = 1) { cacheMock.scanProjectForKubernetesFiles() }
     }
 
     @Test
     fun `KubernetesImageCache clean up after container disablement`() {
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        val spyk = spyk(imageCache)
-        every { getKubernetesImageCache(project) } returns spyk
+        justRun { cacheMock.clear() }
+
         getContainerCheckBox(initialValue = true, switchSelection = true)
 
-        verify(exactly = 1) { spyk.clear() }
+        verify(exactly = 1) { cacheMock.clear() }
     }
 }
