@@ -47,9 +47,12 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
     }
 
     override fun tearDown() {
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
+        try {
+            resetSettings(project)
+            removeDummyCliFile()
+        } finally {
+            super.tearDown()
+        }
     }
 
     /********************* OSS **********************/

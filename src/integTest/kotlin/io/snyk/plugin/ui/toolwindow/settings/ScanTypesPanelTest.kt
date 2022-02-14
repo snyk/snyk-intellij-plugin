@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow.settings
 
 import UIComponentFinder.getComponentByName
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.ui.components.JBCheckBox
@@ -10,7 +9,6 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getKubernetesImageCache
@@ -25,6 +23,8 @@ import snyk.container.KubernetesImageCache
 class ScanTypesPanelTest : LightPlatform4TestCase() {
     private lateinit var cacheMock: KubernetesImageCache
 
+    private lateinit var disposable: Disposable
+
     override fun setUp() {
         super.setUp()
         unmockkAll()
@@ -34,17 +34,14 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
     }
 
     override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        disposable.dispose()
         try {
+            unmockkAll()
+            resetSettings(project)
+            disposable.dispose()
+        } finally {
             super.tearDown()
-        } catch (e: Exception) {
-            // ignore
         }
     }
-
-    private lateinit var disposable: Disposable
 
     private fun setUpContainerScanTypePanelTests(): KubernetesImageCache {
         mockkStatic("io.snyk.plugin.UtilsKt")

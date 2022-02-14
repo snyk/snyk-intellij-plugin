@@ -3,7 +3,6 @@ package io.snyk.plugin.ui.toolwindow
 import UIComponentFinder
 import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.application.ex.ApplicationManagerEx
 import com.intellij.openapi.application.impl.ApplicationInfoImpl
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.HeavyPlatformTestCase
@@ -72,10 +71,13 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
+        try {
+            unmockkAll()
+            resetSettings(project)
+            removeDummyCliFile()
+        } finally {
+            super.tearDown()
+        }
     }
 
     private fun setUpIacTest() {

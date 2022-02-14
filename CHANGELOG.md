@@ -1,10 +1,16 @@
 # Snyk Vulnerability Scanner Changelog
 
+## [2.4.18]
+
+### Changed
+
+- Snyk Open Source: added editor annotations for Maven, NPM, and Kotlin Gradle
+- Snyk Open Source: added quickfix capability for package managers
+
 ## [2.4.17]
 
 ### Changed
-- Snyk Open Source: added editor annotations
-- Snyk Open Source: added quickfix capability for some package manager
+
 - 2022.2 EAP support
 
 ### Fixed

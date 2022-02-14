@@ -8,12 +8,14 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.DocumentUtil
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
     val replacementText: String,
     private val intentionText: String = intentionDefaultTextPrefix,
-    private val familyName: String = intentionDefaultFamilyName
+    private val familyName: String = intentionDefaultFamilyName,
+    val message: String = ""
 ) : IntentionAction {
     override fun startInWriteAction(): Boolean {
         return true
@@ -37,6 +39,9 @@ class AlwaysAvailableReplacementIntentionAction(
             // save all changes on disk to update caches through SnykBulkFileListener
             FileDocumentManager.getInstance().saveDocument(doc)
             refreshAnnotationsForOpenFiles(project)
+            if (message.isNotBlank()) {
+                SnykBalloonNotificationHelper.showWarn(message, project)
+            }
         }
     }
 

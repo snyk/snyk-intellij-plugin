@@ -23,8 +23,11 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
     }
 
     override fun tearDown() {
-        resetSettings(project)
-        super.tearDown()
+        try {
+            resetSettings(project)
+        } finally {
+            super.tearDown()
+        }
     }
 
     fun testGenericDcIgnoreAddedOnProjectOpening() {

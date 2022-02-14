@@ -1,16 +1,20 @@
 package snyk.oss.annotator
 
 import com.google.gson.Gson
+import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.patterns.uast.capture
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.replaceService
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.pluginSettings
@@ -20,6 +24,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
+import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssResult
 import snyk.oss.OssVulnerabilitiesForFile
 import java.nio.file.Paths
@@ -58,13 +63,11 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
 
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
     override fun tearDown() {
-        unmockkAll()
         try {
+            unmockkAll()
+        } finally {
             super.tearDown()
             pluginSettings().fileListenerEnabled = true
-        } catch (e: Exception) {
-            // when tearing down the test case, our File Listener is trying to react on the deletion of the test
-            // files and tries to access the file index that isn't there anymore
         }
     }
 
@@ -120,15 +123,33 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test apply should add a quickfix`() {
+    fun `test apply should not add a quickfix when upgrade empty`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createOssResultWithIssues()
+        result.allCliIssues?.first()?.remediation = null
         every { toolWindowPanel.currentOssResults } returns result
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
+        verify(exactly = 0) { builderMock.withFix(any()) }
+    }
+
+    @Test
+    fun `test apply should add a quickfix with message`() {
+        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
+        val result = createOssResultWithIssues()
+        every { toolWindowPanel.currentOssResults } returns result
+        every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
+        val intentionActionCapturingSlot = slot<AlwaysAvailableReplacementIntentionAction>()
+        every { builderMock.withFix(capture(intentionActionCapturingSlot)) } returns builderMock
+        myFixture.configureByText("package-lock.json", "test")
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
         verify(exactly = 1) { builderMock.withFix(any()) }
+        val expected = "Please update your package-lock.json to finish fixing the vulnerability."
+        assertEquals(expected, intentionActionCapturingSlot.captured.message)
     }
 
     private fun createOssResultWithIssues(): OssResult =

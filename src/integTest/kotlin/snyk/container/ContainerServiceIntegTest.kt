@@ -31,9 +31,12 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
     }
 
     override fun tearDown() {
-        unmockkAll()
-        removeDummyCliFile()
-        super.tearDown()
+        try {
+            unmockkAll()
+            removeDummyCliFile()
+        } finally {
+            super.tearDown()
+        }
     }
 
     @Test
