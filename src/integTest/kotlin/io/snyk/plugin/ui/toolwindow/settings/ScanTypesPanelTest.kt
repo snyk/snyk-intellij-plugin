@@ -21,7 +21,7 @@ import snyk.container.KubernetesImageCache
 
 @Suppress("FunctionName")
 class ScanTypesPanelTest : LightPlatform4TestCase() {
-    private lateinit var cacheMock: KubernetesImageCache
+    private var cacheMock: KubernetesImageCache = mockk()
 
     private lateinit var disposable: Disposable
 
@@ -29,8 +29,8 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
-        cacheMock = setUpContainerScanTypePanelTests()
         disposable = Disposer.newDisposable()
+        setUpContainerScanTypePanelTests()
     }
 
     override fun tearDown() {
@@ -43,12 +43,11 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         }
     }
 
-    private fun setUpContainerScanTypePanelTests(): KubernetesImageCache {
+    private fun setUpContainerScanTypePanelTests() {
         mockkStatic("io.snyk.plugin.UtilsKt")
-        val cacheMock = mockk<KubernetesImageCache>(relaxed = true)
+        cacheMock = mockk(relaxed = true)
         every { isSnykCodeAvailable(any()) } returns false
         every { getKubernetesImageCache(project) } returns cacheMock
-        return cacheMock
     }
 
     private fun getContainerCheckBox(
