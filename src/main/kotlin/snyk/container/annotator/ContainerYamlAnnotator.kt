@@ -94,6 +94,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     fun textRange(psiFile: PsiFile, line: Int, imageName: String): TextRange {
         val document = psiFile.viewProvider.document ?: return TextRange.EMPTY_RANGE
         val documentLine = line - 1
+        if (documentLine < 0 || document.lineCount <= documentLine) return TextRange.EMPTY_RANGE
         val startOffset = document.getLineStartOffset(documentLine)
         val endOffset = document.getLineEndOffset(documentLine)
         val lineRange = TextRange.create(startOffset, endOffset)

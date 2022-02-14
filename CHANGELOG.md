@@ -6,6 +6,10 @@
 
 - 2022.2 EAP support
 
+### Fixed
+
+- Fix IndexOutOfBoundsException during line number requests
+
 ## [2.4.16]
 
 ### Fixed
