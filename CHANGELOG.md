@@ -2,6 +2,12 @@
 
 ## [2.4.18]
 
+### Fixed
+
+- Fix Container: invalid token shows error and don’t redirect to Auth panel
+- Fix Container: should handle case if no images in project found
+- Fix Container: node still showing last results even if disabled
+
 ### Changed
 
 - Snyk Open Source: added editor annotations for Maven, NPM, and Kotlin Gradle

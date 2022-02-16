@@ -17,10 +17,12 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.ConsoleCommandRunner
+import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.pluginSettings
@@ -50,6 +52,7 @@ import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import javax.swing.JButton
 import javax.swing.JLabel
+import javax.swing.JPanel
 import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
 
@@ -163,6 +166,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test should not display error when no OSS supported file found`() {
         mockkObject(SnykBalloonNotificationHelper)
 
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
         val snykError = SnykError("Could not detect supported target files in", project.basePath.toString())
@@ -205,6 +210,111 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             SnykToolWindowPanel.IAC_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND,
             toolWindowPanel.getRootIacIssuesTreeNode().userObject
         )
+    }
+
+    @Test
+    fun `test should display NO_CONTAINER_IMAGES_FOUND after scan when no Container images found`() {
+        mockkObject(SnykBalloonNotificationHelper)
+
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        val snykError = ContainerService.NO_IMAGES_TO_SCAN_ERROR
+        val snykErrorControl = SnykError("control", project.basePath.toString())
+
+        toolWindowPanel.snykScanListener.scanningContainerError(snykErrorControl)
+        toolWindowPanel.snykScanListener.scanningContainerError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(any(), project)
+        }
+
+        assertTrue(toolWindowPanel.currentContainerError == null)
+        assertEquals(
+            SnykToolWindowPanel.CONTAINER_ROOT_TEXT + SnykToolWindowPanel.NO_CONTAINER_IMAGES_FOUND,
+            toolWindowPanel.getRootContainerIssuesTreeNode().userObject
+        )
+    }
+
+    @Test
+    fun `test OSS scan should redirect to Auth panel if token is invalid`() {
+        mockkObject(SnykBalloonNotificationHelper)
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        val snykErrorControl = SnykError("control", project.basePath.toString())
+        val snykError = SnykError("Authentication failed. Please check the API token on ", project.basePath.toString())
+
+        toolWindowPanel.snykScanListener.scanningOssError(snykErrorControl)
+        toolWindowPanel.snykScanListener.scanningOssError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(snykErrorControl.message, project)
+        }
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(snykError.message, project)
+        }
+        assertTrue(toolWindowPanel.currentOssError == null)
+        assertEquals(
+            SnykToolWindowPanel.OSS_ROOT_TEXT,
+            toolWindowPanel.getRootOssIssuesTreeNode().userObject
+        )
+        val authPanel = UIComponentFinder.getComponentByName(toolWindowPanel, JPanel::class, "authPanel")
+        assertNotNull(authPanel)
+    }
+
+    @Test
+    fun `test Container scan should redirect to Auth panel if token is invalid`() {
+        mockkObject(SnykBalloonNotificationHelper)
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        val snykErrorControl = SnykError("control", project.basePath.toString())
+        val snykError = SnykError("Authentication failed. Please check the API token on ", project.basePath.toString())
+
+        toolWindowPanel.snykScanListener.scanningContainerError(snykErrorControl)
+        toolWindowPanel.snykScanListener.scanningContainerError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(snykErrorControl.message, project)
+        }
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(snykError.message, project)
+        }
+        assertTrue(toolWindowPanel.currentContainerError == null)
+        assertEquals(
+            SnykToolWindowPanel.CONTAINER_ROOT_TEXT,
+            toolWindowPanel.getRootContainerIssuesTreeNode().userObject
+        )
+        val authPanel = UIComponentFinder.getComponentByName(toolWindowPanel, JPanel::class, "authPanel")
+        assertNotNull(authPanel)
+    }
+
+    @Test
+    fun `test Container node should show no child when disabled`() {
+        mockkObject(SnykBalloonNotificationHelper)
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+
+        // assert child shown when Container results exist
+        toolWindowPanel.snykScanListener.scanningContainerFinished(fakeContainerResult)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        assertEquals(fakeContainerResult, toolWindowPanel.currentContainerResult)
+        assertTrue(rootContainerNode.childCount > 0)
+
+        // assert no child shown when Container node disabled
+        pluginSettings().containerScanEnabled = false
+        getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        assertTrue(rootContainerNode.childCount == 0)
     }
 
     @Test

@@ -38,7 +38,7 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
         val imageNames = images.map { it.image }
         LOG.debug("container scan requested for ${imageNames.size} images: $imageNames")
         if (imageNames.isEmpty()) {
-            return ContainerResult(emptyList(), null)
+            return ContainerResult(emptyList(), NO_IMAGES_TO_SCAN_ERROR)
         }
         val tempResult = execute(commands + imageNames)
         if (!tempResult.isSuccessful()) {
@@ -142,4 +142,8 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
         jsonStr.contains("\"vulnerabilities\":") && !jsonStr.contains("\"error\":")
 
     override fun buildExtraOptions(): List<String> = listOf("--json")
+
+    companion object {
+        val NO_IMAGES_TO_SCAN_ERROR = SnykError("", "")
+    }
 }

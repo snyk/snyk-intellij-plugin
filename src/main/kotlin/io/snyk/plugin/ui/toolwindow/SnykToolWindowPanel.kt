@@ -66,6 +66,7 @@ import snyk.common.SnykError
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
+import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
@@ -235,7 +236,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             override fun scanningOssError(snykError: SnykError) {
                 currentOssResults = null
-                var cleanupToolwindow = true
                 var ossResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
                     if (snykError.message.startsWith(NO_OSS_FILES)) {
@@ -245,17 +245,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         SnykBalloonNotificationHelper.showError(snykError.message, project)
                         if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
                             pluginSettings().token = null
-                            displayAuthPanel()
-                            cleanupToolwindow = false
+                            currentOssError = null
                         } else {
                             currentOssError = snykError
                         }
                     }
-                    if (cleanupToolwindow) {
-                        removeAllChildren(listOf(rootOssTreeNode))
-                        updateTreeRootNodesPresentation(ossResultsCount)
-                        displayEmptyDescription()
-                    }
+                    removeAllChildren(listOf(rootOssTreeNode))
+                    updateTreeRootNodesPresentation(ossResultsCount = ossResultsCount)
+                    chooseMainPanelToDisplay()
                     refreshAnnotationsForOpenFiles(project)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
@@ -294,12 +291,23 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             override fun scanningContainerError(snykError: SnykError) {
                 currentContainerResult = null
+                var containerResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
-                    SnykBalloonNotificationHelper.showError(snykError.message, project)
-                    currentContainerError = snykError
+                    if (snykError == ContainerService.NO_IMAGES_TO_SCAN_ERROR) {
+                        currentContainerError = null
+                        containerResultsCount = NODE_NOT_SUPPORTED_STATE
+                    } else {
+                        SnykBalloonNotificationHelper.showError(snykError.message, project)
+                        if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
+                            pluginSettings().token = null
+                            currentContainerError = null
+                        } else {
+                            currentContainerError = snykError
+                        }
+                    }
                     removeAllChildren(listOf(rootContainerIssuesTreeNode))
-                    updateTreeRootNodesPresentation()
-                    displayEmptyDescription()
+                    updateTreeRootNodesPresentation(containerResultsCount = containerResultsCount)
+                    chooseMainPanelToDisplay()
                     refreshAnnotationsForOpenFiles(project)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
@@ -609,8 +617,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun removeAllChildren(
-        rootNodesToUpdate: List<DefaultMutableTreeNode> =
-            listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode, rootIacIssuesTreeNode)
+        rootNodesToUpdate: List<DefaultMutableTreeNode> = listOf(
+            rootOssTreeNode,
+            rootSecurityIssuesTreeNode,
+            rootQualityIssuesTreeNode,
+            rootIacIssuesTreeNode,
+            rootContainerIssuesTreeNode
+        )
     ) {
         rootNodesToUpdate.forEach {
             it.removeAllChildren()
@@ -646,13 +659,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun displayAuthPanel() {
-        removeAll()
-        val splitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
-        add(splitter, BorderLayout.CENTER)
-        splitter.firstComponent = TreePanel(vulnerabilitiesTree)
+        displayTreeAndDescriptionPanels()
+        doCleanUi()
+        descriptionPanel.removeAll()
         val authPanel = SnykAuthPanel(project)
         Disposer.register(this, authPanel)
-        splitter.secondComponent = authPanel
+        descriptionPanel.add(CenterOneComponentPanel(authPanel), BorderLayout.CENTER)
         revalidate()
 
         service<SnykAnalyticsService>().logWelcomeIsViewed(
@@ -790,6 +802,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
+                    count == NODE_NOT_SUPPORTED_STATE -> NO_CONTAINER_IMAGES_FOUND
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
@@ -1150,8 +1163,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         const val NO_OSS_FILES = "Could not detect supported target files in"
         const val NO_IAC_FILES = "Could not find any valid IaC files"
-        const val NO_SUPPORTED_IAC_FILES_FOUND = "- No supported IaC files found"
-        const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = "- No supported package manager found"
+        const val NO_SUPPORTED_IAC_FILES_FOUND = " - No supported IaC files found"
+        const val NO_CONTAINER_IMAGES_FOUND = " - No Container images found"
+        const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
         private const val NODE_INITIAL_STATE = -1
         private const val NODE_NOT_SUPPORTED_STATE = -2
