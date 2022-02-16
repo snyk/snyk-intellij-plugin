@@ -6,6 +6,7 @@ import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykToolWindowPanel
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
@@ -71,7 +72,13 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         fixVersion: String
     ) {
         if (fixVersion.isNotBlank()) {
-            annotationBuilder.withFix(AlwaysAvailableReplacementIntentionAction(textRange, fixVersion))
+            annotationBuilder.withFix(
+                AlwaysAvailableReplacementIntentionAction(
+                    textRange,
+                    fixVersion,
+                    analyticsService = getSnykAnalyticsService(psiFile.project)
+                )
+            )
         }
     }
 

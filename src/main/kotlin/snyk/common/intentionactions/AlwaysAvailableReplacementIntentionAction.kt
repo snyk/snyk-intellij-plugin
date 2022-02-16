@@ -7,20 +7,31 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.DocumentUtil
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import org.jetbrains.kotlin.idea.quickfix.QuickFixWithDelegateFactory
+import snyk.analytics.QuickFixIsDisplayed
+import snyk.analytics.QuickFixIsTriggered
 
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
     val replacementText: String,
     private val intentionText: String = intentionDefaultTextPrefix,
     private val familyName: String = intentionDefaultFamilyName,
-    val message: String = ""
+    val message: String = "",
+    val analyticsService: SnykAnalyticsService?
 ) : IntentionAction {
     override fun startInWriteAction(): Boolean {
         return true
     }
     override fun getText(): String {
+        val event = QuickFixIsDisplayed.builder()
+            .ide(QuickFixIsDisplayed.Ide.JETBRAINS)
+            .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
+            .build()
+        analyticsService?.logQuickFixIsDisplayed(event)
         return intentionText + replacementText
     }
 
@@ -43,6 +54,11 @@ class AlwaysAvailableReplacementIntentionAction(
                 SnykBalloonNotificationHelper.showWarn(message, project)
             }
         }
+        val event = QuickFixIsTriggered.builder()
+            .ide(QuickFixIsTriggered.Ide.JETBRAINS)
+            .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
+            .build()
+        analyticsService?.logQuickFixIsTriggered(event)
     }
 
     companion object {

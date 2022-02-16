@@ -15,6 +15,8 @@ import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
 import snyk.analytics.ProductSelectionIsViewed
+import snyk.analytics.QuickFixIsDisplayed
+import snyk.analytics.QuickFixIsTriggered
 import snyk.analytics.WelcomeIsViewed
 
 @Service
@@ -142,6 +144,22 @@ class SnykAnalyticsService : Disposable {
 
         catchAll(log, "authenticateButtonIsClicked") {
             itly.logAuthenticateButtonIsClicked(userId, event)
+        }
+    }
+
+    fun logQuickFixIsDisplayed(event: QuickFixIsDisplayed) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "quickFixIsDisplayed") {
+            itly.logQuickFixIsDisplayed(userId, event)
+        }
+    }
+
+    fun logQuickFixIsTriggered(event: QuickFixIsTriggered) {
+        if (!settings.usageAnalyticsEnabled) return
+
+        catchAll(log, "quickFixIsDisplayed") {
+            itly.logQuickFixIsTriggered(userId, event)
         }
     }
 

@@ -1,6 +1,7 @@
 package snyk.common.intentionactions
 
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -9,7 +10,9 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykAnalyticsService
 import org.junit.Before
 import org.junit.Test
 import java.nio.file.Paths
@@ -24,6 +27,7 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     private lateinit var cut: AlwaysAvailableReplacementIntentionAction
 
     private val fileName = "package.json"
+    private val analyticsMock = mockk<SnykAnalyticsService>(relaxed = true)
 
     private lateinit var psiFile: PsiFile
 
@@ -43,7 +47,13 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-        cut = AlwaysAvailableReplacementIntentionAction(range, replacementText, intentionText, familyName)
+        cut = AlwaysAvailableReplacementIntentionAction(
+            range,
+            replacementText,
+            intentionText,
+            familyName,
+            analyticsService = analyticsMock
+        )
     }
 
     @Suppress("SwallowedException", "TooGenericExceptionCaught")
@@ -59,6 +69,7 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     @Test
     fun `test getText`() {
         assertEquals(intentionText + replacementText, cut.text)
+        verify { analyticsMock.logQuickFixIsDisplayed(any()) }
     }
 
     @Test
@@ -76,5 +87,6 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
         cut.invoke(project, editor, psiFile)
 
         assertEquals("b", doc.text)
+        verify { analyticsMock.logQuickFixIsTriggered(any()) }
     }
 }
