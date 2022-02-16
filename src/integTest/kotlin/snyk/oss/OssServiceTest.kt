@@ -58,16 +58,6 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
-        setupDummyCliFile()
-        pluginSettings().usageAnalyticsEnabled = false
-
-        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
-
-        assertTrue(cliCommands.contains("--DISABLE_ANALYTICS"))
-    }
-
-    @Test
     fun testBuildCliCommandsListWithFileParameter() {
         setupDummyCliFile()
 

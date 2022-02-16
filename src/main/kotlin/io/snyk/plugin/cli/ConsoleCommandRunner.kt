@@ -95,6 +95,10 @@ open class ConsoleCommandRunner {
         if (customEndpoint != null && customEndpoint.isNotEmpty()) {
             commandLine.environment["SNYK_API"] = customEndpoint
         }
+        if (!pluginSettings().usageAnalyticsEnabled) {
+            commandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"
+        }
+
         commandLine.environment["SNYK_INTEGRATION_NAME"] = pluginInfo.integrationName
         commandLine.environment["SNYK_INTEGRATION_VERSION"] = pluginInfo.integrationVersion
         commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment
