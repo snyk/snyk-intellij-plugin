@@ -3,6 +3,7 @@
   "SourceId": "f2e16b49-6653-4183-abba-149fa04165fb",
   "Path": "./src/main/java/snyk/analytics",
   "Branch": "main",
-  "Version": "100.0.0",
-  "OrgId": "114775"
+  "Version": "137.0.0",
+  "OrgId": "114775",
+  "Runtime": "jre:java-v3"
 }

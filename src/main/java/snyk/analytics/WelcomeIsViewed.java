@@ -15,12 +15,12 @@ import java.util.HashMap;
 public class WelcomeIsViewed extends Event {
     private static final String NAME = "Welcome Is Viewed";
     private static final String ID = "91114669-bbab-4f58-a7dd-ea7c98c79221";
-    private static final String VERSION = "1.0.0";
+  private static final String VERSION = "1.0.2";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
 
-        private String ide;
+      private final String ide;
 
         public String getIde()
         {
@@ -49,7 +49,7 @@ public class WelcomeIsViewed extends Event {
 
     // Inner Builder class with required properties
     public static class Builder implements IIde, IBuild {
-        private final HashMap<String, Object> properties = new HashMap<String, Object>();
+      private final HashMap<String, Object> properties = new HashMap<>();
 
         private Builder() {
             this.properties.put("itly", true);

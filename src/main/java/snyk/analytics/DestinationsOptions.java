@@ -18,13 +18,14 @@ public class DestinationsOptions {
   }
 
   public static class Builder implements IBuild {
-        private Builder() {}
-
-
-        public DestinationsOptions build() {
-            return new DestinationsOptions(this);
-        }
+    private Builder() {
     }
+
+
+    public DestinationsOptions build() {
+      return new DestinationsOptions(this);
+    }
+  }
 
     public interface IBuild {
         DestinationsOptions build();

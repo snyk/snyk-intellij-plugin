@@ -15,21 +15,7 @@ import java.util.HashMap;
 public class AuthenticateButtonIsClicked extends Event {
   private static final String NAME = "Authenticate Button Is Clicked";
   private static final String ID = "2220c25f-ba76-4d5b-92f7-6d0e1c6165be";
-  private static final String VERSION = "1.0.0";
-
-  public enum Ide {
-    VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
-
-    private final String ide;
-
-    public String getIde() {
-      return this.ide;
-    }
-
-    Ide(String ide) {
-      this.ide = ide;
-    }
-  }
+  private static final String VERSION = "1.0.2";
 
   public enum EventSource {
     ADVISOR("Advisor"), APP("App"), LEARN("Learn"), IDE("IDE");
@@ -42,6 +28,20 @@ public class AuthenticateButtonIsClicked extends Event {
 
     EventSource(String eventSource) {
       this.eventSource = eventSource;
+    }
+  }
+
+  public enum Ide {
+    VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+
+    private final String ide;
+
+    public String getIde() {
+      return this.ide;
+    }
+
+    Ide(String ide) {
+      this.ide = ide;
     }
   }
 
@@ -63,7 +63,7 @@ public class AuthenticateButtonIsClicked extends Event {
 
   // Inner Builder class with required properties
   public static class Builder implements IIde, IBuild {
-    private final HashMap<String, Object> properties = new HashMap<String, Object>();
+    private final HashMap<String, Object> properties = new HashMap<>();
 
     private Builder() {
       this.properties.put("itly", true);
