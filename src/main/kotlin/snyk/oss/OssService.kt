@@ -68,10 +68,6 @@ class OssService(project: Project) : CliAdapter<OssResult>(project) {
 
         options.add("--json")
 
-        if (!settings.usageAnalyticsEnabled) {
-            options.add("--DISABLE_ANALYTICS")
-        }
-
         val additionalParameters = settings.getAdditionalParameters(project)
 
         if (additionalParameters != null && additionalParameters.trim().isNotEmpty()) {

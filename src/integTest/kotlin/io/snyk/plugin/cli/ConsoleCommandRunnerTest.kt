@@ -78,6 +78,20 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun testSetupCliEnvironmentVariablesWithDisabledUsageAnalytics() {
+        val originalUsageAnalyticsEnabled = pluginSettings().usageAnalyticsEnabled
+        try {
+            pluginSettings().usageAnalyticsEnabled = false
+            val generalCommandLine = GeneralCommandLine("")
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+            assertEquals("1", generalCommandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"])
+        } finally {
+            pluginSettings().usageAnalyticsEnabled = originalUsageAnalyticsEnabled
+        }
+    }
+
+    @Test
     fun testSetupCliEnvironmentVariablesWithProxyWithoutAuth() {
         val httpConfigurable = HttpConfigurable.getInstance()
         val originalProxyHost = httpConfigurable.PROXY_HOST

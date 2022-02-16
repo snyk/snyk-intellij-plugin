@@ -65,16 +65,6 @@ class IacServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testBuildCliCommandsListWithDisableAnalyticsParameter() {
-        setupDummyCliFile()
-        pluginSettings().usageAnalyticsEnabled = false
-
-        val cliCommands = iacService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
-
-        assertFalse(cliCommands.contains("--DISABLE_ANALYTICS"))
-    }
-
-    @Test
     fun testBuildCliCommandsListWithFileParameter() {
         setupDummyCliFile()
 
