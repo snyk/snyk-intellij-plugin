@@ -54,8 +54,8 @@ object TestYamls {
               template:
                 spec:
                   containers:
-                  - name: hello
-                    image: busybox
+                  - image: busybox
+                    name: hello
                     imagePullPolicy: IfNotPresent
                     command:
                     - /bin/sh
