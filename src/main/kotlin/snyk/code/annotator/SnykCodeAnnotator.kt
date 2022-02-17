@@ -9,11 +9,16 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.snykcode.core.AnalysisData
+import snyk.common.AnnotatorCommon
+import kotlin.math.max
+import kotlin.math.min
 
 class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile = file
-    override fun doAnnotate(collectedInfo: PsiFile?): Unit = Unit
+    override fun doAnnotate(psiFile: PsiFile?) {
+        AnnotatorCommon.prepareAnnotate(psiFile)
+    }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         val suggestions = getIssuesForFile(psiFile)
@@ -54,8 +59,12 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     fun textRange(psiFile: PsiFile, snykCodeRange: MyTextRange): TextRange {
         val document = psiFile.viewProvider.document ?: return TextRange.EMPTY_RANGE
-        val lineOffSet = document.getLineStartOffset(snykCodeRange.startRow - 1) + snykCodeRange.startCol
-        val lineOffSetEnd = document.getLineStartOffset(snykCodeRange.endRow - 1) + snykCodeRange.endCol
+        // ensure we stay within doc boundaries
+        val startRow = max(0, snykCodeRange.startRow - 1)
+        val endRow = min(document.lineCount, snykCodeRange.endRow - 1)
+        val endCol = min(document.getLineEndOffset(endRow), snykCodeRange.endCol)
+        val lineOffSet = document.getLineStartOffset(startRow) + snykCodeRange.startCol
+        val lineOffSetEnd = document.getLineStartOffset(endRow) + endCol
         return TextRange.create(lineOffSet, lineOffSetEnd)
     }
 }

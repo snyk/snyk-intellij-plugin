@@ -3,12 +3,11 @@ package snyk.oss.annotator
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykToolWindowPanel
+import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
@@ -19,14 +18,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile = file
     override fun doAnnotate(psiFile: PsiFile?) {
-        val filePath = psiFile?.virtualFile?.path ?: return
-
-        if (AnnotatorHelper.isFileSupported(filePath)) {
-            val document = psiFile.viewProvider.document ?: return
-            ApplicationManager.getApplication().invokeLater {
-                FileDocumentManager.getInstance().saveDocument(document)
-            }
-        }
+        AnnotatorCommon.prepareAnnotate(psiFile)
     }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
