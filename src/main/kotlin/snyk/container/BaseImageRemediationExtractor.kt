@@ -1,38 +1,24 @@
 package snyk.container
 
 object BaseImageRemediationExtractor {
+    val regex = "([a-zA-Z0-9:_/.-])+".toRegex()
 
-    fun extractImageInfo(text: String): BaseImageInfo {
-        val lines = text.split("\n")
-        // first line is headers
-        val parts = lines
-            .filter { s -> s.trim().isNotEmpty() }
-            .first { s -> !s.startsWith("Base Image    Vulnerabilities  Severity") }
-            .split("  ")
-            .filter { s -> s.trim().isNotEmpty() }
+    fun extractImageInfo(text: String): BaseImageInfo? {
+        val lines = text.split("\n").filter { it.isNotBlank() }
+        if (lines.size < 2) return null
+        val matches = regex.find(lines[1]) ?: return null
 
-        val name = parts[0]
-        var critical = 0
-        var high = 0
-        var medium = 0
-        var low = 0
+        val name = matches.value
+        var next = matches.next()?.next()
+        val critical = next?.value?.toInt() ?: -1
+        next = next?.next()?.next()
+        val high = next?.value?.toInt() ?: -1
+        next = next?.next()?.next()
+        val medium = next?.value?.toInt() ?: -1
+        next = next?.next()?.next()
+        val low = next?.value?.toInt() ?: -1
 
-        val vulnerabilities = parts[2]
-        val chunks = vulnerabilities.split(", ")
-        for (chunk in chunks) {
-            if (chunk.contains("critical")) {
-                critical = extractIssueCount(chunk)
-            }
-            if (chunk.contains("high")) {
-                high = extractIssueCount(chunk)
-            }
-            if (chunk.contains("medium")) {
-                medium = extractIssueCount(chunk)
-            }
-            if (chunk.contains("low")) {
-                low = extractIssueCount(chunk)
-            }
-        }
+        if (name.isBlank() || critical < 0 || high < 0 || medium < 0 || low < 0) return null
 
         return BaseImageInfo(
             name = name,
@@ -44,6 +30,4 @@ object BaseImageRemediationExtractor {
             )
         )
     }
-
-    private fun extractIssueCount(chunk: String) = chunk.trim().split(" ")[0].toInt()
 }
