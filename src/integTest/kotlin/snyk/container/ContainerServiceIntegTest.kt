@@ -52,7 +52,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
             "Should have found a minor upgrade remediation",
             actualRemediation.minorUpgrades != null
         )
-        assertTrue(actualRemediation.majorUpgrades == null)
+        assertTrue(actualRemediation.majorUpgrades != null)
         val expectedImageName = expectedResult.allCliIssues!!.first().imageName
         assertEquals(expectedImageName, actualFirstImage.imageName)
         assertEquals(expectedImageName, actualRemediation.currentImage!!.name)

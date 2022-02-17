@@ -24,6 +24,14 @@ postgres:13.1  114              5 critical, 11 high, 12 medium, 86 low
         runTest(input, "postgres:13.1", 5, 11, 12, 86)
     }
 
+    @Test
+    fun extractImageInfo3() {
+        val input = """Base Image     Vulnerabilities  Severity
+postgres:14.1  50               0 critical, 0 high, 0 medium, 50 low
+"""
+        runTest(input, "postgres:14.1", 0, 0, 0, 50)
+    }
+
     private fun runTest(
         input: String,
         expectedImage: String,
