@@ -175,7 +175,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
 
             override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
-                ApplicationManager.getApplication().invokeLater { displaySnykCodeResults(snykCodeResults) }
+                ApplicationManager.getApplication().invokeLater {
+                    displaySnykCodeResults(snykCodeResults)
+                    refreshAnnotationsForOpenFiles(project)
+                }
                 if (snykCodeResults == null) {
                     return
                 }
@@ -186,6 +189,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 currentIacResult = iacResult
                 ApplicationManager.getApplication().invokeLater {
                     displayIacResults(iacResult)
+                    refreshAnnotationsForOpenFiles(project)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -200,6 +204,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 currentContainerResult = containerResult
                 ApplicationManager.getApplication().invokeLater {
                     displayContainerResults(containerResult)
+                    refreshAnnotationsForOpenFiles(project)
                 }
                 service<SnykAnalyticsService>().logAnalysisIsReady(
                     AnalysisIsReady.builder()

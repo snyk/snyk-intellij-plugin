@@ -1,0 +1,8 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <externalAnnotator language="vgo" implementationClass="snyk.oss.annotator.OSSGoModAnnotator"/>
+    <externalAnnotator language="vgo" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
+    <externalAnnotator language="go" implementationClass="snyk.oss.annotator.OSSGoModAnnotator"/>
+    <externalAnnotator language="go" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
+  </extensions>
+</idea-plugin>
