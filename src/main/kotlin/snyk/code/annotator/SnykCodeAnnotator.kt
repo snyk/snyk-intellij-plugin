@@ -60,11 +60,14 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     fun textRange(psiFile: PsiFile, snykCodeRange: MyTextRange): TextRange {
         val document = psiFile.viewProvider.document ?: return TextRange.EMPTY_RANGE
         // ensure we stay within doc boundaries
+        // Snyk Code is 1-based, Document is 0-based indexes
         val startRow = max(0, snykCodeRange.startRow - 1)
-        val endRow = min(document.lineCount, snykCodeRange.endRow - 1)
-        val endCol = min(document.getLineEndOffset(endRow), snykCodeRange.endCol)
-        val lineOffSet = document.getLineStartOffset(startRow) + snykCodeRange.startCol
-        val lineOffSetEnd = document.getLineStartOffset(endRow) + endCol
+        val endRow = max(startRow, min(document.lineCount - 1, snykCodeRange.endRow - 1))
+        val startCol = max(0, snykCodeRange.startCol)
+        val endCol = max(startCol, min(document.getLineEndOffset(endRow), snykCodeRange.endCol))
+
+        val lineOffSet = min(document.getLineStartOffset(startRow) + startCol, document.textLength - 1)
+        val lineOffSetEnd = max(lineOffSet, min(document.getLineStartOffset(endRow) + endCol, document.textLength - 1))
         return TextRange.create(lineOffSet, lineOffSetEnd)
     }
 }

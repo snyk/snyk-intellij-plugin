@@ -7,12 +7,10 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Before
 import org.junit.Test
 import java.nio.file.Paths
@@ -68,6 +66,19 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
+    fun `test textRange should use document to determine boundary limits`() {
+        val range = mockRange(-1, Int.MAX_VALUE, -1, Int.MAX_VALUE)
+        val issue = createSnykCodeResultWithIssues(range)[0]
+        val expectedStart = 0
+        val expectedEnd = 243
+        val expectedRange = TextRange(expectedStart, expectedEnd)
+
+        val actualRange = cut.textRange(psiFile, issue.ranges[0])
+
+        assertEquals(expectedRange, actualRange)
+    }
+
+    @Test
     fun `test annotation message should contain issue title`() {
         val issue = createSnykCodeResultWithIssues()[0]
         val expected = "Snyk Code: ${issue.title}. ${issue.message}"
@@ -77,13 +88,7 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
         assertEquals(expected, actual)
     }
 
-    private fun createSnykCodeResultWithIssues(): List<SuggestionForFile> {
-        val myRange = mockk<MyTextRange>()
-        every { myRange.startCol } returns 10
-        every { myRange.endCol } returns 20
-        every { myRange.startRow } returns 3
-        every { myRange.endRow } returns 4
-
+    private fun createSnykCodeResultWithIssues(range: MyTextRange = mockRange()): List<SuggestionForFile> {
         val suggestionForFile = SuggestionForFile(
             "testId",
             "testRule",
@@ -94,11 +99,20 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
             1,
             emptyList(),
             emptyList(),
-            listOf(myRange),
+            listOf(range),
             emptyList(),
             emptyList(),
             emptyList()
         )
         return listOf(suggestionForFile)
+    }
+
+    private fun mockRange(startRow: Int = 3, endRow: Int = 3, startCol: Int = -3, endCol: Int = 20): MyTextRange {
+        val myRange = mockk<MyTextRange>()
+        every { myRange.startRow } returns startRow
+        every { myRange.endRow } returns endRow
+        every { myRange.startCol } returns startCol
+        every { myRange.endCol } returns endCol
+        return myRange
     }
 }
