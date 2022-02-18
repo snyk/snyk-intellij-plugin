@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Fix Container: invalid token shows error and don’t redirect to Auth panel
+- Fix Container: invalid token shows error and does not redirect to Auth panel
 - Fix Container: should handle case if no images in project found
 - Fix Container: node still showing last results even if disabled
 
