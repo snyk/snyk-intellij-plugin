@@ -20,7 +20,7 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
         if (psiFile.fileType !is JsonFileType || psiFile.name != "package.json") return TextRange.EMPTY_RANGE
         val currentVersion = getIntroducingPackageVersion(vulnerability)
         val packageName = getIntroducingPackage(vulnerability)
-        val visitor = NpmRecursiveVisitor(packageName, currentVersion)
+        val visitor = NpmRecursiveVisitor(packageName)
         psiFile.accept(visitor)
         return visitor.foundTextRange
     }
@@ -51,9 +51,7 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
         return "\"${split[0]}\": \"${split[1]}\""
     }
 
-    internal class NpmRecursiveVisitor(
-        private val artifactName: String, private val artifactVersion: String
-    ) : JsonRecursiveElementVisitor() {
+    internal class NpmRecursiveVisitor(private val artifactName: String) : JsonRecursiveElementVisitor() {
 
         var foundTextRange: TextRange = TextRange.EMPTY_RANGE
 
@@ -68,9 +66,9 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
         }
 
         private fun isSearchedDependency(element: PsiElement): Boolean {
-            return element !is PsiComment && element !is PsiWhiteSpace
-                && element is JsonStringLiteral
-                && element.value == artifactName
+            return element !is PsiComment && element !is PsiWhiteSpace &&
+                element is JsonStringLiteral &&
+                element.value == artifactName
         }
     }
 }
