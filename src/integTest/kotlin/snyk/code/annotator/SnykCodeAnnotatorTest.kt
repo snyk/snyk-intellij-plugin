@@ -107,7 +107,7 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
         return listOf(suggestionForFile)
     }
 
-    private fun mockRange(startRow: Int = 3, endRow: Int = 3, startCol: Int = -3, endCol: Int = 20): MyTextRange {
+    private fun mockRange(startRow: Int = 3, endRow: Int = 4, startCol: Int = 10, endCol: Int = 20): MyTextRange {
         val myRange = mockk<MyTextRange>()
         every { myRange.startRow } returns startRow
         every { myRange.endRow } returns endRow
