@@ -37,11 +37,8 @@ object YAMLImageExtractor {
     }
 
     fun extractFromFile(file: VirtualFile, project: Project): Set<KubernetesWorkloadImage> {
-        val psiFile = findPsiFileIgnoringExceptions(file, project)
-        if (psiFile == null || file.isDirectory || !file.isValid) {
-            logger.debug("no psi file found for ${file.path}")
-            return emptySet()
-        }
+        if (file.isDirectory || !file.isValid) return emptySet()
+        val psiFile = findPsiFileIgnoringExceptions(file, project) ?: return emptySet()
 
         return extractImages(psiFile)
     }

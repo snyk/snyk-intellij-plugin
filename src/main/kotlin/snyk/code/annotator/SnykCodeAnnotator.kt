@@ -29,7 +29,9 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             suggestionForFile.ranges.forEach {
                 val textRange = textRange(psiFile, it)
                 if (!textRange.isEmpty) {
-                    holder.newAnnotation(severity, annotationMessage(suggestionForFile)).range(textRange).create()
+                    holder.newAnnotation(severity, annotationMessage(suggestionForFile))
+                        .range(textRange)
+                        .create()
                 }
             }
         }
