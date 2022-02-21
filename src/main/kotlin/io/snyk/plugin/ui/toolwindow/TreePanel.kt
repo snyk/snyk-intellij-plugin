@@ -16,6 +16,7 @@ class TreePanel(tree: Tree) : SimpleToolWindowPanel(true, true) {
     private val actionManager = ActionManager.getInstance()
 
     init {
+        name = "treePanel"
         val severityToolbarPanel = JPanel(BorderLayout())
         severityToolbarPanel.add(JLabel("Severity: "), BorderLayout.WEST)
         severityToolbarPanel.add(getSeverityToolbar().component, BorderLayout.CENTER)

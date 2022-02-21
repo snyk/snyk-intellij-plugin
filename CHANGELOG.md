@@ -8,8 +8,11 @@
 - Snyk Open Source: added quickfix capability for package managers
 - Snyk Code: Annotations if plugins for the language are installed
 
-### Fixes
+### Fixed
 
+- Fix Container: invalid token shows error and does not redirect to Auth panel
+- Fix Container: should handle case if no images in project found
+- Fix Container: node still showing last results even if disabled
 - improved Snyk Container image parsing in K8S files
 
 ## [2.4.17]
