@@ -7,11 +7,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.DocumentUtil
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import org.jetbrains.kotlin.idea.quickfix.QuickFixWithDelegateFactory
 import snyk.analytics.QuickFixIsDisplayed
 import snyk.analytics.QuickFixIsTriggered
 
