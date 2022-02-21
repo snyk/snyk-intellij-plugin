@@ -11,6 +11,7 @@ class TokenInterceptor(private val token: String) : Interceptor {
             .addHeader("Accept", "application/json")
             .addHeader("Content-Type", "application/json")
             .addHeader("User-Agent", "snyk-intellij-plugin/${pluginInfo.integrationVersion}")
+            .addHeader("x-snyk-ide", "intellij-${pluginInfo.integrationVersion}")
         return chain.proceed(request.build())
     }
 }

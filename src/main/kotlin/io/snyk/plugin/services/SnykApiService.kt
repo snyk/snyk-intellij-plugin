@@ -19,10 +19,13 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 @Service
-class SnykApiService: Disposable {
+class SnykApiService : Disposable {
 
-    val sastOnServerEnabled: Boolean?
-        get() = snykApiClient?.sastOnServerEnabled
+    val sastOnServerEnabled: Boolean
+        get() = snykApiClient?.sastOnServerEnabled == true && !localCodeEngineEnabled
+
+    val localCodeEngineEnabled: Boolean
+        get() = snykApiClient?.localCodeEngineEnabled == true
 
     val userId: String?
         get() = snykApiClient?.userId

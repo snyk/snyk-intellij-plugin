@@ -13,6 +13,9 @@ class SnykApiClient constructor(
     val sastOnServerEnabled: Boolean?
         get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())?.sastEnabled
 
+    val localCodeEngineEnabled: Boolean?
+        get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())?.localCodeEngine?.enabled
+
     val userId: String?
         get() = executeRequest(UserService.apiName, userService().userMe())?.id
 
@@ -32,6 +35,7 @@ class SnykApiClient constructor(
         }
         return userServiceEndpoint
     }
+
     private fun <T> executeRequest(apiName: String, retrofitCall: Call<T>): T? = try {
         log.debug("Executing request to $apiName")
         val response = retrofitCall.execute()
