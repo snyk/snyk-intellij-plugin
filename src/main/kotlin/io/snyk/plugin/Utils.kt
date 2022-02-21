@@ -177,7 +177,7 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     lateinit var checkIfSastEnabled: () -> Unit
     checkIfSastEnabled = {
         if (settings.sastOnServerEnabled != true) {
-            settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled ?: false
+            settings.sastOnServerEnabled = service<SnykApiService>().sastSettings?.sastEnabled ?: false
             if (settings.sastOnServerEnabled == true) {
                 onSuccess.invoke()
             } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {

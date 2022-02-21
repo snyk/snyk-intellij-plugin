@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.net.SnykApiClient
 import io.snyk.plugin.net.TokenInterceptor
 import okhttp3.OkHttpClient
@@ -21,11 +22,8 @@ import javax.net.ssl.X509TrustManager
 @Service
 class SnykApiService : Disposable {
 
-    val sastOnServerEnabled: Boolean
-        get() = snykApiClient?.sastOnServerEnabled == true && !localCodeEngineEnabled
-
-    val localCodeEngineEnabled: Boolean
-        get() = snykApiClient?.localCodeEngineEnabled == true
+    val sastSettings: CliConfigSettings?
+        get() = snykApiClient?.sastSettings
 
     val userId: String?
         get() = snykApiClient?.userId

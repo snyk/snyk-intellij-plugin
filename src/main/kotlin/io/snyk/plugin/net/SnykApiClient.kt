@@ -10,11 +10,8 @@ import retrofit2.Retrofit
 class SnykApiClient constructor(
     private val retrofit: Retrofit
 ) {
-    val sastOnServerEnabled: Boolean?
-        get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())?.sastEnabled
-
-    val localCodeEngineEnabled: Boolean?
-        get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())?.localCodeEngine?.enabled
+    val sastSettings: CliConfigSettings?
+        get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())
 
     val userId: String?
         get() = executeRequest(UserService.apiName, userService().userMe())?.id

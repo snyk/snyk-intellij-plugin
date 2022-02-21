@@ -50,7 +50,9 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
         every { settings.token } returns null
         every { settings.sastOnServerEnabled } returns true
-        every { snykApiServiceMock.sastOnServerEnabled } returns true
+        every { settings.localCodeEngineEnabled } returns false
+        every { snykApiServiceMock.sastSettings?.sastEnabled } returns true
+        every { snykApiServiceMock.sastSettings?.localCodeEngine?.enabled } returns false
     }
 
     override fun tearDown() {
@@ -98,7 +100,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         SnykToolWindowPanel(project)
 
         verify(exactly = 1) {
-            snykApiServiceMock.sastOnServerEnabled
+            snykApiServiceMock.sastSettings
             settings.sastOnServerEnabled = true
             settings.iacScanEnabled = true
             settings.containerScanEnabled = true
