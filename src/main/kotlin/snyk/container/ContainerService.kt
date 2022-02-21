@@ -64,8 +64,10 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
     fun convertRemediation(baseImageRemediation: BaseImageRemediation?): BaseImageRemediationInfo? {
         if (baseImageRemediation == null || !baseImageRemediation.isRemediationAvailable()) return null
 
-        // current image always first
         val adviceList = baseImageRemediation.advice
+        val adviceListAsString = adviceList.joinToString(separator = "\n") { it.message }
+        LOG.debug("\n" + adviceListAsString)
+        // current image always first
         val currentImageRawString = adviceList[0].message
         val currentBaseImageInfo = BaseImageRemediationExtractor.extractImageInfo(currentImageRawString)
         var majorUpgradeInfo: BaseImageInfo? = null

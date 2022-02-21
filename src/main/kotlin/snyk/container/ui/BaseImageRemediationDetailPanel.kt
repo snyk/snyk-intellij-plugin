@@ -83,7 +83,7 @@ class BaseImageRemediationDetailPanel(
     }
 
     private fun innerRemediationInfoPanel(): JPanel {
-        val panel = JPanel(GridLayoutManager(3, 4, Insets(0, 0, 0, 0), 0, 10))
+        val panel = JPanel(GridLayoutManager(4, 4, Insets(0, 0, 0, 0), 0, 10))
 
         imageIssues.baseImageRemediationInfo?.currentImage?.let {
             addBaseImageInfo(panel, 0, CURRENT_IMAGE, it)
@@ -93,8 +93,12 @@ class BaseImageRemediationDetailPanel(
             addBaseImageInfo(panel, 1, MINOR_UPGRADES, it)
         }
 
+        imageIssues.baseImageRemediationInfo?.majorUpgrades?.let {
+            addBaseImageInfo(panel, 2, MAJOR_UPGRADES, it)
+        }
+
         imageIssues.baseImageRemediationInfo?.alternativeUpgrades?.let {
-            addBaseImageInfo(panel, 2, ALTERNATIVE_UPGRADES, it)
+            addBaseImageInfo(panel, 3, ALTERNATIVE_UPGRADES, it)
         }
 
         return panel
@@ -258,6 +262,7 @@ class BaseImageRemediationDetailPanel(
     companion object {
         const val CURRENT_IMAGE = "Current image"
         const val MINOR_UPGRADES = "Minor upgrades"
+        const val MAJOR_UPGRADES = "Major upgrades"
         const val ALTERNATIVE_UPGRADES = "Alternative upgrades"
     }
 }

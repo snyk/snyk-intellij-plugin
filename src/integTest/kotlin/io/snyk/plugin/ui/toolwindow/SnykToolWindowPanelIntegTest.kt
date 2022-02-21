@@ -534,6 +534,14 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull(minorUpgradeValueLabel)
         assertEquals("minor upgrades incorrect", "nginx:1.20.2", minorUpgradeValueLabel?.text)
 
+        val majorUpgradeValueLabel = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JLabel::class,
+            BaseImageRemediationDetailPanel.MAJOR_UPGRADES
+        )
+        assertNotNull(minorUpgradeValueLabel)
+        assertEquals("major upgrades incorrect", "nginx:1.21.4", majorUpgradeValueLabel?.text)
+
         val alternativeUpgradeValueLabel = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
             JLabel::class,
