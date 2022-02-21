@@ -1,9 +1,9 @@
 package snyk.container
 
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import snyk.errorHandler.SentryErrorReporter
+import com.intellij.openapi.diagnostic.logger
 
 object BaseImageRemediationExtractor {
+    val logger = logger<BaseImageRemediationExtractor>()
     val regex = "([a-zA-Z0-9:_/.-])+".toRegex()
 
     fun extractImageInfo(text: String): BaseImageInfo? {
@@ -34,9 +34,8 @@ object BaseImageRemediationExtractor {
                 )
             )
         } catch (e: NumberFormatException) {
-            SnykBalloonNotificationHelper.showError("Unexpected format while parsing Snyk Container output.")
-            SentryErrorReporter.captureException(e)
+            logger.debug("Parsing of remediation advice not possible", e)
+            return null
         }
-        return null
     }
 }
