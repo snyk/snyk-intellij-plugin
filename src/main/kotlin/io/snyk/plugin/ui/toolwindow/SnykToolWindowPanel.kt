@@ -1164,7 +1164,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val NO_OSS_FILES = "Could not detect supported target files in"
         const val NO_IAC_FILES = "Could not find any valid IaC files"
         const val NO_SUPPORTED_IAC_FILES_FOUND = " - No supported IaC files found"
-        const val NO_CONTAINER_IMAGES_FOUND = " - No Container images found"
+        const val NO_CONTAINER_IMAGES_FOUND = " - No container images found"
         const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
         private const val NODE_INITIAL_STATE = -1
