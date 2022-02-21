@@ -19,7 +19,6 @@ import com.intellij.util.Alarm
 import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
-import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
@@ -67,8 +66,6 @@ fun getSnykCliAuthenticationService(project: Project): SnykCliAuthenticationServ
 fun getSnykCliDownloaderService(project: Project): SnykCliDownloaderService? = project.serviceIfNotDisposed()
 
 fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
-
-fun getSnykAnalyticsService(project: Project): SnykAnalyticsService? = project.serviceIfNotDisposed()
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 

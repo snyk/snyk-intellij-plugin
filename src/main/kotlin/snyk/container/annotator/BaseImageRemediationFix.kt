@@ -2,18 +2,23 @@ package snyk.container.annotator
 
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.services.SnykAnalyticsService
+import snyk.analytics.QuickFixIsDisplayed
+import snyk.analytics.QuickFixIsTriggered
 import snyk.container.BaseImageRemediationInfo
 import snyk.container.ContainerIssuesForImage
 
 class BaseImageRemediationFix(
     private val containerIssuesForImage: ContainerIssuesForImage,
-    private val range: TextRange
+    private val range: TextRange,
+    private val analyticsService: SnykAnalyticsService = service()
 ) : IntentionAction {
     private var imageNameToFix: CharSequence
     private val logger = logger<BaseImageRemediationFix>()
@@ -31,6 +36,11 @@ class BaseImageRemediationFix(
     }
 
     override fun getText(): String {
+        val event = QuickFixIsDisplayed.builder()
+            .ide(QuickFixIsDisplayed.Ide.JETBRAINS)
+            .quickFixType(arrayOf(BaseImageRemediationFix::class.simpleName))
+            .build()
+        analyticsService?.logQuickFixIsDisplayed(event)
         return "Upgrade Image to $imageNameToFix"
     }
 
@@ -50,6 +60,11 @@ class BaseImageRemediationFix(
             doc.replaceString(range.startOffset, range.endOffset, imageNameToFix)
             refreshAnnotationsForOpenFiles(project)
         }
+        val event = QuickFixIsTriggered.builder()
+            .ide(QuickFixIsTriggered.Ide.JETBRAINS)
+            .quickFixType(arrayOf(BaseImageRemediationFix::class.simpleName))
+            .build()
+        analyticsService.logQuickFixIsTriggered(event)
     }
 
     companion object {

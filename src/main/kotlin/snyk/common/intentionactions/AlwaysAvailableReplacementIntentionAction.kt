@@ -1,6 +1,7 @@
 package snyk.common.intentionactions
 
 import com.intellij.codeInsight.intention.IntentionAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
@@ -19,7 +20,7 @@ class AlwaysAvailableReplacementIntentionAction(
     private val intentionText: String = intentionDefaultTextPrefix,
     private val familyName: String = intentionDefaultFamilyName,
     val message: String = "",
-    val analyticsService: SnykAnalyticsService?
+    val analyticsService: SnykAnalyticsService = service()
 ) : IntentionAction {
     override fun startInWriteAction(): Boolean {
         return true
@@ -29,7 +30,7 @@ class AlwaysAvailableReplacementIntentionAction(
             .ide(QuickFixIsDisplayed.Ide.JETBRAINS)
             .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
             .build()
-        analyticsService?.logQuickFixIsDisplayed(event)
+        analyticsService.logQuickFixIsDisplayed(event)
         return intentionText + replacementText
     }
 
@@ -56,7 +57,7 @@ class AlwaysAvailableReplacementIntentionAction(
             .ide(QuickFixIsTriggered.Ide.JETBRAINS)
             .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
             .build()
-        analyticsService?.logQuickFixIsTriggered(event)
+        analyticsService.logQuickFixIsTriggered(event)
     }
 
     companion object {
@@ -64,5 +65,3 @@ class AlwaysAvailableReplacementIntentionAction(
         private const val intentionDefaultFamilyName = "Snyk"
     }
 }
-
-

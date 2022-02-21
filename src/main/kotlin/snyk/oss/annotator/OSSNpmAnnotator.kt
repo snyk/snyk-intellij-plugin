@@ -9,7 +9,6 @@ import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
-import io.snyk.plugin.getSnykAnalyticsService
 import org.jetbrains.kotlin.psi.psiUtil.getNextSiblingIgnoringWhitespace
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssVulnerabilitiesForFile
@@ -42,8 +41,7 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
                 AlwaysAvailableReplacementIntentionAction(
                     textRange,
                     fixVersion,
-                    message = msg,
-                    analyticsService = getSnykAnalyticsService(psiFile.project)
+                    message = msg
                 )
             )
         }
