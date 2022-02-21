@@ -158,7 +158,7 @@ class SnykAnalyticsService : Disposable {
     fun logQuickFixIsTriggered(event: QuickFixIsTriggered) {
         if (!settings.usageAnalyticsEnabled) return
 
-        catchAll(log, "quickFixIsDisplayed") {
+        catchAll(log, "quickFixIsTriggered") {
             itly.logQuickFixIsTriggered(userId, event)
         }
     }
