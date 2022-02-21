@@ -6,20 +6,23 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import icons.SnykIcons
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
 import snyk.analytics.QuickFixIsDisplayed
 import snyk.analytics.QuickFixIsTriggered
 import snyk.container.BaseImageRemediationInfo
 import snyk.container.ContainerIssuesForImage
+import javax.swing.Icon
 
 class BaseImageRemediationFix(
     private val containerIssuesForImage: ContainerIssuesForImage,
     private val range: TextRange,
     private val analyticsService: SnykAnalyticsService = service()
-) : IntentionAction {
+) : IntentionAction, Iconable {
     private var imageNameToFix: CharSequence
     private val logger = logger<BaseImageRemediationFix>()
 
@@ -29,6 +32,10 @@ class BaseImageRemediationFix(
 
         val imageRemediationInfo = containerIssuesForImage.baseImageRemediationInfo
         imageNameToFix = determineTargetImage(imageRemediationInfo)
+    }
+
+    override fun getIcon(@Iconable.IconFlags flags: Int): Icon? {
+        return SnykIcons.TOOL_WINDOW
     }
 
     override fun startInWriteAction(): Boolean {
