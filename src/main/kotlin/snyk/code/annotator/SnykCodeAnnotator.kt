@@ -11,7 +11,6 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.snykcode.core.AnalysisData
 import snyk.common.AnnotatorCommon
-import kotlin.math.min
 
 class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykCodeAnnotator>()
@@ -72,8 +71,8 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             if (endRow < 0 || endRow > document.lineCount - 1 || endRow < startRow)
                 throw IllegalArgumentException("Invalid range $snykCodeRange")
 
-            val lineOffSet = min(document.getLineStartOffset(startRow) + startCol, document.textLength - 1)
-            val lineOffSetEnd = min(document.getLineStartOffset(endRow) + endCol, document.textLength - 1)
+            val lineOffSet = document.getLineStartOffset(startRow) + startCol
+            val lineOffSetEnd = document.getLineStartOffset(endRow) + endCol
 
             if (lineOffSet < 0 || lineOffSet > document.textLength - 1)
                 throw IllegalArgumentException("Invalid range $snykCodeRange")
