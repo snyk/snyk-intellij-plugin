@@ -6,6 +6,7 @@ import com.intellij.testFramework.LightPlatform4TestCase
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
 import org.junit.Test
+import snyk.container.TestYamls.cronJobErroneousYaml
 import snyk.container.TestYamls.cronJobYaml
 import snyk.container.TestYamls.daemonSetYaml
 import snyk.container.TestYamls.deploymentYaml
@@ -73,6 +74,13 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
 
         assertEquals(1, images.size)
         assertTrue(images.contains("busybox"))
+    }
+
+    @Test
+    fun `should extract no images from erroneous cronjobs`() {
+        val images = executeExtract(cronJobErroneousYaml())
+
+        assertEquals(0, images.size)
     }
 
     @Test

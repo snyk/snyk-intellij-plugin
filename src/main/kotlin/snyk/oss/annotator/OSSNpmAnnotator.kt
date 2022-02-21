@@ -18,7 +18,6 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
 
     override fun textRange(psiFile: PsiFile, vulnerability: Vulnerability): TextRange {
         if (psiFile.fileType !is JsonFileType || psiFile.name != "package.json") return TextRange.EMPTY_RANGE
-        val currentVersion = getIntroducingPackageVersion(vulnerability)
         val packageName = getIntroducingPackage(vulnerability)
         val visitor = NpmRecursiveVisitor(packageName)
         psiFile.accept(visitor)

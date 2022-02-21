@@ -18,7 +18,11 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile = file
     override fun doAnnotate(psiFile: PsiFile?) {
-        AnnotatorCommon.prepareAnnotate(psiFile)
+        val filePath = psiFile?.virtualFile?.path ?: return
+
+        if (AnnotatorHelper.isFileSupported(filePath)) {
+            AnnotatorCommon.prepareAnnotate(psiFile)
+        }
     }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
