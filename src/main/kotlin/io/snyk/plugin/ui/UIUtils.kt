@@ -81,6 +81,8 @@ fun insertTitleAndResizableTextIntoPanelColumns(
 
 fun snykCodeAvailabilityPostfix(): String = when {
     !isSnykCodeAvailable(pluginSettings().customEndpointUrl) -> " (disabled for endpoint)"
+    (pluginSettings().sastOnServerEnabled ?: true && pluginSettings().localCodeEngineEnabled ?: true) ->
+        " (disabled due to Local Code Engine)"
     !(pluginSettings().sastOnServerEnabled ?: false) -> " (disabled for organization)"
     else -> ""
 }

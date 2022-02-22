@@ -676,7 +676,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun enableProductsAccordingToServerSetting() {
         pluginSettings().apply {
-            sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
+            sastOnServerEnabled = service<SnykApiService>().sastSettings?.sastEnabled
             iacScanEnabled = true
             containerScanEnabled = true
             snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeSecurityIssuesScanEnable

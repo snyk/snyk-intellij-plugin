@@ -10,8 +10,8 @@ import retrofit2.Retrofit
 class SnykApiClient constructor(
     private val retrofit: Retrofit
 ) {
-    val sastOnServerEnabled: Boolean?
-        get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())?.sastEnabled
+    val sastSettings: CliConfigSettings?
+        get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())
 
     val userId: String?
         get() = executeRequest(UserService.apiName, userService().userMe())?.id
@@ -32,6 +32,7 @@ class SnykApiClient constructor(
         }
         return userServiceEndpoint
     }
+
     private fun <T> executeRequest(apiName: String, retrofitCall: Call<T>): T? = try {
         log.debug("Executing request to $apiName")
         val response = retrofitCall.execute()

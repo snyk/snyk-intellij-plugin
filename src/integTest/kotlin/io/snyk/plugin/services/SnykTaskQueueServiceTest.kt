@@ -24,6 +24,8 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
+import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
@@ -35,6 +37,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+
         project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
     }
 
@@ -118,6 +121,20 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         assertNull(settings.sastOnServerEnabled)
         assertFalse(settings.snykCodeSecurityIssuesScanEnable)
         assertFalse(settings.snykCodeQualityIssuesScanEnable)
+    }
+
+    @Test
+    fun `test should disable Code settings when LCE is enabled`() {
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        val settings = pluginSettings()
+        settings.sastOnServerEnabled = true
+        settings.localCodeEngineEnabled = true
+
+        snykTaskQueueService.scan()
+        Disposer.dispose(service<SnykApiService>())
+
+        assertThat(settings.snykCodeSecurityIssuesScanEnable, equalTo(false))
+        assertThat(settings.snykCodeQualityIssuesScanEnable, equalTo(false))
     }
 
     @Test

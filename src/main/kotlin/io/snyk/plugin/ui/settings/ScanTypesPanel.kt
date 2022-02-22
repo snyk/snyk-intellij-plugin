@@ -191,9 +191,20 @@ class ScanTypesPanel(
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                settings.sastOnServerEnabled = service<SnykApiService>().sastOnServerEnabled
+                val sastCliConfigSettings = service<SnykApiService>().sastSettings
+                settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
+                settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 when (settings.sastOnServerEnabled) {
-                    true -> doShowFilesToUpload()
+                    true -> {
+                        if (settings.localCodeEngineEnabled == true) {
+                            showSnykCodeAlert(
+                                message = "Snyk Code is configured to use a Local Code Engine instance." +
+                                    " This setup is not yet supported."
+                            )
+                        } else {
+                            doShowFilesToUpload()
+                        }
+                    }
                     false -> {
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false

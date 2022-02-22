@@ -18,5 +18,16 @@ interface CliConfigService {
 
 data class CliConfigSettings(
     @SerializedName("sastEnabled")
-    val sastEnabled: Boolean
+    val sastEnabled: Boolean,
+
+    @SerializedName("localCodeEngine")
+    val localCodeEngine: LocalCodeEngine
+)
+
+/**
+ * SAST local code engine configuration.
+ */
+data class LocalCodeEngine(
+    @SerializedName("enabled")
+    val enabled: Boolean
 )
