@@ -1,26 +1,46 @@
 package snyk.common.intentionactions
 
 import com.intellij.codeInsight.intention.IntentionAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Iconable
+import com.intellij.openapi.util.Iconable.IconFlags
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.DocumentUtil
+import icons.SnykIcons
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import snyk.analytics.QuickFixIsDisplayed
+import snyk.analytics.QuickFixIsTriggered
+import javax.swing.Icon
 
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
     val replacementText: String,
     private val intentionText: String = intentionDefaultTextPrefix,
     private val familyName: String = intentionDefaultFamilyName,
-    val message: String = ""
-) : IntentionAction {
+    val message: String = "",
+    val analyticsService: SnykAnalyticsService = service()
+) : IntentionAction, Iconable {
+
+    override fun getIcon(@IconFlags flags: Int): Icon? {
+        return SnykIcons.TOOL_WINDOW
+    }
+
     override fun startInWriteAction(): Boolean {
         return true
     }
+
     override fun getText(): String {
+        val event = QuickFixIsDisplayed.builder()
+            .ide(QuickFixIsDisplayed.Ide.JETBRAINS)
+            .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
+            .build()
+        analyticsService.logQuickFixIsDisplayed(event)
         return intentionText + replacementText
     }
 
@@ -43,6 +63,11 @@ class AlwaysAvailableReplacementIntentionAction(
                 SnykBalloonNotificationHelper.showWarn(message, project)
             }
         }
+        val event = QuickFixIsTriggered.builder()
+            .ide(QuickFixIsTriggered.Ide.JETBRAINS)
+            .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
+            .build()
+        analyticsService.logQuickFixIsTriggered(event)
     }
 
     companion object {
@@ -50,5 +75,3 @@ class AlwaysAvailableReplacementIntentionAction(
         private const val intentionDefaultFamilyName = "Snyk"
     }
 }
-
-

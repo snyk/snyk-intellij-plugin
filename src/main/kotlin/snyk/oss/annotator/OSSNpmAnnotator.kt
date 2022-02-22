@@ -37,7 +37,13 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
             } else {
                 ""
             }
-            annotationBuilder.withFix(AlwaysAvailableReplacementIntentionAction(textRange, fixVersion, message = msg))
+            annotationBuilder.withFix(
+                AlwaysAvailableReplacementIntentionAction(
+                    textRange,
+                    fixVersion,
+                    message = msg
+                )
+            )
         }
     }
 

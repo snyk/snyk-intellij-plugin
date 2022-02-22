@@ -71,7 +71,12 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         fixVersion: String
     ) {
         if (fixVersion.isNotBlank()) {
-            annotationBuilder.withFix(AlwaysAvailableReplacementIntentionAction(textRange, fixVersion))
+            annotationBuilder.withFix(
+                AlwaysAvailableReplacementIntentionAction(
+                    textRange,
+                    fixVersion
+                )
+            )
         }
     }
 

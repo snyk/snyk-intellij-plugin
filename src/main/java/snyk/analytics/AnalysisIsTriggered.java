@@ -15,12 +15,12 @@ import java.util.HashMap;
 public class AnalysisIsTriggered extends Event {
     private static final String NAME = "Analysis Is Triggered";
     private static final String ID = "dabf569e-219c-470f-8e31-6e029723f0cd";
-    private static final String VERSION = "2.0.0";
+  private static final String VERSION = "2.0.2";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
 
-        private String ide;
+      private final String ide;
 
         public String getIde()
         {
@@ -49,7 +49,7 @@ public class AnalysisIsTriggered extends Event {
 
     // Inner Builder class with required properties
     public static class Builder implements IAnalysisType, IIde, ITriggeredByUser, IBuild {
-        private final HashMap<String, Object> properties = new HashMap<String, Object>();
+      private final HashMap<String, Object> properties = new HashMap<>();
 
         private Builder() {
             this.properties.put("itly", true);

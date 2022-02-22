@@ -13,39 +13,36 @@ import ly.iterative.itly.Event;
 import java.util.HashMap;
 
 public class HealthScoreIsClicked extends Event {
-    private static final String NAME = "Health Score Is Clicked";
-    private static final String ID = "47cf2487-2066-4f12-9846-cba17d1fa257";
-    private static final String VERSION = "5.0.0";
+  private static final String NAME = "Health Score Is Clicked";
+  private static final String ID = "47cf2487-2066-4f12-9846-cba17d1fa257";
+  private static final String VERSION = "6.0.2";
 
-    public enum Ide {
-        VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+  public enum Ecosystem {
+    ALL("all"), CPP("cpp"), CSHARP("csharp"), DOCKER("docker"), JAVA("java"), JAVASCRIPT("javascript"), KUBERNETES("kubernetes"), NPM("npm"), PHP("php"), PYTHON("python"), GOLANG("golang");
 
-        private String ide;
+    private final String ecosystem;
 
-        public String getIde()
-        {
-            return this.ide;
-        }
+    public String getEcosystem() {
+      return this.ecosystem;
+    }
+
+    Ecosystem(String ecosystem) {
+      this.ecosystem = ecosystem;
+    }
+  }
+
+  public enum Ide {
+    VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+
+    private final String ide;
+
+    public String getIde() {
+      return this.ide;
+    }
 
         Ide(String ide)
         {
             this.ide = ide;
-        }
-    }
-
-    public enum Ecosystem {
-        ALL("all"), DOCKER("docker"), JAVA("java"), JAVASCRIPT("javascript"), KUBERNETES("kubernetes"), NPM("npm"), PYTHON("python"), PHP("php"), C__("c++"), C_("c#");
-
-        private String ecosystem;
-
-        public String getEcosystem()
-        {
-            return this.ecosystem;
-        }
-
-        Ecosystem(String ecosystem)
-        {
-            this.ecosystem = ecosystem;
         }
     }
 
@@ -65,7 +62,7 @@ public class HealthScoreIsClicked extends Event {
 
     // Inner Builder class with required properties
     public static class Builder implements IEcosystem, IIde, IPackageName, IBuild {
-        private final HashMap<String, Object> properties = new HashMap<String, Object>();
+      private final HashMap<String, Object> properties = new HashMap<>();
 
         private Builder() {
             this.properties.put("itly", true);
@@ -87,6 +84,14 @@ public class HealthScoreIsClicked extends Event {
          * * javascript
          *
          * * kubernetes
+         *
+         * * cpp
+         *
+         * * csharp
+         *
+         * * go
+         *
+         * * php
          * <p>
          * Must be followed by {@link IIde#ide(Ide)
          */

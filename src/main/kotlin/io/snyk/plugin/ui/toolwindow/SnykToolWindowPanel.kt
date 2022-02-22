@@ -415,8 +415,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueId(issue.id)
                             .issueType(issue.getIssueType())
+                            .issueId(issue.id)
                             .severity(issue.getIssueSeverityOrNull())
                             .build()
                     )
@@ -441,8 +441,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueId(suggestion.id)
                             .issueType(suggestion.getIssueType())
+                            .issueId(suggestion.id)
                             .severity(suggestion.getIssueSeverityOrNull())
                             .build()
                     )
@@ -475,8 +475,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueId(iacIssue.id)
                             .issueType(IssueInTreeIsClicked.IssueType.INFRASTRUCTURE_AS_CODE_ISSUE)
+                            .issueId(iacIssue.id)
                             .severity(iacIssue.getIssueSeverityOrNull())
                             .build()
                     )
@@ -510,8 +510,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueId(containerIssue.id)
                             .issueType(IssueInTreeIsClicked.IssueType.CONTAINER_VULNERABILITY)
+                            .issueId(containerIssue.id)
                             .severity(containerIssue.getIssueSeverityOrNull())
                             .build()
                     )

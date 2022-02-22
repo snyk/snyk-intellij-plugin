@@ -15,12 +15,12 @@ import java.util.HashMap;
 public class IssueInTreeIsClicked extends Event {
     private static final String NAME = "Issue In Tree Is Clicked";
     private static final String ID = "fae15d02-eab9-49bb-9833-18414e26058b";
-    private static final String VERSION = "2.0.0";
+  private static final String VERSION = "2.0.3";
 
     public enum Ide {
         VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
 
-        private String ide;
+      private final String ide;
 
         public String getIde()
         {
@@ -36,7 +36,7 @@ public class IssueInTreeIsClicked extends Event {
     public enum IssueType {
         ADVISOR("Advisor"), CODE_QUALITY_ISSUE("Code Quality Issue"), CODE_SECURITY_VULNERABILITY("Code Security Vulnerability"), LICENCE_ISSUE("Licence Issue"), OPEN_SOURCE_VULNERABILITY("Open Source Vulnerability"), INFRASTRUCTURE_AS_CODE_ISSUE("Infrastructure as Code Issue"), CONTAINER_VULNERABILITY("Container Vulnerability");
 
-        private String issueType;
+      private final String issueType;
 
         public String getIssueType()
         {
@@ -52,7 +52,7 @@ public class IssueInTreeIsClicked extends Event {
     public enum Severity {
         HIGH("High"), MEDIUM("Medium"), LOW("Low"), CRITICAL("Critical");
 
-        private String severity;
+      private final String severity;
 
         public String getSeverity()
         {
@@ -79,78 +79,70 @@ public class IssueInTreeIsClicked extends Event {
 
     public static IIde builder() { return new Builder(); }
 
-    // Inner Builder class with required properties
-    public static class Builder implements IIde, IIssueId, IIssueType, ISeverity, IBuild {
-        private final HashMap<String, Object> properties = new HashMap<String, Object>();
+  // Inner Builder class with required properties
+  public static class Builder implements IIde, IIssueType, IBuild {
+    private final HashMap<String, Object> properties = new HashMap<>();
 
-        private Builder() {
-            this.properties.put("itly", true);
-        }
+    private Builder() {
+      this.properties.put("itly", true);
+    }
 
-        /**
-         * Ide family.
-         * <p>
-         * Must be followed by {@link IIssueId#issueId(String)
-         */
-        public IIssueId ide(Ide ide) {
-            this.properties.put("ide", ide.getIde());
-            return this;
-        }
-
-        /**
-         * Issue ID as received from the backend.
-         * <p>
-         * Must be followed by {@link IIssueType#issueType(IssueType)
-         */
-        public IIssueType issueId(String issueId) {
-            this.properties.put("issueId", issueId);
-            return this;
-        }
+    /**
+     * Ide family.
+     * <p>
+     * Must be followed by {@link IIssueType#issueType(IssueType)
+     */
+    public IIssueType ide(Ide ide) {
+      this.properties.put("ide", ide.getIde());
+      return this;
+    }
 
         /**
          * Issue type
          * <p>
-         * Must be followed by {@link ISeverity#severity(Severity)
-         */
-        public ISeverity issueType(IssueType issueType) {
-            this.properties.put("issueType", issueType.getIssueType());
-            return this;
-        }
-
-        /**
-         * Severity of the issue
-         * <p>
          * Must be followed by by additional optional properties or build() method
          */
-        public Builder severity(Severity severity) {
-            this.properties.put("severity", severity.getSeverity());
-            return this;
+        public Builder issueType(IssueType issueType) {
+          this.properties.put("issueType", issueType.getIssueType());
+          return this;
         }
 
-        public IssueInTreeIsClicked build() {
-            return new IssueInTreeIsClicked(this);
+    /**
+     * Issue ID as received from the backend.
+     */
+    public Builder issueId(String issueId) {
+      this.properties.put("issueId", issueId);
+      return this;
+    }
+
+    /**
+     * Severity of the issue
+     */
+    public Builder severity(Severity severity) {
+      this.properties.put("severity", severity.getSeverity());
+      return this;
+    }
+
+    public IssueInTreeIsClicked build() {
+      return new IssueInTreeIsClicked(this);
         }
     }
 
     // Required property interfaces
     public interface IIde {
-        IIssueId ide(Ide ide);
+        IIssueType ide(Ide ide);
     }
 
-    public interface IIssueId {
-        IIssueType issueId(String issueId);
-    }
+  public interface IIssueType {
+        Builder issueType(IssueType issueType);
+  }
 
-    public interface IIssueType {
-        ISeverity issueType(IssueType issueType);
-    }
+  /** Build interface with optional properties */
+  public interface IBuild {
+    IBuild issueId(String issueId);
 
-    public interface ISeverity {
-        Builder severity(Severity severity);
-    }
+    IBuild severity(Severity severity);
 
-    /** Build interface with optional properties */
-    public interface IBuild {
-        IssueInTreeIsClicked build();
-    }
+    IssueInTreeIsClicked build();
+  }
 }

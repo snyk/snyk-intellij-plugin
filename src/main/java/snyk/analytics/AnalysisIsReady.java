@@ -13,19 +13,32 @@ import ly.iterative.itly.Event;
 import java.util.HashMap;
 
 public class AnalysisIsReady extends Event {
-    private static final String NAME = "Analysis Is Ready";
-    private static final String ID = "c9337edb-27a3-416e-a654-092fa4375feb";
-    private static final String VERSION = "2.0.0";
+  private static final String NAME = "Analysis Is Ready";
+  private static final String ID = "c9337edb-27a3-416e-a654-092fa4375feb";
+  private static final String VERSION = "2.0.2";
 
-    public enum Ide {
-        VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+  public enum AnalysisType {
+    SNYK_ADVISOR("Snyk Advisor"), SNYK_CODE_QUALITY("Snyk Code Quality"), SNYK_CODE_SECURITY("Snyk Code Security"), SNYK_OPEN_SOURCE("Snyk Open Source"), SNYK_CONTAINER("Snyk Container"), SNYK_INFRASTRUCTURE_AS_CODE("Snyk Infrastructure as Code");
 
-        private String ide;
+    private final String analysisType;
 
-        public String getIde()
-        {
-            return this.ide;
-        }
+    public String getAnalysisType() {
+      return this.analysisType;
+    }
+
+    AnalysisType(String analysisType) {
+      this.analysisType = analysisType;
+    }
+  }
+
+  public enum Ide {
+    VISUAL_STUDIO_CODE("Visual Studio Code"), VISUAL_STUDIO("Visual Studio"), ECLIPSE("Eclipse"), JETBRAINS("JetBrains");
+
+    private final String ide;
+
+    public String getIde() {
+      return this.ide;
+    }
 
         Ide(String ide)
         {
@@ -33,26 +46,10 @@ public class AnalysisIsReady extends Event {
         }
     }
 
-    public enum AnalysisType {
-        SNYK_ADVISOR("Snyk Advisor"), SNYK_CODE_QUALITY("Snyk Code Quality"), SNYK_CODE_SECURITY("Snyk Code Security"), SNYK_OPEN_SOURCE("Snyk Open Source"), SNYK_CONTAINER("Snyk Container"), SNYK_INFRASTRUCTURE_AS_CODE("Snyk Infrastructure as Code");
-
-        private String analysisType;
-
-        public String getAnalysisType()
-        {
-            return this.analysisType;
-        }
-
-        AnalysisType(String analysisType)
-        {
-            this.analysisType = analysisType;
-        }
-    }
-
     public enum Result {
         SUCCESS("Success"), ERROR("Error");
 
-        private String result;
+      private final String result;
 
         public String getResult()
         {
@@ -81,7 +78,7 @@ public class AnalysisIsReady extends Event {
 
     // Inner Builder class with required properties
     public static class Builder implements IAnalysisType, IIde, IResult, IBuild {
-        private final HashMap<String, Object> properties = new HashMap<String, Object>();
+      private final HashMap<String, Object> properties = new HashMap<>();
 
         private Builder() {
             this.properties.put("itly", true);

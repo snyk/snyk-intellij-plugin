@@ -1,7 +1,7 @@
-package snyk.common.intentionactions
+package snyk.container.annotator
 
+import com.google.gson.Gson
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -11,20 +11,21 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
 import org.junit.Before
 import org.junit.Test
+import snyk.container.ContainerIssuesForImage
+import snyk.container.ContainerResult
 import java.nio.file.Paths
 
 @Suppress("FunctionName")
-class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
+class BaseImageRemediationFixTest : BasePlatformTestCase() {
     private lateinit var file: VirtualFile
-    private val intentionText = "a"
-    private val replacementText = "b"
     private val range = TextRange(/* startOffset = */ 0,/* endOffset = */ 4)
-    private val familyName = "SnykySnyky"
-    private lateinit var cut: AlwaysAvailableReplacementIntentionAction
+    private val familyName = "Snyk Container"
+    private lateinit var cut: BaseImageRemediationFix
 
     private val fileName = "package.json"
     private val analyticsMock = mockk<SnykAnalyticsService>(relaxed = true)
@@ -32,7 +33,7 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     private lateinit var psiFile: PsiFile
 
     override fun getTestDataPath(): String {
-        val resource = AlwaysAvailableReplacementIntentionAction::class.java
+        val resource = BaseImageRemediationFixTest::class.java
             .getResource("/test-fixtures/oss/annotator")
         requireNotNull(resource) { "Make sure that the resource $resource exists!" }
         return Paths.get(resource.toURI()).toString()
@@ -47,11 +48,10 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-        cut = AlwaysAvailableReplacementIntentionAction(
+        val containerIssuesForImage = createContainerIssuesForImage()
+        cut = BaseImageRemediationFix(
+            containerIssuesForImage,
             range,
-            replacementText,
-            intentionText,
-            familyName,
             analyticsService = analyticsMock
         )
     }
@@ -68,7 +68,7 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
 
     @Test
     fun `test getText`() {
-        assertEquals(intentionText + replacementText, cut.text)
+        assertEquals("Upgrade Image to nginx:1.21.4", cut.text)
         verify { analyticsMock.logQuickFixIsDisplayed(any()) }
     }
 
@@ -79,14 +79,32 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
 
     @Test
     fun `test invoke`() {
-        val editor = mockk<Editor>()
         val doc = psiFile.viewProvider.document
         doc!!.setText("abcd")
+        val editor = mockk<Editor>()
         every { editor.document } returns doc
 
         cut.invoke(project, editor, psiFile)
 
-        assertEquals("b", doc.text)
+        assertEquals("nginx:1.21.4", doc.text)
         verify { analyticsMock.logQuickFixIsTriggered(any()) }
+    }
+
+    private val containerResultWithRemediationJson =
+        javaClass.classLoader.getResource("container-test-results/nginx-with-remediation.json")!!
+            .readText(Charsets.UTF_8)
+
+    private fun createContainerIssuesForImage(): ContainerIssuesForImage {
+        val containerResult = ContainerResult(
+            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java)), null
+        )
+
+        val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
+        val baseImageRemediationInfo =
+            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
+        return firstContainerIssuesForImage.copy(
+            baseImageRemediationInfo = baseImageRemediationInfo,
+            workloadImages = emptyList()
+        )
     }
 }

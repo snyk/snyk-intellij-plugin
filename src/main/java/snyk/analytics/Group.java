@@ -13,19 +13,18 @@ import ly.iterative.itly.Event;
 import java.util.HashMap;
 
 public class Group extends Event {
-    private static final String NAME = "group";
+  private static final String NAME = "group";
   private static final String ID = "group";
-  private static final String VERSION = "100.0.0";
+  private static final String VERSION = "137.0.0";
 
-    public enum GroupType {
-        ORG("org"), GROUP("group"), ACCOUNT("account");
+  public enum GroupType {
+    ORG("org"), GROUP("group"), ACCOUNT("account");
 
-        private final String groupType;
+    private final String groupType;
 
-        public String getGroupType()
-        {
-            return this.groupType;
-        }
+    public String getGroupType() {
+      return this.groupType;
+    }
 
         GroupType(String groupType)
         {
@@ -49,7 +48,7 @@ public class Group extends Event {
 
     // Inner Builder class with required properties
     public static class Builder implements IBuild {
-        private final HashMap<String, Object> properties = new HashMap<String, Object>();
+      private final HashMap<String, Object> properties = new HashMap<>();
 
         private Builder() {
 

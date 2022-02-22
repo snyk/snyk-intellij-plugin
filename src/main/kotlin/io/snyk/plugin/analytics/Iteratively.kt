@@ -19,6 +19,8 @@ import snyk.analytics.Itly
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
 import snyk.analytics.ProductSelectionIsViewed
+import snyk.analytics.QuickFixIsDisplayed
+import snyk.analytics.QuickFixIsTriggered
 import snyk.analytics.WelcomeIsViewed
 
 object Iteratively {
@@ -100,6 +102,14 @@ object Iteratively {
 
     fun logAuthenticateButtonIsClicked(userId: String, event: AuthenticateButtonIsClicked) {
         itly?.authenticateButtonIsClicked(userId, event)
+    }
+
+    fun logQuickFixIsDisplayed(userId: String, event: QuickFixIsDisplayed) {
+        itly?.quickFixIsDisplayed(userId, event)
+    }
+
+    fun logQuickFixIsTriggered(userId: String, event: QuickFixIsTriggered) {
+        itly?.quickFixIsTriggered(userId, event)
     }
 
     private fun loadIterativelyEnvironment(): Environment {

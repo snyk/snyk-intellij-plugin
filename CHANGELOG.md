@@ -7,6 +7,7 @@
 - Snyk Open Source: added editor annotations for Maven, NPM, and Kotlin Gradle
 - Snyk Open Source: added quickfix capability for package managers
 - Snyk Code: Annotations if plugins for the language are installed
+- Add amplitude events to quickfix display and invocations
 
 ### Fixed
 
