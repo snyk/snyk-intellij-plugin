@@ -12,7 +12,6 @@ import com.intellij.psi.PsiFile
 import icons.SnykIcons
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
-import snyk.analytics.QuickFixIsDisplayed
 import snyk.analytics.QuickFixIsTriggered
 import snyk.container.BaseImageRemediationInfo
 import snyk.container.ContainerIssuesForImage
@@ -43,11 +42,6 @@ class BaseImageRemediationFix(
     }
 
     override fun getText(): String {
-        val event = QuickFixIsDisplayed.builder()
-            .ide(QuickFixIsDisplayed.Ide.JETBRAINS)
-            .quickFixType(arrayOf(BaseImageRemediationFix::class.simpleName))
-            .build()
-        analyticsService?.logQuickFixIsDisplayed(event)
         return "Upgrade Image to $imageNameToFix"
     }
 

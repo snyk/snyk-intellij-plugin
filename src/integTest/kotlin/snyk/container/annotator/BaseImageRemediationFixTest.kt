@@ -69,7 +69,6 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
     @Test
     fun `test getText`() {
         assertEquals("Upgrade Image to nginx:1.21.4", cut.text)
-        verify { analyticsMock.logQuickFixIsDisplayed(any()) }
     }
 
     @Test
