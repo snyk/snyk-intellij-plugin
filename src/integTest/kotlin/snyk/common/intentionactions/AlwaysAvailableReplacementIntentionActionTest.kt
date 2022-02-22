@@ -1,7 +1,6 @@
 package snyk.common.intentionactions
 
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -69,7 +68,6 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     @Test
     fun `test getText`() {
         assertEquals(intentionText + replacementText, cut.text)
-        verify { analyticsMock.logQuickFixIsDisplayed(any()) }
     }
 
     @Test

@@ -14,7 +14,6 @@ import icons.SnykIcons
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import snyk.analytics.QuickFixIsDisplayed
 import snyk.analytics.QuickFixIsTriggered
 import javax.swing.Icon
 
@@ -36,11 +35,6 @@ class AlwaysAvailableReplacementIntentionAction(
     }
 
     override fun getText(): String {
-        val event = QuickFixIsDisplayed.builder()
-            .ide(QuickFixIsDisplayed.Ide.JETBRAINS)
-            .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
-            .build()
-        analyticsService.logQuickFixIsDisplayed(event)
         return intentionText + replacementText
     }
 
