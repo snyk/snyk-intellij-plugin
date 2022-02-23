@@ -1,14 +1,13 @@
-# Snyk Vulnerability Scanner
+# Snyk
 
 [![Version](https://img.shields.io/jetbrains/plugin/v/10972.svg)](https://plugins.jetbrains.com/plugin/10972)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/10972.svg)](https://plugins.jetbrains.com/plugin/10972)
 
 <!-- Plugin description start -->
-Snyk’s Vulnerability Scanner helps you find and fix security vulnerabilities
-and code quality issues in your projects, all from within your favorite IDE.
-Within a few seconds, the plugin will provide a list of all the different
-types of issues identified, bucketed into categories, together with actionable
-fix advice:
+Snyk Security for Code, Open Source Dependencies, Container, and IaC Configurations helps you find and fix security
+vulnerabilities and code quality issues in your projects, all from within your favorite IDE. Within a few seconds, the
+plugin will provide a list of all the different types of issues identified, bucketed into categories, together with
+actionable fix advice:
 
 - **Open Source Security** - known vulnerabilities in both the direct and in-direct (transitive) open source dependencies you are pulling into the project.
 - **Code Security** - security weaknesses identified in your own code.
