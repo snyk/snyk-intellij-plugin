@@ -228,7 +228,7 @@ fun descriptionHeaderPanel(
         lastColumn = addRowOfItemsToPanel(panel, lastColumn, label)
     }
 
-    val label = listOf(labelProvider.getVulnerabilityLabel(id.toUpperCase(), idUrl))
+    val label = listOf(labelProvider.getVulnerabilityLabel(id, idUrl))
     addRowOfItemsToPanel(panel, lastColumn, label)
 
     return panel
