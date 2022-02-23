@@ -36,7 +36,7 @@ class LabelProvider {
 
     fun getVulnerabilityLabel(id: String, idUrl: String? = null): JLabel {
         val url = idUrl ?: "$vulnerabilityBaseUrl/$id"
-        return createLinkLabel(URL(url), id)
+        return createLinkLabel(URL(url), id.toUpperCase())
     }
 
     fun getCVSSLabel(text: String, id: String): JLabel {

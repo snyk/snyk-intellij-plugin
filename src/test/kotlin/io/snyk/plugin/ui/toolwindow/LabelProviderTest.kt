@@ -94,6 +94,17 @@ class LabelProviderTest {
     }
 
     @Test
+    fun `getVulnerability should provide an uppercase label and keep vulnerability ID case sensitivity in url`() {
+        val id = "vuln123"
+
+        val output = LabelProvider().getVulnerabilityLabel(id)
+
+        assertEquals(LinkLabel::class, output::class)
+        assertEquals(id.toUpperCase(), output.text)
+        verifyLinkLabelCreated(LabelProvider.vulnerabilityBaseUrl + "/$id")
+    }
+
+    @Test
     fun `getCVSSLabel should provide a label with a clickable link to the CVSS scoring calculator for this score`() {
         val cvssText = "package"
         val cvssId = "1"
