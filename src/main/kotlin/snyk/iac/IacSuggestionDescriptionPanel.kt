@@ -16,6 +16,7 @@ import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
+import io.snyk.plugin.ui.toolwindow.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.LabelProvider
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
@@ -34,7 +35,7 @@ class IacSuggestionDescriptionPanel(
     val issue: IacIssue,
     val psiFile: PsiFile?,
     val project: Project
-) : JPanel() {
+) : JPanel(), IssueDescriptionPanel {
 
     private val labelProvider = LabelProvider()
 

@@ -18,7 +18,6 @@ import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeSpeedSearch
-import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.Alarm
 import com.intellij.util.ui.tree.TreeUtil
@@ -98,7 +97,7 @@ import javax.swing.tree.TreePath
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     var snykScanListener: SnykScanListener
     private val scrollPaneAlarm = Alarm()
-    private var descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
+    private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
 
     var currentOssResults: OssResult? = null
         get() = if (field?.isExpired() == false) field else null
@@ -813,17 +812,23 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displayNoVulnerabilitiesMessage() {
         descriptionPanel.removeAll()
 
-        val emptyStatePanel = JPanel()
+        val selectedTreeNode = vulnerabilitiesTree.selectionPath?.lastPathComponent
+        val messageHtmlText =
+            if (selectedTreeNode is RootContainerIssuesTreeNode) {
+                val nodeText = selectedTreeNode.userObject as String
+                when {
+                    nodeText.endsWith(NO_CONTAINER_IMAGES_FOUND) -> CONTAINER_NO_IMAGES_FOUND_TEXT
+                    nodeText.endsWith(NO_ISSUES_FOUND_TEXT) -> CONTAINER_NO_ISSUES_FOUND_TEXT
+                    else -> CONTAINER_SCAN_START_TEXT
+                }
+            } else "Scan your project for security vulnerabilities and code issues."
 
-        emptyStatePanel.add(JLabel("Scan your project for security vulnerabilities and code issues. "))
+        val emptyStatePanel = StatePanel(
+            messageHtmlText,
+            "Run Scan"
+        ) { triggerScan() }
 
-        val runScanLinkLabel = LinkLabel.create("Run scan") {
-            triggerScan()
-        }
-
-        emptyStatePanel.add(runScanLinkLabel)
-
-        descriptionPanel.add(CenterOneComponentPanel(emptyStatePanel), BorderLayout.CENTER)
+        descriptionPanel.add(wrapWithScrollPane(emptyStatePanel), BorderLayout.CENTER)
         revalidate()
     }
 
@@ -836,13 +841,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displayScanningMessage() {
         descriptionPanel.removeAll()
 
+        val messageHtmlText = when (vulnerabilitiesTree.selectionPath?.lastPathComponent) {
+            is RootContainerIssuesTreeNode -> CONTAINER_SCAN_RUNNING_TEXT
+            else -> "Scanning project for vulnerabilities..."
+        }
         val statePanel = StatePanel(
-            "Scanning project for vulnerabilities...",
-            "Stop Scanning",
-            Runnable { getSnykTaskQueueService(project)?.stopScan() }
-        )
+            messageHtmlText,
+            "Stop Scanning"
+        ) { getSnykTaskQueueService(project)?.stopScan() }
 
-        descriptionPanel.add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)
+        descriptionPanel.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
 
         revalidate()
     }
@@ -850,12 +858,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displayDownloadMessage() {
         descriptionPanel.removeAll()
 
-        val statePanel = StatePanel("Downloading Snyk CLI...", "Stop Downloading", Runnable {
+        val statePanel = StatePanel(
+            "Downloading Snyk CLI...",
+            "Stop Downloading"
+        ) {
             service<SnykCliDownloaderService>().stopCliDownload()
             displayEmptyDescription()
-        })
+        }
 
-        descriptionPanel.add(CenterOneComponentPanel(statePanel), BorderLayout.CENTER)
+        descriptionPanel.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
 
         revalidate()
     }
@@ -1066,7 +1077,24 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displaySelectVulnerabilityMessage() {
-        if (descriptionPanel.components.firstOrNull() is JScrollPane) return // vulnerability/suggestion already selected
+        val scrollPanelCandidate = descriptionPanel.components.firstOrNull()
+        if (scrollPanelCandidate is JScrollPane &&
+            scrollPanelCandidate.components.firstOrNull() is IssueDescriptionPanel) {
+            // vulnerability/suggestion already selected
+            return
+        }
+        val selectedTreeNode = vulnerabilitiesTree.selectionPath?.lastPathComponent
+        if (selectedTreeNode is RootContainerIssuesTreeNode) {
+            val nodeText = selectedTreeNode.userObject as String
+            when {
+                nodeText.endsWith(NO_CONTAINER_IMAGES_FOUND) -> displayNoContainerImagesFoundMessage()
+                nodeText.endsWith(NO_ISSUES_FOUND_TEXT) -> displayNoContainerIssuesFoundMessage()
+                else -> displayGenericSelectVulnerabilityMessage()
+            }
+        } else displayGenericSelectVulnerabilityMessage()
+    }
+
+    private fun displayGenericSelectVulnerabilityMessage() {
         descriptionPanel.removeAll()
         val label = JLabel("Select an issue and start improving your project.")
             .apply { name = "selectIssueAndStartLabel" }
@@ -1074,6 +1102,24 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             CenterOneComponentPanel(label),
             BorderLayout.CENTER
         )
+        revalidate()
+    }
+
+    private fun displayNoContainerImagesFoundMessage() {
+        descriptionPanel.removeAll()
+
+        val noImagesStatePanel = StatePanel(CONTAINER_NO_IMAGES_FOUND_TEXT)
+
+        descriptionPanel.add(wrapWithScrollPane(noImagesStatePanel), BorderLayout.CENTER)
+        revalidate()
+    }
+
+    private fun displayNoContainerIssuesFoundMessage() {
+        descriptionPanel.removeAll()
+
+        val noIssuesStatePanel = StatePanel(CONTAINER_NO_ISSUES_FOUND_TEXT)
+
+        descriptionPanel.add(wrapWithScrollPane(noIssuesStatePanel), BorderLayout.CENTER)
         revalidate()
     }
 
@@ -1169,6 +1215,33 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
         private const val NODE_INITIAL_STATE = -1
         private const val NODE_NOT_SUPPORTED_STATE = -2
+
+        private val CONTAINER_SCAN_COMMON_POSTFIX =
+            """
+                The plugin searches for Kubernetes workload files (*.yaml, *.yml) and extracts the used images.
+                During testing the image, the CLI will download the image
+                if it is not already available locally in your Docker daemon.<br><br>
+                If you are curious to know more about how the Snyk Container integration works, have a look at our
+                <a href="https://docs.snyk.io/features/integrations/ide-tools/jetbrains-plugins#analysis-results-snyk-container">docs</a>.
+            """.trimIndent()
+        val CONTAINER_SCAN_START_TEXT =
+            "Snyk Container scan for vulnerabilities.<br><br>${Companion.CONTAINER_SCAN_COMMON_POSTFIX}"
+        val CONTAINER_SCAN_RUNNING_TEXT =
+            "Snyk Container scan for vulnerabilities is now running.<br><br>${CONTAINER_SCAN_COMMON_POSTFIX}"
+
+        private val CONTAINER_NO_FOUND_COMMON_POSTFIX =
+            """
+                The plugin searches for Kubernetes workload files (*.yaml, *.yml) and extracts the used images.
+                Consider checking if your container application definition has an image specified.
+                Make sure that the container image has been successfully built locally
+                and/or pushed to a container registry.<br><br>
+                If you are curious to know more about how the Snyk Container integration works, have a look at our
+                <a href="https://docs.snyk.io/features/integrations/ide-tools/jetbrains-plugins#analysis-results-snyk-container">docs</a>.
+            """.trimIndent()
+        val CONTAINER_NO_ISSUES_FOUND_TEXT =
+            "Snyk Container scan didn't find any issues in the scanned container images.<br><br>$CONTAINER_NO_FOUND_COMMON_POSTFIX"
+        val CONTAINER_NO_IMAGES_FOUND_TEXT =
+            "Snyk Container scan didn't find any container images.<br><br>$CONTAINER_NO_FOUND_COMMON_POSTFIX"
     }
 }
 

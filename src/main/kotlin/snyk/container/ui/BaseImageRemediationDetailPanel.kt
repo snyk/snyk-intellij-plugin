@@ -14,6 +14,7 @@ import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.panelGridConstraints
+import io.snyk.plugin.ui.toolwindow.IssueDescriptionPanel
 import snyk.container.BaseImageInfo
 import snyk.container.BaseImageVulnerabilities
 import snyk.container.ContainerIssuesForImage
@@ -30,7 +31,7 @@ import javax.swing.JTextArea
 class BaseImageRemediationDetailPanel(
     private val project: Project,
     private val imageIssues: ContainerIssuesForImage
-) : JPanel() {
+) : JPanel(), IssueDescriptionPanel {
 
     private val targetImages: List<KubernetesWorkloadImage> = getKubernetesImageCache(project)
         ?.getKubernetesWorkloadImages()

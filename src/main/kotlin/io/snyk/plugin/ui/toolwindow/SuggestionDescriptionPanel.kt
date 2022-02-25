@@ -38,7 +38,7 @@ class SuggestionDescriptionPanel(
     private val psiFile: PsiFile,
     private val suggestion: SuggestionForFile,
     private val suggestionIndex: Int
-) : JPanel() {
+) : JPanel(), IssueDescriptionPanel {
 
     private fun getGridConstraints(
         row: Int,

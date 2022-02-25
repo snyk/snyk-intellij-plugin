@@ -51,6 +51,7 @@ import snyk.iac.IgnoreButtonActionListener
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import javax.swing.JButton
+import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
@@ -236,6 +237,77 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             SnykToolWindowPanel.CONTAINER_ROOT_TEXT + SnykToolWindowPanel.NO_CONTAINER_IMAGES_FOUND,
             toolWindowPanel.getRootContainerIssuesTreeNode().userObject
         )
+    }
+
+    @Test
+    fun `test should display CONTAINER_NO_IMAGES_FOUND_TEXT after scan when no Container images found and Container node selected`() {
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+        val snykError = ContainerService.NO_IMAGES_TO_SCAN_ERROR
+
+        toolWindowPanel.snykScanListener.scanningContainerError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        val noImagesFoundPane = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JEditorPane::class,
+            SnykToolWindowPanel.CONTAINER_NO_IMAGES_FOUND_TEXT)
+        assertNotNull(noImagesFoundPane)
+    }
+
+    @Test
+    fun `test should display CONTAINER_NO_ISSUES_FOUND_TEXT after scan when no Container issues found and Container node selected`() {
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        toolWindowPanel.snykScanListener.scanningContainerFinished(ContainerResult(emptyList(), null))
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        val noIssuesFoundPane = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JEditorPane::class,
+            SnykToolWindowPanel.CONTAINER_NO_ISSUES_FOUND_TEXT)
+        assertNotNull(noIssuesFoundPane)
+    }
+
+    @Test
+    fun `test should display CONTAINER_SCAN_START_TEXT before any scan performed and Container node selected`() {
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        val startContainerScanPane = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JEditorPane::class,
+            SnykToolWindowPanel.CONTAINER_SCAN_START_TEXT)
+        assertNotNull(startContainerScanPane)
+    }
+
+    @Test
+    fun `test should display CONTAINER_SCAN_RUNNING_TEXT before any scan performed and Container node selected`() {
+        pluginSettings().token = "fake_token"
+        pluginSettings().pluginFirstRun = false
+        val toolWindowPanel = project.service<SnykToolWindowPanel>()
+
+        TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        toolWindowPanel.snykScanListener.scanningStarted()
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        val containerScanRunningPane = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JEditorPane::class,
+            SnykToolWindowPanel.CONTAINER_SCAN_RUNNING_TEXT)
+        assertNotNull(containerScanRunningPane)
     }
 
     @Test
