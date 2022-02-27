@@ -7,7 +7,7 @@ import com.intellij.psi.PsiFile
 import io.snyk.plugin.findPsiFileIgnoringExceptions
 
 object YAMLImageExtractor {
-    private val logger = Logger.getInstance(javaClass.name)
+    private val logger = Logger.getInstance(javaClass)
     private val imageRegEx = "(?<=([-\\s]image:))(\\s*[a-zA-Z0-9./\\-_]+)(:)?([a-zA-Z0-9./\\-_]+)?".toRegex()
 
     private fun extractImages(file: PsiFile): Set<KubernetesWorkloadImage> {

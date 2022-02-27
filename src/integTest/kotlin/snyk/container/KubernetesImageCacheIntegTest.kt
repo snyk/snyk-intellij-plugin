@@ -1,7 +1,10 @@
 package snyk.container
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.LightPlatform4TestCase
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
@@ -179,6 +182,27 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
 
         assertEquals(1, images.size)
         assertEquals(podYamlLineNumber, images.first().lineNumber)
+    }
+
+    @Test
+    fun `should remove file from cache when all images from file (cached before) been removed`() {
+        val psiFile = createFile(fileName, podYaml())
+        val virtualFile = psiFile.virtualFile
+        cut.extractFromFile(virtualFile)
+        val controlImages: Set<KubernetesWorkloadImage> = cut.getKubernetesWorkloadImages()
+        assertEquals(1, controlImages.size)
+
+        ApplicationManager.getApplication().runWriteAction {
+            PsiDocumentManager.getInstance(project).getDocument(psiFile)
+                ?.setText("")
+        }
+        FileDocumentManager.getInstance().saveAllDocuments()
+        cut.extractFromFile(virtualFile)
+
+        val images = cut.getKubernetesWorkloadImages()
+        assertEquals(0, images.size)
+        val cachedFiles = cut.getKubernetesWorkloadFilesFromCache()
+        assertEquals(0, cachedFiles.size)
     }
 
     private fun executeExtract(yaml: String): Set<String> {
