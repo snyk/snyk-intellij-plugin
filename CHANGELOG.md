@@ -1,4 +1,10 @@
-# Snyk Vulnerability Scanner Changelog
+# Snyk Changelog
+
+## [2.4.19]
+
+### Changed
+
+- Renamed plugin to `Snyk Security - Code, Open Source, Container, IaC Configurations`
 
 ## [2.4.19]
 
