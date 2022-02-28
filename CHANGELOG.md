@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Renamed plugin to `Snyk Security for Code, Open Source Dependencies, Container, and IaC Configurations`
+- Renamed plugin to `Snyk Security - Code, Open Source, Container, IaC Configurations`
 
 ## [2.4.18]
 

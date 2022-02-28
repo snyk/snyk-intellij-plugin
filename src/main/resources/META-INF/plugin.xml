@@ -1,6 +1,6 @@
 <idea-plugin url="snyk.io" require-restart="true">
   <id>io.snyk.snyk-intellij-plugin</id>
-  <name>Snyk Security for Code, Open Source Dependencies, Container, and IaC Configurations</name>
+  <name>Snyk Security - Code, Open Source, Container, IaC Configurations</name>
   <vendor url="https://snyk.io">Snyk Ltd.</vendor>
 
   <depends>com.intellij.modules.lang</depends>
