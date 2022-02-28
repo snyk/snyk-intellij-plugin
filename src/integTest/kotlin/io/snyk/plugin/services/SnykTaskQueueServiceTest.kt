@@ -124,6 +124,13 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun `test LCE should be disabled in initial settings state`() {
+        val settings = pluginSettings()
+
+        assertThat(settings.localCodeEngineEnabled, equalTo(false))
+    }
+
+    @Test
     fun `test should disable Code settings when LCE is enabled`() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         val settings = pluginSettings()
