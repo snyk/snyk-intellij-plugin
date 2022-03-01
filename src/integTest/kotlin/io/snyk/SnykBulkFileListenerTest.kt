@@ -294,13 +294,13 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         }
         FileDocumentManager.getInstance().saveAllDocuments()
 
-        val kubernetesWorkloadFiles = imageCache.getKubernetesWorkloadImages()
+        val kubernetesWorkloadImages = imageCache.getKubernetesWorkloadImages()
 
-        assertNotNull(kubernetesWorkloadFiles)
-        assertNotEmpty(kubernetesWorkloadFiles)
-        assertEquals(1, kubernetesWorkloadFiles.size)
-        assertEquals(path, kubernetesWorkloadFiles.first().virtualFile.toNioPath())
-        assertEquals("nginx:1.16.0", kubernetesWorkloadFiles.first().image)
+        assertNotNull(kubernetesWorkloadImages)
+        assertNotEmpty(kubernetesWorkloadImages)
+        assertEquals(1, kubernetesWorkloadImages.size)
+        assertEquals(path, kubernetesWorkloadImages.first().virtualFile.toNioPath())
+        assertEquals("nginx:1.16.0", kubernetesWorkloadImages.first().image)
         virtualFile.toNioPath().delete(true)
     }
 
@@ -475,6 +475,25 @@ class SnykBulkFileListenerTest : BasePlatformTestCase() {
         assertTrue(
             "Deleted Container file with issues should been marked as obsolete here",
             containerCacheInvalidatedForFile(originalFile)
+        )
+    }
+
+    @Test
+    fun `test ContainerResults should drop cache and mark rescanNeeded when cached file wiped it content`() {
+        setUpContainerTest()
+        val psiFile = myFixture.addFileToProject("existing.yaml", TestYamls.podYaml())
+        createFakeContainerResultInCache(psiFile)
+        assertFalse(isContainerUpdateNeeded())
+
+        ApplicationManager.getApplication().runWriteAction {
+            PsiDocumentManager.getInstance(project).getDocument(psiFile)?.setText("")
+        }
+        FileDocumentManager.getInstance().saveAllDocuments()
+
+        assertTrue(isContainerUpdateNeeded())
+        assertTrue(
+            "Cached Container file with removed content should been marked as obsolete here",
+            containerCacheInvalidatedForFile(psiFile)
         )
     }
 }

@@ -12,6 +12,7 @@
 ### Fixed
 
 - Snyk Vulnerability Database issue url resulting in 404 when opened from details panel.
+- Container results/images cache was not updated on full/partial file content deletion.
 
 ## [2.4.18]
 

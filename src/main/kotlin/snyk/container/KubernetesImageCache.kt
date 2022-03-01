@@ -12,7 +12,7 @@ import com.jetbrains.rd.util.concurrentMapOf
 @Service
 class KubernetesImageCache(val project: Project) {
     private val images = concurrentMapOf<VirtualFile, Set<KubernetesWorkloadImage>>()
-    private val logger = Logger.getInstance(javaClass.name)
+    private val logger = Logger.getInstance(javaClass)
 
     fun clear() {
         images.clear()
@@ -54,7 +54,12 @@ class KubernetesImageCache(val project: Project) {
     fun extractFromFile(file: VirtualFile) {
         val extractFromFile = YAMLImageExtractor.extractFromFile(file, project)
         if (extractFromFile.isNotEmpty()) {
+            logger.debug("${if (images.contains(file)) "updated" else "added"} $file in cache")
             images[file] = extractFromFile
+        } else if (images.contains(file)) {
+            // case when all images from file (cached before) been removed
+            logger.debug("removed $file from cache")
+            images.remove(file)
         }
     }
 }

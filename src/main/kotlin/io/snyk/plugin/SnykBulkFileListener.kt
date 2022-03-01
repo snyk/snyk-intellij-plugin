@@ -207,6 +207,14 @@ class SnykBulkFileListener : BulkFileListener {
             if (isContainerEnabled()) {
                 getKubernetesImageCache(project)?.updateCache(virtualFilesAffected)
                 val containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
+                    val knownContainerIssues: List<ContainerIssuesForImage> =
+                        getSnykToolWindowPanel(project)?.currentContainerResult?.allCliIssues ?: emptyList()
+                    val containerFilesCached = knownContainerIssues
+                        .flatMap { it.workloadImages }
+                        .map { it.virtualFile }
+                    // if file was cached before - we should update cache even if it's none k8s file anymore
+                    if (containerFilesCached.contains(virtualFile)) return@filter true
+
                     val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
                     YAMLImageExtractor.isKubernetes(psiFile)
                 }
