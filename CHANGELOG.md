@@ -5,6 +5,7 @@
 ### Changed
 
 - Renamed plugin to `Snyk Security - Code, Open Source, Container, IaC Configurations`
+- Disable Snyk Code upload when Local Code Engine is enabled
 
 ## [2.4.19]
 
@@ -138,7 +139,7 @@
 
 - run CLI download retries in background instead of UI thread
 - validate CLI download with sha-256
-- allow Snyk Code scan for multi-modules project (cause IlligalStateException before)
+- allow Snyk Code scan for multi-modules project (cause IllegalStateException before)
 
 ### Changed
 
