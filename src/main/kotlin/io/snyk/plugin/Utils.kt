@@ -82,8 +82,14 @@ fun snykToolWindow(project: Project): ToolWindow? {
 }
 
 // see project.service<T>() in com.intellij.openapi.components
-private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? =
-    if (this.isDisposed) null else getService(T::class.java)
+private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
+    if (this.isDisposed) return null
+    return try {
+        getService(T::class.java)
+    } catch (ignored: Throwable) {
+        null
+    }
+}
 
 fun <L> getSyncPublisher(project: Project, topic: Topic<L>): L? {
     val messageBus = project.messageBus

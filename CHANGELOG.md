@@ -1,5 +1,12 @@
 # Snyk Changelog
 
+## [2.4.20]
+
+### Fixed
+
+- avoid any IDE internal InvocationTargetException for project services
+- Container results/images cache was not updated on full/partial file content deletion.
+
 ## [2.4.19]
 
 ### Changed
@@ -7,12 +14,9 @@
 - Renamed plugin to `Snyk Security - Code, Open Source, Container, IaC Configurations`
 - Disable Snyk Code upload when Local Code Engine is enabled
 
-## [2.4.19]
-
 ### Fixed
 
 - Snyk Vulnerability Database issue url resulting in 404 when opened from details panel.
-- Container results/images cache was not updated on full/partial file content deletion.
 
 ## [2.4.18]
 
