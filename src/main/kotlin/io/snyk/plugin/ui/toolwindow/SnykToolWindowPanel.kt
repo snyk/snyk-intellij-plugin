@@ -1225,9 +1225,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 <a href="https://docs.snyk.io/features/integrations/ide-tools/jetbrains-plugins#analysis-results-snyk-container">docs</a>.
             """.trimIndent()
         val CONTAINER_SCAN_START_TEXT =
-            "Snyk Container scan for vulnerabilities.<br><br>${Companion.CONTAINER_SCAN_COMMON_POSTFIX}"
+            "Snyk Container scan for vulnerabilities.<br><br>$CONTAINER_SCAN_COMMON_POSTFIX"
         val CONTAINER_SCAN_RUNNING_TEXT =
-            "Snyk Container scan for vulnerabilities is now running.<br><br>${CONTAINER_SCAN_COMMON_POSTFIX}"
+            "Snyk Container scan for vulnerabilities is now running.<br><br>$CONTAINER_SCAN_COMMON_POSTFIX"
 
         private val CONTAINER_NO_FOUND_COMMON_POSTFIX =
             """
