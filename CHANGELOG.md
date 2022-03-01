@@ -4,6 +4,7 @@
 
 ### Changed
 - Check Snyk Code enablement using configured organization from settings.
+- Container specific messages when Container root tree node is selected.
 
 ### Fixed
 
