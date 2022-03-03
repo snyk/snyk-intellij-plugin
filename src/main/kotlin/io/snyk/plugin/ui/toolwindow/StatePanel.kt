@@ -11,7 +11,7 @@ import javax.swing.JPanel
 
 class StatePanel(messageHtmlText: String, actionText: String? = null, action: (() -> Unit)? = null) : JPanel() {
     init {
-        layout = GridLayoutManager(3, 3, Insets(20, 10, 20, 20), -1, -1)
+        layout = GridLayoutManager(1, 1, Insets(20, 100, 20, 100), -1, -1)
 
         val innerPanel = JPanel()
         innerPanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, -1)
@@ -32,14 +32,8 @@ class StatePanel(messageHtmlText: String, actionText: String? = null, action: ((
             )
         }
 
-        add(JPanel(),
-            baseGridConstraints(0, 0, fill = GridConstraints.FILL_HORIZONTAL)
-        )
         add(innerPanel,
-            baseGridConstraints(0, 1, fill = GridConstraints.FILL_HORIZONTAL)
-        )
-        add(JPanel(),
-            baseGridConstraints(0, 2, fill = GridConstraints.FILL_HORIZONTAL)
+            baseGridConstraints(0, fill = GridConstraints.FILL_HORIZONTAL)
         )
     }
 }
