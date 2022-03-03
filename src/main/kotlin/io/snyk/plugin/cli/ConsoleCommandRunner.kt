@@ -24,7 +24,7 @@ open class ConsoleCommandRunner {
 
     open fun execute(
         commands: List<String>,
-        workDirectory: String = "/",
+        workDirectory: String? = null,
         apiToken: String = "",
         project: Project,
         outputConsumer: (line: String) -> Unit = {}
@@ -34,7 +34,7 @@ open class ConsoleCommandRunner {
         val generalCommandLine = GeneralCommandLine(commands)
 
         generalCommandLine.charset = Charset.forName("UTF-8")
-        generalCommandLine.setWorkDirectory(workDirectory)
+        workDirectory?.let { generalCommandLine.setWorkDirectory(it) }
 
         setupCliEnvironmentVariables(generalCommandLine, apiToken)
 
@@ -73,7 +73,7 @@ open class ConsoleCommandRunner {
         val processOutput = try {
             ScriptRunnerUtil.getProcessOutput(
                 processHandler,
-                ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER,
+                ScriptRunnerUtil.STDOUT_OR_STDERR_OUTPUT_KEY_FILTER,
                 timeout
             )
         } catch (e: ExecutionException) {
