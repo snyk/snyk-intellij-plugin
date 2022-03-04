@@ -1,0 +1,9 @@
+{
+  "sastEnabled": true,
+  "localCodeEngine": {
+    "allowCloudUpload": false,
+    "url": "",
+    "enabled": false
+  },
+  "org": "test-organization"
+}

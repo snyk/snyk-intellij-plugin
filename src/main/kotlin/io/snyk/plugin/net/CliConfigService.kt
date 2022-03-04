@@ -3,13 +3,14 @@ package io.snyk.plugin.net
 import com.google.gson.annotations.SerializedName
 import retrofit2.Call
 import retrofit2.http.GET
+import retrofit2.http.Query
 
 /**
  * An endpoint to get information about CLI configuration like SAST etc.
  */
 interface CliConfigService {
     @GET(apiName)
-    fun sast(): Call<CliConfigSettings>
+    fun sast(@Query("org") org: String? = null): Call<CliConfigSettings>
 
     companion object {
         const val apiName = "cli-config/settings/sast"

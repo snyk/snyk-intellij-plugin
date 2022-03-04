@@ -10,9 +10,6 @@ import retrofit2.Retrofit
 class SnykApiClient constructor(
     private val retrofit: Retrofit
 ) {
-    val sastSettings: CliConfigSettings?
-        get() = executeRequest(CliConfigService.apiName, cliConfigService().sast())
-
     val userId: String?
         get() = executeRequest(UserService.apiName, userService().userMe())?.id
 
@@ -31,6 +28,10 @@ class SnykApiClient constructor(
             userServiceEndpoint = retrofit.create(UserService::class.java)
         }
         return userServiceEndpoint
+    }
+
+    fun sastSettings(org: String? = null): CliConfigSettings? {
+        return executeRequest(CliConfigService.apiName, cliConfigService().sast(org))
     }
 
     private fun <T> executeRequest(apiName: String, retrofitCall: Call<T>): T? = try {

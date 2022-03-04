@@ -23,7 +23,10 @@ import javax.net.ssl.X509TrustManager
 class SnykApiService : Disposable {
 
     val sastSettings: CliConfigSettings?
-        get() = snykApiClient?.sastSettings
+        get() {
+            val pluginSettings = service<SnykApplicationSettingsStateService>()
+            return snykApiClient?.sastSettings(pluginSettings.organization)
+        }
 
     val userId: String?
         get() = snykApiClient?.userId
