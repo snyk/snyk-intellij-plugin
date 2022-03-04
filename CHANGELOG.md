@@ -2,6 +2,9 @@
 
 ## [2.4.20]
 
+### Changed
+- Check Snyk Code enablement using configured organization from settings.
+
 ### Fixed
 
 - avoid any IDE internal InvocationTargetException for project services
