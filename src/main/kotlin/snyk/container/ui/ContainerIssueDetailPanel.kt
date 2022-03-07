@@ -11,6 +11,7 @@ import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
+import io.snyk.plugin.ui.toolwindow.IssueDescriptionPanel
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.container.ContainerIssue
@@ -21,7 +22,7 @@ import javax.swing.JPanel
 
 class ContainerIssueDetailPanel(
     private val issue: ContainerIssue
-) : JPanel() {
+) : JPanel(), IssueDescriptionPanel {
 
     init {
         this.layout = GridLayoutManager(10, 1, Insets(20, 10, 20, 20), -1, 10)

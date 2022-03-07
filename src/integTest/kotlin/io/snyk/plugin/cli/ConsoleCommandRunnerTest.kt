@@ -226,10 +226,11 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val registryValue = Registry.get("snyk.timeout.results.waiting")
         val defaultValue = registryValue.asInteger()
         assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
-        registryValue.setValue(1)
+        registryValue.setValue(100)
         val seconds = "3"
         val sleepCommand = if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            listOf("timeout", seconds)
+            // see https://www.ibm.com/support/pages/timeout-command-run-batch-job-exits-immediately-and-returns-error-input-redirection-not-supported-exiting-process-immediately
+            listOf("ping", "-n", seconds, "localhost")
         } else {
             listOf("/bin/sleep", seconds)
         }
@@ -254,6 +255,5 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
         // clean up
         registryValue.setValue(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS)
-        getCliFile().delete()
     }
 }

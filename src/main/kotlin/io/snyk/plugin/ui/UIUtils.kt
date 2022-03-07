@@ -121,6 +121,7 @@ fun getReadOnlyClickableHtmlJEditorPane(
             BrowserHyperlinkListener.INSTANCE.hyperlinkUpdate(it)
         }
         if (noBorder) border = null
+        name = htmlText
     }
 }
 
@@ -182,11 +183,12 @@ fun baseGridConstraintsAnchorWest(
 fun panelGridConstraints(
     row: Int,
     column: Int = 0,
+    fill: Int = GridConstraints.FILL_BOTH,
     indent: Int = 0
 ) = baseGridConstraints(
     row = row,
     column = column,
-    fill = GridConstraints.FILL_BOTH,
+    fill = fill,
     hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
     vSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
     indent = indent
