@@ -51,13 +51,22 @@ jobs:
           ./gradlew release -Prelease.dryRun
           echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
 
-      - name: Create Github release
-        uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Extract release notes
+        id: extract-release-notes
+        run: |
+          echo "::set-output name=release_notes::$(./gradlew getChangelog --console=plain -q --no-header)"
+
+      - name: Create release
         if: ${{ !env.ACT }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "v${{ steps.createTag.outputs.tagName }}"
+          tag_name: "v${{ steps.createTag.outputs.tagName }}"
+          release_name: "v${{ steps.createTag.outputs.tagName }}"
+          draft: false
           prerelease: false
+          body: "${{ steps.extract-release-notes.outputs.release_notes }}"
 
       - name: Publish Plugin
         if: ${{ !env.ACT }}
