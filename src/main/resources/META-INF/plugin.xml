@@ -25,6 +25,7 @@
 
     <postStartupActivity implementation="io.snyk.plugin.SnykPostStartupActivity"/>
     <postStartupActivity implementation="snyk.WelcomeNotifyActivity"/>
+    <preloadingActivity implementation="snyk.lsp.LspPreloadingActivity"/>
 
     <projectConfigurable id="io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
                          instance="io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
@@ -34,6 +35,9 @@
     <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
 
     <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
+
+    <statusBarWidgetFactory implementation="org.wso2.lsp4intellij.statusbar.LSPServerStatusWidgetFactory"
+                            order="first" />
 
     <!-- Registry keys -->
     <registryKey key="snyk.timeout.results.waiting"

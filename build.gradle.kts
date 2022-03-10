@@ -22,10 +22,14 @@ description = properties("pluginName")
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://jitpack.io")
+    }
 }
 
 dependencies {
     implementation("org.commonmark:commonmark:0.18.1")
+    implementation("com.github.ballerina-platform:lsp4intellij:0.94.2")
     implementation("com.google.code.gson:gson:2.8.9")
     implementation("com.segment.analytics.java:analytics:3.1.3")
     implementation("io.sentry:sentry:5.6.0")
