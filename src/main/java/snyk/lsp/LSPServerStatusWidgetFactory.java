@@ -16,9 +16,6 @@ package snyk.lsp;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.StatusBarWidget;
@@ -27,6 +24,11 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.wso2.lsp4intellij.client.languageserver.LSPServerStatusWidget;
+import org.wso2.lsp4intellij.client.languageserver.serverdefinition.RawCommandServerDefinition;
+import org.wso2.lsp4intellij.client.languageserver.wrapper.LanguageServerWrapper;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class LSPServerStatusWidgetFactory implements StatusBarWidgetFactory {
   private final Map<Project, LSPServerStatusWidget> widgetForProject = new HashMap<>();
@@ -50,15 +52,22 @@ public class LSPServerStatusWidgetFactory implements StatusBarWidgetFactory {
     return true;
   }
 
+  public static RawCommandServerDefinition commandServerDefinition = new RawCommandServerDefinition(
+    "yaml",
+    new String[]{"D:/temp/snyk-ls.exe"}
+  );
+
   @Override
   public StatusBarWidget createWidget(@NotNull Project project) {
-    return widgetForProject.computeIfAbsent(project, (k) -> LSPServerStatusWidget.createWidgetFor(project));
+    return widgetForProject.computeIfAbsent(project, (k) -> LSPServerStatusWidget.createWidgetFor(
+      new LanguageServerWrapper(commandServerDefinition, project)
+    ));
   }
 
   @Override
   public void disposeWidget(@NotNull StatusBarWidget statusBarWidget) {
     if (statusBarWidget instanceof LSPServerStatusWidget) {
-      widgetForProject.remove(((LSPServerStatusWidget) statusBarWidget).getProject());
+      widgetForProject.values().remove(statusBarWidget);
     }
   }
 

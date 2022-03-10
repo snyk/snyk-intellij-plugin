@@ -36,7 +36,7 @@
 
     <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
 
-    <statusBarWidgetFactory implementation="org.wso2.lsp4intellij.statusbar.LSPServerStatusWidgetFactory"
+    <statusBarWidgetFactory implementation="snyk.lsp.LSPServerStatusWidgetFactory"
                             order="first" />
 
     <!-- Registry keys -->
