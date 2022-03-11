@@ -53,8 +53,8 @@ public class LSPServerStatusWidgetFactory implements StatusBarWidgetFactory {
   }
 
   public static RawCommandServerDefinition commandServerDefinition = new RawCommandServerDefinition(
-    "yaml",
-    new String[]{"D:/temp/snyk-ls.exe"}
+    "yaml,yml,json",
+    new String[]{"/Users/psorokin/Work/projects/DW/snyk-ls/build/snyk-lsp.darwin.amd64"}
   );
 
   @Override

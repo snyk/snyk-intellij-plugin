@@ -12,9 +12,9 @@
   <depends optional="true" config-file="optional/withJava.xml">com.intellij.java</depends>
   <depends optional="true" config-file="optional/withPython.xml">com.intellij.modules.python</depends>
   <depends optional="true" config-file="optional/withJavaScript.xml">JavaScript</depends>
-  <depends optional="true" config-file="optional/withJSON.xml">com.intellij.modules.json</depends>
+<!--  <depends optional="true" config-file="optional/withJSON.xml">com.intellij.modules.json</depends>-->
   <depends optional="true" config-file="optional/withHCL.xml">org.intellij.plugins.hcl</depends>
-  <depends optional="true" config-file="optional/withYAML.xml">org.jetbrains.plugins.yaml</depends>
+<!--  <depends optional="true" config-file="optional/withYAML.xml">org.jetbrains.plugins.yaml</depends>-->
   <depends optional="true" config-file="optional/withXML.xml">com.intellij.modules.xml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
@@ -39,6 +39,13 @@
     <statusBarWidgetFactory implementation="snyk.lsp.LSPServerStatusWidgetFactory"
                             order="first" />
 
+    <!-- register a listener on editor events, required for lsp file sync -->
+    <editorFactoryListener implementation="org.wso2.lsp4intellij.listeners.LSPEditorListener"/>
+    <fileDocumentManagerListener implementation="org.wso2.lsp4intellij.listeners.LSPFileDocumentManagerListener"/>
+    <externalAnnotator id="LspYamlAnnotator" language="yaml"
+                       implementationClass="org.wso2.lsp4intellij.contributors.annotator.LSPAnnotator"/>
+    <externalAnnotator language="JSON" implementationClass="org.wso2.lsp4intellij.contributors.annotator.LSPAnnotator"/>
+
     <!-- Registry keys -->
     <registryKey key="snyk.timeout.results.waiting"
                  defaultValue="720000"
@@ -50,6 +57,19 @@
                  restartRequired="true"/>
 
   </extensions>
+
+  <application-components>
+    <component>
+      <implementation-class>org.wso2.lsp4intellij.IntellijLanguageClient</implementation-class>
+    </component>
+  </application-components>
+  <applicationListeners>
+    <!-- required for lsp file sync -->
+    <listener class="org.wso2.lsp4intellij.listeners.VFSListener"
+              topic="com.intellij.openapi.vfs.VirtualFileListener"/>
+    <listener class="org.wso2.lsp4intellij.listeners.LSPProjectManagerListener"
+              topic="com.intellij.openapi.project.ProjectManagerListener"/>
+  </applicationListeners>
 
   <actions>
     <group id="io.snyk.plugin.ActionBar">
