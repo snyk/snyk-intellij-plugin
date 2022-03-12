@@ -12,6 +12,7 @@ import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
+import io.snyk.plugin.snykcode.SnykCodeBulkFileListener
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -20,6 +21,9 @@ import snyk.amplitude.AmplitudeExperimentService
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
+import snyk.container.ContainerBulkFileListener
+import snyk.iac.IacBulkFileListener
+import snyk.oss.OssBulkFileListener
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
@@ -49,7 +53,10 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, SnykBulkFileListener())
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, OssBulkFileListener())
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, SnykCodeBulkFileListener())
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, IacBulkFileListener())
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ContainerBulkFileListener())
             messageBusConnection.subscribe(ProjectManager.TOPIC, SnykProjectManagerListener())
             listenersActivated = true
         }
