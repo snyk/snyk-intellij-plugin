@@ -71,14 +71,11 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         cut = ContainerYamlAnnotator()
     }
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     override fun tearDown() {
-        try {
-            unmockkAll()
-        } finally {
-            super.tearDown()
-            pluginSettings().fileListenerEnabled = true
-        }
+        unmockkAll()
+        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
+        pluginSettings().fileListenerEnabled = true
+        super.tearDown()
     }
 
     @Test

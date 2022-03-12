@@ -56,14 +56,10 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
         )
     }
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     override fun tearDown() {
-        try {
-            unmockkAll()
-        } finally {
-            super.tearDown()
-            pluginSettings().fileListenerEnabled = true
-        }
+        unmockkAll()
+        pluginSettings().fileListenerEnabled = true
+        super.tearDown()
     }
 
     @Test

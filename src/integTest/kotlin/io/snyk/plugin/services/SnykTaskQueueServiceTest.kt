@@ -37,18 +37,13 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
-
-        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
     }
 
     override fun tearDown() {
-        try {
-            unmockkAll()
-            resetSettings(project)
-            removeDummyCliFile()
-        } finally {
-            super.tearDown()
-        }
+        unmockkAll()
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
     }
 
     @Test

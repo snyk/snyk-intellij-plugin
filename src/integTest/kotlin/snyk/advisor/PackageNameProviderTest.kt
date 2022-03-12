@@ -11,8 +11,8 @@ class PackageNameProviderTest : BasePlatformTestCase() {
     }
 
     override fun tearDown() {
-        super.tearDown()
         pluginSettings().fileListenerEnabled = true
+        super.tearDown()
     }
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader

@@ -45,12 +45,9 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
-        try {
-            unmockkAll()
-            resetSettings(project)
-        } finally {
-            super.tearDown()
-        }
+        unmockkAll()
+        resetSettings(project)
+        super.tearDown()
     }
 
     @Test

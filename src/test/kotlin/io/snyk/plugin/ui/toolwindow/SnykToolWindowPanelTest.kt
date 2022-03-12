@@ -31,22 +31,13 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         super.setUp()
         unmockkAll()
 
-        ApplicationManager.getApplication()
-            .replaceService(SnykApplicationSettingsStateService::class.java, settings, project)
-        ApplicationManager.getApplication()
-            .replaceService(SnykApiService::class.java, snykApiServiceMock, project)
-        ApplicationManager.getApplication()
-            .replaceService(SnykTaskQueueService::class.java, taskQueueService, project)
-        ApplicationManager.getApplication()
-            .replaceService(SnykAnalyticsService::class.java, analyticsService, project)
-        ApplicationManager.getApplication()
-            .replaceService(AmplitudeExperimentService::class.java, amplitudeExperimentationServiceMock, project)
+        val application = ApplicationManager.getApplication()
+        application.replaceService(SnykApplicationSettingsStateService::class.java, settings, application)
+        application.replaceService(SnykApiService::class.java, snykApiServiceMock, application)
+        application.replaceService(SnykAnalyticsService::class.java, analyticsService, application)
+        application.replaceService(AmplitudeExperimentService::class.java, amplitudeExperimentationServiceMock, application)
 
-        project.replaceService(AmplitudeExperimentService::class.java, amplitudeExperimentationServiceMock, project)
         project.replaceService(SnykTaskQueueService::class.java, taskQueueService, project)
-        project.replaceService(SnykApplicationSettingsStateService::class.java, settings, project)
-        project.replaceService(SnykAnalyticsService::class.java, analyticsService, project)
-        project.replaceService(SnykApiService::class.java, snykApiServiceMock, project)
 
         every { settings.token } returns null
         every { settings.sastOnServerEnabled } returns true
@@ -56,11 +47,16 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     }
 
     override fun tearDown() {
-        try {
-            unmockkAll()
-        } finally {
-            super.tearDown()
-        }
+        unmockkAll()
+
+        val application = ApplicationManager.getApplication()
+        application.replaceService(AmplitudeExperimentService::class.java, AmplitudeExperimentService(), application)
+        application.replaceService(SnykApplicationSettingsStateService::class.java, SnykApplicationSettingsStateService(), application)
+        application.replaceService(SnykApiService::class.java, SnykApiService(), application)
+        application.replaceService(SnykAnalyticsService::class.java, SnykAnalyticsService(), application)
+
+        project.replaceService(SnykTaskQueueService::class.java, SnykTaskQueueService(project), project)
+        super.tearDown()
     }
 
     @Test

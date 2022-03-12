@@ -31,13 +31,10 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
     }
 
     override fun tearDown() {
-        try {
-            unmockkAll()
-            resetSettings(project)
-            disposable.dispose()
-        } finally {
-            super.tearDown()
-        }
+        unmockkAll()
+        resetSettings(project)
+        disposable.dispose()
+        super.tearDown()
     }
 
     private fun setUpContainerScanTypePanelTests(): KubernetesImageCache {
@@ -106,7 +103,6 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
             pluginSettings().containerScanEnabled
         )
     }
-
 
     @Test
     fun `KubernetesImageCache rescan after container enablement`() {
