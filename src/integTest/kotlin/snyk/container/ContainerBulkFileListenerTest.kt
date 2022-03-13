@@ -5,6 +5,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
@@ -12,6 +14,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
 import com.intellij.util.io.exists
+import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -28,10 +31,12 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
+        unmockkAll()
         resetSettings(project)
     }
 
     override fun tearDown() {
+        unmockkAll()
         resetSettings(project)
         super.tearDown()
     }
@@ -267,5 +272,43 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
             "Cached Container file with removed content should been marked as obsolete here",
             containerCacheInvalidatedForFile(psiFile)
         )
+    }
+
+    @Test
+    fun `test Container should update cache even if any other cache update fail with Exception`() {
+        setUpContainerTest()
+        val psiFile = myFixture.configureByText("existing.yaml", TestYamls.podYaml())
+        createFakeContainerResultInCache(psiFile)
+        assertFalse(isContainerUpdateNeeded())
+
+        var exceptionThrown = false
+        val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
+        try {
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ExceptionProducerFileListener())
+
+            ApplicationManager.getApplication().runWriteAction {
+                PsiDocumentManager.getInstance(project).getDocument(psiFile)?.setText(TestYamls.podYaml() + "bla bla")
+            }
+            exceptionThrown = try {
+                FileDocumentManager.getInstance().saveAllDocuments()
+                false
+            } catch (e: ControlException) {
+                true
+            }
+        } finally {
+            messageBusConnection.dispose()
+        }
+
+        assertTrue("control Exception should thrown during that test", exceptionThrown)
+        assertTrue(isContainerUpdateNeeded())
+        await().atMost(2, TimeUnit.SECONDS).until { containerCacheInvalidatedForFile(psiFile) }
+    }
+
+    private class ControlException : RuntimeException()
+
+    inner class ExceptionProducerFileListener : BulkFileListener {
+        override fun after(events: MutableList<out VFileEvent>) {
+            throw ControlException()
+        }
     }
 }
