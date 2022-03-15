@@ -5,6 +5,7 @@
 ### Fixed
 
 - Split caches update to be performed independently per product to avoid cross-affection if any failed.
+- Container now extract images from Helm generated k8s yaml with image names inside quotes.
 
 ## [2.4.21]
 

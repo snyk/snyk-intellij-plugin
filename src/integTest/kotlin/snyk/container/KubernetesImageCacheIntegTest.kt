@@ -14,12 +14,14 @@ import snyk.container.TestYamls.cronJobYaml
 import snyk.container.TestYamls.daemonSetYaml
 import snyk.container.TestYamls.deploymentYaml
 import snyk.container.TestYamls.fallbackTest
+import snyk.container.TestYamls.helmYaml
 import snyk.container.TestYamls.jobYaml
 import snyk.container.TestYamls.multiContainerPodYaml
 import snyk.container.TestYamls.podYaml
 import snyk.container.TestYamls.replicaSetWithoutApiVersionYaml
 import snyk.container.TestYamls.replicaSetYaml
 import snyk.container.TestYamls.replicationControllerYaml
+import snyk.container.TestYamls.singleQuoteImageNameBrokenYaml
 import snyk.container.TestYamls.statefulSetYaml
 
 private const val podYamlLineNumber = 8
@@ -207,5 +209,24 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
 
         cut.extractFromFile(file)
         return cut.getKubernetesWorkloadImageNamesFromCache()
+    }
+
+    @Test
+    fun `extract images from Helm generated yaml with image names inside quotes`() {
+        val file = createFile(fileName, helmYaml()).virtualFile
+        cut.extractFromFile(file)
+        val images = cut.getKubernetesWorkloadImages()
+
+        assertEquals(1, images.size)
+        assertEquals(KubernetesWorkloadImage("snyk/code-agent:latest", file, 43), images.first())
+    }
+
+    @Test
+    fun `no images extracted from yaml with invalid image names`() {
+        val file = createFile(fileName, singleQuoteImageNameBrokenYaml()).virtualFile
+        cut.extractFromFile(file)
+        val images = cut.getKubernetesWorkloadImages()
+
+        assertEquals(0, images.size)
     }
 }
