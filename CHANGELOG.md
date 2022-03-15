@@ -1,5 +1,13 @@
 # Snyk Changelog
 
+## [2.4.22]
+
+### Fixed
+
+- Split caches update to be performed independently per product to avoid cross-affection if any failed.
+
+## [2.4.21]
+
 ## [2.4.20]
 
 ### Changed
