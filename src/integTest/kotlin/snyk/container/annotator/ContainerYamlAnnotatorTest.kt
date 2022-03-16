@@ -179,6 +179,20 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
+    fun `test apply should add annotations for all duplicated images`() {
+        val builderMock = mockk<AnnotationBuilder>(relaxed = true)
+        every { toolWindowPanel.currentContainerResult } returns
+            createContainerResultWithIssueOnLine21and23ForSameImageName()
+        every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify(exactly = 2) {
+            annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
+        }
+    }
+
+    @Test
     fun `test apply should not add a quickfix if remediation advice base image different`() {
         val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 21))
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
@@ -227,6 +241,26 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         containerResult.allCliIssues = listOf(
             firstContainerIssuesForImage.copy(
                 workloadImages = workloadImages,
+                baseImageRemediationInfo = baseImageRemediationInfo
+            )
+        )
+        return containerResult
+    }
+
+    private fun createContainerResultWithIssueOnLine21and23ForSameImageName(): ContainerResult {
+        val containerResult = ContainerResult(
+            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java)), null
+        )
+
+        val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
+        val baseImageRemediationInfo =
+            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
+
+        val workloadImages1 = KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 21)
+        val workloadImages2 = KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 23)
+        containerResult.allCliIssues = listOf(
+            firstContainerIssuesForImage.copy(
+                workloadImages = listOf(workloadImages1, workloadImages2),
                 baseImageRemediationInfo = baseImageRemediationInfo
             )
         )

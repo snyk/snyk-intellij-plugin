@@ -380,4 +380,18 @@ object TestYamls {
             ports:
             - containerPort: 80
         """.trimIndent()
+
+    fun duplicatedImageNameYaml(): String =
+        """
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: nginx
+        spec:
+          containers:
+          - name: nginx_1
+            image: nginx:1.16.0
+          - name: nginx_2
+            image: nginx:1.16.0
+        """.trimIndent()
 }

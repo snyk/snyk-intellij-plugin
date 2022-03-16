@@ -13,6 +13,7 @@ import snyk.container.TestYamls.cronJobErroneousYaml
 import snyk.container.TestYamls.cronJobYaml
 import snyk.container.TestYamls.daemonSetYaml
 import snyk.container.TestYamls.deploymentYaml
+import snyk.container.TestYamls.duplicatedImageNameYaml
 import snyk.container.TestYamls.fallbackTest
 import snyk.container.TestYamls.helmYaml
 import snyk.container.TestYamls.jobYaml
@@ -228,5 +229,16 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
         val images = cut.getKubernetesWorkloadImages()
 
         assertEquals(0, images.size)
+    }
+
+    @Test
+    fun `distinct Kubernetes Workload Image Names for calling CLI`() {
+        val file = createFile(fileName, duplicatedImageNameYaml()).virtualFile
+
+        cut.extractFromFile(file)
+        val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
+
+        assertEquals(1, images.size)
+        assertTrue(images.contains("nginx:1.16.0"))
     }
 }
