@@ -22,6 +22,8 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         .getResource(("container-test-results/nginx-no-remediation.json"))!!.readText(Charsets.UTF_8)
     private val containerResultForFewImagesJson = javaClass.classLoader
         .getResource(("container-test-results/debian-nginx_critical_only.json"))!!.readText(Charsets.UTF_8)
+    private val containerDoubleJenkinsWithPathJson = javaClass.classLoader
+        .getResource(("container-test-results/container-double-jenkins-with-path.json"))!!.readText(Charsets.UTF_8)
 
     override fun setUp() {
         super.setUp()
@@ -127,6 +129,43 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
             allCliIssues.size == 2 &&
                 allCliIssues.any { it.imageName == "debian" } &&
                 allCliIssues.any { it.imageName == "nginx" }
+        )
+    }
+
+    /** see [snyk.container.ContainerService.sanitizeImageName] kdoc for bug details */
+    @Test
+    fun `proceed image with path (registry hostname) correctly bypassing CLI imageName transformation bug`() {
+        // create KubernetesImageCache mock
+        val cache = spyk(KubernetesImageCache(project))
+        val fakeVirtualFile = createFile("fake.file", "").virtualFile
+        every { cache.getKubernetesWorkloadImages() } returns
+            setOf(
+                KubernetesWorkloadImage("jenkins/jenkins", fakeVirtualFile),
+                KubernetesWorkloadImage("jenkins/jenkins:lts", fakeVirtualFile)
+            )
+        cut.setKubernetesImageCache(cache)
+        // create CLI mock
+        val mockkRunner = mockk<ConsoleCommandRunner>()
+        every { mockkRunner.execute(any(), any(), any(), project) } returns containerDoubleJenkinsWithPathJson
+        cut.setConsoleCommandRunner(mockkRunner)
+
+        val containerResult = cut.scan()
+
+        verify { cache.getKubernetesWorkloadImages() }
+        verify {
+            cut.execute(
+                listOf("container", "test", "jenkins/jenkins", "jenkins/jenkins:lts")
+            )
+        }
+        assertTrue("Container scan should succeed", containerResult.isSuccessful())
+        val allCliIssues = containerResult.allCliIssues
+        assertTrue("Images with issues should be found", allCliIssues != null)
+        allCliIssues!!
+        assertTrue(
+            "2 images correctly named should be found",
+            allCliIssues.size == 2 &&
+                allCliIssues.any { it.imageName == "jenkins/jenkins" } &&
+                allCliIssues.any { it.imageName == "jenkins/jenkins:lts" }
         )
     }
 }

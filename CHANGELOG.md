@@ -5,7 +5,10 @@
 ### Fixed
 
 - Split caches update to be performed independently per product to avoid cross-affection if any failed.
-- Container now extract images from Helm generated k8s yaml with image names inside quotes.
+- Container scan now extract images from Helm generated k8s yaml with image names inside quotes.
+- Container scan should distinct image names when calling CLI.
+- Container scan should add annotations for all duplicated images.
+- Container scan should correctly proceed images with registry hostname in the name.
 
 ## [2.4.21]
 
