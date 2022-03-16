@@ -46,10 +46,11 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
         unmockkAll()
         try {
             super.tearDown()
-            pluginSettings().fileListenerEnabled = true
         } catch (e: Exception) {
             // when tearing down the test case, our File Listener is trying to react on the deletion of the test
             // files and tries to access the file index that isn't there anymore
+        } finally {
+            pluginSettings().fileListenerEnabled = true
         }
     }
 

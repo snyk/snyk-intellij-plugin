@@ -37,11 +37,8 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     }
 
     override fun tearDown() {
-        try {
-            unmockkAll()
-        } finally {
-            super.tearDown()
-        }
+        unmockkAll()
+        super.tearDown()
     }
 
     @Test

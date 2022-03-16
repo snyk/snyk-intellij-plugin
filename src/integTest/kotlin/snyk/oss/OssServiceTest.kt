@@ -35,12 +35,9 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
-        try {
-            resetSettings(project)
-            removeDummyCliFile()
-        } finally {
-            super.tearDown()
-        }
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
     }
 
     private val ossService: OssService
@@ -228,7 +225,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToCliResultWithEmptyRawString() {
-    val cliResult = ossService.convertRawCliStringToCliResult("")
+        val cliResult = ossService.convertRawCliStringToCliResult("")
         assertFalse(cliResult.isSuccessful())
     }
 

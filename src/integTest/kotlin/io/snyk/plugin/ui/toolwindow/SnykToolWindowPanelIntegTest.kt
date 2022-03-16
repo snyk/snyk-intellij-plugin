@@ -75,13 +75,10 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     override fun tearDown() {
-        try {
-            unmockkAll()
-            resetSettings(project)
-            removeDummyCliFile()
-        } finally {
-            super.tearDown()
-        }
+        unmockkAll()
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
     }
 
     private fun setUpIacTest() {

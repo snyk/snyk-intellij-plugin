@@ -4,7 +4,6 @@ import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.unmockkAll
 import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import org.junit.Test
 
@@ -18,13 +17,9 @@ class SnykTaskQueueServiceHeavyTest : HeavyPlatformTestCase() {
     }
 
     override fun tearDown() {
-        try {
-            unmockkAll()
-            resetSettings(project)
-            removeDummyCliFile()
-        } finally {
-            super.tearDown()
-        }
+        unmockkAll()
+        resetSettings(project)
+        super.tearDown()
     }
 
     @Test

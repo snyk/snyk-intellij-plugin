@@ -25,12 +25,9 @@ class CliAdapterTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
-        try {
-            resetSettings(project)
-            removeDummyCliFile()
-        } finally {
-            super.tearDown()
-        }
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
     }
 
     @Test

@@ -42,12 +42,9 @@ class IacServiceTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
-        try {
-            resetSettings(project)
-            removeDummyCliFile()
-        } finally {
-            super.tearDown()
-        }
+        resetSettings(project)
+        removeDummyCliFile()
+        super.tearDown()
     }
 
     private val iacService: IacScanService
