@@ -16,6 +16,10 @@ import snyk.container.TestYamls.deploymentYaml
 import snyk.container.TestYamls.duplicatedImageNameYaml
 import snyk.container.TestYamls.fallbackTest
 import snyk.container.TestYamls.helmYaml
+import snyk.container.TestYamls.imagePathCommentedYaml
+import snyk.container.TestYamls.imagePathFollowedByCommentYaml
+import snyk.container.TestYamls.imagePathWithDigestYaml
+import snyk.container.TestYamls.imagePathWithPortAndTagYaml
 import snyk.container.TestYamls.jobYaml
 import snyk.container.TestYamls.multiContainerPodYaml
 import snyk.container.TestYamls.podYaml
@@ -240,5 +244,48 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
 
         assertEquals(1, images.size)
         assertTrue(images.contains("nginx:1.16.0"))
+    }
+
+    @Test
+    fun `image Path followed by comment is extracted`() {
+        val file = createFile(fileName, imagePathFollowedByCommentYaml()).virtualFile
+
+        cut.extractFromFile(file)
+        val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
+
+        assertEquals(1, images.size)
+        assertTrue(images.contains("imagename"))
+    }
+
+    @Test
+    fun `image Path commented is NOT extracted`() {
+        val file = createFile(fileName, imagePathCommentedYaml()).virtualFile
+
+        cut.extractFromFile(file)
+        val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
+
+        assertEquals(0, images.size)
+    }
+
+    @Test
+    fun `image Path with port and tag is extracted`() {
+        val file = createFile(fileName, imagePathWithPortAndTagYaml()).virtualFile
+
+        cut.extractFromFile(file)
+        val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
+
+        assertEquals(1, images.size)
+        assertTrue(images.contains("fictional.registry.example:10443/imagename:latest"))
+    }
+
+    @Test
+    fun `image Path with digest is extracted`() {
+        val file = createFile(fileName, imagePathWithDigestYaml()).virtualFile
+
+        cut.extractFromFile(file)
+        val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
+
+        assertEquals(1, images.size)
+        assertTrue(images.contains("fictional.registry.example:10443/imagename@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2"))
     }
 }

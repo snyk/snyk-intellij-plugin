@@ -394,4 +394,44 @@ object TestYamls {
           - name: nginx_2
             image: nginx:1.16.0
         """.trimIndent()
+
+    fun imagePathCommentedYaml(): String =
+        """
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: image_1
+            # image: not-an-imagename
+        """.trimIndent()
+
+    fun imagePathFollowedByCommentYaml(): String =
+        """
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: image_1
+            image: imagename # some comment
+        """.trimIndent()
+
+    fun imagePathWithPortAndTagYaml(): String =
+        """
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: image_1
+            image: fictional.registry.example:10443/imagename:latest
+        """.trimIndent()
+
+    fun imagePathWithDigestYaml(): String =
+        """
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: image_1
+            image: fictional.registry.example:10443/imagename@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2
+        """.trimIndent()
 }

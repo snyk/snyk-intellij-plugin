@@ -9,6 +9,7 @@
 - Container scan should distinct image names when calling CLI.
 - Container scan should add annotations for all duplicated images.
 - Container scan should correctly proceed images with registry hostname in the name.
+- Container scan should extract images with `port` and `tag` as well as `digest` in the path.
 
 ## [2.4.21]
 
