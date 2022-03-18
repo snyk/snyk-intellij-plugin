@@ -304,4 +304,80 @@ object TestYamls {
             ports:
             - containerPort: 80
         """.trimIndent()
+
+    fun helmYaml(): String =
+        """
+        ---
+        # Source: snyk-broker/templates/code_agent_deployment.yaml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: "bitbucket-server-code-agent"
+          namespace: snyk-broker-bitbucket
+          labels:
+            app.kubernetes.io/name: snyk-broker-chart-ca
+            app.kubernetes.io/instance: snyk-broker-chart
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: snyk-broker-chart-ca
+              app.kubernetes.io/instance: snyk-broker-chart
+          template:
+            metadata:
+              labels:
+                app.kubernetes.io/name: snyk-broker-chart-ca
+                app.kubernetes.io/instance: snyk-broker-chart
+            spec:
+              serviceAccountName: snyk-broker
+              securityContext:
+                {}
+              containers:
+                - name: code-agent
+                  resources:
+                    limits:
+                      cpu: 1
+                      memory: 2Gi
+                    requests:
+                      cpu: 1
+                      memory: 2Gi
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                      drop:
+                      - ALL
+                    readOnlyRootFilesystem: false
+                    runAsNonRoot: true
+                    runAsUser: 1000
+                  image: "snyk/code-agent:latest"
+                  imagePullPolicy: Always
+                  ports:
+                    - name: http
+                      containerPort: 3000
+                  env:
+                    - name: PORT
+                      value: '3000'
+                    - name: SNYK_TOKEN
+                      valueFrom:
+                        secretKeyRef:
+                          name: snyk-token
+                          key: snyk-token-key
+                 # Troubleshooting - Set to 0 for SSL inspection testing
+                    - name: NODE_TLS_REJECT_UNAUTHORIZED
+                      value: "0"
+        """.trimIndent()
+
+    fun singleQuoteImageNameBrokenYaml(): String =
+        """
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: "nginx:1.16.0
+            ports:
+            - containerPort: 80
+        """.trimIndent()
 }

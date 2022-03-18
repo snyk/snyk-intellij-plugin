@@ -5,10 +5,25 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.findPsiFileIgnoringExceptions
+import org.intellij.lang.annotations.Language
 
 object YAMLImageExtractor {
     private val logger = Logger.getInstance(javaClass)
-    private val imageRegEx = "(?<=([-\\s]image:))(\\s*[a-zA-Z0-9./\\-_]+)(:)?([a-zA-Z0-9./\\-_]+)?".toRegex()
+
+    // see https://kubernetes.io/docs/concepts/containers/images/
+    @Language("regexp")
+    private const val imageNameSymbol = "[a-zA-Z0-9./\\-_]"
+
+    @Language("regexp")
+    private const val imageName = "($imageNameSymbol+(:)?($imageNameSymbol+)?)"
+
+    @Language("regexp")
+    private const val imageNameDescription = "$imageName|(\"$imageName\")"
+
+    @Language("regexp")
+    private const val imageTag = "[-\\s]image:\\s*"
+
+    private val imageRegexGrouped = "$imageTag($imageNameDescription)".toRegex()
 
     private fun extractImages(file: PsiFile): Set<KubernetesWorkloadImage> {
         return if (!isKubernetes(file)) emptySet() else extractImagesFromText(file)
@@ -30,7 +45,10 @@ object YAMLImageExtractor {
 
     private fun extractImageNameFromLine(s: String): String {
         return if (!s.trim().startsWith("#")) {
-            imageRegEx.find(s)?.value?.trim() ?: ""
+            imageRegexGrouped.find(s)?.groupValues
+                ?.getOrNull(1) // get first regex group match if any
+                ?.removeSurrounding("\"") // remove surrounding " if any
+                ?: ""
         } else {
             ""
         }
