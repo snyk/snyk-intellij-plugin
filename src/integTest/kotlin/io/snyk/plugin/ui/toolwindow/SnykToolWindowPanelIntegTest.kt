@@ -681,6 +681,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         every { getKubernetesImageCache(project)?.getKubernetesWorkloadImages() } returns setOf(
             KubernetesWorkloadImage("ignored_image_name", MockVirtualFile("fake_virtual_file"))
         )
+        every { getKubernetesImageCache(project)?.getKubernetesWorkloadImageNamesFromCache() } returns
+            setOf("ignored_image_name")
         val containerService = ContainerService(project)
         val mockkRunner = mockk<ConsoleCommandRunner>()
         every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultWithRemediationJson

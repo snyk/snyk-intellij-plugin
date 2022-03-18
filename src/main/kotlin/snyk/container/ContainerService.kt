@@ -31,11 +31,10 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
     fun scan(): ContainerResult {
         LOG.debug("starting scanning container service")
 
-        val containerIssueImageList = mutableListOf<ContainerIssuesForImage>()
+        val patchedIssueImageList = mutableListOf<ContainerIssuesForImage>()
 
         val commands = listOf("container", "test")
-        val images = imageCache?.getKubernetesWorkloadImages() ?: emptySet()
-        val imageNames = images.map { it.image }
+        val imageNames = imageCache?.getKubernetesWorkloadImageNamesFromCache() ?: emptySet()
         LOG.debug("container scan requested for ${imageNames.size} images: $imageNames")
         if (imageNames.isEmpty()) {
             return ContainerResult(emptyList(), NO_IMAGES_TO_SCAN_ERROR)
@@ -49,16 +48,41 @@ class ContainerService(project: Project) : CliAdapter<ContainerResult>(
             "container scan: images with vulns [${tempResult.allCliIssues?.size}], issues [${tempResult.issuesCount}] "
         )
 
+        val images = imageCache?.getKubernetesWorkloadImages() ?: emptySet()
         tempResult.allCliIssues?.forEach { forImage ->
             val baseImageRemediationInfo = convertRemediation(forImage.docker.baseImageRemediation)
+            val sanitizedImageName = sanitizeImageName(forImage.imageName, imageNames)
             val enrichedContainerIssuesForImage = forImage.copy(
-                workloadImages = images.filter { it.image == forImage.imageName },
+                imageName = sanitizedImageName,
+                workloadImages = images.filter { it.image == sanitizedImageName },
                 baseImageRemediationInfo = baseImageRemediationInfo
             )
-            containerIssueImageList.add(enrichedContainerIssuesForImage)
+            patchedIssueImageList.add(enrichedContainerIssuesForImage)
         }
         LOG.debug("container service scan completed")
-        return ContainerResult(containerIssueImageList, null)
+        return ContainerResult(patchedIssueImageList, null)
+    }
+
+    /**
+     * Due to bug (feature?) in CLI, image names come transformed as below, so we need to sanitize them:
+     * snyk/code-agent      -> snyk/code-agent/code-agent
+     * jenkins/jenkins:lts  -> jenkins/jenkins:lts/jenkins
+     * bitnami/kubectl:1.21 -> bitnami/kubectl:1.21/kubectl
+     * ghcr.io/christophetd/log4shell-vulnerable-app -> ghcr.io/christophetd/log4shell-vulnerable-app/christophetd/log4shell-vulnerable-app
+     */
+    private fun sanitizeImageName(cliReturnedImageName: String, imageNamesToScan: Set<String>): String {
+        val nameCandidates = imageNamesToScan.filter { cliReturnedImageName.startsWith(it) }
+        return when {
+            // trivial case: jenkins/jenkins:lts  -> jenkins/jenkins:lts/jenkins
+            nameCandidates.size == 1 -> nameCandidates.first()
+            // tricky case when we have:
+            // jenkins/jenkins      -> jenkins/jenkins/jenkins
+            // jenkins/jenkins:lts  -> jenkins/jenkins:lts/jenkins
+            // so for `jenkins/jenkins:lts/jenkins` we should choose latter (longest match)
+            nameCandidates.size > 1 -> nameCandidates.maxBy { it.length }!!
+            // fallback in case our sanitizing fail
+            else -> cliReturnedImageName
+        }
     }
 
     fun convertRemediation(baseImageRemediation: BaseImageRemediation?): BaseImageRemediationInfo? {

@@ -10,20 +10,24 @@ import org.intellij.lang.annotations.Language
 object YAMLImageExtractor {
     private val logger = Logger.getInstance(javaClass)
 
-    // see https://kubernetes.io/docs/concepts/containers/images/
+    // we don't really care to validate that image Path is properly formed,
+    // just need to include in our search only allowed symbols.
+    // otherwise, we can try to do something like next regexp:
+    // (($registryHostname(:$port)?/)?$imageName((:$imageTag)|(@$digest))?)
+    // for more details and some formal specs see
+    // https://kubernetes.io/docs/concepts/containers/images/
+    // https://github.com/opencontainers/image-spec/blob/main/descriptor.md#digests
+    // https://github.com/opencontainers/distribution-spec/blob/main/spec.md
     @Language("regexp")
-    private const val imageNameSymbol = "[a-zA-Z0-9./\\-_]"
+    private const val imagePath = "[a-zA-Z0-9./\\-_:@]+"
 
     @Language("regexp")
-    private const val imageName = "($imageNameSymbol+(:)?($imageNameSymbol+)?)"
+    private const val imagePathDescription = "$imagePath|(\"$imagePath\")"
 
     @Language("regexp")
-    private const val imageNameDescription = "$imageName|(\"$imageName\")"
+    private const val imageYamlTag = "[-\\s]image:\\s*"
 
-    @Language("regexp")
-    private const val imageTag = "[-\\s]image:\\s*"
-
-    private val imageRegexGrouped = "$imageTag($imageNameDescription)".toRegex()
+    private val imageRegexGrouped = "$imageYamlTag($imagePathDescription)".toRegex()
 
     private fun extractImages(file: PsiFile): Set<KubernetesWorkloadImage> {
         return if (!isKubernetes(file)) emptySet() else extractImagesFromText(file)
@@ -32,7 +36,7 @@ object YAMLImageExtractor {
     private fun extractImagesFromText(psiFile: PsiFile): Set<KubernetesWorkloadImage> {
         val extractedImages = mutableListOf<KubernetesWorkloadImage>()
         getFileLines(psiFile).forEachIndexed { lineNumber, line ->
-            val imageName = extractImageNameFromLine(line)
+            val imageName = extractImagePathFromLine(line)
             if (imageName.isNotBlank()) {
                 // we report line numbers with a start index of 1 elsewhere (e.g. IaC)
                 val image = KubernetesWorkloadImage(imageName, psiFile.virtualFile, lineNumber + 1)
@@ -43,7 +47,7 @@ object YAMLImageExtractor {
         return extractedImages.toSet()
     }
 
-    private fun extractImageNameFromLine(s: String): String {
+    private fun extractImagePathFromLine(s: String): String {
         return if (!s.trim().startsWith("#")) {
             imageRegexGrouped.find(s)?.groupValues
                 ?.getOrNull(1) // get first regex group match if any

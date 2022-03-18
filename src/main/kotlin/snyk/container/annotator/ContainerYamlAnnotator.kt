@@ -42,14 +42,17 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
             val severity = severity(forImage)
 
-            val workloadImage = forImage.workloadImages.first { it.virtualFile == psiFile.virtualFile }
-            val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
-            val annotationBuilder = holder.newAnnotation(severity, annotationMessage(forImage)).range(textRange)
-            if (shouldAddQuickFix(forImage)) {
-                val intentionAction = BaseImageRemediationFix(forImage, textRange)
-                annotationBuilder.withFix(intentionAction)
-            }
-            annotationBuilder.create()
+            forImage.workloadImages
+                .filter { it.virtualFile == psiFile.virtualFile }
+                .forEach { workloadImage ->
+                    val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
+                    val annotationBuilder = holder.newAnnotation(severity, annotationMessage(forImage)).range(textRange)
+                    if (shouldAddQuickFix(forImage)) {
+                        val intentionAction = BaseImageRemediationFix(forImage, textRange)
+                        annotationBuilder.withFix(intentionAction)
+                    }
+                    annotationBuilder.create()
+                }
         }
     }
 
