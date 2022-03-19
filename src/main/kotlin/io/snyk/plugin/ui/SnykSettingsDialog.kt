@@ -1,11 +1,13 @@
 package io.snyk.plugin.ui
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBPasswordField
@@ -20,6 +22,7 @@ import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
+import snyk.SnykBundle
 import snyk.amplitude.AmplitudeExperimentService
 import snyk.amplitude.api.ExperimentUser
 import java.awt.Insets
@@ -175,7 +178,7 @@ class SnykSettingsDialog(
                 1,
                 1,
                 1,
-                1,
+                3,
                 UIGridConstraints.ANCHOR_WEST,
                 UIGridConstraints.FILL_HORIZONTAL,
                 UIGridConstraints.SIZEPOLICY_WANT_GROW,
@@ -215,7 +218,7 @@ class SnykSettingsDialog(
                 2,
                 1,
                 1,
-                2,
+                3,
                 UIGridConstraints.ANCHOR_WEST,
                 UIGridConstraints.FILL_HORIZONTAL,
                 UIGridConstraints.SIZEPOLICY_WANT_GROW,
@@ -235,7 +238,7 @@ class SnykSettingsDialog(
                 3,
                 1,
                 1,
-                2,
+                3,
                 UIGridConstraints.ANCHOR_WEST,
                 UIGridConstraints.FILL_NONE,
                 UIGridConstraints.SIZEPOLICY_WANT_GROW,
@@ -279,6 +282,32 @@ class SnykSettingsDialog(
                 UIGridConstraints.ANCHOR_WEST,
                 UIGridConstraints.FILL_HORIZONTAL,
                 UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                UIGridConstraints.SIZEPOLICY_FIXED,
+                null,
+                null,
+                null,
+                0,
+                false
+            )
+        )
+
+        val organizationContextHelpLabel = ContextHelpLabel.createWithLink(
+            null,
+            SnykBundle.message("snyk.settings.organization.tooltip.description"),
+            SnykBundle.message("snyk.settings.organization.tooltip.linkText")
+        ) {
+            BrowserUtil.browse(SnykBundle.message("snyk.settings.organization.tooltip.link"))
+        }
+        generalSettingsPanel.add(
+            organizationContextHelpLabel,
+            UIGridConstraints(
+                4,
+                3,
+                1,
+                1,
+                UIGridConstraints.ANCHOR_EAST,
+                UIGridConstraints.FILL_NONE,
+                UIGridConstraints.SIZEPOLICY_FIXED,
                 UIGridConstraints.SIZEPOLICY_FIXED,
                 null,
                 null,
