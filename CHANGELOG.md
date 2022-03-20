@@ -1,11 +1,9 @@
 # Snyk Changelog
 
-## [2.4.23]
+## [2.4.22]
 
 ### Changed
 - Provide an additional info to the “Organization” setting
-
-## [2.4.22]
 
 ### Fixed
 
