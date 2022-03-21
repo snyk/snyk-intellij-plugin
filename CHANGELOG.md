@@ -2,6 +2,9 @@
 
 ## [2.4.22]
 
+### Changed
+- Provide an additional info to the “Organization” setting
+
 ### Fixed
 
 - Split caches update to be performed independently per product to avoid cross-affection if any failed.
@@ -50,7 +53,7 @@
 - Fix Container: invalid token shows error and does not redirect to Auth panel
 - Fix Container: should handle case if no images in project found
 - Fix Container: node still showing last results even if disabled
-- improved Snyk Container image parsing in K8S files
+- Improved Snyk Container image parsing in K8S files
 
 ## [2.4.17]
 
