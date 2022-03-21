@@ -250,10 +250,14 @@ fun getX509TrustManager(): X509TrustManager {
 }
 
 fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): PsiFile? =
-    try {
-        PsiManager.getInstance(project).findFile(virtualFile)
-    } catch (ignored: Throwable) {
+    if (!virtualFile.isValid || project.isDisposed) {
         null
+    } else {
+        try {
+            PsiManager.getInstance(project).findFile(virtualFile)
+        } catch (ignored: Throwable) {
+            null
+        }
     }
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
