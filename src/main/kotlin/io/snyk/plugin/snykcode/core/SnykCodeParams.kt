@@ -3,6 +3,7 @@ package io.snyk.plugin.snykcode.core
 import ai.deepcode.javaclient.core.DeepCodeParamsBase
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.snykcode.codeRestApi
 import io.snyk.plugin.toSnykCodeApiUrl
 
 class SnykCodeParams private constructor() : DeepCodeParamsBase(
@@ -14,7 +15,8 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     pluginSettings().token,
     "",
     "${SCLogger.presentableName}-Jetbrains",
-    { getWaitForResultsTimeout() }
+    { getWaitForResultsTimeout() },
+    codeRestApi
 ) {
 
     init {
