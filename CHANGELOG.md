@@ -4,6 +4,7 @@
 
 ### Fixed
 - Snyk Code: make analysis retrieval more resilient to server/net errors.
+- Snyk Code: add analysis context to improve analysis retrieval.
 
 ## [2.4.22]
 
