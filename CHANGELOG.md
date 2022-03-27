@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.23]
+
+### Fixed
+- Snyk Code: make analysis retrieval more resilient to server/net errors.
+
 ## [2.4.22]
 
 ### Changed
