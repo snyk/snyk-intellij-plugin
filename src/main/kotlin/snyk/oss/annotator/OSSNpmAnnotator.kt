@@ -9,7 +9,6 @@ import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
-import org.jetbrains.kotlin.psi.psiUtil.getNextSiblingIgnoringWhitespace
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
@@ -62,12 +61,19 @@ class OSSNpmAnnotator : OSSBaseAnnotator() {
 
         override fun visitElement(element: PsiElement) {
             if (isSearchedDependency(element)) {
-                val value = element.getNextSiblingIgnoringWhitespace(false)
-                    ?.getNextSiblingIgnoringWhitespace(false) ?: return
+                val value = element.getNextSiblingIgnoringWhitespace()?.getNextSiblingIgnoringWhitespace() ?: return
                 this.foundTextRange = TextRange(element.textRange.startOffset, value.textRange.endOffset)
                 return
             }
             super.visitElement(element)
+        }
+
+        private fun PsiElement.getNextSiblingIgnoringWhitespace(): PsiElement? {
+            var candidate = this.nextSibling
+            while (candidate is PsiWhiteSpace) {
+                candidate = candidate.nextSibling
+            }
+            return candidate
         }
 
         private fun isSearchedDependency(element: PsiElement): Boolean {

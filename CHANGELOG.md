@@ -5,6 +5,7 @@
 ### Fixed
 - Snyk Code: make analysis retrieval more resilient to server/net errors.
 - Snyk Code: add analysis context to improve analysis retrieval.
+- Usage of kotlin-plugin specific method removed (cause `ClassNotFoundException: org.jetbrains.kotlin.psi.psiUtil`)
 
 ## [2.4.22]
 
