@@ -24,7 +24,7 @@ class RunUtils private constructor() : RunUtilsBase(
     override fun reuseCurrentProgress(project: Any, title: String, progressConsumer: Consumer<Any>): Boolean {
         val progressManager = ProgressManager.getInstance()
         val progressIndicator = progressManager.progressIndicator
-        if (getRunningProgresses(project).contains(progressIndicator)) {
+        if (progressIndicator != null && getRunningProgresses(project).contains(progressIndicator)) {
             val myBackgroundable = MyBackgroundable(PDU.toProject(project), title, progressConsumer)
             progressManager.runProcessWithProgressAsynchronously(myBackgroundable, progressIndicator)
             return true
