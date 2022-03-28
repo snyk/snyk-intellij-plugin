@@ -9,13 +9,15 @@ import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import io.snyk.plugin.snykcode.codeRestApi
 
 class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
     AnalysisData.instance,
     SnykCodeParams.instance,
     SnykCodeIgnoreInfoHolder.instance,
     PDU.instance,
-    SCLogger.instance
+    SCLogger.instance,
+    codeRestApi
 ) {
     private val scLogger: SCLogger = SCLogger.instance
 
