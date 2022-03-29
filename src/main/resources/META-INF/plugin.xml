@@ -40,7 +40,7 @@
                  defaultValue="720000"
                  description="Snyk timeout (milliseconds) to wait for results during scan"/>
 
-    <registryKey key="snyk.reportFalsePositives"
+    <registryKey key="snyk.code.report.false.positives.enabled"
                  defaultValue="false"
                  description="Enable Snyk functionality to report false-positive issue/vulnerability"/>
 
