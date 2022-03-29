@@ -220,6 +220,8 @@ fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
 fun isNewRefactoredTreeEnabled(): Boolean = Registry.`is`("snyk.preview.new.refactored.tree.enabled", false)
 
+fun isReportFalsePositivesEnabled(): Boolean = Registry.`is`("snyk.code.report.false.positives.enabled", false)
+
 fun getWaitForResultsTimeout(): Long =
     Registry.intValue(
         "snyk.timeout.results.waiting",
