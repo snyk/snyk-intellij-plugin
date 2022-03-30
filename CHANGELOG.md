@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.24]
+
+### Fixed
+- Disable force [auto-save in annotators](https://github.com/snyk/snyk-intellij-plugin/issues/324)
+
 ## [2.4.23]
 
 ### Fixed
