@@ -7,6 +7,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -94,6 +95,8 @@ import javax.swing.tree.TreePath
  */
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
+    private val logger = logger<SnykToolWindowPanel>()
+
     var snykScanListener: SnykScanListener
     private val scrollPaneAlarm = Alarm()
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
@@ -435,7 +438,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
                     if (!smartReloadMode && psiFile.virtualFile.isValid) {
-                        navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
+                        if (textRange.start >= 0 && textRange.end < psiFile.textLength) {
+                            navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
+                        } else {
+                            logger.warn("Navigation to TextRange: $textRange with file length=${psiFile.textLength}")
+                        }
                     }
 
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
