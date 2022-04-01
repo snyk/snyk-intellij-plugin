@@ -905,6 +905,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults?) {
         if (currentSnykCodeError != null) return
+        if (pluginSettings().token.isNullOrEmpty()) {
+            displayAuthPanel()
+            return
+        }
         if (snykCodeResults == null) {
             updateTreeRootNodesPresentation(
                 securityIssuesCount = NODE_INITIAL_STATE,
