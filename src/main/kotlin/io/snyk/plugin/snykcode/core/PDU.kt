@@ -16,6 +16,7 @@ import com.intellij.psi.PsiFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.SnykError
@@ -134,12 +135,15 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     override fun showLoginLink(project: Any?, message: String) {
-//        showError(message, project)
-        runForProject(project, Consumer { prj ->
-            ApplicationManager.getApplication().invokeLater {
-                prj.service<SnykToolWindowPanel>().displayAuthPanel()
+        pluginSettings().token = null
+        runForProject(
+            project,
+            Consumer { prj ->
+                ApplicationManager.getApplication().invokeLater {
+                    prj.service<SnykToolWindowPanel>().displayAuthPanel()
+                }
             }
-        })
+        )
     }
 
     override fun showConsentRequest(project: Any?, userActionNeeded: Boolean) {

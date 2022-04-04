@@ -4,6 +4,7 @@
 
 ### Fixed
 - Sanitise TextRange in file before accessing it. 
+- Request re-authentication from Snyk Code scan if token found to be invalid.
 
 ## [2.4.24]
 
