@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.25]
+
+### Fixed
+- Sanitise TextRange in file before accessing it. 
+
 ## [2.4.24]
 
 ### Fixed
