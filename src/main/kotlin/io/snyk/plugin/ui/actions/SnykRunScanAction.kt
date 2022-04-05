@@ -6,11 +6,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAware
 import io.snyk.plugin.analytics.getSelectedProducts
-import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isScanRunning
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykTaskQueueService
 import snyk.analytics.AnalysisIsTriggered
 
 /**
@@ -19,7 +19,7 @@ import snyk.analytics.AnalysisIsTriggered
 class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
-        actionEvent.project!!.service<SnykTaskQueueService>().scan()
+        getSnykTaskQueueService(actionEvent.project!!)?.scan()
 
         service<SnykAnalyticsService>().logAnalysisIsTriggered(
             AnalysisIsTriggered.builder()

@@ -4,7 +4,6 @@ import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.PlatformDependentUtilsBase
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
@@ -15,10 +14,10 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.SnykError
 import java.util.function.Consumer
 
@@ -140,7 +139,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
             project,
             Consumer { prj ->
                 ApplicationManager.getApplication().invokeLater {
-                    prj.service<SnykToolWindowPanel>().displayAuthPanel()
+                    getSnykToolWindowPanel(prj)?.displayAuthPanel()
                 }
             }
         )

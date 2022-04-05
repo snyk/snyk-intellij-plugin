@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.26]
+
+### Fixed
+- Avoiding IncorrectOperationException by remove direct project service's requests.
+
 ## [2.4.25]
 
 ### Fixed

@@ -67,7 +67,6 @@ import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
-import snyk.container.KubernetesImageCache
 import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueDetailPanel
@@ -495,9 +494,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
                     descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
-                    val targetImage = project.service<KubernetesImageCache>()
-                        .getKubernetesWorkloadImages()
-                        .find { it.image == issuesForImage.imageName }
+                    val targetImage = getKubernetesImageCache(project)
+                        ?.getKubernetesWorkloadImages()
+                        ?.find { it.image == issuesForImage.imageName }
                     val virtualFile = targetImage?.virtualFile
                     val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
                     if (!smartReloadMode && virtualFile != null && virtualFile.isValid && line != null) {

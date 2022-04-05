@@ -5,9 +5,9 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
+import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.isProjectSettingsAvailable
 import java.time.Instant
 import java.time.LocalDate
@@ -84,7 +84,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     fun getAdditionalParameters(project: Project? = null): String? {
         return if (isProjectSettingsAvailable(project)) {
-            project!!.service<SnykProjectSettingsStateService>().additionalParameters
+            getSnykProjectSettingsService(project!!)?.additionalParameters
         } else {
             ""
         }
