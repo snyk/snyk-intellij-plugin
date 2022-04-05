@@ -7,7 +7,6 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiFile
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
@@ -17,6 +16,7 @@ import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.isReportFalsePositivesEnabled
 import io.snyk.plugin.snykcode.core.PDU
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
@@ -36,7 +36,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class SuggestionDescriptionPanel(
-    private val psiFile: PsiFile,
+    private val snykCodeFile: SnykCodeFile,
     private val suggestion: SuggestionForFile,
     private val suggestionIndex: Int
 ) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.severityAsString) {
@@ -78,7 +78,7 @@ class SuggestionDescriptionPanel(
         return panel
     }
 
-    private fun codeLine(range: MyTextRange, file: PsiFile?): JTextArea {
+    private fun codeLine(range: MyTextRange, file: SnykCodeFile?): JTextArea {
         val component = JTextArea(getLineOfCode(range, file))
         component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
         component.isEditable = false
@@ -99,7 +99,8 @@ class SuggestionDescriptionPanel(
         afterLinkText: String = "",
         toolTipText: String,
         customFont: Font? = null,
-        onClick: (HyperlinkEvent) -> Unit): HyperlinkLabel {
+        onClick: (HyperlinkEvent) -> Unit
+    ): HyperlinkLabel {
         return HyperlinkLabel().apply {
             this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
             this.toolTipText = toolTipText
@@ -110,16 +111,14 @@ class SuggestionDescriptionPanel(
         }
     }
 
-    private fun getLineOfCode(range: MyTextRange, file: PsiFile?): String {
+    private fun getLineOfCode(range: MyTextRange, file: SnykCodeFile?): String {
         if (file == null) return "<File Not Found>"
-        val document = PsiDocumentManager.getInstance(file.project).getDocument(file)
+        val document = PsiDocumentManager.getInstance(file.project).getDocument(PDU.toPsiFile(file))
             ?: throw IllegalStateException("No document found for ${file.virtualFile.path}")
         val chars = document.charsSequence
         val startOffset = range.start
-        val endOffset = range.end
         val lineNumber = document.getLineNumber(startOffset)
         var lineStartOffset = document.getLineStartOffset(lineNumber)
-        val columnNumber = startOffset - lineStartOffset
 
         // skip all white space characters
         while (lineStartOffset < document.textLength
@@ -129,7 +128,7 @@ class SuggestionDescriptionPanel(
         }
         val lineEndOffset = document.getLineEndOffset(lineNumber)
 
-        val lineColumnPrefix = ""//"(${lineNumber + 1}, ${columnNumber + 1}) "
+        val lineColumnPrefix = ""
         val codeInLine = chars.subSequence(lineStartOffset, min(lineEndOffset, chars.length)).toString()
 
         return lineColumnPrefix + codeInLine
@@ -175,8 +174,9 @@ class SuggestionDescriptionPanel(
             val stepPanel = stepPanel(
                 index = index,
                 markerRange = markerRange,
-                maxFilenameLength = max(psiFile.name.length, maxFilenameLength ?: 0),
-                allStepPanels = allStepPanels)
+                maxFilenameLength = max(snykCodeFile.virtualFile.name.length, maxFilenameLength ?: 0),
+                allStepPanels = allStepPanels
+            )
 
             panel.add(
                 stepPanel,
@@ -204,10 +204,10 @@ class SuggestionDescriptionPanel(
 
         val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
 
-        val fileToNavigate = if (markerRange.file.isNullOrEmpty()) psiFile else {
-            PDU.instance.getFileByDeepcodedPath(markerRange.file, psiFile.project)?.let { PDU.toPsiFile(it) }
+        val fileToNavigate = if (markerRange.file.isNullOrEmpty()) snykCodeFile else {
+            PDU.instance.getFileByDeepcodedPath(markerRange.file, project)?.let { it as SnykCodeFile }
         }
-        val fileName = fileToNavigate?.name ?: markerRange.file
+        val fileName = fileToNavigate?.virtualFile?.name ?: markerRange.file
 
         val positionLinkText = "$fileName:${markerRange.startRow}".padEnd(maxFilenameLength + 5, ' ')
 
@@ -221,13 +221,13 @@ class SuggestionDescriptionPanel(
             if (fileToNavigate == null || !fileToNavigate.virtualFile.isValid) return@linkLabel
             // jump to Source
             PsiNavigationSupport.getInstance().createNavigatable(
-                fileToNavigate.project,
+                project,
                 fileToNavigate.virtualFile,
                 markerRange.start
             ).navigate(false)
 
             // highlight(by selection) marker range in source file
-            val editor = FileEditorManager.getInstance(fileToNavigate.project).selectedTextEditor
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor
             editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
 
             allStepPanels.forEach {
@@ -237,7 +237,7 @@ class SuggestionDescriptionPanel(
         }
         stepPanel.add(positionLabel, baseGridConstraintsAnchorWest(0, indent = 1))
 
-        val codeLine = codeLine(markerRange, fileToNavigate)
+        val codeLine = codeLine(markerRange, snykCodeFile)
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,

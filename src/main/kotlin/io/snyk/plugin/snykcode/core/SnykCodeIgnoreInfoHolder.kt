@@ -2,8 +2,6 @@ package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeIgnoreInfoHolderBase
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
-import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.File
@@ -14,22 +12,21 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
     SCLogger.instance
 ) {
 
-    fun cleanIgnoreFileCachesIfAffected(project: Project, virtualFilesToCheck: Collection<VirtualFile>) {
-        val ignoreFilesChanged = getIgnoreFiles(project, virtualFilesToCheck)
+    fun cleanIgnoreFileCachesIfAffected(filesToCheck: Collection<SnykCodeFile>) {
+        val ignoreFilesChanged = getIgnoreFiles(filesToCheck)
         for (ignoreFile in ignoreFilesChanged) {
             remove_ignoreFileContent(ignoreFile)
-            AnalysisData.instance.removeProjectFromCaches(project)
+            AnalysisData.instance.removeProjectFromCaches(ignoreFile.project)
         }
     }
 
-    fun updateIgnoreFileCachesIfAffected(project: Project, virtualFilesToCheck: Collection<VirtualFile>) {
-        val ignoreFilesChanged = getIgnoreFiles(project, virtualFilesToCheck)
+    fun updateIgnoreFileCachesIfAffected(filesToCheck: Collection<SnykCodeFile>) {
+        val ignoreFilesChanged = getIgnoreFiles(filesToCheck)
         for (ignoreFile in ignoreFilesChanged) {
-            getSnykTaskQueueService(project)?.scheduleRunnable(
-                "updating caches for: ${PDU.instance.getFilePath(ignoreFile)}"
-            ) { progress ->
-                update_ignoreFileContent(ignoreFile, progress)
-            }
+            getSnykTaskQueueService(ignoreFile.project)
+                ?.scheduleRunnable(
+                    "updating caches for: ${PDU.instance.getFilePath(ignoreFile)}"
+                ) { progress -> update_ignoreFileContent(ignoreFile, progress) }
         }
     }
 
@@ -38,24 +35,23 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
         val gitignore = File("$prjBasePath/.gitignore")
         val dcignore = File("$prjBasePath/.dcignore")
         if (!gitignore.exists() && dcignore.createNewFile()) {
-            val fullDcIgnoreText = this.javaClass.classLoader.getResource("full.dcignore")?.readText()
+            val fullDcIgnoreText = this.javaClass.classLoader.getResource("full.dcignore")
+                ?.readText()
                 ?: throw RuntimeException("full.dcignore can not be found in plugin's resources")
             dcignore.writeText(fullDcIgnoreText)
             SnykBalloonNotificationHelper.showInfo(
-                "We added generic .dcignore file to upload only project's source code.",
-                project
+                "We added generic .dcignore file to upload only project's source code.", project
             )
         }
     }
 
-    private fun getIgnoreFiles(project: Project, virtualFilesToCheck: Collection<VirtualFile>) =
-        virtualFilesToCheck
-            .filter { it.name == ".dcignore" || it.name == ".gitignore" }
-            .filter { it.isValid }
+    private fun getIgnoreFiles(filesToCheck: Collection<SnykCodeFile>) =
+        filesToCheck
+            .filter { it.virtualFile.name == ".dcignore" || it.virtualFile.name == ".gitignore" }
+            .filter { it.virtualFile.isValid }
             .distinct()
-            .mapNotNull { findPsiFileIgnoringExceptions(it, project) }
 
-    companion object{
+    companion object {
         val instance = SnykCodeIgnoreInfoHolder()
     }
 }

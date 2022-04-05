@@ -1,10 +1,10 @@
 package io.snyk.plugin.snykcode.core
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.psi.PsiFile
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.resetSettings
@@ -30,22 +30,16 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
     fun testGenericDcIgnoreAddedOnProjectOpening() {
         val genericDcIgnoreFile = File(project.basePath + "/.dcignore")
         assertTrue(
-            "Generic .dcignore file was NOT added to the project",
-            genericDcIgnoreFile.exists()
+            "Generic .dcignore file was NOT added to the project", genericDcIgnoreFile.exists()
         )
     }
 
     fun testNodeModulesAreExcluded() {
         assertTrue("No path found for project", project.basePath != null)
-        val filePathToCheck = project.basePath + "/node_modules/1.js"
-        File(filePathToCheck).parentFile.mkdir()
-        File(filePathToCheck).createNewFile()
-
-        val psiFileToCheck = findPsiFile(filePathToCheck)
-        initiateAllMissedIgnoreFilesRescan()
+        val fileToCheck = setUpTest()
         assertTrue(
             "Files inside `node_modules` should be excluded(ignored) by default",
-            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(psiFileToCheck)
+            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(fileToCheck)
         )
     }
 
@@ -58,9 +52,11 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         File(filePathToCheck).createNewFile()
 
         initiateAllMissedIgnoreFilesRescan()
+
+        val file = findFile(project, filePathToCheck)
         assertFalse(
             "File $filePathToCheck should NOT be excluded(ignored) by default .dcignore",
-            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(findPsiFile(filePathToCheck))
+            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(file)
         )
 
         val dcignoreFilePath = project.basePath + "/.dcignore"
@@ -71,36 +67,34 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         }
         assertTrue(
             "File $filePathToCheck should be excluded(ignored) by updated .dcignore",
-            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(findPsiFile(filePathToCheck))
+            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(file)
         )
     }
 
     fun testIgnoreCacheUpdateOnProjectClose() {
         // to check default ignore behaviour still works
+        val fileToCheck = setUpTest()
+
+        PlatformTestUtil.forceCloseProjectWithoutSaving(project)
+        myProject = null // to avoid double disposing effort in tearDown
+        assertFalse(
+            "No files should be excluded(ignored) after Project closing -> caches cleanUp",
+            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(fileToCheck)
+        )
+    }
+
+    private fun setUpTest(): SnykCodeFile {
         val filePathToCheck = project.basePath + "/node_modules/1.js"
         File(filePathToCheck).parentFile.mkdir()
         File(filePathToCheck).createNewFile()
 
-        val psiFileToCheck = findPsiFile(filePathToCheck)
+        val fileToCheck = findFile(project, filePathToCheck)
         initiateAllMissedIgnoreFilesRescan()
-        assertTrue(
-            "Files inside `node_modules` should be excluded(ignored) by default",
-            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(psiFileToCheck)
-        )
-
-        PlatformTestUtil.forceCloseProjectWithoutSaving(project)
-        myProject = null // to avoid double disposing effort in tearDown
-
-        assertFalse(
-            "No files should be excluded(ignored) after Project closing -> caches cleanUp",
-            SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(psiFileToCheck)
-        )
+        return fileToCheck
     }
 
-    private fun findPsiFile(path: String): PsiFile {
-        val vFileToCheck = StandardFileSystems.local().refreshAndFindFileByPath(path)
-            ?: throw FileNotFoundException(path)
-        return psiManager.findFile(vFileToCheck)
-            ?: throw FileNotFoundException(path)
+    private fun findFile(project: Project, path: String): SnykCodeFile {
+        val file = StandardFileSystems.local().refreshAndFindFileByPath(path) ?: throw FileNotFoundException(path)
+        return SnykCodeFile(project, file)
     }
 }

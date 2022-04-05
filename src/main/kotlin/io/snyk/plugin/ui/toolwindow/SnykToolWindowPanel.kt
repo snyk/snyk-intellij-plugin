@@ -15,7 +15,6 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.treeStructure.Tree
@@ -50,7 +49,7 @@ import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.PDU
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -345,7 +344,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         } else {
                             val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
                             SnykCodeResults(
-                                AnalysisData.instance.getAnalysis(allProjectFiles).mapKeys { PDU.toPsiFile(it.key) }
+                                AnalysisData.instance.getAnalysis(allProjectFiles).mapKeys { it.key as SnykCodeFile }
                             )
                         }
                     ApplicationManager.getApplication().invokeLater {
@@ -424,22 +423,22 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     // todo: open package manager file, if any and  was not opened yet
                 }
                 is SuggestionTreeNode -> {
-                    val psiFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? PsiFile
+                    val snykCodeFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? SnykCodeFile
                         ?: throw IllegalArgumentException(node.toString())
                     val (suggestion, index) = node.userObject as Pair<SuggestionForFile, Int>
 
                     descriptionPanel.add(
-                        SuggestionDescriptionPanel(psiFile, suggestion, index),
+                        SuggestionDescriptionPanel(snykCodeFile, suggestion, index),
                         BorderLayout.CENTER
                     )
 
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
-                    if (!smartReloadMode && psiFile.virtualFile.isValid) {
-                        if (textRange.start >= 0 && textRange.end < psiFile.textLength) {
-                            navigateToSource(psiFile.virtualFile, textRange.start, textRange.end)
+                    if (!smartReloadMode && snykCodeFile.virtualFile.isValid) {
+                        if (textRange.start >= 0 && textRange.end < snykCodeFile.virtualFile.length) {
+                            navigateToSource(snykCodeFile.virtualFile, textRange.start, textRange.end)
                         } else {
-                            logger.warn("Navigation to TextRange: $textRange with file length=${psiFile.textLength}")
+                            logger.warn("Navigation to TextRange: $textRange with file length=${snykCodeFile.virtualFile.length}")
                         }
                     }
 

@@ -1,15 +1,15 @@
 package io.snyk.plugin.snykcode
 
 import ai.deepcode.javaclient.core.SuggestionForFile
-import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 
 class SnykCodeResults(
-    private val file2suggestions: Map<PsiFile, List<SuggestionForFile>> = emptyMap()
+    private val file2suggestions: Map<SnykCodeFile, List<SuggestionForFile>> = emptyMap()
 ) {
-    fun suggestions(file: PsiFile): List<SuggestionForFile> = file2suggestions[file] ?: emptyList()
+    fun suggestions(file: SnykCodeFile): List<SuggestionForFile> = file2suggestions[file] ?: emptyList()
 
-    private val files: Set<PsiFile> by lazy { file2suggestions.keys }
+    private val files: Set<SnykCodeFile> by lazy { file2suggestions.keys }
 
     val totalCount: Int by lazy { files.sumBy { getCount(it, -1) } }
 
@@ -28,7 +28,7 @@ class SnykCodeResults(
     }
 
     /** sort by Errors-Warnings-Infos */
-    fun getSortedFiles(): Collection<PsiFile> = files
+    fun getSortedFiles(): Collection<SnykCodeFile> = files
         .sortedWith(Comparator { file1, file2 ->
             val file1Errors by lazy { errorsCount(file1) }
             val file2Errors by lazy { errorsCount(file2) }
@@ -43,14 +43,14 @@ class SnykCodeResults(
             }
         })
 
-    private fun errorsCount(file: PsiFile) = getCount(file, 3)
+    private fun errorsCount(file: SnykCodeFile) = getCount(file, 3)
 
-    private fun warnsCount(file: PsiFile) = getCount(file, 2)
+    private fun warnsCount(file: SnykCodeFile) = getCount(file, 2)
 
-    private fun infosCount(file: PsiFile) = getCount(file, 1)
+    private fun infosCount(file: SnykCodeFile) = getCount(file, 1)
 
     /** @params severity - if `-1` then accept all  */
-    private fun getCount(file: PsiFile, severity: Int) =
+    private fun getCount(file: SnykCodeFile, severity: Int) =
         suggestions(file)
             .filter { severity == -1 || it.severity == severity }
             .sumBy { it.ranges.size }
@@ -67,4 +67,3 @@ class SnykCodeResults(
 
 val SuggestionForFile.severityAsString: String
     get() = Severity.toName(this.severity)
-
