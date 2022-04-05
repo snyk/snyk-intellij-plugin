@@ -17,7 +17,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.OnePixelSplitter
-import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.Alarm
@@ -55,6 +54,7 @@ import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsReady.Result
@@ -84,7 +84,6 @@ import java.nio.file.Paths
 import java.util.Objects.nonNull
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-import javax.swing.ScrollPaneConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
@@ -408,10 +407,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             when (val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode) {
                 is VulnerabilityTreeNode -> {
                     val groupedVulns = node.userObject as Collection<Vulnerability>
-                    val scrollPane = wrapWithScrollPane(
-                        VulnerabilityDescriptionPanel(groupedVulns)
+                    descriptionPanel.add(
+                        VulnerabilityDescriptionPanel(groupedVulns),
+                        BorderLayout.CENTER
                     )
-                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
                     val issue = groupedVulns.first()
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
@@ -429,10 +428,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ?: throw IllegalArgumentException(node.toString())
                     val (suggestion, index) = node.userObject as Pair<SuggestionForFile, Int>
 
-                    val scrollPane = wrapWithScrollPane(
-                        SuggestionDescriptionPanel(psiFile, suggestion, index)
+                    descriptionPanel.add(
+                        SuggestionDescriptionPanel(psiFile, suggestion, index),
+                        BorderLayout.CENTER
                     )
-                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
@@ -461,10 +460,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val psiFile = virtualFile?.let { findPsiFileIgnoringExceptions(it, project) }
 
                     val iacIssue = node.userObject as IacIssue
-                    val scrollPane = wrapWithScrollPane(
-                        IacSuggestionDescriptionPanel(iacIssue, psiFile, project)
+                    descriptionPanel.add(
+                        IacSuggestionDescriptionPanel(iacIssue, psiFile, project),
+                        BorderLayout.CENTER
                     )
-                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
                     if (!smartReloadMode && virtualFile != null && virtualFile.isValid) {
                         val document = FileDocumentManager.getInstance().getDocument(virtualFile)
@@ -489,10 +488,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
                 is ContainerImageTreeNode -> {
                     val issuesForImage = node.userObject as ContainerIssuesForImage
-                    val scrollPane = wrapWithScrollPane(
-                        BaseImageRemediationDetailPanel(project, issuesForImage)
+                    descriptionPanel.add(
+                        BaseImageRemediationDetailPanel(project, issuesForImage),
+                        BorderLayout.CENTER
                     )
-                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
 
                     val targetImage = getKubernetesImageCache(project)
                         ?.getKubernetesWorkloadImages()
@@ -511,8 +510,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
                 is ContainerIssueTreeNode -> {
                     val containerIssue = node.userObject as ContainerIssue
-                    val scrollPane = wrapWithScrollPane(ContainerIssueDetailPanel(containerIssue))
-                    descriptionPanel.add(scrollPane, BorderLayout.CENTER)
+                    descriptionPanel.add(
+                        ContainerIssueDetailPanel(containerIssue),
+                        BorderLayout.CENTER
+                    )
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
@@ -561,26 +562,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
-    private fun wrapWithScrollPane(panel: JPanel): JScrollPane {
-        val scrollPane = ScrollPaneFactory.createScrollPane(
-            panel,
-            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
-        )
-        // hack to scroll Panel to beginning after all it content (hopefully) loaded
-        scrollPaneAlarm.addRequest(
-            {
-                ApplicationManager.getApplication().invokeLater {
-                    scrollPane.verticalScrollBar.value = 0
-                    scrollPane.horizontalScrollBar.value = 0
-                }
-            }, 50
-        )
-        return scrollPane
-    }
-
-    override fun dispose() {
-    }
+    override fun dispose() {}
 
     fun cleanUiAndCaches() {
         currentOssResults = null

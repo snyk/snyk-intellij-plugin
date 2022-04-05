@@ -636,8 +636,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
         val baseImageRemediationDetailPanel = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
-            BaseImageRemediationDetailPanel::class,
-            "BaseImageRemediationDetailPanel"
+            BaseImageRemediationDetailPanel::class
         )
         assertNotNull(baseImageRemediationDetailPanel)
     }
@@ -668,8 +667,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
         val containerIssueDetailPanel = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
-            ContainerIssueDetailPanel::class,
-            "ContainerIssueDetailPanel"
+            ContainerIssueDetailPanel::class
         )
         assertNotNull("ContainerIssueDetailPanel should be shown on issue node selection", containerIssueDetailPanel)
     }
