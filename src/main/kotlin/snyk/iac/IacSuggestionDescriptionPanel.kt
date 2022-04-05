@@ -159,18 +159,17 @@ class IacSuggestionDescriptionPanel(
         return remediationPanel
     }
 
-    override val bottomRightButtons: List<JButton>
-        get() = listOf(
-            JButton().apply {
-                if (issue.ignored) {
-                    text = IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
-                    isEnabled = false
-                } else {
-                    text = "Ignore This Issue"
-                    addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue, psiFile, project))
-                }
-                name = "ignoreButton"
+    override fun getBottomRightButtons(): List<JButton> = listOf(
+        JButton().apply {
+            if (issue.ignored) {
+                text = IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
+                isEnabled = false
+            } else {
+                text = "Ignore This Issue"
+                addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue, psiFile, project))
             }
-        )
+            name = "ignoreButton"
+        }
+    )
 
 }

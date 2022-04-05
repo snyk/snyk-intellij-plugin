@@ -97,25 +97,25 @@ abstract class IssueDescriptionPanelBase(
     abstract fun createMainBodyPanel(): Pair<JPanel, Int>
 
     private fun bottomPanel(): JPanel = JBUI.Panels.simplePanel().apply {
-        addToLeft(extraBottomLeftPanel)
+        addToLeft(getExtraBottomLeftPanel())
         addToRight(bottomRightButtonsPanel())
         border = IdeBorderFactory.createBorder(SideBorder.TOP)
     }
 
-    protected open val extraBottomLeftPanel: JPanel = EMPTY_PANEL
+    protected open fun getExtraBottomLeftPanel(): JPanel = EMPTY_PANEL
 
     private fun bottomRightButtonsPanel(): JPanel = JPanel(
         GridLayoutManager(1, 2, JBUI.emptyInsets(), -1, -1)
     ).apply {
         border = Borders.empty(7, 10)
-        bottomRightButtons.forEachIndexed { index, button ->
+        getBottomRightButtons().forEachIndexed { index, button ->
             add(button, baseGridConstraints(row = 0, column = index))
         }
     }
 
-    protected open val bottomRightButtons: List<JButton> = emptyList()
+    protected open fun getBottomRightButtons(): List<JButton> = emptyList()
 
     private val isBottomPanelNeeded: Boolean
-        get() = extraBottomLeftPanel != EMPTY_PANEL || bottomRightButtons.isNotEmpty()
+        get() = getExtraBottomLeftPanel() != EMPTY_PANEL || getBottomRightButtons().isNotEmpty()
 }
 
