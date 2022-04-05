@@ -136,6 +136,7 @@ class SuggestionDescriptionPanel(
     }
 
     private fun dataFlowPanel(): JPanel? {
+        if (suggestion.ranges.isEmpty()) return null
         val suggestionRange = suggestion.ranges[suggestionIndex]
         val markers = suggestionRange?.let { range ->
             range.markers.values.flatten().distinctBy { it.startRow }
@@ -388,5 +389,18 @@ class SuggestionDescriptionPanel(
 
     private fun getOverviewText(): String {
         return suggestion.message
+    }
+
+    override fun getBottomRightButtons(): List<JButton> =
+        if (isReportFalsePositivesEnabled()) {
+            listOf(
+                JButton(REPORT_FALSE_POSITIVE_TEXT).apply {
+                    //todo
+                }
+            )
+        } else emptyList()
+
+    companion object {
+        const val REPORT_FALSE_POSITIVE_TEXT = "Report False Positive"
     }
 }
