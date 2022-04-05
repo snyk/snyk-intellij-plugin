@@ -25,10 +25,10 @@ repositories {
 }
 
 dependencies {
-    implementation("org.commonmark:commonmark:0.18.1")
-    implementation("com.google.code.gson:gson:2.8.9")
+    implementation("org.commonmark:commonmark:0.18.2")
+    implementation("com.google.code.gson:gson:2.9.0")
     implementation("com.segment.analytics.java:analytics:3.1.3")
-    implementation("io.sentry:sentry:5.6.0")
+    implementation("io.sentry:sentry:5.7.0")
     implementation("io.snyk.code.sdk:snyk-code-client:2.3.0")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
     implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
@@ -41,7 +41,7 @@ dependencies {
     }
     testImplementation("org.hamcrest:hamcrest:2.2")
     testImplementation("io.mockk:mockk:1.12.2")
-    testImplementation("org.awaitility:awaitility:4.1.1")
+    testImplementation("org.awaitility:awaitility:4.2.0")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.4.32")
 
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.19.0")
