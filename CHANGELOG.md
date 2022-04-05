@@ -4,6 +4,7 @@
 
 ### Fixed
 - Avoiding IncorrectOperationException by remove direct project service's requests.
+- Avoid ClassNotFoundException due to not bundled Json support in some IDE.
 
 ## [2.4.25]
 

@@ -15,6 +15,12 @@ import kotlin.math.min
 class NpmSupport(private val editor: Editor) {
 
     fun getPackageName(lineNumber: Int): String? {
+        try {
+            // check if json Psi exist (json support seems to be not always bundled)
+            Class.forName("com.intellij.json.JsonElementTypes")
+        } catch (_: ClassNotFoundException) {
+            return null
+        }
         val document = editor.document
         val project = editor.project ?: return null
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return null
