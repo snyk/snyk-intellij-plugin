@@ -8,6 +8,8 @@ import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_SOUTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST
+import com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL
+import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
@@ -22,6 +24,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.addAndGetCenteredPanel
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.boldLabel
+import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.getStandardLayout
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.AuthenticateButtonIsClicked
@@ -61,7 +64,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
         }
 
         layout = getStandardLayout(1, 1)
-        val panel = addAndGetCenteredPanel(this, 3, 2)
+        val panel = addAndGetCenteredPanel(this, 4, 2)
         panel.add(
             boldLabel("Welcome to Snyk for JetBrains!"),
             baseGridConstraints(row = 0, column = 1, anchor = ANCHOR_SOUTHWEST)
@@ -76,7 +79,15 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
         )
         panel.add(authButton, baseGridConstraints(row = 2, column = 1, anchor = ANCHOR_NORTHWEST))
 
-        ApplicationManager.getApplication().messageBus.connect(this)
+        panel.add(
+            getReadOnlyClickableHtmlJEditorPane(
+                messagePolicyAndTerms,
+                font = io.snyk.plugin.ui.getFont(-1, 11, UIUtil.getLabelFont()) ?: UIUtil.getLabelFont()
+            ),
+            baseGridConstraints(row = 3, column = 1, anchor = ANCHOR_SOUTHWEST, fill = FILL_HORIZONTAL)
+        )
+
+        ApplicationManager.getApplication().messageBus.connect(this@SnykAuthPanel)
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
                 override fun cliDownloadStarted() {
                     authButton.isEnabled = false
@@ -107,5 +118,12 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
 
     companion object {
         const val AUTHENTICATE_BUTTON_TEXT = "Test code now"
+        val messagePolicyAndTerms =
+            """
+                <br>
+                By connecting your account with Snyk, you agree to<br>
+                the Snyk <a href="https://snyk.io/policies/privacy/">Privacy Policy</a>,
+                and the Snyk <a href="https://snyk.io/policies/terms-of-service/">Terms of Service</a>.
+            """.trimIndent()
     }
 }

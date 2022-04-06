@@ -5,6 +5,7 @@
 ### Changed
 
 - Updated Snyk Code API to 2.3.1 (limit file size to 1 MB)
+- Provide link to [Privacy Policy](https://snyk.io/policies/privacy/) and [Terms of Service](https://snyk.io/policies/terms-of-service/) on Welcome screen.
 
 ### Fixed
 
