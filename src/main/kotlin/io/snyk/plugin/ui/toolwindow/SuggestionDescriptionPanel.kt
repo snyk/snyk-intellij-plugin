@@ -40,7 +40,7 @@ class SuggestionDescriptionPanel(
     private val suggestion: SuggestionForFile,
     private val suggestionIndex: Int
 ) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.severityAsString) {
-
+    val project = snykCodeFile.project
     init {
         createUI()
     }
