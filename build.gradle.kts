@@ -22,7 +22,6 @@ description = properties("pluginName")
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
 dependencies {
