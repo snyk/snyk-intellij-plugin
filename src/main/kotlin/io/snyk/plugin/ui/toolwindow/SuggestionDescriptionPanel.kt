@@ -4,7 +4,6 @@ import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
 import com.intellij.icons.AllIcons
-import com.intellij.ide.BrowserUtil
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiDocumentManager
@@ -14,17 +13,19 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
-import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
-import icons.SnykIcons
+import io.snyk.plugin.isReportFalsePositivesEnabled
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.severityAsString
+import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
+import io.snyk.plugin.ui.descriptionHeaderPanel
+import io.snyk.plugin.ui.panelGridConstraints
 import java.awt.Color
-import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
+import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -38,89 +39,29 @@ class SuggestionDescriptionPanel(
     private val psiFile: PsiFile,
     private val suggestion: SuggestionForFile,
     private val suggestionIndex: Int
-) : JPanel(), IssueDescriptionPanel {
-
-    private fun getGridConstraints(
-        row: Int,
-        column: Int = 0,
-        rowSpan: Int = 1,
-        colSpan: Int = 1,
-        anchor: Int = GridConstraints.ANCHOR_WEST,
-        fill: Int = GridConstraints.FILL_NONE,
-        HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
-        VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED,
-        minimumSize: Dimension? = null,
-        preferredSize: Dimension? = null,
-        maximumSize: Dimension? = null,
-        indent: Int = 1,
-        useParentLayout: Boolean = false
-    ): GridConstraints {
-        return GridConstraints(
-            row, column, rowSpan, colSpan, anchor, fill, HSizePolicy, VSizePolicy, minimumSize, preferredSize,
-            maximumSize, indent, useParentLayout
-        )
-    }
-
-    private fun getPanelGridConstraints(row: Int, indent: Int = 0): GridConstraints {
-        return getGridConstraints(
-            row,
-            anchor = GridConstraints.ANCHOR_CENTER,
-            fill = GridConstraints.FILL_BOTH,
-            HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-            VSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
-            indent = indent
-        )
-    }
+) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.severityAsString) {
 
     init {
-        this.layout = GridLayoutManager(6, 1, Insets(20, 10, 20, 10), -1, 20)
-
-        this.add(
-            Spacer(),
-            getGridConstraints(
-                5,
-                anchor = GridConstraints.ANCHOR_CENTER,
-                fill = GridConstraints.FILL_VERTICAL,
-                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                VSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0
-            )
-        )
-
-        this.add(overviewPanel(), getPanelGridConstraints(2))
-
-        dataFlowPanel()?.let { this.add(it, getPanelGridConstraints(3)) }
-
-        this.add(fixExamplesPanel(), getPanelGridConstraints(4))
-
-        this.add(titlePanel(), getPanelGridConstraints(0))
+        createUI()
     }
 
-    private fun titlePanel(): JPanel {
-        val titlePanel = JPanel()
-        titlePanel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, 5)
+    override fun secondRowTitlePanel(): JPanel = descriptionHeaderPanel(
+        issueNaming = if (suggestion.categories.contains("Security")) "Vulnerability" else "Code Issue",
+        cwes = suggestion.cwe ?: emptyList()
+    )
 
-        val titleLabel = JLabel().apply {
-            font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
-            text = " " + suggestion.title.ifBlank {
-                when (suggestion.severity) {
-                    3 -> "High Severity"
-                    2 -> "Medium Severity"
-                    1 -> "Low Severity"
-                    else -> ""
-                }
-            }
-            icon = SnykIcons.getSeverityIcon(suggestion.severityAsString, SnykIcons.IconSize.SIZE24)
+    override fun createMainBodyPanel(): Pair<JPanel, Int> {
+        val lastRowToAddSpacer = 5
+        val panel = JPanel(
+            GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(0, 10, 20, 10), -1, 20)
+        ).apply {
+            this.add(overviewPanel(), panelGridConstraints(2))
+
+            dataFlowPanel()?.let { this.add(it, panelGridConstraints(3)) }
+
+            this.add(fixExamplesPanel(), panelGridConstraints(4))
         }
-
-        titlePanel.add(
-            titleLabel,
-            getGridConstraints(0)
-        )
-
-        titlePanel.add(cwePanel(), getGridConstraints(1, indent = 0))
-
-        return titlePanel
+        return Pair(panel, lastRowToAddSpacer)
     }
 
     private fun overviewPanel(): JComponent {
@@ -132,7 +73,7 @@ class SuggestionDescriptionPanel(
             this.font = io.snyk.plugin.ui.getFont(-1, 14, panel.font)
             this.preferredSize = Dimension() // this is the key part for shrink/grow.
         }
-        panel.add(label, getPanelGridConstraints(1, 1))
+        panel.add(label, panelGridConstraints(1, indent = 1))
 
         return panel
     }
@@ -195,6 +136,7 @@ class SuggestionDescriptionPanel(
     }
 
     private fun dataFlowPanel(): JPanel? {
+        if (suggestion.ranges.isEmpty()) return null
         val suggestionRange = suggestion.ranges[suggestionIndex]
         val markers = suggestionRange?.let { range ->
             range.markers.values.flatten().distinctBy { it.startRow }
@@ -207,12 +149,12 @@ class SuggestionDescriptionPanel(
 
         panel.add(
             defaultFontLabel("Data Flow - ${markers.size} step${if (markers.size > 1) "s" else ""}", true),
-            getGridConstraints(0)
+            baseGridConstraintsAnchorWest(0)
         )
 
         panel.add(
             stepsPanel(markers),
-            getGridConstraints(1)
+            baseGridConstraintsAnchorWest(1)
         )
 
         return panel
@@ -238,7 +180,7 @@ class SuggestionDescriptionPanel(
 
             panel.add(
                 stepPanel,
-                getGridConstraints(
+                baseGridConstraintsAnchorWest(
                     row = index,
                     fill = GridConstraints.FILL_BOTH,
                     indent = 0
@@ -293,16 +235,16 @@ class SuggestionDescriptionPanel(
             }
             stepPanel.background = UIUtil.getTableSelectionBackground(false)
         }
-        stepPanel.add(positionLabel, getGridConstraints(0, indent = 1))
+        stepPanel.add(positionLabel, baseGridConstraintsAnchorWest(0, indent = 1))
 
         val codeLine = codeLine(markerRange, fileToNavigate)
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,
-            getGridConstraints(
+            baseGridConstraintsAnchorWest(
                 row = 0,
                 // is needed to avoid center alignment when outer panel is filling horizontal space
-                HSizePolicy = GridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = GridConstraints.SIZEPOLICY_CAN_GROW,
                 column = 1
             )
         )
@@ -319,7 +261,7 @@ class SuggestionDescriptionPanel(
 
         panel.add(
             defaultFontLabel("External example fixes", true),
-            getGridConstraints(0)
+            baseGridConstraintsAnchorWest(0)
         )
 
         val labelText =
@@ -327,7 +269,7 @@ class SuggestionDescriptionPanel(
             else "This issue was fixed by ${suggestion.repoDatasetSize} projects. Here are $examplesCount example fixes."
         panel.add(
             defaultFontLabel(labelText),
-            getGridConstraints(1)
+            baseGridConstraintsAnchorWest(1)
         )
 
         if (examplesCount == 0) return panel
@@ -339,9 +281,9 @@ class SuggestionDescriptionPanel(
 
         val tabbedPanel = JPanel()
         tabbedPanel.layout = GridLayoutManager(1, 1, Insets(10, 0, 0, 0), -1, -1)
-        tabbedPanel.add(tabbedPane, getPanelGridConstraints(0))
+        tabbedPanel.add(tabbedPane, panelGridConstraints(0))
 
-        panel.add(tabbedPanel, getPanelGridConstraints(2, indent = 1))
+        panel.add(tabbedPanel, panelGridConstraints(2, indent = 1))
 
         val maxRowCount = fixes.take(examplesCount)
             .map { it.lines.size }
@@ -417,7 +359,7 @@ class SuggestionDescriptionPanel(
 
             panel.add(
                 codeLine,
-                getGridConstraints(
+                baseGridConstraintsAnchorWest(
                     row = index,
                     fill = GridConstraints.FILL_BOTH,
                     indent = 0
@@ -430,7 +372,7 @@ class SuggestionDescriptionPanel(
             val emptyLine = JTextArea("")
             panel.add(
                 emptyLine,
-                getGridConstraints(
+                baseGridConstraintsAnchorWest(
                     row = i - 1,
                     fill = GridConstraints.FILL_BOTH,
                     indent = 0
@@ -445,44 +387,20 @@ class SuggestionDescriptionPanel(
         )
     }
 
-
-    private fun cwePanel(): Component {
-        val panel = JPanel()
-        val cwes = suggestion.cwe
-
-        panel.layout = GridLayoutManager(1, 1 + cwes.size * 2, Insets(0, 0, 0, 0), 5, 0)
-
-        panel.add(
-            defaultFontLabel(
-                if (suggestion.categories.contains("Security")) "Vulnerability" else "Code Issue"
-            ),
-            getGridConstraints(0)
-        )
-
-        cwes.forEachIndexed { index, cwe ->
-            if (!cwe.isNullOrEmpty()) {
-                val positionLabel = linkLabel(
-                    linkText = cwe,
-                    toolTipText = "Click to open description in the Browser"
-                ) {
-                    val url = "https://cwe.mitre.org/data/definitions/${cwe.removePrefix("CWE-")}.html"
-                    BrowserUtil.open(url)
-                }
-
-                panel.add(
-                    defaultFontLabel(" | ").apply {
-                        this.foreground = Color(this.foreground.red, this.foreground.green, this.foreground.blue, 50)
-                    },
-                    getGridConstraints(0, column = index * 2 + 1, indent = 0)
-                )
-                panel.add(positionLabel, getGridConstraints(0, column = index * 2 + 2, indent = 0))
-            }
-        }
-
-        return panel
-    }
-
     private fun getOverviewText(): String {
         return suggestion.message
+    }
+
+    override fun getBottomRightButtons(): List<JButton> =
+        if (isReportFalsePositivesEnabled()) {
+            listOf(
+                JButton(REPORT_FALSE_POSITIVE_TEXT).apply {
+                    //todo
+                }
+            )
+        } else emptyList()
+
+    companion object {
+        const val REPORT_FALSE_POSITIVE_TEXT = "Report False Positive"
     }
 }

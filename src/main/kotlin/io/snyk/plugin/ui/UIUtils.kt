@@ -1,9 +1,12 @@
 package io.snyk.plugin.ui
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.ColorUtil
+import com.intellij.ui.ScrollPaneFactory
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
+import com.intellij.util.Alarm
 import com.intellij.util.ui.JBHtmlEditorKit
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -20,6 +23,8 @@ import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.ScrollPaneConstants
 import javax.swing.text.html.HTMLDocument
 
 fun boldLabel(title: String): JLabel {
@@ -200,10 +205,12 @@ fun descriptionHeaderPanel(
     cves: List<String> = emptyList(),
     cvssScore: String? = null,
     cvssV3: String? = null,
-    id: String,
-    idUrl: String? = null
+    id: String? = null,
+    idUrl: String? = null,
+    customLabels: List<JLabel> = emptyList()
 ): JPanel {
     val panel = JPanel()
+    val font14 = getFont(-1, 14, panel.font)
 
     val columnCount = 1 + // name label
         cwes.size * 2 + // CWEs with `|`
@@ -213,25 +220,38 @@ fun descriptionHeaderPanel(
     panel.layout = GridLayoutManager(1, columnCount, Insets(0, 0, 0, 0), 5, 0)
 
     panel.add(
-        JLabel(issueNaming),
+        JLabel(issueNaming).apply { font = font14 },
         baseGridConstraintsAnchorWest(0)
     )
 
     val labelProvider = LabelProvider()
 
     var lastColumn =
-        addRowOfItemsToPanel(panel, 0, cwes.map { cwe -> labelProvider.getCWELabel(cwe) })
+        addRowOfItemsToPanel(
+            panel = panel,
+            startingColumn = 0,
+            items = cwes.map { cwe -> labelProvider.getCWELabel(cwe) },
+            customFont = font14
+        )
 
     lastColumn =
-        addRowOfItemsToPanel(panel, lastColumn, cves.map { cve -> labelProvider.getCVELabel(cve) })
+        addRowOfItemsToPanel(
+            panel = panel,
+            startingColumn = lastColumn,
+            items = cves.map { cve -> labelProvider.getCVELabel(cve) },
+            customFont = font14
+        )
 
     if (cvssScore != null && cvssV3 != null) {
         val label = listOf(labelProvider.getCVSSLabel("CVSS $cvssScore", cvssV3))
-        lastColumn = addRowOfItemsToPanel(panel, lastColumn, label)
+        lastColumn = addRowOfItemsToPanel(panel, lastColumn, label, customFont = font14)
     }
 
-    val label = listOf(labelProvider.getVulnerabilityLabel(id, idUrl))
-    addRowOfItemsToPanel(panel, lastColumn, label)
+    if (id != null) {
+        val label = listOf(labelProvider.getVulnerabilityLabel(id, idUrl))
+        lastColumn = addRowOfItemsToPanel(panel, lastColumn, label, customFont = font14)
+    }
+    addRowOfItemsToPanel(panel, lastColumn, customLabels, customFont = font14)
 
     return panel
 }
@@ -242,17 +262,22 @@ fun addRowOfItemsToPanel(
     items: List<JLabel>,
     separator: String = " | ",
     firstSeparator: Boolean = true,
-    opaqueSeparator: Boolean = true
+    opaqueSeparator: Boolean = true,
+    customFont: Font? = null
 ): Int {
     var currentColumn = startingColumn
     items.forEach { item ->
         if (currentColumn != startingColumn || firstSeparator) {
             currentColumn++
             panel.add(
-                JLabel(separator).apply { if (opaqueSeparator) makeOpaque(this, 50) },
+                JLabel(separator).apply {
+                    if (opaqueSeparator) makeOpaque(this, 50)
+                    if (customFont != null) this.font = customFont
+                },
                 baseGridConstraints(0, column = currentColumn, indent = 0)
             )
         }
+        if (customFont != null) item.font = customFont
         currentColumn++
         panel.add(item, baseGridConstraints(0, column = currentColumn, indent = 0))
     }
@@ -267,3 +292,25 @@ private fun makeOpaque(component: JComponent, alpha: Int) {
         alpha
     )
 }
+
+private val scrollPaneAlarm = Alarm()
+
+fun wrapWithScrollPane(panel: JPanel): JScrollPane {
+    val scrollPane = ScrollPaneFactory.createScrollPane(
+        panel,
+        ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
+    )
+    // hack to scroll Panel to beginning after all it content (hopefully) loaded
+    scrollPaneAlarm.addRequest(
+        {
+            ApplicationManager.getApplication().invokeLater {
+                if (!scrollPane.isShowing) return@invokeLater
+                scrollPane.verticalScrollBar.value = 0
+                scrollPane.horizontalScrollBar.value = 0
+            }
+        }, 100
+    )
+    return scrollPane
+}
+

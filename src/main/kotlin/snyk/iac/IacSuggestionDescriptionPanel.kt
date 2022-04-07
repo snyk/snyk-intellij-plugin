@@ -2,13 +2,8 @@ package snyk.iac
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
-import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
-import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.UIUtil
-import icons.SnykIcons
-import io.snyk.plugin.Severity
-import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.descriptionHeaderPanel
@@ -16,13 +11,11 @@ import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
-import io.snyk.plugin.ui.toolwindow.IssueDescriptionPanel
+import io.snyk.plugin.ui.toolwindow.IssueDescriptionPanelBase
 import io.snyk.plugin.ui.toolwindow.LabelProvider
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.common.IgnoreService
-import java.awt.Component
-import java.awt.Font
 import java.awt.Insets
 import java.net.MalformedURLException
 import java.net.URL
@@ -35,46 +28,47 @@ class IacSuggestionDescriptionPanel(
     val issue: IacIssue,
     val psiFile: PsiFile?,
     val project: Project
-) : JPanel(), IssueDescriptionPanel {
+) : IssueDescriptionPanelBase(title = issue.title, severity = issue.severity) {
 
     private val labelProvider = LabelProvider()
 
     init {
         this.name = "IacSuggestionDescriptionPanel"
-        this.layout = GridLayoutManager(10, 1, Insets(20, 10, 20, 20), -1, 10)
+        createUI()
+    }
 
-        this.add(
-            Spacer(),
-            baseGridConstraints(
-                row = 9,
-                fill = GridConstraints.FILL_VERTICAL,
-                hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                vSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0
-            )
-        )
+    override fun secondRowTitlePanel(): JPanel = descriptionHeaderPanel(
+        issueNaming = "Issue",
+        id = issue.id,
+        idUrl = issue.documentation
+    )
 
-        this.add(titlePanel(), panelGridConstraints(0))
+    override fun createMainBodyPanel(): Pair<JPanel, Int> {
+        val panel = JPanel()
+        val lastRowToAddSpacer = 9
+        panel.layout = GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(0, 10, 20, 20), -1, 10)
 
-        this.add(
-            mainBodyPanel(), panelGridConstraints(1)
+        panel.add(
+            descriptionImpactPathPanel(), panelGridConstraints(1)
         )
 
         if (!issue.resolve.isNullOrBlank()) {
-            this.add(
+            panel.add(
                 remediationPanelWithTitle(issue.resolve), panelGridConstraints(6)
             )
         }
 
         val referencePanel = addIssueReferences()
         if (referencePanel != null) {
-            this.add(referencePanel, panelGridConstraints(row = 7))
+            panel.add(referencePanel, panelGridConstraints(row = 7))
         }
+
+        return Pair(panel, lastRowToAddSpacer)
     }
 
-    private fun mainBodyPanel(): JPanel {
+    private fun descriptionImpactPathPanel(): JPanel {
         val mainBodyPanel = JPanel()
-        mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(20, 0, 20, 0), 50, -1)
+        mainBodyPanel.layout = GridLayoutManager(11, 2, Insets(10, 0, 20, 0), 50, -1)
 
         insertTitleAndResizableTextIntoPanelColumns(
             panel = mainBodyPanel,
@@ -101,69 +95,6 @@ class IacSuggestionDescriptionPanel(
         return mainBodyPanel
     }
 
-    private fun titlePanel(): JPanel {
-        val titlePanel = JPanel()
-        titlePanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, 5)
-        val titleLabel = JLabel().apply {
-            font = getFont(Font.BOLD, 20, font)
-            text = " " + issue.title.ifBlank {
-                when (issue.severity) {
-                    Severity.CRITICAL -> "Critical Severity"
-                    Severity.HIGH -> "High Severity"
-                    Severity.MEDIUM -> "Medium Severity"
-                    Severity.LOW -> "Low Severity"
-                    else -> ""
-                }
-            }
-            icon = SnykIcons.getSeverityIcon(issue.severity, SnykIcons.IconSize.SIZE24)
-        }
-
-        titlePanel.add(
-            titleLabel,
-            baseGridConstraintsAnchorWest(0)
-        )
-
-        titlePanel.add(cwePanel(), baseGridConstraintsAnchorWest(row = 1, column = 0, indent = 0))
-        titlePanel.add(
-            topButtonPanel(),
-            baseGridConstraints(row = 0, column = 1, anchor = GridConstraints.ANCHOR_EAST, indent = 0)
-        )
-
-        return titlePanel
-    }
-
-    private fun topButtonPanel(): Component {
-        val panel = JPanel()
-
-        panel.layout = GridLayoutManager(1, 1, Insets(0, 0, 0, 0), 5, 0)
-
-        createIgnoreButton(panel)
-        return panel
-    }
-
-    private fun createIgnoreButton(panel: JPanel) {
-        val ignoreButton = JButton().apply {
-            if (issue.ignored) {
-                text = IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
-                isEnabled = false
-            } else {
-                text = "Ignore This Issue"
-                addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue, psiFile, project))
-            }
-            name = "ignoreButton"
-        }
-        panel.add(
-            ignoreButton,
-            baseGridConstraintsAnchorWest(0)
-        )
-    }
-
-    private fun cwePanel() = descriptionHeaderPanel(
-        issueNaming = "Issue",
-        id = issue.id,
-        idUrl = issue.documentation
-    )
-
     private fun remediationPanel(resolve: String): JPanel {
         val remediationPanel = JPanel()
         remediationPanel.layout = GridLayoutManager(2, 1, Insets(0, 10, 20, 0), -1, -1)
@@ -185,13 +116,13 @@ class IacSuggestionDescriptionPanel(
         if (issue.references.isNotEmpty()) {
             val panel = JPanel()
             panel.layout = GridLayoutManager(
-                issue.references.size + 2, 1, Insets(20, 0, 20, 0), 50, -1
+                issue.references.size + 2, 1, Insets(20, 0, 0, 0), 50, -1
             )
 
             panel.add(boldLabel("References"), baseGridConstraintsAnchorWest(row = 1))
             issue.references.forEachIndexed { index, s ->
                 val label = try {
-                     labelProvider.createLinkLabel(URL(s), s)
+                    labelProvider.createLinkLabel(URL(s), s)
                 } catch (e: MalformedURLException) {
                     JLabel(s)
                 }
@@ -227,4 +158,18 @@ class IacSuggestionDescriptionPanel(
 
         return remediationPanel
     }
+
+    override fun getBottomRightButtons(): List<JButton> = listOf(
+        JButton().apply {
+            if (issue.ignored) {
+                text = IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
+                isEnabled = false
+            } else {
+                text = "Ignore This Issue"
+                addActionListener(IgnoreButtonActionListener(IgnoreService(project), issue, psiFile, project))
+            }
+            name = "ignoreButton"
+        }
+    )
+
 }
