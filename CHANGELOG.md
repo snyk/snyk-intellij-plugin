@@ -5,6 +5,7 @@
 ### Fixed
 - Avoiding IncorrectOperationException by remove direct project service's requests.
 - Avoid ClassNotFoundException due to not bundled Json support in some IDE.
+- Fix possible duplicates and missing annotations for Snyk Code
 
 ## [2.4.25]
 
