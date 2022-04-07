@@ -4,6 +4,7 @@ import UIComponentFinder
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.Companion.REPORT_FALSE_POSITIVE_TEXT
 import org.junit.Test
 import javax.swing.JButton
@@ -33,8 +34,9 @@ class SuggestionDescriptionPanelIntegTest : BasePlatformTestCase() {
         Registry.get("snyk.code.report.false.positives.enabled").setValue(true)
         try {
             myFixture.configureByText("fake.file", "fake file content")
+            val snykCodeFile = SnykCodeFile(project, myFixture.file.virtualFile)
             val cut = SuggestionDescriptionPanel(
-                myFixture.file,
+                snykCodeFile,
                 suggestionForFile,
                 0
             )

@@ -18,7 +18,6 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.treeStructure.Tree
-import com.intellij.util.Alarm
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.analytics.getIssueSeverityOrNull
@@ -96,7 +95,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val logger = logger<SnykToolWindowPanel>()
 
     var snykScanListener: SnykScanListener
-    private val scrollPaneAlarm = Alarm()
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
 
     var currentOssResults: OssResult? = null
