@@ -113,7 +113,7 @@ class SuggestionDescriptionPanel(
 
     private fun getLineOfCode(range: MyTextRange, file: SnykCodeFile?): String {
         if (file == null) return "<File Not Found>"
-        val document = PsiDocumentManager.getInstance(file.project).getDocument(PDU.toPsiFile(file))
+        val document = PDU.toPsiFile(file)?.let { PsiDocumentManager.getInstance(file.project).getDocument(it) }
             ?: throw IllegalStateException("No document found for ${file.virtualFile.path}")
         val chars = document.charsSequence
         val startOffset = range.start
@@ -205,7 +205,7 @@ class SuggestionDescriptionPanel(
         val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
 
         val fileToNavigate = if (markerRange.file.isNullOrEmpty()) snykCodeFile else {
-            PDU.instance.getFileByDeepcodedPath(markerRange.file, project)?.let { it as SnykCodeFile }
+            PDU.instance.getFileByDeepcodedPath(markerRange.file, project)?.let { PDU.toSnykCodeFile(it) }
         }
         val fileName = fileToNavigate?.virtualFile?.name ?: markerRange.file
 

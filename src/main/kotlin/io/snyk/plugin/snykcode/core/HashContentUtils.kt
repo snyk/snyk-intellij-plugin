@@ -2,7 +2,6 @@ package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.HashContentUtilsBase
 import com.intellij.openapi.util.Computable
-import java.nio.file.Files
 
 class HashContentUtils private constructor() : HashContentUtilsBase(
     PDU.instance
@@ -12,8 +11,8 @@ class HashContentUtils private constructor() : HashContentUtilsBase(
         return RunUtils.computeInReadActionInSmartMode(
             file.project,
             Computable {
-                return@Computable try {
-                    String(Files.readAllBytes(file.virtualFile.toNioPath()))
+                try {
+                    String(file.virtualFile.contentsToByteArray())
                 } catch (e: Exception) {
                     SCLogger.instance.logWarn("Couldn't read content of ${file.virtualFile.name}, ${e.message}")
                     ""

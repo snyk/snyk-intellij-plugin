@@ -12,6 +12,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
+import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
@@ -47,7 +48,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         val allCachedFiles = AnalysisData.instance.getAllCachedFiles(project)
         val filesToRemoveFromCache = allCachedFiles
             .filter { cachedFile ->
-                val snykCodeFile = cachedFile as SnykCodeFile
+                val snykCodeFile = PDU.toSnykCodeFile(cachedFile)
                 snykCodeFile in filesAffected ||
                     // Directory containing cached file is deleted/moved
                     filesAffected.any {

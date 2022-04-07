@@ -4,8 +4,6 @@ import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.PlatformDependentUtilsBase
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -27,8 +25,7 @@ import java.util.function.Consumer
 class PDU private constructor() : PlatformDependentUtilsBase() {
 
     override fun getProject(file: Any): Any {
-        require(file is SnykCodeFile) { "File $file must be of type SnykCodeFile but is ${file.javaClass.name}" }
-        return file.project
+        return toSnykCodeFile(file).project
     }
 
     override fun getProjectName(project: Any): String = toProject(project).name
@@ -44,10 +41,10 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     override fun getProjectBasedFilePath(file: Any): String {
-        require(file is SnykCodeFile) { "File $file must be of type SnykCodeFile but is ${file.javaClass.name}" }
-        val virtualFile = file.virtualFile
+        val snykCodeFile = toSnykCodeFile(file)
+        val virtualFile = snykCodeFile.virtualFile
         val absolutePath = virtualFile.path
-        val projectPath = file.project.guessProjectDir()?.path
+        val projectPath = snykCodeFile.project.guessProjectDir()?.path
             ?: throw IllegalStateException("No Project base Path found for file $file")
         // `ignoreCase = true` needed due to https://youtrack.jetbrains.com/issue/IDEA-268081
         return absolutePath.replaceFirst(projectPath, "", ignoreCase = true)
@@ -57,8 +54,9 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         val prj = toProject(project)
         val absolutePath = prj.guessProjectDir()?.path + if (path.startsWith("/")) path else "/$path"
         val virtualFile =
-            LocalFileSystem.getInstance().findFileByPath(absolutePath) ?: LocalFileSystem.getInstance()
-                .findFileByPath(path)
+            LocalFileSystem.getInstance().findFileByPath(absolutePath)
+                ?: LocalFileSystem.getInstance().findFileByPath(path)
+
         if (virtualFile == null) {
             SCLogger.instance.logWarn("VirtualFile not found for: $absolutePath or $path")
             return null
@@ -71,7 +69,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     override fun getFileSize(file: Any): Long = toVirtualFile(file).length
 
     override fun getLineStartOffset(file: Any, line: Int): Int {
-        val psiFile = toPsiFile(file)
+        val psiFile = toPsiFile(file) ?: return 0
         val document =
             RunUtils.computeInReadActionInSmartMode(psiFile.project, Computable { psiFile.viewProvider.document })
         if (document == null) {
@@ -139,14 +137,11 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
 
     override fun showLoginLink(project: Any?, message: String) {
         pluginSettings().token = null
-        runForProject(
-            project,
-            Consumer { prj ->
-                ApplicationManager.getApplication().invokeLater {
-                    getSnykToolWindowPanel(prj)?.displayAuthPanel()
-                }
+        runForProject(project, Consumer { prj ->
+            ApplicationManager.getApplication().invokeLater {
+                getSnykToolWindowPanel(prj)?.displayAuthPanel()
             }
-        )
+        })
     }
 
     override fun showConsentRequest(project: Any?, userActionNeeded: Boolean) {
@@ -185,28 +180,22 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     companion object {
-        private val logger = logger<PDU>()
 
-        fun toPsiFile(file: Any): PsiFile {
-            require(file is SnykCodeFile) { "File $file must be of type SnykCodeFile but is ${file.javaClass.name}" }
-            var psiFile: PsiFile? = null
-            runReadAction {
-                val findFile = PsiManager.getInstance(file.project).findFile(file.virtualFile)
-                if (findFile != null) {
-                    psiFile = findFile
-                    return@runReadAction
+        fun toPsiFile(file: Any): PsiFile? {
+            val snykCodeFile = toSnykCodeFile(file)
+            return RunUtils.computeInReadActionInSmartMode(
+                snykCodeFile.project,
+                Computable {
+                    return@Computable PsiManager.getInstance(snykCodeFile.project).findFile(snykCodeFile.virtualFile)
                 }
-            }
-            if (psiFile == null) {
-                throw IllegalStateException("cannot find psifile for $file")
-            } else {
-                return psiFile as PsiFile
-            }
+            )
         }
 
-        fun toVirtualFile(file: Any): VirtualFile {
+        fun toVirtualFile(file: Any): VirtualFile = toSnykCodeFile(file).virtualFile
+
+        fun toSnykCodeFile(file: Any): SnykCodeFile {
             require(file is SnykCodeFile) { "File $file must be of type SnykCodeFile but is ${file.javaClass.name}" }
-            return file.virtualFile
+            return file
         }
 
         fun toProject(project: Any): Project {

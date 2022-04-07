@@ -4,7 +4,6 @@ import ai.deepcode.javaclient.core.DeepCodeUtilsBase
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.util.Computable
 import com.intellij.openapi.vcs.changes.ChangeListManager
 import io.snyk.plugin.snykcode.codeRestApi
 
@@ -36,11 +35,7 @@ class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
             files.clear()
         }
         scLogger.logInfo("allProjectFiles scan finished. Found ${files.size} files")
-
-        return RunUtils.computeInReadActionInSmartMode(
-            project,
-            Computable { files.filter { it.virtualFile.isValid } }
-        ) ?: emptyList<SnykCodeFile>()
+        return files.filter { it.virtualFile.isValid }
     }
 
     override fun getFileLength(file: Any): Long = PDU.toVirtualFile(file).length
@@ -48,8 +43,8 @@ class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
     override fun getFileExtention(file: Any): String = PDU.toVirtualFile(file).extension ?: ""
 
     override fun isGitIgnoredExternalCheck(file: Any): Boolean {
-        require(file is SnykCodeFile) { "File $file must be of type SnykCodeFile but is ${file.javaClass.name}" }
-        return ChangeListManager.getInstance(PDU.instance.getProject(file) as Project).isIgnoredFile(file.virtualFile)
+        val snykCodeFile = PDU.toSnykCodeFile(file)
+        return ChangeListManager.getInstance(snykCodeFile.project).isIgnoredFile(snykCodeFile.virtualFile)
     }
 
     companion object {

@@ -49,6 +49,7 @@ import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
+import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
@@ -344,7 +345,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         } else {
                             val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
                             SnykCodeResults(
-                                AnalysisData.instance.getAnalysis(allProjectFiles).mapKeys { it.key as SnykCodeFile }
+                                AnalysisData.instance.getAnalysis(allProjectFiles)
+                                    .mapKeys { PDU.toSnykCodeFile(it.key) }
                             )
                         }
                     ApplicationManager.getApplication().invokeLater {
@@ -435,10 +437,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
                     if (!smartReloadMode && snykCodeFile.virtualFile.isValid) {
-                        if (textRange.start >= 0 && textRange.end < snykCodeFile.virtualFile.length) {
+                        val textLength = PDU.toPsiFile(snykCodeFile)?.textLength ?: 0
+                        if ((textRange.start >= 0) && (textRange.end < textLength)) {
                             navigateToSource(snykCodeFile.virtualFile, textRange.start, textRange.end)
                         } else {
-                            logger.warn("Navigation to TextRange: $textRange with file length=${snykCodeFile.virtualFile.length}")
+                            logger.warn("Navigation to TextRange: $textRange with file length=$textLength")
                         }
                     }
 

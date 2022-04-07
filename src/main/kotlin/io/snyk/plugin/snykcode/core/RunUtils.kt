@@ -61,7 +61,7 @@ class RunUtils private constructor() : RunUtilsBase(
             ProgressManager.getInstance().progressIndicator?.isCanceled == true -> null
             files.isEmpty() -> SnykCodeResults()
             else -> SnykCodeResults(
-                AnalysisData.instance.getAnalysis(files).mapKeys { it.key as SnykCodeFile }
+                AnalysisData.instance.getAnalysis(files).mapKeys { PDU.toSnykCodeFile(it.key) }
             )
         }
         getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeFinished(scanResults)
