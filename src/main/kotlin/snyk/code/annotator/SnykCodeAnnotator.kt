@@ -10,6 +10,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.snykcode.core.AnalysisData
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.AnnotatorCommon
 
 class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
@@ -47,7 +48,7 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     private fun getIssuesForFile(psiFile: PsiFile): List<SuggestionForFile> {
         ProgressManager.checkCanceled()
-        return AnalysisData.instance.getAnalysis(psiFile)
+        return AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile))
     }
 
     fun annotationMessage(suggestion: SuggestionForFile): String {

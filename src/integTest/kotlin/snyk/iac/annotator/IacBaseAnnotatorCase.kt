@@ -32,7 +32,7 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
     override fun tearDown() {
         unmockkAll()
         project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
-        pluginSettings().fileListenerEnabled = true
         super.tearDown()
+        pluginSettings().fileListenerEnabled = true
     }
 }
