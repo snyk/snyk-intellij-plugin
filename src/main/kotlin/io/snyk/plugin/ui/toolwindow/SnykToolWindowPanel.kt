@@ -647,6 +647,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun displayAuthPanel() {
+        if (Disposer.isDisposed(this)) return
         displayTreeAndDescriptionPanels()
         doCleanUi()
         descriptionPanel.removeAll()
