@@ -2,7 +2,12 @@
 
 ## [2.4.26]
 
+### Changed
+
+- Updated Snyk Code API to 2.3.1 (limit file size to 1 MB)
+
 ### Fixed
+
 - Avoiding IncorrectOperationException by remove direct project service's requests.
 - Avoid ClassNotFoundException due to not bundled Json support in some IDE.
 - Fix possible duplicates and missing annotations for Snyk Code
@@ -10,7 +15,8 @@
 ## [2.4.25]
 
 ### Fixed
-- Sanitise TextRange in file before accessing it. 
+
+- Sanitise TextRange in file before accessing it.
 - Request re-authentication from Snyk Code scan if token found to be invalid.
 
 ## [2.4.24]
