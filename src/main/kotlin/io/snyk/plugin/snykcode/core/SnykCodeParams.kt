@@ -1,10 +1,11 @@
 package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeParamsBase
+import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.codeRestApi
-import snyk.common.toSnykCodeApiUrl
+import io.snyk.plugin.toSnykCodeApiUrl
 
 class SnykCodeParams private constructor() : DeepCodeParamsBase(
     true,
@@ -21,8 +22,12 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
 ) {
 
     init {
-        val apiUrl = toSnykCodeApiUrl(pluginSettings().customEndpointUrl)
-        setApiUrl(apiUrl, pluginSettings().ignoreUnknownCA)
+        val requestLogging = Logger.getInstance(SCLogger.presentableName).isDebugEnabled
+        setApiUrl(
+            toSnykCodeApiUrl(pluginSettings().customEndpointUrl),
+            pluginSettings().ignoreUnknownCA,
+            requestLogging
+        )
     }
 
     override fun consentGiven(project: Any): Boolean {
