@@ -10,6 +10,7 @@
 
 - Avoiding IncorrectOperationException by remove direct project service's requests.
 - Avoid ClassNotFoundException due to not bundled Json support in some IDE.
+- Avoid IncorrectOperationException due to already disposed SnykToolWindowPanel when SnykAuthPanel invoked.
 
 ## [2.4.25]
 
