@@ -1,6 +1,7 @@
 package snyk.container.ui
 
 import com.intellij.uiDesigner.core.GridLayoutManager
+import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
@@ -39,7 +40,7 @@ class ContainerIssueDetailPanel(
         return Pair(panel, lastRowToAddSpacer)
     }
 
-    override fun secondRowTitlePanel(): JPanel = descriptionHeaderPanel(
+    override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
         issueNaming = "Vulnerability",
         cwes = issue.identifiers?.cwe ?: emptyList(),
         cves = issue.identifiers?.cve ?: emptyList(),

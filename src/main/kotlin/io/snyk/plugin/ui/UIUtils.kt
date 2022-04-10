@@ -208,8 +208,8 @@ fun descriptionHeaderPanel(
     id: String? = null,
     idUrl: String? = null,
     customLabels: List<JLabel> = emptyList()
-): JPanel {
-    val panel = JPanel()
+): DescriptionHeaderPanel {
+    val panel = DescriptionHeaderPanel()
     val font14 = getFont(-1, 14, panel.font)
 
     val columnCount = 1 + // name label
@@ -221,7 +221,7 @@ fun descriptionHeaderPanel(
 
     panel.add(
         JLabel(issueNaming).apply { font = font14 },
-        baseGridConstraintsAnchorWest(0)
+        baseGridConstraintsAnchorWest(row = 0, indent = 0)
     )
 
     val labelProvider = LabelProvider()
@@ -255,6 +255,8 @@ fun descriptionHeaderPanel(
 
     return panel
 }
+
+class DescriptionHeaderPanel : JPanel()
 
 fun addRowOfItemsToPanel(
     panel: JPanel,

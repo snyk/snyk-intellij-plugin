@@ -9,6 +9,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.Borders
 import icons.SnykIcons
 import io.snyk.plugin.Severity
+import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -58,9 +59,9 @@ abstract class IssueDescriptionPanelBase(
         add(mainBodyPanel, BorderLayout.CENTER)
     }
 
-    fun titlePanel(): JPanel {
+    fun titlePanel(insets: Insets = Insets(20, 10, 20, 20), indent: Int = 1): JPanel {
         val titlePanel = JPanel()
-        titlePanel.layout = GridLayoutManager(2, 2, Insets(20, 10, 20, 20), -1, 5)
+        titlePanel.layout = GridLayoutManager(2, 2, insets, -1, 5)
         val titleLabel = JLabel().apply {
             font = io.snyk.plugin.ui.getFont(Font.BOLD, 20, font)
             text = getTitleText()
@@ -69,12 +70,12 @@ abstract class IssueDescriptionPanelBase(
 
         titlePanel.add(
             titleLabel,
-            baseGridConstraintsAnchorWest(0)
+            baseGridConstraintsAnchorWest(row = 0, indent = indent)
         )
 
         titlePanel.add(
             secondRowTitlePanel(),
-            baseGridConstraintsAnchorWest(row = 1, column = 0, indent = 0)
+            baseGridConstraintsAnchorWest(row = 1, column = 0, indent = indent)
         )
 
         return titlePanel
@@ -92,7 +93,7 @@ abstract class IssueDescriptionPanelBase(
         }
     }
 
-    abstract fun secondRowTitlePanel(): JPanel
+    abstract fun secondRowTitlePanel(): DescriptionHeaderPanel
 
     abstract fun createMainBodyPanel(): Pair<JPanel, Int>
 
