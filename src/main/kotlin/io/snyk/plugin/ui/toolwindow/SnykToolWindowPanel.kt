@@ -653,7 +653,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         descriptionPanel.removeAll()
         val authPanel = SnykAuthPanel(project)
         Disposer.register(this, authPanel)
-        descriptionPanel.add(CenterOneComponentPanel(authPanel), BorderLayout.CENTER)
+        descriptionPanel.add(authPanel, BorderLayout.CENTER)
         revalidate()
 
         service<SnykAnalyticsService>().logWelcomeIsViewed(
