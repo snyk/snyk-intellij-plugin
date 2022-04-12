@@ -436,10 +436,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
                     if (!smartReloadMode && snykCodeFile.virtualFile.isValid) {
                         val textLength = PDU.toPsiFile(snykCodeFile)?.textLength ?: 0
-                        if ((textRange.start >= 0) && (textRange.end < textLength)) {
+                        if (textRange.start in (0 until textLength) &&
+                            textRange.end in (0 until textLength) &&
+                            textRange.start < textRange.end
+                        ) {
                             navigateToSource(snykCodeFile.virtualFile, textRange.start, textRange.end)
                         } else {
-                            logger.warn("Navigation to TextRange: $textRange with file length=$textLength")
+                            logger.warn("Navigation to wrong TextRange: $textRange with file length=$textLength")
                         }
                     }
 
