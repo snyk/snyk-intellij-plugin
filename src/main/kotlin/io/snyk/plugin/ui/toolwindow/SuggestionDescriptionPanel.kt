@@ -16,6 +16,7 @@ import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.isReportFalsePositivesEnabled
+import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.severityAsString
@@ -122,11 +123,14 @@ class SuggestionDescriptionPanel(
             ?: throw IllegalStateException("No document found for ${file.virtualFile.path}")
         val chars = document.charsSequence
         val startOffset = range.start
+        val textLength = document.textLength
+
+        if (startOffset !in (0 until textLength)) return "<Wrong Pointer>"
         val lineNumber = document.getLineNumber(startOffset)
         var lineStartOffset = document.getLineStartOffset(lineNumber)
 
         // skip all white space characters
-        while (lineStartOffset < document.textLength
+        while (lineStartOffset < textLength
             && (chars[lineStartOffset] == '\t' || chars[lineStartOffset] == ' ')
         ) {
             lineStartOffset++
@@ -224,16 +228,8 @@ class SuggestionDescriptionPanel(
             customFont = JTextArea().font
         ) {
             if (fileToNavigate == null || !fileToNavigate.virtualFile.isValid) return@linkLabel
-            // jump to Source
-            PsiNavigationSupport.getInstance().createNavigatable(
-                project,
-                fileToNavigate.virtualFile,
-                markerRange.start
-            ).navigate(false)
 
-            // highlight(by selection) marker range in source file
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
-            editor?.selectionModel?.setSelection(markerRange.start, markerRange.end)
+            navigateToSource(project, fileToNavigate.virtualFile, markerRange.start, markerRange.end)
 
             allStepPanels.forEach {
                 it.background = UIUtil.getTextFieldBackground()

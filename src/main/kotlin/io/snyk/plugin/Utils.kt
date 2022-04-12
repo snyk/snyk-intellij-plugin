@@ -3,12 +3,15 @@
 package io.snyk.plugin
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
@@ -44,6 +47,8 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
+
+private val logger = logger("#io.snyk")
 
 fun getOssService(project: Project): OssService? = project.serviceIfNotDisposed()
 
@@ -269,6 +274,42 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
         val psiFile = findPsiFileIgnoringExceptions(it, project)
         if (psiFile != null) {
             DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+        }
+    }
+}
+
+fun navigateToSource(
+    project: Project,
+    virtualFile: VirtualFile,
+    selectionStartOffset: Int,
+    selectionEndOffset: Int? = null
+) {
+    if (!virtualFile.isValid) return
+    val psiFile = RunUtils.computeInReadActionInSmartMode(
+        project,
+        Computable { PsiManager.getInstance(project).findFile(virtualFile) }
+    ) ?: return
+    val textLength = psiFile.textLength
+    if (selectionStartOffset in (0 until textLength)) {
+        // jump to Source
+        PsiNavigationSupport.getInstance().createNavigatable(
+            project,
+            virtualFile,
+            selectionStartOffset
+        ).navigate(false)
+    } else {
+        logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
+    }
+
+    if (selectionEndOffset != null) {
+        // highlight(by selection) suggestion range in source file
+        if (selectionEndOffset in (0 until textLength) &&
+            selectionStartOffset < selectionEndOffset
+        ) {
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor
+            editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
+        } else {
+            logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
         }
     }
 }

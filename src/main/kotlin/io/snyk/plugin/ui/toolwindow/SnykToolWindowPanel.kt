@@ -2,18 +2,15 @@ package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
@@ -41,6 +38,7 @@ import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
@@ -435,15 +433,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val textRange = suggestion.ranges[index]
                         ?: throw IllegalArgumentException(suggestion.ranges.toString())
                     if (!smartReloadMode && snykCodeFile.virtualFile.isValid) {
-                        val textLength = PDU.toPsiFile(snykCodeFile)?.textLength ?: 0
-                        if (textRange.start in (0 until textLength) &&
-                            textRange.end in (0 until textLength) &&
-                            textRange.start < textRange.end
-                        ) {
-                            navigateToSource(snykCodeFile.virtualFile, textRange.start, textRange.end)
-                        } else {
-                            logger.warn("Navigation to wrong TextRange: $textRange with file length=$textLength")
-                        }
+                        navigateToSource(project, snykCodeFile.virtualFile, textRange.start, textRange.end)
                     }
 
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
@@ -477,7 +467,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             }
                             val lineStartOffset = document.getLineStartOffset(lineNumber)
 
-                            navigateToSource(virtualFile, lineStartOffset)
+                            navigateToSource(project, virtualFile, lineStartOffset)
                         }
                     }
                     if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
@@ -506,7 +496,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         if (document != null) {
                             val lineNumber = if (0 <= line && line < document.lineCount) line else 0
                             val lineStartOffset = document.getLineStartOffset(lineNumber)
-                            navigateToSource(virtualFile, lineStartOffset)
+                            navigateToSource(project, virtualFile, lineStartOffset)
                         }
                     }
                     // TODO: Add image click event logging ?
@@ -548,21 +538,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         descriptionPanel.revalidate()
         descriptionPanel.repaint()
-    }
-
-    private fun navigateToSource(virtualFile: VirtualFile, selectionStartOffset: Int, selectionEndOffset: Int? = null) {
-        // jump to Source
-        PsiNavigationSupport.getInstance().createNavigatable(
-            project,
-            virtualFile,
-            selectionStartOffset
-        ).navigate(false)
-
-        if (selectionEndOffset != null) {
-            // highlight(by selection) suggestion range in source file
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
-            editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
-        }
     }
 
     override fun dispose() {}
