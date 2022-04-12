@@ -145,39 +145,6 @@ fun isScanRunning(project: Project): Boolean =
 
 fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
 
-fun isSnykCodeAvailable(customEndpointUrl: String?): Boolean =
-    customEndpointUrl.isNullOrEmpty() || isSnykCodeSupportedEndpoint(customEndpointUrl)
-
-fun toSnykCodeApiUrl(customEndpointUrl: String?): String =
-    if (customEndpointUrl != null && isSnykCodeSupportedEndpoint(customEndpointUrl)) {
-        customEndpointUrl
-            .replace("https://", "https://deeproxy.")
-            .removeTrailingSlashes()
-            .removeSuffix("api")
-    } else {
-        "https://deeproxy.snyk.io/"
-    }
-
-private fun isSnykCodeSupportedEndpoint(customEndpointUrl: String) =
-    customEndpointUrl.removeTrailingSlashes() == "https://dev.snyk.io/api" ||
-        customEndpointUrl.removeTrailingSlashes() == "https://snyk.io/api"
-
-fun getSnykCodeSettingsUrl(): String {
-    val endpoint = pluginSettings().customEndpointUrl
-    val baseUrl = if (endpoint.isNullOrEmpty()) {
-        "https://app.snyk.io"
-    } else {
-        endpoint
-            // example: https://snyk.io/api/ -> https://app.snyk.io
-            .replace("https://", "https://app.")
-            .removeTrailingSlashes()
-            .removeSuffix("/api")
-    }
-    return "$baseUrl/manage/snyk-code"
-}
-
-private fun String.removeTrailingSlashes(): String = this.replace(Regex("/+$"), "")
-
 // check sastEnablement in a loop with rising timeout
 fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
     val settings = pluginSettings()

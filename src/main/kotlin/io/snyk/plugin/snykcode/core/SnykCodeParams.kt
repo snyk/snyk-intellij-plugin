@@ -4,7 +4,7 @@ import ai.deepcode.javaclient.core.DeepCodeParamsBase
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.codeRestApi
-import io.snyk.plugin.toSnykCodeApiUrl
+import snyk.common.toSnykCodeApiUrl
 
 class SnykCodeParams private constructor() : DeepCodeParamsBase(
     true,
@@ -21,17 +21,15 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
 ) {
 
     init {
-        setApiUrl(toSnykCodeApiUrl(pluginSettings().customEndpointUrl), pluginSettings().ignoreUnknownCA)
+        val apiUrl = toSnykCodeApiUrl(pluginSettings().customEndpointUrl)
+        setApiUrl(apiUrl, pluginSettings().ignoreUnknownCA)
     }
 
     override fun consentGiven(project: Any): Boolean {
-        //TODO
         return true
     }
 
-    override fun setConsentGiven(project: Any) {
-        //TODO
-    }
+    override fun setConsentGiven(project: Any) = Unit
 
     companion object {
         val instance = SnykCodeParams()

@@ -11,7 +11,6 @@ import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
-import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -57,7 +56,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
     }
 
     private fun isSnykCodeAvailable(): Boolean =
-        isSnykCodeAvailable(settings.customEndpointUrl) && (settings.sastOnServerEnabled ?: false)
+        snyk.common.isSnykCodeAvailable(settings.customEndpointUrl) && (settings.sastOnServerEnabled ?: false)
 
     private fun showSettings(project: Project) {
         ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
