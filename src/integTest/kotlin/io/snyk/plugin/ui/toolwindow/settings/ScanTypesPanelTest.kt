@@ -39,6 +39,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
     private fun setUpContainerScanTypePanelTests(): KubernetesImageCache {
         mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkStatic("snyk.common.CustomEndpointsKt")
         val cacheMock = mockk<KubernetesImageCache>(relaxed = true)
         every { isSnykCodeAvailable(any()) } returns false
         every { getKubernetesImageCache(project) } returns cacheMock
