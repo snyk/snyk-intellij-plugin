@@ -13,15 +13,15 @@ import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getKubernetesImageCache
-import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
-import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import snyk.common.isSnykCodeAvailable
+import snyk.common.toSnykCodeSettingsUrl
 import java.awt.Component
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -211,8 +211,13 @@ class ScanTypesPanel(
                         showSnykCodeAlert(
                             message = "Snyk Code is disabled by your organisation's configuration: ",
                             linkText = "Snyk > Settings > Snyk Code",
-                            url = getSnykCodeSettingsUrl(),
-                            runOnClick = { startSastEnablementCheckLoop(parentDisposable, onSuccess = { doShowFilesToUpload() }) }
+                            url = toSnykCodeSettingsUrl(settings.customEndpointUrl),
+                            runOnClick = {
+                                startSastEnablementCheckLoop(
+                                    parentDisposable,
+                                    onSuccess = { doShowFilesToUpload() }
+                                )
+                            }
                         )
                     }
                     null -> {
@@ -278,7 +283,8 @@ class ScanTypesPanel(
     ) {
         val showAlert = message.isNotEmpty()
         if (simplifyForOnboardPanel) {
-            snykCodeCheckbox?.text = SNYK_CODE_SECURITY_ISSUES + if (showAlert) " (you can enable it later in the Settings)" else ""
+            snykCodeCheckbox?.text =
+                SNYK_CODE_SECURITY_ISSUES + if (showAlert) " (you can enable it later in the Settings)" else ""
         } else {
             snykCodeAlertHyperLinkLabel.isVisible = showAlert
             // todo: change to setTextWithHyperlink() after move to sinceId >= 211

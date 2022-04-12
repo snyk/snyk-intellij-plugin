@@ -10,8 +10,8 @@ import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeParams
-import io.snyk.plugin.toSnykCodeApiUrl
 import io.snyk.plugin.ui.SnykSettingsDialog
+import snyk.common.toSnykCodeApiUrl
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {

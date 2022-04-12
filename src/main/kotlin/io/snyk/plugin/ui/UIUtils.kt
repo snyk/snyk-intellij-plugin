@@ -10,9 +10,9 @@ import com.intellij.util.Alarm
 import com.intellij.util.ui.JBHtmlEditorKit
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.LabelProvider
+import snyk.common.isSnykCodeAvailable
 import java.awt.Color
 import java.awt.Container
 import java.awt.Dimension
@@ -315,4 +315,3 @@ fun wrapWithScrollPane(panel: JPanel): JScrollPane {
     )
     return scrollPane
 }
-

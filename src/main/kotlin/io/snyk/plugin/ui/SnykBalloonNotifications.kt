@@ -12,12 +12,12 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.util.Alarm
-import io.snyk.plugin.getSnykCodeSettingsUrl
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.snykToolWindow
 import io.snyk.plugin.startSastEnablementCheckLoop
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper.GROUP
+import snyk.common.toSnykCodeSettingsUrl
 import java.awt.event.MouseEvent
 
 object SnykBalloonNotifications {
@@ -60,7 +60,7 @@ object SnykBalloonNotifications {
             "$sastForOrgEnablementMessage To enable navigate to ",
             project,
             NotificationAction.createSimpleExpiring("Snyk > Settings > Snyk Code") {
-                BrowserUtil.browse(getSnykCodeSettingsUrl())
+                BrowserUtil.browse(toSnykCodeSettingsUrl(pluginSettings().customEndpointUrl))
                 startSastEnablementCheckLoop(project)
             }
         )

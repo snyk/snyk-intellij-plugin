@@ -12,11 +12,11 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getKubernetesImageCache
-import io.snyk.plugin.isSnykCodeAvailable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import org.junit.Test
+import snyk.common.isSnykCodeAvailable
 import snyk.container.KubernetesImageCache
 
 @Suppress("FunctionName")
@@ -90,7 +90,8 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
 
         assertFalse(
             "Expected container checkbox `deselected` state to be gotten from setting, but wasn't",
-            containerCheckBox.isSelected)
+            containerCheckBox.isSelected
+        )
     }
 
     @Test
