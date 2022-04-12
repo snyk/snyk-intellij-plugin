@@ -13,14 +13,18 @@ import com.intellij.ui.components.JBTabbedPane
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.isReportFalsePositivesEnabled
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.severityAsString
+import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
+import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.FALSE_POSITIVE_REPORTED_TEXT
+import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -41,11 +45,12 @@ class SuggestionDescriptionPanel(
     private val suggestionIndex: Int
 ) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.severityAsString) {
     val project = snykCodeFile.project
+
     init {
         createUI()
     }
 
-    override fun secondRowTitlePanel(): JPanel = descriptionHeaderPanel(
+    override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
         issueNaming = if (suggestion.categories.contains("Security")) "Vulnerability" else "Code Issue",
         cwes = suggestion.cwe ?: emptyList()
     )
@@ -395,12 +400,18 @@ class SuggestionDescriptionPanel(
         if (isReportFalsePositivesEnabled()) {
             listOf(
                 JButton(REPORT_FALSE_POSITIVE_TEXT).apply {
-                    //todo
+                    addActionListener { e ->
+                        val dialog = ReportFalsePositiveDialog(
+                            project,
+                            titlePanel(insets = JBUI.insetsBottom(10), indent = 0)
+                        )
+                        if (dialog.showAndGet()) {
+                            this.isEnabled = false
+                            this.text = FALSE_POSITIVE_REPORTED_TEXT
+                            // todo: disable re-report per session/project/application/token/org ?
+                        }
+                    }
                 }
             )
         } else emptyList()
-
-    companion object {
-        const val REPORT_FALSE_POSITIVE_TEXT = "Report False Positive"
-    }
 }

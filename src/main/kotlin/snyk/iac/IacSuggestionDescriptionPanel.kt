@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.UIUtil
+import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.descriptionHeaderPanel
@@ -37,7 +38,7 @@ class IacSuggestionDescriptionPanel(
         createUI()
     }
 
-    override fun secondRowTitlePanel(): JPanel = descriptionHeaderPanel(
+    override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
         issueNaming = "Issue",
         id = issue.id,
         idUrl = issue.documentation

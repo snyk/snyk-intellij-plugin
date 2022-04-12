@@ -9,6 +9,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
@@ -164,7 +165,7 @@ class BaseImageRemediationDetailPanel(
 
     override fun getTitleIcon(): Icon = SnykIcons.CONTAINER_IMAGE_24
 
-    override fun secondRowTitlePanel(): JPanel = descriptionHeaderPanel(
+    override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
         issueNaming = "Image",
         customLabels = secondRowTitleLabels()
     )

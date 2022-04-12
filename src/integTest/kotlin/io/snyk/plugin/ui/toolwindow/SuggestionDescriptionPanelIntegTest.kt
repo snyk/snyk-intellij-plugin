@@ -5,7 +5,7 @@ import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.ui.toolwindow.SuggestionDescriptionPanel.Companion.REPORT_FALSE_POSITIVE_TEXT
+import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
 import org.junit.Test
 import javax.swing.JButton
 
