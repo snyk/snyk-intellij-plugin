@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.27]
+
+### Fixed
+
+- Avoiding IllegalArgumentException and IndexOutOfBoundsException due to accessing out-of-bound offset.
+
 ## [2.4.26]
 
 ### Changed
