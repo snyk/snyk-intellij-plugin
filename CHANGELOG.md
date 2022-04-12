@@ -2,8 +2,10 @@
 
 ## [2.4.27]
 
-### Fixed
+### Changed
+- Snyk Code: add support for Single Tenant setups
 
+### Fixed
 - Avoiding IllegalArgumentException and IndexOutOfBoundsException due to accessing out-of-bound offset.
 
 ## [2.4.26]
