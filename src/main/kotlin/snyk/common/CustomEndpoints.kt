@@ -8,7 +8,7 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 
     return when {
         uri.isSaaS() -> endpoint.replace("https://", "https://deeproxy.").removeSuffix("api")
-        uri.isSingleTenant() -> endpoint.replace("registry-web", "deeproxy").removeSuffix("api")
+        uri.isSingleTenant() -> endpoint.replace("app", "deeproxy").removeSuffix("api")
         else -> "https://deeproxy.snyk.io/"
     }
 }
@@ -49,12 +49,12 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
  * Checks if the deployment type is SaaS (production or development).
  */
 internal fun URI.isSaaS() =
-    this.host.endsWith("snyk.io")
+    !this.host.startsWith("app") && this.host.endsWith("snyk.io")
 
 /**
  * Checks if the deployment type is Single Tenant.
  */
 internal fun URI.isSingleTenant() =
-    this.host.contains("registry-web") && this.host.endsWith("snyk-internal.net")
+    this.host.startsWith("app") && this.host.endsWith("snyk.io")
 
 private fun String.removeTrailingSlashesIfPresent(): String = this.replace(Regex("/+$"), "")
