@@ -9,7 +9,7 @@ fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
     id("org.jetbrains.changelog") version "1.2.1"
-    id("org.jetbrains.intellij") version "1.1.2"
+    id("org.jetbrains.intellij") version "1.5.2"
     id("org.jetbrains.kotlin.jvm") version "1.5.10"
     id("io.gitlab.arturbosch.detekt") version ("1.17.1")
     id("pl.allegro.tech.build.axion-release") version "1.13.6"
@@ -78,12 +78,12 @@ detekt {
 
 tasks {
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
         kotlinOptions.languageVersion = "1.3"
     }
 
     withType<Detekt> {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
 
     withType<ProcessResources> {
