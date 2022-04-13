@@ -3,7 +3,6 @@ package io.snyk.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
@@ -14,16 +13,16 @@ import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.getAmplitudeExperimentService
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykCliAuthenticationService
+import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
-import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import snyk.SnykBundle
-import snyk.amplitude.AmplitudeExperimentService
 import snyk.amplitude.api.ExperimentUser
 import java.awt.Insets
 import java.util.Objects.nonNull
@@ -65,7 +64,7 @@ class SnykSettingsDialog(
         initializeUiComponents()
         initializeValidation()
 
-        receiveTokenButton.isEnabled = !service<SnykCliDownloaderService>().isCliDownloading()
+        receiveTokenButton.isEnabled = !getSnykCliDownloaderService().isCliDownloading()
 
         ApplicationManager.getApplication().messageBus.connect(rootPanel)
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
@@ -84,11 +83,11 @@ class SnykSettingsDialog(
                 val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 tokenTextField.text = token
 
-                val analytics = service<SnykAnalyticsService>()
+                val analytics = getSnykAnalyticsService()
                 val userId = analytics.obtainUserId(token)
                 analytics.setUserId(userId)
 
-                service<AmplitudeExperimentService>().fetch(ExperimentUser(userId))
+                getAmplitudeExperimentService().fetch(ExperimentUser(userId))
             }
         }
 

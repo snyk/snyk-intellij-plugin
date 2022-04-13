@@ -2,10 +2,10 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.analytics.Iteratively
+import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.pluginSettings
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
@@ -47,7 +47,7 @@ class SnykAnalyticsService : Disposable {
             log.warn("Token is null or empty, user public id will not be obtained.")
             return ""
         }
-        val userId = service<SnykApiService>().userId
+        val userId = getSnykApiService().userId
         if (userId == null) {
             log.warn("Not able to obtain user public id.")
             return ""

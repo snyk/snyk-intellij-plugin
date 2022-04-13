@@ -3,7 +3,6 @@ package io.snyk.plugin.services
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.progress.ProgressIndicator
@@ -17,7 +16,8 @@ import com.intellij.util.PlatformIcons
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.services.download.SnykCliDownloaderService
+import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.lang.StringEscapeUtils.escapeHtml
@@ -51,8 +51,8 @@ class SnykCliAuthenticationService(val project: Project) {
     private fun downloadCliIfNeeded() {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
-                val downloaderService = service<SnykCliDownloaderService>()
-                downloaderService.downloadLatestRelease(ProgressManager.getInstance().progressIndicator, project)
+                val currentIndicator = ProgressManager.getInstance().progressIndicator
+                getSnykCliDownloaderService().downloadLatestRelease(currentIndicator, project)
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
             }
@@ -112,7 +112,7 @@ class SnykCliAuthenticationService(val project: Project) {
     }
 
     private fun buildCliCommands(commands: List<String>): List<String> {
-        val settings = service<SnykApplicationSettingsStateService>()
+        val settings = pluginSettings()
         val cli: MutableList<String> = mutableListOf(getCliFile().absolutePath)
         cli.addAll(commands)
 

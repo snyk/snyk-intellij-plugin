@@ -3,7 +3,6 @@ package io.snyk.plugin.services
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
@@ -16,6 +15,8 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getOssService
+import io.snyk.plugin.getSnykApiService
+import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykCode
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
@@ -25,7 +26,6 @@ import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import org.jetbrains.annotations.TestOnly
@@ -156,7 +156,7 @@ class SnykTaskQueueService(val project: Project) {
     private fun scheduleSnykCodeScan() {
         object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
             override fun run(indicator: ProgressIndicator) {
-                val sastCliConfigSettings = service<SnykApiService>().sastSettings
+                val sastCliConfigSettings = getSnykApiService().sastSettings
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 when (settings.sastOnServerEnabled) {
@@ -270,7 +270,7 @@ class SnykTaskQueueService(val project: Project) {
             override fun run(indicator: ProgressIndicator) {
                 cliDownloadPublisher.checkCliExistsStarted()
                 if (project.isDisposed) return
-                val cliDownloader = service<SnykCliDownloaderService>()
+                val cliDownloader = getSnykCliDownloaderService()
 
                 if (!isCliInstalled()) {
                     cliDownloader.downloadLatestRelease(indicator, project)

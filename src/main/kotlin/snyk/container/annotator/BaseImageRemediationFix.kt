@@ -2,7 +2,6 @@ package snyk.container.annotator
 
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -10,6 +9,7 @@ import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
 import snyk.analytics.QuickFixIsTriggered
@@ -20,7 +20,7 @@ import javax.swing.Icon
 class BaseImageRemediationFix(
     private val containerIssuesForImage: ContainerIssuesForImage,
     private val range: TextRange,
-    private val analyticsService: SnykAnalyticsService = service()
+    private val analyticsService: SnykAnalyticsService = getSnykAnalyticsService()
 ) : IntentionAction, Iconable {
     private var imageNameToFix: CharSequence
     private val logger = logger<BaseImageRemediationFix>()

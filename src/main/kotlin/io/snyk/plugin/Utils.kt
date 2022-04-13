@@ -5,8 +5,8 @@ package io.snyk.plugin
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
@@ -22,6 +22,7 @@ import com.intellij.util.Alarm
 import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
@@ -33,6 +34,9 @@ import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.advisor.AdvisorService
+import snyk.advisor.AdvisorServiceImpl
+import snyk.advisor.SnykAdvisorModel
 import snyk.amplitude.AmplitudeExperimentService
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
@@ -64,11 +68,11 @@ fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.ser
 
 fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
 
-fun getAmplitudeExperimentService(project: Project): AmplitudeExperimentService? = project.serviceIfNotDisposed()
+fun getAmplitudeExperimentService(): AmplitudeExperimentService = getApplicationService()
 
 fun getSnykCliAuthenticationService(project: Project): SnykCliAuthenticationService? = project.serviceIfNotDisposed()
 
-fun getSnykCliDownloaderService(project: Project): SnykCliDownloaderService? = project.serviceIfNotDisposed()
+fun getSnykCliDownloaderService(): SnykCliDownloaderService = getApplicationService()
 
 fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
 
@@ -76,7 +80,15 @@ fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
 fun isCliInstalled(): Boolean = getCliFile().exists()
 
-fun pluginSettings(): SnykApplicationSettingsStateService = service()
+fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
+
+fun getSnykApiService(): SnykApiService = getApplicationService()
+
+fun getSnykAnalyticsService(): SnykAnalyticsService = getApplicationService()
+
+fun getSnykAdvisorModel(): SnykAdvisorModel = getApplicationService()
+
+fun getAdvisorService(): AdvisorService = getApplicationService<AdvisorServiceImpl>()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
@@ -94,6 +106,15 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
     } catch (ignored: Throwable) {
         null
     }
+}
+
+/**
+ * Copy of [com.intellij.openapi.components.service] to make code compilable with jvm 11 bytecode (Idea 2022.1)
+ */
+private inline fun <reified T : Any> getApplicationService(): T {
+    val serviceClass = T::class.java
+    return ApplicationManager.getApplication().getService(serviceClass)
+        ?: throw RuntimeException("Cannot find service ${serviceClass.name} (classloader=${serviceClass.classLoader})")
 }
 
 fun <L> getSyncPublisher(project: Project, topic: Topic<L>): L? {
@@ -143,7 +164,7 @@ fun isContainerRunning(project: Project): Boolean {
 fun isScanRunning(project: Project): Boolean =
     isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project) || isContainerRunning(project)
 
-fun isCliDownloading(): Boolean = service<SnykCliDownloaderService>().isCliDownloading()
+fun isCliDownloading(): Boolean = getSnykCliDownloaderService().isCliDownloading()
 
 // check sastEnablement in a loop with rising timeout
 fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
@@ -155,7 +176,7 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     lateinit var checkIfSastEnabled: () -> Unit
     checkIfSastEnabled = {
         if (settings.sastOnServerEnabled != true) {
-            settings.sastOnServerEnabled = service<SnykApiService>().sastSettings?.sastEnabled ?: false
+            settings.sastOnServerEnabled = getSnykApiService().sastSettings?.sastEnabled ?: false
             if (settings.sastOnServerEnabled == true) {
                 onSuccess.invoke()
             } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {

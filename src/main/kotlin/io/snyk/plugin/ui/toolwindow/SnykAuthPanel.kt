@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
@@ -14,12 +13,12 @@ import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getAmplitudeExperimentService
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.addAndGetCenteredPanel
 import io.snyk.plugin.ui.baseGridConstraints
@@ -43,7 +42,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
         name = "authPanel"
         val authButton = JButton(object : AbstractAction(AUTHENTICATE_BUTTON_TEXT) {
             override fun actionPerformed(e: ActionEvent?) {
-                val analytics = service<SnykAnalyticsService>()
+                val analytics = getSnykAnalyticsService()
                 analytics.logAuthenticateButtonIsClicked(authenticateEvent())
                 getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
@@ -55,12 +54,12 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                 if (userId.isNotBlank()) {
                     analytics.setUserId(userId)
                     analytics.identify()
-                    getAmplitudeExperimentService(project)?.fetch(ExperimentUser(userId))
+                    getAmplitudeExperimentService().fetch(ExperimentUser(userId))
                 }
                 getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
             }
         }).apply {
-            isEnabled = getSnykCliDownloaderService(project)?.isCliDownloading() == false
+            isEnabled = !getSnykCliDownloaderService().isCliDownloading()
         }
 
         layout = getStandardLayout(1, 1)
