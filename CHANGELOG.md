@@ -4,6 +4,7 @@
 
 ### Changed
 - Snyk Code: add support for Single Tenant setups
+- Update organization setting tooltip text to clarify expected value.
 
 ### Fixed
 - Avoiding IllegalArgumentException and IndexOutOfBoundsException due to accessing out-of-bound offset.
