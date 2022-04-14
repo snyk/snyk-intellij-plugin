@@ -35,7 +35,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `isSnykCodeAvailable returns true for Single Tenant deployments`() {
-        val snykCodeAvailable = isSnykCodeAvailable("https://registry-web.random-uuid.polaris.snyk-internal.net/api")
+        val snykCodeAvailable = isSnykCodeAvailable("https://app.random-uuid.snyk.io/api")
 
         assertThat(snykCodeAvailable, equalTo(true))
     }
@@ -58,9 +58,9 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeApiUrl returns correct deeproxy url for Single Tenant deployments`() {
-        val apiUrl = toSnykCodeApiUrl("https://registry-web.random-uuid.polaris.snyk-internal.net/api")
+        val apiUrl = toSnykCodeApiUrl("https://app.random-uuid.snyk.io/api")
 
-        assertThat(apiUrl, equalTo("https://deeproxy.random-uuid.polaris.snyk-internal.net/"))
+        assertThat(apiUrl, equalTo("https://deeproxy.random-uuid.snyk.io/"))
     }
 
     @Test
@@ -74,8 +74,8 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeSettingsUrl returns correct settings url for Single Tenant deployments`() {
-        val settingsUrl = toSnykCodeSettingsUrl("https://registry-web.random-uuid.polaris.snyk-internal.net/api")
+        val settingsUrl = toSnykCodeSettingsUrl("https://app.random-uuid.snyk.io/api")
 
-        assertThat(settingsUrl, equalTo("https://registry-web.random-uuid.polaris.snyk-internal.net/manage/snyk-code"))
+        assertThat(settingsUrl, equalTo("https://app.random-uuid.snyk.io/manage/snyk-code"))
     }
 }
