@@ -17,6 +17,7 @@ class ItlyHelperTest {
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = false
+        settings.containerScanEnabled = false
 
         val actualProducts = getSelectedProducts(settings)
 
@@ -30,6 +31,7 @@ class ItlyHelperTest {
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = false
+        settings.containerScanEnabled = false
 
         val actualProducts = getSelectedProducts(settings)
 
