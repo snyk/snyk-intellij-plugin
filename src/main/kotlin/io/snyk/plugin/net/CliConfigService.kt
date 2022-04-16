@@ -22,7 +22,10 @@ data class CliConfigSettings(
     val sastEnabled: Boolean,
 
     @SerializedName("localCodeEngine")
-    val localCodeEngine: LocalCodeEngine
+    val localCodeEngine: LocalCodeEngine,
+
+    @SerializedName("reportFalsePositivesEnabled")
+    val reportFalsePositivesEnabled: Boolean
 )
 
 /**
