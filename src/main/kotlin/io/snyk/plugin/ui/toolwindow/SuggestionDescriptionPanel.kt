@@ -16,10 +16,14 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.isReportFalsePositivesEnabled
 import io.snyk.plugin.navigateToSource
+import io.snyk.plugin.net.FalsePositiveContext
+import io.snyk.plugin.net.FalsePositivePayload
+import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.DescriptionHeaderPanel
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
@@ -402,9 +406,32 @@ class SuggestionDescriptionPanel(
                             getRelatedPsiFiles()
                         )
                         if (dialog.showAndGet()) {
-                            this.isEnabled = false
-                            this.text = FALSE_POSITIVE_REPORTED_TEXT
-                            // todo(?): disable re-report per session/project/application/token/org
+                            val suggestionRange = suggestion.ranges?.getOrNull(suggestionIndex) //fixme
+                            val snykApiService = service<SnykApiService>() //fixme
+                            val payload = FalsePositivePayload(
+                                topic = "False Positive",
+                                message = suggestion.message,
+                                context = FalsePositiveContext(
+                                    issueId = suggestion.id,
+                                    userPublicId = snykApiService.userId ?: "",
+                                    startLine = suggestionRange?.startRow ?: 1,
+                                    endLine = suggestionRange?.endRow ?: 1,
+                                    primaryFilePath = snykCodeFile.virtualFile.path,
+                                    vulnName = suggestion.rule,
+                                    fileContents = "dialog.result" //fixme
+                                )
+                            )
+                            if (snykApiService.reportFalsePositive(payload)) {
+                                this.isEnabled = false
+                                this.text = FALSE_POSITIVE_REPORTED_TEXT
+                                // todo(?): disable re-report per session/project/application/token/org
+                            } else {
+                                SnykBalloonNotificationHelper.showError(
+                                    // todo: correct text with Andy or re-use error message from backend
+                                    "Not able to perform $REPORT_FALSE_POSITIVE_TEXT, please try again later or contact support@snyk.io",
+                                    project
+                                )
+                            }
                         }
                     }
                 }
