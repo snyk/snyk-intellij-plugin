@@ -57,7 +57,7 @@ object SnykBalloonNotificationHelper {
             }
         }
         // workaround for https://youtrack.jetbrains.com/issue/IDEA-220408/notifications-with-project=null-is-not-shown-anymore
-        if (project != null && !project.isDisposed) {
+        if (project != null) {
             notification.notify(project)
         } else {
             ProjectManager.getInstance().openProjects.forEach { prj ->
