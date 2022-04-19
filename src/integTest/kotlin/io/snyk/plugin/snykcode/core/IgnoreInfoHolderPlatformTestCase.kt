@@ -7,6 +7,7 @@ import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import io.snyk.plugin.getSnykCode
 import io.snyk.plugin.resetSettings
 import java.io.File
 import java.io.FileNotFoundException
@@ -27,15 +28,24 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         super.tearDown()
     }
 
-    fun testGenericDcIgnoreAddedOnProjectOpening() {
+    fun testGenericDcIgnoreNotAddedOnProjectOpening() {
         val genericDcIgnoreFile = File(project.basePath + "/.dcignore")
+        assertFalse(
+            "Generic .dcignore file should NOT be added on project opening", genericDcIgnoreFile.exists()
+        )
+    }
+
+    fun testGenericDcIgnoreAddedOnCodeScan() {
+        val genericDcIgnoreFile = File(project.basePath + "/.dcignore")
+        getSnykCode(project)?.scan()
         assertTrue(
-            "Generic .dcignore file was NOT added to the project", genericDcIgnoreFile.exists()
+            "Generic .dcignore file was NOT added to the project after Code scan", genericDcIgnoreFile.exists()
         )
     }
 
     fun testNodeModulesAreExcluded() {
         assertTrue("No path found for project", project.basePath != null)
+        SnykCodeIgnoreInfoHolder.instance.createDcIgnoreIfNeeded(project)
         val fileToCheck = setUpTest()
         assertTrue(
             "Files inside `node_modules` should be excluded(ignored) by default",
@@ -43,11 +53,21 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         )
     }
 
+    private fun refreshVirtualFileSystem() {
+        ApplicationManager.getApplication().runWriteAction {
+            VirtualFileManager.getInstance().syncRefresh()
+        }
+    }
+
     private fun initiateAllMissedIgnoreFilesRescan() {
+        // trigger Virtual File System to proceed .dcignore file appearance
+        refreshVirtualFileSystem()
         SnykCodeUtils.instance.getAllSupportedFilesInProject(project, true, null)
     }
 
     fun testIgnoreCacheUpdateOnIgnoreFileContentChange() {
+        SnykCodeIgnoreInfoHolder.instance.createDcIgnoreIfNeeded(project)
+
         val filePathToCheck = project.basePath + "/2.js"
         File(filePathToCheck).createNewFile()
 
@@ -62,9 +82,7 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         val dcignoreFilePath = project.basePath + "/.dcignore"
         File(dcignoreFilePath).writeText("2.js")
         // trigger BulkFileListener to proceed .dcignore file change
-        ApplicationManager.getApplication().runWriteAction {
-            VirtualFileManager.getInstance().syncRefresh()
-        }
+        refreshVirtualFileSystem()
         assertTrue(
             "File $filePathToCheck should be excluded(ignored) by updated .dcignore",
             SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(file)

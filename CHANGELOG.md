@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.28]
+
+### Fixed
+- generic .dcignore file creation failure and exceptions
+
 ## [2.4.27]
 
 ### Changed

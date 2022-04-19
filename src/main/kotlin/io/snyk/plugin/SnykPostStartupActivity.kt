@@ -61,8 +61,6 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
             listenersActivated = true
         }
 
-        SnykCodeIgnoreInfoHolder.instance.createDcIgnoreIfNeeded(project)
-
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             getSnykTaskQueueService(project)?.downloadLatestRelease()
         }
