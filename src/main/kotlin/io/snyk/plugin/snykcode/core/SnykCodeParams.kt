@@ -20,7 +20,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     { getWaitForResultsTimeout() },
     codeRestApi
 ) {
-    fun requestLogging() = Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled
+    private fun requestLogging() = Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled
 
     init {
         setApiUrl(
