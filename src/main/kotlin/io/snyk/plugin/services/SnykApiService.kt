@@ -9,6 +9,7 @@ import io.snyk.plugin.net.SnykApiClient
 import io.snyk.plugin.net.TokenInterceptor
 import io.snyk.plugin.pluginSettings
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.security.KeyManagementException
@@ -46,9 +47,24 @@ class SnykApiService : Disposable {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private fun createRetrofit(token: String, baseUrl: String, disableSslVerification: Boolean): Retrofit {
+    // todo: unify/generalize with ai.deepcode.javaclient.DeepCodeRestApiImpl.buildRetrofit
+    private fun createRetrofit(
+        token: String,
+        baseUrl: String,
+        disableSslVerification: Boolean,
+        requestLogging: Boolean = false
+    ): Retrofit {
+        val logging = HttpLoggingInterceptor()
+        // set your desired log level
+        if (requestLogging) {
+            logging.setLevel(HttpLoggingInterceptor.Level.BODY)
+        } else {
+            logging.setLevel(HttpLoggingInterceptor.Level.NONE)
+        }
+
         val builder = baseClient.newBuilder()
             .addInterceptor(TokenInterceptor(token))
+            .addInterceptor(logging)
 
         if (disableSslVerification) {
             val x509TrustManager = buildUnsafeTrustManager()
