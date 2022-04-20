@@ -5,7 +5,7 @@ import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.codeRestApi
-import io.snyk.plugin.toSnykCodeApiUrl
+import snyk.common.toSnykCodeApiUrl
 
 class SnykCodeParams private constructor() : DeepCodeParamsBase(
     true,
@@ -20,12 +20,28 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     { getWaitForResultsTimeout() },
     codeRestApi
 ) {
+    private val requestLogging = Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled
 
     init {
-        val requestLogging = Logger.getInstance(SCLogger.presentableName).isDebugEnabled
         setApiUrl(
             toSnykCodeApiUrl(pluginSettings().customEndpointUrl),
             pluginSettings().ignoreUnknownCA,
+            requestLogging
+        )
+    }
+
+    override fun setApiUrl(apiUrl: String) {
+        setApiUrl(
+            toSnykCodeApiUrl(apiUrl),
+            pluginSettings().ignoreUnknownCA,
+            requestLogging
+        )
+    }
+
+    override fun setApiUrl(apiUrl: String, disableSslVerification: Boolean) {
+        setApiUrl(
+            toSnykCodeApiUrl(apiUrl),
+            disableSslVerification,
             requestLogging
         )
     }
