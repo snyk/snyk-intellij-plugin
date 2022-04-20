@@ -2,10 +2,10 @@ package snyk.advisor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
+import io.snyk.plugin.getAdvisorService
 import org.jetbrains.annotations.TestOnly
 import snyk.advisor.api.PackageInfo
 import java.time.Instant
@@ -20,7 +20,7 @@ class SnykAdvisorModel : Disposable {
     private val packagesRequestDelayed: MutableSet<String> = ConcurrentHashMap.newKeySet<String>()
     private val packagesRequested: MutableSet<String> = ConcurrentHashMap.newKeySet<String>()
 
-    private var advisorService: AdvisorService = service<AdvisorServiceImpl>()
+    private var advisorService: AdvisorService = getAdvisorService()
 
     private val alarmToRequestScore = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
     private val alarmToDropCache = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)

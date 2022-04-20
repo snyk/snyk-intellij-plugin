@@ -1,6 +1,5 @@
 package snyk.advisor
 
-import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.LineExtensionInfo
@@ -16,8 +15,9 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
 import io.snyk.plugin.analytics.getEcosystem
+import io.snyk.plugin.getSnykAdvisorModel
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.advisor.api.PackageInfo
 import snyk.analytics.HealthScoreIsClicked
@@ -46,7 +46,7 @@ class AdvisorScoreProvider(
             ?: return resetAndReturnEmptyList()
 
         val info = packageName?.let {
-            service<SnykAdvisorModel>().getInfo(editor.project, packageManager, it)
+            getSnykAdvisorModel().getInfo(editor.project, packageManager, it)
         }
         val score = info?.normalizedScore
         if (score == null ||
@@ -115,7 +115,7 @@ class AdvisorScoreProvider(
                     """.trimIndent(),
                     e.mouseEvent
                 )
-                service<SnykAnalyticsService>().logHealthScoreIsClicked(
+                getSnykAnalyticsService().logHealthScoreIsClicked(
                     HealthScoreIsClicked.builder()
                         .ecosystem(packageManager.getEcosystem())
                         .ide(HealthScoreIsClicked.Ide.JETBRAINS)

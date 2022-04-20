@@ -34,14 +34,22 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
         val prjBasePath = project.basePath
         val gitignore = File("$prjBasePath/.gitignore")
         val dcignore = File("$prjBasePath/.dcignore")
-        if (!gitignore.exists() && dcignore.createNewFile()) {
-            val fullDcIgnoreText = this.javaClass.classLoader.getResource("full.dcignore")
-                ?.readText()
-                ?: throw RuntimeException("full.dcignore can not be found in plugin's resources")
-            dcignore.writeText(fullDcIgnoreText)
-            SnykBalloonNotificationHelper.showInfo(
-                "We added generic .dcignore file to upload only project's source code.", project
-            )
+        if (!gitignore.exists()) {
+            val genericDcIgnoreFileCreated = try {
+                dcignore.createNewFile()
+            } catch (e: Exception) {
+                SCLogger.instance.logWarn("Failed to create generic .dcignore: $e")
+                false
+            }
+            if (genericDcIgnoreFileCreated) {
+                val fullDcIgnoreText = this.javaClass.classLoader.getResource("full.dcignore")
+                    ?.readText()
+                    ?: throw RuntimeException("full.dcignore can not be found in plugin's resources")
+                dcignore.writeText(fullDcIgnoreText)
+                SnykBalloonNotificationHelper.showInfo(
+                    "We added generic .dcignore file to upload only project's source code.", project
+                )
+            }
         }
     }
 

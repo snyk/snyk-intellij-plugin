@@ -2,11 +2,11 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.net.SnykApiClient
 import io.snyk.plugin.net.TokenInterceptor
+import io.snyk.plugin.pluginSettings
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -24,8 +24,7 @@ class SnykApiService : Disposable {
 
     val sastSettings: CliConfigSettings?
         get() {
-            val pluginSettings = service<SnykApplicationSettingsStateService>()
-            return snykApiClient?.sastSettings(pluginSettings.organization)
+            return snykApiClient?.sastSettings(pluginSettings().organization)
         }
 
     val userId: String?
@@ -79,7 +78,7 @@ class SnykApiService : Disposable {
 
     private val snykApiClient: SnykApiClient?
         get() {
-            val appSettings = service<SnykApplicationSettingsStateService>()
+            val appSettings = pluginSettings()
             var endpoint = appSettings.customEndpointUrl
             if (endpoint.isNullOrEmpty()) endpoint = "https://snyk.io/api/"
 

@@ -5,6 +5,10 @@
 ### Changed
 - Enable HTTP request logging when Snyk Code logger in debug mode
 
+### Fixed
+- generic .dcignore file creation failure and exceptions
+
+
 ## [2.4.27]
 
 ### Changed

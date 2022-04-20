@@ -17,7 +17,7 @@ class CliDownloaderErrorHandler {
         SnykBalloonNotificationHelper.showError(message, project,
             NotificationAction.createSimple("Retry CLI download") {
                 runBackgroundableTask("Retry Snyk CLI Download", project, true) {
-                    getSnykCliDownloaderService(project)?.downloadLatestRelease(it, project)
+                    getSnykCliDownloaderService().downloadLatestRelease(it, project)
                 }
             },
             NotificationAction.createSimple("Contact support...") {

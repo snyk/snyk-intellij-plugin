@@ -4,9 +4,8 @@ import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
 import com.intellij.icons.AllIcons
-import com.intellij.ide.util.PsiNavigationSupport
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
@@ -46,6 +45,8 @@ class SuggestionDescriptionPanel(
     private val suggestionIndex: Int
 ) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.severityAsString) {
     val project = snykCodeFile.project
+
+    private val suggestionRange: MyTextRange? = suggestion.ranges?.getOrNull(suggestionIndex)
 
     init {
         createUI()
@@ -144,8 +145,6 @@ class SuggestionDescriptionPanel(
     }
 
     private fun dataFlowPanel(): JPanel? {
-        if (suggestion.ranges.isEmpty()) return null
-        val suggestionRange = suggestion.ranges[suggestionIndex]
         val markers = suggestionRange?.let { range ->
             range.markers.values.flatten().distinctBy { it.startRow }
         } ?: emptyList()
@@ -399,15 +398,30 @@ class SuggestionDescriptionPanel(
                     addActionListener { e ->
                         val dialog = ReportFalsePositiveDialog(
                             project,
-                            titlePanel(insets = JBUI.insetsBottom(10), indent = 0)
+                            titlePanel(insets = JBUI.insetsBottom(10), indent = 0),
+                            getRelatedPsiFiles()
                         )
                         if (dialog.showAndGet()) {
                             this.isEnabled = false
                             this.text = FALSE_POSITIVE_REPORTED_TEXT
-                            // todo: disable re-report per session/project/application/token/org ?
+                            // todo(?): disable re-report per session/project/application/token/org
                         }
                     }
                 }
             )
         } else emptyList()
+
+    private fun getRelatedPsiFiles(): Set<PsiFile> {
+        val markersWithUniqFiles = suggestionRange?.let { range ->
+            range.markers.values.flatten().distinctBy { it.file }
+        }
+        val filesFromMarkers: Set<SnykCodeFile> = markersWithUniqFiles
+            ?.mapNotNull { PDU.instance.getFileByDeepcodedPath(it.file, project) }
+            ?.map { PDU.toSnykCodeFile(it) }
+            ?.toSet()
+            ?: emptySet()
+        return (setOf(snykCodeFile) + filesFromMarkers)
+            .mapNotNull { PDU.toPsiFile(it) }
+            .toSet()
+    }
 }

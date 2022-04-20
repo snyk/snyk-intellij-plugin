@@ -4,20 +4,16 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.ide.plugins.PluginInstaller
 import com.intellij.ide.plugins.PluginStateListener
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.startup.StartupActivity
 import com.intellij.openapi.vfs.VirtualFileManager
-import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.SnykCodeBulkFileListener
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.PLUGIN_ID
-import snyk.amplitude.AmplitudeExperimentService
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
@@ -44,7 +40,7 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
         if (!settings.pluginInstalled) {
             settings.pluginInstalled = true
-            service<SnykAnalyticsService>().logPluginIsInstalled(
+            getSnykAnalyticsService().logPluginIsInstalled(
                 PluginIsInstalled.builder()
                     .ide(PluginIsInstalled.Ide.JETBRAINS)
                     .build()
@@ -61,8 +57,6 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
             listenersActivated = true
         }
 
-        SnykCodeIgnoreInfoHolder.instance.createDcIgnoreIfNeeded(project)
-
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             getSnykTaskQueueService(project)?.downloadLatestRelease()
         }
@@ -78,12 +72,12 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
         val userToken = settings.token ?: ""
         val publicUserId = if (userToken.isNotBlank()) {
-            service<SnykApiService>().userId ?: ""
+            getSnykApiService().userId ?: ""
         } else ""
 
         LOG.info("Loading variants for all amplitude experiments")
         val experimentUser = ExperimentUser(publicUserId)
-        service<AmplitudeExperimentService>().fetch(experimentUser)
+        getAmplitudeExperimentService().fetch(experimentUser)
 
         if (isContainerEnabled()) {
             getKubernetesImageCache(project)?.scanProjectForKubernetesFiles()
@@ -102,7 +96,7 @@ private class UninstallListener : PluginStateListener {
         // reset pluginInstalled flag to track PluginIsInstalled event next time
         pluginSettings().pluginInstalled = false
 
-        service<SnykAnalyticsService>().logPluginIsUninstalled(
+        getSnykAnalyticsService().logPluginIsUninstalled(
             PluginIsUninstalled.builder()
                 .ide(PluginIsUninstalled.Ide.JETBRAINS)
                 .build()

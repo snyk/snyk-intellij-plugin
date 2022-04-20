@@ -1,6 +1,8 @@
 package io.snyk.plugin.ui.toolwindow
 
+import UIComponentFinder
 import com.intellij.CommonBundle
+import com.intellij.openapi.ui.DialogWrapper.CLOSE_EXIT_CODE
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.components.JBLabel
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
@@ -16,7 +18,7 @@ class ReportFalsePositiveDialogIntegTest : BasePlatformTestCase() {
     @Test
     fun `test dialog has required title`() {
         val titlePanel = JPanel()
-        val dialog = ReportFalsePositiveDialog(project, titlePanel)
+        val dialog = ReportFalsePositiveDialog(project, titlePanel, emptySet())
 
         assertEquals(
             "Title should be: `$TITLE_TEXT`",
@@ -28,7 +30,7 @@ class ReportFalsePositiveDialogIntegTest : BasePlatformTestCase() {
     @Test
     fun `test dialog has ordered Cancel and Report buttons`() {
         val titlePanel = JPanel()
-        val dialog = ReportFalsePositiveDialog(project, titlePanel)
+        val dialog = ReportFalsePositiveDialog(project, titlePanel, emptySet())
         val actions = dialog.actions
 
         assertEquals(
@@ -51,7 +53,7 @@ class ReportFalsePositiveDialogIntegTest : BasePlatformTestCase() {
     @Test
     fun `test dialog has given titlePanel`() {
         val titlePanel = JPanel()
-        val dialog = ReportFalsePositiveDialog(project, titlePanel)
+        val dialog = ReportFalsePositiveDialog(project, titlePanel, emptySet())
         val centerPanel = dialog.centerPanel
 
         val foundTitlePanel = UIComponentFinder.getComponentByCondition(centerPanel, JPanel::class) {
@@ -63,12 +65,44 @@ class ReportFalsePositiveDialogIntegTest : BasePlatformTestCase() {
     @Test
     fun `test dialog has upload warning message`() {
         val titlePanel = JPanel()
-        val dialog = ReportFalsePositiveDialog(project, titlePanel)
+        val dialog = ReportFalsePositiveDialog(project, titlePanel, emptySet())
         val centerPanel = dialog.centerPanel
 
         val foundWarningMessageLabel = UIComponentFinder.getComponentByCondition(centerPanel, JBLabel::class) {
             it.text == WARN_MESSAGE_TEXT
         }
         assertNotNull("Upload warning message not found", foundWarningMessageLabel)
+    }
+
+    @Test
+    fun `test Report False Positive dialog return corresponded files name and content`() {
+        val titlePanel = JPanel()
+        val file1Name = "fake_file1.java"
+        val file1Content = "fake_file1_content"
+        val psiFile1 = myFixture.configureByText(file1Name, file1Content)
+        val file2Name = "fake_file2.java"
+        val file2Content = "fake_file2_content"
+        val psiFile2 = myFixture.configureByText(file2Name, file2Content)
+
+        val dialog = ReportFalsePositiveDialog(project, titlePanel, setOf(psiFile1, psiFile2))
+        val actions = dialog.actions
+
+        val reportAction = actions.find {
+            it.getValue(Action.NAME) == REPORT_FALSE_POSITIVE_TEXT
+        }
+        assertNotNull("`$REPORT_FALSE_POSITIVE_TEXT` action/button not found", reportAction)
+        reportAction!!
+
+        reportAction.actionPerformed(null)
+        assertTrue(
+            "Files name should be included in resulted concatenated text",
+            dialog.result.contains(file1Name) && dialog.result.contains(file2Name)
+        )
+        assertTrue(
+            "Files content should be included in resulted concatenated text",
+            dialog.result.contains(file1Content) && dialog.result.contains(file2Content)
+        )
+
+        dialog.close(CLOSE_EXIT_CODE)
     }
 }

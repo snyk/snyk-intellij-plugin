@@ -5,7 +5,6 @@ import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
@@ -28,6 +27,9 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.getSnykAnalyticsService
+import io.snyk.plugin.getSnykApiService
+import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
@@ -41,9 +43,6 @@ import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykApiService
-import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
@@ -163,7 +162,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     displayVulnerabilities(ossResult)
                     refreshAnnotationsForOpenFiles(project)
                 }
-                service<SnykAnalyticsService>().logAnalysisIsReady(
+                getSnykAnalyticsService().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
                         .ide(AnalysisIsReady.Ide.JETBRAINS)
@@ -189,7 +188,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     displayIacResults(iacResult)
                     refreshAnnotationsForOpenFiles(project)
                 }
-                service<SnykAnalyticsService>().logAnalysisIsReady(
+                getSnykAnalyticsService().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
                         .ide(AnalysisIsReady.Ide.JETBRAINS)
@@ -204,7 +203,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     displayContainerResults(containerResult)
                     refreshAnnotationsForOpenFiles(project)
                 }
-                service<SnykAnalyticsService>().logAnalysisIsReady(
+                getSnykAnalyticsService().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
                         .ide(AnalysisIsReady.Ide.JETBRAINS)
@@ -215,7 +214,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             private fun logSnykCodeAnalysisIsReady(result: Result) {
                 fun doLogSnykCodeAnalysisIsReady(analysisType: AnalysisIsReady.AnalysisType) {
-                    service<SnykAnalyticsService>().logAnalysisIsReady(
+                    getSnykAnalyticsService().logAnalysisIsReady(
                         AnalysisIsReady.builder()
                             .analysisType(analysisType)
                             .ide(AnalysisIsReady.Ide.JETBRAINS)
@@ -252,7 +251,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     chooseMainPanelToDisplay()
                     refreshAnnotationsForOpenFiles(project)
                 }
-                service<SnykAnalyticsService>().logAnalysisIsReady(
+                getSnykAnalyticsService().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
                         .ide(AnalysisIsReady.Ide.JETBRAINS)
@@ -277,7 +276,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     displayEmptyDescription()
                     refreshAnnotationsForOpenFiles(project)
                 }
-                service<SnykAnalyticsService>().logAnalysisIsReady(
+                getSnykAnalyticsService().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
                         .ide(AnalysisIsReady.Ide.JETBRAINS)
@@ -307,7 +306,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     chooseMainPanelToDisplay()
                     refreshAnnotationsForOpenFiles(project)
                 }
-                service<SnykAnalyticsService>().logAnalysisIsReady(
+                getSnykAnalyticsService().logAnalysisIsReady(
                     AnalysisIsReady.builder()
                         .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
                         .ide(AnalysisIsReady.Ide.JETBRAINS)
@@ -410,7 +409,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     )
 
                     val issue = groupedVulns.first()
-                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueType(issue.getIssueType())
@@ -436,7 +435,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         navigateToSource(project, snykCodeFile.virtualFile, textRange.start, textRange.end)
                     }
 
-                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueType(suggestion.getIssueType())
@@ -470,7 +469,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             navigateToSource(project, virtualFile, lineStartOffset)
                         }
                     }
-                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueType(IssueInTreeIsClicked.IssueType.INFRASTRUCTURE_AS_CODE_ISSUE)
@@ -507,7 +506,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ContainerIssueDetailPanel(containerIssue),
                         BorderLayout.CENTER
                     )
-                    if (!smartReloadMode) service<SnykAnalyticsService>().logIssueInTreeIsClicked(
+                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                             .issueType(IssueInTreeIsClicked.IssueType.CONTAINER_VULNERABILITY)
@@ -613,7 +612,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun triggerScan() {
-        service<SnykAnalyticsService>().logAnalysisIsTriggered(
+        getSnykAnalyticsService().logAnalysisIsTriggered(
             AnalysisIsTriggered.builder()
                 .analysisType(getSelectedProducts(pluginSettings()))
                 .ide(AnalysisIsTriggered.Ide.JETBRAINS)
@@ -634,7 +633,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         descriptionPanel.add(authPanel, BorderLayout.CENTER)
         revalidate()
 
-        service<SnykAnalyticsService>().logWelcomeIsViewed(
+        getSnykAnalyticsService().logWelcomeIsViewed(
             WelcomeIsViewed.builder()
                 .ide(JETBRAINS)
                 .build()
@@ -643,7 +642,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun enableProductsAccordingToServerSetting() {
         pluginSettings().apply {
-            sastOnServerEnabled = service<SnykApiService>().sastSettings?.sastEnabled
+            sastOnServerEnabled = getSnykApiService().sastSettings?.sastEnabled
             iacScanEnabled = true
             containerScanEnabled = true
             snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeSecurityIssuesScanEnable
@@ -823,7 +822,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             "Downloading Snyk CLI...",
             "Stop Downloading"
         ) {
-            service<SnykCliDownloaderService>().stopCliDownload()
+            getSnykCliDownloaderService().stopCliDownload()
             displayEmptyDescription()
         }
 

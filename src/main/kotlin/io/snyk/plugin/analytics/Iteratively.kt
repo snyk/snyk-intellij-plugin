@@ -1,8 +1,7 @@
 package io.snyk.plugin.analytics
 
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.pluginSettings
 import ly.iterative.itly.Environment
 import ly.iterative.itly.Options
 import ly.iterative.itly.ValidationOptions
@@ -31,7 +30,7 @@ object Iteratively {
     private var itly: Itly? = null
 
     init {
-        val settings = service<SnykApplicationSettingsStateService>()
+        val settings = pluginSettings()
         anonymousId = settings.userAnonymousId
 
         val segmentWriteKey = PropertyLoader.segmentWriteKey
