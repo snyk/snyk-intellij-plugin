@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.settings
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.HyperlinkLabel
@@ -13,10 +12,10 @@ import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -191,7 +190,7 @@ class ScanTypesPanel(
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                val sastCliConfigSettings = service<SnykApiService>().sastSettings
+                val sastCliConfigSettings = getSnykApiService().sastSettings
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 when (settings.sastOnServerEnabled) {

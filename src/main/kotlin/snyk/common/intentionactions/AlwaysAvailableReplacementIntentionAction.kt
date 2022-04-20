@@ -1,7 +1,6 @@
 package snyk.common.intentionactions
 
 import com.intellij.codeInsight.intention.IntentionAction
-import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
@@ -11,6 +10,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.DocumentUtil
 import icons.SnykIcons
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -23,10 +23,10 @@ class AlwaysAvailableReplacementIntentionAction(
     private val intentionText: String = intentionDefaultTextPrefix,
     private val familyName: String = intentionDefaultFamilyName,
     val message: String = "",
-    val analyticsService: SnykAnalyticsService = service()
+    val analyticsService: SnykAnalyticsService = getSnykAnalyticsService()
 ) : IntentionAction, Iconable {
 
-    override fun getIcon(@IconFlags flags: Int): Icon? {
+    override fun getIcon(@IconFlags flags: Int): Icon {
         return SnykIcons.TOOL_WINDOW
     }
 
