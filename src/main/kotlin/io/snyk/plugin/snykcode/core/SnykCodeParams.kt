@@ -20,13 +20,13 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     { getWaitForResultsTimeout() },
     codeRestApi
 ) {
-    private val requestLogging = Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled
+    fun requestLogging() = Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled
 
     init {
         setApiUrl(
             toSnykCodeApiUrl(pluginSettings().customEndpointUrl),
             pluginSettings().ignoreUnknownCA,
-            requestLogging
+            requestLogging()
         )
     }
 
@@ -34,7 +34,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
         setApiUrl(
             toSnykCodeApiUrl(apiUrl),
             pluginSettings().ignoreUnknownCA,
-            requestLogging
+            requestLogging()
         )
     }
 
@@ -42,7 +42,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
         setApiUrl(
             toSnykCodeApiUrl(apiUrl),
             disableSslVerification,
-            requestLogging
+            requestLogging()
         )
     }
 
