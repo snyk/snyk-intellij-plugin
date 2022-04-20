@@ -31,6 +31,7 @@ import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import java.util.concurrent.TimeUnit
 
+@Suppress("FunctionName")
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     override fun setUp() {
@@ -116,6 +117,13 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         assertNull(settings.sastOnServerEnabled)
         assertFalse(settings.snykCodeSecurityIssuesScanEnable)
         assertFalse(settings.snykCodeQualityIssuesScanEnable)
+    }
+
+    @Test
+    fun `test reportFalsePositivesEnabled should be unknown in initial settings state`() {
+        val settings = pluginSettings()
+
+        assertNull(settings.reportFalsePositivesEnabled)
     }
 
     @Test
