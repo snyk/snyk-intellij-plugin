@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.29]
+
+### Fixed
+- AlreadyDisposedException when annotations async refreshed for disposed project
+
 ## [2.4.28]
 
 ### Changed
@@ -7,7 +12,6 @@
 
 ### Fixed
 - generic .dcignore file creation failure and exceptions
-
 
 ## [2.4.27]
 

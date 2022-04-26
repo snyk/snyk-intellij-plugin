@@ -257,6 +257,7 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
     }
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
+    if (project.isDisposed) return
     val openFiles = FileEditorManager.getInstance(project).openFiles
     FileContentUtil.reparseFiles(project, openFiles.asList(), true)
     openFiles.forEach {
