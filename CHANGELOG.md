@@ -5,6 +5,7 @@
 ### Fixed
 - AlreadyDisposedException when annotations async refreshed for disposed project
 - `IllegalArgumentException: wrong column` for issue's description panel creation
+- failed psiFile search for invalid virtualFile
 
 ## [2.4.28]
 
