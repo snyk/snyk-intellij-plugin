@@ -186,7 +186,9 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
             return RunUtils.computeInReadActionInSmartMode(
                 snykCodeFile.project,
                 Computable {
-                    return@Computable PsiManager.getInstance(snykCodeFile.project).findFile(snykCodeFile.virtualFile)
+                    return@Computable if (snykCodeFile.virtualFile.isValid) {
+                        PsiManager.getInstance(snykCodeFile.project).findFile(snykCodeFile.virtualFile)
+                    } else null
                 }
             )
         }
