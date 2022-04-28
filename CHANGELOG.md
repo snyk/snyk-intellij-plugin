@@ -3,6 +3,7 @@
 ## [2.4.29]
 
 ### Fixed
+- AlreadyDisposedException when annotations async refreshed for disposed project
 - `IllegalArgumentException: wrong column` for issue's description panel creation
 
 ## [2.4.28]
