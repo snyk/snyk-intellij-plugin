@@ -395,51 +395,51 @@ class SuggestionDescriptionPanel(
         return suggestion.message
     }
 
-    override fun getBottomRightButtons(): List<JButton> =
-        if (isReportFalsePositivesEnabled()) {
-            listOf(
-                JButton(REPORT_FALSE_POSITIVE_TEXT).apply {
-                    addActionListener { e ->
-                        val dialog = ReportFalsePositiveDialog(
-                            project,
-                            titlePanel(insets = JBUI.insetsBottom(10), indent = 0),
-                            getRelatedPsiFiles()
+    override fun getBottomRightButtons(): List<JButton> = mutableListOf<JButton>()
+        .apply {
+            if (isReportFalsePositivesEnabled()) add(reportFalsePositiveButton)
+        }
+        .toList()
+
+    private val reportFalsePositiveButton: JButton
+        get() = JButton(REPORT_FALSE_POSITIVE_TEXT).apply {
+            addActionListener {
+                val dialog = ReportFalsePositiveDialog(
+                    project,
+                    titlePanel(insets = JBUI.insetsBottom(10), indent = 0),
+                    getRelatedPsiFiles()
+                )
+                if (dialog.showAndGet()) {
+                    val payload = FalsePositivePayload(
+                        topic = "False Positive",
+                        message = suggestion.message,
+                        context = FalsePositiveContext(
+                            issueId = suggestion.id,
+                            userPublicId = getSnykApiService().userId ?: "",
+                            startLine = suggestionRange?.startRow ?: 1,
+                            endLine = suggestionRange?.endRow ?: 1,
+                            primaryFilePath = snykCodeFile.virtualFile.path,
+                            vulnName = suggestion.rule,
+                            fileContents = dialog.result
                         )
-                        if (dialog.showAndGet()) {
-                            val payload = FalsePositivePayload(
-                                topic = "False Positive",
-                                message = suggestion.message,
-                                context = FalsePositiveContext(
-                                    issueId = suggestion.id,
-                                    userPublicId = getSnykApiService().userId ?: "",
-                                    startLine = suggestionRange?.startRow ?: 1,
-                                    endLine = suggestionRange?.endRow ?: 1,
-                                    primaryFilePath = snykCodeFile.virtualFile.path,
-                                    vulnName = suggestion.rule,
-                                    fileContents = dialog.result
-                                )
-                            )
-                            if (getSnykApiService().reportFalsePositive(payload)) {
-                                this.isEnabled = false
-                                this.text = FALSE_POSITIVE_REPORTED_TEXT
-                                SnykBalloonNotificationHelper.showInfo(
-                                    // todo: correct text with Andy
-                                    "False Positive reported. Thank you!",
-                                    project
-                                )
-                                // todo(?): disable re-report per session/project/application/token/org
-                            } else {
-                                SnykBalloonNotificationHelper.showError(
-                                    // todo: correct text with Andy (or re-use error message from backend?)
-                                    "Unable to send report, please contact support@snyk.io for assistance",
-                                    project
-                                )
-                            }
-                        }
+                    )
+                    if (getSnykApiService().reportFalsePositive(payload)) {
+                        this.isEnabled = false
+                        this.text = FALSE_POSITIVE_REPORTED_TEXT
+                        SnykBalloonNotificationHelper.showInfo(
+                            "False Positive reported. Thank you!",
+                            project
+                        )
+                        // todo(?): disable re-report per session/project/application/token/org
+                    } else {
+                        SnykBalloonNotificationHelper.showError(
+                            "Unable to send report, please contact support@snyk.io for assistance",
+                            project
+                        )
                     }
                 }
-            )
-        } else emptyList()
+            }
+        }
 
     private fun getRelatedPsiFiles(): Set<PsiFile> {
         val markersWithUniqFiles = suggestionRange?.let { range ->
