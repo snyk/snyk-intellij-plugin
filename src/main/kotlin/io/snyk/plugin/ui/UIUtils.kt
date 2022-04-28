@@ -216,7 +216,8 @@ fun descriptionHeaderPanel(
         cwes.size * 2 + // CWEs with `|`
         cves.size * 2 + // CVEs with `|`
         2 + // CVSS
-        2 // Snyk description
+        2 + // Snyk description
+        customLabels.size * 2 // Labels with `|`
     panel.layout = GridLayoutManager(1, columnCount, Insets(0, 0, 0, 0), 5, 0)
 
     panel.add(
