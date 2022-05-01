@@ -7,6 +7,7 @@ import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
@@ -29,14 +30,14 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
 
     /** `filePath == null` is the case when we want to check if _any_ IaC file with issues been marked as obsolete */
     private fun iacCacheInvalidatedForFilePath(filePath: String?): Boolean {
-        val iacCachedIssues = project.service<SnykToolWindowPanel>().currentIacResult!!.allCliIssues!!
+        val iacCachedIssues = getSnykCachedResults(project)?.currentIacResult!!.allCliIssues!!
         return iacCachedIssues.any { iacFile ->
             (filePath == null || iacFile.targetFilePath == filePath) && iacFile.obsolete
         }
     }
 
     private fun isIacUpdateNeeded(): Boolean =
-        project.service<SnykToolWindowPanel>().currentIacResult?.iacScanNeeded ?: true
+        getSnykCachedResults(project)?.currentIacResult?.iacScanNeeded ?: true
 
     private fun createFakeIacResultInCache(file: String, filePath: String) {
         val iacIssue = IacIssue(
@@ -48,9 +49,8 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
         val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), file, filePath, "npm")
         val iacVulnerabilities = listOf(iacIssuesForFile)
         val fakeIacResult = IacResult(iacVulnerabilities, null)
-        val toolWindowPanel = project.service<SnykToolWindowPanel>()
-        toolWindowPanel.currentIacResult = fakeIacResult
-        val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
+        getSnykCachedResults(project)?.currentIacResult = fakeIacResult
+        val rootIacIssuesTreeNode = project.service<SnykToolWindowPanel>().getRootIacIssuesTreeNode()
         rootIacIssuesTreeNode.add(IacFileTreeNode(iacIssuesForFile, project))
     }
 
@@ -163,13 +163,12 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
     @Test
     fun `test currentIacResults should keep it when out-of-project IaC supported file content changed`() {
         val fakeIacResult = IacResult(null, null)
-        val toolWindowPanel = project.service<SnykToolWindowPanel>()
 
         val file = myFixture.addFileToProject("exclude/k8s-deployment.yaml", "")
         val module = ProjectRootManager.getInstance(project).fileIndex.getModuleForFile(file.virtualFile)!!
         PsiTestUtil.addExcludedRoot(module, file.virtualFile.parent)
 
-        toolWindowPanel.currentIacResult = fakeIacResult
+        getSnykCachedResults(project)?.currentIacResult = fakeIacResult
 
         // change and save excluded file to trigger BulkFileListener to proceed events
         ApplicationManager.getApplication().runWriteAction {
@@ -183,7 +182,7 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
         assertEquals(
             "cached IacResult should NOT be dropped after NON project build file changed",
             fakeIacResult,
-            toolWindowPanel.currentIacResult
+            getSnykCachedResults(project)?.currentIacResult
         )
     }
 }

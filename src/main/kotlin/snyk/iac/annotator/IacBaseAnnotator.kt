@@ -12,7 +12,7 @@ import io.snyk.plugin.Severity.Companion.CRITICAL
 import io.snyk.plugin.Severity.Companion.HIGH
 import io.snyk.plugin.Severity.Companion.LOW
 import io.snyk.plugin.Severity.Companion.MEDIUM
-import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.getSnykCachedResults
 import snyk.common.AnnotatorCommon
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
@@ -30,7 +30,7 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     fun getIssues(psiFile: PsiFile): List<IacIssue> {
-        val iacResult = getSnykToolWindowPanel(psiFile.project)?.currentIacResult ?: return emptyList()
+        val iacResult = getSnykCachedResults(psiFile.project)?.currentIacResult ?: return emptyList()
         ProgressManager.checkCanceled()
         return getIssuesForFile(psiFile, iacResult)
     }

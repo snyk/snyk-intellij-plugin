@@ -3,12 +3,6 @@ package io.snyk.plugin.snykcode
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.snykcode.core.AnalysisData
@@ -22,19 +16,10 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
 
     private val log = logger<SnykCodeBulkFileListener>()
 
-    override fun before(project: Project, events: List<VFileEvent>) {
+    override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) {
         val filesAffected = toSnykCodeFileSet(
             project,
-            getAffectedVirtualFiles(
-                events,
-                classesOfEventsToFilter = listOf(
-                    VFileCreateEvent::class.java,
-                    VFileContentChangeEvent::class.java,
-                    VFileMoveEvent::class.java,
-                    VFileCopyEvent::class.java,
-                    VFileDeleteEvent::class.java
-                )
-            )
+            virtualFilesAffected
         )
         // if SnykCode analysis is running then re-run it (with updated files)
         val supportedFileChanged = filesAffected
@@ -69,17 +54,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(filesAffected)
     }
 
-    override fun after(project: Project, events: List<VFileEvent>) {
-        val virtualFilesAffected = getAffectedVirtualFiles(
-            events,
-            eventToVirtualFileTransformer = { transformEventToNewVirtualFile(it) },
-            classesOfEventsToFilter = listOf(
-                VFileCreateEvent::class.java,
-                VFileContentChangeEvent::class.java,
-                VFileMoveEvent::class.java,
-                VFileCopyEvent::class.java
-            )
-        )
+    override fun after(project: Project, virtualFilesAffected: Set<VirtualFile>) {
         // update .dcignore caches if needed
         SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(
             toSnykCodeFileSet(

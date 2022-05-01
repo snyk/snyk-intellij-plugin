@@ -3,56 +3,33 @@ package snyk.oss
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
+import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.SnykBulkFileListener
-import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.getSnykCachedResults
 
 class OssBulkFileListener : SnykBulkFileListener() {
 
     private val log = logger<OssBulkFileListener>()
 
-    override fun before(project: Project, events: List<VFileEvent>) {
-        val virtualFilesAffected = getAffectedVirtualFiles(
-            events,
-            classesOfEventsToFilter = listOf(
-                VFileCreateEvent::class.java,
-                VFileContentChangeEvent::class.java,
-                VFileMoveEvent::class.java,
-                VFileCopyEvent::class.java,
-                VFileDeleteEvent::class.java
-            )
-        )
-        //throw RuntimeException()
-        val toolWindowPanel = getSnykToolWindowPanel(project)
+    override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) {
+        dropOssCacheIfNeeded(project, virtualFilesAffected)
+    }
 
-        if (toolWindowPanel?.currentOssResults != null) {
+    override fun after(project: Project, virtualFilesAffected: Set<VirtualFile>) {
+        dropOssCacheIfNeeded(project, virtualFilesAffected)
+    }
+
+    private fun dropOssCacheIfNeeded(project: Project, virtualFilesAffected: Set<VirtualFile>) {
+        val snykCachedResults = getSnykCachedResults(project)
+        if (snykCachedResults?.currentOssResults != null) {
             val buildFileChanged = virtualFilesAffected
                 .filter { supportedBuildFiles.contains(it.name) }
                 .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
             if (buildFileChanged != null) {
-                toolWindowPanel.currentOssResults = null
+                snykCachedResults.currentOssResults = null
                 log.debug("OSS cached results dropped due to changes in: $buildFileChanged")
             }
         }
-    }
-
-    override fun after(project: Project, events: List<VFileEvent>) {
-        val virtualFilesAffected = getAffectedVirtualFiles(
-            events,
-            eventToVirtualFileTransformer = { transformEventToNewVirtualFile(it) },
-            classesOfEventsToFilter = listOf(
-                VFileCreateEvent::class.java,
-                VFileContentChangeEvent::class.java,
-                VFileMoveEvent::class.java,
-                VFileCopyEvent::class.java
-            )
-        )
-        // todo: update OSS cache if new build file created
     }
 
     companion object {

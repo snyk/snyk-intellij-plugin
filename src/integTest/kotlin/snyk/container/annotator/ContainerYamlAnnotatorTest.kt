@@ -18,7 +18,6 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.hamcrest.collection.IsCollectionWithSize.hasSize
 import org.junit.Assert.assertThat
 import org.junit.Before
@@ -27,6 +26,7 @@ import snyk.common.SeverityConstants.SEVERITY_CRITICAL
 import snyk.common.SeverityConstants.SEVERITY_HIGH
 import snyk.common.SeverityConstants.SEVERITY_LOW
 import snyk.common.SeverityConstants.SEVERITY_MEDIUM
+import snyk.common.SnykCachedResults
 import snyk.container.BaseImageInfo
 import snyk.container.BaseImageRemediation
 import snyk.container.BaseImageRemediationInfo
@@ -50,7 +50,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     lateinit var virtualFile: VirtualFile
     private lateinit var psiFile: PsiFile
 
-    val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
+    val snykCachedResults: SnykCachedResults = mockk(relaxed = true)
 
     override fun getTestDataPath(): String {
         val resource = ContainerYamlAnnotator::class.java.getResource("/test-fixtures/container/annotator")
@@ -64,7 +64,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
+        project.replaceService(SnykCachedResults::class.java, snykCachedResults, project)
         pluginSettings().fileListenerEnabled = false
         virtualFile = myFixture.copyFileToProject(kubernetesManifestFile)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(virtualFile)!! }
@@ -73,14 +73,14 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
+        project.replaceService(SnykCachedResults::class.java, SnykCachedResults(project), project)
         pluginSettings().fileListenerEnabled = true
         super.tearDown()
     }
 
     @Test
     fun `test getIssues should not return any issue if no container issue exists`() {
-        every { toolWindowPanel.currentContainerResult } returns null
+        every { snykCachedResults.currentContainerResult } returns null
 
         val issues = cut.getContainerIssuesForImages(psiFile)
 
@@ -89,7 +89,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test getIssues should return one issue if only one container issue exists`() {
-        every { toolWindowPanel.currentContainerResult } returns createContainerResultWithIssueOnLine21()
+        every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
 
         val issues = cut.getContainerIssuesForImages(psiFile)
 
@@ -98,7 +98,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test apply should trigger newAnnotation call`() {
-        every { toolWindowPanel.currentContainerResult } returns createContainerResultWithIssueOnLine21()
+        every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
@@ -167,7 +167,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test apply should add a quickfix if remediation advice available`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
-        every { toolWindowPanel.currentContainerResult } returns createContainerResultWithIssueOnLine21()
+        every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
 
         cut.apply(psiFile, Unit, annotationHolderMock)
@@ -181,7 +181,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test apply should add annotations for all duplicated images`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
-        every { toolWindowPanel.currentContainerResult } returns
+        every { snykCachedResults.currentContainerResult } returns
             createContainerResultWithIssueOnLine21and23ForSameImageName()
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
 
@@ -203,7 +203,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         )
         val containerResult = createContainerResultWithIssueOnLine21()
         containerResult.allCliIssues = listOf(imageForIssues)
-        every { toolWindowPanel.currentContainerResult } returns containerResult
+        every { snykCachedResults.currentContainerResult } returns containerResult
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
 
         cut.apply(psiFile, Unit, annotationHolderMock)

@@ -5,13 +5,13 @@ import com.intellij.testFramework.replaceService
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Before
+import snyk.common.SnykCachedResults
 import java.nio.file.Paths
 
 abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
 
-    val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
+    val snykCachedResults: SnykCachedResults = mockk(relaxed = true)
 
     override fun getTestDataPath(): String {
         val resource = IacBaseAnnotatorCase::class.java.getResource("/test-fixtures/iac/annotator")
@@ -25,13 +25,13 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
+        project.replaceService(SnykCachedResults::class.java, snykCachedResults, project)
         pluginSettings().fileListenerEnabled = false
     }
 
     override fun tearDown() {
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
+        project.replaceService(SnykCachedResults::class.java, SnykCachedResults(project), project)
         super.tearDown()
         pluginSettings().fileListenerEnabled = true
     }

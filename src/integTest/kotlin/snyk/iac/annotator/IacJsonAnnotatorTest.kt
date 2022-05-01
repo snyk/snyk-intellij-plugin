@@ -31,7 +31,7 @@ class IacJsonAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test getIssues should not return any annotations if no iac issue exists`() {
-        every { toolWindowPanel.currentIacResult } returns null
+        every { snykCachedResults.currentIacResult } returns null
 
         val issues = IacJsonAnnotator().getIssues(psiFile)
 
@@ -40,7 +40,7 @@ class IacJsonAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test getIssues should return one annotations if only one iac issue exists`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine2()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine2()
 
         val issues = IacJsonAnnotator().getIssues(psiFile)
 
@@ -49,7 +49,7 @@ class IacJsonAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test apply should trigger newAnnotation call`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine2()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine2()
 
         IacJsonAnnotator().apply(psiFile, Unit, annotationHolderMock)
 

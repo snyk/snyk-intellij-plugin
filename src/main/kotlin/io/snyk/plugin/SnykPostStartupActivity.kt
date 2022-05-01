@@ -57,6 +57,8 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
             listenersActivated = true
         }
 
+        getSnykCachedResults(project)?.initCacheUpdater()
+
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             getSnykTaskQueueService(project)?.downloadLatestRelease()
         }
