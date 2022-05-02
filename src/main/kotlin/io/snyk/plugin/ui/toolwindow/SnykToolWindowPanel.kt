@@ -29,6 +29,7 @@ import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykApiService
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.head
@@ -91,25 +92,21 @@ import javax.swing.tree.TreePath
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val logger = logger<SnykToolWindowPanel>()
 
+    /** public for tests only */
     var snykScanListener: SnykScanListener
+
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
 
-    var currentOssResults: OssResult? = null
-        get() = if (field?.isExpired() == false) field else null
-
+    /** public for tests only */
     var currentOssError: SnykError? = null
 
-    var currentContainerResult: ContainerResult? = null
-        get() = if (field?.isExpired() == false) field else null
-
+    /** public for tests only */
     var currentContainerError: SnykError? = null
 
-    var currentIacResult: IacResult? = null
-        get() = if (field?.isExpired() == false) field else null
-
+    /** public for tests only */
     var currentIacError: SnykError? = null
 
-    var currentSnykCodeError: SnykError? = null
+    private var currentSnykCodeError: SnykError? = null
 
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -117,7 +114,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     private val rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
     private val rootContainerIssuesTreeNode = RootContainerIssuesTreeNode(project)
-    val vulnerabilitiesTree by lazy {
+
+    internal val vulnerabilitiesTree by lazy {
         rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
@@ -157,7 +155,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
 
             override fun scanningOssFinished(ossResult: OssResult) {
-                currentOssResults = ossResult
                 ApplicationManager.getApplication().invokeLater {
                     displayVulnerabilities(ossResult)
                     refreshAnnotationsForOpenFiles(project)
@@ -183,7 +180,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
 
             override fun scanningIacFinished(iacResult: IacResult) {
-                currentIacResult = iacResult
                 ApplicationManager.getApplication().invokeLater {
                     displayIacResults(iacResult)
                     refreshAnnotationsForOpenFiles(project)
@@ -198,7 +194,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
 
             override fun scanningContainerFinished(containerResult: ContainerResult) {
-                currentContainerResult = containerResult
                 ApplicationManager.getApplication().invokeLater {
                     displayContainerResults(containerResult)
                     refreshAnnotationsForOpenFiles(project)
@@ -231,7 +226,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
 
             override fun scanningOssError(snykError: SnykError) {
-                currentOssResults = null
                 var ossResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
                     if (snykError.message.startsWith(NO_OSS_FILES)) {
@@ -261,7 +255,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
 
             override fun scanningIacError(snykError: SnykError) {
-                currentIacResult = null
                 var iacResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
                     currentIacError = if (snykError.message.startsWith(NO_IAC_FILES)) {
@@ -286,7 +279,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
 
             override fun scanningContainerError(snykError: SnykError) {
-                currentContainerResult = null
                 var containerResultsCount: Int? = null
                 ApplicationManager.getApplication().invokeLater {
                     if (snykError == ContainerService.NO_IMAGES_TO_SCAN_ERROR) {
@@ -346,9 +338,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         }
                     ApplicationManager.getApplication().invokeLater {
                         displaySnykCodeResults(snykCodeResults)
-                        currentOssResults?.let { displayVulnerabilities(it) }
-                        currentIacResult?.let { displayIacResults(it) }
-                        currentContainerResult?.let { displayContainerResults(it) }
+                        val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
+                        snykCachedResults.currentOssResults?.let { displayVulnerabilities(it) }
+                        snykCachedResults.currentIacResult?.let { displayIacResults(it) }
+                        snykCachedResults.currentContainerResult?.let { displayContainerResults(it) }
                     }
                 }
             })
@@ -542,12 +535,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     override fun dispose() {}
 
     fun cleanUiAndCaches() {
-        currentOssResults = null
+        val snykCachedResults = getSnykCachedResults(project)
+        snykCachedResults?.currentOssResults = null
         currentOssError = null
         currentSnykCodeError = null
-        currentIacResult = null
+        snykCachedResults?.currentIacResult = null
         currentIacError = null
-        currentContainerResult = null
+        snykCachedResults?.currentContainerResult = null
         currentContainerError = null
 
         AnalysisData.instance.resetCachesAndTasks(project)

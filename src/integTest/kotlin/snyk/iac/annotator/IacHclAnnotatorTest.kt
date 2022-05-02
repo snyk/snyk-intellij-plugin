@@ -33,7 +33,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test doAnnotation should not return any annotations if no iac issue exists`() {
-        every { toolWindowPanel.currentIacResult } returns null
+        every { snykCachedResults.currentIacResult } returns null
 
         val annotations = IacHclAnnotator().getIssues(psiFile)
 
@@ -42,7 +42,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test getIssues should return one annotation if only one iac issue exists`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine1()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine1()
 
         val annotations = IacHclAnnotator().getIssues(psiFile)
 
@@ -51,7 +51,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test apply should trigger newAnnotation call`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine1()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine1()
 
         IacHclAnnotator().apply(psiFile, Unit, annotationHolderMock)
 
@@ -60,12 +60,12 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test textRange without leading whitespace for HCLIdentifier`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine1()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine1()
 
         val expectedRange = TextRange.create(0, 8)
         val actualRange = IacHclAnnotator().textRange(
             psiFile,
-            toolWindowPanel.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
+            snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
         assertThat(actualRange, equalTo(expectedRange))
@@ -73,12 +73,12 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test textRange with leading whitespace for HCLIdentifier`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine8()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine8()
 
         val expectedRange = TextRange.create(201, 209)
         val actualRange = IacHclAnnotator().textRange(
             psiFile,
-            toolWindowPanel.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
+            snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
         assertThat(actualRange, equalTo(expectedRange))
@@ -86,12 +86,12 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test textRange for leading whitespace for HCLProperty`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine18()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
         val expectedRange = TextRange.create(446, 453)
         val actualRange = IacHclAnnotator().textRange(
             psiFile,
-            toolWindowPanel.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
+            snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
         assertThat(actualRange, equalTo(expectedRange))

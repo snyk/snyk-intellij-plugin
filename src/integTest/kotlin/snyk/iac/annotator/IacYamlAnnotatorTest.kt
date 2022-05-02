@@ -33,7 +33,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test getIssues should not return any annotations if no iac issue exists`() {
-        every { toolWindowPanel.currentIacResult } returns null
+        every { snykCachedResults.currentIacResult } returns null
 
         val issues = IacYamlAnnotator().getIssues(psiFile)
 
@@ -42,7 +42,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test getIssues should return one annotations if only one iac issue exists`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine18()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
         val issues = IacYamlAnnotator().getIssues(psiFile)
 
@@ -51,7 +51,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test apply should trigger newAnnotation call`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine18()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
         IacYamlAnnotator().apply(psiFile, Unit, annotationHolderMock)
 
@@ -60,12 +60,12 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test textRange with leading space`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine18()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
         val expectedRange = TextRange.create(262, 269)
         val actualRange = IacYamlAnnotator().textRange(
             psiFile,
-            toolWindowPanel.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
+            snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
         assertThat(actualRange, equalTo(expectedRange))
@@ -73,12 +73,12 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
 
     @Test
     fun `test textRange with dash at the begin`() {
-        every { toolWindowPanel.currentIacResult } returns createIacResultWithIssueOnLine20()
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine20()
 
         val expectedRange = TextRange.create(304, 308)
         val actualRange = IacYamlAnnotator().textRange(
             psiFile,
-            toolWindowPanel.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
+            snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
         assertThat(actualRange, equalTo(expectedRange))

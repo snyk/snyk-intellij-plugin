@@ -16,9 +16,9 @@ import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykApiService
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykCode
-import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
@@ -119,13 +119,13 @@ class SnykTaskQueueService(val project: Project) {
         taskQueueContainer.run(object : Task.Backgroundable(project, "Snyk Container is scanning...", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return
-                val toolWindowPanel = getSnykToolWindowPanel(project) ?: return
-                if (toolWindowPanel.currentContainerResult?.rescanNeeded == false) return
+                val snykCachedResults = getSnykCachedResults(project) ?: return
+                if (snykCachedResults.currentContainerResult?.rescanNeeded == false) return
                 logger.debug("Starting Container scan")
                 containerScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
-                toolWindowPanel.currentContainerResult = null
+                snykCachedResults.currentContainerResult = null
                 val containerResult = try {
                     getContainerService(project)?.scan()
                 } finally {
@@ -202,8 +202,8 @@ class SnykTaskQueueService(val project: Project) {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk Open Source is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return
-                val toolWindowPanel = getSnykToolWindowPanel(project) ?: return
-                if (toolWindowPanel.currentOssResults != null) return
+                val snykCachedResults = getSnykCachedResults(project) ?: return
+                if (snykCachedResults.currentOssResults != null) return
 
                 ossScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
@@ -232,13 +232,13 @@ class SnykTaskQueueService(val project: Project) {
         taskQueueIac.run(object : Task.Backgroundable(project, "Snyk Infrastructure as Code is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return
-                val toolWindowPanel = getSnykToolWindowPanel(project) ?: return
-                if (toolWindowPanel.currentIacResult?.iacScanNeeded == false) return
+                val snykCachedResults = getSnykCachedResults(project) ?: return
+                if (snykCachedResults.currentIacResult?.iacScanNeeded == false) return
                 logger.debug("Starting IaC scan")
                 iacScanProgressIndicator = indicator
                 scanPublisher?.scanningStarted()
 
-                toolWindowPanel.currentIacResult = null
+                snykCachedResults.currentIacResult = null
                 val iacResult = try {
                     getIacService(project)?.scan()
                 } finally {

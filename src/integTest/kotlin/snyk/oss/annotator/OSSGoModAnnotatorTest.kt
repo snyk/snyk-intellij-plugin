@@ -14,13 +14,13 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.hamcrest.collection.IsCollectionWithSize
 import org.junit.Assert
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
+import snyk.common.SnykCachedResults
 import snyk.oss.OssResult
 import snyk.oss.OssVulnerabilitiesForFile
 import java.nio.file.Paths
@@ -36,7 +36,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
     private lateinit var file: VirtualFile
     private lateinit var psiFile: PsiFile
 
-    private val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
+    private val snykCachedResults: SnykCachedResults = mockk(relaxed = true)
 
     override fun getTestDataPath(): String {
         val resource = OSSGoModAnnotator::class.java.getResource("/test-fixtures/oss/annotator")
@@ -50,7 +50,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
+        project.replaceService(SnykCachedResults::class.java, snykCachedResults, project)
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
@@ -59,7 +59,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
+        project.replaceService(SnykCachedResults::class.java, SnykCachedResults(project), project)
         pluginSettings().fileListenerEnabled = true
         super.tearDown()
     }
@@ -73,7 +73,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test getIssues should not return any issue if no oss issue exists`() {
-        every { toolWindowPanel.currentOssResults } returns null
+        every { snykCachedResults.currentOssResults } returns null
 
         val issues = cut.getIssuesForFile(psiFile)
 
@@ -82,7 +82,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test getIssues should return issues if they exist`() {
-        every { toolWindowPanel.currentOssResults } returns createOssResultWithIssues()
+        every { snykCachedResults.currentOssResults } returns createOssResultWithIssues()
 
         val issues = cut.getIssuesForFile(psiFile)
 
@@ -92,7 +92,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test apply should trigger newAnnotation call`() {
-        every { toolWindowPanel.currentOssResults } returns createOssResultWithIssues()
+        every { snykCachedResults.currentOssResults } returns createOssResultWithIssues()
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
@@ -126,7 +126,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
     fun `test apply should not add a quickfix`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createOssResultWithIssues()
-        every { toolWindowPanel.currentOssResults } returns result
+        every { snykCachedResults.currentOssResults } returns result
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
 
         cut.apply(psiFile, Unit, annotationHolderMock)

@@ -16,6 +16,7 @@ import com.intellij.util.io.delete
 import com.intellij.util.io.exists
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
@@ -104,7 +105,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
      * `psiFile == null` is the case when we want to check if _any_ Container file with issues been marked as obsolete
      */
     private fun containerCacheInvalidatedForFile(psiFile: PsiFile?): Boolean {
-        val containerCachedIssues = project.service<SnykToolWindowPanel>().currentContainerResult!!.allCliIssues!!
+        val containerCachedIssues = getSnykCachedResults(project)?.currentContainerResult!!.allCliIssues!!
         return containerCachedIssues.any { issuesForImage ->
             (psiFile == null || issuesForImage.workloadImages.any { it.virtualFile == psiFile.virtualFile }) &&
                 issuesForImage.obsolete
@@ -112,7 +113,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
     }
 
     private fun isContainerUpdateNeeded(): Boolean =
-        project.service<SnykToolWindowPanel>().currentContainerResult?.rescanNeeded ?: true
+        getSnykCachedResults(project)?.currentContainerResult?.rescanNeeded ?: true
 
     private fun createFakeContainerResultInCache(psiFile: PsiFile? = null) {
         val containerIssue = ContainerIssue(
@@ -137,7 +138,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         )
         val fakeContainerResult = ContainerResult(listOf(issuesForImage), null)
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
-        toolWindowPanel.currentContainerResult = fakeContainerResult
+        getSnykCachedResults(project)?.currentContainerResult = fakeContainerResult
         toolWindowPanel.getRootContainerIssuesTreeNode().add(ContainerImageTreeNode(issuesForImage, project))
 
         getKubernetesImageCache(project)?.extractFromFile(addedPsiFile.virtualFile)

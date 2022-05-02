@@ -4,9 +4,13 @@ import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
+import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 
 /**
  * For our caches we need following events for file: Create, Change, Delete
@@ -21,35 +25,41 @@ import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
  * While in `after` state we have access for new/updated files too (but old might not exist anymore)
  *
  * Next mapping/interpretation for BulkFileListener type of events should be used:
+ *
  * Create
  *  - addressed at `after` state, new file processed to _add_ caches
+ *
  * ContentChange
+ *  - addressed at `before` state, old file processed to _clean_ caches
  *  - addressed at `after` state, new file processed to _update_ caches
+ *
  * Move
  *  - addressed at `before` state, old file processed to _clean_ caches
  *  - addressed at `after` state, new file processed to _add_ caches
+ *
  * Rename
  *  - addressed at `before` state, old file processed to _clean_ caches
  *  - addressed at `after` state, new file processed to _add_ caches
+ *
  * Copy
  *  - addressed at `after` state, new file processed to _add_ caches
+ *
  * Delete
  *  - addressed at `before` state, old file processed to _clean_ caches
- *
  */
 abstract class SnykBulkFileListener : BulkFileListener {
 
     /****************************** Before **************************/
 
-    override fun before(events: List<out VFileEvent>) {
+    override fun before(events: List<VFileEvent>) {
         if (!isFileListenerEnabled()) return
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
-            before(project, events)
+            before(project, getBeforeVirtualFiles(events))
         }
     }
 
-    abstract fun before(project: Project, events: List<VFileEvent>)
+    abstract fun before(project: Project, virtualFilesAffected: Set<VirtualFile>)
 
     /****************************** After **************************/
 
@@ -57,26 +67,51 @@ abstract class SnykBulkFileListener : BulkFileListener {
         if (!isFileListenerEnabled()) return
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
-            after(project, events)
+            after(project, getAfterVirtualFiles(events))
         }
     }
 
-    abstract fun after(project: Project, events: List<VFileEvent>)
+    abstract fun after(project: Project, virtualFilesAffected: Set<VirtualFile>)
 
     /****************************** Common/Util methods **************************/
 
-    protected fun transformEventToNewVirtualFile(e: VFileEvent): VirtualFile? =
+    private fun transformEventToNewVirtualFile(e: VFileEvent): VirtualFile? =
         when (e) {
             is VFileCopyEvent -> e.findCreatedFile()
             is VFileMoveEvent -> if (e.newParent.isValid) e.newParent.findChild(e.file.name) else null
             else -> e.file
         }
 
-    protected fun getAffectedVirtualFiles(
+    private fun getBeforeVirtualFiles(events: List<VFileEvent>) =
+        getAffectedVirtualFiles(
+            events,
+            eventToVirtualFileTransformer = { it.file },
+            classesOfEventsToFilter = listOf(
+                VFileDeleteEvent::class.java,
+                VFileContentChangeEvent::class.java,
+                VFileMoveEvent::class.java,
+                VFilePropertyChangeEvent::class.java
+            )
+        )
+
+    private fun getAfterVirtualFiles(events: List<VFileEvent>) =
+        getAffectedVirtualFiles(
+            events,
+            eventToVirtualFileTransformer = { transformEventToNewVirtualFile(it) },
+            classesOfEventsToFilter = listOf(
+                VFileCreateEvent::class.java,
+                VFileContentChangeEvent::class.java,
+                VFileMoveEvent::class.java,
+                VFileCopyEvent::class.java,
+                VFilePropertyChangeEvent::class.java
+            )
+        )
+
+    private fun getAffectedVirtualFiles(
         events: List<VFileEvent>,
-        eventToVirtualFileTransformer: (VFileEvent) -> VirtualFile? = { it.file },
+        eventToVirtualFileTransformer: (VFileEvent) -> VirtualFile?,
         classesOfEventsToFilter: Collection<Class<*>>,
-        eventsFilter: (VFileEvent) -> Boolean = { true }
+        eventsFilter: (VFileEvent) -> Boolean = { (it as? VFilePropertyChangeEvent)?.isRename != false }
     ): Set<VirtualFile> {
         return events.asSequence()
             .filter { event -> instanceOf(event, classesOfEventsToFilter) }

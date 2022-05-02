@@ -4,7 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
-import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -13,6 +12,7 @@ import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
@@ -22,7 +22,6 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
@@ -165,9 +164,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         snykTaskQueueService.scan()
 
-        val toolWindowPanel = project.service<SnykToolWindowPanel>()
-
-        assertEquals(fakeIacResult, toolWindowPanel.currentIacResult)
+        assertEquals(fakeIacResult, getSnykCachedResults(project)?.currentIacResult)
     }
 
     @Test
@@ -186,14 +183,12 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.iacScanEnabled = false
         settings.containerScanEnabled = true
 
-        val toolWindowPanel = project.service<SnykToolWindowPanel>()
-
-        assertEquals(null, toolWindowPanel.currentContainerResult)
+        assertEquals(null, getSnykCachedResults(project)?.currentContainerResult)
 
         snykTaskQueueService.scan()
 
         await().atMost(2, TimeUnit.SECONDS).until {
-            toolWindowPanel.currentContainerResult != null
+            getSnykCachedResults(project)?.currentContainerResult != null
         }
     }
 }

@@ -16,10 +16,10 @@ import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.jetbrains.kotlin.psi.KtFile
 import org.junit.Before
 import org.junit.Test
+import snyk.common.SnykCachedResults
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssResult
 import snyk.oss.OssVulnerabilitiesForFile
@@ -37,7 +37,7 @@ class OSSGradleKtsAnnotatorTest : BasePlatformTestCase() {
     private lateinit var virtualFileBuildGradleKts: VirtualFile
     private lateinit var buildGradleKts: KtFile
 
-    private val toolWindowPanel: SnykToolWindowPanel = mockk(relaxed = true)
+    private val snykCachedResults: SnykCachedResults = mockk(relaxed = true)
 
     override fun getTestDataPath(): String {
         val resource = OSSGradleKtsAnnotator::class.java.getResource("/test-fixtures/oss/annotator")
@@ -51,7 +51,7 @@ class OSSGradleKtsAnnotatorTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, toolWindowPanel, project)
+        project.replaceService(SnykCachedResults::class.java, snykCachedResults, project)
         pluginSettings().fileListenerEnabled = false
         virtualFileBuildGradleKts = myFixture.copyFileToProject(buildGradleKtsFilename)
         buildGradleKts = WriteAction.computeAndWait<KtFile, Throwable> {
@@ -62,14 +62,14 @@ class OSSGradleKtsAnnotatorTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         unmockkAll()
-        project.replaceService(SnykToolWindowPanel::class.java, SnykToolWindowPanel(project), project)
+        project.replaceService(SnykCachedResults::class.java, SnykCachedResults(project), project)
         pluginSettings().fileListenerEnabled = true
         super.tearDown()
     }
 
     @Test
     fun `test gradle-kts apply should trigger newAnnotation call`() {
-        every { toolWindowPanel.currentOssResults } returns createGradleKtsOssResultWithIssues()
+        every { snykCachedResults.currentOssResults } returns createGradleKtsOssResultWithIssues()
 
         cut.apply(buildGradleKts, Unit, annotationHolderMock)
 
@@ -133,7 +133,7 @@ class OSSGradleKtsAnnotatorTest : BasePlatformTestCase() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createGradleKtsOssResultWithIssues()
         val capturedIntentionSlot = slot<IntentionAction>()
-        every { toolWindowPanel.currentOssResults } returns result
+        every { snykCachedResults.currentOssResults } returns result
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
         every { builderMock.withFix(capture(capturedIntentionSlot)) } returns builderMock
 

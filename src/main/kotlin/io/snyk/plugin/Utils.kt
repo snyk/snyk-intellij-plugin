@@ -38,6 +38,7 @@ import snyk.advisor.AdvisorService
 import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
 import snyk.amplitude.AmplitudeExperimentService
+import snyk.common.SnykCachedResults
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
@@ -65,6 +66,8 @@ fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.s
 fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.serviceIfNotDisposed()
 
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
+
+fun getSnykCachedResults(project: Project): SnykCachedResults? = project.serviceIfNotDisposed()
 
 fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
 

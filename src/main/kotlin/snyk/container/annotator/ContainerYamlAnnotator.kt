@@ -7,7 +7,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.getSnykCachedResults
 import snyk.common.AnnotatorCommon
 import snyk.common.SeverityConstants.SEVERITY_CRITICAL
 import snyk.common.SeverityConstants.SEVERITY_HIGH
@@ -27,7 +27,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     fun getContainerIssuesForImages(psiFile: PsiFile): List<ContainerIssuesForImage> {
-        val containerResult = getSnykToolWindowPanel(psiFile.project)?.currentContainerResult
+        val containerResult = getSnykCachedResults(psiFile.project)?.currentContainerResult
         ProgressManager.checkCanceled()
         return containerResult?.allCliIssues
             ?.filter { forImage -> forImage.workloadImages.find { it.virtualFile == psiFile.virtualFile } != null }

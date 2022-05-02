@@ -6,7 +6,7 @@ import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.getSnykCachedResults
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssVulnerabilitiesForFile
@@ -47,7 +47,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     open fun getIssuesForFile(psiFile: PsiFile): OssVulnerabilitiesForFile? {
-        val ossResult = getSnykToolWindowPanel(psiFile.project)?.currentOssResults ?: return null
+        val ossResult = getSnykCachedResults(psiFile.project)?.currentOssResults ?: return null
         val filePath = psiFile.virtualFile?.path ?: return null
         if (!AnnotatorHelper.isFileSupported(filePath)) return null
 
