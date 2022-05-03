@@ -17,6 +17,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
+import java.net.URLEncoder
 import java.nio.charset.Charset
 
 open class ConsoleCommandRunner {
@@ -72,9 +73,7 @@ open class ConsoleCommandRunner {
         val timeout = getWaitForResultsTimeout()
         val processOutput = try {
             ScriptRunnerUtil.getProcessOutput(
-                processHandler,
-                ScriptRunnerUtil.STDOUT_OR_STDERR_OUTPUT_KEY_FILTER,
-                timeout
+                processHandler, ScriptRunnerUtil.STDOUT_OR_STDERR_OUTPUT_KEY_FILTER, timeout
             )
         } catch (e: ExecutionException) {
             SentryErrorReporter.captureException(e)
@@ -108,9 +107,10 @@ open class ConsoleCommandRunner {
         if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxyHost.isNotEmpty()) {
             var authentication = ""
             if (proxySettings.PROXY_AUTHENTICATION) {
-                val auth =
-                    proxySettings.getPromptedAuthentication(proxyHost, "Snyk: Please enter your proxy password")
-                authentication = auth.userName + ":" + String(auth.password) + "@"
+                val auth = proxySettings.getPromptedAuthentication(proxyHost, "Snyk: Please enter your proxy password")
+                authentication = URLEncoder.encode(auth.userName, "UTF-8") + ":" + URLEncoder.encode(
+                    String(auth.password), "UTF-8"
+                ) + "@"
             }
             commandLine.environment["http_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
             commandLine.environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
