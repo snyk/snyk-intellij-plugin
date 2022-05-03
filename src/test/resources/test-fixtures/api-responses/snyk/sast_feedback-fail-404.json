@@ -1,0 +1,5 @@
+{
+  "code": 404,
+  "message": "bad API request, please contact support@snyk.io for assistance",
+  "error": "unsupported url"
+}
