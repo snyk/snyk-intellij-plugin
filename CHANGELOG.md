@@ -1,13 +1,19 @@
 # Snyk Changelog
 
+## [2.4.30]
+
+### Fixed
+
+- URL encode proxy credentials
+
 ## [2.4.29]
 
 ### Fixed
+
 - AlreadyDisposedException when annotations async refreshed for disposed project
 - `IllegalArgumentException: wrong column` for issue's description panel creation
 - failed psiFile search for invalid virtualFile
 - `InvocationTargetExceptions` by extracting caches to separate class
-- URL encode proxy credentials
 
 ## [2.4.28]
 
