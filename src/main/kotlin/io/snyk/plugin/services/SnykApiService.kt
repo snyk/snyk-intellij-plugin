@@ -4,10 +4,12 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.net.CliConfigSettings
+import io.snyk.plugin.net.FalsePositivePayload
 import io.snyk.plugin.net.SnykApiClient
 import io.snyk.plugin.net.TokenInterceptor
 import io.snyk.plugin.pluginSettings
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.security.KeyManagementException
@@ -24,11 +26,14 @@ class SnykApiService : Disposable {
 
     val sastSettings: CliConfigSettings?
         get() {
-            return snykApiClient?.sastSettings(pluginSettings().organization)
+            return getSnykApiClient()?.sastSettings(pluginSettings().organization)
         }
 
     val userId: String?
-        get() = snykApiClient?.userId
+        get() = getSnykApiClient()?.getUserId()
+
+    fun reportFalsePositive(payload: FalsePositivePayload): Boolean =
+        getSnykApiClient()?.reportFalsePositive(payload) ?: false
 
     // mostly needed for httpClient correctly shutdown in Tests
     override fun dispose() {
@@ -42,9 +47,24 @@ class SnykApiService : Disposable {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private fun createRetrofit(token: String, baseUrl: String, disableSslVerification: Boolean): Retrofit {
+    // todo: unify/generalize with ai.deepcode.javaclient.DeepCodeRestApiImpl.buildRetrofit
+    private fun createRetrofit(
+        token: String,
+        baseUrl: String,
+        disableSslVerification: Boolean,
+        requestLogging: Boolean = false
+    ): Retrofit {
+        val logging = HttpLoggingInterceptor()
+        // set your desired log level
+        if (requestLogging) {
+            logging.setLevel(HttpLoggingInterceptor.Level.BODY)
+        } else {
+            logging.setLevel(HttpLoggingInterceptor.Level.NONE)
+        }
+
         val builder = baseClient.newBuilder()
             .addInterceptor(TokenInterceptor(token))
+            .addInterceptor(logging)
 
         if (disableSslVerification) {
             val x509TrustManager = buildUnsafeTrustManager()
@@ -76,24 +96,44 @@ class SnykApiService : Disposable {
         override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
     }
 
-    private val snykApiClient: SnykApiClient?
-        get() {
-            val appSettings = pluginSettings()
-            var endpoint = appSettings.customEndpointUrl
-            if (endpoint.isNullOrEmpty()) endpoint = "https://snyk.io/api/"
+    private var currentUniqSnykApiClient: UniqSnykApiClient? = null
 
-            val retrofit = try {
-                createRetrofit(
-                    token = appSettings.token ?: "",
-                    baseUrl = if (endpoint.endsWith('/')) endpoint else "$endpoint/",
-                    disableSslVerification = appSettings.ignoreUnknownCA
+    private fun getSnykApiClient(): SnykApiClient? {
+        val appSettings = pluginSettings()
+        var endpoint = appSettings.customEndpointUrl
+        if (endpoint.isNullOrEmpty()) endpoint = "https://snyk.io/api/"
+
+        val token = appSettings.token ?: ""
+        val baseUrl: String = if (endpoint.endsWith('/')) endpoint else "$endpoint/"
+        val disableSslVerification = appSettings.ignoreUnknownCA
+
+        if (currentUniqSnykApiClient?.token != token ||
+            currentUniqSnykApiClient?.baseUrl != baseUrl ||
+            currentUniqSnykApiClient?.disableSslVerification != disableSslVerification
+        ) {
+            log.debug("Creating new SnykApiClient")
+            currentUniqSnykApiClient = try {
+                val retrofit = createRetrofit(token, baseUrl, disableSslVerification)
+                UniqSnykApiClient(
+                    snykApiClient = SnykApiClient(retrofit),
+                    token = token,
+                    baseUrl = baseUrl,
+                    disableSslVerification = disableSslVerification
                 )
             } catch (t: Throwable) {
                 log.warn("Failed to create Retrofit client for endpoint: $endpoint", t)
-                return null
+                null
             }
-            return SnykApiClient(retrofit)
         }
+        return currentUniqSnykApiClient?.snykApiClient
+    }
+
+    private data class UniqSnykApiClient(
+        val snykApiClient: SnykApiClient,
+        val token: String,
+        val baseUrl: String,
+        val disableSslVerification: Boolean
+    )
 
     companion object {
         private val log = logger<SnykApiService>()

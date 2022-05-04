@@ -29,22 +29,8 @@ object SnykBalloonNotificationHelper {
     val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
     fun showError(message: String, project: Project?, vararg actions: AnAction) {
-        val foundProject = getProject(project)
-        showNotification(message, foundProject, NotificationType.ERROR, *actions)
+        showNotification(message, project, NotificationType.ERROR, *actions)
     }
-
-    private fun getProject(project: Project?): Project? {
-        var foundProject = project
-        if (foundProject == null) {
-            val openProjects: Array<Project> = ProjectManager.getInstance().openProjects
-            if (openProjects.isNotEmpty()) {
-                foundProject = openProjects[0]
-            }
-        }
-        return foundProject
-    }
-
-    fun showError(message: String) = showNotification(message, null, NotificationType.ERROR)
 
     fun showInfo(message: String, project: Project, vararg actions: AnAction) =
         showNotification(message, project, NotificationType.INFORMATION, *actions)
@@ -70,7 +56,14 @@ object SnykBalloonNotificationHelper {
                 actions.forEach { this.addAction(it) }
             }
         }
-        notification.notify(project)
+        // workaround for https://youtrack.jetbrains.com/issue/IDEA-220408/notifications-with-project=null-is-not-shown-anymore
+        if (project != null) {
+            notification.notify(project)
+        } else {
+            ProjectManager.getInstance().openProjects.forEach { prj ->
+                notification.notify(prj)
+            }
+        }
         return notification
     }
 

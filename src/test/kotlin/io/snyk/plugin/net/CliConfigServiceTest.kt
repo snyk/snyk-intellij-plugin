@@ -56,16 +56,3 @@ class CliConfigServiceTest {
         assertThat(request.url.queryParameter("org"), equalTo("my-cool-test-org"))
     }
 }
-
-internal fun MockWebServer.enqueueResponse(fileName: String, statusCode: Int) {
-    val inputStream = javaClass.classLoader?.getResourceAsStream("test-fixtures/api-responses/snyk/$fileName")
-
-    val source = inputStream?.let { inputStream.source().buffer() }
-    source?.let {
-        enqueue(
-            MockResponse()
-                .setResponseCode(statusCode)
-                .setBody(source.readString(StandardCharsets.UTF_8))
-        )
-    }
-}
