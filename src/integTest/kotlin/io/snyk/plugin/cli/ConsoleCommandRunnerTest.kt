@@ -32,6 +32,7 @@ import org.junit.Test
 import snyk.PLUGIN_ID
 import snyk.errorHandler.SentryErrorReporter
 import snyk.oss.OssService
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
@@ -127,11 +128,13 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             httpConfigurable.USE_HTTP_PROXY = true
             httpConfigurable.PROXY_AUTHENTICATION = true
             httpConfigurable.proxyLogin = "testLogin"
-            httpConfigurable.plainProxyPassword = "testPassword"
+            httpConfigurable.plainProxyPassword = "test%!@Password"
+            val encodedLogin = URLEncoder.encode(httpConfigurable.proxyLogin, "UTF-8")
+            val encodedPassword = URLEncoder.encode(httpConfigurable.plainProxyPassword, "UTF-8")
 
             val generalCommandLine = GeneralCommandLine("")
-            val expectedProxy = "http://${httpConfigurable.proxyLogin}:${httpConfigurable.plainProxyPassword}@" +
-                "${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
+            val expectedProxy =
+                "http://${encodedLogin}:${encodedPassword}@${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
@@ -178,8 +181,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                     downloadIndicator = indicator
                     snykCliDownloaderService.downloadLatestRelease(indicator, project)
                 }
-            },
-            EmptyProgressIndicator()
+            }, EmptyProgressIndicator()
         )
 
         assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
@@ -203,9 +205,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                         // this is expected and actually desired
                     }
                 }
-            },
-            EmptyProgressIndicator(),
-            null
+            }, EmptyProgressIndicator(), null
         )
 
         testRunFuture.get(30000, TimeUnit.MILLISECONDS)
@@ -238,13 +238,10 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                 override fun run(indicator: ProgressIndicator) {
                     val output = ConsoleCommandRunner().execute(sleepCommand, getPluginPath(), "", project)
                     assertTrue(
-                        "Should get timeout error, but received:\n$output",
-                        output.startsWith("Execution timeout")
+                        "Should get timeout error, but received:\n$output", output.startsWith("Execution timeout")
                     )
                 }
-            },
-            EmptyProgressIndicator(),
-            null
+            }, EmptyProgressIndicator(), null
         )
         testRunFuture.get(30000, TimeUnit.MILLISECONDS)
 
