@@ -1,6 +1,7 @@
 package snyk.common
 
 import java.net.URI
+import java.net.URISyntaxException
 
 fun toSnykCodeApiUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
@@ -49,12 +50,20 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
  * Checks if the deployment type is SaaS (production or development).
  */
 internal fun URI.isSaaS() =
-    !this.host.startsWith("app") && this.host.endsWith("snyk.io")
+    this.host != null && !this.host.startsWith("app") && this.host.endsWith("snyk.io")
 
 /**
  * Checks if the deployment type is Single Tenant.
  */
 internal fun URI.isSingleTenant() =
-    this.host.startsWith("app") && this.host.endsWith("snyk.io")
+    this.host != null && this.host.startsWith("app") && this.host.endsWith("snyk.io")
 
-private fun String.removeTrailingSlashesIfPresent(): String = this.replace(Regex("/+$"), "")
+internal fun String.removeTrailingSlashesIfPresent(): String {
+    val candidate = this.replace(Regex("/+$"), "")
+    return try {
+        URI(candidate)
+        candidate
+    } catch (e: URISyntaxException) {
+        this
+    }
+}

@@ -3,6 +3,7 @@ package snyk.common
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.Assert.assertThat
 import org.junit.Test
+import java.net.URI
 
 class CustomEndpointsTest {
 
@@ -22,6 +23,21 @@ class CustomEndpointsTest {
 
         assertThat(endpointWithSingleTrailingSlash, equalTo("https://on-prem.internal/api"))
         assertThat(endpointWithMultipleTrailingSlashes, equalTo("https://on-prem.internal/api"))
+    }
+
+    @Test
+    fun `removeTrailingSlashesIfPresent do not return malformed(syntactically incorrect) url`() {
+        val endpointWithNoHost = "http:/".removeTrailingSlashesIfPresent()
+
+        assertThat(endpointWithNoHost, equalTo("http:/"))
+    }
+
+    @Test
+    fun `isSaaS and isSingleTenant works with no-host(but syntactically correct) URI`() {
+        val uriWithNoHost = URI("http:/")
+
+        assertThat(uriWithNoHost.isSaaS(), equalTo(false))
+        assertThat(uriWithNoHost.isSingleTenant(), equalTo(false))
     }
 
     @Test
