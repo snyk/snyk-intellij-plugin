@@ -1,12 +1,11 @@
 package io.snyk.plugin.services.download
 
-import com.intellij.util.Url
-import com.intellij.util.io.HttpRequests
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.mockCliDownload
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import junit.framework.TestCase.assertEquals
@@ -52,12 +51,18 @@ class CliDownloaderTest {
 
     @Test
     fun `should download cli information from base url`() {
-        assertEquals("${CliDownloader.BASE_URL}/cli/latest/%s", CliDownloader.LATEST_RELEASE_DOWNLOAD_URL)
+        assertEquals(
+            "${CliDownloader.BASE_URL}/cli/latest/${Platform.current().snykWrapperFileName}",
+            CliDownloader.LATEST_RELEASE_DOWNLOAD_URL
+        )
     }
 
     @Test
     fun `should download sha256 from base url`() {
-        assertEquals("${CliDownloader.BASE_URL}/cli/latest/%s.sha256", CliDownloader.SHA256_DOWNLOAD_URL)
+        assertEquals(
+            "${CliDownloader.BASE_URL}/cli/latest/${Platform.current().snykWrapperFileName}.sha256",
+            CliDownloader.SHA256_DOWNLOAD_URL
+        )
     }
 
     @Test
@@ -68,10 +73,8 @@ class CliDownloaderTest {
         Files.write(testFile.toPath(), dummyContent)
         val cut = CliDownloader()
         val expectedSha = cut.calculateSha256("wrong sha".toByteArray())
-        mockkStatic(HttpRequests::class)
-        justRun {
-            HttpRequests.request(any<Url>()).productNameAsUserAgent().saveToFile(any<File>(), any())
-        }
+
+        mockCliDownload()
 
         try {
             cut.downloadFile(testFile, expectedSha, mockk(relaxed = true))

@@ -10,6 +10,7 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -89,20 +90,26 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `should automatically enable products`() {
-        every { settings.token } returns "test-token"
-        every { settings.pluginFirstRun } returns true
+    fun `should automatically enable all products on first run after Auth`() {
+        val application = ApplicationManager.getApplication()
+        application.replaceService(
+            SnykApplicationSettingsStateService::class.java,
+            SnykApplicationSettingsStateService(),
+            application
+        )
+        pluginSettings().token = "test-token"
+        pluginSettings().pluginFirstRun = true
 
         SnykToolWindowPanel(project)
 
-        verify(exactly = 1) {
+        verify(exactly = 1, timeout = 5000) {
             snykApiServiceMock.sastSettings
-            settings.sastOnServerEnabled = true
-            settings.iacScanEnabled = true
-            settings.containerScanEnabled = true
-            settings.snykCodeSecurityIssuesScanEnable = true
-            settings.snykCodeQualityIssuesScanEnable = true
         }
+        assertTrue(pluginSettings().ossScanEnable)
+        assertTrue(pluginSettings().snykCodeSecurityIssuesScanEnable)
+        assertTrue(pluginSettings().snykCodeQualityIssuesScanEnable)
+        assertTrue(pluginSettings().iacScanEnabled)
+        assertTrue(pluginSettings().containerScanEnabled)
     }
 
     private fun findOnePixelSplitter(vulnerabilityTree: Tree): Container? {
