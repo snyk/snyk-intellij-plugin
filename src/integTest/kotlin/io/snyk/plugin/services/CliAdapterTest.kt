@@ -31,24 +31,6 @@ class CliAdapterTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testIsCliInstalledFailed() {
-        removeDummyCliFile()
-
-        val isCliInstalled = isCliInstalled()
-
-        assertFalse(isCliInstalled)
-    }
-
-    @Test
-    fun testIsCliInstalledSuccess() {
-        setupDummyCliFile()
-
-        val isCliInstalled = isCliInstalled()
-
-        assertTrue(isCliInstalled)
-    }
-
-    @Test
     fun testBuildCliCommandsListWithInsecureParameter() {
         setupDummyCliFile()
 

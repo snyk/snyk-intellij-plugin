@@ -25,7 +25,6 @@ import io.snyk.plugin.getIacService
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
@@ -71,10 +70,14 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private lateinit var toolWindowPanel: SnykToolWindowPanel
 
+    private val fakeApiToken = "fake_token"
+
     override fun setUp() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        pluginSettings().token = fakeApiToken // needed to avoid forced Auth panel showing
+        pluginSettings().pluginFirstRun = false
         // ToolWindow need to be reinitialised for every test as Project is recreated for Heavy tests
         // also we MUST do it *before* any actual test code due to initialisation of SnykScanListener in init{}
         toolWindowPanel = project.service()
@@ -107,7 +110,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         if (containerResultStub != null) {
             mockkStatic("io.snyk.plugin.UtilsKt")
-            every { isCliInstalled() } returns true
             every { getContainerService(project)?.scan() } returns containerResultStub
         }
     }
@@ -118,8 +120,9 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val mockRunner = mockk<ConsoleCommandRunner>()
         every {
             mockRunner.execute(
-                listOf(getCliFile().absolutePath, "iac", "test", "--json"),
-                project.basePath!!,
+                commands = listOf(getCliFile().absolutePath, "iac", "test", "--json"),
+                workDirectory = project.basePath!!,
+                apiToken = fakeApiToken,
                 project = project
             )
         } returns (iacGoofJson)
@@ -171,9 +174,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test should not display error when no OSS supported file found`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
-
         val snykError = SnykError("Could not detect supported target files in", project.basePath.toString())
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
@@ -218,9 +218,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test should display NO_CONTAINER_IMAGES_FOUND after scan when no Container images found`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
-
         val snykError = ContainerService.NO_IMAGES_TO_SCAN_ERROR
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
@@ -241,8 +238,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test should display CONTAINER_NO_IMAGES_FOUND_TEXT after scan when no Container images found and Container node selected`() {
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
         val snykError = ContainerService.NO_IMAGES_TO_SCAN_ERROR
 
         toolWindowPanel.snykScanListener.scanningContainerError(snykError)
@@ -259,9 +254,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test should display CONTAINER_NO_ISSUES_FOUND_TEXT after scan when no Container issues found and Container node selected`() {
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
-
         toolWindowPanel.snykScanListener.scanningContainerFinished(ContainerResult(emptyList(), null))
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
@@ -276,9 +268,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test should display CONTAINER_SCAN_START_TEXT before any scan performed and Container node selected`() {
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
-
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
@@ -291,9 +280,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test should display CONTAINER_SCAN_RUNNING_TEXT before any scan performed and Container node selected`() {
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
-
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
         toolWindowPanel.snykScanListener.scanningStarted()
@@ -309,8 +295,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test OSS scan should redirect to Auth panel if token is invalid`() {
         mockkObject(SnykBalloonNotificationHelper)
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
         val snykErrorControl = SnykError("control", project.basePath.toString())
         val snykError = SnykError("Authentication failed. Please check the API token on ", project.basePath.toString())
 
@@ -336,8 +320,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test Container scan should redirect to Auth panel if token is invalid`() {
         mockkObject(SnykBalloonNotificationHelper)
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
         val snykErrorControl = SnykError("control", project.basePath.toString())
         val snykError = SnykError("Authentication failed. Please check the API token on ", project.basePath.toString())
 
@@ -363,8 +345,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test Container node should show no child when disabled`() {
         mockkObject(SnykBalloonNotificationHelper)
-        pluginSettings().token = "fake_token"
-        pluginSettings().pluginFirstRun = false
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
 
         // assert child shown when Container results exist
@@ -450,7 +430,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val iacResultWithError = IacResult(null, iacError)
 
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns true
         every { getIacService(project)?.scan() } returns iacResultWithError
 
         // actual test run
@@ -476,6 +455,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertTrue(pathTextArea?.text == iacError.path)
     }
 
+    @Test
     fun test_WhenIacIssueIgnored_ThenItMarkedIgnored_AndButtonRemainsDisabled() {
         // pre-test setup
         prepareTreeWithFakeIacResults()

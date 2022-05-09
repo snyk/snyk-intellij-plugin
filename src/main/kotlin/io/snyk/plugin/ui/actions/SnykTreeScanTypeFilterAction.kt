@@ -27,7 +27,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
     override fun update(e: AnActionEvent) {
         val project = e.project
-        e.presentation.isEnabled = project != null && !project.isDisposed
+        e.presentation.isEnabled = project != null && !project.isDisposed && !settings.token.isNullOrEmpty()
     }
 
     override fun createPopupActionGroup(button: JComponent?): DefaultActionGroup {
@@ -55,8 +55,7 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         }
     }
 
-    private fun isSnykCodeAvailable(): Boolean =
-        snyk.common.isSnykCodeAvailable(settings.customEndpointUrl) && (settings.sastOnServerEnabled ?: false)
+    private fun isSnykCodeAvailable(): Boolean = snykCodeAvailabilityPostfix().isEmpty()
 
     private fun showSettings(project: Project) {
         ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
@@ -64,7 +63,8 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
     private fun createSecurityIssuesScanAction(): AnAction {
         return object : ToggleAction("Security Issues${snykCodeAvailabilityPostfix()}") {
-            override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeSecurityIssuesScanEnable
+            override fun isSelected(e: AnActionEvent): Boolean =
+                settings.snykCodeSecurityIssuesScanEnable && isSnykCodeAvailable()
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 if (!state && isLastScanTypeDisabling(e)) return
@@ -79,7 +79,8 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
 
     private fun createQualityIssuesScanAction(): AnAction {
         return object : ToggleAction("Quality Issues${snykCodeAvailabilityPostfix()}") {
-            override fun isSelected(e: AnActionEvent): Boolean = settings.snykCodeQualityIssuesScanEnable
+            override fun isSelected(e: AnActionEvent): Boolean =
+                settings.snykCodeQualityIssuesScanEnable && isSnykCodeAvailable()
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 if (!state && isLastScanTypeDisabling(e)) return

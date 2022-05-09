@@ -4,7 +4,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import java.io.File
-import java.net.URL
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -15,8 +14,8 @@ class CliDownloader {
     companion object {
         const val BASE_URL = "https://static.snyk.io"
         const val LATEST_RELEASES_URL = "$BASE_URL/cli/latest/version"
-        const val LATEST_RELEASE_DOWNLOAD_URL = "$BASE_URL/cli/latest/%s"
-        const val SHA256_DOWNLOAD_URL = "$BASE_URL/cli/latest/%s.sha256"
+        val LATEST_RELEASE_DOWNLOAD_URL = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}"
+        val SHA256_DOWNLOAD_URL = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}.sha256"
     }
 
     fun calculateSha256(bytes: ByteArray): String {
@@ -39,10 +38,8 @@ class CliDownloader {
         try {
             downloadFile.deleteOnExit()
 
-            val url = URL(String.format(LATEST_RELEASE_DOWNLOAD_URL, Platform.current().snykWrapperFileName)).toString()
-
             indicator.checkCanceled()
-            createRequest(url).saveToFile(downloadFile, indicator)
+            createRequest(LATEST_RELEASE_DOWNLOAD_URL).saveToFile(downloadFile, indicator)
 
             indicator.checkCanceled()
             verifyChecksum(expectedSha, downloadFile.readBytes())
@@ -72,8 +69,7 @@ class CliDownloader {
     }
 
     fun expectedSha(): String {
-        val url = String.format(SHA256_DOWNLOAD_URL, Platform.current().snykWrapperFileName)
-        val request = createRequest(url)
+        val request = createRequest(SHA256_DOWNLOAD_URL)
         return request.readString().split(" ")[0]
     }
 }

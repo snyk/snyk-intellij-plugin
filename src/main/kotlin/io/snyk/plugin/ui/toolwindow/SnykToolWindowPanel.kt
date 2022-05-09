@@ -135,6 +135,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         initializeUiComponents()
 
+        createTreeAndDescriptionPanel()
+
         chooseMainPanelToDisplay()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
@@ -557,11 +559,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         DaemonCodeAnalyzer.getInstance(project).restart()
 
         ApplicationManager.getApplication().invokeLater {
-            doCleanUi()
+            doCleanUi(true)
         }
     }
 
-    private fun doCleanUi() {
+    private fun doCleanUi(reDisplayDescription: Boolean) {
         removeAllChildren()
         updateTreeRootNodesPresentation(
             ossResultsCount = NODE_INITIAL_STATE,
@@ -572,7 +574,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         )
         reloadTree()
 
-        displayEmptyDescription()
+        if (reDisplayDescription) {
+            displayEmptyDescription()
+        }
     }
 
     private fun removeAllChildren(
@@ -596,12 +600,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> {
                 pluginSettings().pluginFirstRun = false
-                enableProductsAccordingToServerSetting()
-                displayTreeAndDescriptionPanels()
+                enableCodeScanAccordingToServerSetting()
+                displayEmptyDescription()
                 // don't trigger scan for Default project i.e. no project opened state
                 if (project.basePath != null) triggerScan()
             }
-            else -> displayTreeAndDescriptionPanels()
+            else -> displayEmptyDescription()
         }
     }
 
@@ -619,8 +623,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun displayAuthPanel() {
         if (Disposer.isDisposed(this)) return
-        displayTreeAndDescriptionPanels()
-        doCleanUi()
+        doCleanUi(false)
         descriptionPanel.removeAll()
         val authPanel = SnykAuthPanel(project)
         Disposer.register(this, authPanel)
@@ -634,41 +637,32 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         )
     }
 
-    private fun enableProductsAccordingToServerSetting() {
+    private fun enableCodeScanAccordingToServerSetting() {
         pluginSettings().apply {
-            sastOnServerEnabled = getSnykApiService().sastSettings?.sastEnabled
-            iacScanEnabled = true
-            containerScanEnabled = true
-            snykCodeSecurityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeSecurityIssuesScanEnable
-            snykCodeQualityIssuesScanEnable = sastOnServerEnabled ?: this.snykCodeQualityIssuesScanEnable
+            val sastSettings = getSnykApiService().sastSettings
+            sastOnServerEnabled = sastSettings?.sastEnabled
+            localCodeEngineEnabled = sastSettings?.localCodeEngine?.enabled
+            val codeScanAllowed = sastOnServerEnabled == true && localCodeEngineEnabled != true
+            snykCodeSecurityIssuesScanEnable = this.snykCodeSecurityIssuesScanEnable && codeScanAllowed
+            snykCodeQualityIssuesScanEnable = this.snykCodeQualityIssuesScanEnable && codeScanAllowed
         }
     }
 
-    private fun displayTreeAndDescriptionPanels() {
+    private fun createTreeAndDescriptionPanel() {
         removeAll()
-
         val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
         add(vulnerabilitiesSplitter, BorderLayout.CENTER)
         vulnerabilitiesSplitter.firstComponent = TreePanel(vulnerabilitiesTree)
         vulnerabilitiesSplitter.secondComponent = descriptionPanel
-
-        displayEmptyDescription()
     }
 
     private fun displayEmptyDescription() {
         when {
-            isScanRunning(project) -> {
-                displayScanningMessage()
-            }
-            isCliDownloading() -> {
-                displayDownloadMessage()
-            }
-            noIssuesInAnyProductFound() -> {
-                displayNoVulnerabilitiesMessage()
-            }
-            else -> {
-                displaySelectVulnerabilityMessage()
-            }
+            isCliDownloading() -> displayDownloadMessage()
+            pluginSettings().token.isNullOrEmpty() -> displayAuthPanel()
+            isScanRunning(project) -> displayScanningMessage()
+            noIssuesInAnyProductFound() -> displayNoVulnerabilitiesMessage()
+            else -> displaySelectVulnerabilityMessage()
         }
     }
 

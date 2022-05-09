@@ -81,7 +81,7 @@ fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateSer
 
 fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
 
-fun isCliInstalled(): Boolean = getCliFile().exists()
+fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
 

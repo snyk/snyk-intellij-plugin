@@ -14,6 +14,7 @@ import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.util.net.HttpConfigurable
 import io.mockk.every
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.sentry.protocol.SentryId
@@ -21,6 +22,7 @@ import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
@@ -168,6 +170,8 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     fun testCommandExecutionRequestWhileCliIsDownloading() {
         val cliFile = getCliFile()
         cliFile.delete()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isCliInstalled() } returns false
 
         val progressManager = ProgressManager.getInstance() as CoreProgressManager
         val snykCliDownloaderService = service<SnykCliDownloaderService>()
@@ -181,7 +185,8 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                     downloadIndicator = indicator
                     snykCliDownloaderService.downloadLatestRelease(indicator, project)
                 }
-            }, EmptyProgressIndicator()
+            },
+            EmptyProgressIndicator()
         )
 
         assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
@@ -205,7 +210,9 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                         // this is expected and actually desired
                     }
                 }
-            }, EmptyProgressIndicator(), null
+            },
+            EmptyProgressIndicator(),
+            null
         )
 
         testRunFuture.get(30000, TimeUnit.MILLISECONDS)
@@ -241,7 +248,9 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                         "Should get timeout error, but received:\n$output", output.startsWith("Execution timeout")
                     )
                 }
-            }, EmptyProgressIndicator(), null
+            },
+            EmptyProgressIndicator(),
+            null
         )
         testRunFuture.get(30000, TimeUnit.MILLISECONDS)
 

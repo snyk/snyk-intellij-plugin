@@ -10,14 +10,13 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getPluginPath
+import io.snyk.plugin.mockCliDownload
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import org.apache.http.HttpStatus
 import org.junit.Test
-import java.io.File
 import java.net.SocketTimeoutException
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -42,11 +41,13 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         cutSpy.downloader = downloader
         cutSpy.errorHandler = errorHandler
         indicator = EmptyProgressIndicator()
+        removeDummyCliFile()
     }
 
     override fun tearDown() {
         unmockkAll()
         resetSettings(project)
+        removeDummyCliFile()
         super.tearDown()
     }
 
@@ -61,25 +62,31 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         assertTrue(latestReleaseInfo.tagName.isNotEmpty())
     }
 
+    /**
+     * Should be THE ONLY test where we actually do download the CLI
+     * !!! Do __MOCK__ cli download in ANY other test to reduce testing time needed !!!
+     */
     @Test
     fun testDownloadLatestCliRelease() {
         ensureCliFileExistent()
 
         cutSpy.downloadLatestRelease(indicator, project)
 
-        val downloadedFile = File(getPluginPath(), Platform.current().snykWrapperFileName)
+        val downloadedFile = cliFile
 
         assertTrue(downloadedFile.exists())
         assertEquals(cutSpy.getLatestReleaseInfo()!!.tagName, "v" + pluginSettings().cliVersion)
 
         verify { downloader.downloadFile(cliFile, any(), indicator) }
         verify { downloader.verifyChecksum(any(), any()) }
-        downloadedFile.delete()
     }
 
     @Test
     fun testDownloadLatestCliReleaseFailsWhenShaDoesNotMatch() {
         ensureCliFileExistent()
+
+        mockCliDownload()
+
         every { downloader.calculateSha256(any()) } returns "wrong-sha"
         justRun { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
 
@@ -146,54 +153,42 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         pluginSettings().cliVersion = "1.342.2"
         pluginSettings().setLastCheckDate(currentDate.minusDays(5))
 
-        val cliDownloaderService = project.service<SnykCliDownloaderService>()
+        ensureCliFileExistent()
 
-        val cliFile = getCliFile()
+        every { downloader.downloadFile(any(), any(), any()) } returns cliFile
 
-        if (!cliFile.exists()) {
-            cliFile.createNewFile()
-        }
-
-        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
+        cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
 
         assertTrue(getCliFile().exists())
         assertEquals(currentDate.toLocalDate(), pluginSettings().getLastCheckDate())
         assertEquals(
-            cliDownloaderService.getLatestReleaseInfo()!!.tagName,
+            cutSpy.getLatestReleaseInfo()!!.tagName,
             "v" + pluginSettings().cliVersion
         )
-
-        cliFile.delete()
     }
 
     @Test
     fun testCliSilentAutoUpdateWhenPreviousUpdateInfoIsNull() {
         val currentDate = LocalDate.now()
 
-        val applicationSettingsStateService = pluginSettings()
+        val settings = pluginSettings()
 
-        applicationSettingsStateService.cliVersion = ""
-        applicationSettingsStateService.lastCheckDate = null
+        settings.cliVersion = ""
+        settings.lastCheckDate = null
 
-        val cliDownloaderService = project.service<SnykCliDownloaderService>()
+        ensureCliFileExistent()
 
-        val cliFile = getCliFile()
+        every { downloader.downloadFile(any(), any(), any()) } returns cliFile
 
-        if (!cliFile.exists()) {
-            cliFile.createNewFile()
-        }
-
-        cliDownloaderService.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
+        cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
 
         assertTrue(getCliFile().exists())
 
-        assertEquals(currentDate, applicationSettingsStateService.getLastCheckDate())
+        assertEquals(currentDate, settings.getLastCheckDate())
         assertEquals(
-            cliDownloaderService.getLatestReleaseInfo()!!.tagName,
-            "v" + applicationSettingsStateService.cliVersion
+            cutSpy.getLatestReleaseInfo()!!.tagName,
+            "v" + settings.cliVersion
         )
-
-        cliFile.delete()
     }
 
     @Test

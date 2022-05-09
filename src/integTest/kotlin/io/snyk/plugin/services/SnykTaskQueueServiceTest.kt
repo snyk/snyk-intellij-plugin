@@ -12,6 +12,7 @@ import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
@@ -28,6 +29,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
+import snyk.oss.OssResult
 import java.util.concurrent.TimeUnit
 
 @Suppress("FunctionName")
@@ -68,19 +70,25 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     @Test
     fun testCliDownloadBeforeScanIfNeeded() {
         val cliFile = getCliFile()
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { getCliFile().exists() } returns false
+        every { isCliInstalled() } returns false
+
         val downloaderMock = mockk<CliDownloader>()
         service<SnykCliDownloaderService>().downloader = downloaderMock
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { getCliFile() } returns cliFile
-        every { getCliFile().exists() } returns false
         every { downloaderMock.expectedSha() } returns "test"
         every { downloaderMock.downloadFile(any(), any(), any()) } returns cliFile
-
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        every { getOssService(project)?.scan() } returns OssResult(null, null)
 
         val settings = pluginSettings()
         settings.ossScanEnable = true
+        settings.snykCodeSecurityIssuesScanEnable = false
+        settings.snykCodeQualityIssuesScanEnable = false
+        settings.iacScanEnabled = false
+        settings.containerScanEnabled = false
 
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
         snykTaskQueueService.scan()
         // needed due to luck of disposing services by Idea test framework (bug?)
         Disposer.dispose(service<SnykApiService>())
@@ -126,10 +134,10 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun `test LCE should be disabled in initial settings state`() {
+    fun `test LCE should be unknown in initial settings state`() {
         val settings = pluginSettings()
 
-        assertThat(settings.localCodeEngineEnabled, equalTo(false))
+        assertNull(settings.localCodeEngineEnabled)
     }
 
     @Test

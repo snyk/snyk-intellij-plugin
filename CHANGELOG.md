@@ -5,6 +5,10 @@
 ### Fixed
 
 - URL encode proxy credentials
+- Honoring user's product selection on welcome screen before first ever scan
+- Proper message when Code product is disabled due to unreachable org settings on backend
+- Auth screen has priority to be shown in case of invalid/empty token
+- Code scan endpoint url was internally corrupted after any Snyk settings change
 
 ## [2.4.29]
 
