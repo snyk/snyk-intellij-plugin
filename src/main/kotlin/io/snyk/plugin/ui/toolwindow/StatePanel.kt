@@ -5,6 +5,7 @@ import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
+import io.snyk.plugin.ui.panelGridConstraints
 import java.awt.Insets
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -18,7 +19,7 @@ class StatePanel(messageHtmlText: String, actionText: String? = null, action: ((
 
         if (messageHtmlText.length > 100) {
             innerPanel.add(getReadOnlyClickableHtmlJEditorPane(messageHtmlText),
-                baseGridConstraints(row = 0, fill = GridConstraints.FILL_HORIZONTAL)
+                panelGridConstraints(row = 0)
             )
         } else {
             innerPanel.add(JLabel("<html>$messageHtmlText</html>"),
@@ -33,7 +34,7 @@ class StatePanel(messageHtmlText: String, actionText: String? = null, action: ((
         }
 
         add(innerPanel,
-            baseGridConstraints(0, fill = GridConstraints.FILL_HORIZONTAL)
+            panelGridConstraints(0, fill = GridConstraints.FILL_HORIZONTAL)
         )
     }
 }
