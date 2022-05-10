@@ -105,17 +105,16 @@ open class ConsoleCommandRunner {
         val proxySettings = HttpConfigurable.getInstance()
         val proxyHost = proxySettings.PROXY_HOST
         if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxyHost.isNotEmpty()) {
-            var authentication = ""
-            if (proxySettings.PROXY_AUTHENTICATION) {
+            val authentication = if (proxySettings.PROXY_AUTHENTICATION) {
                 val auth = proxySettings.getPromptedAuthentication(proxyHost, "Snyk: Please enter your proxy password")
-                authentication = URLEncoder.encode(auth.userName, "UTF-8") + ":" + URLEncoder.encode(
-                    String(auth.password), "UTF-8"
-                ) + "@"
-            }
+                if (auth == null) "" else auth.userName.urlEncode() + ":" + String(auth.password).urlEncode() + "@"
+            } else ""
             commandLine.environment["http_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
             commandLine.environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
         }
     }
+
+    private fun String.urlEncode() = URLEncoder.encode(this, "UTF-8")
 
     companion object {
         const val PROCESS_CANCELLED_BY_USER = "PROCESS_CANCELLED_BY_USER"
