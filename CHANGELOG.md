@@ -6,6 +6,7 @@
 
 - Empty (or cancelled request for) proxy credentials
 - `IllegalStateException` when no `Document` found for invalid(obsolete) file
+- For Snyk Code multi-file issues code snippet in some data flow steps shown from wrong file
 
 ## [2.4.30]
 
