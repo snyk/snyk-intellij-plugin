@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.31]
+
+### Fixed
+
+- Empty (or cancelled request for) proxy credentials
+
 ## [2.4.30]
 
 ### Fixed

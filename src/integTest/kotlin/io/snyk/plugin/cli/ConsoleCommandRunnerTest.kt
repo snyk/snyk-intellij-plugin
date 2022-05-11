@@ -152,6 +152,41 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun testSetupCliEnvironmentVariablesWithProxyWithCancelledAuth() {
+        val httpConfigurable = HttpConfigurable.getInstance()
+        val originalProxyHost = httpConfigurable.PROXY_HOST
+        val originalProxyPort = httpConfigurable.PROXY_PORT
+        val originalUseProxy = httpConfigurable.USE_HTTP_PROXY
+        val originalProxyAuthentication = httpConfigurable.PROXY_AUTHENTICATION
+        val originalAuthenticationCancelled = httpConfigurable.AUTHENTICATION_CANCELLED
+        val originalLogin = httpConfigurable.proxyLogin
+        val originalPassword = httpConfigurable.plainProxyPassword
+        try {
+            httpConfigurable.PROXY_PORT = 3128
+            httpConfigurable.PROXY_HOST = "testProxy"
+            httpConfigurable.USE_HTTP_PROXY = true
+            httpConfigurable.PROXY_AUTHENTICATION = true
+            httpConfigurable.AUTHENTICATION_CANCELLED = true
+
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedProxy =
+                "http://${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
+
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+            assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
+        } finally {
+            httpConfigurable.USE_HTTP_PROXY = originalUseProxy
+            httpConfigurable.PROXY_HOST = originalProxyHost
+            httpConfigurable.PROXY_PORT = originalProxyPort
+            httpConfigurable.PROXY_AUTHENTICATION = originalProxyAuthentication
+            httpConfigurable.AUTHENTICATION_CANCELLED = originalAuthenticationCancelled
+            httpConfigurable.proxyLogin = originalLogin
+            httpConfigurable.plainProxyPassword = originalPassword
+        }
+    }
+
+    @Test
     fun testSetupCliEnvironmentVariables() {
         val generalCommandLine = GeneralCommandLine("")
         val snykPluginVersion = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
