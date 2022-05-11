@@ -2,14 +2,13 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SideBorder
-import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
-import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.Borders
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.DescriptionHeaderPanel
+import io.snyk.plugin.ui.addSpacer
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -47,15 +46,7 @@ abstract class IssueDescriptionPanelBase(
     private fun descriptionBodyPanel(): JPanel = JPanel(BorderLayout()).apply {
         add(titlePanel(), BorderLayout.NORTH)
         val (mainBodyPanel, rowForSpacer) = createMainBodyPanel()
-        mainBodyPanel.add(
-            Spacer(),
-            baseGridConstraints(
-                row = rowForSpacer,
-                fill = GridConstraints.FILL_VERTICAL,
-                hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                vSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW
-            )
-        )
+        mainBodyPanel.addSpacer(rowForSpacer)
         add(mainBodyPanel, BorderLayout.CENTER)
     }
 

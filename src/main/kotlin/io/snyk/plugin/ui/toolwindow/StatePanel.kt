@@ -1,8 +1,8 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.ui.components.labels.LinkLabel
-import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
+import io.snyk.plugin.ui.addSpacer
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.panelGridConstraints
@@ -15,26 +15,30 @@ class StatePanel(messageHtmlText: String, actionText: String? = null, action: ((
         layout = GridLayoutManager(1, 1, Insets(20, 100, 20, 100), -1, -1)
 
         val innerPanel = JPanel()
-        innerPanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), -1, -1)
+        innerPanel.layout = GridLayoutManager(4, 2, Insets(0, 0, 0, 0), -1, -1)
 
         if (messageHtmlText.length > 100) {
             innerPanel.add(getReadOnlyClickableHtmlJEditorPane(messageHtmlText),
-                panelGridConstraints(row = 0)
+                panelGridConstraints(row = 1)
             )
         } else {
             innerPanel.add(JLabel("<html>$messageHtmlText</html>"),
-                baseGridConstraints(row = 0, indent = 0)
+                baseGridConstraints(row = 1, indent = 0)
             )
         }
 
         if (actionText != null && action != null) {
             innerPanel.add(LinkLabel.create(actionText, action),
-                baseGridConstraints(row = 1, indent = 0)
+                baseGridConstraints(row = 2, indent = 0)
             )
         }
 
-        add(innerPanel,
-            panelGridConstraints(0, fill = GridConstraints.FILL_HORIZONTAL)
+        innerPanel.addSpacer(row = 0)
+        innerPanel.addSpacer(row = 3)
+
+        add(
+            innerPanel,
+            panelGridConstraints(0)
         )
     }
 }

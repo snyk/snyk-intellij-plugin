@@ -6,6 +6,7 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
+import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBHtmlEditorKit
 import com.intellij.util.ui.JBUI
@@ -202,6 +203,17 @@ fun panelGridConstraints(
     vSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
     indent = indent
 )
+
+fun JPanel.addSpacer(row: Int) =
+    this.add(
+        Spacer(),
+        baseGridConstraints(
+            row = row,
+            fill = GridConstraints.FILL_VERTICAL,
+            hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
+            vSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW
+        )
+    )
 
 fun descriptionHeaderPanel(
     issueNaming: String,
