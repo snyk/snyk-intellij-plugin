@@ -97,7 +97,18 @@ fun snykCodeAvailabilityPostfix(): String {
     }
 }
 
+/** Be careful! On macOS it's height could be set to 0 in some cases:
+ * would blame `fill = FILL_HORIZONTAL`, but sometimes even with pure `panelGridConstraints` it's not shown (height=0)
+ * another suspect could be calling that fun inside `init{}` of the Panel class.*/
 fun getReadOnlyClickableHtmlJEditorPane(
+    htmlText: String,
+    font: Font = UIUtil.getLabelFont(),
+    noBorder: Boolean = false
+): JEditorPane = getReadOnlyClickableHtmlJEditorPaneFixedSize(htmlText, font, noBorder).apply {
+    preferredSize = Dimension() // this is the key part for shrink/grow.
+}
+
+fun getReadOnlyClickableHtmlJEditorPaneFixedSize(
     htmlText: String,
     font: Font = UIUtil.getLabelFont(),
     noBorder: Boolean = false
@@ -113,7 +124,6 @@ fun getReadOnlyClickableHtmlJEditorPane(
     ).apply {
         isEditable = false
         background = UIUtil.getPanelBackground()
-        preferredSize = Dimension() // this is the key part for shrink/grow.
 
         // add a CSS rule to force body tags to use the default label font
         // instead of the value in javax.swing.text.html.default.css
