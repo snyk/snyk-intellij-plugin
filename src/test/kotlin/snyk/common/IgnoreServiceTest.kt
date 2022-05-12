@@ -9,6 +9,7 @@ import io.mockk.verify
 import io.snyk.plugin.cli.CliNotExistsException
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import junit.framework.TestCase.assertEquals
@@ -33,6 +34,7 @@ class IgnoreServiceTest {
 
         every { pluginSettings() } returns settings
         every { getCliFile() } returns File.createTempFile("cliTestTmpFile", ".tmp")
+        every { isCliInstalled() } returns true
         every { project.basePath } returns expectedWorkingDirectory
         every { settings.token } returns expectedApiToken
         every { settings.getAdditionalParameters() } returns ""
