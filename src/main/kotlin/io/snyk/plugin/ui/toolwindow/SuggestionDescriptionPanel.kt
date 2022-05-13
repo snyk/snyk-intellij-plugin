@@ -125,7 +125,7 @@ class SuggestionDescriptionPanel(
     private fun getLineOfCode(range: MyTextRange, file: SnykCodeFile?): String {
         if (file == null) return "<File Not Found>"
         val document = PDU.toPsiFile(file)?.let { PsiDocumentManager.getInstance(file.project).getDocument(it) }
-            ?: throw IllegalStateException("No document found for ${file.virtualFile.path}")
+            ?: return "<No Document Found>"
         val chars = document.charsSequence
         val startOffset = range.start
         val textLength = document.textLength

@@ -5,6 +5,7 @@
 ### Fixed
 
 - Empty (or cancelled request for) proxy credentials
+- `IllegalStateException` when no `Document` found for invalid(obsolete) file
 
 ## [2.4.30]
 
