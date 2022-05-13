@@ -241,7 +241,7 @@ class SuggestionDescriptionPanel(
         }
         stepPanel.add(positionLabel, baseGridConstraintsAnchorWest(0, indent = 1))
 
-        val codeLine = codeLine(markerRange, snykCodeFile)
+        val codeLine = codeLine(markerRange, fileToNavigate)
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,
