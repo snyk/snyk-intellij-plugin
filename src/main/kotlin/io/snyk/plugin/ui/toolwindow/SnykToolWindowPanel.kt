@@ -1142,14 +1142,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         private const val NODE_INITIAL_STATE = -1
         private const val NODE_NOT_SUPPORTED_STATE = -2
 
-        private val CONTAINER_SCAN_COMMON_POSTFIX =
+        private val CONTAINER_DOCS_TEXT_WITH_LINK =
             """
-                The plugin searches for Kubernetes workload files (*.yaml, *.yml) and extracts the used images.
-                During testing the image, the CLI will download the image
-                if it is not already available locally in your Docker daemon.<br><br>
                 If you are curious to know more about how the Snyk Container integration works, have a look at our
                 <a href="https://docs.snyk.io/features/integrations/ide-tools/jetbrains-plugins#analysis-results-snyk-container">docs</a>.
             """.trimIndent()
+
+        private val CONTAINER_SCAN_COMMON_POSTFIX =
+            """
+                The plugin searches for Kubernetes workload files (*.yaml, *.yml) and extracts the used images.<br>
+                During testing the image, the CLI will download the image
+                if it is not already available locally in your Docker daemon.<br><br>
+                $CONTAINER_DOCS_TEXT_WITH_LINK
+            """.trimIndent()
+
+
         val CONTAINER_SCAN_START_TEXT =
             "Snyk Container scan for vulnerabilities.<br><br>$CONTAINER_SCAN_COMMON_POSTFIX"
         val CONTAINER_SCAN_RUNNING_TEXT =
@@ -1157,13 +1164,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         private val CONTAINER_NO_FOUND_COMMON_POSTFIX =
             """
-                The plugin searches for Kubernetes workload files (*.yaml, *.yml) and extracts the used images.
-                Consider checking if your container application definition has an image specified.
+                The plugin searches for Kubernetes workload files (*.yaml, *.yml) and extracts the used images.<br>
+                Consider checking if your container application definition has an image specified.<br>
                 Make sure that the container image has been successfully built locally
                 and/or pushed to a container registry.<br><br>
-                If you are curious to know more about how the Snyk Container integration works, have a look at our
-                <a href="https://docs.snyk.io/features/integrations/ide-tools/jetbrains-plugins#analysis-results-snyk-container">docs</a>.
+                $CONTAINER_DOCS_TEXT_WITH_LINK
             """.trimIndent()
+
         val CONTAINER_NO_ISSUES_FOUND_TEXT =
             "Snyk Container scan didn't find any issues in the scanned container images.<br><br>$CONTAINER_NO_FOUND_COMMON_POSTFIX"
         val CONTAINER_NO_IMAGES_FOUND_TEXT =

@@ -6,6 +6,7 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
+import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBHtmlEditorKit
 import com.intellij.util.ui.JBUI
@@ -96,7 +97,18 @@ fun snykCodeAvailabilityPostfix(): String {
     }
 }
 
+/** Be careful! On macOS it's height could be set to 0 in some cases:
+ * would blame `fill = FILL_HORIZONTAL`, but sometimes even with pure `panelGridConstraints` it's not shown (height=0)
+ * another suspect could be calling that fun inside `init{}` of the Panel class.*/
 fun getReadOnlyClickableHtmlJEditorPane(
+    htmlText: String,
+    font: Font = UIUtil.getLabelFont(),
+    noBorder: Boolean = false
+): JEditorPane = getReadOnlyClickableHtmlJEditorPaneFixedSize(htmlText, font, noBorder).apply {
+    preferredSize = Dimension() // this is the key part for shrink/grow.
+}
+
+fun getReadOnlyClickableHtmlJEditorPaneFixedSize(
     htmlText: String,
     font: Font = UIUtil.getLabelFont(),
     noBorder: Boolean = false
@@ -112,7 +124,6 @@ fun getReadOnlyClickableHtmlJEditorPane(
     ).apply {
         isEditable = false
         background = UIUtil.getPanelBackground()
-        preferredSize = Dimension() // this is the key part for shrink/grow.
 
         // add a CSS rule to force body tags to use the default label font
         // instead of the value in javax.swing.text.html.default.css
@@ -202,6 +213,17 @@ fun panelGridConstraints(
     vSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
     indent = indent
 )
+
+fun JPanel.addSpacer(row: Int) =
+    this.add(
+        Spacer(),
+        baseGridConstraints(
+            row = row,
+            fill = GridConstraints.FILL_VERTICAL,
+            hSizePolicy = GridConstraints.SIZEPOLICY_CAN_SHRINK,
+            vSizePolicy = GridConstraints.SIZEPOLICY_WANT_GROW
+        )
+    )
 
 fun descriptionHeaderPanel(
     issueNaming: String,

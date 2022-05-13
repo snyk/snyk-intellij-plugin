@@ -6,7 +6,8 @@
 
 - Empty (or cancelled request for) proxy credentials
 - `IllegalStateException` when no `Document` found for invalid(obsolete) file
-- For Snyk Code multi-file issues code snippet in some data flow steps shown from wrong file
+- For Snyk Code multi-file issues code snippet in some data flow steps was shown from wrong file
+- Correctly show some messages on macOS: Terms and Condition message on Auth panel and Container specific message for tree node
 
 ## [2.4.30]
 

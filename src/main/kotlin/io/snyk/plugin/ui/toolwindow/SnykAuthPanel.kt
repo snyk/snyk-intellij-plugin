@@ -23,7 +23,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.addAndGetCenteredPanel
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.boldLabel
-import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
+import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPaneFixedSize
 import io.snyk.plugin.ui.getStandardLayout
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.AuthenticateButtonIsClicked
@@ -79,11 +79,11 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
         panel.add(authButton, baseGridConstraints(row = 2, column = 1, anchor = ANCHOR_NORTHWEST))
 
         panel.add(
-            getReadOnlyClickableHtmlJEditorPane(
-                messagePolicyAndTerms,
+            getReadOnlyClickableHtmlJEditorPaneFixedSize(
+                messagePolicyAndTermsHtml,
                 font = io.snyk.plugin.ui.getFont(-1, 11, UIUtil.getLabelFont()) ?: UIUtil.getLabelFont()
             ),
-            baseGridConstraints(row = 3, column = 1, anchor = ANCHOR_SOUTHWEST, fill = FILL_HORIZONTAL)
+            baseGridConstraints(row = 3, column = 1, anchor = ANCHOR_SOUTHWEST)
         )
 
         ApplicationManager.getApplication().messageBus.connect(this@SnykAuthPanel)
@@ -117,7 +117,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
 
     companion object {
         const val AUTHENTICATE_BUTTON_TEXT = "Test code now"
-        val messagePolicyAndTerms =
+        val messagePolicyAndTermsHtml =
             """
                 <br>
                 By connecting your account with Snyk, you agree to<br>
