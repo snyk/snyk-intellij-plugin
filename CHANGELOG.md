@@ -8,6 +8,7 @@
 - `IllegalStateException` when no `Document` found for invalid(obsolete) file
 - For Snyk Code multi-file issues code snippet in some data flow steps was shown from wrong file
 - Correctly show some messages on macOS: Terms and Condition message on Auth panel and Container specific message for tree node
+- Make re-try attempts for most Snyk Code api calls if not succeed for any reason (except 401 - auth failed)
 
 ## [2.4.30]
 

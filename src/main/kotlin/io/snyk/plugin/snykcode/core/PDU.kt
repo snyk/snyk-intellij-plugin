@@ -153,13 +153,16 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
     }
 
     override fun showWarn(message: String, project: Any?, wasWarnShown: Boolean) {
-        // wasWarnShown will be needed for auto scans only
-        runForProject(project, Consumer { prj ->
-            SnykBalloonNotificationHelper.showWarn(message, prj)
-            getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
-                SnykError(message, prj.basePath ?: "")
-            )
-        })
+        if (wasWarnShown) {
+            SCLogger.instance.logWarn(message)
+        } else {
+            runForProject(project, Consumer { prj ->
+                SnykBalloonNotificationHelper.showWarn(message, prj)
+                getSyncPublisher(prj, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeError(
+                    SnykError(message, prj.basePath ?: "")
+                )
+            })
+        }
     }
 
     override fun showError(message: String, project: Any?) {
