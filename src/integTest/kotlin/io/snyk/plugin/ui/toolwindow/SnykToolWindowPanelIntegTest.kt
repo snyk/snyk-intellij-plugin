@@ -171,47 +171,74 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     )
 
     @Test
-    fun `test should not display error when no OSS supported file found`() {
+    fun `test when no OSS supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError = SnykError("Could not detect supported target files in", project.basePath.toString())
+        val snykError = SnykError(SnykToolWindowPanel.NO_OSS_FILES, project.basePath.toString())
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
         toolWindowPanel.snykScanListener.scanningOssError(snykErrorControl)
         toolWindowPanel.snykScanListener.scanningOssError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
+        val rootOssTreeNode = toolWindowPanel.getRootOssIssuesTreeNode()
+        // flow and internal state check
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(any(), project)
         }
         assertTrue(toolWindowPanel.currentOssError == null)
         assertTrue(getSnykCachedResults(project)?.currentOssResults == null)
+        val cliErrorMessage = rootOssTreeNode.originalCliErrorMessage
+        assertTrue(cliErrorMessage != null && cliErrorMessage.startsWith(SnykToolWindowPanel.NO_OSS_FILES))
+        // node check
         assertEquals(
             SnykToolWindowPanel.OSS_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_PACKAGE_MANAGER_FOUND,
-            toolWindowPanel.getRootOssIssuesTreeNode().userObject
+            rootOssTreeNode.userObject
         )
+        // description check
+        TreeUtil.selectNode(toolWindowPanel.getTree(), rootOssTreeNode)
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        val jEditorPane = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JEditorPane::class
+        )
+        assertNotNull(jEditorPane)
+        jEditorPane!!
+        assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_OSS_FILES))
     }
 
     @Test
-    fun `test should not display error when no IAC supported file found`() {
+    fun `test when no IAC supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError = SnykError("Could not find any valid IaC files", project.basePath.toString())
+        val snykError = SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString())
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
         toolWindowPanel.snykScanListener.scanningIacError(snykErrorControl)
         toolWindowPanel.snykScanListener.scanningIacError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
+        // flow and internal state check
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(any(), project)
         }
-
         assertTrue(toolWindowPanel.currentIacError == null)
+        assertTrue(getSnykCachedResults(project)?.currentIacResult == null)
+        // node check
         assertEquals(
             SnykToolWindowPanel.IAC_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND,
             toolWindowPanel.getRootIacIssuesTreeNode().userObject
         )
+        // description check
+        TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootIacIssuesTreeNode())
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        val jEditorPane = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JEditorPane::class
+        )
+        assertNotNull(jEditorPane)
+        jEditorPane!!
+        assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_IAC_FILES))
     }
 
     @Test
