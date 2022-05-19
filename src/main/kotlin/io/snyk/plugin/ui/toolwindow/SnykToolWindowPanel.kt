@@ -51,6 +51,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.severityAsString
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.txtToHtml
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
 import snyk.analytics.AnalysisIsReady
@@ -150,6 +151,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             override fun scanningStarted() {
                 currentOssError = null
+                rootOssTreeNode.originalCliErrorMessage = null
                 currentSnykCodeError = null
                 currentIacError = null
                 currentContainerError = null
@@ -232,8 +234,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 ApplicationManager.getApplication().invokeLater {
                     if (snykError.message.startsWith(NO_OSS_FILES)) {
                         currentOssError = null
+                        rootOssTreeNode.originalCliErrorMessage = snykError.message
                         ossResultsCount = NODE_NOT_SUPPORTED_STATE
                     } else {
+                        rootOssTreeNode.originalCliErrorMessage = null
                         SnykBalloonNotificationHelper.showError(snykError.message, project)
                         if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
                             pluginSettings().token = null
@@ -540,6 +544,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         val snykCachedResults = getSnykCachedResults(project)
         snykCachedResults?.currentOssResults = null
         currentOssError = null
+        rootOssTreeNode.originalCliErrorMessage = null
         currentSnykCodeError = null
         snykCachedResults?.currentIacResult = null
         currentIacError = null
@@ -1179,7 +1184,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 }
 
 class RootOssTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.OSS_ROOT_TEXT, project)
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.OSS_ROOT_TEXT, project) {
+
+    var originalCliErrorMessage: String? = null
+
+    override fun getNoVulnerabilitiesMessage(): String =
+        originalCliErrorMessage?.let { txtToHtml(it) } ?: super.getNoVulnerabilitiesMessage()
+
+    override fun getSelectVulnerabilityMessage(): String =
+        originalCliErrorMessage?.let { txtToHtml(it) } ?: super.getSelectVulnerabilityMessage()
+}
 
 class RootSecurityIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT, project)
@@ -1188,7 +1202,22 @@ class RootQualityIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT, project)
 
 class RootIacIssuesTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project)
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project) {
+
+    override fun getNoVulnerabilitiesMessage(): String =
+        if ((this.userObject as String).endsWith(SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND)) {
+            SnykToolWindowPanel.NO_IAC_FILES
+        } else {
+            super.getNoVulnerabilitiesMessage()
+        }
+
+    override fun getSelectVulnerabilityMessage(): String =
+        if ((this.userObject as String).endsWith(SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND)) {
+            SnykToolWindowPanel.NO_IAC_FILES
+        } else {
+            super.getSelectVulnerabilityMessage()
+        }
+}
 
 class RootContainerIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CONTAINER_ROOT_TEXT, project) {

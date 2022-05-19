@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.32]
+
+### Changed
+- Show specific description when no IaC or OSS files found but corresponded scan performed
+
 ## [2.4.31]
 
 ### Fixed

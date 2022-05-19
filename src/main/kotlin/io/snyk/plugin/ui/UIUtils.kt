@@ -13,12 +13,15 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.LabelProvider
+import org.apache.commons.lang.StringEscapeUtils
 import snyk.common.isSnykCodeAvailable
 import java.awt.Color
 import java.awt.Container
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 import javax.swing.ImageIcon
 import javax.swing.JComponent
 import javax.swing.JEditorPane
@@ -341,4 +344,16 @@ fun wrapWithScrollPane(panel: JPanel): JScrollPane {
         }, 100
     )
     return scrollPane
+}
+
+fun txtToHtml(s: String): String {
+    val escapedHtml = StringEscapeUtils.escapeHtml(s)
+    val newLineConverted = escapedHtml
+        .replace("\n", "<br>")
+        .replace("\t", "&nbsp; &nbsp; &nbsp;")
+    // html link converter "stolen" from https://stackoverflow.com/a/12053940/7577274
+    val str = "(?i)\\b((?:https?://|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:\'\".,<>?«»“”‘’]))"
+    val patt: Pattern = Pattern.compile(str)
+    val matcher: Matcher = patt.matcher(newLineConverted)
+    return matcher.replaceAll("<a href=\"$1\">$1</a>")
 }
