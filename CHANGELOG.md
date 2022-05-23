@@ -2,6 +2,13 @@
 
 ## [2.4.32]
 
+### Fixed
+
+- tweak and update Snyk Code communication with server:
+  * encode and compress POST/PUT requests
+  * update fallbacks for supported extensions and configFiles
+  * do not proceed (send) files if only configFiles presence
+ 
 ### Changed
 - Show specific description when no IaC or OSS files found but corresponded scan performed
 
