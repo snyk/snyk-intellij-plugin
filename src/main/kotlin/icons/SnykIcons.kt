@@ -47,41 +47,41 @@ object SnykIcons {
     val RPM = getIcon("/icons/rpm.svg")
     val DOCKER = getIcon("/icons/docker.svg")
 
-    private val CRITICAL_SEVERITY = getIcon("/icons/severity_critical.svg")
-    private val CRITICAL_SEVERITY_24 = getIcon("/icons/severity_critical_24.svg")
-    private val HIGH_SEVERITY = getIcon("/icons/severity_high.svg")
-    private val HIGH_SEVERITY_24 = getIcon("/icons/severity_high_24.svg")
-    private val LOW_SEVERITY = getIcon("/icons/severity_low.svg")
-    private val LOW_SEVERITY_24 = getIcon("/icons/severity_low_24.svg")
-    private val MEDIUM_SEVERITY = getIcon("/icons/severity_medium.svg")
-    private val MEDIUM_SEVERITY_24 = getIcon("/icons/severity_medium_24.svg")
+    private val CRITICAL_SEVERITY_16 = getIcon("/icons/severity_critical_16.svg")
+    private val CRITICAL_SEVERITY_32 = getIcon("/icons/severity_critical_32.svg")
+    private val HIGH_SEVERITY_16 = getIcon("/icons/severity_high_16.svg")
+    private val HIGH_SEVERITY_32 = getIcon("/icons/severity_high_32.svg")
+    private val LOW_SEVERITY_16 = getIcon("/icons/severity_low_16.svg")
+    private val LOW_SEVERITY_32 = getIcon("/icons/severity_low_32.svg")
+    private val MEDIUM_SEVERITY_16 = getIcon("/icons/severity_medium_16.svg")
+    private val MEDIUM_SEVERITY_32 = getIcon("/icons/severity_medium_32.svg")
 
     fun getSeverityIcon(severity: String, iconSize: IconSize = IconSize.SIZE16): Icon {
         return when (severity) {
             Severity.CRITICAL -> when (iconSize) {
-                IconSize.SIZE16 -> CRITICAL_SEVERITY
-                IconSize.SIZE24 -> CRITICAL_SEVERITY_24
+                IconSize.SIZE16 -> CRITICAL_SEVERITY_16
+                IconSize.SIZE32 -> CRITICAL_SEVERITY_32
             }
             Severity.HIGH -> when (iconSize) {
-                IconSize.SIZE16 -> HIGH_SEVERITY
-                IconSize.SIZE24 -> HIGH_SEVERITY_24
+                IconSize.SIZE16 -> HIGH_SEVERITY_16
+                IconSize.SIZE32 -> HIGH_SEVERITY_32
             }
             Severity.MEDIUM -> when (iconSize) {
-                IconSize.SIZE16 -> MEDIUM_SEVERITY
-                IconSize.SIZE24 -> MEDIUM_SEVERITY_24
+                IconSize.SIZE16 -> MEDIUM_SEVERITY_16
+                IconSize.SIZE32 -> MEDIUM_SEVERITY_32
             }
             Severity.LOW -> when (iconSize) {
-                IconSize.SIZE16 -> LOW_SEVERITY
-                IconSize.SIZE24 -> LOW_SEVERITY_24
+                IconSize.SIZE16 -> LOW_SEVERITY_16
+                IconSize.SIZE32 -> LOW_SEVERITY_32
             }
             else -> when (iconSize) {
                 IconSize.SIZE16 -> VULNERABILITY_16
-                IconSize.SIZE24 -> VULNERABILITY_24
+                IconSize.SIZE32 -> VULNERABILITY_24
             }
         }
     }
 
     enum class IconSize {
-        SIZE16, SIZE24
+        SIZE16, SIZE32
     }
 }

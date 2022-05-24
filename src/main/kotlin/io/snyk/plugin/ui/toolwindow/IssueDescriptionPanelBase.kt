@@ -72,7 +72,7 @@ abstract class IssueDescriptionPanelBase(
         return titlePanel
     }
 
-    protected open fun getTitleIcon() = SnykIcons.getSeverityIcon(severity, SnykIcons.IconSize.SIZE24)
+    protected open fun getTitleIcon() = SnykIcons.getSeverityIcon(severity, SnykIcons.IconSize.SIZE32)
 
     private fun getTitleText() = " " + title.ifBlank {
         when (severity) {
