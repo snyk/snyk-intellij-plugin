@@ -2,16 +2,11 @@ package snyk.iac.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
-import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiFile
-import io.snyk.plugin.Severity.Companion.CRITICAL
-import io.snyk.plugin.Severity.Companion.HIGH
-import io.snyk.plugin.Severity.Companion.LOW
-import io.snyk.plugin.Severity.Companion.MEDIUM
 import io.snyk.plugin.getSnykCachedResults
 import snyk.common.AnnotatorCommon
 import snyk.iac.IacIssue
@@ -46,14 +41,8 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             if (iacIssue.ignored || iacIssue.obsolete) return@forEach
 
             LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
-            val severity = when (iacIssue.severity) {
-                CRITICAL -> HighlightSeverity.ERROR
-                HIGH -> HighlightSeverity.WARNING
-                MEDIUM -> HighlightSeverity.WEAK_WARNING
-                LOW -> HighlightSeverity.INFORMATION
-                else -> HighlightSeverity.INFORMATION
-            }
-            holder.newAnnotation(severity, annotationMessage(iacIssue))
+            val highlightSeverity = iacIssue.getSeverity().getHighlightSeverity()
+            holder.newAnnotation(highlightSeverity, annotationMessage(iacIssue))
                 .range(textRange(psiFile, iacIssue))
                 .create()
         }

@@ -22,10 +22,6 @@ import org.hamcrest.collection.IsCollectionWithSize.hasSize
 import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
-import snyk.common.SeverityConstants.SEVERITY_CRITICAL
-import snyk.common.SeverityConstants.SEVERITY_HIGH
-import snyk.common.SeverityConstants.SEVERITY_LOW
-import snyk.common.SeverityConstants.SEVERITY_MEDIUM
 import snyk.common.SnykCachedResults
 import snyk.container.BaseImageInfo
 import snyk.container.BaseImageRemediation
@@ -46,6 +42,11 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     private val containerResultWithRemediationJson =
         javaClass.classLoader.getResource("container-test-results/nginx-with-remediation.json")!!
             .readText(Charsets.UTF_8)
+
+    private val SEVERITY_CRITICAL = "critical"
+    private val SEVERITY_HIGH = "high"
+    private val SEVERITY_MEDIUM = "medium"
+    private val SEVERITY_LOW = "low"
 
     lateinit var virtualFile: VirtualFile
     private lateinit var psiFile: PsiFile
@@ -107,25 +108,25 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     @Test
     fun `test severity with at least one critical should return error`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_CRITICAL))
+        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_CRITICAL).getSeverity().getHighlightSeverity()
         assertEquals(HighlightSeverity.ERROR.javaClass, severity.javaClass)
     }
 
     @Test
     fun `test severity with at least one high should return warning`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_HIGH))
+        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_HIGH).getSeverity().getHighlightSeverity()
         assertEquals(HighlightSeverity.WARNING.javaClass, severity.javaClass)
     }
 
     @Test
     fun `test severity with at least one medium should return weak warning`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_MEDIUM))
+        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_MEDIUM).getSeverity().getHighlightSeverity()
         assertEquals(HighlightSeverity.WEAK_WARNING.javaClass, severity.javaClass)
     }
 
     @Test
     fun `test severity with at least one low should return info`() {
-        val severity = cut.severity(createContainerImageForIssuesWithSeverity(SEVERITY_LOW))
+        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_LOW).getSeverity().getHighlightSeverity()
         assertEquals(HighlightSeverity.INFORMATION.javaClass, severity.javaClass)
     }
 

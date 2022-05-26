@@ -267,7 +267,7 @@ class OssServiceTest : LightPlatformTestCase() {
                     language
                     packageManager
                     packageName
-                    severity
+                    getSeverity()
                     name
                     version
                     exploit

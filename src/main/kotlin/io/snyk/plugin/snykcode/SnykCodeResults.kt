@@ -65,5 +65,4 @@ class SnykCodeResults(
     }
 }
 
-val SuggestionForFile.severityAsString: String
-    get() = Severity.toName(this.severity)
+fun SuggestionForFile.getSeverityAsEnum(): Severity = Severity.getFromIndex(this.severity)

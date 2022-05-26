@@ -183,8 +183,8 @@ class IacServiceTest : LightPlatformTestCase() {
         touchAllFields(iacResult)
     }
 
-    private fun touchAllFields(ossResultToCheck: IacResult) {
-        ossResultToCheck.allCliIssues?.forEach {
+    private fun touchAllFields(iacResultToCheck: IacResult) {
+        iacResultToCheck.allCliIssues?.forEach {
             it.targetFile
             it.packageManager
             it.uniqueCount
@@ -192,7 +192,7 @@ class IacServiceTest : LightPlatformTestCase() {
                 with(iacIssue) {
                     id
                     title
-                    severity
+                    getSeverity()
                     publicId
                     documentation
                     lineNumber

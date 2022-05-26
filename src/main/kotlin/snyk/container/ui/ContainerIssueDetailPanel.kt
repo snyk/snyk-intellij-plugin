@@ -15,7 +15,7 @@ import javax.swing.JPanel
 
 class ContainerIssueDetailPanel(
     private val issue: ContainerIssue
-) : IssueDescriptionPanelBase(title = issue.title, severity = issue.severity) {
+) : IssueDescriptionPanelBase(title = issue.title, severity = issue.getSeverity()) {
 
     init {
         createUI()

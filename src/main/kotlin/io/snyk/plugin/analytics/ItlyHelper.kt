@@ -3,6 +3,7 @@ package io.snyk.plugin.analytics
 import ai.deepcode.javaclient.core.SuggestionForFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.snykcode.getSeverityAsEnum
 import snyk.ItlyOverrideHelper
 import snyk.advisor.AdvisorPackageManager
 import snyk.analytics.AnalysisIsReady.AnalysisType
@@ -29,18 +30,18 @@ fun getSelectedProducts(settings: SnykApplicationSettingsStateService): Array<St
 }
 
 fun Vulnerability.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
-    return mapIssueSeverity(severity)
+    return mapIssueSeverity(getSeverity())
 }
 
 fun IacIssue.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
-    return mapIssueSeverity(severity)
+    return mapIssueSeverity(getSeverity())
 }
 
 fun ContainerIssue.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
-    return mapIssueSeverity(severity)
+    return mapIssueSeverity(getSeverity())
 }
 
-private fun mapIssueSeverity(severity: String): IssueInTreeIsClicked.Severity? {
+private fun mapIssueSeverity(severity: Severity): IssueInTreeIsClicked.Severity? {
     return when (severity) {
         Severity.CRITICAL -> IssueInTreeIsClicked.Severity.CRITICAL
         Severity.HIGH -> IssueInTreeIsClicked.Severity.HIGH
@@ -55,13 +56,7 @@ fun Vulnerability.getIssueType(): IssueInTreeIsClicked.IssueType {
 }
 
 fun SuggestionForFile.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
-    return when (severity) {
-        4 -> IssueInTreeIsClicked.Severity.CRITICAL
-        3 -> IssueInTreeIsClicked.Severity.HIGH
-        2 -> IssueInTreeIsClicked.Severity.MEDIUM
-        1 -> IssueInTreeIsClicked.Severity.LOW
-        else -> null
-    }
+    return mapIssueSeverity(getSeverityAsEnum())
 }
 
 fun SuggestionForFile.getIssueType(): IssueInTreeIsClicked.IssueType {

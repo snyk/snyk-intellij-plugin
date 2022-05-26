@@ -23,7 +23,7 @@ private val EMPTY_PANEL = JBUI.Panels.simplePanel()
 
 abstract class IssueDescriptionPanelBase(
     private val title: String,
-    private val severity: String
+    private val severity: Severity
 ) : JPanel(BorderLayout()), IssueDescriptionPanel {
 
     /**

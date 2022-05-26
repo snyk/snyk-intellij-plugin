@@ -56,7 +56,7 @@ object SnykIcons {
     private val MEDIUM_SEVERITY_16 = getIcon("/icons/severity_medium_16.svg")
     private val MEDIUM_SEVERITY_32 = getIcon("/icons/severity_medium_32.svg")
 
-    fun getSeverityIcon(severity: String, iconSize: IconSize = IconSize.SIZE16): Icon {
+    fun getSeverityIcon(severity: Severity, iconSize: IconSize = IconSize.SIZE16): Icon {
         return when (severity) {
             Severity.CRITICAL -> when (iconSize) {
                 IconSize.SIZE16 -> CRITICAL_SEVERITY_16

@@ -2,6 +2,7 @@ package snyk.container
 
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
+import io.snyk.plugin.Severity
 
 data class ContainerIssuesForImage(
     val vulnerabilities: List<ContainerIssue>,
@@ -15,6 +16,8 @@ data class ContainerIssuesForImage(
     val obsolete: Boolean get() = vulnerabilities.any { it.obsolete }
     val ignored: Boolean get() = vulnerabilities.all { it.ignored }
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
+
+    fun getSeverity() = vulnerabilities.map { it.getSeverity() }.max() ?: Severity.UNKNOWN
 }
 
 data class Docker(val baseImageRemediation: BaseImageRemediation? = null)
@@ -32,7 +35,7 @@ data class ContainerIssue(
     val id: String,
     val title: String,
     val description: String,
-    val severity: String,
+    private val severity: String,
     val identifiers: Identifiers? = null,
     val cvssScore: String? = null,
     @SerializedName("CVSSv3") val cvssV3: String? = null,
@@ -41,7 +44,9 @@ data class ContainerIssue(
     val packageManager: String,
     @Expose val obsolete: Boolean = false,
     @Expose val ignored: Boolean = false
-)
+) {
+    fun getSeverity(): Severity = Severity.getFromName(severity)
+}
 
 data class Identifiers(
     @SerializedName("CWE")

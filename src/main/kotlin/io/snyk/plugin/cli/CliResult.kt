@@ -18,7 +18,7 @@ abstract class CliResult<CliIssues>(
 
     abstract val issuesCount: Int?
 
-    protected abstract fun countBySeverity(severity: String): Int?
+    protected abstract fun countBySeverity(severity: Severity): Int?
 
     fun criticalSeveritiesCount(): Int = countBySeverity(Severity.CRITICAL) ?: 0
 

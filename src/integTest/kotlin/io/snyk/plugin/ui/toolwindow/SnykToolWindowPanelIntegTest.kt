@@ -432,7 +432,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             .any {
                 it is IacIssueTreeNode &&
                     it.userObject is IacIssue &&
-                    (it.userObject as IacIssue).severity == Severity.MEDIUM
+                    (it.userObject as IacIssue).getSeverity() == Severity.MEDIUM
             }
 
         assertTrue("Medium severity IaC results should be shown by default", isMediumSeverityShown())

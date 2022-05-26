@@ -21,7 +21,7 @@ import io.snyk.plugin.net.FalsePositiveContext
 import io.snyk.plugin.net.FalsePositivePayload
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.snykcode.severityAsString
+import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
@@ -47,7 +47,7 @@ class SuggestionDescriptionPanel(
     private val snykCodeFile: SnykCodeFile,
     private val suggestion: SuggestionForFile,
     private val suggestionIndex: Int
-) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.severityAsString) {
+) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.getSeverityAsEnum()) {
     val project = snykCodeFile.project
 
     private val suggestionRange: MyTextRange? = suggestion.ranges?.getOrNull(suggestionIndex)

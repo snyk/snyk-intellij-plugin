@@ -11,7 +11,6 @@ import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
-import snyk.oss.annotator.AnnotatorHelper.severity
 import kotlin.math.max
 
 abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
@@ -32,10 +31,10 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             .forEach { vulnerability ->
                 if (vulnerability.ignored || vulnerability.obsolete) return@forEach
                 val textRange = textRange(psiFile, vulnerability)
-                val severity = severity(vulnerability)
+                val highlightSeverity = vulnerability.getSeverity().getHighlightSeverity()
                 if (textRange != TextRange.EMPTY_RANGE) {
                     val annotationBuilder =
-                        holder.newAnnotation(severity, annotationMessage(vulnerability)).range(textRange)
+                        holder.newAnnotation(highlightSeverity, annotationMessage(vulnerability)).range(textRange)
                     val fixRange = fixRange(psiFile, vulnerability)
                     val fixVersion = getFixVersion(issues.remediation, vulnerability)
                     if (fixRange != TextRange.EMPTY_RANGE && fixVersion.isNotBlank()) {

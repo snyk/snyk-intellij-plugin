@@ -2,17 +2,12 @@ package snyk.container.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
-import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykCachedResults
 import snyk.common.AnnotatorCommon
-import snyk.common.SeverityConstants.SEVERITY_CRITICAL
-import snyk.common.SeverityConstants.SEVERITY_HIGH
-import snyk.common.SeverityConstants.SEVERITY_LOW
-import snyk.common.SeverityConstants.SEVERITY_MEDIUM
 import snyk.container.ContainerIssuesForImage
 
 class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
@@ -40,13 +35,14 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         issuesForImages.forEach { forImage ->
             if (forImage.ignored || forImage.obsolete) return
 
-            val severity = severity(forImage)
+            val highlightSeverity = forImage.getSeverity().getHighlightSeverity()
 
             forImage.workloadImages
                 .filter { it.virtualFile == psiFile.virtualFile }
                 .forEach { workloadImage ->
                     val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
-                    val annotationBuilder = holder.newAnnotation(severity, annotationMessage(forImage)).range(textRange)
+                    val annotationBuilder =
+                        holder.newAnnotation(highlightSeverity, annotationMessage(forImage)).range(textRange)
                     if (shouldAddQuickFix(forImage)) {
                         val intentionAction = BaseImageRemediationFix(forImage, textRange)
                         annotationBuilder.withFix(intentionAction)
@@ -65,17 +61,6 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val imageNameToFix =
             BaseImageRemediationFix.determineTargetImage(forImage.baseImageRemediationInfo).split(":")[0]
         return baseImageName == imageNameToFix
-    }
-
-    fun severity(forImage: ContainerIssuesForImage): HighlightSeverity {
-        val severities = forImage.vulnerabilities.groupBy { it.severity }
-        return when {
-            severities[SEVERITY_CRITICAL]?.isNotEmpty() == true -> HighlightSeverity.ERROR
-            severities[SEVERITY_HIGH]?.isNotEmpty() == true -> HighlightSeverity.WARNING
-            severities[SEVERITY_MEDIUM]?.isNotEmpty() == true -> HighlightSeverity.WEAK_WARNING
-            severities[SEVERITY_LOW]?.isNotEmpty() == true -> HighlightSeverity.INFORMATION
-            else -> HighlightSeverity.INFORMATION
-        }
     }
 
     fun annotationMessage(image: ContainerIssuesForImage): String {

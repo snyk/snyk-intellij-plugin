@@ -7,6 +7,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.isProjectSettingsAvailable
 import java.time.Instant
@@ -55,6 +56,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var lastCheckDate: Date? = null
     var pluginFirstRun = true
     var pluginInstalled = false
+
     // Instant could not be used here due to serialisation Exception
     var pluginFirstInstallTime: Date = Date.from(Instant.now())
     var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
@@ -100,4 +102,13 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     fun setLastCheckDate(localDate: LocalDateTime) {
         this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant())
     }
+
+    fun hasSeverityEnabled(severity: Severity): Boolean =
+        when (severity) {
+            Severity.CRITICAL -> criticalSeverityEnabled
+            Severity.HIGH -> highSeverityEnabled
+            Severity.MEDIUM -> mediumSeverityEnabled
+            Severity.LOW -> lowSeverityEnabled
+            else -> false
+        }
 }
