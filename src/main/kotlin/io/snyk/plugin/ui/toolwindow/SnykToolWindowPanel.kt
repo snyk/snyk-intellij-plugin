@@ -984,6 +984,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun buildHMLpostfix(snykCodeResults: SnykCodeResults): String =
         buildHMLpostfix(
+            criticalCount = snykCodeResults.totalCriticalCount,
             errorsCount = snykCodeResults.totalErrorsCount,
             warnsCount = snykCodeResults.totalWarnsCount,
             infosCount = snykCodeResults.totalInfosCount
@@ -1015,8 +1016,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             .forEach { file ->
                 val fileTreeNode = SnykCodeFileTreeNode(file)
                 rootNode.add(fileTreeNode)
-                snykCodeResults.suggestions(file)
-                    .sortedByDescending { it.severity }
+                snykCodeResults.getSortedSuggestions(file)
                     .forEach { suggestion ->
                         for (index in 0 until suggestion.ranges.size) {
                             fileTreeNode.add(SuggestionTreeNode(suggestion, index))
