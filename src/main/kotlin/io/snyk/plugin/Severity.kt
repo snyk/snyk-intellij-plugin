@@ -14,6 +14,15 @@ enum class Severity {
 
     override fun toString(): String = super.toString().toLowerCase()
 
+    fun toPresentableString(): String =
+        when (this) {
+            CRITICAL -> "Critical Severity"
+            HIGH -> "High Severity"
+            MEDIUM -> "Medium Severity"
+            LOW -> "Low Severity"
+            else -> ""
+        }
+
     fun getColor(): Color =
         when (this) {
             CRITICAL -> Color.decode("#9E261E")
@@ -37,8 +46,9 @@ enum class Severity {
             CRITICAL -> HighlightSeverity.ERROR
             HIGH -> HighlightSeverity.WARNING
             MEDIUM -> HighlightSeverity.WEAK_WARNING
-            LOW -> HighlightSeverity.INFORMATION
-            else -> HighlightSeverity.INFORMATION
+            LOW -> HighlightSeverity.WEAK_WARNING
+            else -> HighlightSeverity.WARNING
+            // Don't use HighlightSeverity.INFORMATION as it's not visible in the Editor and in `Problems`
         }
 
     companion object {

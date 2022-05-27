@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
 import snyk.common.AnnotatorCommon
 import snyk.container.ContainerIssuesForImage
@@ -32,24 +33,31 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         logger.debug("apply on ${psiFile.name}")
         val issuesForImages = getContainerIssuesForImages(psiFile)
-        issuesForImages.forEach { forImage ->
-            if (forImage.ignored || forImage.obsolete) return
-
-            val highlightSeverity = forImage.getSeverity().getHighlightSeverity()
-
-            forImage.workloadImages
-                .filter { it.virtualFile == psiFile.virtualFile }
-                .forEach { workloadImage ->
-                    val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
-                    val annotationBuilder =
-                        holder.newAnnotation(highlightSeverity, annotationMessage(forImage)).range(textRange)
-                    if (shouldAddQuickFix(forImage)) {
-                        val intentionAction = BaseImageRemediationFix(forImage, textRange)
-                        annotationBuilder.withFix(intentionAction)
+            .filter { forImage ->
+                forImage.getSeverities().any { AnnotatorCommon.isSeverityToShow(it) }
+            }
+        issuesForImages
+            .filter { !it.ignored && !it.obsolete }
+            .forEach { forImage ->
+                val severityToShow = forImage.getSeverities()
+                    .filter { AnnotatorCommon.isSeverityToShow(it) }
+                    .max() ?: Severity.UNKNOWN
+                forImage.workloadImages
+                    .filter { it.virtualFile == psiFile.virtualFile }
+                    .forEach { workloadImage ->
+                        val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
+                        val annotationBuilder =
+                            holder.newAnnotation(
+                                severityToShow.getHighlightSeverity(),
+                                annotationMessage(forImage)).range(textRange
+                            )
+                        if (shouldAddQuickFix(forImage)) {
+                            val intentionAction = BaseImageRemediationFix(forImage, textRange)
+                            annotationBuilder.withFix(intentionAction)
+                        }
+                        annotationBuilder.create()
                     }
-                    annotationBuilder.create()
-                }
-        }
+            }
     }
 
     private fun shouldAddQuickFix(forImage: ContainerIssuesForImage): Boolean {

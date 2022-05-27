@@ -5,6 +5,7 @@ import com.intellij.testFramework.replaceService
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.resetSettings
 import org.junit.Before
 import snyk.common.SnykCachedResults
 import java.nio.file.Paths
@@ -26,6 +27,7 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
         super.setUp()
         unmockkAll()
         project.replaceService(SnykCachedResults::class.java, snykCachedResults, project)
+        resetSettings(project)
         pluginSettings().fileListenerEnabled = false
     }
 
@@ -33,6 +35,6 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
         unmockkAll()
         project.replaceService(SnykCachedResults::class.java, SnykCachedResults(project), project)
         super.tearDown()
-        pluginSettings().fileListenerEnabled = true
+        resetSettings(null)
     }
 }

@@ -28,6 +28,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val issues = getIssuesForFile(psiFile) ?: return
 
         issues.vulnerabilities
+            .filter { AnnotatorCommon.isSeverityToShow(it.getSeverity()) }
             .forEach { vulnerability ->
                 if (vulnerability.ignored || vulnerability.obsolete) return@forEach
                 val textRange = textRange(psiFile, vulnerability)

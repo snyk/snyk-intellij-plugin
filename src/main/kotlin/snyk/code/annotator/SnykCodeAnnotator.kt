@@ -11,10 +11,12 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.snykcode.getSeverityAsEnum
 import snyk.common.AnnotatorCommon
 
 class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykCodeAnnotator>()
+
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile = file
     override fun doAnnotate(psiFile: PsiFile?) {
@@ -23,6 +25,7 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         val suggestions = getIssuesForFile(psiFile)
+            .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
 
         suggestions.forEach { suggestionForFile ->
             val severity = severity(suggestionForFile)
@@ -37,20 +40,15 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         }
     }
 
-    fun severity(suggestion: SuggestionForFile): HighlightSeverity {
-        return when (suggestion.severity) {
-            3 -> HighlightSeverity.ERROR
-            2 -> HighlightSeverity.WARNING
-            1 -> HighlightSeverity.WEAK_WARNING
-            else -> HighlightSeverity.INFORMATION
-        }
-    }
+    private fun severity(suggestion: SuggestionForFile): HighlightSeverity =
+        suggestion.getSeverityAsEnum().getHighlightSeverity()
 
     private fun getIssuesForFile(psiFile: PsiFile): List<SuggestionForFile> {
         ProgressManager.checkCanceled()
         return AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile))
     }
 
+    /** Public for Tests only */
     fun annotationMessage(suggestion: SuggestionForFile): String {
         return buildString {
             val title = if (suggestion.title.isNotBlank()) " " + suggestion.title + "." else ""
@@ -58,6 +56,7 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         }
     }
 
+    /** Public for Tests only */
     fun textRange(psiFile: PsiFile, snykCodeRange: MyTextRange): TextRange {
         try {
             val document =

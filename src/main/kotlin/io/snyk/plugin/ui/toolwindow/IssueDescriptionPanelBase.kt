@@ -74,15 +74,7 @@ abstract class IssueDescriptionPanelBase(
 
     protected open fun getTitleIcon() = SnykIcons.getSeverityIcon(severity, SnykIcons.IconSize.SIZE32)
 
-    private fun getTitleText() = " " + title.ifBlank {
-        when (severity) {
-            Severity.CRITICAL -> "Critical Severity"
-            Severity.HIGH -> "High Severity"
-            Severity.MEDIUM -> "Medium Severity"
-            Severity.LOW -> "Low Severity"
-            else -> ""
-        }
-    }
+    private fun getTitleText() = " " + title.ifBlank { severity.toPresentableString() }
 
     abstract fun secondRowTitlePanel(): DescriptionHeaderPanel
 

@@ -17,7 +17,7 @@ data class ContainerIssuesForImage(
     val ignored: Boolean get() = vulnerabilities.all { it.ignored }
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
 
-    fun getSeverity() = vulnerabilities.map { it.getSeverity() }.max() ?: Severity.UNKNOWN
+    fun getSeverities() = vulnerabilities.map { it.getSeverity() }.distinct()
 }
 
 data class Docker(val baseImageRemediation: BaseImageRemediation? = null)

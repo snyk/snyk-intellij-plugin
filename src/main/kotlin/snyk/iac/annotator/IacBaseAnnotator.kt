@@ -32,20 +32,21 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         val issues = getIssues(psiFile)
+            .filter { AnnotatorCommon.isSeverityToShow(it.getSeverity()) }
 
         LOG.debug("Call apply on ${psiFile.name}")
         if (issues.isEmpty()) return
 
         LOG.debug("Received ${issues.size} IacIssue annotations for ${psiFile.virtualFile.name}")
-        issues.forEach { iacIssue ->
-            if (iacIssue.ignored || iacIssue.obsolete) return@forEach
-
-            LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
-            val highlightSeverity = iacIssue.getSeverity().getHighlightSeverity()
-            holder.newAnnotation(highlightSeverity, annotationMessage(iacIssue))
-                .range(textRange(psiFile, iacIssue))
-                .create()
-        }
+        issues
+            .filter { !it.ignored && !it.obsolete }
+            .forEach { iacIssue ->
+                LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
+                val highlightSeverity = iacIssue.getSeverity().getHighlightSeverity()
+                holder.newAnnotation(highlightSeverity, annotationMessage(iacIssue))
+                    .range(textRange(psiFile, iacIssue))
+                    .create()
+            }
     }
 
     abstract fun textRange(psiFile: PsiFile, iacIssue: IacIssue): TextRange

@@ -18,6 +18,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.resetSettings
 import org.hamcrest.collection.IsCollectionWithSize.hasSize
 import org.junit.Assert.assertThat
 import org.junit.Before
@@ -66,6 +67,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         super.setUp()
         unmockkAll()
         project.replaceService(SnykCachedResults::class.java, snykCachedResults, project)
+        resetSettings(project)
         pluginSettings().fileListenerEnabled = false
         virtualFile = myFixture.copyFileToProject(kubernetesManifestFile)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(virtualFile)!! }
@@ -75,7 +77,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     override fun tearDown() {
         unmockkAll()
         project.replaceService(SnykCachedResults::class.java, SnykCachedResults(project), project)
-        pluginSettings().fileListenerEnabled = true
+        resetSettings(project)
         super.tearDown()
     }
 
@@ -107,27 +109,41 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test severity with at least one critical should return error`() {
-        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_CRITICAL).getSeverity().getHighlightSeverity()
-        assertEquals(HighlightSeverity.ERROR.javaClass, severity.javaClass)
+    fun `test apply for disabled Severity should not trigger newAnnotation call`() {
+        every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
+        pluginSettings().mediumSeverityEnabled = false
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify(exactly = 0) { annotationHolderMock.newAnnotation(HighlightSeverity.WARNING, any()) }
     }
 
     @Test
-    fun `test severity with at least one high should return warning`() {
-        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_HIGH).getSeverity().getHighlightSeverity()
-        assertEquals(HighlightSeverity.WARNING.javaClass, severity.javaClass)
+    fun `test severity with one critical`() {
+        val severities = createContainerImageForIssuesWithSeverity(SEVERITY_CRITICAL).getSeverities()
+        assertEquals(1, severities.size)
+        assertEquals(HighlightSeverity.ERROR, severities.first().getHighlightSeverity())
     }
 
     @Test
-    fun `test severity with at least one medium should return weak warning`() {
-        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_MEDIUM).getSeverity().getHighlightSeverity()
-        assertEquals(HighlightSeverity.WEAK_WARNING.javaClass, severity.javaClass)
+    fun `test severity with one high`() {
+        val severities = createContainerImageForIssuesWithSeverity(SEVERITY_HIGH).getSeverities()
+        assertEquals(1, severities.size)
+        assertEquals(HighlightSeverity.WARNING, severities.first().getHighlightSeverity())
     }
 
     @Test
-    fun `test severity with at least one low should return info`() {
-        val severity = createContainerImageForIssuesWithSeverity(SEVERITY_LOW).getSeverity().getHighlightSeverity()
-        assertEquals(HighlightSeverity.INFORMATION.javaClass, severity.javaClass)
+    fun `test severity with one medium`() {
+        val severities = createContainerImageForIssuesWithSeverity(SEVERITY_MEDIUM).getSeverities()
+        assertEquals(1, severities.size)
+        assertEquals(HighlightSeverity.WEAK_WARNING, severities.first().getHighlightSeverity())
+    }
+
+    @Test
+    fun `test severity with one low`() {
+        val severities = createContainerImageForIssuesWithSeverity(SEVERITY_LOW).getSeverities()
+        assertEquals(1, severities.size)
+        assertEquals(HighlightSeverity.WEAK_WARNING, severities.first().getHighlightSeverity())
     }
 
     @Test

@@ -17,6 +17,7 @@ import snyk.PLUGIN_ID
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
+import snyk.common.AnnotatorCommon
 import snyk.container.ContainerBulkFileListener
 import snyk.iac.IacBulkFileListener
 import snyk.oss.OssBulkFileListener
@@ -58,6 +59,8 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
         }
 
         getSnykCachedResults(project)?.initCacheUpdater()
+
+        AnnotatorCommon.initRefreshing(project)
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             getSnykTaskQueueService(project)?.downloadLatestRelease()
