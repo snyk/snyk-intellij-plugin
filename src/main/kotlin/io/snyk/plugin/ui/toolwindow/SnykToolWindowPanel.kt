@@ -831,7 +831,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootOssTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.ossScanEnable && ossResult.allCliIssues != null) {
+        if (settings.ossScanEnable && settings.ossResultsTreeFiltering && ossResult.allCliIssues != null) {
             ossResult.allCliIssues!!.forEach { ossVulnerabilitiesForFile ->
                 if (ossVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
                     val ossGroupedResult = ossVulnerabilitiesForFile.toGroupedResult()
@@ -884,10 +884,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             securityIssuesCount = securityResults.totalCount
             securityIssuesHMLPostfix = buildHMLpostfix(securityResults)
 
-            val securityResultsToDisplay = securityResults.cloneFiltered {
-                pluginSettings().hasSeverityEnabled(it.getSeverityAsEnum())
+            if (pluginSettings().codeSecurityResultsTreeFiltering) {
+                val securityResultsToDisplay = securityResults.cloneFiltered {
+                    pluginSettings().hasSeverityEnabled(it.getSeverityAsEnum())
+                }
+                displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
             }
-            displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
         }
         updateTreeRootNodesPresentation(
             securityIssuesCount = securityIssuesCount,
@@ -908,10 +910,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             qualityIssuesCount = qualityResults.totalCount
             qualityIssuesHMLPostfix = buildHMLpostfix(qualityResults)
 
-            val qualityResultsToDisplay = qualityResults.cloneFiltered {
-                pluginSettings().hasSeverityEnabled(it.getSeverityAsEnum())
+            if (pluginSettings().codeQualityResultsTreeFiltering) {
+                val qualityResultsToDisplay = qualityResults.cloneFiltered {
+                    pluginSettings().hasSeverityEnabled(it.getSeverityAsEnum())
+                }
+                displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
             }
-            displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
         }
         updateTreeRootNodesPresentation(
             qualityIssuesCount = qualityIssuesCount,
@@ -927,7 +931,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootIacIssuesTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.iacScanEnabled && iacResult.allCliIssues != null) {
+        if (settings.iacScanEnabled && settings.iacResultsTreeFiltering && iacResult.allCliIssues != null) {
             iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
                 if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
                     val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
@@ -958,7 +962,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootContainerIssuesTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.containerScanEnabled && containerResult.allCliIssues != null) {
+        if (settings.containerScanEnabled && settings.containerResultsTreeFiltering && containerResult.allCliIssues != null) {
             containerResult.allCliIssues!!.forEach { issuesForImage ->
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
                     val imageTreeNode = ContainerImageTreeNode(issuesForImage, project)

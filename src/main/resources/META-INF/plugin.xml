@@ -72,7 +72,7 @@
       <action id="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
               class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
               text="Scan For Issue Types:"
-              description="Snyk: Choose Scan types to run/display"
+              description="Snyk: Choose Scan types to display"
               icon="AllIcons.General.Filter"/>
     </group>
 

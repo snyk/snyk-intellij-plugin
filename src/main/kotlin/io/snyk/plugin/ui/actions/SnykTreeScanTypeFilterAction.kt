@@ -42,18 +42,8 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         )
     }
 
-    private fun createOssScanAction(): AnAction {
-        return object : ToggleAction("Open Source Vulnerabilities") {
-            override fun isSelected(e: AnActionEvent): Boolean = settings.ossScanEnable
-
-            override fun setSelected(e: AnActionEvent, state: Boolean) {
-                if (!state && isLastScanTypeDisabling(e)) return
-
-                settings.ossScanEnable = state
-                fireFiltersChangedEvent(e.project!!)
-            }
-        }
-    }
+    private fun availabilityPostfix(productEnabled: Boolean): String =
+        if (productEnabled) "" else " (disabled)"
 
     private fun isSnykCodeAvailable(): Boolean = snykCodeAvailabilityPostfix().isEmpty()
 
@@ -61,78 +51,73 @@ class SnykTreeScanTypeFilterAction : ComboBoxAction() {
         ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
     }
 
-    private fun createSecurityIssuesScanAction(): AnAction {
-        return object : ToggleAction("Security Issues${snykCodeAvailabilityPostfix()}") {
-            override fun isSelected(e: AnActionEvent): Boolean =
-                settings.snykCodeSecurityIssuesScanEnable && isSnykCodeAvailable()
+    private fun createScanFilteringAction(
+        scanTypeTitle: String,
+        scanTypeEnabled: Boolean,
+        resultsTreeFiltering: Boolean,
+        setResultsTreeFiltering: (Boolean) -> Unit
+    ): AnAction =
+        object : ToggleAction(scanTypeTitle + availabilityPostfix(scanTypeEnabled)) {
+            override fun isSelected(e: AnActionEvent): Boolean = resultsTreeFiltering
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
+                if (!scanTypeEnabled) {
+                    showSettings(e.project!!)
+                    return
+                }
                 if (!state && isLastScanTypeDisabling(e)) return
 
-                val available = isSnykCodeAvailable()
-                settings.snykCodeSecurityIssuesScanEnable = state && available
-                fireFiltersChangedEvent(e.project!!)
-                if (!available) showSettings(e.project!!)
+                setResultsTreeFiltering(state)
+                getSyncPublisher(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
             }
         }
-    }
 
-    private fun createQualityIssuesScanAction(): AnAction {
-        return object : ToggleAction("Quality Issues${snykCodeAvailabilityPostfix()}") {
-            override fun isSelected(e: AnActionEvent): Boolean =
-                settings.snykCodeQualityIssuesScanEnable && isSnykCodeAvailable()
+    private fun createOssScanAction(): AnAction = createScanFilteringAction(
+        scanTypeTitle = "Open Source Vulnerabilities",
+        scanTypeEnabled = settings.ossScanEnable,
+        resultsTreeFiltering = settings.ossResultsTreeFiltering,
+        setResultsTreeFiltering = { settings.ossResultsTreeFiltering = it }
+    )
 
-            override fun setSelected(e: AnActionEvent, state: Boolean) {
-                if (!state && isLastScanTypeDisabling(e)) return
+    private fun createSecurityIssuesScanAction(): AnAction = createScanFilteringAction(
+        scanTypeTitle = "Security Issues",
+        scanTypeEnabled = settings.snykCodeSecurityIssuesScanEnable && isSnykCodeAvailable(),
+        resultsTreeFiltering = settings.codeSecurityResultsTreeFiltering,
+        setResultsTreeFiltering = { settings.codeSecurityResultsTreeFiltering = it }
+    )
 
-                val available = isSnykCodeAvailable()
-                settings.snykCodeQualityIssuesScanEnable = state && available
-                fireFiltersChangedEvent(e.project!!)
-                if (!available) showSettings(e.project!!)
-            }
-        }
-    }
+    private fun createQualityIssuesScanAction(): AnAction = createScanFilteringAction(
+        scanTypeTitle = "Quality Issues",
+        scanTypeEnabled = settings.snykCodeQualityIssuesScanEnable && isSnykCodeAvailable(),
+        resultsTreeFiltering = settings.codeQualityResultsTreeFiltering,
+        setResultsTreeFiltering = { settings.codeQualityResultsTreeFiltering = it }
+    )
 
-    private fun createIacScanAction(): AnAction {
-        return object : ToggleAction("Configuration Issues") {
-            override fun isSelected(e: AnActionEvent): Boolean = settings.iacScanEnabled
+    private fun createIacScanAction(): AnAction = createScanFilteringAction(
+        scanTypeTitle = "Configuration Issues",
+        scanTypeEnabled = settings.iacScanEnabled,
+        resultsTreeFiltering = settings.iacResultsTreeFiltering,
+        setResultsTreeFiltering = { settings.iacResultsTreeFiltering = it }
+    )
 
-            override fun setSelected(e: AnActionEvent, state: Boolean) {
-                if (!state && isLastScanTypeDisabling(e)) return
-
-                settings.iacScanEnabled = state
-                fireFiltersChangedEvent(e.project!!)
-            }
-        }
-    }
-
-    private fun createContainerScanAction(): AnAction {
-        return object : ToggleAction("Container Vulnerabilities") {
-            override fun isSelected(e: AnActionEvent): Boolean = settings.containerScanEnabled
-
-            override fun setSelected(e: AnActionEvent, state: Boolean) {
-                if (!state && isLastScanTypeDisabling(e)) return
-
-                settings.containerScanEnabled = state
-                fireFiltersChangedEvent(e.project!!)
-            }
-        }
-    }
-
-    private fun fireFiltersChangedEvent(project: Project) {
-        getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
-    }
+    private fun createContainerScanAction(): AnAction = createScanFilteringAction(
+        scanTypeTitle = "Container Vulnerabilities",
+        scanTypeEnabled = settings.containerScanEnabled,
+        resultsTreeFiltering = settings.containerResultsTreeFiltering,
+        setResultsTreeFiltering = { settings.containerResultsTreeFiltering = it }
+    )
 
     private fun isLastScanTypeDisabling(e: AnActionEvent): Boolean {
         val onlyOneEnabled = arrayOf(
-            settings.ossScanEnable,
-            settings.snykCodeSecurityIssuesScanEnable,
-            settings.snykCodeQualityIssuesScanEnable,
-            settings.iacScanEnabled,
-            settings.containerScanEnabled
+            settings.ossScanEnable && settings.ossResultsTreeFiltering,
+            settings.snykCodeSecurityIssuesScanEnable && settings.codeSecurityResultsTreeFiltering,
+            settings.snykCodeQualityIssuesScanEnable && settings.codeQualityResultsTreeFiltering,
+            settings.iacScanEnabled && settings.iacResultsTreeFiltering,
+            settings.containerScanEnabled && settings.containerResultsTreeFiltering
         ).count { it } == 1
         if (onlyOneEnabled) {
-            SnykBalloonNotificationHelper.showWarnBalloonAtEventPlace("At least one Scan type should be selected", e)
+            val message = "At least one Scan type should be enabled and selected"
+            SnykBalloonNotificationHelper.showWarnBalloonAtEventPlace(message, e)
         }
         return onlyOneEnabled
     }

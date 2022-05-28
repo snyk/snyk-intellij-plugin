@@ -42,6 +42,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var iacScanEnabled: Boolean = true
     var containerScanEnabled: Boolean = true
 
+    var ossResultsTreeFiltering: Boolean = true
+    var codeSecurityResultsTreeFiltering: Boolean = true
+    var codeQualityResultsTreeFiltering: Boolean = true
+    var iacResultsTreeFiltering: Boolean = true
+    var containerResultsTreeFiltering: Boolean = true
+
     var sastOnServerEnabled: Boolean? = null
     var localCodeEngineEnabled: Boolean? = null
     var reportFalsePositivesEnabled: Boolean? = null

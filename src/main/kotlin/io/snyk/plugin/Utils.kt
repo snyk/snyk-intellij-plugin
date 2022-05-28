@@ -132,19 +132,13 @@ val <T> List<T>.tail: List<T>
 val <T> List<T>.head: T
     get() = first()
 
-fun isUrlValid(url: String?): Boolean {
-    if (url == null || url.isEmpty()) {
-        return true
-    }
-
-    return try {
+fun isUrlValid(url: String?): Boolean =
+    url == null || url.isEmpty() || try {
         URL(url).toURI()
-
         true
     } catch (throwable: Throwable) {
         false
     }
-}
 
 fun isOssRunning(project: Project): Boolean {
     val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
