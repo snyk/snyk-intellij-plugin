@@ -1,6 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
-import UIComponentFinder
+import snyk.common.UIComponentFinder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.replaceService

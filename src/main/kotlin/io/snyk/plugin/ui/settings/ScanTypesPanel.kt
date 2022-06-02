@@ -19,6 +19,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import snyk.common.ProductType
 import snyk.common.isSnykCodeAvailable
 import snyk.common.toSnykCodeSettingsUrl
 import java.awt.Component
@@ -39,15 +40,31 @@ class ScanTypesPanel(
 
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
 
-    private var snykCodeCheckbox: JBCheckBox? = null
-    private var snykCodeQualityCheckbox: JBCheckBox? = null
+    private var codeSecurityCheckbox: JBCheckBox? = null
+    private var codeQualityCheckbox: JBCheckBox? = null
     private var snykCodeComment: JLabel? = null
-    private var snykCodeAlertHyperLinkLabel = HyperlinkLabel().apply {
-        this.isVisible = false
-    }
+    private var snykCodeAlertHyperLinkLabel = HyperlinkLabel()
     private var snykCodeReCheckLinkLabel = LinkLabel.create("Check again") {
         checkSastEnable()
+    }
+
+    private var currentOssScanEnabled = settings.ossScanEnable
+    private var currentCodeSecurityScanEnabled = settings.snykCodeSecurityIssuesScanEnable
+    private var currentCodeQualityScanEnabled = settings.snykCodeQualityIssuesScanEnable
+    private var currentIacScanPanelEnabled = settings.iacScanEnabled
+    private var currentContainerScanEnabled = settings.containerScanEnabled
+
+    val codeAlertPanel = panel {
+        row {
+            cell {
+                snykCodeAlertHyperLinkLabel()
+                    .withLargeLeftGap()
+                snykCodeReCheckLinkLabel()
+                    .withLargeLeftGap()
+            }
+        }
     }.apply {
+        border = JBUI.Borders.empty(0)
         this.isVisible = false
     }
 
@@ -55,23 +72,26 @@ class ScanTypesPanel(
         row {
             cell {
                 checkBox(
-                    "Snyk Open Source vulnerabilities",
-                    { settings.ossScanEnable },
-                    { settings.ossScanEnable = it },
-                    cliScanComments
-                )
-                label("").component.convertIntoHelpHintLabel(
-                    "Find and automatically fix open source vulnerabilities"
-                )
+                    text = ProductType.OSS.productSelectionName,
+                    getter = { settings.ossScanEnable },
+                    setter = { settings.ossScanEnable = it },
+                    comment = cliScanComments
+                ).component.apply {
+                    this.addItemListener {
+                        isLastProductDisabling(this, currentOssScanEnabled)
+                        currentOssScanEnabled = this.isSelected
+                    }
+                    name = ProductType.OSS.toString()
+                }
+                label("").component.convertIntoHelpHintLabel(ProductType.OSS.description)
             }
         }
         row {
             cell {
                 checkBox(
-                    "Snyk Advisor (early preview)",
-                    { settings.advisorEnable },
-                    { settings.advisorEnable = it },
-                    null
+                    text = ProductType.ADVISOR.productSelectionName,
+                    getter = { settings.advisorEnable },
+                    setter = { settings.advisorEnable = it }
                 )
                 label("").component.convertIntoHelpHintLabel(
                     "Discover the health (maintenance, community, popularity & security)\n" +
@@ -83,14 +103,17 @@ class ScanTypesPanel(
             row {
                 cell {
                     checkBox(
-                        "Snyk Infrastructure as Code issues",
-                        { settings.iacScanEnabled },
-                        { settings.iacScanEnabled = it },
-                        null
-                    )
-                    label("").component.convertIntoHelpHintLabel(
-                        "Find and fix insecure configurations in Terraform and Kubernetes code"
-                    )
+                        text = ProductType.IAC.productSelectionName,
+                        getter = { settings.iacScanEnabled },
+                        setter = { settings.iacScanEnabled = it }
+                    ).component.apply {
+                        this.addItemListener {
+                            isLastProductDisabling(this, currentIacScanPanelEnabled)
+                            currentIacScanPanelEnabled = this.isSelected
+                        }
+                        name = ProductType.IAC.toString()
+                    }
+                    label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
                 }
             }
         }
@@ -98,45 +121,55 @@ class ScanTypesPanel(
             row {
                 cell {
                     checkBox(
-                        "Snyk Container vulnerabilities",
-                        { settings.containerScanEnabled },
-                        { enabled ->
+                        text = ProductType.CONTAINER.productSelectionName,
+                        getter = { settings.containerScanEnabled },
+                        setter = { enabled ->
                             settings.containerScanEnabled = enabled
                             val imagesCache = getKubernetesImageCache(project)
                             if (enabled) imagesCache?.scanProjectForKubernetesFiles() else imagesCache?.clear()
-                        },
-                        null
+                        }
                     ).component.apply {
-                        name = "containerEnablementCheckBox"
+                        this.addItemListener {
+                            isLastProductDisabling(this, currentContainerScanEnabled)
+                            currentContainerScanEnabled = this.isSelected
+                        }
+                        name = ProductType.CONTAINER.toString()
                     }
-                    label("").component.convertIntoHelpHintLabel(
-                        "Find and fix vulnerabilities in container images and Kubernetes applications"
-                    )
+                    label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
                 }
             }
         }
         row {
             cell {
-                snykCodeCheckbox = checkBox(
-                    SNYK_CODE_SECURITY_ISSUES,
-                    { settings.snykCodeSecurityIssuesScanEnable },
-                    { settings.snykCodeSecurityIssuesScanEnable = it }
+                codeSecurityCheckbox = checkBox(
+                    text = ProductType.CODE_SECURITY.productSelectionName,
+                    getter = { settings.snykCodeSecurityIssuesScanEnable },
+                    setter = { settings.snykCodeSecurityIssuesScanEnable = it }
                 )
-                    .component
-                label("").component.convertIntoHelpHintLabel(
-                    "Find and fix vulnerabilities in your application code in real time"
-                )
+                    .component.apply {
+                        this.addItemListener {
+                            isLastProductDisabling(this, currentCodeSecurityScanEnabled)
+                            currentCodeSecurityScanEnabled = this.isSelected
+                        }
+                        name = ProductType.CODE_SECURITY.toString()
+                    }
+                label("").component.convertIntoHelpHintLabel(ProductType.CODE_SECURITY.description)
+
                 if (!simplifyForOnboardPanel) {
-                    snykCodeQualityCheckbox = checkBox(
-                        SNYK_CODE_QUALITY_ISSUES,
-                        { settings.snykCodeQualityIssuesScanEnable },
-                        { settings.snykCodeQualityIssuesScanEnable = it }
+                    codeQualityCheckbox = checkBox(
+                        text = ProductType.CODE_QUALITY.productSelectionName,
+                        getter = { settings.snykCodeQualityIssuesScanEnable },
+                        setter = { settings.snykCodeQualityIssuesScanEnable = it }
                     )
                         .withLargeLeftGap()
-                        .component
-                    label("").component.convertIntoHelpHintLabel(
-                        "Find and fix code quality issues in your application code in real time"
-                    )
+                        .component.apply {
+                            this.addItemListener {
+                                isLastProductDisabling(this, currentCodeQualityScanEnabled)
+                                currentCodeQualityScanEnabled = this.isSelected
+                            }
+                            name = ProductType.CODE_QUALITY.toString()
+                        }
+                    label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
                 }
             }
         }
@@ -147,21 +180,13 @@ class ScanTypesPanel(
                     foreground = UIUtil.getContextHelpForeground()
                 }
 
-            snykCodeCheckbox?.addItemListener {
+            codeSecurityCheckbox?.addItemListener {
                 snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
             }
-            snykCodeQualityCheckbox?.addItemListener {
+            codeQualityCheckbox?.addItemListener {
                 snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
             }
             checkSastEnable()
-        }
-        row {
-            cell {
-                snykCodeAlertHyperLinkLabel()
-                    .withLargeLeftGap()
-                snykCodeReCheckLinkLabel()
-                    .withLargeLeftGap()
-            }
         }
     }.apply {
         name = "scanTypesPanel"
@@ -241,7 +266,7 @@ class ScanTypesPanel(
     }
 
     private fun shouldSnykCodeCommentBeVisible() =
-        snykCodeCheckbox?.isSelected == true || snykCodeQualityCheckbox?.isSelected == true
+        codeSecurityCheckbox?.isSelected == true || codeQualityCheckbox?.isSelected == true
 
     private fun getUploadingFilesMessage(): String {
         val allSupportedFilesInProject =
@@ -264,12 +289,16 @@ class ScanTypesPanel(
 
     private fun setLabelMessage(label: JLabel?, progressMessage: String, messageProducer: () -> String?) {
         label?.text = progressMessage
-        // We have to do background task run through Alarm on Alarm.ThreadToUse.POOLED_THREAD due to next (Idea?) bug:
-        // Creation of Task.Backgroundable under another Task.Backgroundable does not work for Settings dialog,
-        // it postpone inner Background task execution till Setting dialog exit
-        alarm.addRequest({
-            messageProducer.invoke()?.let { label?.text = it }
-        }, 0)
+        runBackgroundable({ messageProducer.invoke()?.let { label?.text = it } })
+    }
+
+    // We have to do background task run through Alarm on Alarm.ThreadToUse.POOLED_THREAD due to next (Idea?) bug:
+    // Creation of Task.Backgroundable under another Task.Backgroundable does not work for Settings dialog,
+    // it postpones inner Background task execution till Setting dialog exit
+    private fun runBackgroundable(runnable: () -> Unit, delayMillis: Int = 10) {
+        if (!alarm.isDisposed) {
+            alarm.addRequest(runnable, delayMillis)
+        }
     }
 
     private var currentHyperlinkListener: HyperlinkListener? = null
@@ -282,10 +311,11 @@ class ScanTypesPanel(
     ) {
         val showAlert = message.isNotEmpty()
         if (simplifyForOnboardPanel) {
-            snykCodeCheckbox?.text =
-                SNYK_CODE_SECURITY_ISSUES + if (showAlert) " (you can enable it later in the Settings)" else ""
+            codeSecurityCheckbox?.text =
+                ProductType.CODE_SECURITY.productSelectionName +
+                    if (showAlert) " (you can enable it later in the Settings)" else ""
         } else {
-            snykCodeAlertHyperLinkLabel.isVisible = showAlert
+            codeAlertPanel.isVisible = showAlert
             // todo: change to setTextWithHyperlink() after move to sinceId >= 211
             snykCodeAlertHyperLinkLabel.setHyperlinkText(message, linkText, "")
             snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
@@ -299,24 +329,37 @@ class ScanTypesPanel(
                 }
                 snykCodeAlertHyperLinkLabel.addHyperlinkListener(currentHyperlinkListener)
             }
-            snykCodeReCheckLinkLabel.isVisible = showAlert
         }
     }
 
     private fun setSnykCodeAvailability(available: Boolean) {
         val enabled = (settings.sastOnServerEnabled == true) && available
-        snykCodeCheckbox?.let {
+        codeSecurityCheckbox?.let {
             it.isEnabled = enabled
             it.isSelected = enabled && settings.snykCodeSecurityIssuesScanEnable
         }
-        snykCodeQualityCheckbox?.let {
+        codeQualityCheckbox?.let {
             it.isEnabled = enabled
             it.isSelected = enabled && settings.snykCodeQualityIssuesScanEnable
         }
     }
 
-    companion object {
-        private const val SNYK_CODE_SECURITY_ISSUES = "Snyk Code Security issues"
-        private const val SNYK_CODE_QUALITY_ISSUES = "Snyk Code Quality issues"
+    private fun isLastProductDisabling(component: JBCheckBox, wasEnabled: Boolean): Boolean {
+        val onlyOneEnabled = arrayOf(
+            currentOssScanEnabled,
+            currentCodeSecurityScanEnabled,
+            currentCodeQualityScanEnabled,
+            currentIacScanPanelEnabled,
+            currentContainerScanEnabled
+        ).count { it } == 1
+
+        if (onlyOneEnabled && wasEnabled) {
+            component.isSelected = true
+            SnykBalloonNotificationHelper.showWarnBalloonForComponent(
+                "At least one Scan type should be enabled",
+                component
+            )
+        }
+        return onlyOneEnabled
     }
 }

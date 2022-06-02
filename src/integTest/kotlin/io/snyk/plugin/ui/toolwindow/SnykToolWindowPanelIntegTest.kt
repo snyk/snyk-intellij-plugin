@@ -1,6 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
-import UIComponentFinder
+import snyk.common.UIComponentFinder
 import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.impl.ApplicationInfoImpl
@@ -559,8 +559,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val rootNode = toolWindowPanel.getRootNode()
         setOf(
             SnykToolWindowPanel.OSS_ROOT_TEXT,
-            SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT,
-            SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT,
+            SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT,
+            SnykToolWindowPanel.CODE_QUALITY_ROOT_TEXT,
             SnykToolWindowPanel.IAC_ROOT_TEXT,
             SnykToolWindowPanel.CONTAINER_ROOT_TEXT
         ).forEach {

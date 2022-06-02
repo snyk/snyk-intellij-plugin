@@ -129,14 +129,14 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     fun `test severity with one high`() {
         val severities = createContainerImageForIssuesWithSeverity(SEVERITY_HIGH).getSeverities()
         assertEquals(1, severities.size)
-        assertEquals(HighlightSeverity.WARNING, severities.first().getHighlightSeverity())
+        assertEquals(HighlightSeverity.ERROR, severities.first().getHighlightSeverity())
     }
 
     @Test
     fun `test severity with one medium`() {
         val severities = createContainerImageForIssuesWithSeverity(SEVERITY_MEDIUM).getSeverities()
         assertEquals(1, severities.size)
-        assertEquals(HighlightSeverity.WEAK_WARNING, severities.first().getHighlightSeverity())
+        assertEquals(HighlightSeverity.WARNING, severities.first().getHighlightSeverity())
     }
 
     @Test

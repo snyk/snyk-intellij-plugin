@@ -60,6 +60,7 @@ import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
+import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
@@ -711,10 +712,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
         val newSecurityIssuesNodeText = when {
-            currentSnykCodeError != null -> "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (error)"
-            isSnykCodeRunning(project) && settings.snykCodeSecurityIssuesScanEnable -> "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (scanning...)"
+            currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
+            isSnykCodeRunning(project) && settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
             else -> securityIssuesCount?.let { count ->
-                SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + when {
+                CODE_SECURITY_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
@@ -725,10 +726,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
 
         val newQualityIssuesNodeText = when {
-            currentSnykCodeError != null -> "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (error)"
-            isSnykCodeRunning(project) && settings.snykCodeQualityIssuesScanEnable -> "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"
+            currentSnykCodeError != null -> "$CODE_QUALITY_ROOT_TEXT (error)"
+            isSnykCodeRunning(project) && settings.snykCodeQualityIssuesScanEnable -> "$CODE_QUALITY_ROOT_TEXT (scanning...)"
             else -> qualityIssuesCount?.let { count ->
-                SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + when {
+                CODE_QUALITY_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
                     count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
@@ -831,7 +832,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootOssTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.ossScanEnable && settings.ossResultsTreeFiltering && ossResult.allCliIssues != null) {
+        if (settings.ossScanEnable && settings.treeFiltering.ossResults && ossResult.allCliIssues != null) {
             ossResult.allCliIssues!!.forEach { ossVulnerabilitiesForFile ->
                 if (ossVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
                     val ossGroupedResult = ossVulnerabilitiesForFile.toGroupedResult()
@@ -840,7 +841,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     rootOssTreeNode.add(fileTreeNode)
 
                     ossGroupedResult.id2vulnerabilities.values
-                        .filter { settings.hasSeverityEnabled(it.head.getSeverity()) }
+                        .filter { settings.hasSeverityEnabledAndFiltered(it.head.getSeverity()) }
                         .sortedByDescending { it.head.getSeverity() }
                         .forEach {
                             fileTreeNode.add(VulnerabilityTreeNode(it, project))
@@ -884,9 +885,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             securityIssuesCount = securityResults.totalCount
             securityIssuesHMLPostfix = buildHMLpostfix(securityResults)
 
-            if (pluginSettings().codeSecurityResultsTreeFiltering) {
+            if (pluginSettings().treeFiltering.codeSecurityResults) {
                 val securityResultsToDisplay = securityResults.cloneFiltered {
-                    pluginSettings().hasSeverityEnabled(it.getSeverityAsEnum())
+                    pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                 }
                 displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
             }
@@ -910,9 +911,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             qualityIssuesCount = qualityResults.totalCount
             qualityIssuesHMLPostfix = buildHMLpostfix(qualityResults)
 
-            if (pluginSettings().codeQualityResultsTreeFiltering) {
+            if (pluginSettings().treeFiltering.codeQualityResults) {
                 val qualityResultsToDisplay = qualityResults.cloneFiltered {
-                    pluginSettings().hasSeverityEnabled(it.getSeverityAsEnum())
+                    pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                 }
                 displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
             }
@@ -931,14 +932,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootIacIssuesTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.iacScanEnabled && settings.iacResultsTreeFiltering && iacResult.allCliIssues != null) {
+        if (settings.iacScanEnabled && settings.treeFiltering.iacResults && iacResult.allCliIssues != null) {
             iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
                 if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
                     val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
                     rootIacIssuesTreeNode.add(fileTreeNode)
 
                     iacVulnerabilitiesForFile.infrastructureAsCodeIssues
-                        .filter { settings.hasSeverityEnabled(it.getSeverity()) }
+                        .filter { settings.hasSeverityEnabledAndFiltered(it.getSeverity()) }
                         .sortedByDescending { it.getSeverity() }
                         .forEach {
                             fileTreeNode.add(IacIssueTreeNode(it, project))
@@ -962,14 +963,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootContainerIssuesTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.containerScanEnabled && settings.containerResultsTreeFiltering && containerResult.allCliIssues != null) {
+        if (settings.containerScanEnabled && settings.treeFiltering.containerResults && containerResult.allCliIssues != null) {
             containerResult.allCliIssues!!.forEach { issuesForImage ->
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
                     val imageTreeNode = ContainerImageTreeNode(issuesForImage, project)
                     rootContainerIssuesTreeNode.add(imageTreeNode)
 
                     issuesForImage.vulnerabilities
-                        .filter { settings.hasSeverityEnabled(it.getSeverity()) }
+                        .filter { settings.hasSeverityEnabledAndFiltered(it.getSeverity()) }
                         .sortedByDescending { it.getSeverity() }
                         .forEach {
                             imageTreeNode.add(ContainerIssueTreeNode(it, project))
@@ -1004,11 +1005,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun buildHMLpostfix(criticalCount: Int = 0, errorsCount: Int, warnsCount: Int, infosCount: Int): String {
         var result = ""
-        if (criticalCount > 0) result += " | $criticalCount ${Severity.CRITICAL}"
-        if (errorsCount > 0) result += " | $errorsCount ${Severity.HIGH}"
-        if (warnsCount > 0) result += " | $warnsCount ${Severity.MEDIUM}"
-        if (infosCount > 0) result += " | $infosCount ${Severity.LOW}"
-        return result.replaceFirst(" |", ":")
+        if (criticalCount > 0) result += ", $criticalCount ${Severity.CRITICAL}"
+        if (errorsCount > 0) result += ", $errorsCount ${Severity.HIGH}"
+        if (warnsCount > 0) result += ", $warnsCount ${Severity.MEDIUM}"
+        if (infosCount > 0) result += ", $infosCount ${Severity.LOW}"
+        return result.replaceFirst(",", ":")
     }
 
     private fun userObjectsForExpandedNodes(rootNode: DefaultMutableTreeNode) =
@@ -1124,11 +1125,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     fun getDescriptionPanel() = descriptionPanel
 
     companion object {
-        const val OSS_ROOT_TEXT = " Open Source Security"
-        const val SNYKCODE_SECURITY_ISSUES_ROOT_TEXT = " Code Security"
-        const val SNYKCODE_QUALITY_ISSUES_ROOT_TEXT = " Code Quality"
-        const val IAC_ROOT_TEXT = " Configuration Issues"
-        const val CONTAINER_ROOT_TEXT = " Container Vulnerabilities"
+        val OSS_ROOT_TEXT = " " + ProductType.OSS.treeName
+        val CODE_SECURITY_ROOT_TEXT = " " + ProductType.CODE_SECURITY.treeName
+        val CODE_QUALITY_ROOT_TEXT = " " + ProductType.CODE_QUALITY.treeName
+        val IAC_ROOT_TEXT = " " + ProductType.IAC.treeName
+        val CONTAINER_ROOT_TEXT = " " + ProductType.CONTAINER.treeName
 
         const val SELECT_ISSUE_TEXT = "Select an issue and start improving your project."
         const val SCAN_PROJECT_TEXT = "Scan your project for security vulnerabilities and code issues."
@@ -1192,10 +1193,10 @@ class RootOssTreeNode(project: Project) :
 }
 
 class RootSecurityIssuesTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT, project)
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT, project)
 
 class RootQualityIssuesTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT, project)
+    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CODE_QUALITY_ROOT_TEXT, project)
 
 class RootIacIssuesTreeNode(project: Project) :
     ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project) {

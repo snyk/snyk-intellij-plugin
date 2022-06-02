@@ -20,7 +20,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     private val applicationSettingsStateService
         get() = pluginSettings()
 
-    private val snykSettingsDialog: SnykSettingsDialog =
+    val snykSettingsDialog: SnykSettingsDialog =
         SnykSettingsDialog(project, applicationSettingsStateService, this)
 
     override fun getId(): String = "io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
@@ -33,7 +33,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isIgnoreUnknownCAModified() ||
         isSendUsageAnalyticsModified() ||
         isCrashReportingModified() ||
-        snykSettingsDialog.isScanTypeChanged()
+        snykSettingsDialog.isScanTypeChanged() ||
+        snykSettingsDialog.isSeverityEnablementChanged()
 
     private fun isCoreParamsModified() = isTokenModified() ||
         isCustomEndpointModified() ||
@@ -50,7 +51,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
         val rescanNeeded = isCoreParamsModified()
         val productSelectionChanged = snykSettingsDialog.isScanTypeChanged()
-        val severitySelectionChanged = false // todo: implement severity selection
+        val severitySelectionChanged = snykSettingsDialog.isSeverityEnablementChanged()
 
         applicationSettingsStateService.customEndpointUrl = customEndpoint
         SnykCodeParams.instance.apiUrl = customEndpoint
@@ -64,6 +65,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         applicationSettingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
         applicationSettingsStateService.crashReportingEnabled = snykSettingsDialog.isCrashReportingEnabled()
         snykSettingsDialog.saveScanTypeChanges()
+        snykSettingsDialog.saveSeveritiesEnablementChanges()
 
         if (isProjectSettingsAvailable(project)) {
             getSnykProjectSettingsService(project)?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
@@ -74,6 +76,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
         }
         if (productSelectionChanged || severitySelectionChanged) {
+            applicationSettingsStateService.matchFilteringWithEnablement()
             getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
         }
     }

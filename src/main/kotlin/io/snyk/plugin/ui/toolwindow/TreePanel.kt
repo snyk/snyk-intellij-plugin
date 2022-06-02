@@ -18,11 +18,10 @@ class TreePanel(tree: Tree) : SimpleToolWindowPanel(true, true) {
     init {
         name = "treePanel"
         val severityToolbarPanel = JPanel(BorderLayout())
-        severityToolbarPanel.add(JLabel("Severity: "), BorderLayout.WEST)
+        severityToolbarPanel.add(JLabel("  Severity: "), BorderLayout.WEST)
         severityToolbarPanel.add(getSeverityToolbar().component, BorderLayout.CENTER)
 
         val toolBarPanel = JPanel(BorderLayout())
-        toolBarPanel.add(getScanTypeToolbar().component, BorderLayout.WEST)
         toolBarPanel.add(severityToolbarPanel, BorderLayout.CENTER)
 
         add(toolBarPanel, BorderLayout.NORTH)
@@ -32,11 +31,6 @@ class TreePanel(tree: Tree) : SimpleToolWindowPanel(true, true) {
         treePanel.add(ScrollPaneFactory.createScrollPane(tree))
         treePanel.border = IdeBorderFactory.createBorder(SideBorder.TOP)
         add(treePanel)
-    }
-
-    private fun getScanTypeToolbar(): ActionToolbar {
-        val actionGroup = actionManager.getAction("io.snyk.plugin.TreeFilters.ScanType") as ActionGroup
-        return actionManager.createActionToolbar("Snyk Tree Toolbar", actionGroup, true)
     }
 
     private fun getSeverityToolbar(): ActionToolbar {

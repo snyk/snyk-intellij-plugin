@@ -1,5 +1,16 @@
 # Snyk Changelog
 
+## [2.4.33]
+
+### Fixed
+- Unify names for Types of Scan (Snyk Products) in different places of UI
+- Other minor UI improvements (including updated Severity icons) 
+
+### Changed
+- Separation of **Filtering**(for results in the Tree) and **Enablement**(in the Settings)for: 
+  - Types of Scan (Snyk Products)
+  - Severities.
+
 ## [2.4.32]
 
 ### Fixed

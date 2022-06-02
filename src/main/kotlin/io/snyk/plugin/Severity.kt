@@ -2,7 +2,9 @@ package io.snyk.plugin
 
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.util.ui.UIUtil
+import icons.SnykIcons
 import java.awt.Color
+import javax.swing.Icon
 
 enum class Severity {
     // order is important for comparator
@@ -44,12 +46,14 @@ enum class Severity {
     fun getHighlightSeverity(): HighlightSeverity =
         when (this) {
             CRITICAL -> HighlightSeverity.ERROR
-            HIGH -> HighlightSeverity.WARNING
-            MEDIUM -> HighlightSeverity.WEAK_WARNING
+            HIGH -> HighlightSeverity.ERROR
+            MEDIUM -> HighlightSeverity.WARNING
             LOW -> HighlightSeverity.WEAK_WARNING
             else -> HighlightSeverity.WARNING
             // Don't use HighlightSeverity.INFORMATION as it's not visible in the Editor and in `Problems`
         }
+
+    fun getIcon(): Icon = SnykIcons.getSeverityIcon(this)
 
     companion object {
         private const val SEVERITY_CRITICAL = "critical"
