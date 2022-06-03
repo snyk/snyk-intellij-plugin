@@ -28,12 +28,12 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
     }
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> = listOfNotNull(
-            createOssScanAction(),
-            createSecurityIssuesScanAction(),
-            createQualityIssuesScanAction(),
-            if (isIacEnabled()) createIacScanAction() else null,
-            if (isContainerEnabled()) createContainerScanAction() else null
-        ).toTypedArray()
+        createOssScanAction(),
+        createSecurityIssuesScanAction(),
+        createQualityIssuesScanAction(),
+        if (isIacEnabled()) createIacScanAction() else null,
+        if (isContainerEnabled()) createContainerScanAction() else null
+    ).toTypedArray()
 
     private fun createScanFilteringAction(
         productType: ProductType,
@@ -42,8 +42,9 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
         setResultsTreeFiltering: (Boolean) -> Unit,
         availabilityPostfix: String = ""
     ): AnAction {
-        val text =
-            productType.treeName + availabilityPostfix.ifEmpty { if (scanTypeAvailable) "" else " (disabled in Settings)" }
+        val text = productType.treeName + availabilityPostfix.ifEmpty {
+            if (scanTypeAvailable) "" else " (disabled in Settings)"
+        }
         return object : ToggleAction(text) {
 
             override fun isSelected(e: AnActionEvent): Boolean = resultsTreeFiltering

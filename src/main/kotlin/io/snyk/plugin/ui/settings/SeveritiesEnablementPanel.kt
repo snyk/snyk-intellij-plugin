@@ -7,7 +7,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 
-class SeveritiesEnablementPanel() {
+class SeveritiesEnablementPanel {
     private val settings
         get() = pluginSettings()
 
@@ -20,9 +20,9 @@ class SeveritiesEnablementPanel() {
         row {
             cell {
                 checkBox(
-                    Severity.CRITICAL.toPresentableString(),
-                    { settings.criticalSeverityEnabled },
-                    { settings.criticalSeverityEnabled = it }
+                    text = Severity.CRITICAL.toPresentableString(),
+                    getter = { settings.criticalSeverityEnabled },
+                    setter = { settings.criticalSeverityEnabled = it }
                 ).component.apply {
                     this.addItemListener {
                         isLastSeverityDisabling(this, currentCriticalSeverityEnabled)
@@ -35,9 +35,9 @@ class SeveritiesEnablementPanel() {
         row {
             cell {
                 checkBox(
-                    Severity.HIGH.toPresentableString(),
-                    { settings.highSeverityEnabled },
-                    { settings.highSeverityEnabled = it }
+                    text = Severity.HIGH.toPresentableString(),
+                    getter = { settings.highSeverityEnabled },
+                    setter = { settings.highSeverityEnabled = it }
                 ).component.apply {
                     this.addItemListener {
                         isLastSeverityDisabling(this, currentHighSeverityEnabled)
@@ -50,9 +50,9 @@ class SeveritiesEnablementPanel() {
         row {
             cell {
                 checkBox(
-                    Severity.MEDIUM.toPresentableString(),
-                    { settings.mediumSeverityEnabled },
-                    { settings.mediumSeverityEnabled = it }
+                    text = Severity.MEDIUM.toPresentableString(),
+                    getter = { settings.mediumSeverityEnabled },
+                    setter = { settings.mediumSeverityEnabled = it }
                 ).component.apply {
                     this.addItemListener {
                         isLastSeverityDisabling(this, currentMediumSeverityEnabled)
@@ -65,9 +65,9 @@ class SeveritiesEnablementPanel() {
         row {
             cell {
                 checkBox(
-                    Severity.LOW.toPresentableString(),
-                    { settings.lowSeverityEnabled },
-                    { settings.lowSeverityEnabled = it }
+                    text = Severity.LOW.toPresentableString(),
+                    getter = { settings.lowSeverityEnabled },
+                    setter = { settings.lowSeverityEnabled = it }
                 ).component.apply {
                     this.addItemListener {
                         isLastSeverityDisabling(this, currentLowSeverityEnabled)
@@ -82,7 +82,7 @@ class SeveritiesEnablementPanel() {
         border = JBUI.Borders.empty(2)
     }
 
-    private fun isLastSeverityDisabling(component: JBCheckBox, wasEnabled : Boolean): Boolean {
+    private fun isLastSeverityDisabling(component: JBCheckBox, wasEnabled: Boolean): Boolean {
         val onlyOneEnabled = arrayOf(
             currentCriticalSeverityEnabled,
             currentHighSeverityEnabled,
@@ -99,5 +99,4 @@ class SeveritiesEnablementPanel() {
         }
         return onlyOneEnabled
     }
-
 }

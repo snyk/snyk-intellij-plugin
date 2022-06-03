@@ -161,7 +161,7 @@ class BaseImageRemediationDetailPanel(
         )
 
         panel.isOpaque = true
-        panel.background = severity.getBgColor()// UIUtil.mix(Color.WHITE, baseColor, 0.25)
+        panel.background = severity.getBgColor()
 
         return panel
     }

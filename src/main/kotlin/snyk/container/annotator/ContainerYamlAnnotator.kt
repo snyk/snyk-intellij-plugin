@@ -32,12 +32,11 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         logger.debug("apply on ${psiFile.name}")
-        val issuesForImages = getContainerIssuesForImages(psiFile)
+        getContainerIssuesForImages(psiFile)
             .filter { forImage ->
-                forImage.getSeverities().any { AnnotatorCommon.isSeverityToShow(it) }
+                !forImage.ignored && !forImage.obsolete &&
+                    forImage.getSeverities().any { AnnotatorCommon.isSeverityToShow(it) }
             }
-        issuesForImages
-            .filter { !it.ignored && !it.obsolete }
             .forEach { forImage ->
                 val severityToShow = forImage.getSeverities()
                     .filter { AnnotatorCommon.isSeverityToShow(it) }

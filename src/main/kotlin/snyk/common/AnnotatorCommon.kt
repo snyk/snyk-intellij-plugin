@@ -22,6 +22,7 @@ object AnnotatorCommon {
 
     fun initRefreshing(project: Project) {
         logger.debug("Initializing annotations refresh listener")
+        // todo: do we need to refresh annotations when Tree filters changing?
         project.messageBus.connect()
             .subscribe(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC, object : SnykResultsFilteringListener {
                 override fun filtersChanged() {

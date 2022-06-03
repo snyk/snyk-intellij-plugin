@@ -1,7 +1,8 @@
 package io.snyk.plugin.services
 
 import io.snyk.plugin.Severity
-import junit.framework.TestCase.*
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
 import org.junit.Test
 
 class SnykApplicationSettingsStateServiceTest {

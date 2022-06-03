@@ -59,10 +59,10 @@ abstract class SnykTreeSeverityFilterActionBase(
     }
 }
 
-class SnykTreeLowSeverityFilterAction: SnykTreeSeverityFilterActionBase(Severity.LOW)
+class SnykTreeLowSeverityFilterAction : SnykTreeSeverityFilterActionBase(Severity.LOW)
 
-class SnykTreeMediumSeverityFilterAction: SnykTreeSeverityFilterActionBase(Severity.MEDIUM)
+class SnykTreeMediumSeverityFilterAction : SnykTreeSeverityFilterActionBase(Severity.MEDIUM)
 
-class SnykTreeHighSeverityFilterAction: SnykTreeSeverityFilterActionBase(Severity.HIGH)
+class SnykTreeHighSeverityFilterAction : SnykTreeSeverityFilterActionBase(Severity.HIGH)
 
 class SnykTreeCriticalSeverityFilterAction : SnykTreeSeverityFilterActionBase(Severity.CRITICAL)

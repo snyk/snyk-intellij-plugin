@@ -67,7 +67,7 @@
              class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterActionGroup"
              text="Filter Results by Scan Type"
              popup="true"
-             description="Snyk: choose Scan types to display in the Tree"
+             description="Snyk: choose scan types to display in the tree"
              icon="AllIcons.General.Filter"/>
       <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"

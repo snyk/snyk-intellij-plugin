@@ -306,6 +306,8 @@ fun navigateToSource(
     }
 }
 
+// `Memory leak` deceted by Jetbrains, see details here:
+// https://youtrack.jetbrains.com/issue/IJSDK-979/Usage-of-ShowSettingsUtilshowSettingsDialogProject-jClassT-will-cause-Memory-leak-detected-KotlinCompilerConfigurableTab
 fun showSettings(project: Project, componentNameToFocus: String, componentHelpHint: String) {
     ShowSettingsUtil.getInstance()
         .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java) {
@@ -319,7 +321,7 @@ fun showSettings(project: Project, componentNameToFocus: String, componentHelpHi
                     componentToFocus.requestFocusInWindow()
                     SnykBalloonNotificationHelper
                         .showInfoBalloonForComponent(componentHelpHint, componentToFocus, true)
-                }, 1000)
+                }, delayMillis = 1000)
             } else {
                 logger.warn("Can't find component with name: $componentNameToFocus")
             }
