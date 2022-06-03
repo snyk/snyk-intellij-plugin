@@ -4,7 +4,8 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
-import io.snyk.plugin.events.SnykResultsFilteringListener
+import io.snyk.plugin.events.SnykProductsOrSeverityListener
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 
@@ -22,10 +23,16 @@ object AnnotatorCommon {
 
     fun initRefreshing(project: Project) {
         logger.debug("Initializing annotations refresh listener")
-        // todo: do we need to refresh annotations when Tree filters changing?
         project.messageBus.connect()
-            .subscribe(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC, object : SnykResultsFilteringListener {
-                override fun filtersChanged() {
+            .subscribe(
+                SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC, object : SnykProductsOrSeverityListener {
+                override fun enablementChanged() {
+                    refreshAnnotationsForOpenFiles(project)
+                }
+            })
+        project.messageBus.connect()
+            .subscribe(SnykSettingsListener.SNYK_SETTINGS_TOPIC, object : SnykSettingsListener {
+                override fun settingsChanged() {
                     refreshAnnotationsForOpenFiles(project)
                 }
             })
