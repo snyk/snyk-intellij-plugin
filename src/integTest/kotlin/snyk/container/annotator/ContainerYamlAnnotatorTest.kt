@@ -243,7 +243,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     private fun createContainerResultWithIssueOnLine21(): ContainerResult {
         val containerResult = ContainerResult(
-            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java)), null
+            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java))
         )
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
@@ -262,7 +262,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     private fun createContainerResultWithIssueOnLine21and23ForSameImageName(): ContainerResult {
         val containerResult = ContainerResult(
-            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java)), null
+            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java))
         )
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]

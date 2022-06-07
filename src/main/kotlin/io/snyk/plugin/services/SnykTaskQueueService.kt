@@ -144,7 +144,7 @@ class SnykTaskQueueService(val project: Project) {
                         }
                         scanPublisher?.scanningContainerFinished(containerResult)
                     } else {
-                        scanPublisher?.scanningContainerError(containerResult.error!!)
+                        scanPublisher?.scanningContainerError(containerResult.getFirstError()!!)
                     }
                 }
                 logger.debug("Container scan completed")
@@ -221,9 +221,10 @@ class SnykTaskQueueService(val project: Project) {
                     if (ossResult.isSuccessful()) {
                         scanPublisher?.scanningOssFinished(ossResult)
                     } else {
-                        scanPublisher?.scanningOssError(ossResult.error!!)
+                        scanPublisher?.scanningOssError(ossResult.getFirstError()!!)
                     }
                 }
+                DaemonCodeAnalyzer.getInstance(project).restart()
             }
         })
     }
@@ -257,7 +258,7 @@ class SnykTaskQueueService(val project: Project) {
                         }
                         scanPublisher?.scanningIacFinished(iacResult)
                     } else {
-                        scanPublisher?.scanningIacError(iacResult.error!!)
+                        scanPublisher?.scanningIacError(iacResult.getFirstError()!!)
                     }
                 }
                 logger.debug("IaC scan completed")

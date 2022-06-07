@@ -166,8 +166,24 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 null,
                 "fake-image-name2"
             )
-        ),
-        null
+        )
+    )
+
+    private val fakeContainerResultWithError = ContainerResult(
+        listOf(
+            ContainerIssuesForImage(
+                listOf(fakeContainerIssue1),
+                "fake project name",
+                Docker(),
+                null,
+                "fake-image-name1"
+            )),
+        listOf(
+            SnykError(
+                "fake error message",
+                "fake-path"
+            )
+        )
     )
 
     @Test
@@ -281,7 +297,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test should display CONTAINER_NO_ISSUES_FOUND_TEXT after scan when no Container issues found and Container node selected`() {
-        toolWindowPanel.snykScanListener.scanningContainerFinished(ContainerResult(emptyList(), null))
+        toolWindowPanel.snykScanListener.scanningContainerFinished(ContainerResult(emptyList()))
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
@@ -454,7 +470,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // mock IaC results
         val iacError = SnykError("fake error", "fake path")
-        val iacResultWithError = IacResult(null, iacError)
+        val iacResultWithError = IacResult(null, listOf(iacError))
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { getIacService(project)?.scan() } returns iacResultWithError
@@ -575,7 +591,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test container error shown`() {
         // mock Container results
         val containerError = SnykError("fake error", "fake path")
-        val containerResultWithError = ContainerResult(null, containerError)
+        val containerResultWithError = ContainerResult(null, listOf(containerError))
 
         setUpContainerTest(containerResultWithError)
 
@@ -634,6 +650,40 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             BaseImageRemediationDetailPanel::class
         )
         assertNotNull(baseImageRemediationDetailPanel)
+    }
+
+    @Test
+    fun `test container image node and Failed-to-scan image shown`() {
+        // pre-test setup
+        setUpContainerTest(fakeContainerResultWithError)
+        mockkObject(SnykBalloonNotificationHelper)
+
+        // actual test run
+        project.service<SnykTaskQueueService>().scan()
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        // Assertions
+        assertEquals(fakeContainerResultWithError, getSnykCachedResults(project)?.currentContainerResult)
+
+        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+        assertEquals("1 image with issues and 1 error should be found", 2, rootContainerNode.childCount)
+        assertEquals(
+            "`fake-image-name1` should be found",
+            "fake-image-name1",
+            ((rootContainerNode.firstChild as ContainerImageTreeNode).userObject as ContainerIssuesForImage).imageName
+        )
+        assertTrue(
+            "`fake-path` should be found",
+            ((rootContainerNode.lastChild as ErrorTreeNode).userObject as SnykError).path.startsWith("fake-path")
+        )
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(
+                match { it.contains("fake-path") },
+                project,
+                any()
+            )
+        }
     }
 
     @Test

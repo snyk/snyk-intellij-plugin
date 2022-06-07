@@ -91,7 +91,7 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
 
     private fun createContainerIssuesForImage(): ContainerIssuesForImage {
         val containerResult = ContainerResult(
-            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java)), null
+            listOf(Gson().fromJson(containerResultWithRemediationJson, ContainerIssuesForImage::class.java))
         )
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]

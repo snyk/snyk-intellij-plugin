@@ -6,8 +6,8 @@ import snyk.common.SnykError
 
 class OssResult(
     allOssVulnerabilities: List<OssVulnerabilitiesForFile>?,
-    error: SnykError?
-) : CliResult<OssVulnerabilitiesForFile>(allOssVulnerabilities, error) {
+    errors: List<SnykError> = emptyList()
+) : CliResult<OssVulnerabilitiesForFile>(allOssVulnerabilities, errors) {
 
     override val issuesCount = allOssVulnerabilities?.sumBy { it.uniqueCount }
 

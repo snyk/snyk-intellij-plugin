@@ -5314,5 +5314,10 @@
       }
     },
     "path": "nginx"
+  },
+  {
+    "ok": false,
+    "error": "Failed to scan image \"fake-image-name\". Please make sure the image and/or repository exist, and that you are using the correct credentials.",
+    "path": "fake-image-name"
   }
 ]

@@ -1,39 +1,48 @@
 package snyk.common
 
-import com.intellij.ide.CliResult
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.Severity
+import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.services.CliAdapter
 import snyk.iac.IacIssue
 
-class IgnoreService(project: Project) : CliAdapter<CliResult>(project) {
+class IgnoreService(project: Project) : CliAdapter<Unit, IgnoreService.IgnoreResults>(project) {
 
     fun ignore(issueId: String) {
         val result = execute(listOf("ignore", "--id=$issueId"))
-        if (result.exitCode > 0) {
-            throw IgnoreException("Unexpected error (${result.exitCode}) when ignoring $issueId.")
+        if (isFail(result)) {
+            throw IgnoreException("Unexpected error (${result.getFirstError()?.message}) when ignoring $issueId.")
         }
     }
 
     fun ignoreInstance(issueId: String, path: String) {
         val result = execute(listOf("ignore", "--id=$issueId", "--path=$path"))
-        if (result.exitCode > 0) {
-            throw IgnoreException("Unexpected error (${result.exitCode}) when ignoring $issueId.")
+        if (isFail(result)) {
+            throw IgnoreException("Unexpected error (${result.getFirstError()?.message}) when ignoring $issueId.")
         }
     }
+
+    private fun isFail(result: IgnoreResults) =
+        result.errors.isNotEmpty() && result.getFirstError()?.message != CLI_PRODUCE_NO_OUTPUT
 
     fun buildPath(issue: IacIssue, targetFile: String): String {
         val separator = " > "
         return targetFile + separator + issue.path.joinToString(separator)
     }
 
-    override fun getErrorResult(errorMsg: String): CliResult = CliResult(1, errorMsg)
-    override fun convertRawCliStringToCliResult(rawStr: String): CliResult {
-        return if (rawStr.isEmpty()) {
-            CliResult(0, "Successful")
-        } else {
-            CliResult(2, "Unexpected Output")
-        }
-    }
+    override fun getProductResult(cliIssues: List<Unit>?, snykErrors: List<SnykError>) =
+        IgnoreResults(snykErrors.firstOrNull()?.message)
+
+    override fun getCliIIssuesClass(): Class<Unit> = Unit::class.java
 
     override fun buildExtraOptions(): List<String> = emptyList()
+
+    inner class IgnoreResults(errorMessage: String?) : CliResult<Unit>(
+        null,
+        errorMessage?.let { listOf(SnykError(it, "")) } ?: emptyList()
+    ) {
+        override val issuesCount: Int? = null
+        override fun countBySeverity(severity: Severity): Int? = null
+    }
 }
+

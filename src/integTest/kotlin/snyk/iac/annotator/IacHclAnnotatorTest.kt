@@ -105,7 +105,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
         val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), terraformManifestFile, file.path, "terraform")
-        return IacResult(listOf(iacIssuesForFile), null)
+        return IacResult(listOf(iacIssuesForFile))
     }
 
     private fun createIacResultWithIssueOnLine8(): IacResult {
@@ -116,7 +116,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
         val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), terraformManifestFile, file.path, "terraform")
-        return IacResult(listOf(iacIssuesForFile), null)
+        return IacResult(listOf(iacIssuesForFile))
     }
 
     private fun createIacResultWithIssueOnLine18(): IacResult {
@@ -127,6 +127,6 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
         val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), terraformManifestFile, file.path, "terraform")
-        return IacResult(listOf(iacIssuesForFile), null)
+        return IacResult(listOf(iacIssuesForFile))
     }
 }

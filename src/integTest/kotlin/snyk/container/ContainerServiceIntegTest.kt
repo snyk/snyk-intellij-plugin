@@ -2,14 +2,17 @@ package snyk.container
 
 import com.google.gson.Gson
 import com.intellij.testFramework.LightPlatform4TestCase
+import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.setupDummyCliFile
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.junit.Test
 import snyk.container.TestYamls.podYaml
 
@@ -21,7 +24,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
     private val containerResultJson = javaClass.classLoader
         .getResource(("container-test-results/nginx-no-remediation.json"))!!.readText(Charsets.UTF_8)
     private val containerResultForFewImagesJson = javaClass.classLoader
-        .getResource(("container-test-results/debian-nginx_critical_only.json"))!!.readText(Charsets.UTF_8)
+        .getResource(("container-test-results/debian-nginx-fake_critical_only.json"))!!.readText(Charsets.UTF_8)
     private val containerDoubleJenkinsWithPathJson = javaClass.classLoader
         .getResource(("container-test-results/container-double-jenkins-with-path.json"))!!.readText(Charsets.UTF_8)
 
@@ -78,7 +81,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         cut.setConsoleCommandRunner(mockkRunner)
 
         val expectedContainerResult =
-            ContainerResult(listOf(Gson().fromJson(expectedResult, ContainerIssuesForImage::class.java)), null)
+            ContainerResult(listOf(Gson().fromJson(expectedResult, ContainerIssuesForImage::class.java)))
 
         val scanResult = cut.scan()
 
@@ -129,6 +132,12 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
             allCliIssues.size == 2 &&
                 allCliIssues.any { it.imageName == "debian" } &&
                 allCliIssues.any { it.imageName == "nginx" }
+        )
+        val errors = containerResult.errors
+        assertTrue("Image failed to scan should be found", errors.isNotEmpty())
+        assertTrue(
+            "fake-image-name failed to scan should be found",
+            errors.size == 1 && errors.any { it.path == "fake-image-name" }
         )
     }
 

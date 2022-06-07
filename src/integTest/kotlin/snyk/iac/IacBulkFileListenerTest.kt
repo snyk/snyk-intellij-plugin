@@ -48,7 +48,7 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
         )
         val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), file, filePath, "npm")
         val iacVulnerabilities = listOf(iacIssuesForFile)
-        val fakeIacResult = IacResult(iacVulnerabilities, null)
+        val fakeIacResult = IacResult(iacVulnerabilities)
         getSnykCachedResults(project)?.currentIacResult = fakeIacResult
         val rootIacIssuesTreeNode = project.service<SnykToolWindowPanel>().getRootIacIssuesTreeNode()
         rootIacIssuesTreeNode.add(IacFileTreeNode(iacIssuesForFile, project))
@@ -162,7 +162,7 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
 
     @Test
     fun `test currentIacResults should keep it when out-of-project IaC supported file content changed`() {
-        val fakeIacResult = IacResult(null, null)
+        val fakeIacResult = IacResult(null)
 
         val file = myFixture.addFileToProject("exclude/k8s-deployment.yaml", "")
         val module = ProjectRootManager.getInstance(project).fileIndex.getModuleForFile(file.virtualFile)!!

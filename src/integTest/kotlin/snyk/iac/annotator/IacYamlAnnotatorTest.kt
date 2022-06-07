@@ -93,7 +93,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
         )
         val iacIssuesForFile =
             IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes")
-        return IacResult(listOf(iacIssuesForFile), null)
+        return IacResult(listOf(iacIssuesForFile))
     }
 
     private fun createIacResultWithIssueOnLine20(): IacResult {
@@ -105,6 +105,6 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
         )
         val iacIssuesForFile =
             IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes")
-        return IacResult(listOf(iacIssuesForFile), null)
+        return IacResult(listOf(iacIssuesForFile))
     }
 }

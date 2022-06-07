@@ -79,7 +79,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         service<SnykCliDownloaderService>().downloader = downloaderMock
         every { downloaderMock.expectedSha() } returns "test"
         every { downloaderMock.downloadFile(any(), any(), any()) } returns cliFile
-        every { getOssService(project)?.scan() } returns OssResult(null, null)
+        every { getOssService(project)?.scan() } returns OssResult(null)
 
         val settings = pluginSettings()
         settings.ossScanEnable = true
@@ -162,8 +162,9 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.snykCodeSecurityIssuesScanEnable = false
         settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = true
+        getSnykCachedResults(project)?.currentIacResult = null
 
-        val fakeIacResult = IacResult(null, null)
+        val fakeIacResult = IacResult(emptyList())
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isIacEnabled() } returns true
@@ -180,7 +181,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isContainerEnabled() } returns true
         every { isCliInstalled() } returns true
-        val fakeContainerResult = ContainerResult(null, null)
+        val fakeContainerResult = ContainerResult(emptyList())
         every { getContainerService(project)?.scan() } returns fakeContainerResult
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
@@ -191,7 +192,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.iacScanEnabled = false
         settings.containerScanEnabled = true
 
-        assertEquals(null, getSnykCachedResults(project)?.currentContainerResult)
+        getSnykCachedResults(project)?.currentContainerResult = null
 
         snykTaskQueueService.scan()
 

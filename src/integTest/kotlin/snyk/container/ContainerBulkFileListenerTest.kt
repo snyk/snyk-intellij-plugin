@@ -136,7 +136,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
                 virtualFile = addedPsiFile.virtualFile
             ))
         )
-        val fakeContainerResult = ContainerResult(listOf(issuesForImage), null)
+        val fakeContainerResult = ContainerResult(listOf(issuesForImage))
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
         getSnykCachedResults(project)?.currentContainerResult = fakeContainerResult
         toolWindowPanel.getRootContainerIssuesTreeNode().add(ContainerImageTreeNode(issuesForImage, project))

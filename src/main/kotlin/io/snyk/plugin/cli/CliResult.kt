@@ -7,18 +7,20 @@ import java.time.temporal.ChronoUnit
 
 abstract class CliResult<CliIssues>(
     var allCliIssues: List<CliIssues>?,
-    var error: SnykError?
+    var errors: List<SnykError>
 ) {
 
     private val timestamp: Instant = Instant.now()
 
     fun isExpired(): Boolean = timestamp.plus(1, ChronoUnit.DAYS) < Instant.now()
 
-    fun isSuccessful(): Boolean = error == null
+    fun isSuccessful(): Boolean = allCliIssues != null
 
     abstract val issuesCount: Int?
 
     protected abstract fun countBySeverity(severity: Severity): Int?
+
+    fun getFirstError(): SnykError? = errors.firstOrNull()
 
     fun criticalSeveritiesCount(): Int = countBySeverity(Severity.CRITICAL) ?: 0
 
