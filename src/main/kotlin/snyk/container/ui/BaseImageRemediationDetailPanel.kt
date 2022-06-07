@@ -28,7 +28,10 @@ import javax.swing.JTextArea
 class BaseImageRemediationDetailPanel(
     private val project: Project,
     private val imageIssues: ContainerIssuesForImage
-) : IssueDescriptionPanelBase(title = imageIssues.imageName, severity = "") {
+) : IssueDescriptionPanelBase(
+    title = imageIssues.imageName,
+    severity = imageIssues.getSeverities().max() ?: Severity.UNKNOWN
+) {
 
     private val targetImages: List<KubernetesWorkloadImage> = getKubernetesImageCache(project)
         ?.getKubernetesWorkloadImages()
@@ -138,11 +141,11 @@ class BaseImageRemediationDetailPanel(
         return panel
     }
 
-    private fun getSeverityCountItem(count: Int, severity: String): JPanel {
+    private fun getSeverityCountItem(count: Int, severity: Severity): JPanel {
         val panel = JPanel()
         panel.layout = GridLayoutManager(1, 2, Insets(0, 0, 0, 0), 0, 0)
 
-        val baseColor = Severity.getColor(severity)
+        val baseColor = severity.getColor()
         panel.add(
             JLabel("%3d ".format(count)).apply {
                 font = io.snyk.plugin.ui.getFont(Font.BOLD, 14, JTextArea().font)
@@ -158,7 +161,7 @@ class BaseImageRemediationDetailPanel(
         )
 
         panel.isOpaque = true
-        panel.background = Severity.getBgColor(severity)// UIUtil.mix(Color.WHITE, baseColor, 0.25)
+        panel.background = severity.getBgColor()
 
         return panel
     }

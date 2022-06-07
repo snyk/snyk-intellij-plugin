@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.ScrollPaneFactory
@@ -22,6 +23,7 @@ import java.awt.Font
 import java.awt.Insets
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import javax.swing.Icon
 import javax.swing.ImageIcon
 import javax.swing.JComponent
 import javax.swing.JEditorPane
@@ -93,7 +95,7 @@ fun snykCodeAvailabilityPostfix(): String {
     val localCodeEngineEnabled = pluginSettings().localCodeEngineEnabled
     return when {
         !isSnykCodeAvailable(pluginSettings().customEndpointUrl) -> " (disabled for endpoint)"
-        (sastOnServerEnabled == null && localCodeEngineEnabled == null) -> " (disabled due to unreachable server settings)"
+        (sastOnServerEnabled == null && localCodeEngineEnabled == null) -> " (unreachable server settings)"
         (sastOnServerEnabled != false && localCodeEngineEnabled == true) -> " (disabled due to Local Code Engine)"
         sastOnServerEnabled != true -> " (disabled in Snyk.io)"
         else -> ""
@@ -357,3 +359,5 @@ fun txtToHtml(s: String): String {
     val matcher: Matcher = patt.matcher(newLineConverted)
     return matcher.replaceAll("<a href=\"$1\">$1</a>")
 }
+
+fun getDisabledIcon(originalIcon: Icon?): Icon? = originalIcon?.let { IconLoader.getDisabledIcon(it) }

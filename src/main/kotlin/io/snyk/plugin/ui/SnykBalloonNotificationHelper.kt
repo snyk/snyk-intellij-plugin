@@ -101,6 +101,10 @@ object SnykBalloonNotificationHelper {
     fun showWarnBalloonAtEventPlace(message: String, e: AnActionEvent, showAbove: Boolean = false) {
         val component = e.inputEvent?.component ?: e.getData(PlatformDataKeys.CONTEXT_COMPONENT) ?: return
         // todo: case if no Component exist (action invoked from Search?)
+        showWarnBalloonForComponent(message, component, showAbove)
+    }
+
+    fun showWarnBalloonForComponent(message: String, component: Component, showAbove: Boolean = false) {
         val balloon = createBalloon(
             message,
             AllIcons.General.BalloonWarning,

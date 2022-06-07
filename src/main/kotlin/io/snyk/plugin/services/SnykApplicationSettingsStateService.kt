@@ -7,6 +7,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.isProjectSettingsAvailable
 import java.time.Instant
@@ -52,9 +53,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var highSeverityEnabled = true
     var criticalSeverityEnabled = true
 
+    var treeFiltering = TreeFiltering()
+
     var lastCheckDate: Date? = null
     var pluginFirstRun = true
     var pluginInstalled = false
+
     // Instant could not be used here due to serialisation Exception
     var pluginFirstInstallTime: Date = Date.from(Instant.now())
     var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
@@ -100,4 +104,69 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     fun setLastCheckDate(localDate: LocalDateTime) {
         this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant())
     }
+
+    fun hasSeverityEnabled(severity: Severity): Boolean =
+        when (severity) {
+            Severity.CRITICAL -> criticalSeverityEnabled
+            Severity.HIGH -> highSeverityEnabled
+            Severity.MEDIUM -> mediumSeverityEnabled
+            Severity.LOW -> lowSeverityEnabled
+            else -> false
+        }
+
+    fun hasSeverityTreeFiltered(severity: Severity): Boolean =
+        when (severity) {
+            Severity.CRITICAL -> treeFiltering.criticalSeverity
+            Severity.HIGH -> treeFiltering.highSeverity
+            Severity.MEDIUM -> treeFiltering.mediumSeverity
+            Severity.LOW -> treeFiltering.lowSeverity
+            else -> false
+        }
+
+    fun setSeverityTreeFiltered(severity: Severity, state: Boolean) {
+        when (severity) {
+            Severity.CRITICAL -> treeFiltering.criticalSeverity = state
+            Severity.HIGH -> treeFiltering.highSeverity = state
+            Severity.MEDIUM -> treeFiltering.mediumSeverity = state
+            Severity.LOW -> treeFiltering.lowSeverity = state
+            else -> throw IllegalArgumentException("Unknown severity: $severity")
+        }
+    }
+
+    fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean =
+        hasSeverityEnabled(severity) && hasSeverityTreeFiltered(severity)
+
+    fun hasOnlyOneSeverityEnabled(): Boolean =
+        arrayOf(
+            hasSeverityEnabledAndFiltered(Severity.CRITICAL),
+            hasSeverityEnabledAndFiltered(Severity.HIGH),
+            hasSeverityEnabledAndFiltered(Severity.MEDIUM),
+            hasSeverityEnabledAndFiltered(Severity.LOW)
+        ).count { it } == 1
+
+    fun matchFilteringWithEnablement() {
+        treeFiltering.criticalSeverity = criticalSeverityEnabled
+        treeFiltering.highSeverity = highSeverityEnabled
+        treeFiltering.mediumSeverity = mediumSeverityEnabled
+        treeFiltering.lowSeverity = lowSeverityEnabled
+
+        treeFiltering.ossResults = ossScanEnable
+        treeFiltering.codeSecurityResults = snykCodeSecurityIssuesScanEnable
+        treeFiltering.codeQualityResults = snykCodeQualityIssuesScanEnable
+        treeFiltering.iacResults = iacScanEnabled
+        treeFiltering.containerResults = containerScanEnabled
+    }
+}
+
+class TreeFiltering {
+    var ossResults: Boolean = true
+    var codeSecurityResults: Boolean = true
+    var codeQualityResults: Boolean = true
+    var iacResults: Boolean = true
+    var containerResults: Boolean = true
+
+    var lowSeverity = true
+    var mediumSeverity = true
+    var highSeverity = true
+    var criticalSeverity = true
 }

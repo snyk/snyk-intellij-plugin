@@ -1,3 +1,5 @@
+package snyk.common
+
 import java.awt.Component
 import java.awt.Container
 import kotlin.reflect.KClass

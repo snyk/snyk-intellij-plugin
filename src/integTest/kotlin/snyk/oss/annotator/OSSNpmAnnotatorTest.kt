@@ -3,6 +3,7 @@ package snyk.oss.annotator
 import com.google.gson.Gson
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -15,6 +16,7 @@ import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.resetSettings
 import org.hamcrest.collection.IsCollectionWithSize
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThat
@@ -52,6 +54,7 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
         super.setUp()
         unmockkAll()
         project.replaceService(SnykCachedResults::class.java, snykCachedResults, project)
+        resetSettings(project)
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
@@ -61,7 +64,7 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
     override fun tearDown() {
         unmockkAll()
         project.replaceService(SnykCachedResults::class.java, SnykCachedResults(project), project)
-        pluginSettings().fileListenerEnabled = true
+        resetSettings(project)
         super.tearDown()
     }
 
@@ -91,6 +94,16 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
         cut.apply(psiFile, Unit, annotationHolderMock)
 
         verify { annotationHolderMock.newAnnotation(any(), any()) }
+    }
+
+    @Test
+    fun `test apply for disabled Severity should not trigger newAnnotation call`() {
+        every { snykCachedResults.currentOssResults } returns createOssResultWithIssues()
+        pluginSettings().mediumSeverityEnabled = false
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify(exactly = 0) { annotationHolderMock.newAnnotation(HighlightSeverity.WEAK_WARNING, any()) }
     }
 
     @Test

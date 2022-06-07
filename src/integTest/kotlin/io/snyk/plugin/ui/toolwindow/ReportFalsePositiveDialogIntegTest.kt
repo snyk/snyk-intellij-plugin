@@ -1,6 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
-import UIComponentFinder
+import snyk.common.UIComponentFinder
 import com.intellij.CommonBundle
 import com.intellij.openapi.ui.DialogWrapper.CLOSE_EXIT_CODE
 import com.intellij.testFramework.fixtures.BasePlatformTestCase

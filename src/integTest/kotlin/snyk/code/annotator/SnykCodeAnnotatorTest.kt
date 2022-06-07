@@ -2,6 +2,8 @@ package snyk.code.annotator
 
 import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
+import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
@@ -9,8 +11,13 @@ import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.resetSettings
+import io.snyk.plugin.snykcode.core.AnalysisData
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import org.junit.Before
 import org.junit.Test
 import java.nio.file.Paths
@@ -19,6 +26,7 @@ import java.nio.file.Paths
 class SnykCodeAnnotatorTest : BasePlatformTestCase() {
     private var cut = SnykCodeAnnotator()
     private val fileName = "app.js"
+    private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
 
     private lateinit var file: VirtualFile
     private lateinit var psiFile: PsiFile
@@ -35,23 +43,17 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
+        resetSettings(project)
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
         cut = SnykCodeAnnotator()
     }
 
-    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     override fun tearDown() {
         unmockkAll()
-        try {
-            super.tearDown()
-        } catch (e: Exception) {
-            // when tearing down the test case, our File Listener is trying to react on the deletion of the test
-            // files and tries to access the file index that isn't there anymore
-        } finally {
-            pluginSettings().fileListenerEnabled = true
-        }
+        super.tearDown()
+        resetSettings(null)
     }
 
     @Test
@@ -100,6 +102,29 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
         val actual = cut.annotationMessage(issue)
 
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `test apply should trigger newAnnotation call`() {
+        mockkObject(AnalysisData)
+        every { AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile)) } returns
+            createSnykCodeResultWithIssues()
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify { annotationHolderMock.newAnnotation(any(), any()) }
+    }
+
+    @Test
+    fun `test apply for disabled Severity should not trigger newAnnotation call`() {
+        mockkObject(AnalysisData)
+        every { AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile)) } returns
+            createSnykCodeResultWithIssues()
+        pluginSettings().highSeverityEnabled = false
+
+        cut.apply(psiFile, Unit, annotationHolderMock)
+
+        verify(exactly = 0) { annotationHolderMock.newAnnotation(HighlightSeverity.ERROR, any()) }
     }
 
     private fun createSnykCodeResultWithIssues(range: MyTextRange = mockRange()): List<SuggestionForFile> {

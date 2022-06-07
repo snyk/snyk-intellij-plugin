@@ -1,12 +1,14 @@
 package snyk.iac.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.snyk.plugin.pluginSettings
 import org.hamcrest.collection.IsCollectionWithSize.hasSize
 import org.junit.Assert.assertThat
 import org.junit.Before
@@ -15,6 +17,7 @@ import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 
+@Suppress("FunctionName")
 class IacJsonAnnotatorTest : IacBaseAnnotatorCase() {
 
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
@@ -56,12 +59,22 @@ class IacJsonAnnotatorTest : IacBaseAnnotatorCase() {
         verify { annotationHolderMock.newAnnotation(any(), any()) }
     }
 
+    @Test
+    fun `test apply for disabled Severity should not trigger newAnnotation call`() {
+        every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine2()
+        pluginSettings().mediumSeverityEnabled = false
+
+        IacJsonAnnotator().apply(psiFile, Unit, annotationHolderMock)
+
+        verify(exactly = 0) { annotationHolderMock.newAnnotation(HighlightSeverity.WARNING, any()) }
+    }
+
     private fun createIacResultWithIssueOnLine2(): IacResult {
         val iacIssue = IacIssue(
             id = "SNYK-CC-AWS-426",
             title = "Snyk - EC2 API termination protection is not enabled",
             lineNumber = 2,
-            severity = "", publicId = "", documentation = "", issue = "", impact = ""
+            severity = "medium", publicId = "", documentation = "", issue = "", impact = ""
         )
         val iacIssuesForFile =
             IacIssuesForFile(listOf(iacIssue), cloudformationManifestFile, file.path, "cloudformation")

@@ -1,5 +1,6 @@
 package snyk.oss
 
+import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.CliResult
 import snyk.common.SnykError
 
@@ -10,10 +11,10 @@ class OssResult(
 
     override val issuesCount = allOssVulnerabilities?.sumBy { it.uniqueCount }
 
-    override fun countBySeverity(severity: String): Int? {
+    override fun countBySeverity(severity: Severity): Int? {
         return allCliIssues?.sumBy { vulnerabilitiesForFile ->
             vulnerabilitiesForFile.vulnerabilities
-                .filter { it.severity == severity }
+                .filter { it.getSeverity() == severity }
                 .distinctBy { it.id }
                 .size
         }

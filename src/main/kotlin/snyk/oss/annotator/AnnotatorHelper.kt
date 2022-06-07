@@ -1,19 +1,6 @@
 package snyk.oss.annotator
 
-import com.intellij.lang.annotation.HighlightSeverity
-import snyk.common.SeverityConstants
-import snyk.oss.Vulnerability
-
 object AnnotatorHelper {
-    fun severity(vulnerability: Vulnerability): HighlightSeverity {
-        return when (vulnerability.severity) {
-            SeverityConstants.SEVERITY_CRITICAL -> HighlightSeverity.ERROR
-            SeverityConstants.SEVERITY_HIGH -> HighlightSeverity.WARNING
-            SeverityConstants.SEVERITY_MEDIUM -> HighlightSeverity.WEAK_WARNING
-            SeverityConstants.SEVERITY_LOW -> HighlightSeverity.INFORMATION
-            else -> HighlightSeverity.INFORMATION
-        }
-    }
 
     fun isFileSupported(filePath: String): Boolean =
         listOf(

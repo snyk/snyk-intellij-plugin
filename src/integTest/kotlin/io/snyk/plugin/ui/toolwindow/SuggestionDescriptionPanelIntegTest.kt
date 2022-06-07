@@ -1,6 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
-import UIComponentFinder
+import snyk.common.UIComponentFinder
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.fixtures.BasePlatformTestCase

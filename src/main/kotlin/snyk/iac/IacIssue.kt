@@ -1,11 +1,12 @@
 package snyk.iac
 
 import com.google.gson.annotations.Expose
+import io.snyk.plugin.Severity
 
 data class IacIssue(
     val id: String,
     val title: String,
-    val severity: String,
+    private val severity: String,
     val publicId: String,
     val documentation: String,
     val lineNumber: Int,
@@ -17,6 +18,8 @@ data class IacIssue(
     @Expose val obsolete: Boolean = false
 ) {
     var ignored = false
+
+    fun getSeverity(): Severity = Severity.getFromName(severity)
 
     // We need the equals / hashcode methods as we don't want to include `obsolete` in our equality checks
     @Suppress("DuplicatedCode") // false positive for generated code

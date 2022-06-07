@@ -1,26 +1,67 @@
 package io.snyk.plugin
 
+import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.util.ui.UIUtil
+import icons.SnykIcons
 import java.awt.Color
+import javax.swing.Icon
 
-class Severity {
+enum class Severity {
+    // order is important for comparator
+    UNKNOWN,
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL;
+
+    override fun toString(): String = super.toString().toLowerCase()
+
+    fun toPresentableString(): String =
+        when (this) {
+            CRITICAL -> "Critical Severity"
+            HIGH -> "High Severity"
+            MEDIUM -> "Medium Severity"
+            LOW -> "Low Severity"
+            else -> ""
+        }
+
+    fun getColor(): Color =
+        when (this) {
+            CRITICAL -> Color.decode("#9E261E")
+            HIGH -> Color.decode("#9B3D15")
+            MEDIUM -> Color.decode("#925C1E")
+            LOW -> Color.decode("#585675")
+            else -> UIUtil.getPanelBackground()
+        }
+
+    fun getBgColor(): Color =
+        when (this) {
+            CRITICAL -> Color.decode("#FFDAD8")
+            HIGH -> Color.decode("#FFDBCC")
+            MEDIUM -> Color.decode("#FFE8CD")
+            LOW -> Color.decode("#EEEEEE")
+            else -> UIUtil.getPanelBackground()
+        }
+
+    fun getHighlightSeverity(): HighlightSeverity =
+        when (this) {
+            CRITICAL -> HighlightSeverity.ERROR
+            HIGH -> HighlightSeverity.ERROR
+            MEDIUM -> HighlightSeverity.WARNING
+            LOW -> HighlightSeverity.WEAK_WARNING
+            else -> HighlightSeverity.WARNING
+            // Don't use HighlightSeverity.INFORMATION as it's not visible in the Editor and in `Problems`
+        }
+
+    fun getIcon(): Icon = SnykIcons.getSeverityIcon(this)
+
     companion object {
-        const val CRITICAL = "critical"
-        const val HIGH = "high"
-        const val MEDIUM = "medium"
-        const val LOW = "low"
-        const val UNKNOWN = "unknown"
+        private const val SEVERITY_CRITICAL = "critical"
+        private const val SEVERITY_HIGH = "high"
+        private const val SEVERITY_MEDIUM = "medium"
+        private const val SEVERITY_LOW = "low"
 
-        fun getIndex(severity: String): Int =
-            when (severity) {
-                CRITICAL -> 4
-                HIGH -> 3
-                MEDIUM -> 2
-                LOW -> 1
-                else -> 0
-            }
-
-        fun toName(index: Int): String =
+        fun getFromIndex(index: Int): Severity =
             when (index) {
                 4 -> CRITICAL
                 3 -> HIGH
@@ -29,22 +70,13 @@ class Severity {
                 else -> UNKNOWN
             }
 
-        fun getColor(severity: String): Color =
-            when (severity) {
-                CRITICAL -> Color.decode("#9E261E")
-                HIGH -> Color.decode("#9B3D15")
-                MEDIUM -> Color.decode("#925C1E")
-                LOW -> Color.decode("#585675")
-                else -> UIUtil.getPanelBackground()
-            }
-
-        fun getBgColor(severity: String): Color =
-            when (severity) {
-                CRITICAL -> Color.decode("#FFDAD8")
-                HIGH -> Color.decode("#FFDBCC")
-                MEDIUM -> Color.decode("#FFE8CD")
-                LOW -> Color.decode("#EEEEEE")
-                else -> UIUtil.getPanelBackground()
+        fun getFromName(name: String): Severity =
+            when (name) {
+                SEVERITY_CRITICAL -> CRITICAL
+                SEVERITY_HIGH -> HIGH
+                SEVERITY_MEDIUM -> MEDIUM
+                SEVERITY_LOW -> LOW
+                else -> UNKNOWN
             }
     }
 }

@@ -63,23 +63,23 @@
               class="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               text="Clean All Results"/>
       <separator/>
+      <group id="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterActionGroup"
+             class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterActionGroup"
+             text="Filter Results by Scan Type"
+             popup="true"
+             description="Snyk: choose scan types to display in the tree"
+             icon="AllIcons.General.Filter"/>
       <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"
               text="Snyk Settings"/>
     </group>
 
     <group id="io.snyk.plugin.TreeFilters.ScanType">
-      <action id="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
-              class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterAction"
-              text="Scan For Issue Types:"
-              description="Snyk: Choose Scan types to run/display"
-              icon="AllIcons.General.Filter"/>
     </group>
 
     <group id="io.snyk.plugin.TreeFilters.Severity">
       <action id="io.snyk.plugin.ui.actions.SnykTreeCriticalSeverityFilterAction"
               class="io.snyk.plugin.ui.actions.SnykTreeCriticalSeverityFilterAction"
-              text="Critical Severity"
               description="Snyk: Show Critical severity issues"/>
       <action id="io.snyk.plugin.ui.actions.SnykTreeHighSeverityFilterAction"
               class="io.snyk.plugin.ui.actions.SnykTreeHighSeverityFilterAction"

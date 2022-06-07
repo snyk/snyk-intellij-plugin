@@ -2,17 +2,13 @@ package snyk.container.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
-import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
 import snyk.common.AnnotatorCommon
-import snyk.common.SeverityConstants.SEVERITY_CRITICAL
-import snyk.common.SeverityConstants.SEVERITY_HIGH
-import snyk.common.SeverityConstants.SEVERITY_LOW
-import snyk.common.SeverityConstants.SEVERITY_MEDIUM
 import snyk.container.ContainerIssuesForImage
 
 class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
@@ -36,24 +32,31 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         logger.debug("apply on ${psiFile.name}")
-        val issuesForImages = getContainerIssuesForImages(psiFile)
-        issuesForImages.forEach { forImage ->
-            if (forImage.ignored || forImage.obsolete) return
-
-            val severity = severity(forImage)
-
-            forImage.workloadImages
-                .filter { it.virtualFile == psiFile.virtualFile }
-                .forEach { workloadImage ->
-                    val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
-                    val annotationBuilder = holder.newAnnotation(severity, annotationMessage(forImage)).range(textRange)
-                    if (shouldAddQuickFix(forImage)) {
-                        val intentionAction = BaseImageRemediationFix(forImage, textRange)
-                        annotationBuilder.withFix(intentionAction)
+        getContainerIssuesForImages(psiFile)
+            .filter { forImage ->
+                !forImage.ignored && !forImage.obsolete &&
+                    forImage.getSeverities().any { AnnotatorCommon.isSeverityToShow(it) }
+            }
+            .forEach { forImage ->
+                val severityToShow = forImage.getSeverities()
+                    .filter { AnnotatorCommon.isSeverityToShow(it) }
+                    .max() ?: Severity.UNKNOWN
+                forImage.workloadImages
+                    .filter { it.virtualFile == psiFile.virtualFile }
+                    .forEach { workloadImage ->
+                        val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
+                        val annotationBuilder =
+                            holder.newAnnotation(
+                                severityToShow.getHighlightSeverity(),
+                                annotationMessage(forImage)).range(textRange
+                            )
+                        if (shouldAddQuickFix(forImage)) {
+                            val intentionAction = BaseImageRemediationFix(forImage, textRange)
+                            annotationBuilder.withFix(intentionAction)
+                        }
+                        annotationBuilder.create()
                     }
-                    annotationBuilder.create()
-                }
-        }
+            }
     }
 
     private fun shouldAddQuickFix(forImage: ContainerIssuesForImage): Boolean {
@@ -65,17 +68,6 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val imageNameToFix =
             BaseImageRemediationFix.determineTargetImage(forImage.baseImageRemediationInfo).split(":")[0]
         return baseImageName == imageNameToFix
-    }
-
-    fun severity(forImage: ContainerIssuesForImage): HighlightSeverity {
-        val severities = forImage.vulnerabilities.groupBy { it.severity }
-        return when {
-            severities[SEVERITY_CRITICAL]?.isNotEmpty() == true -> HighlightSeverity.ERROR
-            severities[SEVERITY_HIGH]?.isNotEmpty() == true -> HighlightSeverity.WARNING
-            severities[SEVERITY_MEDIUM]?.isNotEmpty() == true -> HighlightSeverity.WEAK_WARNING
-            severities[SEVERITY_LOW]?.isNotEmpty() == true -> HighlightSeverity.INFORMATION
-            else -> HighlightSeverity.INFORMATION
-        }
     }
 
     fun annotationMessage(image: ContainerIssuesForImage): String {

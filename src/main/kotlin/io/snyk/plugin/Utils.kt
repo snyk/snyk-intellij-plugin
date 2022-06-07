@@ -9,6 +9,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
@@ -30,8 +31,10 @@ import io.snyk.plugin.services.SnykCodeService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
+import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.advisor.AdvisorService
@@ -39,6 +42,7 @@ import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
 import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.SnykCachedResults
+import snyk.common.UIComponentFinder
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
@@ -52,6 +56,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
+import javax.swing.JComponent
 
 private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
 
@@ -132,19 +137,13 @@ val <T> List<T>.tail: List<T>
 val <T> List<T>.head: T
     get() = first()
 
-fun isUrlValid(url: String?): Boolean {
-    if (url == null || url.isEmpty()) {
-        return true
-    }
-
-    return try {
+fun isUrlValid(url: String?): Boolean =
+    url == null || url.isEmpty() || try {
         URL(url).toURI()
-
         true
     } catch (throwable: Throwable) {
         false
     }
-}
 
 fun isOssRunning(project: Project): Boolean {
     val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
@@ -305,4 +304,26 @@ fun navigateToSource(
             logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
         }
     }
+}
+
+// `Memory leak` deceted by Jetbrains, see details here:
+// https://youtrack.jetbrains.com/issue/IJSDK-979/Usage-of-ShowSettingsUtilshowSettingsDialogProject-jClassT-will-cause-Memory-leak-detected-KotlinCompilerConfigurableTab
+fun showSettings(project: Project, componentNameToFocus: String, componentHelpHint: String) {
+    ShowSettingsUtil.getInstance()
+        .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java) {
+            val componentToFocus = UIComponentFinder.getComponentByName(
+                it.snykSettingsDialog.getRootPanel(),
+                JComponent::class,
+                componentNameToFocus
+            )
+            if (componentToFocus != null) {
+                it.snykSettingsDialog.runBackgroundable({
+                    componentToFocus.requestFocusInWindow()
+                    SnykBalloonNotificationHelper
+                        .showInfoBalloonForComponent(componentHelpHint, componentToFocus, true)
+                }, delayMillis = 1000)
+            } else {
+                logger.warn("Can't find component with name: $componentNameToFocus")
+            }
+        }
 }

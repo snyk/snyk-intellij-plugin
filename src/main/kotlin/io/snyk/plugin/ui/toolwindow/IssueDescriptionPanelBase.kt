@@ -23,7 +23,7 @@ private val EMPTY_PANEL = JBUI.Panels.simplePanel()
 
 abstract class IssueDescriptionPanelBase(
     private val title: String,
-    private val severity: String
+    private val severity: Severity
 ) : JPanel(BorderLayout()), IssueDescriptionPanel {
 
     /**
@@ -72,17 +72,9 @@ abstract class IssueDescriptionPanelBase(
         return titlePanel
     }
 
-    protected open fun getTitleIcon() = SnykIcons.getSeverityIcon(severity, SnykIcons.IconSize.SIZE24)
+    protected open fun getTitleIcon() = SnykIcons.getSeverityIcon(severity, SnykIcons.IconSize.SIZE32)
 
-    private fun getTitleText() = " " + title.ifBlank {
-        when (severity) {
-            Severity.CRITICAL -> "Critical Severity"
-            Severity.HIGH -> "High Severity"
-            Severity.MEDIUM -> "Medium Severity"
-            Severity.LOW -> "Low Severity"
-            else -> ""
-        }
-    }
+    private fun getTitleText() = " " + title.ifBlank { severity.toPresentableString() }
 
     abstract fun secondRowTitlePanel(): DescriptionHeaderPanel
 
