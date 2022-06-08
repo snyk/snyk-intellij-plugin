@@ -25,7 +25,7 @@ class OssBulkFileListenerTest : BasePlatformTestCase() {
 
     @Test
     fun `test currentOssResults should be dropped when build file changed`() {
-        val fakeOssResult = OssResult(null, null)
+        val fakeOssResult = OssResult(null)
         getSnykCachedResults(project)?.currentOssResults = fakeOssResult
 
         myFixture.configureByText("package.json", "main project file")
@@ -38,7 +38,7 @@ class OssBulkFileListenerTest : BasePlatformTestCase() {
 
     @Test
     fun `test keep currentOssResults when out-of-project build file content changed`() {
-        val fakeOssResult = OssResult(null, null)
+        val fakeOssResult = OssResult(null)
 
         val file = myFixture.addFileToProject("exclude/package.json", "")
         val module = ProjectRootManager.getInstance(project).fileIndex.getModuleForFile(file.virtualFile)!!

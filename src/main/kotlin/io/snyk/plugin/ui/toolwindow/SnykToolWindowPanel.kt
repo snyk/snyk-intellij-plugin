@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -44,6 +45,7 @@ import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.snykToolWindow
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
@@ -161,7 +163,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
             override fun scanningOssFinished(ossResult: OssResult) {
                 ApplicationManager.getApplication().invokeLater {
-                    displayVulnerabilities(ossResult)
+                    displayOssResults(ossResult)
+                    notifyAboutErrorsIfNeeded(ProductType.OSS, ossResult)
                     refreshAnnotationsForOpenFiles(project)
                 }
                 getSnykAnalyticsService().logAnalysisIsReady(
@@ -187,6 +190,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             override fun scanningIacFinished(iacResult: IacResult) {
                 ApplicationManager.getApplication().invokeLater {
                     displayIacResults(iacResult)
+                    notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
                     refreshAnnotationsForOpenFiles(project)
                 }
                 getSnykAnalyticsService().logAnalysisIsReady(
@@ -201,6 +205,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             override fun scanningContainerFinished(containerResult: ContainerResult) {
                 ApplicationManager.getApplication().invokeLater {
                     displayContainerResults(containerResult)
+                    notifyAboutErrorsIfNeeded(ProductType.CONTAINER, containerResult)
                     refreshAnnotationsForOpenFiles(project)
                 }
                 getSnykAnalyticsService().logAnalysisIsReady(
@@ -210,6 +215,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .result(Result.SUCCESS)
                         .build()
                 )
+            }
+
+            private fun notifyAboutErrorsIfNeeded(prodType: ProductType, cliResult: CliResult<*>) {
+                if (cliResult.isSuccessful() && cliResult.errors.isNotEmpty()) {
+                    val message = "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
+                        cliResult.errors.joinToString(", ") { it.path }
+                    SnykBalloonNotificationHelper.showError(message, project,
+                        NotificationAction.createSimpleExpiring("Open Snyk Tool Window") {
+                            snykToolWindow(project)?.show()
+                        }
+                    )
+                }
             }
 
             private fun logSnykCodeAnalysisIsReady(result: Result) {
@@ -346,7 +363,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     ApplicationManager.getApplication().invokeLater {
                         displaySnykCodeResults(snykCodeResults)
                         val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
-                        snykCachedResults.currentOssResults?.let { displayVulnerabilities(it) }
+                        snykCachedResults.currentOssResults?.let { displayOssResults(it) }
                         snykCachedResults.currentIacResult?.let { displayIacResults(it) }
                         snykCachedResults.currentContainerResult?.let { displayContainerResults(it) }
                     }
@@ -526,6 +543,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
                 is RootContainerIssuesTreeNode -> {
                     currentContainerError?.let { displaySnykError(it) } ?: displayEmptyDescription()
+                }
+                is ErrorTreeNode -> {
+                    displaySnykError(node.userObject as SnykError)
                 }
                 else -> {
                     displayEmptyDescription()
@@ -825,15 +845,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    private fun displayVulnerabilities(ossResult: OssResult) {
+    private fun displayOssResults(ossResult: OssResult) {
         val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootOssTreeNode)
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         rootOssTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.ossScanEnable && settings.treeFiltering.ossResults && ossResult.allCliIssues != null) {
-            ossResult.allCliIssues!!.forEach { ossVulnerabilitiesForFile ->
+        if (settings.ossScanEnable && settings.treeFiltering.ossResults) {
+            ossResult.allCliIssues?.forEach { ossVulnerabilitiesForFile ->
                 if (ossVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
                     val ossGroupedResult = ossVulnerabilitiesForFile.toGroupedResult()
 
@@ -847,6 +867,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             fileTreeNode.add(VulnerabilityTreeNode(it, project))
                         }
                 }
+            }
+            ossResult.errors.forEach { snykError ->
+                rootOssTreeNode.add(
+                    ErrorTreeNode(snykError, project)
+                )
             }
         }
         updateTreeRootNodesPresentation(
@@ -932,8 +957,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootIacIssuesTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.iacScanEnabled && settings.treeFiltering.iacResults && iacResult.allCliIssues != null) {
-            iacResult.allCliIssues!!.forEach { iacVulnerabilitiesForFile ->
+        if (settings.iacScanEnabled && settings.treeFiltering.iacResults) {
+            iacResult.allCliIssues?.forEach { iacVulnerabilitiesForFile ->
                 if (iacVulnerabilitiesForFile.infrastructureAsCodeIssues.isNotEmpty()) {
                     val fileTreeNode = IacFileTreeNode(iacVulnerabilitiesForFile, project)
                     rootIacIssuesTreeNode.add(fileTreeNode)
@@ -945,6 +970,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             fileTreeNode.add(IacIssueTreeNode(it, project))
                         }
                 }
+            }
+            iacResult.errors.forEach { snykError ->
+                rootIacIssuesTreeNode.add(
+                    ErrorTreeNode(snykError, project)
+                )
             }
         }
 
@@ -963,8 +993,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootContainerIssuesTreeNode.removeAllChildren()
 
         val settings = pluginSettings()
-        if (settings.containerScanEnabled && settings.treeFiltering.containerResults && containerResult.allCliIssues != null) {
-            containerResult.allCliIssues!!.forEach { issuesForImage ->
+        if (settings.containerScanEnabled && settings.treeFiltering.containerResults) {
+            containerResult.allCliIssues?.forEach { issuesForImage ->
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
                     val imageTreeNode = ContainerImageTreeNode(issuesForImage, project)
                     rootContainerIssuesTreeNode.add(imageTreeNode)
@@ -976,6 +1006,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             imageTreeNode.add(ContainerIssueTreeNode(it, project))
                         }
                 }
+            }
+            containerResult.errors.forEach { snykError ->
+                rootContainerIssuesTreeNode.add(
+                    ErrorTreeNode(snykError, project)
+                )
             }
         }
 

@@ -58,7 +58,8 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
         if (containerRelatedVirtualFilesAffected.isEmpty()) return
         log.debug("update Container cache for $containerRelatedVirtualFilesAffected")
         val snykCachedResults = getSnykCachedResults(project)
-        val containerIssuesForImages = snykCachedResults?.currentContainerResult?.allCliIssues ?: return
+        val currentContainerResult = snykCachedResults?.currentContainerResult ?: return
+        val containerIssuesForImages = currentContainerResult.allCliIssues ?: return
 
         val newContainerIssuesForImagesList = containerIssuesForImages.map { issuesForImage ->
             if (issuesForImage.workloadImages.any { containerRelatedVirtualFilesAffected.contains(it.virtualFile) }) {
@@ -68,7 +69,7 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
             }
         }
 
-        val newContainerCache = ContainerResult(newContainerIssuesForImagesList, null)
+        val newContainerCache = ContainerResult(newContainerIssuesForImagesList, currentContainerResult.errors)
         newContainerCache.rescanNeeded = true
         snykCachedResults.currentContainerResult = newContainerCache
         ApplicationManager.getApplication().invokeLater {

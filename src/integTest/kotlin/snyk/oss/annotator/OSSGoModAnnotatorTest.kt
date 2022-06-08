@@ -138,5 +138,5 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
     }
 
     private fun createOssResultWithIssues(): OssResult =
-        OssResult(listOf(Gson().fromJson(ossResult, OssVulnerabilitiesForFile::class.java)), null)
+        OssResult(listOf(Gson().fromJson(ossResult, OssVulnerabilitiesForFile::class.java)))
 }

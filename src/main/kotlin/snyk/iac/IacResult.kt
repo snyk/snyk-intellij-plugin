@@ -6,8 +6,8 @@ import snyk.common.SnykError
 
 class IacResult(
     allIacVulnerabilities: List<IacIssuesForFile>?,
-    error: SnykError?
-) : CliResult<IacIssuesForFile>(allIacVulnerabilities, error) {
+    errors: List<SnykError> = emptyList()
+) : CliResult<IacIssuesForFile>(allIacVulnerabilities, errors) {
 
     var iacScanNeeded: Boolean = false
 

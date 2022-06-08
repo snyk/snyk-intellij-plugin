@@ -35,7 +35,8 @@ class IacBulkFileListener : SnykBulkFileListener() {
     ) {
         if (virtualFilesAffected.isEmpty()) return
         val snykCachedResults = getSnykCachedResults(project)
-        val iacFiles = snykCachedResults?.currentIacResult?.allCliIssues ?: return
+        val currentIacResult = snykCachedResults?.currentIacResult ?: return
+        val iacFiles = currentIacResult.allCliIssues ?: return
 
         val newIacFileList = iacFiles.toMutableList()
         val iacRelatedvirtualFilesAffected = virtualFilesAffected
@@ -53,7 +54,7 @@ class IacBulkFileListener : SnykBulkFileListener() {
 
         if (changed) {
             log.debug("update IaC cache for $iacRelatedvirtualFilesAffected")
-            val newIacCache = IacResult(newIacFileList.toImmutableList(), null)
+            val newIacCache = IacResult(newIacFileList.toImmutableList(), currentIacResult.errors)
             newIacCache.iacScanNeeded = true
             snykCachedResults.currentIacResult = newIacCache
             ApplicationManager.getApplication().invokeLater {

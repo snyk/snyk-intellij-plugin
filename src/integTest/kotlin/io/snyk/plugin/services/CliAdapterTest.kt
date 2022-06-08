@@ -1,21 +1,28 @@
 package io.snyk.plugin.services
 
 import com.intellij.testFramework.LightPlatformTestCase
-import io.snyk.plugin.isCliInstalled
+import io.snyk.plugin.Severity
+import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
+import snyk.common.SnykError
 
 class CliAdapterTest : LightPlatformTestCase() {
 
     private val dummyCliAdapter by lazy {
-        object : CliAdapter<Any>(project) {
-            override fun getErrorResult(errorMsg: String): Any = Unit
-            override fun convertRawCliStringToCliResult(rawStr: String): Any = Unit
+        object : CliAdapter<Unit, DummyResults>(project) {
+            override fun getProductResult(cliIssues: List<Unit>?, snykErrors: List<SnykError>) = DummyResults()
+            override fun getCliIIssuesClass(): Class<Unit> = Unit::class.java
             override fun buildExtraOptions(): List<String> = emptyList()
         }
+    }
+
+    inner class DummyResults : CliResult<Unit>(null, emptyList()) {
+        override val issuesCount: Int? = null
+        override fun countBySeverity(severity: Severity): Int? = null
     }
 
     @Throws(Exception::class)

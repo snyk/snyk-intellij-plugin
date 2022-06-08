@@ -150,5 +150,5 @@ class OSSGradleKtsAnnotatorTest : BasePlatformTestCase() {
     }
 
     private fun createGradleKtsOssResultWithIssues(): OssResult =
-        OssResult(listOf(Gson().fromJson(ossResultGradleKts, OssVulnerabilitiesForFile::class.java)), null)
+        OssResult(listOf(Gson().fromJson(ossResultGradleKts, OssVulnerabilitiesForFile::class.java)))
 }

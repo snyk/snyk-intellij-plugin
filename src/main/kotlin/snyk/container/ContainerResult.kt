@@ -4,11 +4,10 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.CliResult
 import snyk.common.SnykError
 
-class ContainerResult(containerVulnerabilities: List<ContainerIssuesForImage>?, error: SnykError?) :
-    CliResult<ContainerIssuesForImage>(
-        containerVulnerabilities,
-        error
-    ) {
+class ContainerResult(
+    containerVulnerabilities: List<ContainerIssuesForImage>?,
+    errors: List<SnykError> = emptyList()
+) : CliResult<ContainerIssuesForImage>(containerVulnerabilities, errors) {
 
     var rescanNeeded: Boolean = false
 

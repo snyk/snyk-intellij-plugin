@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.34]
+
+### Fixed
+- All failed scan results for artifacts(file, image) are now shown in the results(Tree) too (right after successful scan results).
+
 ## [2.4.33]
 
 ### Fixed

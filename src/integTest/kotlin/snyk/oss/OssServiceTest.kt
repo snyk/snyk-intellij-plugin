@@ -126,8 +126,8 @@ class OssServiceTest : LightPlatformTestCase() {
         assertFalse(cliResult.isSuccessful())
         assertEquals(
             "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
-            cliResult.error!!.message)
-        assertEquals("/Users/user/Desktop/example-npm-project", cliResult.error!!.path)
+            cliResult.getFirstError()!!.message)
+        assertEquals("/Users/user/Desktop/example-npm-project", cliResult.getFirstError()!!.path)
     }
 
     @Test
@@ -197,16 +197,16 @@ class OssServiceTest : LightPlatformTestCase() {
                 """.trimIndent())
         assertFalse(jsonErrorCliResult.isSuccessful())
         assertEquals("Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
-            jsonErrorCliResult.error!!.message)
-        assertEquals("/Users/user/Desktop/example-npm-project", jsonErrorCliResult.error!!.path)
+            jsonErrorCliResult.getFirstError()!!.message)
+        assertEquals("/Users/user/Desktop/example-npm-project", jsonErrorCliResult.getFirstError()!!.path)
 
         val rawErrorCliResult = ossService.convertRawCliStringToCliResult("""
                     Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.
                 """.trimIndent())
         assertFalse(rawErrorCliResult.isSuccessful())
         assertEquals("Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.",
-            rawErrorCliResult.error!!.message)
-        assertEquals(project.basePath, rawErrorCliResult.error!!.path)
+            rawErrorCliResult.getFirstError()!!.message)
+        assertEquals(project.basePath, rawErrorCliResult.getFirstError()!!.path)
     }
 
     @Test

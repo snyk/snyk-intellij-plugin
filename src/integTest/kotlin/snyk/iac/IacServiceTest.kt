@@ -99,8 +99,8 @@ class IacServiceTest : LightPlatformTestCase() {
         val iacResult = iacService.scan()
 
         assertFalse(iacResult.isSuccessful())
-        assertEquals(errorMsg, iacResult.error!!.message)
-        assertEquals(errorPath, iacResult.error!!.path)
+        assertEquals(errorMsg, iacResult.getFirstError()!!.message)
+        assertEquals(errorPath, iacResult.getFirstError()!!.path)
     }
 
     @Test
@@ -148,13 +148,13 @@ class IacServiceTest : LightPlatformTestCase() {
                     }
                 """.trimIndent())
         assertFalse(jsonErrorIacResult.isSuccessful())
-        assertEquals(errorMsg, jsonErrorIacResult.error!!.message)
-        assertEquals(errorPath, jsonErrorIacResult.error!!.path)
+        assertEquals(errorMsg, jsonErrorIacResult.getFirstError()!!.message)
+        assertEquals(errorPath, jsonErrorIacResult.getFirstError()!!.path)
 
         val rawErrorIacResult = iacService.convertRawCliStringToCliResult(errorMsg)
         assertFalse(rawErrorIacResult.isSuccessful())
-        assertEquals(errorMsg, rawErrorIacResult.error!!.message)
-        assertEquals(project.basePath, rawErrorIacResult.error!!.path)
+        assertEquals(errorMsg, rawErrorIacResult.getFirstError()!!.message)
+        assertEquals(project.basePath, rawErrorIacResult.getFirstError()!!.path)
     }
 
     @Test

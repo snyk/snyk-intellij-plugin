@@ -78,6 +78,6 @@ class IacJsonAnnotatorTest : IacBaseAnnotatorCase() {
         )
         val iacIssuesForFile =
             IacIssuesForFile(listOf(iacIssue), cloudformationManifestFile, file.path, "cloudformation")
-        return IacResult(listOf(iacIssuesForFile), null)
+        return IacResult(listOf(iacIssuesForFile))
     }
 }
