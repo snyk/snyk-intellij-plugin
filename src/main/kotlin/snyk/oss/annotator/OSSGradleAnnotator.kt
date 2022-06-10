@@ -6,9 +6,14 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiRecursiveElementVisitor
 import com.intellij.psi.PsiWhiteSpace
+import io.snyk.plugin.getOssTextRangeFinderService
 import snyk.oss.Vulnerability
 
-class OSSGradleKtsAnnotator : OSSBaseAnnotator() {
+class OSSGradleAnnotator : OSSBaseAnnotator() {
+
+    init {
+        getOssTextRangeFinderService().registerFinder(this::textRange)
+    }
 
     override fun getIntroducingPackage(vulnerability: Vulnerability): String {
         return super.getIntroducingPackage(vulnerability)
@@ -61,9 +66,9 @@ class OSSGradleKtsAnnotator : OSSBaseAnnotator() {
             // no version given
             val depGroups = element.text.split(":")
             return if (depGroups.size > 2) {
-                "$packageName:$version" == element.text
+                element.textMatches("$packageName:$version") || element.textMatches("'$packageName:$version'")
             } else {
-                packageName == element.text
+                element.textMatches(packageName) || element.textMatches("'$packageName'")
             }
         }
     }

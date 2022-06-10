@@ -139,7 +139,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         val fakeContainerResult = ContainerResult(listOf(issuesForImage))
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
         getSnykCachedResults(project)?.currentContainerResult = fakeContainerResult
-        toolWindowPanel.getRootContainerIssuesTreeNode().add(ContainerImageTreeNode(issuesForImage, project))
+        toolWindowPanel.getRootContainerIssuesTreeNode().add(ContainerImageTreeNode(issuesForImage, project) {})
 
         getKubernetesImageCache(project)?.extractFromFile(addedPsiFile.virtualFile)
     }

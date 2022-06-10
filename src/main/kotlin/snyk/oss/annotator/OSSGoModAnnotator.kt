@@ -1,10 +1,16 @@
 package snyk.oss.annotator
 
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.getOssTextRangeFinderService
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 
 class OSSGoModAnnotator : OSSBaseAnnotator() {
+
+    init {
+        getOssTextRangeFinderService().registerFinder(this::textRange)
+    }
+
     override fun lineMatches(psiFile: PsiFile, line: String, vulnerability: Vulnerability): Boolean {
         val fileName = psiFile.virtualFile.path
         return fileName.endsWith("go.mod") && !line.endsWith("// indirect") &&

@@ -12,6 +12,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.treeStructure.Tree
@@ -28,6 +29,7 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.getOssTextRangeFinderService
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.getSnykCachedResults
@@ -417,7 +419,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         val selectionPath = vulnerabilitiesTree.selectionPath
 
         if (nonNull(selectionPath)) {
-            when (val node: DefaultMutableTreeNode = selectionPath!!.lastPathComponent as DefaultMutableTreeNode) {
+            val lastPathComponent = selectionPath!!.lastPathComponent
+            if (!smartReloadMode && lastPathComponent is NavigatableToSourceTreeNode) {
+                lastPathComponent.navigateToSource()
+            }
+            when (val node: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
                 is VulnerabilityTreeNode -> {
                     val groupedVulns = node.userObject as Collection<Vulnerability>
                     descriptionPanel.add(
@@ -434,7 +440,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             .severity(issue.getIssueSeverityOrNull())
                             .build()
                     )
-                    // todo: open package manager file, if any and  was not opened yet
                 }
                 is SuggestionTreeNode -> {
                     val snykCodeFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? SnykCodeFile
@@ -445,12 +450,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         SuggestionDescriptionPanel(snykCodeFile, suggestion, index),
                         BorderLayout.CENTER
                     )
-
-                    val textRange = suggestion.ranges[index]
-                        ?: throw IllegalArgumentException(suggestion.ranges.toString())
-                    if (!smartReloadMode && snykCodeFile.virtualFile.isValid) {
-                        navigateToSource(project, snykCodeFile.virtualFile, textRange.start, textRange.end)
-                    }
 
                     if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
@@ -467,25 +466,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     val fileName = iacIssuesForFile.targetFilePath
                     val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(fileName))
                     val psiFile = virtualFile?.let { findPsiFileIgnoringExceptions(it, project) }
-
                     val iacIssue = node.userObject as IacIssue
+
                     descriptionPanel.add(
                         IacSuggestionDescriptionPanel(iacIssue, psiFile, project),
                         BorderLayout.CENTER
                     )
 
-                    if (!smartReloadMode && virtualFile != null && virtualFile.isValid) {
-                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                        if (document != null) {
-                            val lineNumber = iacIssue.lineNumber.let {
-                                val candidate = it - 1 // to 1-based count used in the editor
-                                if (0 <= candidate && candidate < document.lineCount) candidate else 0
-                            }
-                            val lineStartOffset = document.getLineStartOffset(lineNumber)
-
-                            navigateToSource(project, virtualFile, lineStartOffset)
-                        }
-                    }
                     if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
                         IssueInTreeIsClicked.builder()
                             .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
@@ -501,20 +488,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         BaseImageRemediationDetailPanel(project, issuesForImage),
                         BorderLayout.CENTER
                     )
-
-                    val targetImage = getKubernetesImageCache(project)
-                        ?.getKubernetesWorkloadImages()
-                        ?.find { it.image == issuesForImage.imageName }
-                    val virtualFile = targetImage?.virtualFile
-                    val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
-                    if (!smartReloadMode && virtualFile != null && virtualFile.isValid && line != null) {
-                        val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                        if (document != null) {
-                            val lineNumber = if (0 <= line && line < document.lineCount) line else 0
-                            val lineStartOffset = document.getLineStartOffset(lineNumber)
-                            navigateToSource(project, virtualFile, lineStartOffset)
-                        }
-                    }
                     // TODO: Add image click event logging ?
                 }
                 is ContainerIssueTreeNode -> {
@@ -851,26 +824,48 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootOssTreeNode.removeAllChildren()
 
+        fun navigateToOssVulnerability(filePath: String, vulnerability: Vulnerability?): () -> Unit = {
+            val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(filePath))
+            if (virtualFile != null && virtualFile.isValid) {
+                if (vulnerability == null) {
+                    navigateToSource(project, virtualFile, 0)
+                } else {
+                    val psiFile = PsiManager.getInstance(project).findFile(virtualFile)
+                    val textRange = psiFile?.let { getOssTextRangeFinderService().findTextRange(it, vulnerability) }
+                    navigateToSource(
+                        project = project,
+                        virtualFile = virtualFile,
+                        selectionStartOffset = textRange?.startOffset ?: 0,
+                        selectionEndOffset = textRange?.endOffset
+                    )
+                }
+            }
+        }
+
         val settings = pluginSettings()
         if (settings.ossScanEnable && settings.treeFiltering.ossResults) {
-            ossResult.allCliIssues?.forEach { ossVulnerabilitiesForFile ->
-                if (ossVulnerabilitiesForFile.vulnerabilities.isNotEmpty()) {
-                    val ossGroupedResult = ossVulnerabilitiesForFile.toGroupedResult()
+            ossResult.allCliIssues?.forEach { vulnsForFile ->
+                if (vulnsForFile.vulnerabilities.isNotEmpty()) {
+                    val ossGroupedResult = vulnsForFile.toGroupedResult()
 
-                    val fileTreeNode = FileTreeNode(ossVulnerabilitiesForFile, project)
+                    val fileTreeNode = FileTreeNode(vulnsForFile, project)
                     rootOssTreeNode.add(fileTreeNode)
 
                     ossGroupedResult.id2vulnerabilities.values
                         .filter { settings.hasSeverityEnabledAndFiltered(it.head.getSeverity()) }
                         .sortedByDescending { it.head.getSeverity() }
                         .forEach {
-                            fileTreeNode.add(VulnerabilityTreeNode(it, project))
+                            val navigateToSource = navigateToOssVulnerability(
+                                filePath = Paths.get(vulnsForFile.path, vulnsForFile.sanitizedTargetFile).toString(),
+                                vulnerability = it.head
+                            )
+                            fileTreeNode.add(VulnerabilityTreeNode(it, project, navigateToSource))
                         }
                 }
             }
             ossResult.errors.forEach { snykError ->
                 rootOssTreeNode.add(
-                    ErrorTreeNode(snykError, project)
+                    ErrorTreeNode(snykError, project, navigateToOssVulnerability(snykError.path, null))
                 )
             }
         }
@@ -956,6 +951,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootIacIssuesTreeNode.removeAllChildren()
 
+        fun navigateToIaCIssue(filePath: String, issueLine: Int): () -> Unit = {
+            val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(filePath))
+            if (virtualFile != null && virtualFile.isValid) {
+                val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+                if (document != null) {
+                    val candidate = issueLine - 1 // to 1-based count used in the editor
+                    val lineNumber = if (0 <= candidate && candidate < document.lineCount) candidate else 0
+                    val lineStartOffset = document.getLineStartOffset(lineNumber)
+
+                    navigateToSource(project, virtualFile, lineStartOffset)
+                }
+            }
+        }
+
         val settings = pluginSettings()
         if (settings.iacScanEnabled && settings.treeFiltering.iacResults) {
             iacResult.allCliIssues?.forEach { iacVulnerabilitiesForFile ->
@@ -967,13 +976,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .filter { settings.hasSeverityEnabledAndFiltered(it.getSeverity()) }
                         .sortedByDescending { it.getSeverity() }
                         .forEach {
-                            fileTreeNode.add(IacIssueTreeNode(it, project))
+                            val navigateToSource = navigateToIaCIssue(
+                                iacVulnerabilitiesForFile.targetFilePath,
+                                it.lineNumber
+                            )
+                            fileTreeNode.add(IacIssueTreeNode(it, project, navigateToSource))
                         }
                 }
             }
             iacResult.errors.forEach { snykError ->
                 rootIacIssuesTreeNode.add(
-                    ErrorTreeNode(snykError, project)
+                    ErrorTreeNode(snykError, project, navigateToIaCIssue(snykError.path, 0))
                 )
             }
         }
@@ -992,24 +1005,43 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootContainerIssuesTreeNode.removeAllChildren()
 
+        fun navigateToImage(imageName: String): () -> Unit = {
+            val targetImage = getKubernetesImageCache(project)
+                ?.getKubernetesWorkloadImages()
+                ?.find { it.image == imageName }
+            val virtualFile = targetImage?.virtualFile
+            val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
+            if (virtualFile != null && virtualFile.isValid && line != null) {
+                val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+                if (document != null) {
+                    val lineNumber = if (0 <= line && line < document.lineCount) line else 0
+                    val lineStartOffset = document.getLineStartOffset(lineNumber)
+                    navigateToSource(project, virtualFile, lineStartOffset)
+                }
+            }
+        }
+
         val settings = pluginSettings()
         if (settings.containerScanEnabled && settings.treeFiltering.containerResults) {
             containerResult.allCliIssues?.forEach { issuesForImage ->
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
-                    val imageTreeNode = ContainerImageTreeNode(issuesForImage, project)
+                    val imageTreeNode =
+                        ContainerImageTreeNode(issuesForImage, project, navigateToImage(issuesForImage.imageName))
                     rootContainerIssuesTreeNode.add(imageTreeNode)
 
                     issuesForImage.vulnerabilities
                         .filter { settings.hasSeverityEnabledAndFiltered(it.getSeverity()) }
                         .sortedByDescending { it.getSeverity() }
                         .forEach {
-                            imageTreeNode.add(ContainerIssueTreeNode(it, project))
+                            imageTreeNode.add(
+                                ContainerIssueTreeNode(it, project, navigateToImage(issuesForImage.imageName))
+                            )
                         }
                 }
             }
             containerResult.errors.forEach { snykError ->
                 rootContainerIssuesTreeNode.add(
-                    ErrorTreeNode(snykError, project)
+                    ErrorTreeNode(snykError, project, navigateToImage(snykError.path))
                 )
             }
         }
@@ -1052,6 +1084,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         else TreeUtil.collectExpandedUserObjects(vulnerabilitiesTree, TreePath(rootNode.path))
 
     private fun displayResultsForRoot(rootNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
+        fun navigateToSource(suggestion: SuggestionForFile, index: Int, snykCodeFile: SnykCodeFile): () -> Unit = {
+            val textRange = suggestion.ranges[index]
+                ?: throw IllegalArgumentException(suggestion.ranges.toString())
+            if (snykCodeFile.virtualFile.isValid) {
+                navigateToSource(project, snykCodeFile.virtualFile, textRange.start, textRange.end)
+            }
+        }
         snykCodeResults.getSortedFiles()
             .forEach { file ->
                 val fileTreeNode = SnykCodeFileTreeNode(file)
@@ -1059,7 +1098,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 snykCodeResults.getSortedSuggestions(file)
                     .forEach { suggestion ->
                         for (index in 0 until suggestion.ranges.size) {
-                            fileTreeNode.add(SuggestionTreeNode(suggestion, index))
+                            fileTreeNode.add(
+                                SuggestionTreeNode(
+                                    suggestion,
+                                    index,
+                                    navigateToSource(suggestion, index, file)
+                                )
+                            )
                         }
                     }
             }

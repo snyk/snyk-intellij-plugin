@@ -252,9 +252,8 @@ class OssServiceTest : LightPlatformTestCase() {
 
     private fun touchAllFields(ossResultToCheck: OssResult) {
         ossResultToCheck.allCliIssues?.forEach {
-            it.displayTargetFile
+            it.sanitizedTargetFile
             it.packageManager
-            it.projectName
             it.uniqueCount
             it.vulnerabilities.forEach { vuln ->
                 with(vuln) {

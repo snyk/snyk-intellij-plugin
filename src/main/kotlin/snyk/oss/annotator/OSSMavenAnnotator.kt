@@ -7,10 +7,15 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.XmlRecursiveElementVisitor
 import com.intellij.psi.util.siblings
 import com.intellij.psi.xml.XmlTag
+import io.snyk.plugin.getOssTextRangeFinderService
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 
 class OSSMavenAnnotator : OSSBaseAnnotator() {
+
+    init {
+        getOssTextRangeFinderService().registerFinder(this::textRange)
+    }
 
     override fun getIntroducingPackage(vulnerability: Vulnerability): String {
         return super.getIntroducingPackage(vulnerability).split(":")[1].replace("\"", "")
