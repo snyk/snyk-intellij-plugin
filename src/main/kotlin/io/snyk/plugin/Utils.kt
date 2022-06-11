@@ -47,6 +47,7 @@ import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
 import snyk.oss.OssService
+import snyk.oss.OssTextRangeFinder
 import java.io.File
 import java.net.URL
 import java.security.KeyStore
@@ -97,6 +98,8 @@ fun getSnykAnalyticsService(): SnykAnalyticsService = getApplicationService()
 fun getSnykAdvisorModel(): SnykAdvisorModel = getApplicationService()
 
 fun getAdvisorService(): AdvisorService = getApplicationService<AdvisorServiceImpl>()
+
+fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 

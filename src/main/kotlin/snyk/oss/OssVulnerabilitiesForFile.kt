@@ -1,12 +1,15 @@
 package snyk.oss
 
-class OssVulnerabilitiesForFile {
-    lateinit var vulnerabilities: List<Vulnerability>
-    lateinit var projectName: String
-    lateinit var displayTargetFile: String
-    lateinit var packageManager: String
-    var remediation: Remediation? = null
+data class OssVulnerabilitiesForFile(
+    val vulnerabilities: List<Vulnerability>,
+    private val displayTargetFile: String,
+    val packageManager: String,
+    val path: String,
+    val remediation: Remediation? = null
+) {
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
+
+    val sanitizedTargetFile: String get() = displayTargetFile.replace("-lock", "")
 
     fun toGroupedResult(): OssGroupedResult {
         val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })

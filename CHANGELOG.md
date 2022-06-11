@@ -4,6 +4,10 @@
 
 ### Fixed
 - All failed scan results for artifacts(file, image) are now shown in the results(Tree) too (right after successful scan results).
+- Open Source Scan results annotations are shown for Gradle(Groovy) dependencies.
+
+### Added
+- Navigation to the Editor for the Open Source Scan results and all failed artifact's scan results.
 
 ## [2.4.33]
 

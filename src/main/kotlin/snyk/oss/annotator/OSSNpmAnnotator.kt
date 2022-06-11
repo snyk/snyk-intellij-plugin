@@ -9,11 +9,16 @@ import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
+import io.snyk.plugin.getOssTextRangeFinderService
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 
 class OSSNpmAnnotator : OSSBaseAnnotator() {
+
+    init {
+        getOssTextRangeFinderService().registerFinder(this::textRange)
+    }
 
     override fun textRange(psiFile: PsiFile, vulnerability: Vulnerability): TextRange {
         if (psiFile.fileType !is JsonFileType || psiFile.name != "package.json") return TextRange.EMPTY_RANGE

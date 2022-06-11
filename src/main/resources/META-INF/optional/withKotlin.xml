@@ -1,6 +1,6 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
     <externalAnnotator language="kotlin" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
-    <externalAnnotator language="kotlin" implementationClass="snyk.oss.annotator.OSSGradleKtsAnnotator"/>
+    <externalAnnotator language="kotlin" implementationClass="snyk.oss.annotator.OSSGradleAnnotator"/>
   </extensions>
 </idea-plugin>

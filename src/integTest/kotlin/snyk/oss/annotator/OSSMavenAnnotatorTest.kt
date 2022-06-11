@@ -29,7 +29,7 @@ import java.nio.file.Paths
 
 @Suppress("DuplicatedCode", "FunctionName")
 class OSSMavenAnnotatorTest : BasePlatformTestCase() {
-    private var cut = OSSMavenAnnotator()
+    private val cut by lazy { OSSMavenAnnotator() }
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
     private val fileName = "pom.xml"
     private val ossResult =
@@ -56,7 +56,6 @@ class OSSMavenAnnotatorTest : BasePlatformTestCase() {
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-        cut = OSSMavenAnnotator()
     }
 
     override fun tearDown() {

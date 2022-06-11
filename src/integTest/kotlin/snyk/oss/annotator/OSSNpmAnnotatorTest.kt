@@ -30,11 +30,13 @@ import java.nio.file.Paths
 
 @Suppress("DuplicatedCode", "FunctionName")
 class OSSNpmAnnotatorTest : BasePlatformTestCase() {
-    private var cut = OSSNpmAnnotator()
+    private val cut by lazy { OSSNpmAnnotator() }
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
     private val fileName = "package.json"
     private val ossResult =
         javaClass.classLoader.getResource("oss-test-results/oss-result-package.json")!!.readText(Charsets.UTF_8)
+    private val ossResultNoRemediation =
+        javaClass.classLoader.getResource("oss-test-results/oss-result-package-no-remediation.json")!!.readText(Charsets.UTF_8)
 
     private lateinit var file: VirtualFile
     private lateinit var psiFile: PsiFile
@@ -58,7 +60,6 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-        cut = OSSNpmAnnotator()
     }
 
     override fun tearDown() {
@@ -132,8 +133,8 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test apply should not add a quickfix when upgrade empty`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
-        val result = createOssResultWithIssues()
-        result.allCliIssues?.first()?.remediation = null
+        val result = createOssResultWithIssuesNoRemediation()
+        assertNull(result.allCliIssues?.first()?.remediation)
         every { snykCachedResults.currentOssResults } returns result
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
 
@@ -161,4 +162,7 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
 
     private fun createOssResultWithIssues(): OssResult =
         OssResult(listOf(Gson().fromJson(ossResult, OssVulnerabilitiesForFile::class.java)))
+
+    private fun createOssResultWithIssuesNoRemediation(): OssResult =
+        OssResult(listOf(Gson().fromJson(ossResultNoRemediation, OssVulnerabilitiesForFile::class.java)))
 }

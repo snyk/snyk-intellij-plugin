@@ -54,7 +54,7 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         ProgressManager.checkCanceled()
 
         return ossResult.allCliIssues
-            ?.firstOrNull { filePath.endsWith(it.displayTargetFile.replace("-lock", "")) }
+            ?.firstOrNull { filePath.endsWith(it.sanitizedTargetFile) }
     }
 
     open fun annotationMessage(vulnerability: Vulnerability): String {

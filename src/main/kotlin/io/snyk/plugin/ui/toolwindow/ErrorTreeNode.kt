@@ -6,5 +6,6 @@ import javax.swing.tree.DefaultMutableTreeNode
 
 class ErrorTreeNode(
     snykError: SnykError,
-    val project: Project
-) : DefaultMutableTreeNode(snykError)
+    val project: Project,
+    override val navigateToSource: () -> Unit
+) : DefaultMutableTreeNode(snykError), NavigatableToSourceTreeNode

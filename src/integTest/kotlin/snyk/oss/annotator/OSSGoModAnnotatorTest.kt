@@ -27,7 +27,7 @@ import java.nio.file.Paths
 
 @Suppress("DuplicatedCode", "FunctionName")
 class OSSGoModAnnotatorTest : BasePlatformTestCase() {
-    private var cut = OSSGoModAnnotator()
+    private val cut by lazy { OSSGoModAnnotator() }
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
     private val fileName = "go.mod"
     private val ossResult =
@@ -54,7 +54,6 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-        cut = OSSGoModAnnotator()
     }
 
     override fun tearDown() {
