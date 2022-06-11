@@ -230,7 +230,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertRawCliStringToCliResultWithMissformedJson() {
+    fun testConvertMissformedErrorAsArrayJson() {
         val cliResult = ossService.convertRawCliStringToCliResult("""
                     {
                       "ok": false,
@@ -239,6 +239,70 @@ class OssServiceTest : LightPlatformTestCase() {
                     }
                 """.trimIndent())
         assertFalse(cliResult.isSuccessful())
+        assertTrue(cliResult.getFirstError()!!.message.contains(
+            "Expected a string but was BEGIN_ARRAY"
+        ))
+    }
+
+    @Test
+    fun testConvertMissformedErrorPathTagJson() {
+        val cliResult2 = ossService.convertRawCliStringToCliResult("""
+                    {
+                      "ok": false,
+                      "error": "error",
+                      "path_not_provided": ""
+                    }
+                """.trimIndent())
+        assertFalse(cliResult2.isSuccessful())
+        assertTrue(cliResult2.getFirstError()!!.message.contains(
+            "Parameter specified as non-null is null: method snyk.common.SnykError.<init>, parameter path"
+        ))
+    }
+
+    @Test
+    fun testConvertMissformedResultArrayJson() {
+        val cliResult1 = ossService.convertRawCliStringToCliResult("""
+            {
+              "vulnerabilities": "SHOULD_BE_ARRAY_HERE",
+              "packageManager": "npm",
+              "displayTargetFile": "package-lock.json",
+              "path": "D:\\TestProjects\\goof"
+            }
+            """.trimIndent())
+        assertFalse(cliResult1.isSuccessful())
+        assertTrue(cliResult1.getFirstError()!!.message.contains(
+            "Expected BEGIN_ARRAY but was STRING"
+        ))
+    }
+
+    @Test
+    fun testConvertMissformedResultNestedJson() {
+        val cliResult2 = ossService.convertRawCliStringToCliResult("""
+            {
+              "vulnerabilities": [
+                {
+                  "wrong-tag-here": "bla-bla-bla"
+                }
+              ],
+              "packageManager": "npm",
+              "displayTargetFile": "package-lock.json",
+              "path": "D:\\TestProjects\\goof"
+            }
+            """.trimIndent())
+        assertFalse(cliResult2.isSuccessful())
+        assertTrue(cliResult2.getFirstError()!!.message.contains(
+            "Parameter specified as non-null is null: method snyk.oss.Vulnerability.copy, parameter id"
+        ))
+    }
+
+    @Test
+    fun testConvertMissformedResultRootTagJson() {
+        val rawCliString = getResourceAsString("missformed-vulnerabilities-test.json")
+        val cliResult3 = ossService.convertRawCliStringToCliResult(rawCliString)
+        assertFalse(cliResult3.isSuccessful())
+        assertTrue(cliResult3.getFirstError()!!.message.contains(
+            "Parameter specified as non-null is null: method snyk.oss.OssVulnerabilitiesForFile.copy, parameter displayTargetFile"
+        ))
     }
 
     @Test

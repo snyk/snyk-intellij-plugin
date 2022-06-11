@@ -42,10 +42,19 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             getErrorResult(exception.message ?: "Snyk CLI not installed.")
         }
 
-    private fun getErrorResult(errorMsg: String): R =
-        getProductResult(null, listOf(SnykError(errorMsg, projectPath)))
+    private fun getErrorResult(errorMsg: String): R {
+        logger.warn(errorMsg)
+        return getProductResult(null, listOf(SnykError(errorMsg, projectPath)))
+    }
 
     protected abstract fun getProductResult(cliIssues: List<CliIssues>?, snykErrors: List<SnykError> = emptyList()): R
+
+    /**
+     *  `Gson().fromJson` could put `null` value into not-null field.
+     *  That case should be handled(tested/checked) here and (specific) Exception thrown if needed.
+     */
+    @Throws(Exception::class)
+    protected abstract fun sanitizeCliIssues(cliIssues: CliIssues): CliIssues
 
     /**
      * !!! Public for tests only !!!
@@ -81,14 +90,29 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
 
     private fun convertRawCliStringWithSingleEntryToCliResult(rawStr: String): R = when {
         isSuccessCliJsonString(rawStr) -> {
-            getProductResult(listOf(Gson().fromJson(rawStr, getCliIIssuesClass())))
+            val cliIssues = Gson().fromJson(rawStr, getCliIIssuesClass())
+            // `Gson().fromJson` could put `null` value into not-null field
+            getSanitizedResultOrError {
+                getProductResult(listOf(sanitizeCliIssues(cliIssues)))
+            }
         }
         isErrorCliJsonString(rawStr) -> {
             val cliError = Gson().fromJson(rawStr, CliError::class.java)
-            getProductResult(null, listOf(SnykError(cliError.message, cliError.path)))
+            // `Gson().fromJson` could put `null` value into not-null field
+            getSanitizedResultOrError {
+                getProductResult(null, listOf(SnykError(cliError.message, cliError.path)))
+            }
         }
         else -> getErrorResult(rawStr)
     }
+
+    private fun getSanitizedResultOrError(resultProducer: () -> R): R =
+        try {
+            resultProducer()
+        } catch (e: Exception) {
+            SentryErrorReporter.captureException(e)
+            getErrorResult("Failed to sanitize CLI output: ${e.message ?: e.toString()}")
+        }
 
     private fun convertRawCliStringWithArrayToCliResult(rawStr: String): R {
         // see https://sites.google.com/site/gson/gson-user-guide#TOC-Serializing-and-Deserializing-Collection-with-Objects-of-Arbitrary-Types

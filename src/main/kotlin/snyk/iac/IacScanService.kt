@@ -16,6 +16,12 @@ class IacScanService(project: Project) : CliAdapter<IacIssuesForFile, IacResult>
     override fun getProductResult(cliIssues: List<IacIssuesForFile>?, snykErrors: List<SnykError>): IacResult =
         IacResult(cliIssues, snykErrors)
 
+    override fun sanitizeCliIssues(cliIssues: IacIssuesForFile): IacIssuesForFile =
+        // .copy() will check nullability of fields
+        cliIssues.copy(
+            infrastructureAsCodeIssues = cliIssues.infrastructureAsCodeIssues.map { it.copy() }
+        )
+
     override fun getCliIIssuesClass(): Class<IacIssuesForFile> = IacIssuesForFile::class.java
 
     override fun isSuccessCliJsonString(jsonStr: String): Boolean =

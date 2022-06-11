@@ -33,6 +33,8 @@ class IgnoreService(project: Project) : CliAdapter<Unit, IgnoreService.IgnoreRes
     override fun getProductResult(cliIssues: List<Unit>?, snykErrors: List<SnykError>) =
         IgnoreResults(snykErrors.firstOrNull()?.message)
 
+    override fun sanitizeCliIssues(cliIssues: Unit) = cliIssues
+
     override fun getCliIIssuesClass(): Class<Unit> = Unit::class.java
 
     override fun buildExtraOptions(): List<String> = emptyList()
