@@ -66,68 +66,72 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
      * if result is Empty - CLI fail to run (some notification already done in CLI execution code).
      */
     fun convertRawCliStringToCliResult(rawStr: String): R =
-        try {
-            when {
-                rawStr == ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER -> {
-                    getProductResult(null)
-                }
-                rawStr.isEmpty() -> {
-                    getErrorResult(CLI_PRODUCE_NO_OUTPUT)
-                }
-                rawStr.first() == '[' -> {
-                    convertRawCliStringWithArrayToCliResult(rawStr)
-                }
-                rawStr.first() == '{' -> {
-                    convertRawCliStringWithSingleEntryToCliResult(rawStr)
-                }
-                else -> getErrorResult(rawStr)
+        when {
+            rawStr == ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER -> {
+                getProductResult(null)
             }
-        } catch (e: Throwable) {
-            // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
-            SentryErrorReporter.captureException(e)
-            getErrorResult("Failed to parse CLI output: ${e.message ?: e.toString()}")
+            rawStr.isEmpty() -> {
+                getErrorResult(CLI_PRODUCE_NO_OUTPUT)
+            }
+            rawStr.first() == '[' -> {
+                convertArrayToCliResult(rawStr)
+            }
+            rawStr.first() == '{' -> {
+                convertSingleEntryToCliResult(rawStr, reportExceptions = true)
+            }
+            else -> getErrorResult(rawStr)
         }
 
-    private fun convertRawCliStringWithSingleEntryToCliResult(rawStr: String): R = when {
-        isSuccessCliJsonString(rawStr) -> {
-            val cliIssues = Gson().fromJson(rawStr, getCliIIssuesClass())
-            // `Gson().fromJson` could put `null` value into not-null field
-            getSanitizedResultOrError {
-                getProductResult(listOf(sanitizeCliIssues(cliIssues)))
+    private fun convertSingleEntryToCliResult(rawStr: String, reportExceptions: Boolean): R =
+        when {
+            isSuccessCliJsonString(rawStr) -> getResultOrError(reportExceptions) {
+                // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
+                val cliIssues = Gson().fromJson(rawStr, getCliIIssuesClass())
+                // `Gson().fromJson` could put `null` value into not-null field
+                val sanitizedCliIssues = sanitizeCliIssues(cliIssues)
+                return@getResultOrError getProductResult(listOf(sanitizedCliIssues))
             }
-        }
-        isErrorCliJsonString(rawStr) -> {
-            val cliError = Gson().fromJson(rawStr, CliError::class.java)
-            // `Gson().fromJson` could put `null` value into not-null field
-            getSanitizedResultOrError {
-                getProductResult(null, listOf(SnykError(cliError.message, cliError.path)))
+            isErrorCliJsonString(rawStr) -> getResultOrError(reportExceptions) {
+                // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
+                val cliError = Gson().fromJson(rawStr, CliError::class.java)
+                // `Gson().fromJson` could put `null` value into not-null field
+                val snykError = SnykError(cliError.message, cliError.path)
+                return@getResultOrError getProductResult(null, listOf(snykError))
             }
+            else -> getErrorResult(rawStr)
         }
-        else -> getErrorResult(rawStr)
-    }
 
-    private fun getSanitizedResultOrError(resultProducer: () -> R): R =
+    private fun getResultOrError(reportExceptions: Boolean, resultProducer: () -> R): R =
         try {
             resultProducer()
-        } catch (e: Exception) {
-            SentryErrorReporter.captureException(e)
-            getErrorResult("Failed to sanitize CLI output: ${e.message ?: e.toString()}")
+        } catch (e: Throwable) {
+            if (reportExceptions) {
+                SentryErrorReporter.captureException(e)
+            }
+            getErrorResult("Failed to parse CLI's json: ${e.message ?: e.toString()}")
         }
 
-    private fun convertRawCliStringWithArrayToCliResult(rawStr: String): R {
-        // see https://sites.google.com/site/gson/gson-user-guide#TOC-Serializing-and-Deserializing-Collection-with-Objects-of-Arbitrary-Types
-        val jsonArray: JsonArray = JsonParser.parseString(rawStr).asJsonArray
-        val allErrors: MutableList<SnykError> = mutableListOf()
-        val cliIssues = jsonArray
-            .map { it.toString() }
-            .mapNotNull { elementAsSsting ->
-                val cliResult = convertRawCliStringWithSingleEntryToCliResult(elementAsSsting)
-                allErrors.addAll(cliResult.errors)
-                cliResult.allCliIssues
+    private fun convertArrayToCliResult(rawStr: String): R =
+        getResultOrError(reportExceptions = true) {
+            // see https://sites.google.com/site/gson/gson-user-guide#TOC-Serializing-and-Deserializing-Collection-with-Objects-of-Arbitrary-Types
+            // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
+            val jsonArray: JsonArray = JsonParser.parseString(rawStr).asJsonArray
+            val allErrors: MutableList<SnykError> = mutableListOf()
+            val cliIssues = jsonArray
+                .map { it.toString() }
+                .mapNotNull { elementAsString ->
+                    val cliResult = convertSingleEntryToCliResult(elementAsString, reportExceptions = false)
+                    allErrors.addAll(cliResult.errors)
+                    cliResult.allCliIssues
+                }
+                .flatten()
+            if (allErrors.isNotEmpty()) {
+                SentryErrorReporter.captureException(Throwable(
+                    allErrors.joinToString("\n") { it.message }
+                ))
             }
-            .flatten()
-        return getProductResult(cliIssues, allErrors)
-    }
+            return@getResultOrError getProductResult(cliIssues, allErrors)
+        }
 
     // todo? potentially we should be able to get Class through `refined CliIssue` here, something like:
     // private inline fun <reified CliIssues> getCliIIssuesClass(): Class<CliIssues> = CliIssues::class.java

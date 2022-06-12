@@ -19,6 +19,7 @@
 - All failed scan results for artifacts(file, image) are now shown in the results(Tree) too (right after successful scan results).
 - Open Source Scan results annotations are shown for Gradle(Groovy) dependencies.
 - Results (json) received from CLI are now sanitized for correctness.
+- For mixed correct and failed-to-parse json results: successfully parsed elements will be shown alongside with errors.
 
 ### Added
 - Navigation to the Editor for the Open Source Scan results and all failed artifact's scan results.
