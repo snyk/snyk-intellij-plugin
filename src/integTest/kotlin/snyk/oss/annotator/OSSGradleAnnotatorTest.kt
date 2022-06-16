@@ -183,32 +183,30 @@ class OSSGradleAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test annotation message should contain issue title`() {
         val vulnerability = createGradleKtsOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
-        val expected = "Snyk: ${vulnerability.title} in ${vulnerability.name}"
 
         val actual = cut.annotationMessage(vulnerability)
 
-        assertEquals(expected, actual)
+        assertTrue(actual.contains(vulnerability.title) && actual.contains(vulnerability.name))
     }
 
     @Test
     fun `test gradle kts apply should add a quickfix if upgradePath available and introducing dep is in gradle kts`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createGradleKtsOssResultWithIssues()
-        val capturedIntentionSlot = slot<IntentionAction>()
+        val capturedIntentionSlot = slot<AlwaysAvailableReplacementIntentionAction>()
         every { snykCachedResults.currentOssResults } returns result
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
         every { builderMock.withFix(capture(capturedIntentionSlot)) } returns builderMock
 
         cut.apply(buildGradleKts, Unit, annotationHolderMock)
 
-        assertTrue(capturedIntentionSlot.captured is AlwaysAvailableReplacementIntentionAction)
-        val action = capturedIntentionSlot.captured as AlwaysAvailableReplacementIntentionAction
+        val action = capturedIntentionSlot.captured
         assertEquals(TextRange(700, 706), action.range)
         assertEquals("2.17.1", action.replacementText)
         verify {
             annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
         }
-        verify(exactly = 4) { builderMock.withFix(any()) }
+        verify(exactly = 4) { builderMock.withFix(ofType(AlwaysAvailableReplacementIntentionAction::class)) }
     }
 
     private fun createGradleKtsOssResultWithIssues(): OssResult =

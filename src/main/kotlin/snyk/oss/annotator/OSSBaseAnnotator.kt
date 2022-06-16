@@ -6,9 +6,12 @@ import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
+import snyk.common.intentionactions.ShowDetailsIntentionActionBase
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 import kotlin.math.max
@@ -27,26 +30,32 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         val issues = getIssuesForFile(psiFile) ?: return
 
-        issues.vulnerabilities
+        val filteredVulns = issues.vulnerabilities
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverity()) }
-            .forEach { vulnerability ->
-                if (vulnerability.ignored || vulnerability.obsolete) return@forEach
-                val textRange = textRange(psiFile, vulnerability)
-                val highlightSeverity = vulnerability.getSeverity().getHighlightSeverity()
-                if (textRange != TextRange.EMPTY_RANGE) {
-                    val annotationBuilder =
-                        holder.newAnnotation(highlightSeverity, annotationMessage(vulnerability)).range(textRange)
-                    val fixRange = fixRange(psiFile, vulnerability)
-                    val fixVersion = getFixVersion(issues.remediation, vulnerability)
-                    if (fixRange != TextRange.EMPTY_RANGE && fixVersion.isNotBlank()) {
-                        addQuickFix(psiFile, vulnerability, annotationBuilder, fixRange, fixVersion)
-                    }
-                    annotationBuilder.create()
+            .distinctBy { getIntroducingPackage(it) + it.id }
+
+        filteredVulns.forEach { vulnerability ->
+            if (vulnerability.ignored || vulnerability.obsolete) return@forEach
+            val textRange = textRange(psiFile, vulnerability)
+            val highlightSeverity = vulnerability.getSeverity().getHighlightSeverity()
+            if (textRange != TextRange.EMPTY_RANGE) {
+                val annotationMessage = annotationMessage(vulnerability)
+                val annotationBuilder =
+                    holder.newAnnotation(highlightSeverity, "Snyk: $annotationMessage").range(textRange)
+                val fixRange = fixRange(psiFile, vulnerability)
+                val fixVersion = getFixVersion(issues.remediation, vulnerability)
+                if (fixRange != TextRange.EMPTY_RANGE && fixVersion.isNotBlank()) {
+                    addQuickFix(psiFile, vulnerability, annotationBuilder, fixRange, fixVersion)
                 }
+                annotationBuilder.withFix(
+                    ShowDetailsIntentionAction(annotationMessage, vulnerability)
+                )
+                annotationBuilder.create()
             }
+        }
     }
 
-    open fun getIssuesForFile(psiFile: PsiFile): OssVulnerabilitiesForFile? {
+    fun getIssuesForFile(psiFile: PsiFile): OssVulnerabilitiesForFile? {
         val ossResult = getSnykCachedResults(psiFile.project)?.currentOssResults ?: return null
         val filePath = psiFile.virtualFile?.path ?: return null
         if (!AnnotatorHelper.isFileSupported(filePath)) return null
@@ -57,11 +66,8 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             ?.firstOrNull { filePath.endsWith(it.sanitizedTargetFile) }
     }
 
-    open fun annotationMessage(vulnerability: Vulnerability): String {
-        return buildString {
-            append("Snyk: ${vulnerability.title} in ${vulnerability.name}")
-        }
-    }
+    fun annotationMessage(vulnerability: Vulnerability): String =
+        "${vulnerability.title} in '${vulnerability.name}' id: ${vulnerability.id}"
 
     open fun addQuickFix(
         psiFile: PsiFile,
@@ -150,4 +156,16 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     open fun lineMatches(psiFile: PsiFile, line: String, vulnerability: Vulnerability): Boolean =
         line.contains(getIntroducingPackage(vulnerability))
+
+    inner class ShowDetailsIntentionAction(
+        override val annotationMessage: String,
+        private val vulnerability: Vulnerability
+    ) : ShowDetailsIntentionActionBase() {
+
+        override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
+            toolWindowPanel.selectNodeAndDisplayDescription(vulnerability)
+        }
+
+        override fun getSeverity(): Severity = vulnerability.getSeverity()
+    }
 }

@@ -7,8 +7,11 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.AnnotatorCommon
+import snyk.common.intentionactions.ShowDetailsIntentionActionBase
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
 
@@ -43,8 +46,10 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             .forEach { iacIssue ->
                 LOG.debug("-> ${iacIssue.id}: ${iacIssue.title}: ${iacIssue.lineNumber}")
                 val highlightSeverity = iacIssue.getSeverity().getHighlightSeverity()
-                holder.newAnnotation(highlightSeverity, annotationMessage(iacIssue))
+                val annotationMessage = annotationMessage(iacIssue)
+                holder.newAnnotation(highlightSeverity, "Snyk: $annotationMessage")
                     .range(textRange(psiFile, iacIssue))
+                    .withFix(ShowDetailsIntentionAction(annotationMessage, iacIssue))
                     .create()
             }
     }
@@ -66,12 +71,7 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         return iacIssuesForFile?.infrastructureAsCodeIssues?.toList() ?: emptyList()
     }
 
-    fun annotationMessage(iacIssue: IacIssue): String {
-        return buildString {
-            append("Snyk - ")
-            append(iacIssue.title)
-        }
-    }
+    fun annotationMessage(iacIssue: IacIssue): String = iacIssue.title
 
     fun defaultTextRange(psiFile: PsiFile, iacIssue: IacIssue): TextRange {
         val document = psiFile.viewProvider.document ?: return TextRange.EMPTY_RANGE
@@ -82,5 +82,17 @@ abstract class IacBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val startOffset = document.getLineStartOffset(lineNumber)
         val endOffset = document.getLineEndOffset(lineNumber)
         return TextRange.create(startOffset, endOffset)
+    }
+
+    inner class ShowDetailsIntentionAction(
+        override val annotationMessage: String,
+        private val iacIssue: IacIssue
+    ) : ShowDetailsIntentionActionBase() {
+
+        override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
+            toolWindowPanel.selectNodeAndDisplayDescription(iacIssue)
+        }
+
+        override fun getSeverity(): Severity = iacIssue.getSeverity()
     }
 }

@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
+import ai.deepcode.javaclient.core.SuggestionForFile
 import snyk.common.UIComponentFinder
 import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
@@ -23,6 +24,7 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getKubernetesImageCache
+import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isOssRunning
@@ -31,6 +33,8 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.setupDummyCliFile
+import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
 import org.junit.Test
@@ -51,6 +55,7 @@ import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.iac.IgnoreButtonActionListener
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
+import snyk.oss.Vulnerability
 import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JLabel
@@ -62,6 +67,7 @@ import javax.swing.tree.TreeNode
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private val iacGoofJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")
+    private val ossGoofJson = getResourceAsString("oss-test-results/oss-result-package.json")
     private val containerResultWithRemediationJson =
         getResourceAsString("container-test-results/nginx-with-remediation.json")
 
@@ -114,6 +120,23 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         }
     }
 
+    private fun prepareTreeWithFakeOssResults() {
+        val mockRunner = mockk<ConsoleCommandRunner>()
+        every {
+            mockRunner.execute(
+                commands = listOf(getCliFile().absolutePath, "test", "--json"),
+                workDirectory = project.basePath!!,
+                apiToken = fakeApiToken,
+                project = project
+            )
+        } returns (ossGoofJson)
+        getOssService(project)?.setConsoleCommandRunner(mockRunner)
+
+        val ossResult = getOssService(project)?.scan()!!
+        toolWindowPanel.snykScanListener.scanningOssFinished(ossResult)
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+    }
+
     private fun prepareTreeWithFakeIacResults() {
         setUpIacTest()
 
@@ -126,12 +149,40 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 project = project
             )
         } returns (iacGoofJson)
-
         getIacService(project)?.setConsoleCommandRunner(mockRunner)
 
         project.service<SnykTaskQueueService>().scan()
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
+    private fun prepareTreeWithFakeCodeResults() {
+        val codeResults = SnykCodeResults(
+            mapOf(
+                Pair(
+                    SnykCodeFile(project, mockk(relaxed = true)),
+                    listOf(fakeSuggestionForFile)
+                )
+            )
+        )
+        toolWindowPanel.snykScanListener.scanningSnykCodeFinished(codeResults)
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+    }
+
+    private val fakeSuggestionForFile = SuggestionForFile(
+        "id",
+        "rule",
+        "message",
+        "title",
+        "text",
+        2,
+        0,
+        emptyList(),
+        emptyList(),
+        listOf(mockk(relaxed = true)),
+        emptyList(),
+        emptyList(),
+        emptyList()
+    )
     private val fakeContainerIssue1 = ContainerIssue(
         id = "fakeId1",
         title = "fakeTitle1",
@@ -439,9 +490,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         prepareTreeWithFakeIacResults()
 
         // actual test run
-
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-
         val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
         fun isMediumSeverityShown(): Boolean = rootIacIssuesTreeNode.children().asSequence()
             .flatMap { (it as TreeNode).children().asSequence() }
@@ -502,9 +550,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun test_WhenIacIssueIgnored_ThenItMarkedIgnored_AndButtonRemainsDisabled() {
         // pre-test setup
         prepareTreeWithFakeIacResults()
-
         val tree = toolWindowPanel.getTree()
-        PlatformTestUtil.waitWhileBusy(tree)
 
         // select first IaC issue and ignore it
         val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
@@ -771,5 +817,147 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
         assertNotNull(alternativeUpgradeValueLabel)
         assertEquals("alternative upgrades incorrect", "nginx:1-perl", alternativeUpgradeValueLabel?.text)
+    }
+
+    @Test
+    fun `test IaC node selected and Description shown on external request`() {
+        // pre-test setup
+        prepareTreeWithFakeIacResults()
+        val tree = toolWindowPanel.getTree()
+        val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
+        val firstIaCFileNode = rootIacIssuesTreeNode.firstChild as? IacFileTreeNode
+        val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
+            ?: throw IllegalStateException("IacIssueNode should not be null")
+        val iacIssue = firstIacIssueNode.userObject as IacIssue
+
+        // actual test run
+        toolWindowPanel.selectNodeAndDisplayDescription(iacIssue)
+        // hack to avoid "File accessed outside allowed roots" check in tests
+        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
+        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
+        ApplicationInfoImpl.setInStressTest(true)
+        try {
+            PlatformTestUtil.waitWhileBusy(tree)
+        } finally {
+            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
+        }
+
+        // Assertions
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
+        assertEquals(iacIssue, selectedNodeUserObject)
+
+        val iacDescriptionPanel =
+            UIComponentFinder.getComponentByName(
+                toolWindowPanel.getDescriptionPanel(),
+                IacSuggestionDescriptionPanel::class,
+                "IacSuggestionDescriptionPanel"
+            )
+        assertNotNull("IacSuggestionDescriptionPanel should not be null", iacDescriptionPanel)
+    }
+
+    @Test
+    fun `test OSS node selected and Description shown on external request`() {
+        prepareTreeWithFakeOssResults()
+
+        val tree = toolWindowPanel.getTree()
+        val rootOssIssuesTreeNode = toolWindowPanel.getRootOssIssuesTreeNode()
+        val firstOssFileNode = rootOssIssuesTreeNode.firstChild as FileTreeNode
+        val firstOssIssueNode = firstOssFileNode.firstChild as VulnerabilityTreeNode
+        val groupedVulns = firstOssIssueNode.userObject as Collection<Vulnerability>
+        val vulnerability = groupedVulns.first()
+
+        // actual test run
+        toolWindowPanel.selectNodeAndDisplayDescription(vulnerability)
+        // hack to avoid "File accessed outside allowed roots" check in tests
+        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
+        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
+        ApplicationInfoImpl.setInStressTest(true)
+        try {
+            PlatformTestUtil.waitWhileBusy(tree)
+        } finally {
+            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
+        }
+
+        // Assertions
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
+        assertEquals(groupedVulns, selectedNodeUserObject)
+
+        val vulnerabilityDescriptionPanel =
+            UIComponentFinder.getComponentByName(
+                toolWindowPanel.getDescriptionPanel(),
+                VulnerabilityDescriptionPanel::class
+            )
+        assertNotNull("VulnerabilityDescriptionPanel should not be null", vulnerabilityDescriptionPanel)
+    }
+
+    @Test
+    fun `test Code node selected and Description shown on external request`() {
+        prepareTreeWithFakeCodeResults()
+
+        val tree = toolWindowPanel.getTree()
+        val rootCodeTreeNode = toolWindowPanel.getRootCodeQualityIssuesTreeNode()
+        val firstCodeFileNode = rootCodeTreeNode.firstChild as SnykCodeFileTreeNode
+        val firstCodeIssueNode = firstCodeFileNode.firstChild as SuggestionTreeNode
+        val (suggestion, index) = firstCodeIssueNode.userObject as Pair<SuggestionForFile, Int>
+
+        // actual test run
+        toolWindowPanel.selectNodeAndDisplayDescription(suggestion, suggestion.ranges[index])
+        // hack to avoid "File accessed outside allowed roots" check in tests
+        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
+        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
+        ApplicationInfoImpl.setInStressTest(true)
+        try {
+            PlatformTestUtil.waitWhileBusy(tree)
+        } finally {
+            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
+        }
+
+        // Assertions
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
+        val actualSelectedPair = selectedNodeUserObject as Pair<SuggestionForFile, Int>
+        val expectedPair = Pair(fakeSuggestionForFile, 0)
+        assertEquals(expectedPair, actualSelectedPair)
+
+        val suggestionDescriptionPanel =
+            UIComponentFinder.getComponentByName(
+                toolWindowPanel.getDescriptionPanel(),
+                SuggestionDescriptionPanel::class
+            )
+        assertNotNull("SuggestionDescriptionPanel should not be null", suggestionDescriptionPanel)
+    }
+
+    @Test
+    fun `test Container node selected and Description shown on external request`() {
+        // prepare Tree with fake Container results
+        val tree = toolWindowPanel.getTree()
+        setUpContainerTest(null)
+        getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningContainerFinished(fakeContainerResult)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        val rootContainerTreeNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+        val firstImageNode = rootContainerTreeNode.firstChild as ContainerImageTreeNode
+        val containerImage = firstImageNode.userObject as ContainerIssuesForImage
+
+        // actual test run
+        toolWindowPanel.selectNodeAndDisplayDescription(containerImage)
+        // hack to avoid "File accessed outside allowed roots" check in tests
+        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
+        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
+        ApplicationInfoImpl.setInStressTest(true)
+        try {
+            PlatformTestUtil.waitWhileBusy(tree)
+        } finally {
+            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
+        }
+
+        // Assertions
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
+        assertEquals(containerImage, selectedNodeUserObject)
+
+        val containerImageDescriptionPanel =
+            UIComponentFinder.getComponentByName(
+                toolWindowPanel.getDescriptionPanel(),
+                BaseImageRemediationDetailPanel::class
+            )
+        assertNotNull("Image's Description Panel should not be null", containerImageDescriptionPanel)
     }
 }

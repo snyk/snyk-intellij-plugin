@@ -224,7 +224,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         verify {
             annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
         }
-        verify(exactly = 0) { builderMock.withFix(any()) }
+        verify(exactly = 0) { builderMock.withFix(ofType(BaseImageRemediationFix::class)) }
     }
 
     private fun dummyDocker(): Docker {

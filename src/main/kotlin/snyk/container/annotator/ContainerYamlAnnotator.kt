@@ -8,7 +8,9 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.AnnotatorCommon
+import snyk.common.intentionactions.ShowDetailsIntentionActionBase
 import snyk.container.ContainerIssuesForImage
 
 class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
@@ -41,19 +43,22 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
                 val severityToShow = forImage.getSeverities()
                     .filter { AnnotatorCommon.isSeverityToShow(it) }
                     .max() ?: Severity.UNKNOWN
+                val annotationMessage = annotationMessage(forImage)
                 forImage.workloadImages
                     .filter { it.virtualFile == psiFile.virtualFile }
                     .forEach { workloadImage ->
                         val textRange = textRange(psiFile, workloadImage.lineNumber, forImage.imageName)
                         val annotationBuilder =
-                            holder.newAnnotation(
-                                severityToShow.getHighlightSeverity(),
-                                annotationMessage(forImage)).range(textRange
-                            )
+                            holder
+                                .newAnnotation(severityToShow.getHighlightSeverity(), annotationMessage)
+                                .range(textRange)
                         if (shouldAddQuickFix(forImage)) {
                             val intentionAction = BaseImageRemediationFix(forImage, textRange)
                             annotationBuilder.withFix(intentionAction)
                         }
+                        annotationBuilder.withFix(
+                            ShowDetailsIntentionAction(annotationMessage, forImage, severityToShow)
+                        )
                         annotationBuilder.create()
                     }
             }
@@ -95,5 +100,18 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         if (colStart == -1) return TextRange.EMPTY_RANGE
         val lineOffSet = startOffset + colStart
         return TextRange.create(lineOffSet, lineOffSet + imageName.length)
+    }
+
+    inner class ShowDetailsIntentionAction(
+        override val annotationMessage: String,
+        private val forImage: ContainerIssuesForImage,
+        private val severityToShow: Severity
+    ) : ShowDetailsIntentionActionBase() {
+
+        override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
+            toolWindowPanel.selectNodeAndDisplayDescription(forImage)
+        }
+
+        override fun getSeverity(): Severity = severityToShow
     }
 }

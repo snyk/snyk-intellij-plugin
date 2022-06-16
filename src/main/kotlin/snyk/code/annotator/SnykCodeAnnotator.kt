@@ -4,15 +4,16 @@ import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
-import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.Severity
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.getSeverityAsEnum
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.AnnotatorCommon
+import snyk.common.intentionactions.ShowDetailsIntentionActionBase
 
 class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykCodeAnnotator>()
@@ -28,33 +29,30 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
 
         suggestions.forEach { suggestionForFile ->
-            val severity = severity(suggestionForFile)
+            val highlightSeverity = suggestionForFile.getSeverityAsEnum().getHighlightSeverity()
             suggestionForFile.ranges.forEach {
                 val textRange = textRange(psiFile, it)
                 if (!textRange.isEmpty) {
-                    holder.newAnnotation(severity, annotationMessage(suggestionForFile))
+                    val annotationMessage = annotationMessage(suggestionForFile)
+                    holder.newAnnotation(highlightSeverity, "Snyk: $annotationMessage")
                         .range(textRange)
+                        .withFix(ShowDetailsIntentionAction(annotationMessage, suggestionForFile, it))
                         .create()
                 }
             }
         }
     }
 
-    private fun severity(suggestion: SuggestionForFile): HighlightSeverity =
-        suggestion.getSeverityAsEnum().getHighlightSeverity()
-
-    private fun getIssuesForFile(psiFile: PsiFile): List<SuggestionForFile> {
-        ProgressManager.checkCanceled()
-        return AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile))
-    }
+    private fun getIssuesForFile(psiFile: PsiFile): List<SuggestionForFile> =
+        AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile))
 
     /** Public for Tests only */
-    fun annotationMessage(suggestion: SuggestionForFile): String {
-        return buildString {
-            val title = if (suggestion.title.isNotBlank()) " " + suggestion.title + "." else ""
-            append("Snyk Code:$title ${suggestion.message}")
+    fun annotationMessage(suggestion: SuggestionForFile): String =
+        suggestion.title.ifBlank {
+            suggestion.message.let {
+                if (it.length < 70) it else "${it.take(70)}..."
+            }
         }
-    }
 
     /** Public for Tests only */
     fun textRange(psiFile: PsiFile, snykCodeRange: MyTextRange): TextRange {
@@ -84,5 +82,18 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             logger.warn(e)
             return TextRange.EMPTY_RANGE
         }
+    }
+
+    inner class ShowDetailsIntentionAction(
+        override val annotationMessage: String,
+        private val suggestion: SuggestionForFile,
+        private val codeTextRange: MyTextRange
+    ) : ShowDetailsIntentionActionBase() {
+
+        override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
+            toolWindowPanel.selectNodeAndDisplayDescription(suggestion, codeTextRange)
+        }
+
+        override fun getSeverity(): Severity = suggestion.getSeverityAsEnum()
     }
 }

@@ -1,5 +1,6 @@
 package io.snyk.plugin
 
+import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
@@ -51,6 +52,16 @@ enum class Severity {
             LOW -> HighlightSeverity.WEAK_WARNING
             else -> HighlightSeverity.WARNING
             // Don't use HighlightSeverity.INFORMATION as it's not visible in the Editor and in `Problems`
+        }
+
+    fun getQuickFixPriority(): PriorityAction.Priority =
+        when (this) {
+            // Don't use PriorityAction.Priority.TOP as it's used to show real QuickFix first (on top of the list)
+            CRITICAL -> PriorityAction.Priority.HIGH
+            HIGH -> PriorityAction.Priority.HIGH
+            MEDIUM -> PriorityAction.Priority.NORMAL
+            LOW -> PriorityAction.Priority.LOW
+            else -> PriorityAction.Priority.LOW
         }
 
     fun getIcon(): Icon = SnykIcons.getSeverityIcon(this)

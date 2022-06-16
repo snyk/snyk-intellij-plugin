@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
+import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.notification.NotificationAction
@@ -132,7 +133,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
+    /** Flag used to recognize not-user-initiated Description panel reload cases for purposes like:
+     *  - disable Itly logging
+     *  - don't navigate to source (in the Editor)
+     *  */
     private var smartReloadMode = false
+
+    private var navigateToSourceEnabled = true
 
     private val treeNodeStub = ProjectBasedDefaultMutableTreeNode("", project)
 
@@ -146,10 +153,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         chooseMainPanelToDisplay()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
-            val capturedSmartReloadModeValue = smartReloadMode
-            ApplicationManager.getApplication().invokeLater {
-                updateDescriptionPanelBySelectedTreeNode(capturedSmartReloadModeValue)
-            }
+            updateDescriptionPanelBySelectedTreeNode()
         }
 
         snykScanListener = object : SnykScanListener {
@@ -413,123 +417,129 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             })
     }
 
-    private fun updateDescriptionPanelBySelectedTreeNode(smartReloadMode: Boolean) {
-        descriptionPanel.removeAll()
+    private fun updateDescriptionPanelBySelectedTreeNode() {
+        val capturedSmartReloadMode = smartReloadMode
+        val capturedNavigateToSourceEnabled = navigateToSourceEnabled
 
-        val selectionPath = vulnerabilitiesTree.selectionPath
+        ApplicationManager.getApplication().invokeLater {
+            descriptionPanel.removeAll()
+            val selectionPath = vulnerabilitiesTree.selectionPath
+            if (nonNull(selectionPath)) {
+                val lastPathComponent = selectionPath!!.lastPathComponent
+                if (!capturedSmartReloadMode &&
+                    capturedNavigateToSourceEnabled &&
+                    lastPathComponent is NavigatableToSourceTreeNode
+                ) {
+                    lastPathComponent.navigateToSource()
+                }
+                when (val node: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
+                    is VulnerabilityTreeNode -> {
+                        val groupedVulns = node.userObject as Collection<Vulnerability>
+                        descriptionPanel.add(
+                            VulnerabilityDescriptionPanel(groupedVulns),
+                            BorderLayout.CENTER
+                        )
 
-        if (nonNull(selectionPath)) {
-            val lastPathComponent = selectionPath!!.lastPathComponent
-            if (!smartReloadMode && lastPathComponent is NavigatableToSourceTreeNode) {
-                lastPathComponent.navigateToSource()
+                        val issue = groupedVulns.first()
+                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
+                            IssueInTreeIsClicked.builder()
+                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
+                                .issueType(issue.getIssueType())
+                                .issueId(issue.id)
+                                .severity(issue.getIssueSeverityOrNull())
+                                .build()
+                        )
+                    }
+                    is SuggestionTreeNode -> {
+                        val snykCodeFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? SnykCodeFile
+                            ?: throw IllegalArgumentException(node.toString())
+                        val (suggestion, index) = node.userObject as Pair<SuggestionForFile, Int>
+
+                        descriptionPanel.add(
+                            SuggestionDescriptionPanel(snykCodeFile, suggestion, index),
+                            BorderLayout.CENTER
+                        )
+
+                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
+                            IssueInTreeIsClicked.builder()
+                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
+                                .issueType(suggestion.getIssueType())
+                                .issueId(suggestion.id)
+                                .severity(suggestion.getIssueSeverityOrNull())
+                                .build()
+                        )
+                    }
+                    is IacIssueTreeNode -> {
+                        val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
+                            ?: throw IllegalArgumentException(node.toString())
+                        val fileName = iacIssuesForFile.targetFilePath
+                        val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(fileName))
+                        val psiFile = virtualFile?.let { findPsiFileIgnoringExceptions(it, project) }
+                        val iacIssue = node.userObject as IacIssue
+
+                        descriptionPanel.add(
+                            IacSuggestionDescriptionPanel(iacIssue, psiFile, project),
+                            BorderLayout.CENTER
+                        )
+
+                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
+                            IssueInTreeIsClicked.builder()
+                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
+                                .issueType(IssueInTreeIsClicked.IssueType.INFRASTRUCTURE_AS_CODE_ISSUE)
+                                .issueId(iacIssue.id)
+                                .severity(iacIssue.getIssueSeverityOrNull())
+                                .build()
+                        )
+                    }
+                    is ContainerImageTreeNode -> {
+                        val issuesForImage = node.userObject as ContainerIssuesForImage
+                        descriptionPanel.add(
+                            BaseImageRemediationDetailPanel(project, issuesForImage),
+                            BorderLayout.CENTER
+                        )
+                        // TODO: Add image click event logging ?
+                    }
+                    is ContainerIssueTreeNode -> {
+                        val containerIssue = node.userObject as ContainerIssue
+                        descriptionPanel.add(
+                            ContainerIssueDetailPanel(containerIssue),
+                            BorderLayout.CENTER
+                        )
+                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
+                            IssueInTreeIsClicked.builder()
+                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
+                                .issueType(IssueInTreeIsClicked.IssueType.CONTAINER_VULNERABILITY)
+                                .issueId(containerIssue.id)
+                                .severity(containerIssue.getIssueSeverityOrNull())
+                                .build()
+                        )
+                    }
+                    is RootOssTreeNode -> {
+                        currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
+                    }
+                    is RootSecurityIssuesTreeNode, is RootQualityIssuesTreeNode -> {
+                        currentSnykCodeError?.let { displaySnykError(it) } ?: displayEmptyDescription()
+                    }
+                    is RootIacIssuesTreeNode -> {
+                        currentIacError?.let { displaySnykError(it) } ?: displayEmptyDescription()
+                    }
+                    is RootContainerIssuesTreeNode -> {
+                        currentContainerError?.let { displaySnykError(it) } ?: displayEmptyDescription()
+                    }
+                    is ErrorTreeNode -> {
+                        displaySnykError(node.userObject as SnykError)
+                    }
+                    else -> {
+                        displayEmptyDescription()
+                    }
+                }
+            } else {
+                displayEmptyDescription()
             }
-            when (val node: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
-                is VulnerabilityTreeNode -> {
-                    val groupedVulns = node.userObject as Collection<Vulnerability>
-                    descriptionPanel.add(
-                        VulnerabilityDescriptionPanel(groupedVulns),
-                        BorderLayout.CENTER
-                    )
 
-                    val issue = groupedVulns.first()
-                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                        IssueInTreeIsClicked.builder()
-                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueType(issue.getIssueType())
-                            .issueId(issue.id)
-                            .severity(issue.getIssueSeverityOrNull())
-                            .build()
-                    )
-                }
-                is SuggestionTreeNode -> {
-                    val snykCodeFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? SnykCodeFile
-                        ?: throw IllegalArgumentException(node.toString())
-                    val (suggestion, index) = node.userObject as Pair<SuggestionForFile, Int>
-
-                    descriptionPanel.add(
-                        SuggestionDescriptionPanel(snykCodeFile, suggestion, index),
-                        BorderLayout.CENTER
-                    )
-
-                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                        IssueInTreeIsClicked.builder()
-                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueType(suggestion.getIssueType())
-                            .issueId(suggestion.id)
-                            .severity(suggestion.getIssueSeverityOrNull())
-                            .build()
-                    )
-                }
-                is IacIssueTreeNode -> {
-                    val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
-                        ?: throw IllegalArgumentException(node.toString())
-                    val fileName = iacIssuesForFile.targetFilePath
-                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(fileName))
-                    val psiFile = virtualFile?.let { findPsiFileIgnoringExceptions(it, project) }
-                    val iacIssue = node.userObject as IacIssue
-
-                    descriptionPanel.add(
-                        IacSuggestionDescriptionPanel(iacIssue, psiFile, project),
-                        BorderLayout.CENTER
-                    )
-
-                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                        IssueInTreeIsClicked.builder()
-                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueType(IssueInTreeIsClicked.IssueType.INFRASTRUCTURE_AS_CODE_ISSUE)
-                            .issueId(iacIssue.id)
-                            .severity(iacIssue.getIssueSeverityOrNull())
-                            .build()
-                    )
-                }
-                is ContainerImageTreeNode -> {
-                    val issuesForImage = node.userObject as ContainerIssuesForImage
-                    descriptionPanel.add(
-                        BaseImageRemediationDetailPanel(project, issuesForImage),
-                        BorderLayout.CENTER
-                    )
-                    // TODO: Add image click event logging ?
-                }
-                is ContainerIssueTreeNode -> {
-                    val containerIssue = node.userObject as ContainerIssue
-                    descriptionPanel.add(
-                        ContainerIssueDetailPanel(containerIssue),
-                        BorderLayout.CENTER
-                    )
-                    if (!smartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                        IssueInTreeIsClicked.builder()
-                            .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                            .issueType(IssueInTreeIsClicked.IssueType.CONTAINER_VULNERABILITY)
-                            .issueId(containerIssue.id)
-                            .severity(containerIssue.getIssueSeverityOrNull())
-                            .build()
-                    )
-                }
-                is RootOssTreeNode -> {
-                    currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                }
-                is RootSecurityIssuesTreeNode, is RootQualityIssuesTreeNode -> {
-                    currentSnykCodeError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                }
-                is RootIacIssuesTreeNode -> {
-                    currentIacError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                }
-                is RootContainerIssuesTreeNode -> {
-                    currentContainerError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                }
-                is ErrorTreeNode -> {
-                    displaySnykError(node.userObject as SnykError)
-                }
-                else -> {
-                    displayEmptyDescription()
-                }
-            }
-        } else {
-            displayEmptyDescription()
+            descriptionPanel.revalidate()
+            descriptionPanel.repaint()
         }
-
-        descriptionPanel.revalidate()
-        descriptionPanel.repaint()
     }
 
     override fun dispose() {}
@@ -1151,11 +1161,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         userObjectsForExpandedChildren: List<Any>?,
         selectedNodeUserObject: Any?
     ) {
-        smartReloadMode = true
         val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
 
         displayEmptyDescription()
-        reloadTreeNode(nodeToReload)
+        (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
+
         userObjectsForExpandedChildren?.let {
             it.forEach { userObject ->
                 val pathToNewNode = TreeUtil.findNodeWithObject(nodeToReload, userObject)?.path
@@ -1165,14 +1175,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         } ?: expandRecursively(nodeToReload)
 
-        selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
-        // we need to update Description panel in case if no selection was made before
-        updateDescriptionPanelBySelectedTreeNode(smartReloadMode)
-        smartReloadMode = false
-    }
-
-    private fun reloadTreeNode(nodeToReload: DefaultMutableTreeNode) {
-        (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
+        smartReloadMode = true
+        try {
+            selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
+            // for some reason TreeSelectionListener is not initiated here on node selection
+            // also we need to update Description panel in case if no selection was made before
+            updateDescriptionPanelBySelectedTreeNode()
+        } finally {
+            smartReloadMode = false
+        }
     }
 
     private fun expandRecursively(rootNode: DefaultMutableTreeNode) {
@@ -1186,6 +1197,43 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         (vulnerabilitiesTree.model as DefaultTreeModel).reload()
     }
 
+    private fun selectAndDisplayNodeWithIssueDescription(selectCondition: (DefaultMutableTreeNode) -> Boolean) {
+        val node = TreeUtil.findNode(rootTreeNode) { selectCondition(it) }
+        if (node != null) {
+            navigateToSourceEnabled = false
+            try {
+                TreeUtil.selectNode(vulnerabilitiesTree, node)
+                // here TreeSelectionListener is invoked, so no needs for explicit updateDescriptionPanelBySelectedTreeNode()
+            } finally {
+                navigateToSourceEnabled = true
+            }
+        }
+    }
+
+    fun selectNodeAndDisplayDescription(vulnerability: Vulnerability) =
+        selectAndDisplayNodeWithIssueDescription { treeNode ->
+            (treeNode.userObject as? Collection<Vulnerability>)?.any {
+                it == vulnerability
+            } ?: false
+        }
+
+    fun selectNodeAndDisplayDescription(iacIssue: IacIssue) =
+        selectAndDisplayNodeWithIssueDescription { treeNode ->
+            (treeNode.userObject as? IacIssue) == iacIssue
+        }
+
+    fun selectNodeAndDisplayDescription(issuesForImage: ContainerIssuesForImage) =
+        selectAndDisplayNodeWithIssueDescription { treeNode ->
+            (treeNode.userObject as? ContainerIssuesForImage) == issuesForImage
+        }
+
+    fun selectNodeAndDisplayDescription(suggestionForFile: SuggestionForFile, textRange: MyTextRange) =
+        selectAndDisplayNodeWithIssueDescription { treeNode ->
+            (treeNode.userObject as? Pair<SuggestionForFile, Int>)?.let { (suggestion, index) ->
+                suggestion == suggestionForFile && suggestion.ranges[index] == textRange
+            } ?: false
+        }
+
     @TestOnly
     fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode
 
@@ -1194,6 +1242,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
+
+    @TestOnly
+    fun getRootCodeQualityIssuesTreeNode() = rootQualityIssuesTreeNode
 
     @TestOnly
     fun getTree() = vulnerabilitiesTree
