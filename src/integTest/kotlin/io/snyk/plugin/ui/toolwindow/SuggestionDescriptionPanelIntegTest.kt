@@ -7,6 +7,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import org.junit.Test
 import javax.swing.JButton
 

@@ -6,7 +6,7 @@ import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
-import io.snyk.plugin.ui.toolwindow.IssueDescriptionPanelBase
+import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.container.ContainerIssue

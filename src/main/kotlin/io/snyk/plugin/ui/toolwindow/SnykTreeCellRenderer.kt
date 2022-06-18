@@ -15,6 +15,16 @@ import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.PackageManagerIconProvider
 import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import snyk.common.SnykError
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
@@ -29,7 +39,7 @@ import snyk.oss.Vulnerability
 import javax.swing.Icon
 import javax.swing.JTree
 
-class VulnerabilityTreeCellRenderer : ColoredTreeCellRenderer() {
+class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
     override fun customizeCellRenderer(
         tree: JTree,
         value: Any,

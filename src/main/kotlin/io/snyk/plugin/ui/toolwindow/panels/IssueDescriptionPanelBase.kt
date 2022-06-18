@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui.toolwindow
+package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SideBorder

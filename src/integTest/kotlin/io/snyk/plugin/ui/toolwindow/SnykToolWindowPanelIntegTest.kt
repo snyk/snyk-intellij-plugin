@@ -37,6 +37,14 @@ import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
+import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
 import org.junit.Test
 import snyk.common.SnykError
 import snyk.container.ContainerIssue
@@ -75,6 +83,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         .getResource(resourceName)!!.readText(Charsets.UTF_8)
 
     private lateinit var toolWindowPanel: SnykToolWindowPanel
+    private val scanPublisher
+        get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)!!
 
     private val fakeApiToken = "fake_token"
 
@@ -133,7 +143,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         getOssService(project)?.setConsoleCommandRunner(mockRunner)
 
         val ossResult = getOssService(project)?.scan()!!
-        toolWindowPanel.snykScanListener.scanningOssFinished(ossResult)
+        scanPublisher.scanningOssFinished(ossResult)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
@@ -164,7 +174,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 )
             )
         )
-        toolWindowPanel.snykScanListener.scanningSnykCodeFinished(codeResults)
+        scanPublisher.scanningSnykCodeFinished(codeResults)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
@@ -244,8 +254,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val snykError = SnykError(SnykToolWindowPanel.NO_OSS_FILES, project.basePath.toString())
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
-        toolWindowPanel.snykScanListener.scanningOssError(snykErrorControl)
-        toolWindowPanel.snykScanListener.scanningOssError(snykError)
+        scanPublisher.scanningOssError(snykErrorControl)
+        scanPublisher.scanningOssError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         val rootOssTreeNode = toolWindowPanel.getRootOssIssuesTreeNode()
@@ -253,7 +263,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(any(), project)
         }
-        assertTrue(toolWindowPanel.currentOssError == null)
+        assertTrue(getSnykCachedResults(project)?.currentOssError == null)
         assertTrue(getSnykCachedResults(project)?.currentOssResults == null)
         val cliErrorMessage = rootOssTreeNode.originalCliErrorMessage
         assertTrue(cliErrorMessage != null && cliErrorMessage.startsWith(SnykToolWindowPanel.NO_OSS_FILES))
@@ -281,15 +291,15 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val snykError = SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString())
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
-        toolWindowPanel.snykScanListener.scanningIacError(snykErrorControl)
-        toolWindowPanel.snykScanListener.scanningIacError(snykError)
+        scanPublisher.scanningIacError(snykErrorControl)
+        scanPublisher.scanningIacError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         // flow and internal state check
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(any(), project)
         }
-        assertTrue(toolWindowPanel.currentIacError == null)
+        assertTrue(getSnykCachedResults(project)?.currentIacError == null)
         assertTrue(getSnykCachedResults(project)?.currentIacResult == null)
         // node check
         assertEquals(
@@ -315,15 +325,15 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val snykError = ContainerService.NO_IMAGES_TO_SCAN_ERROR
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
-        toolWindowPanel.snykScanListener.scanningContainerError(snykErrorControl)
-        toolWindowPanel.snykScanListener.scanningContainerError(snykError)
+        scanPublisher.scanningContainerError(snykErrorControl)
+        scanPublisher.scanningContainerError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(any(), project)
         }
 
-        assertTrue(toolWindowPanel.currentContainerError == null)
+        assertTrue(getSnykCachedResults(project)?.currentContainerError == null)
         assertEquals(
             SnykToolWindowPanel.CONTAINER_ROOT_TEXT + SnykToolWindowPanel.NO_CONTAINER_IMAGES_FOUND,
             toolWindowPanel.getRootContainerIssuesTreeNode().userObject
@@ -334,7 +344,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test should display CONTAINER_NO_IMAGES_FOUND_TEXT after scan when no Container images found and Container node selected`() {
         val snykError = ContainerService.NO_IMAGES_TO_SCAN_ERROR
 
-        toolWindowPanel.snykScanListener.scanningContainerError(snykError)
+        scanPublisher.scanningContainerError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
@@ -348,7 +358,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test should display CONTAINER_NO_ISSUES_FOUND_TEXT after scan when no Container issues found and Container node selected`() {
-        toolWindowPanel.snykScanListener.scanningContainerFinished(ContainerResult(emptyList()))
+        scanPublisher.scanningContainerFinished(ContainerResult(emptyList()))
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
@@ -376,7 +386,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test should display CONTAINER_SCAN_RUNNING_TEXT before any scan performed and Container node selected`() {
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-        toolWindowPanel.snykScanListener.scanningStarted()
+        scanPublisher.scanningStarted()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         val containerScanRunningPane = UIComponentFinder.getComponentByName(
@@ -392,8 +402,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val snykErrorControl = SnykError("control", project.basePath.toString())
         val snykError = SnykError("Authentication failed. Please check the API token on ", project.basePath.toString())
 
-        toolWindowPanel.snykScanListener.scanningOssError(snykErrorControl)
-        toolWindowPanel.snykScanListener.scanningOssError(snykError)
+        scanPublisher.scanningOssError(snykErrorControl)
+        scanPublisher.scanningOssError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         verify(exactly = 1, timeout = 2000) {
@@ -402,7 +412,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(snykError.message, project)
         }
-        assertTrue(toolWindowPanel.currentOssError == null)
+        assertTrue(getSnykCachedResults(project)?.currentOssError == null)
         assertEquals(
             SnykToolWindowPanel.OSS_ROOT_TEXT,
             toolWindowPanel.getRootOssIssuesTreeNode().userObject
@@ -417,8 +427,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val snykErrorControl = SnykError("control", project.basePath.toString())
         val snykError = SnykError("Authentication failed. Please check the API token on ", project.basePath.toString())
 
-        toolWindowPanel.snykScanListener.scanningContainerError(snykErrorControl)
-        toolWindowPanel.snykScanListener.scanningContainerError(snykError)
+        scanPublisher.scanningContainerError(snykErrorControl)
+        scanPublisher.scanningContainerError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         verify(exactly = 1, timeout = 2000) {
@@ -427,7 +437,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(snykError.message, project)
         }
-        assertTrue(toolWindowPanel.currentContainerError == null)
+        assertTrue(getSnykCachedResults(project)?.currentContainerError == null)
         assertEquals(
             SnykToolWindowPanel.CONTAINER_ROOT_TEXT,
             toolWindowPanel.getRootContainerIssuesTreeNode().userObject
@@ -459,10 +469,10 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test should display '(error)' in OSS root tree node when result is empty and error occurs`() {
         val snykError = SnykError("an error", project.basePath.toString())
-        toolWindowPanel.snykScanListener.scanningOssError(snykError)
+        scanPublisher.scanningOssError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        assertTrue(toolWindowPanel.currentOssError == snykError)
+        assertTrue(getSnykCachedResults(project)?.currentOssError == snykError)
         assertTrue(getSnykCachedResults(project)?.currentOssResults == null)
         assertEquals(
             SnykToolWindowPanel.OSS_ROOT_TEXT + " (error)",
@@ -528,7 +538,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
-        assertEquals(iacError, toolWindowPanel.currentIacError)
+        assertEquals(iacError, getSnykCachedResults(project)?.currentIacError)
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootIacIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
@@ -637,7 +647,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
-        assertEquals(containerError, toolWindowPanel.currentContainerError)
+        assertEquals(containerError, getSnykCachedResults(project)?.currentContainerError)
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())

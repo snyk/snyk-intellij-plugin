@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui.toolwindow
+package io.snyk.plugin.ui.toolwindow.panels
 
 import io.snyk.plugin.Severity
 import java.awt.Graphics

@@ -4,9 +4,12 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.Project
 import io.snyk.plugin.analytics.Iteratively
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.snykcode.SnykCodeResults
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.AuthenticateButtonIsClicked
@@ -18,6 +21,10 @@ import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.QuickFixIsDisplayed
 import snyk.analytics.QuickFixIsTriggered
 import snyk.analytics.WelcomeIsViewed
+import snyk.common.SnykError
+import snyk.container.ContainerResult
+import snyk.iac.IacResult
+import snyk.oss.OssResult
 
 @Service
 class SnykAnalyticsService : Disposable {
@@ -31,6 +38,102 @@ class SnykAnalyticsService : Disposable {
     init {
         userId = obtainUserId(settings.token)
     }
+
+    fun initAnalyticsReporter(project: Project) = project.messageBus.connect().subscribe(
+        SnykScanListener.SNYK_SCAN_TOPIC,
+        object : SnykScanListener {
+            override fun scanningStarted() {
+                // todo? move logAnalysisIsTriggered() calls here,
+                //  require review of scan-not-started-and-cache-used logic around that event
+            }
+
+            override fun scanningOssFinished(ossResult: OssResult) {
+                logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(AnalysisIsReady.Result.SUCCESS)
+                        .build()
+                )
+            }
+
+            override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
+                logSnykCodeAnalysisIsReady(AnalysisIsReady.Result.SUCCESS)
+            }
+
+            override fun scanningIacFinished(iacResult: IacResult) {
+                logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(AnalysisIsReady.Result.SUCCESS)
+                        .build()
+                )
+            }
+
+            override fun scanningContainerFinished(containerResult: ContainerResult) {
+                logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(AnalysisIsReady.Result.SUCCESS)
+                        .build()
+                )
+            }
+
+            override fun scanningOssError(snykError: SnykError) {
+                logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(AnalysisIsReady.Result.ERROR)
+                        .build()
+                )
+            }
+
+            override fun scanningIacError(snykError: SnykError) {
+                logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(AnalysisIsReady.Result.ERROR)
+                        .build()
+                )
+            }
+
+            override fun scanningSnykCodeError(snykError: SnykError) {
+                logSnykCodeAnalysisIsReady(AnalysisIsReady.Result.ERROR)
+            }
+
+            override fun scanningContainerError(snykError: SnykError) {
+                logAnalysisIsReady(
+                    AnalysisIsReady.builder()
+                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
+                        .ide(AnalysisIsReady.Ide.JETBRAINS)
+                        .result(AnalysisIsReady.Result.ERROR)
+                        .build()
+                )
+            }
+
+            private fun logSnykCodeAnalysisIsReady(result: AnalysisIsReady.Result) {
+                fun doLogSnykCodeAnalysisIsReady(analysisType: AnalysisIsReady.AnalysisType) {
+                    logAnalysisIsReady(
+                        AnalysisIsReady.builder()
+                            .analysisType(analysisType)
+                            .ide(AnalysisIsReady.Ide.JETBRAINS)
+                            .result(result)
+                            .build()
+                    )
+                }
+                if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
+                    doLogSnykCodeAnalysisIsReady(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
+                }
+                if (pluginSettings().snykCodeQualityIssuesScanEnable) {
+                    doLogSnykCodeAnalysisIsReady(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
+                }
+            }
+        }
+    )
 
     override fun dispose() {
         catchAll(log, "flush") {
@@ -93,7 +196,7 @@ class SnykAnalyticsService : Disposable {
         }
     }
 
-    fun logAnalysisIsReady(event: AnalysisIsReady) {
+    private fun logAnalysisIsReady(event: AnalysisIsReady) {
         if (!settings.usageAnalyticsEnabled || userId.isBlank()) {
             return
         }
