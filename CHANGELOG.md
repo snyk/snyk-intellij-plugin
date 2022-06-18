@@ -1,6 +1,6 @@
 # Snyk Changelog
 
-## [2.4.34]
+## [2.4.35]
 
 ### Fixed
 - Some minor UI renaming and alignments
