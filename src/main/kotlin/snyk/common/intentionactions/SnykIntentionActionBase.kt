@@ -11,7 +11,7 @@ abstract class SnykIntentionActionBase() : IntentionAction, Iconable, PriorityAc
 
     override fun startInWriteAction(): Boolean = true
 
-    override fun getFamilyName(): String  = intentionDefaultFamilyName
+    override fun getFamilyName(): String = intentionDefaultFamilyName
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
 

@@ -558,16 +558,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
             ?: throw IllegalStateException("IacIssueNode should not be null")
         TreeUtil.selectNode(tree, firstIacIssueNode)
-
-        // hack to avoid "File accessed outside allowed roots" check in tests
-        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
-        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
-        ApplicationInfoImpl.setInStressTest(true)
-        try {
-            PlatformTestUtil.waitWhileBusy(tree)
-        } finally {
-            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
-        }
+        waitWhileTreeBusy()
 
         fun iacDescriptionPanel() =
             UIComponentFinder.getComponentByName(
@@ -819,11 +810,24 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertEquals("alternative upgrades incorrect", "nginx:1-perl", alternativeUpgradeValueLabel?.text)
     }
 
+    private fun waitWhileTreeBusy() {
+        val tree = toolWindowPanel.getTree()
+        // hack to avoid "File accessed outside allowed roots" check in tests
+        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
+        val prevIsInStressTest = ApplicationInfoImpl.isInStressTest()
+        ApplicationInfoImpl.setInStressTest(true)
+        try {
+            PlatformTestUtil.waitWhileBusy(tree)
+        } finally {
+            ApplicationInfoImpl.setInStressTest(prevIsInStressTest)
+        }
+    }
+
     @Test
     fun `test IaC node selected and Description shown on external request`() {
         // pre-test setup
         prepareTreeWithFakeIacResults()
-        val tree = toolWindowPanel.getTree()
+
         val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
         val firstIaCFileNode = rootIacIssuesTreeNode.firstChild as? IacFileTreeNode
         val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
@@ -832,15 +836,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         toolWindowPanel.selectNodeAndDisplayDescription(iacIssue)
-        // hack to avoid "File accessed outside allowed roots" check in tests
-        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
-        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
-        ApplicationInfoImpl.setInStressTest(true)
-        try {
-            PlatformTestUtil.waitWhileBusy(tree)
-        } finally {
-            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
-        }
+        waitWhileTreeBusy()
 
         // Assertions
         val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
@@ -859,7 +855,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test OSS node selected and Description shown on external request`() {
         prepareTreeWithFakeOssResults()
 
-        val tree = toolWindowPanel.getTree()
         val rootOssIssuesTreeNode = toolWindowPanel.getRootOssIssuesTreeNode()
         val firstOssFileNode = rootOssIssuesTreeNode.firstChild as FileTreeNode
         val firstOssIssueNode = firstOssFileNode.firstChild as VulnerabilityTreeNode
@@ -868,15 +863,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         toolWindowPanel.selectNodeAndDisplayDescription(vulnerability)
-        // hack to avoid "File accessed outside allowed roots" check in tests
-        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
-        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
-        ApplicationInfoImpl.setInStressTest(true)
-        try {
-            PlatformTestUtil.waitWhileBusy(tree)
-        } finally {
-            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
-        }
+        waitWhileTreeBusy()
 
         // Assertions
         val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
@@ -894,7 +881,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test Code node selected and Description shown on external request`() {
         prepareTreeWithFakeCodeResults()
 
-        val tree = toolWindowPanel.getTree()
         val rootCodeTreeNode = toolWindowPanel.getRootCodeQualityIssuesTreeNode()
         val firstCodeFileNode = rootCodeTreeNode.firstChild as SnykCodeFileTreeNode
         val firstCodeIssueNode = firstCodeFileNode.firstChild as SuggestionTreeNode
@@ -902,15 +888,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         toolWindowPanel.selectNodeAndDisplayDescription(suggestion, suggestion.ranges[index])
-        // hack to avoid "File accessed outside allowed roots" check in tests
-        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
-        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
-        ApplicationInfoImpl.setInStressTest(true)
-        try {
-            PlatformTestUtil.waitWhileBusy(tree)
-        } finally {
-            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
-        }
+        waitWhileTreeBusy()
 
         // Assertions
         val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
@@ -929,7 +907,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test Container node selected and Description shown on external request`() {
         // prepare Tree with fake Container results
-        val tree = toolWindowPanel.getTree()
         setUpContainerTest(null)
         getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningContainerFinished(fakeContainerResult)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -939,15 +916,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         toolWindowPanel.selectNodeAndDisplayDescription(containerImage)
-        // hack to avoid "File accessed outside allowed roots" check in tests
-        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
-        val prev_isInStressTest = ApplicationInfoImpl.isInStressTest()
-        ApplicationInfoImpl.setInStressTest(true)
-        try {
-            PlatformTestUtil.waitWhileBusy(tree)
-        } finally {
-            ApplicationInfoImpl.setInStressTest(prev_isInStressTest)
-        }
+        waitWhileTreeBusy()
 
         // Assertions
         val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
