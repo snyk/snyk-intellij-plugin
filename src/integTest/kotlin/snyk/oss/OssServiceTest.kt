@@ -236,7 +236,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertMissformedErrorAsArrayJson() {
+    fun testConvertMisformedErrorAsArrayJson() {
         val cliResult = ossService.convertRawCliStringToCliResult("""
                     {
                       "ok": false,
@@ -252,7 +252,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertMissformedErrorPathTagJson() {
+    fun testConvertMisformedErrorPathTagJson() {
         val cliResult2 = ossService.convertRawCliStringToCliResult("""
                     {
                       "ok": false,
@@ -268,7 +268,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertMissformedResultArrayJson() {
+    fun testConvertMisformedResultArrayJson() {
         val cliResult1 = ossService.convertRawCliStringToCliResult("""
             {
               "vulnerabilities": "SHOULD_BE_ARRAY_HERE",
@@ -285,7 +285,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertMissformedResultNestedJson() {
+    fun testConvertMisformedResultNestedJson() {
         val cliResult2 = ossService.convertRawCliStringToCliResult("""
             {
               "vulnerabilities": [
@@ -306,8 +306,8 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertMissformedResultRootTagJson() {
-        val rawCliString = getResourceAsString("missformed-vulnerabilities-test.json")
+    fun testConvertMisformedResultRootTagJson() {
+        val rawCliString = getResourceAsString("misformed-vulnerabilities-test.json")
 
         val cliResult3 = ossService.convertRawCliStringToCliResult(rawCliString)
 
@@ -318,7 +318,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertGoodAndMissformedResultJson() {
+    fun testConvertGoodAndMisformedResultJson() {
         mockkObject(SentryErrorReporter)
         val rawCliString = getResourceAsString("vulnerabilities-array-with-error-and-result-test.json")
 

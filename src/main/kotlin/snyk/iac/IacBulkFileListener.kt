@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykToolWindowPanel
-import okhttp3.internal.toImmutableList
 
 class IacBulkFileListener : SnykBulkFileListener() {
 
