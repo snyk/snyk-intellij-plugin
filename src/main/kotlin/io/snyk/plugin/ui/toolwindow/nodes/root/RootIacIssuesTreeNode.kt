@@ -23,5 +23,5 @@ class RootIacIssuesTreeNode(
             super.getSelectVulnerabilityMessage()
         }
 
-    override fun getSnykError(): SnykError?  = getSnykCachedResults(project)?.currentIacError
+    override fun getSnykError(): SnykError? = getSnykCachedResults(project)?.currentIacError
 }
