@@ -1,6 +1,6 @@
 package snyk.container.annotator
 
-import com.intellij.codeInsight.intention.IntentionAction
+import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
@@ -13,6 +13,7 @@ import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykAnalyticsService
 import snyk.analytics.QuickFixIsTriggered
+import snyk.common.intentionactions.SnykIntentionActionBase
 import snyk.container.BaseImageRemediationInfo
 import snyk.container.ContainerIssuesForImage
 import javax.swing.Icon
@@ -21,8 +22,8 @@ class BaseImageRemediationFix(
     private val containerIssuesForImage: ContainerIssuesForImage,
     private val range: TextRange,
     private val analyticsService: SnykAnalyticsService = getSnykAnalyticsService()
-) : IntentionAction, Iconable {
-    private var imageNameToFix: CharSequence
+) : SnykIntentionActionBase() {
+    private val imageNameToFix: CharSequence
     private val logger = logger<BaseImageRemediationFix>()
 
     init {
@@ -33,20 +34,12 @@ class BaseImageRemediationFix(
         imageNameToFix = determineTargetImage(imageRemediationInfo)
     }
 
-    override fun getIcon(@Iconable.IconFlags flags: Int): Icon? {
-        return SnykIcons.TOOL_WINDOW
-    }
+    override fun getIcon(@Iconable.IconFlags flags: Int): Icon = SnykIcons.CHECKMARK_GREEN
 
-    override fun startInWriteAction(): Boolean {
-        return true
-    }
+    override fun getPriority(): PriorityAction.Priority = PriorityAction.Priority.TOP
 
     override fun getText(): String {
         return "Upgrade Image to $imageNameToFix"
-    }
-
-    override fun getFamilyName(): String {
-        return "Snyk Container"
     }
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {

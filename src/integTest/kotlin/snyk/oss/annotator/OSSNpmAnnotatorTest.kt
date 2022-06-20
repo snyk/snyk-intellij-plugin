@@ -123,11 +123,10 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test annotation message should contain issue title`() {
         val vulnerability = createOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
-        val expected = "Snyk: ${vulnerability.title} in ${vulnerability.name}"
 
         val actual = cut.annotationMessage(vulnerability)
 
-        assertEquals(expected, actual)
+        assertTrue(actual.contains(vulnerability.title) && actual.contains(vulnerability.name))
     }
 
     @Test
@@ -140,7 +139,7 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
-        verify(exactly = 0) { builderMock.withFix(any()) }
+        verify(exactly = 0) { builderMock.withFix(ofType(AlwaysAvailableReplacementIntentionAction::class)) }
     }
 
     @Test
@@ -155,7 +154,7 @@ class OSSNpmAnnotatorTest : BasePlatformTestCase() {
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
-        verify(exactly = 1) { builderMock.withFix(any()) }
+        verify(exactly = 1) { builderMock.withFix(ofType(AlwaysAvailableReplacementIntentionAction::class)) }
         val expected = "Please update your package-lock.json to finish fixing the vulnerability."
         assertEquals(expected, intentionActionCapturingSlot.captured.message)
     }

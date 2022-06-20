@@ -24,7 +24,7 @@ import java.nio.file.Paths
 class BaseImageRemediationFixTest : BasePlatformTestCase() {
     private lateinit var file: VirtualFile
     private val range = TextRange(/* startOffset = */ 0,/* endOffset = */ 4)
-    private val familyName = "Snyk Container"
+    private val familyName = "Snyk"
     private lateinit var cut: BaseImageRemediationFix
 
     private val fileName = "package.json"
@@ -50,8 +50,8 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
         val containerIssuesForImage = createContainerIssuesForImage()
         cut = BaseImageRemediationFix(
-            containerIssuesForImage,
-            range,
+            containerIssuesForImage = containerIssuesForImage,
+            range = range,
             analyticsService = analyticsMock
         )
     }

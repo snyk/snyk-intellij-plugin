@@ -21,6 +21,7 @@ import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
 import snyk.common.SnykCachedResults
+import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssResult
 import snyk.oss.OssVulnerabilitiesForFile
 import java.nio.file.Paths
@@ -114,11 +115,10 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test annotation message should contain issue title`() {
         val vulnerability = createOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
-        val expected = "Snyk: ${vulnerability.title} in ${vulnerability.name}"
 
         val actual = cut.annotationMessage(vulnerability)
 
-        assertEquals(expected, actual)
+        assertTrue(actual.contains(vulnerability.title) && actual.contains(vulnerability.name))
     }
 
     @Test
@@ -133,7 +133,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         verify {
             annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
         }
-        verify(exactly = 0) { builderMock.withFix(any()) }
+        verify(exactly = 0) { builderMock.withFix(ofType(AlwaysAvailableReplacementIntentionAction::class)) }
     }
 
     private fun createOssResultWithIssues(): OssResult =

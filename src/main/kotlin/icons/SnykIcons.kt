@@ -47,6 +47,9 @@ object SnykIcons {
     val RPM = getIcon("/icons/rpm.svg")
     val DOCKER = getIcon("/icons/docker.svg")
 
+    // copy of FeaturesTrainerIcons.Img.GreenCheckmark from https://jetbrains.github.io/ui/resources/icons_list/
+    val CHECKMARK_GREEN = getIcon("/icons/greenCheckmark.svg")
+
     private val CRITICAL_SEVERITY_16 = getIcon("/icons/severity_critical_16.svg")
     private val CRITICAL_SEVERITY_32 = getIcon("/icons/severity_critical_32.svg")
     private val HIGH_SEVERITY_16 = getIcon("/icons/severity_high_16.svg")

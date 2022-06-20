@@ -109,26 +109,24 @@ class OSSMavenAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test annotation message should contain issue title`() {
         val vulnerability = createOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
-        val expected = "Snyk: ${vulnerability.title} in ${vulnerability.name}"
 
         val actual = cut.annotationMessage(vulnerability)
 
-        assertEquals(expected, actual)
+        assertTrue(actual.contains(vulnerability.title) && actual.contains(vulnerability.name))
     }
 
     @Test
     fun `test apply should add a quickfix if upgradePath available and introducing dep is in pom`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createOssResultWithIssues()
-        val capturedIntentionSlot = slot<IntentionAction>()
+        val capturedIntentionSlot = slot<AlwaysAvailableReplacementIntentionAction>()
         every { snykCachedResults.currentOssResults } returns result
         every { annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>()) } returns builderMock
         every { builderMock.withFix(capture(capturedIntentionSlot)) } returns builderMock
 
         cut.apply(psiFile, Unit, annotationHolderMock)
 
-        assertTrue(capturedIntentionSlot.captured is AlwaysAvailableReplacementIntentionAction)
-        val action = capturedIntentionSlot.captured as AlwaysAvailableReplacementIntentionAction
+        val action = capturedIntentionSlot.captured
         assertEquals(TextRange(757, 763), action.range)
         assertEquals("2.17.1", action.replacementText)
         verify {

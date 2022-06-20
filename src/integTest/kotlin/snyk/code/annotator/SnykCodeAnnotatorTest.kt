@@ -95,13 +95,12 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test annotation message should contain issue title`() {
+    fun `test annotation message should contain issue title or message`() {
         val issue = createSnykCodeResultWithIssues()[0]
-        val expected = "Snyk Code: ${issue.title}. ${issue.message}"
 
         val actual = cut.annotationMessage(issue)
 
-        assertEquals(expected, actual)
+        assertTrue(actual.contains(issue.title) || actual.contains(issue.message))
     }
 
     @Test

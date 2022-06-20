@@ -1,10 +1,9 @@
 package snyk.common.intentionactions
 
-import com.intellij.codeInsight.intention.IntentionAction
+import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.util.Iconable.IconFlags
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
@@ -20,31 +19,15 @@ import javax.swing.Icon
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
     val replacementText: String,
-    private val intentionText: String = intentionDefaultTextPrefix,
-    private val familyName: String = intentionDefaultFamilyName,
     val message: String = "",
     val analyticsService: SnykAnalyticsService = getSnykAnalyticsService()
-) : IntentionAction, Iconable {
+) : SnykIntentionActionBase() {
 
-    override fun getIcon(@IconFlags flags: Int): Icon {
-        return SnykIcons.TOOL_WINDOW
-    }
+    override fun getIcon(@IconFlags flags: Int): Icon = SnykIcons.CHECKMARK_GREEN
 
-    override fun startInWriteAction(): Boolean {
-        return true
-    }
+    override fun getPriority(): PriorityAction.Priority = PriorityAction.Priority.TOP
 
-    override fun getText(): String {
-        return intentionText + replacementText
-    }
-
-    override fun getFamilyName(): String {
-        return familyName
-    }
-
-    override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
-        return true
-    }
+    override fun getText(): String = intentionTextPrefix + replacementText + intentionTextPostfix
 
     override fun invoke(project: Project, editor: Editor?, file: PsiFile) {
         val doc = editor?.document ?: return
@@ -65,7 +48,7 @@ class AlwaysAvailableReplacementIntentionAction(
     }
 
     companion object {
-        private const val intentionDefaultTextPrefix = "Change to "
-        private const val intentionDefaultFamilyName = "Snyk"
+        private const val intentionTextPrefix = "Upgrade to "
+        private const val intentionTextPostfix = " (Snyk)"
     }
 }

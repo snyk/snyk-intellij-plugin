@@ -19,10 +19,9 @@ import java.nio.file.Paths
 @Suppress("FunctionName")
 class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     private lateinit var file: VirtualFile
-    private val intentionText = "a"
     private val replacementText = "b"
     private val range = TextRange(/* startOffset = */ 0,/* endOffset = */ 4)
-    private val familyName = "SnykySnyky"
+    private val familyName = "Snyk"
     private lateinit var cut: AlwaysAvailableReplacementIntentionAction
 
     private val fileName = "package.json"
@@ -47,10 +46,8 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
         cut = AlwaysAvailableReplacementIntentionAction(
-            range,
-            replacementText,
-            intentionText,
-            familyName,
+            range = range,
+            replacementText = replacementText,
             analyticsService = analyticsMock
         )
     }
@@ -63,7 +60,7 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
 
     @Test
     fun `test getText`() {
-        assertEquals(intentionText + replacementText, cut.text)
+        assertTrue(cut.text.contains(replacementText))
     }
 
     @Test

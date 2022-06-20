@@ -1,5 +1,18 @@
 # Snyk Changelog
 
+## [2.4.35]
+
+### Fixed
+- Some minor UI renaming and alignments
+
+### Added
+- Navigation from the Editor (using QuickFix's functionality at annotations) to Snyk ToolWindow 
+(correspondent node in the Tree opened and Description shown) for:
+  - Open Source scan results;
+  - SnykCode scan results;
+  - Infrastructure as a Code scan results;
+  - Container scan results.
+
 ## [2.4.34]
 
 ### Fixed
