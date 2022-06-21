@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.36]
+
+### Fixed
+- Results (json) received from CLI are now sanitized for correctness.
+- For mixed correct and failed-to-parse json results: successfully parsed elements will be shown alongside with errors.
+
 ## [2.4.35]
 
 ### Fixed
