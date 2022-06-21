@@ -119,6 +119,20 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
     override fun getProductResult(cliIssues: List<ContainerIssuesForImage>?, snykErrors: List<SnykError>): ContainerResult =
         ContainerResult(cliIssues, snykErrors)
 
+    override fun sanitizeCliIssues(cliIssues: ContainerIssuesForImage): ContainerIssuesForImage =
+        // .copy() will check nullability of fields
+        cliIssues.copy(
+            vulnerabilities = cliIssues.vulnerabilities.map { containerIssue ->
+                containerIssue.copy(
+                    identifiers = containerIssue.identifiers?.copy(),
+                    // @Expose fields are `null` after Gson parser, so explicit init needed
+                    obsolete = false,
+                    ignored = false
+                )
+            },
+            workloadImages = emptyList()
+        )
+
     override fun getCliIIssuesClass(): Class<ContainerIssuesForImage> = ContainerIssuesForImage::class.java
 
     override fun buildExtraOptions(): List<String> = listOf("--json")

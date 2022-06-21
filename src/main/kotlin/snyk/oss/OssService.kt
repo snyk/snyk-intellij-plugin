@@ -17,6 +17,12 @@ class OssService(project: Project) : CliAdapter<OssVulnerabilitiesForFile, OssRe
     override fun getProductResult(cliIssues: List<OssVulnerabilitiesForFile>?, snykErrors: List<SnykError>): OssResult =
         OssResult(cliIssues, snykErrors)
 
+    override fun sanitizeCliIssues(cliIssues: OssVulnerabilitiesForFile): OssVulnerabilitiesForFile =
+        // .copy() will check nullability of fields
+        cliIssues.copy(
+            vulnerabilities = cliIssues.vulnerabilities.map { it.copy() }
+        )
+
     override fun getCliIIssuesClass(): Class<OssVulnerabilitiesForFile> = OssVulnerabilitiesForFile::class.java
 
     override fun buildExtraOptions(): List<String> {

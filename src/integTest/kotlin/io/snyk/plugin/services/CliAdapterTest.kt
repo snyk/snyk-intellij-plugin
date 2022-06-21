@@ -15,6 +15,7 @@ class CliAdapterTest : LightPlatformTestCase() {
     private val dummyCliAdapter by lazy {
         object : CliAdapter<Unit, DummyResults>(project) {
             override fun getProductResult(cliIssues: List<Unit>?, snykErrors: List<SnykError>) = DummyResults()
+            override fun sanitizeCliIssues(cliIssues: Unit) = Unit
             override fun getCliIIssuesClass(): Class<Unit> = Unit::class.java
             override fun buildExtraOptions(): List<String> = emptyList()
         }

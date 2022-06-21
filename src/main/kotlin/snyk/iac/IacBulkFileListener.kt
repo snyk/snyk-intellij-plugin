@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykToolWindowPanel
-import okhttp3.internal.toImmutableList
 
 class IacBulkFileListener : SnykBulkFileListener() {
 
@@ -36,39 +35,34 @@ class IacBulkFileListener : SnykBulkFileListener() {
         if (virtualFilesAffected.isEmpty()) return
         val snykCachedResults = getSnykCachedResults(project)
         val currentIacResult = snykCachedResults?.currentIacResult ?: return
-        val iacFiles = currentIacResult.allCliIssues ?: return
+        val allIacIssuesForFiles = currentIacResult.allCliIssues ?: return
 
-        val newIacFileList = iacFiles.toMutableList()
-        val iacRelatedvirtualFilesAffected = virtualFilesAffected
+        val iacRelatedVFsAffected = virtualFilesAffected
             .filter { iacFileExtensions.contains(it.extension) }
             .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
-        val changed = iacRelatedvirtualFilesAffected.isNotEmpty() // for new files we need to "dirty" the cache, too
-        iacRelatedvirtualFilesAffected.forEach {
-            newIacFileList.forEachIndexed { i, iacIssuesForFile ->
-                if (pathsEqual(it.path, iacIssuesForFile.targetFilePath)) {
-                    val obsoleteIacFile = makeObsolete(iacIssuesForFile)
-                    newIacFileList[i] = obsoleteIacFile
+
+        allIacIssuesForFiles
+            .filter { iacIssuesForFile ->
+                iacRelatedVFsAffected.any {
+                    pathsEqual(it.path, iacIssuesForFile.targetFilePath)
                 }
             }
-        }
+            .forEach(::markObsolete)
 
+        val changed = iacRelatedVFsAffected.isNotEmpty() // for new/deleted/renamed files we also need to "dirty" the cache, too
         if (changed) {
-            log.debug("update IaC cache for $iacRelatedvirtualFilesAffected")
-            val newIacCache = IacResult(newIacFileList.toImmutableList(), currentIacResult.errors)
-            newIacCache.iacScanNeeded = true
-            snykCachedResults.currentIacResult = newIacCache
+            log.debug("update IaC cache for $iacRelatedVFsAffected")
+            currentIacResult.iacScanNeeded = true
             ApplicationManager.getApplication().invokeLater {
-                getSnykToolWindowPanel(project)?.displayIacResults(newIacCache)
+                getSnykToolWindowPanel(project)?.displayIacResults(currentIacResult)
             }
             DaemonCodeAnalyzer.getInstance(project).restart()
         }
     }
 
-    private fun makeObsolete(iacIssuesForFile: IacIssuesForFile): IacIssuesForFile =
-        iacIssuesForFile.copy(
-            infrastructureAsCodeIssues = iacIssuesForFile.infrastructureAsCodeIssues
-                .map { elem -> elem.copy(obsolete = true) }
-        )
+    private fun markObsolete(iacIssuesForFile: IacIssuesForFile) {
+        iacIssuesForFile.infrastructureAsCodeIssues.forEach { it.obsolete = true }
+    }
 
     companion object {
         // see https://github.com/snyk/snyk/blob/master/src/lib/iac/constants.ts#L7

@@ -1,0 +1,81 @@
+{
+  "vulnerabilities": [
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "alternativeIds": [],
+      "creationTime": "2021-01-28T07:59:50.454879Z",
+      "credit": [
+        "cthackers"
+      ],
+      "cvssScore": 7.4,
+      "description": "## Overview\n[adm-zip](https://www.npmjs.com/package/adm-zip) is a JavaScript implementation for zip data compression for NodeJS.\n\nAffected versions of this package are vulnerable to Directory Traversal. It could extract files outside the target folder.\n\n## Details\n\nA Directory Traversal attack (also known as path traversal) aims to access files and directories that are stored outside the intended folder. By manipulating files with \"dot-dot-slash (../)\" sequences and its variations, or by using absolute file paths, it may be possible to access arbitrary files and directories stored on file system, including application source code, configuration, and other critical system files.\n\nDirectory Traversal vulnerabilities can be generally divided into two types:\n\n- **Information Disclosure**: Allows the attacker to gain information about the folder structure or read the contents of sensitive files on the system.\n\n`st` is a module for serving static files on web pages, and contains a [vulnerability of this type](https://snyk.io/vuln/npm:st:20140206). In our example, we will serve files from the `public` route.\n\nIf an attacker requests the following URL from our server, it will in turn leak the sensitive private key of the root user.\n\n```\ncurl http://localhost:8080/public/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/root/.ssh/id_rsa\n```\n**Note** `%2e` is the URL encoded version of `.` (dot).\n\n- **Writing arbitrary files**: Allows the attacker to create or replace existing files. This type of vulnerability is also known as `Zip-Slip`. \n\nOne way to achieve this is by using a malicious `zip` archive that holds path traversal filenames. When each filename in the zip archive gets concatenated to the target extraction folder, without validation, the final path ends up outside of the target folder. If an executable or a configuration file is overwritten with a file containing malicious code, the problem can turn into an arbitrary code execution issue quite easily.\n\nThe following is an example of a `zip` archive with one benign file and one malicious file. Extracting the malicious file will result in traversing out of the target folder, ending up in `/root/.ssh/` overwriting the `authorized_keys` file:\n\n```\n2018-04-15 22:04:29 .....           19           19  good.txt\n2018-04-15 22:04:42 .....           20           20  ../../../../../../root/.ssh/authorized_keys\n```\n\n## Remediation\nUpgrade `adm-zip` to version 0.5.2 or higher.\n## References\n- [GitHub Commit](https://github.com/cthackers/adm-zip/commit/119dcad6599adccc77982feb14a0c7440fa63013)\n",
+      "disclosureTime": "2021-01-28T07:59:22Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "0.5.2"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-JS-ADMZIP-1065796",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-22"
+        ]
+      },
+      "language": "js",
+      "modificationTime": "2021-02-15T17:04:17.878741Z",
+      "moduleName": "adm-zip",
+      "packageManager": "npm",
+      "packageName": "adm-zip",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-02-15T17:04:18.109270Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/cthackers/adm-zip/commit/119dcad6599adccc77982feb14a0c7440fa63013"
+        }
+      ],
+      "semver": {
+        "vulnerable": [
+          "<0.5.2"
+        ]
+      },
+      "severity": "high",
+      "severityWithCritical": "high",
+      "title": "Directory Traversal",
+      "from": [
+        "goof@1.0.1",
+        "adm-zip@0.4.7"
+      ],
+      "upgradePath": [
+        false,
+        "adm-zip@0.5.2"
+      ],
+      "isUpgradable": true,
+      "isPatchable": false,
+      "name": "adm-zip",
+      "version": "0.4.7"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 553,
+  "org": "artsiomch",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.19.0\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "packageManager": "npm",
+  "ignoreSettings": null,
+  "summary": "310 vulnerable dependency paths",
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 78,
+  "projectName": "goof",
+
+  "!!!!displayTargetFile_TAG_SHOULD_BE_HERE!!!!": "",
+
+  "path": "D:\\TestProjects\\goof"
+}

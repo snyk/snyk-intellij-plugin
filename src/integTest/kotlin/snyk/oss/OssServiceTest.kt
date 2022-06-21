@@ -4,6 +4,9 @@ import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
@@ -13,11 +16,13 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
+import snyk.errorHandler.SentryErrorReporter
 
 class OssServiceTest : LightPlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
+        unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
 
@@ -35,6 +40,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     override fun tearDown() {
+        unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
         super.tearDown()
@@ -230,7 +236,7 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun testConvertRawCliStringToCliResultWithMissformedJson() {
+    fun testConvertMisformedErrorAsArrayJson() {
         val cliResult = ossService.convertRawCliStringToCliResult("""
                     {
                       "ok": false,
@@ -238,7 +244,99 @@ class OssServiceTest : LightPlatformTestCase() {
                       "path": "some/path/here"
                     }
                 """.trimIndent())
+
         assertFalse(cliResult.isSuccessful())
+        assertTrue(cliResult.getFirstError()!!.message.contains(
+            "Expected a string but was BEGIN_ARRAY"
+        ))
+    }
+
+    @Test
+    fun testConvertMisformedErrorPathTagJson() {
+        val cliResult2 = ossService.convertRawCliStringToCliResult("""
+                    {
+                      "ok": false,
+                      "error": "error",
+                      "path_not_provided": ""
+                    }
+                """.trimIndent())
+
+        assertFalse(cliResult2.isSuccessful())
+        assertTrue(cliResult2.getFirstError()!!.message.contains(
+            "Parameter specified as non-null is null: method snyk.common.SnykError.<init>, parameter path"
+        ))
+    }
+
+    @Test
+    fun testConvertMisformedResultArrayJson() {
+        val cliResult1 = ossService.convertRawCliStringToCliResult("""
+            {
+              "vulnerabilities": "SHOULD_BE_ARRAY_HERE",
+              "packageManager": "npm",
+              "displayTargetFile": "package-lock.json",
+              "path": "D:\\TestProjects\\goof"
+            }
+            """.trimIndent())
+
+        assertFalse(cliResult1.isSuccessful())
+        assertTrue(cliResult1.getFirstError()!!.message.contains(
+            "Expected BEGIN_ARRAY but was STRING"
+        ))
+    }
+
+    @Test
+    fun testConvertMisformedResultNestedJson() {
+        val cliResult2 = ossService.convertRawCliStringToCliResult("""
+            {
+              "vulnerabilities": [
+                {
+                  "wrong-tag-here": "bla-bla-bla"
+                }
+              ],
+              "packageManager": "npm",
+              "displayTargetFile": "package-lock.json",
+              "path": "D:\\TestProjects\\goof"
+            }
+            """.trimIndent())
+
+        assertFalse(cliResult2.isSuccessful())
+        assertTrue(cliResult2.getFirstError()!!.message.contains(
+            "Parameter specified as non-null is null: method snyk.oss.Vulnerability.copy, parameter id"
+        ))
+    }
+
+    @Test
+    fun testConvertMisformedResultRootTagJson() {
+        val rawCliString = getResourceAsString("misformed-vulnerabilities-test.json")
+
+        val cliResult3 = ossService.convertRawCliStringToCliResult(rawCliString)
+
+        assertFalse(cliResult3.isSuccessful())
+        assertTrue(cliResult3.getFirstError()!!.message.contains(
+            "Parameter specified as non-null is null: method snyk.oss.OssVulnerabilitiesForFile.copy, parameter displayTargetFile"
+        ))
+    }
+
+    @Test
+    fun testConvertGoodAndMisformedResultJson() {
+        mockkObject(SentryErrorReporter)
+        val rawCliString = getResourceAsString("vulnerabilities-array-with-error-and-result-test.json")
+
+        val cliResult3 = ossService.convertRawCliStringToCliResult(rawCliString)
+
+        assertTrue(cliResult3.isSuccessful())
+        assertTrue(cliResult3.allCliIssues?.size == 1)
+        assertTrue(cliResult3.errors.size == 2)
+        assertTrue(cliResult3.errors[0].message.contains(
+            "Expected a string but was BEGIN_ARRAY"
+        ))
+        assertTrue(cliResult3.errors[1].message.contains(
+            "Parameter specified as non-null is null"
+        ))
+        // only one error reported for all json array parsing exceptions
+        verify(exactly = 1, timeout = 2000) {
+            SentryErrorReporter.captureException(any())
+        }
     }
 
     @Test
