@@ -2,6 +2,16 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      incrementLevel:
+        description: 'Version level to increment'
+        required: true
+        type: choice
+        options:
+          - incrementPatch
+          - incrementMinor
+          - incrementMajor
+        default: 'incrementPatch'
   schedule:
     - cron: '0 9 * * 2'  # every Tuesday at 9 am UTC
 
@@ -40,8 +50,14 @@ jobs:
         if: ${{ !env.ACT }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+# for cron run we have empty `inputs.incrementLevel`
+# see if-then-else alternatives https://stackoverflow.com/questions/60916931/github-action-does-the-if-have-an-else
         run: |
-          ./gradlew release
+          if [[ '${{ inputs.incrementLevel }}' != '' ]]; then
+            ./gradlew release -Prelease.versionIncrementer=${{ inputs.incrementLevel }}
+          else
+            ./gradlew release
+          fi
           echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
 
       - name: Create Tag - Dry Run
