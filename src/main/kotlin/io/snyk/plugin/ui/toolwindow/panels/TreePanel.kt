@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui.toolwindow
+package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager

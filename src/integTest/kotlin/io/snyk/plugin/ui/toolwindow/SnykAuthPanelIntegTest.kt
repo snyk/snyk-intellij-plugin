@@ -10,6 +10,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliAuthenticationService
+import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import org.junit.Test
 import javax.swing.JButton
 import javax.swing.JLabel

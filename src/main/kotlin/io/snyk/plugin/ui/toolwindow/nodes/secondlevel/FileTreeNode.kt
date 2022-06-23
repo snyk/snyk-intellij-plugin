@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui.toolwindow
+package io.snyk.plugin.ui.toolwindow.nodes.secondlevel
 
 import com.intellij.openapi.project.Project
 import snyk.oss.OssVulnerabilitiesForFile

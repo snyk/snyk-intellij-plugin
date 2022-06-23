@@ -60,6 +60,8 @@ class SnykPostStartupActivity : StartupActivity.DumbAware {
 
         getSnykCachedResults(project)?.initCacheUpdater()
 
+        getSnykAnalyticsService().initAnalyticsReporter(project)
+
         AnnotatorCommon.initRefreshing(project)
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {

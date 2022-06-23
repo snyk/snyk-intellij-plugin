@@ -19,8 +19,6 @@ import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
-import io.snyk.plugin.analytics.getIssueSeverityOrNull
-import io.snyk.plugin.analytics.getIssueType
 import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
@@ -28,7 +26,6 @@ import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
-import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getOssTextRangeFinderService
 import io.snyk.plugin.getSnykAnalyticsService
@@ -56,29 +53,39 @@ import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import io.snyk.plugin.ui.txtToHtml
+import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.ErrorHolderTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootTreeNodeBase
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
+import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
+import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
+import io.snyk.plugin.ui.toolwindow.panels.StatePanel
+import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
-import snyk.analytics.AnalysisIsReady
-import snyk.analytics.AnalysisIsReady.Result
 import snyk.analytics.AnalysisIsTriggered
-import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.ProductType
 import snyk.common.SnykError
-import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
-import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
-import snyk.container.ui.ContainerIssueDetailPanel
 import snyk.container.ui.ContainerIssueTreeNode
 import snyk.iac.IacIssue
-import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
-import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
@@ -99,21 +106,7 @@ import javax.swing.tree.TreePath
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val logger = logger<SnykToolWindowPanel>()
 
-    /** public for tests only */
-    var snykScanListener: SnykScanListener
-
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
-
-    /** public for tests only */
-    var currentOssError: SnykError? = null
-
-    /** public for tests only */
-    var currentContainerError: SnykError? = null
-
-    /** public for tests only */
-    var currentIacError: SnykError? = null
-
-    private var currentSnykCodeError: SnykError? = null
 
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -141,12 +134,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private var navigateToSourceEnabled = true
 
-    private val treeNodeStub = ProjectBasedDefaultMutableTreeNode("", project)
+    private val treeNodeStub = object : RootTreeNodeBase("", project) {
+        override fun getSnykError(): SnykError? = null
+    }
 
     init {
-        vulnerabilitiesTree.cellRenderer = VulnerabilityTreeCellRenderer()
+        vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
 
-        initializeUiComponents()
+        layout = BorderLayout()
+        TreeSpeedSearch(vulnerabilitiesTree, TreeSpeedSearch.NODE_DESCRIPTOR_TOSTRING, true)
 
         createTreeAndDescriptionPanel()
 
@@ -156,202 +152,128 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             updateDescriptionPanelBySelectedTreeNode()
         }
 
-        snykScanListener = object : SnykScanListener {
-
-            override fun scanningStarted() {
-                currentOssError = null
-                rootOssTreeNode.originalCliErrorMessage = null
-                currentSnykCodeError = null
-                currentIacError = null
-                currentContainerError = null
-                ApplicationManager.getApplication().invokeLater { displayScanningMessageAndUpdateTree() }
-            }
-
-            override fun scanningOssFinished(ossResult: OssResult) {
-                ApplicationManager.getApplication().invokeLater {
-                    displayOssResults(ossResult)
-                    notifyAboutErrorsIfNeeded(ProductType.OSS, ossResult)
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                getSnykAnalyticsService().logAnalysisIsReady(
-                    AnalysisIsReady.builder()
-                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
-                        .ide(AnalysisIsReady.Ide.JETBRAINS)
-                        .result(Result.SUCCESS)
-                        .build()
-                )
-            }
-
-            override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
-                ApplicationManager.getApplication().invokeLater {
-                    displaySnykCodeResults(snykCodeResults)
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                if (snykCodeResults == null) {
-                    return
-                }
-                logSnykCodeAnalysisIsReady(Result.SUCCESS)
-            }
-
-            override fun scanningIacFinished(iacResult: IacResult) {
-                ApplicationManager.getApplication().invokeLater {
-                    displayIacResults(iacResult)
-                    notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                getSnykAnalyticsService().logAnalysisIsReady(
-                    AnalysisIsReady.builder()
-                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
-                        .ide(AnalysisIsReady.Ide.JETBRAINS)
-                        .result(Result.SUCCESS)
-                        .build()
-                )
-            }
-
-            override fun scanningContainerFinished(containerResult: ContainerResult) {
-                ApplicationManager.getApplication().invokeLater {
-                    displayContainerResults(containerResult)
-                    notifyAboutErrorsIfNeeded(ProductType.CONTAINER, containerResult)
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                getSnykAnalyticsService().logAnalysisIsReady(
-                    AnalysisIsReady.builder()
-                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
-                        .ide(AnalysisIsReady.Ide.JETBRAINS)
-                        .result(Result.SUCCESS)
-                        .build()
-                )
-            }
-
-            private fun notifyAboutErrorsIfNeeded(prodType: ProductType, cliResult: CliResult<*>) {
-                if (cliResult.isSuccessful() && cliResult.errors.isNotEmpty()) {
-                    val message = "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
-                        cliResult.errors.joinToString(", ") { it.path }
-                    SnykBalloonNotificationHelper.showError(message, project,
-                        NotificationAction.createSimpleExpiring("Open Snyk Tool Window") {
-                            snykToolWindow(project)?.show()
-                        }
-                    )
-                }
-            }
-
-            private fun logSnykCodeAnalysisIsReady(result: Result) {
-                fun doLogSnykCodeAnalysisIsReady(analysisType: AnalysisIsReady.AnalysisType) {
-                    getSnykAnalyticsService().logAnalysisIsReady(
-                        AnalysisIsReady.builder()
-                            .analysisType(analysisType)
-                            .ide(AnalysisIsReady.Ide.JETBRAINS)
-                            .result(result)
-                            .build()
-                    )
-                }
-                if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
-                    doLogSnykCodeAnalysisIsReady(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
-                }
-                if (pluginSettings().snykCodeQualityIssuesScanEnable) {
-                    doLogSnykCodeAnalysisIsReady(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
-                }
-            }
-
-            override fun scanningOssError(snykError: SnykError) {
-                var ossResultsCount: Int? = null
-                ApplicationManager.getApplication().invokeLater {
-                    if (snykError.message.startsWith(NO_OSS_FILES)) {
-                        currentOssError = null
-                        rootOssTreeNode.originalCliErrorMessage = snykError.message
-                        ossResultsCount = NODE_NOT_SUPPORTED_STATE
-                    } else {
-                        rootOssTreeNode.originalCliErrorMessage = null
-                        SnykBalloonNotificationHelper.showError(snykError.message, project)
-                        if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
-                            pluginSettings().token = null
-                            currentOssError = null
-                        } else {
-                            currentOssError = snykError
-                        }
-                    }
-                    removeAllChildren(listOf(rootOssTreeNode))
-                    updateTreeRootNodesPresentation(ossResultsCount = ossResultsCount)
-                    chooseMainPanelToDisplay()
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                getSnykAnalyticsService().logAnalysisIsReady(
-                    AnalysisIsReady.builder()
-                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_OPEN_SOURCE)
-                        .ide(AnalysisIsReady.Ide.JETBRAINS)
-                        .result(Result.ERROR)
-                        .build()
-                )
-            }
-
-            override fun scanningIacError(snykError: SnykError) {
-                var iacResultsCount: Int? = null
-                ApplicationManager.getApplication().invokeLater {
-                    currentIacError = if (snykError.message.startsWith(NO_IAC_FILES)) {
-                        iacResultsCount = NODE_NOT_SUPPORTED_STATE
-                        null
-                    } else {
-                        SnykBalloonNotificationHelper.showError(snykError.message, project)
-                        snykError
-                    }
-                    removeAllChildren(listOf(rootIacIssuesTreeNode))
-                    updateTreeRootNodesPresentation(iacResultsCount = iacResultsCount)
-                    displayEmptyDescription()
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                getSnykAnalyticsService().logAnalysisIsReady(
-                    AnalysisIsReady.builder()
-                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_INFRASTRUCTURE_AS_CODE)
-                        .ide(AnalysisIsReady.Ide.JETBRAINS)
-                        .result(Result.ERROR)
-                        .build()
-                )
-            }
-
-            override fun scanningContainerError(snykError: SnykError) {
-                var containerResultsCount: Int? = null
-                ApplicationManager.getApplication().invokeLater {
-                    if (snykError == ContainerService.NO_IMAGES_TO_SCAN_ERROR) {
-                        currentContainerError = null
-                        containerResultsCount = NODE_NOT_SUPPORTED_STATE
-                    } else {
-                        SnykBalloonNotificationHelper.showError(snykError.message, project)
-                        if (snykError.message.startsWith("Authentication failed. Please check the API token on ")) {
-                            pluginSettings().token = null
-                            currentContainerError = null
-                        } else {
-                            currentContainerError = snykError
-                        }
-                    }
-                    removeAllChildren(listOf(rootContainerIssuesTreeNode))
-                    updateTreeRootNodesPresentation(containerResultsCount = containerResultsCount)
-                    chooseMainPanelToDisplay()
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                getSnykAnalyticsService().logAnalysisIsReady(
-                    AnalysisIsReady.builder()
-                        .analysisType(AnalysisIsReady.AnalysisType.SNYK_CONTAINER)
-                        .ide(AnalysisIsReady.Ide.JETBRAINS)
-                        .result(Result.ERROR)
-                        .build()
-                )
-            }
-
-            override fun scanningSnykCodeError(snykError: SnykError) {
-                AnalysisData.instance.resetCachesAndTasks(project)
-                currentSnykCodeError = snykError
-                ApplicationManager.getApplication().invokeLater {
-                    removeAllChildren(listOf(rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode))
-                    updateTreeRootNodesPresentation()
-                    displayEmptyDescription()
-                    refreshAnnotationsForOpenFiles(project)
-                }
-                logSnykCodeAnalysisIsReady(Result.ERROR)
-            }
-        }
-
         project.messageBus.connect(this)
-            .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, snykScanListener)
+            .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, object : SnykScanListener {
+
+                override fun scanningStarted() {
+                    rootOssTreeNode.originalCliErrorMessage = null
+                    ApplicationManager.getApplication().invokeLater {
+                        updateTreeRootNodesPresentation()
+                        displayScanningMessage()
+                    }
+                }
+
+                override fun scanningOssFinished(ossResult: OssResult) {
+                    ApplicationManager.getApplication().invokeLater {
+                        displayOssResults(ossResult)
+                        notifyAboutErrorsIfNeeded(ProductType.OSS, ossResult)
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                }
+
+                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
+                    ApplicationManager.getApplication().invokeLater {
+                        displaySnykCodeResults(snykCodeResults)
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                    if (snykCodeResults == null) {
+                        return
+                    }
+                }
+
+                override fun scanningIacFinished(iacResult: IacResult) {
+                    ApplicationManager.getApplication().invokeLater {
+                        displayIacResults(iacResult)
+                        notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                }
+
+                override fun scanningContainerFinished(containerResult: ContainerResult) {
+                    ApplicationManager.getApplication().invokeLater {
+                        displayContainerResults(containerResult)
+                        notifyAboutErrorsIfNeeded(ProductType.CONTAINER, containerResult)
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                }
+
+                private fun notifyAboutErrorsIfNeeded(prodType: ProductType, cliResult: CliResult<*>) {
+                    if (cliResult.isSuccessful() && cliResult.errors.isNotEmpty()) {
+                        val message = "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
+                            cliResult.errors.joinToString(", ") { it.path }
+                        SnykBalloonNotificationHelper.showError(message, project,
+                            NotificationAction.createSimpleExpiring("Open Snyk Tool Window") {
+                                snykToolWindow(project)?.show()
+                            }
+                        )
+                    }
+                }
+
+                override fun scanningOssError(snykError: SnykError) {
+                    var ossResultsCount: Int? = null
+                    ApplicationManager.getApplication().invokeLater {
+                        if (snykError.message.startsWith(NO_OSS_FILES)) {
+                            rootOssTreeNode.originalCliErrorMessage = snykError.message
+                            ossResultsCount = NODE_NOT_SUPPORTED_STATE
+                        } else {
+                            rootOssTreeNode.originalCliErrorMessage = null
+                            SnykBalloonNotificationHelper.showError(snykError.message, project)
+                            if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
+                                pluginSettings().token = null
+                            }
+                        }
+                        removeAllChildren(listOf(rootOssTreeNode))
+                        updateTreeRootNodesPresentation(ossResultsCount = ossResultsCount)
+                        chooseMainPanelToDisplay()
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                }
+
+                override fun scanningIacError(snykError: SnykError) {
+                    var iacResultsCount: Int? = null
+                    ApplicationManager.getApplication().invokeLater {
+                        if (snykError.message.startsWith(NO_IAC_FILES)) {
+                            iacResultsCount = NODE_NOT_SUPPORTED_STATE
+                        } else {
+                            SnykBalloonNotificationHelper.showError(snykError.message, project)
+                            if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
+                                pluginSettings().token = null
+                            }
+                        }
+                        removeAllChildren(listOf(rootIacIssuesTreeNode))
+                        updateTreeRootNodesPresentation(iacResultsCount = iacResultsCount)
+                        chooseMainPanelToDisplay()
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                }
+
+                override fun scanningContainerError(snykError: SnykError) {
+                    var containerResultsCount: Int? = null
+                    ApplicationManager.getApplication().invokeLater {
+                        if (snykError == ContainerService.NO_IMAGES_TO_SCAN_ERROR) {
+                            containerResultsCount = NODE_NOT_SUPPORTED_STATE
+                        } else {
+                            SnykBalloonNotificationHelper.showError(snykError.message, project)
+                            if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
+                                pluginSettings().token = null
+                            }
+                        }
+                        removeAllChildren(listOf(rootContainerIssuesTreeNode))
+                        updateTreeRootNodesPresentation(containerResultsCount = containerResultsCount)
+                        chooseMainPanelToDisplay()
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                }
+
+                override fun scanningSnykCodeError(snykError: SnykError) {
+                    ApplicationManager.getApplication().invokeLater {
+                        removeAllChildren(listOf(rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode))
+                        updateTreeRootNodesPresentation()
+                        displayEmptyDescription()
+                        refreshAnnotationsForOpenFiles(project)
+                    }
+                }
+            })
 
         project.messageBus.connect(this)
             .subscribe(SnykResultsFilteringListener.SNYK_FILTERING_TOPIC, object : SnykResultsFilteringListener {
@@ -432,111 +354,23 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 ) {
                     lastPathComponent.navigateToSource()
                 }
-                when (val node: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
-                    is VulnerabilityTreeNode -> {
-                        val groupedVulns = node.userObject as Collection<Vulnerability>
+                when (val selectedNode: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
+                    is DescriptionHolderTreeNode -> {
                         descriptionPanel.add(
-                            VulnerabilityDescriptionPanel(groupedVulns),
+                            selectedNode.getDescriptionPanel(logEventNeeded = !capturedSmartReloadMode),
                             BorderLayout.CENTER
                         )
-
-                        val issue = groupedVulns.first()
-                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                            IssueInTreeIsClicked.builder()
-                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                                .issueType(issue.getIssueType())
-                                .issueId(issue.id)
-                                .severity(issue.getIssueSeverityOrNull())
-                                .build()
-                        )
                     }
-                    is SuggestionTreeNode -> {
-                        val snykCodeFile = (node.parent as? SnykCodeFileTreeNode)?.userObject as? SnykCodeFile
-                            ?: throw IllegalArgumentException(node.toString())
-                        val (suggestion, index) = node.userObject as Pair<SuggestionForFile, Int>
-
-                        descriptionPanel.add(
-                            SuggestionDescriptionPanel(snykCodeFile, suggestion, index),
-                            BorderLayout.CENTER
-                        )
-
-                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                            IssueInTreeIsClicked.builder()
-                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                                .issueType(suggestion.getIssueType())
-                                .issueId(suggestion.id)
-                                .severity(suggestion.getIssueSeverityOrNull())
-                                .build()
-                        )
+                    is ErrorHolderTreeNode -> {
+                        selectedNode.getSnykError()?.let {
+                            displaySnykError(it)
+                        } ?: displayEmptyDescription()
                     }
-                    is IacIssueTreeNode -> {
-                        val iacIssuesForFile = (node.parent as? IacFileTreeNode)?.userObject as? IacIssuesForFile
-                            ?: throw IllegalArgumentException(node.toString())
-                        val fileName = iacIssuesForFile.targetFilePath
-                        val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(fileName))
-                        val psiFile = virtualFile?.let { findPsiFileIgnoringExceptions(it, project) }
-                        val iacIssue = node.userObject as IacIssue
-
-                        descriptionPanel.add(
-                            IacSuggestionDescriptionPanel(iacIssue, psiFile, project),
-                            BorderLayout.CENTER
-                        )
-
-                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                            IssueInTreeIsClicked.builder()
-                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                                .issueType(IssueInTreeIsClicked.IssueType.INFRASTRUCTURE_AS_CODE_ISSUE)
-                                .issueId(iacIssue.id)
-                                .severity(iacIssue.getIssueSeverityOrNull())
-                                .build()
-                        )
-                    }
-                    is ContainerImageTreeNode -> {
-                        val issuesForImage = node.userObject as ContainerIssuesForImage
-                        descriptionPanel.add(
-                            BaseImageRemediationDetailPanel(project, issuesForImage),
-                            BorderLayout.CENTER
-                        )
-                        // TODO: Add image click event logging ?
-                    }
-                    is ContainerIssueTreeNode -> {
-                        val containerIssue = node.userObject as ContainerIssue
-                        descriptionPanel.add(
-                            ContainerIssueDetailPanel(containerIssue),
-                            BorderLayout.CENTER
-                        )
-                        if (!capturedSmartReloadMode) getSnykAnalyticsService().logIssueInTreeIsClicked(
-                            IssueInTreeIsClicked.builder()
-                                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                                .issueType(IssueInTreeIsClicked.IssueType.CONTAINER_VULNERABILITY)
-                                .issueId(containerIssue.id)
-                                .severity(containerIssue.getIssueSeverityOrNull())
-                                .build()
-                        )
-                    }
-                    is RootOssTreeNode -> {
-                        currentOssError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                    }
-                    is RootSecurityIssuesTreeNode, is RootQualityIssuesTreeNode -> {
-                        currentSnykCodeError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                    }
-                    is RootIacIssuesTreeNode -> {
-                        currentIacError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                    }
-                    is RootContainerIssuesTreeNode -> {
-                        currentContainerError?.let { displaySnykError(it) } ?: displayEmptyDescription()
-                    }
-                    is ErrorTreeNode -> {
-                        displaySnykError(node.userObject as SnykError)
-                    }
-                    else -> {
-                        displayEmptyDescription()
-                    }
+                    else -> displayEmptyDescription()
                 }
             } else {
                 displayEmptyDescription()
             }
-
             descriptionPanel.revalidate()
             descriptionPanel.repaint()
         }
@@ -545,15 +379,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     override fun dispose() {}
 
     fun cleanUiAndCaches() {
-        val snykCachedResults = getSnykCachedResults(project)
-        snykCachedResults?.currentOssResults = null
-        currentOssError = null
+        getSnykCachedResults(project)?.cleanCaches()
         rootOssTreeNode.originalCliErrorMessage = null
-        currentSnykCodeError = null
-        snykCachedResults?.currentIacResult = null
-        currentIacError = null
-        snykCachedResults?.currentContainerResult = null
-        currentContainerError = null
 
         AnalysisData.instance.resetCachesAndTasks(project)
         SnykCodeIgnoreInfoHolder.instance.removeProject(project)
@@ -581,7 +408,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             iacResultsCount = NODE_INITIAL_STATE,
             containerResultsCount = NODE_INITIAL_STATE
         )
-        reloadTree()
+        (vulnerabilitiesTree.model as DefaultTreeModel).reload()
 
         if (reDisplayDescription) {
             displayEmptyDescription()
@@ -699,7 +526,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         val newOssTreeNodeText =
             when {
-                currentOssError != null -> "$OSS_ROOT_TEXT (error)"
+                getSnykCachedResults(project)?.currentOssError != null -> "$OSS_ROOT_TEXT (error)"
                 isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
 
                 else -> ossResultsCount?.let { count ->
@@ -715,7 +542,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
         val newSecurityIssuesNodeText = when {
-            currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
+            getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
             isSnykCodeRunning(project) && settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
             else -> securityIssuesCount?.let { count ->
                 CODE_SECURITY_ROOT_TEXT + when {
@@ -729,7 +556,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
 
         val newQualityIssuesNodeText = when {
-            currentSnykCodeError != null -> "$CODE_QUALITY_ROOT_TEXT (error)"
+            getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_QUALITY_ROOT_TEXT (error)"
             isSnykCodeRunning(project) && settings.snykCodeQualityIssuesScanEnable -> "$CODE_QUALITY_ROOT_TEXT (scanning...)"
             else -> qualityIssuesCount?.let { count ->
                 CODE_QUALITY_ROOT_TEXT + when {
@@ -743,7 +570,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode.userObject = it }
 
         val newIacTreeNodeText = when {
-            currentIacError != null -> "$IAC_ROOT_TEXT (error)"
+            getSnykCachedResults(project)?.currentIacError != null -> "$IAC_ROOT_TEXT (error)"
             isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
             else -> iacResultsCount?.let { count ->
                 IAC_ROOT_TEXT + when {
@@ -758,7 +585,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
 
         val newContainerTreeNodeText = when {
-            currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
+            getSnykCachedResults(project)?.currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
             isContainerRunning(project) && settings.containerScanEnabled -> "$CONTAINER_ROOT_TEXT (scanning...)"
             else -> containerResultsCount?.let { count ->
                 CONTAINER_ROOT_TEXT + when {
@@ -777,7 +604,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         descriptionPanel.removeAll()
 
         val selectedTreeNode =
-            vulnerabilitiesTree.selectionPath?.lastPathComponent as? ProjectBasedDefaultMutableTreeNode ?: treeNodeStub
+            vulnerabilitiesTree.selectionPath?.lastPathComponent as? RootTreeNodeBase ?: treeNodeStub
         val messageHtmlText = selectedTreeNode.getNoVulnerabilitiesMessage()
 
         val emptyStatePanel = StatePanel(
@@ -789,17 +616,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
     }
 
-    private fun displayScanningMessageAndUpdateTree() {
-        updateTreeRootNodesPresentation()
-
-        displayScanningMessage()
-    }
-
     private fun displayScanningMessage() {
         descriptionPanel.removeAll()
 
         val selectedTreeNode =
-            vulnerabilitiesTree.selectionPath?.lastPathComponent as? ProjectBasedDefaultMutableTreeNode ?: treeNodeStub
+            vulnerabilitiesTree.selectionPath?.lastPathComponent as? RootTreeNodeBase ?: treeNodeStub
         val messageHtmlText = selectedTreeNode.getScanningMessage()
 
         val statePanel = StatePanel(
@@ -888,7 +709,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults?) {
-        if (currentSnykCodeError != null) return
+        if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
         if (pluginSettings().token.isNullOrEmpty()) {
             displayAuthPanel()
             return
@@ -1130,7 +951,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         descriptionPanel.removeAll()
 
         val selectedTreeNode =
-            vulnerabilitiesTree.selectionPath?.lastPathComponent as? ProjectBasedDefaultMutableTreeNode ?: treeNodeStub
+            vulnerabilitiesTree.selectionPath?.lastPathComponent as? RootTreeNodeBase ?: treeNodeStub
         val messageHtmlText = selectedTreeNode.getSelectVulnerabilityMessage()
         val statePanel = StatePanel(messageHtmlText)
 
@@ -1144,12 +965,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         descriptionPanel.add(SnykErrorPanel(snykError), BorderLayout.CENTER)
 
         revalidate()
-    }
-
-    private fun initializeUiComponents() {
-        layout = BorderLayout()
-
-        TreeSpeedSearch(vulnerabilitiesTree, TreeSpeedSearch.NODE_DESCRIPTOR_TOSTRING, true)
     }
 
     /**
@@ -1191,10 +1006,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootNode.children().asSequence().forEach {
             expandRecursively(it as DefaultMutableTreeNode)
         }
-    }
-
-    private fun reloadTree() {
-        (vulnerabilitiesTree.model as DefaultTreeModel).reload()
     }
 
     private fun selectAndDisplayNodeWithIssueDescription(selectCondition: (DefaultMutableTreeNode) -> Boolean) {
@@ -1265,6 +1076,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val SELECT_ISSUE_TEXT = "Select an issue and start improving your project."
         const val SCAN_PROJECT_TEXT = "Scan your project for security vulnerabilities and code issues."
         const val SCANNING_TEXT = "Scanning project for vulnerabilities..."
+        const val AUTH_FAILED_TEXT = "Authentication failed. Please check the API token on "
         const val NO_ISSUES_FOUND_TEXT = " - No issues found"
         const val NO_OSS_FILES = "Could not detect supported target files in"
         const val NO_IAC_FILES = "Could not find any valid IaC files"
@@ -1309,80 +1121,4 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         val CONTAINER_NO_IMAGES_FOUND_TEXT =
             "Snyk Container scan didn't find any container images.<br><br>$CONTAINER_NO_FOUND_COMMON_POSTFIX"
     }
-}
-
-class RootOssTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.OSS_ROOT_TEXT, project) {
-
-    var originalCliErrorMessage: String? = null
-
-    override fun getNoVulnerabilitiesMessage(): String =
-        originalCliErrorMessage?.let { txtToHtml(it) } ?: super.getNoVulnerabilitiesMessage()
-
-    override fun getSelectVulnerabilityMessage(): String =
-        originalCliErrorMessage?.let { txtToHtml(it) } ?: super.getSelectVulnerabilityMessage()
-}
-
-class RootSecurityIssuesTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT, project)
-
-class RootQualityIssuesTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CODE_QUALITY_ROOT_TEXT, project)
-
-class RootIacIssuesTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.IAC_ROOT_TEXT, project) {
-
-    override fun getNoVulnerabilitiesMessage(): String =
-        if ((this.userObject as String).endsWith(SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND)) {
-            SnykToolWindowPanel.NO_IAC_FILES
-        } else {
-            super.getNoVulnerabilitiesMessage()
-        }
-
-    override fun getSelectVulnerabilityMessage(): String =
-        if ((this.userObject as String).endsWith(SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND)) {
-            SnykToolWindowPanel.NO_IAC_FILES
-        } else {
-            super.getSelectVulnerabilityMessage()
-        }
-}
-
-class RootContainerIssuesTreeNode(project: Project) :
-    ProjectBasedDefaultMutableTreeNode(SnykToolWindowPanel.CONTAINER_ROOT_TEXT, project) {
-
-    override fun getNoVulnerabilitiesMessage(): String {
-        val nodeText = userObject as String
-        return with(SnykToolWindowPanel) {
-            when {
-                nodeText.endsWith(NO_CONTAINER_IMAGES_FOUND) -> CONTAINER_NO_IMAGES_FOUND_TEXT
-                nodeText.endsWith(NO_ISSUES_FOUND_TEXT) -> CONTAINER_NO_ISSUES_FOUND_TEXT
-                else -> CONTAINER_SCAN_START_TEXT
-            }
-        }
-    }
-
-    override fun getScanningMessage(): String = SnykToolWindowPanel.CONTAINER_SCAN_RUNNING_TEXT
-
-    override fun getSelectVulnerabilityMessage(): String {
-        val nodeText = userObject as String
-        return with(SnykToolWindowPanel) {
-            when {
-                nodeText.endsWith(NO_CONTAINER_IMAGES_FOUND) -> CONTAINER_NO_IMAGES_FOUND_TEXT
-                nodeText.endsWith(NO_ISSUES_FOUND_TEXT) -> CONTAINER_NO_ISSUES_FOUND_TEXT
-                else -> super.getSelectVulnerabilityMessage()
-            }
-        }
-    }
-}
-
-open class ProjectBasedDefaultMutableTreeNode(
-    userObject: Any,
-    val project: Project
-) : DefaultMutableTreeNode(userObject) {
-
-    open fun getNoVulnerabilitiesMessage(): String = SnykToolWindowPanel.SCAN_PROJECT_TEXT
-
-    open fun getScanningMessage(): String = SnykToolWindowPanel.SCANNING_TEXT
-
-    open fun getSelectVulnerabilityMessage(): String = SnykToolWindowPanel.SELECT_ISSUE_TEXT
 }

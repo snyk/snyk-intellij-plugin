@@ -13,7 +13,7 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
-import io.snyk.plugin.ui.toolwindow.IssueDescriptionPanelBase
+import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
 import snyk.container.BaseImageInfo
 import snyk.container.BaseImageVulnerabilities
 import snyk.container.ContainerIssuesForImage

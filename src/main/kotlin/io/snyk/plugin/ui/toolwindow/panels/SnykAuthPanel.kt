@@ -1,4 +1,4 @@
-package io.snyk.plugin.ui.toolwindow
+package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -7,7 +7,6 @@ import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_SOUTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST
-import com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
