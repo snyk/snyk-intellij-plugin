@@ -1,20 +1,29 @@
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.icons.AllIcons
+import com.intellij.ide.CommonActionsManager
+import com.intellij.ide.DefaultTreeExpander
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.ui.PopupHandler
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.ui.expandTreeNodeRecursively
 import snyk.common.SnykError
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
+import javax.swing.JTree
+import javax.swing.tree.DefaultMutableTreeNode
 
 /**
  * IntelliJ ToolWindow for Snyk plugin.
@@ -24,16 +33,37 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
     private val actionToolbar: ActionToolbar
 
     init {
+        val snykToolWindowPanel = getSnykToolWindowPanel(project)!!
+        val tree = snykToolWindowPanel.getTree()
         val actionManager = ActionManager.getInstance()
-        val actionGroup = actionManager.getAction("io.snyk.plugin.ActionBar") as ActionGroup
+
+        val expandTreeActionsGroup = DefaultActionGroup()
+        val myTreeExpander = DefaultTreeExpander(tree)
+        val commonActionsManager = CommonActionsManager.getInstance()
+        expandTreeActionsGroup.add(commonActionsManager.createExpandAllAction(myTreeExpander, this))
+        expandTreeActionsGroup.add(commonActionsManager.createCollapseAllAction(myTreeExpander, this))
+
+        val expandNodeChildActionsGroup = DefaultActionGroup()
+        expandNodeChildActionsGroup.add(ExpandNodeChildAction(tree))
+        PopupHandler.installPopupHandler(tree, expandNodeChildActionsGroup, "SnykTree", actionManager)
+
+        val actionGroup = actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup
+
+        actionGroup.addSeparator()
+        actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ViewActions") as DefaultActionGroup)
+        actionGroup.addAll(expandTreeActionsGroup)
+
+        actionGroup.addSeparator()
+        actionGroup.addAll(actionManager.getAction("io.snyk.plugin.MiscActions") as DefaultActionGroup)
+
         actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, false)
-        initialiseToolbar()
+        initialiseToolbarUpdater()
         toolbar = actionToolbar.component
 
-        getSnykToolWindowPanel(project)?.let { setContent(it) }
+        setContent(snykToolWindowPanel)
     }
 
-    private fun initialiseToolbar() {
+    private fun initialiseToolbarUpdater() {
         // update actions presentation immediately after running state changes (avoid default 500 ms delay)
         project.messageBus.connect(this)
             .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, object : SnykScanListener {
@@ -72,4 +102,13 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
         ApplicationManager.getApplication().invokeLater { actionToolbar.updateActionsImmediately() }
 
     override fun dispose() = Unit
+
+    inner class ExpandNodeChildAction(
+        val tree: JTree
+    ) : DumbAwareAction("Expand All Children", "Expand All Children", AllIcons.Actions.Expandall) {
+        override fun actionPerformed(e: AnActionEvent) {
+            val selectedNode = tree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
+            expandTreeNodeRecursively(tree, selectedNode)
+        }
+    }
 }

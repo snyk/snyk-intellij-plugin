@@ -6,6 +6,9 @@
 - Results (json) received from CLI are now sanitized for correctness.
 - For mixed correct and failed-to-parse json results: successfully parsed elements will be shown alongside with errors.
 
+### Added
+- For tree with results `Expand All`/`Collapse All` together with `Expand All Child` (for selected node) actions added.
+
 ## [2.4.35]
 
 ### Fixed

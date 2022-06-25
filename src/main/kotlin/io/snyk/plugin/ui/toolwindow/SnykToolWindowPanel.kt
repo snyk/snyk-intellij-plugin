@@ -53,6 +53,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.ErrorHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
@@ -988,7 +989,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     vulnerabilitiesTree.expandPath(TreePath(pathToNewNode))
                 }
             }
-        } ?: expandRecursively(nodeToReload)
+        } ?: expandTreeNodeRecursively(vulnerabilitiesTree, nodeToReload)
 
         smartReloadMode = true
         try {
@@ -998,13 +999,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             updateDescriptionPanelBySelectedTreeNode()
         } finally {
             smartReloadMode = false
-        }
-    }
-
-    private fun expandRecursively(rootNode: DefaultMutableTreeNode) {
-        vulnerabilitiesTree.expandPath(TreePath(rootNode.path))
-        rootNode.children().asSequence().forEach {
-            expandRecursively(it as DefaultMutableTreeNode)
         }
     }
 
@@ -1057,7 +1051,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     @TestOnly
     fun getRootCodeQualityIssuesTreeNode() = rootQualityIssuesTreeNode
 
-    @TestOnly
     fun getTree() = vulnerabilitiesTree
 
     @TestOnly
