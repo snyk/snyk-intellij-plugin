@@ -129,6 +129,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
             vulnerabilities = listOf(containerIssue),
             projectName = "fake project name",
             docker = Docker(),
+            uniqueCount = 1,
             error = null,
             imageName = "nginx",
             workloadImages = listOf(KubernetesWorkloadImage(

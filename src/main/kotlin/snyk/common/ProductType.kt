@@ -9,7 +9,9 @@ enum class ProductType(
         productSelectionName = "Snyk Open Source",
         treeName = "Open Source Vulnerabilities",
         description = "Find and automatically fix open source vulnerabilities"
-    ),
+    ) {
+        override fun getIssuesCountText(count: Int): String = " - $count vulnerabilit${if (count > 1) "ies" else "y"}"
+    },
     IAC(
         productSelectionName = "Snyk Infrastructure as Code",
         treeName = "Configuration Issues",
@@ -19,7 +21,9 @@ enum class ProductType(
         productSelectionName = "Snyk Container",
         treeName = "Container Vulnerabilities",
         description = "Find and fix vulnerabilities in container images and Kubernetes applications"
-    ),
+    ) {
+        override fun getIssuesCountText(count: Int): String = " - $count vulnerabilit${if (count > 1) "ies" else "y"}"
+    },
     CODE_SECURITY(
         productSelectionName = "Snyk Code Security",
         treeName = "Code Security Issues",
@@ -38,4 +42,6 @@ enum class ProductType(
     );
 
     override fun toString(): String = productSelectionName
+
+    open fun getIssuesCountText(count: Int): String = " - $count issue${if (count > 1) "s" else ""}"
 }

@@ -96,7 +96,7 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
         val baseImageRemediationInfo =
-            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
+            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage)
         return firstContainerIssuesForImage.copy(
             baseImageRemediationInfo = baseImageRemediationInfo,
             workloadImages = emptyList()

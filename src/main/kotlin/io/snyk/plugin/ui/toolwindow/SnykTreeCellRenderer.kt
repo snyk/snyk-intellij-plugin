@@ -25,6 +25,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
@@ -66,9 +67,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 }
             }
             is FileTreeNode -> {
-                val ossVulnerabilitiesForFile = value.userObject as OssVulnerabilitiesForFile
-                nodeIcon = PackageManagerIconProvider.getIcon(ossVulnerabilitiesForFile.packageManager.toLowerCase())
-                text = ossVulnerabilitiesForFile.sanitizedTargetFile
+                val fileVulns = value.userObject as OssVulnerabilitiesForFile
+                nodeIcon = PackageManagerIconProvider.getIcon(fileVulns.packageManager.toLowerCase())
+                text = fileVulns.sanitizedTargetFile + ProductType.OSS.getIssuesCountText(value.childCount)
 
                 val snykCachedResults = getSnykCachedResults(value.project)
                 if (snykCachedResults?.currentOssResults == null) {
@@ -92,7 +93,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
             is SnykCodeFileTreeNode -> {
                 val file = value.userObject
-                text = PDU.toSnykCodeFile(file).virtualFile.name
+                text = PDU.toSnykCodeFile(file).virtualFile.name + ProductType.CODE_SECURITY.getIssuesCountText(value.childCount)
                 val psiFile = PDU.toPsiFile(file)
                 nodeIcon = psiFile?.getIcon(Iconable.ICON_FLAG_READ_STATUS)
                 if (!AnalysisData.instance.isFileInCache(file)) {
@@ -104,7 +105,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             is IacFileTreeNode -> {
                 val iacVulnerabilitiesForFile = value.userObject as IacIssuesForFile
                 nodeIcon = PackageManagerIconProvider.getIcon(iacVulnerabilitiesForFile.packageManager.toLowerCase())
-                text = iacVulnerabilitiesForFile.targetFile
+                text = iacVulnerabilitiesForFile.targetFile + ProductType.IAC.getIssuesCountText(value.childCount)
 
                 val snykCachedResults = getSnykCachedResults(value.project)
                 if (snykCachedResults?.currentIacResult == null || iacVulnerabilitiesForFile.obsolete) {
@@ -116,7 +117,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             is ContainerImageTreeNode -> {
                 val issuesForImage = value.userObject as ContainerIssuesForImage
                 nodeIcon = SnykIcons.CONTAINER_IMAGE
-                text = issuesForImage.imageName
+                text = issuesForImage.imageName + ProductType.CONTAINER.getIssuesCountText(value.childCount)
 
                 val snykCachedResults = getSnykCachedResults(value.project)
                 if (snykCachedResults?.currentContainerResult == null || issuesForImage.obsolete) {

@@ -534,7 +534,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     OSS_ROOT_TEXT + when {
                         count == NODE_INITIAL_STATE -> ""
                         count == 0 -> NO_ISSUES_FOUND_TEXT
-                        count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
+                        count > 0 -> ProductType.OSS.getIssuesCountText(count) + addHMLPostfix
                         count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_PACKAGE_MANAGER_FOUND
                         else -> throw IllegalStateException("ResultsCount is meaningful")
                     }
@@ -549,7 +549,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 CODE_SECURITY_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
+                    count > 0 -> ProductType.CODE_SECURITY.getIssuesCountText(count) + addHMLPostfix
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
@@ -563,7 +563,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 CODE_QUALITY_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
+                    count > 0 -> ProductType.CODE_QUALITY.getIssuesCountText(count) + addHMLPostfix
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
@@ -577,7 +577,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 IAC_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> " - $count issue${if (count > 1) "s" else ""}$addHMLPostfix"
+                    count > 0 -> ProductType.IAC.getIssuesCountText(count) + addHMLPostfix
                     count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_IAC_FILES_FOUND
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
@@ -592,7 +592,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 CONTAINER_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> " - $count vulnerabilit${if (count > 1) "ies" else "y"}$addHMLPostfix"
+                    count > 0 -> ProductType.CONTAINER.getIssuesCountText(count) + addHMLPostfix
                     count == NODE_NOT_SUPPORTED_STATE -> NO_CONTAINER_IMAGES_FOUND
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
@@ -861,9 +861,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ContainerImageTreeNode(issuesForImage, project, navigateToImage(issuesForImage.imageName))
                     rootContainerIssuesTreeNode.add(imageTreeNode)
 
-                    issuesForImage.vulnerabilities
-                        .filter { settings.hasSeverityEnabledAndFiltered(it.getSeverity()) }
-                        .sortedByDescending { it.getSeverity() }
+                    issuesForImage.groupedVulnsById.values
+                        .filter { settings.hasSeverityEnabledAndFiltered(it.head.getSeverity()) }
+                        .sortedByDescending { it.head.getSeverity() }
                         .forEach {
                             imageTreeNode.add(
                                 ContainerIssueTreeNode(it, project, navigateToImage(issuesForImage.imageName))

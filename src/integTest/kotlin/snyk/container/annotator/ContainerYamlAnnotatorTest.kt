@@ -248,7 +248,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
         val baseImageRemediationInfo =
-            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
+            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage)
 
         val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 21))
         containerResult.allCliIssues = listOf(
@@ -267,7 +267,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
         val firstContainerIssuesForImage = containerResult.allCliIssues!![0]
         val baseImageRemediationInfo =
-            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage.docker.baseImageRemediation)
+            getContainerService(project)?.convertRemediation(firstContainerIssuesForImage)
 
         val workloadImages1 = KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 21)
         val workloadImages2 = KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 23)
@@ -283,9 +283,24 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     private fun createContainerImageForIssuesWithSeverity(
         severity: String = Severity.CRITICAL.toString()
     ): ContainerIssuesForImage {
-        val containerIssue = ContainerIssue("", "", "", severity, packageManager = "npm", from = emptyList())
+        val containerIssue = ContainerIssue(
+            id = "",
+            title = "",
+            description = "",
+            severity = severity,
+            packageManager = "npm",
+            from = emptyList()
+        )
         val vulnerabilities = listOf(containerIssue, containerIssue.copy()) // force the tests to filter duplicates
         val docker = Docker(null)
-        return ContainerIssuesForImage(vulnerabilities, "test", docker, null, "nginx:1.16.0", null)
+        return ContainerIssuesForImage(
+            vulnerabilities = vulnerabilities,
+            projectName = "test",
+            docker = docker,
+            uniqueCount = 1,
+            error = null,
+            imageName = "nginx:1.16.0",
+            baseImageRemediationInfo = null
+        )
     }
 }
