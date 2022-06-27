@@ -177,4 +177,23 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
                 allCliIssues.any { it.imageName == "jenkins/jenkins:lts" }
         )
     }
+
+    @Test
+    fun `no images to scan case should produce correct ContainerResult`() {
+        // create KubernetesImageCache mock
+        val cache = spyk(KubernetesImageCache(project))
+        every { cache.getKubernetesWorkloadImages() } returns emptySet()
+        cut.setKubernetesImageCache(cache)
+
+        val containerResult = cut.scan()
+
+        verify { cache.getKubernetesWorkloadImages() }
+        assertFalse("Container scan should NOT succeed", containerResult.isSuccessful())
+        val allCliIssues = containerResult.allCliIssues
+        assertNull("Images with issues should be NOT found", allCliIssues)
+        assertTrue(
+            "ContainerResult should hold NO_IMAGES_TO_SCAN_ERROR inside",
+            containerResult.getFirstError() == ContainerService.NO_IMAGES_TO_SCAN_ERROR
+        )
+    }
 }

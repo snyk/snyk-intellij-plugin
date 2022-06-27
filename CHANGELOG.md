@@ -5,6 +5,7 @@
 ### Fixed
 - Results (json) received from CLI are now sanitized for correctness.
 - For mixed correct and failed-to-parse json results: successfully parsed elements will be shown alongside with errors.
+- Container scan for no-images-found case now produce correct message and visuals.
 
 ## [2.4.35]
 

@@ -31,7 +31,7 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
         val imageNames = imageCache?.getKubernetesWorkloadImageNamesFromCache() ?: emptySet()
         LOG.debug("container scan requested for ${imageNames.size} images: $imageNames")
         if (imageNames.isEmpty()) {
-            return ContainerResult(emptyList(), listOf(NO_IMAGES_TO_SCAN_ERROR))
+            return ContainerResult(null, listOf(NO_IMAGES_TO_SCAN_ERROR))
         }
         val tempResult = execute(commands + imageNames)
         if (!tempResult.isSuccessful()) {
