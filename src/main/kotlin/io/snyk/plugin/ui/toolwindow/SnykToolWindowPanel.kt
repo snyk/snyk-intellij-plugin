@@ -534,7 +534,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     OSS_ROOT_TEXT + when {
                         count == NODE_INITIAL_STATE -> ""
                         count == 0 -> NO_ISSUES_FOUND_TEXT
-                        count > 0 -> ProductType.OSS.getIssuesCountText(count) + addHMLPostfix
+                        count > 0 -> ProductType.OSS.getCountText(count, isUniqueCount = true) + addHMLPostfix
                         count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_PACKAGE_MANAGER_FOUND
                         else -> throw IllegalStateException("ResultsCount is meaningful")
                     }
@@ -549,7 +549,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 CODE_SECURITY_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> ProductType.CODE_SECURITY.getIssuesCountText(count) + addHMLPostfix
+                    count > 0 -> ProductType.CODE_SECURITY.getCountText(count) + addHMLPostfix
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
@@ -563,7 +563,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 CODE_QUALITY_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> ProductType.CODE_QUALITY.getIssuesCountText(count) + addHMLPostfix
+                    count > 0 -> ProductType.CODE_QUALITY.getCountText(count) + addHMLPostfix
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
             }
@@ -577,7 +577,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 IAC_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> ProductType.IAC.getIssuesCountText(count) + addHMLPostfix
+                    count > 0 -> ProductType.IAC.getCountText(count, isUniqueCount = true) + addHMLPostfix
                     count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_IAC_FILES_FOUND
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
@@ -592,7 +592,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 CONTAINER_ROOT_TEXT + when {
                     count == NODE_INITIAL_STATE -> ""
                     count == 0 -> NO_ISSUES_FOUND_TEXT
-                    count > 0 -> ProductType.CONTAINER.getIssuesCountText(count) + addHMLPostfix
+                    count > 0 -> ProductType.CONTAINER.getCountText(count, isUniqueCount = true) + addHMLPostfix
                     count == NODE_NOT_SUPPORTED_STATE -> NO_CONTAINER_IMAGES_FOUND
                     else -> throw IllegalStateException("ResultsCount is meaningful")
                 }
@@ -741,7 +741,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 val securityResultsToDisplay = securityResults.cloneFiltered {
                     pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                 }
-                displayResultsForRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
+                displayResultsForCodeRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
             }
         }
         updateTreeRootNodesPresentation(
@@ -767,7 +767,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 val qualityResultsToDisplay = qualityResults.cloneFiltered {
                     pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                 }
-                displayResultsForRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
+                displayResultsForCodeRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
             }
         }
         updateTreeRootNodesPresentation(
@@ -915,7 +915,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         if (rootNode.childCount == 0) null
         else TreeUtil.collectExpandedUserObjects(vulnerabilitiesTree, TreePath(rootNode.path))
 
-    private fun displayResultsForRoot(rootNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
+    private fun displayResultsForCodeRoot(rootNode: DefaultMutableTreeNode, snykCodeResults: SnykCodeResults) {
         fun navigateToSource(suggestion: SuggestionForFile, index: Int, snykCodeFile: SnykCodeFile): () -> Unit = {
             val textRange = suggestion.ranges[index]
                 ?: throw IllegalArgumentException(suggestion.ranges.toString())
@@ -925,7 +925,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
         snykCodeResults.getSortedFiles()
             .forEach { file ->
-                val fileTreeNode = SnykCodeFileTreeNode(file)
+                val productType = when (rootNode) {
+                    is RootQualityIssuesTreeNode -> ProductType.CODE_QUALITY
+                    is RootSecurityIssuesTreeNode -> ProductType.CODE_SECURITY
+                    else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
+                }
+                val fileTreeNode = SnykCodeFileTreeNode(file, productType)
                 rootNode.add(fileTreeNode)
                 snykCodeResults.getSortedSuggestions(file)
                     .forEach { suggestion ->
@@ -1017,26 +1022,30 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     fun selectNodeAndDisplayDescription(vulnerability: Vulnerability) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
-            (treeNode.userObject as? Collection<Vulnerability>)?.any {
-                it == vulnerability
-            } ?: false
+            treeNode is VulnerabilityTreeNode &&
+                (treeNode.userObject as Collection<Vulnerability>).any {
+                    it == vulnerability
+                }
         }
 
     fun selectNodeAndDisplayDescription(iacIssue: IacIssue) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
-            (treeNode.userObject as? IacIssue) == iacIssue
+            treeNode is IacIssueTreeNode &&
+                (treeNode.userObject as IacIssue) == iacIssue
         }
 
     fun selectNodeAndDisplayDescription(issuesForImage: ContainerIssuesForImage) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
-            (treeNode.userObject as? ContainerIssuesForImage) == issuesForImage
+            treeNode is ContainerImageTreeNode &&
+                (treeNode.userObject as ContainerIssuesForImage) == issuesForImage
         }
 
     fun selectNodeAndDisplayDescription(suggestionForFile: SuggestionForFile, textRange: MyTextRange) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
-            (treeNode.userObject as? Pair<SuggestionForFile, Int>)?.let { (suggestion, index) ->
-                suggestion == suggestionForFile && suggestion.ranges[index] == textRange
-            } ?: false
+            treeNode is SuggestionTreeNode &&
+                (treeNode.userObject as Pair<SuggestionForFile, Int>).let { (suggestion, index) ->
+                    suggestion == suggestionForFile && suggestion.ranges[index] == textRange
+                }
         }
 
     @TestOnly

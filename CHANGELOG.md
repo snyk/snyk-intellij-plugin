@@ -19,6 +19,9 @@
 ### Added
 - For tree with results `Expand All`/`Collapse All` together with `Expand All Child` (for selected node) actions added;
 
+### Changed
+- Naming for scan results in the tree and naming of result's count is corrected.
+
 ## [2.4.35]
 
 ### Fixed
