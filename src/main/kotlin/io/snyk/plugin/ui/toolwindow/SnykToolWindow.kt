@@ -36,6 +36,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
         val snykToolWindowPanel = getSnykToolWindowPanel(project)!!
         val tree = snykToolWindowPanel.getTree()
         val actionManager = ActionManager.getInstance()
+        val actionGroup = DefaultActionGroup()
 
         val expandTreeActionsGroup = DefaultActionGroup()
         val myTreeExpander = DefaultTreeExpander(tree)
@@ -47,12 +48,10 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
         expandNodeChildActionsGroup.add(ExpandNodeChildAction(tree))
         PopupHandler.installPopupHandler(tree, expandNodeChildActionsGroup, "SnykTree", actionManager)
 
-        val actionGroup = actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup
-
+        actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup)
         actionGroup.addSeparator()
         actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ViewActions") as DefaultActionGroup)
         actionGroup.addAll(expandTreeActionsGroup)
-
         actionGroup.addSeparator()
         actionGroup.addAll(actionManager.getAction("io.snyk.plugin.MiscActions") as DefaultActionGroup)
 
