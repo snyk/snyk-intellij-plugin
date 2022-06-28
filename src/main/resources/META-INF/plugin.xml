@@ -52,7 +52,7 @@
   </extensions>
 
   <actions>
-    <group id="io.snyk.plugin.ActionBar">
+    <group id="io.snyk.plugin.ScanActions">
       <action id="io.snyk.plugin.ui.actions.SnykRunScanAction"
               class="io.snyk.plugin.ui.actions.SnykRunScanAction"
               text="Run"/>
@@ -62,19 +62,21 @@
       <action id="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               class="io.snyk.plugin.ui.actions.SnykCleanScanAction"
               text="Clean All Results"/>
-      <separator/>
+    </group>
+
+    <group id="io.snyk.plugin.ViewActions">
       <group id="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterActionGroup"
              class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterActionGroup"
              text="Filter Results by Scan Type"
              popup="true"
              description="Snyk: choose scan types to display in the tree"
              icon="AllIcons.General.Filter"/>
+    </group>
+
+    <group id="io.snyk.plugin.MiscActions">
       <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"
               text="Snyk Settings"/>
-    </group>
-
-    <group id="io.snyk.plugin.TreeFilters.ScanType">
     </group>
 
     <group id="io.snyk.plugin.TreeFilters.Severity">
