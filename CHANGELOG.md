@@ -5,6 +5,7 @@
 ### Fixed
 - Found Container vulnerabilities now grouped by ID (similar to OSS results);
 - For Container images with no remediation/fix available issues count(grouped by severity) now is shown.
+- Container multi-images (OSS multi-build-managers) scan with no auth now redirect to auth panel.
 
 ### Added
 - In the result's tree, second level nodes(file/image) now have number of vulnerabilities/issues found in it.
