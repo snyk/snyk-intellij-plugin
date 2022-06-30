@@ -47,14 +47,14 @@ Before creating PR (if any user related changes been made) please don't forget t
 
 ### Build and deploy
 
-Build process happened through Gradle (as well as all dependency's connection). Managed in `build.gradle.kts` root file, parametrised by `gradle.properties` file.
+Build process happens through Gradle (as well as all dependency's connection). Managed in `build.gradle.kts` root file, parametrised by `gradle.properties` file.
 
-Release happened automatically every Tuesday at 9am UTC. Also, could be run manually through GitHub's `Actions/Release` workflow run. Specified in `release.yml` file.
+Release happens automatically every Tuesday at 9am UTC. Also, could be run manually through GitHub's `Actions/Release` workflow run. Specified in `release.yml` file.
 
 ### Testing
 Should be mostly done trough [IntelliJ Platform Testing Framework](https://plugins.jetbrains.com/docs/intellij/testing-plugins.html) and placed into `integTest` source root except simple independent Unit tests (`test` source root).
 
-Mocks are [not recommended](https://plugins.jetbrains.com/docs/intellij/testing-plugins.html#mocks) by Jetbrains, but we heavily( and successfully?) use Mockk framework. Just be careful not to mock whole world and make sure you're testing real functionality and not mocked one.
+Mocks are [not recommended](https://plugins.jetbrains.com/docs/intellij/testing-plugins.html#mocks) by Jetbrains, but we heavily (and successfully) use Mockk framework. Just be careful not to mock whole world and make sure you're testing real functionality and not mocked one.
 
 ### Useful Links:
 - [IntelliJ Platform Plugin SDK](https://plugins.jetbrains.com/docs/intellij) - that's your "Holy book" :)
