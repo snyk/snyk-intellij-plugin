@@ -2,17 +2,14 @@ package snyk.container
 
 import com.google.gson.Gson
 import com.intellij.testFramework.LightPlatform4TestCase
-import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.setupDummyCliFile
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.junit.Test
 import snyk.container.TestYamls.podYaml
 
@@ -21,7 +18,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
     private lateinit var cut: ContainerService
     private val containerResultWithRemediationJson = javaClass.classLoader
         .getResource(("container-test-results/nginx-with-remediation.json"))!!.readText(Charsets.UTF_8)
-    private val containerResultJson = javaClass.classLoader
+    private val containerResultJsonNoRemediation = javaClass.classLoader
         .getResource(("container-test-results/nginx-no-remediation.json"))!!.readText(Charsets.UTF_8)
     private val containerResultForFewImagesJson = javaClass.classLoader
         .getResource(("container-test-results/debian-nginx-fake_critical_only.json"))!!.readText(Charsets.UTF_8)
@@ -57,18 +54,18 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         assertTrue(actualRemediation.majorUpgrades != null)
         val expectedImageName = expectedResult.allCliIssues!!.first().imageName
         assertEquals(expectedImageName, actualFirstImage.imageName)
-        assertEquals(expectedImageName, actualRemediation.currentImage!!.name)
+        assertEquals(expectedImageName, actualRemediation.currentImage.name)
         assertEquals(8, actualFirstImage.workloadImages.first().lineNumber)
     }
 
     @Test
     fun `take image from KubernetesImageCache and scan it using the CLI, no remediation`() {
-        val (expectedResult, containerResult) = executeScan(containerResultJson)
+        val (expectedResult, containerResult) = executeScan(containerResultJsonNoRemediation)
 
         val actualCliIssues = containerResult.allCliIssues!!
         assertTrue(actualCliIssues.isNotEmpty())
         val first = actualCliIssues.first()
-        assertTrue("BaseRemeditation should be null", null == first.baseImageRemediationInfo)
+        assertFalse("Remediation should be NOT available", first.baseImageRemediationInfo!!.isRemediationAvailable())
         assertEquals(expectedResult.allCliIssues!!.first().imageName, first.imageName)
     }
 
@@ -86,6 +83,10 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         val scanResult = cut.scan()
 
         verify { cache.getKubernetesWorkloadImages() }
+        assertEquals(
+            expectedContainerResult.issuesCount,
+            scanResult.allCliIssues?.sumBy { it.groupedVulnsById.size }
+        )
         return Pair(expectedContainerResult, scanResult)
     }
 

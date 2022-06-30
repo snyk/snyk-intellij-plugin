@@ -27,10 +27,10 @@ class BaseImageRemediationFix(
     private val logger = logger<BaseImageRemediationFix>()
 
     init {
-        if (containerIssuesForImage.baseImageRemediationInfo == null)
-            throw IllegalArgumentException("Trying to create quick fix without remediation")
-
         val imageRemediationInfo = containerIssuesForImage.baseImageRemediationInfo
+        if (imageRemediationInfo?.isRemediationAvailable() != true) {
+            throw IllegalArgumentException("Trying to create quick fix without remediation")
+        }
         imageNameToFix = determineTargetImage(imageRemediationInfo)
     }
 

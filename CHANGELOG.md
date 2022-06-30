@@ -1,5 +1,14 @@
 # Snyk Changelog
 
+## [2.4.37]
+
+### Fixed
+- Found Container vulnerabilities now grouped by ID (similar to OSS results);
+- For Container images with no remediation/fix available issues count(grouped by severity) now is shown.
+
+### Added
+- In the result's tree, second level nodes(file/image) now have number of vulnerabilities/issues found in it.
+
 ## [2.4.36]
 
 ### Fixed
@@ -8,7 +17,10 @@
 - Container scan for no-images-found case now produce correct message and visuals.
 
 ### Added
-- For tree with results `Expand All`/`Collapse All` together with `Expand All Child` (for selected node) actions added.
+- For tree with results `Expand All`/`Collapse All` together with `Expand All Child` (for selected node) actions added;
+
+### Changed
+- Naming for scan results in the tree and naming of result's count is corrected.
 
 ## [2.4.35]
 

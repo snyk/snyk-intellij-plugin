@@ -3,6 +3,7 @@ package snyk.container
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.services.CliAdapter
 import org.jetbrains.annotations.TestOnly
@@ -44,7 +45,7 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
 
         val images = imageCache?.getKubernetesWorkloadImages() ?: emptySet()
         tempResult.allCliIssues?.forEach { forImage ->
-            val baseImageRemediationInfo = convertRemediation(forImage.docker.baseImageRemediation)
+            val baseImageRemediationInfo = convertRemediation(forImage)
             val sanitizedImageName = sanitizeImageName(forImage.imageName, imageNames)
             val enrichedContainerIssuesForImage = forImage.copy(
                 imageName = sanitizedImageName,
@@ -79,15 +80,24 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
         }
     }
 
-    fun convertRemediation(baseImageRemediation: BaseImageRemediation?): BaseImageRemediationInfo? {
-        if (baseImageRemediation == null || !baseImageRemediation.isRemediationAvailable()) return null
-
+    fun convertRemediation(forImage: ContainerIssuesForImage): BaseImageRemediationInfo? {
+        val baseImageRemediation = forImage.docker.baseImageRemediation ?: return null
+        if (!baseImageRemediation.isRemediationAvailable()) {
+            return BaseImageRemediationInfo(
+                currentImage = getDefaultCurrentImageInfo(forImage),
+                majorUpgrades = null,
+                minorUpgrades = null,
+                alternativeUpgrades = null,
+                recommendationForUpgrade = baseImageRemediation.advice.firstOrNull()?.message ?: ""
+            )
+        }
         val adviceList = baseImageRemediation.advice
         val adviceListAsString = adviceList.joinToString(separator = "\n") { it.message }
         LOG.debug("\n" + adviceListAsString)
         // current image always first
         val currentImageRawString = adviceList[0].message
-        val currentBaseImageInfo = BaseImageRemediationExtractor.extractImageInfo(currentImageRawString)
+        val currentBaseImageInfo =
+            BaseImageRemediationExtractor.extractImageInfo(currentImageRawString) ?: getDefaultCurrentImageInfo(forImage)
         var majorUpgradeInfo: BaseImageInfo? = null
         var minorUpgradeInfo: BaseImageInfo? = null
         var alternativeUpgradeInfo: BaseImageInfo? = null
@@ -107,7 +117,6 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
                 }
             }
         }
-
         return BaseImageRemediationInfo(
             currentImage = currentBaseImageInfo,
             majorUpgrades = majorUpgradeInfo,
@@ -115,6 +124,16 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
             alternativeUpgrades = alternativeUpgradeInfo
         )
     }
+
+    private fun getDefaultCurrentImageInfo(forImage: ContainerIssuesForImage) = BaseImageInfo(
+        name = forImage.imageName,
+        vulnerabilities = BaseImageVulnerabilities(
+            critical = forImage.countBySeverity(Severity.CRITICAL),
+            high = forImage.countBySeverity(Severity.HIGH),
+            medium = forImage.countBySeverity(Severity.MEDIUM),
+            low = forImage.countBySeverity(Severity.LOW)
+        )
+    )
 
     override fun getProductResult(cliIssues: List<ContainerIssuesForImage>?, snykErrors: List<SnykError>): ContainerResult =
         ContainerResult(cliIssues, snykErrors)

@@ -179,19 +179,19 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     private val fakeSuggestionForFile = SuggestionForFile(
-        "id",
-        "rule",
-        "message",
-        "title",
-        "text",
-        2,
-        0,
-        emptyList(),
-        emptyList(),
-        listOf(mockk(relaxed = true)),
-        emptyList(),
-        emptyList(),
-        emptyList()
+        /* id = */ "id",
+        /* rule = */ "rule",
+        /* message = */ "message",
+        /* title = */ "title",
+        /* text = */ "text",
+        /* severity = */ 2,
+        /* repoDatasetSize = */ 0,
+        /* exampleCommitDescriptions = */ emptyList(),
+        /* exampleCommitFixes = */ emptyList(),
+        /* ranges = */ listOf(mockk(relaxed = true)),
+        /* categories = */ emptyList(),
+        /* tags = */ emptyList(),
+        /* cwe = */ emptyList()
     )
     private val fakeContainerIssue1 = ContainerIssue(
         id = "fakeId1",
@@ -214,18 +214,20 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     private val fakeContainerResult = ContainerResult(
         listOf(
             ContainerIssuesForImage(
-                listOf(fakeContainerIssue1),
-                "fake project name",
-                Docker(),
-                null,
-                "fake-image-name1"
+                vulnerabilities = listOf(fakeContainerIssue1),
+                projectName = "fake project name",
+                docker = Docker(),
+                uniqueCount = 1,
+                error = null,
+                imageName = "fake-image-name1"
             ),
             ContainerIssuesForImage(
-                listOf(fakeContainerIssue2),
-                "fake project name",
-                Docker(),
-                null,
-                "fake-image-name2"
+                vulnerabilities = listOf(fakeContainerIssue2),
+                projectName = "fake project name",
+                docker = Docker(),
+                uniqueCount = 1,
+                error = null,
+                imageName = "fake-image-name2"
             )
         )
     )
@@ -233,16 +235,17 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     private val fakeContainerResultWithError = ContainerResult(
         listOf(
             ContainerIssuesForImage(
-                listOf(fakeContainerIssue1),
-                "fake project name",
-                Docker(),
-                null,
-                "fake-image-name1"
+                vulnerabilities = listOf(fakeContainerIssue1),
+                projectName = "fake project name",
+                docker = Docker(),
+                uniqueCount = 1,
+                error = null,
+                imageName = "fake-image-name1"
             )),
         listOf(
             SnykError(
-                "fake error message",
-                "fake-path"
+                message = "fake error message",
+                path = "fake-path"
             )
         )
     )
@@ -765,23 +768,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     @Test
     fun `test container image nodes with remediation description shown`() {
-        // mock Container results
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { getKubernetesImageCache(project)?.getKubernetesWorkloadImages() } returns setOf(
-            KubernetesWorkloadImage("ignored_image_name", MockVirtualFile("fake_virtual_file"))
-        )
-        every { getKubernetesImageCache(project)?.getKubernetesWorkloadImageNamesFromCache() } returns
-            setOf("ignored_image_name")
-        val containerService = ContainerService(project)
-        val mockkRunner = mockk<ConsoleCommandRunner>()
-        every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultWithRemediationJson
-        containerService.setConsoleCommandRunner(mockkRunner)
+        prepareContainerTreeNodesAndCaches(containerResultWithRemediationJson)
 
-        setUpContainerTest(containerService.scan())
-
-        // actual test run
-        project.service<SnykTaskQueueService>().scan()
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
         TreeUtil.selectNode(toolWindowPanel.getTree(), rootContainerNode.firstChild)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
@@ -818,6 +806,42 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
         assertNotNull(alternativeUpgradeValueLabel)
         assertEquals("alternative upgrades incorrect", "nginx:1-perl", alternativeUpgradeValueLabel?.text)
+    }
+
+    private fun prepareContainerTreeNodesAndCaches(containerResultJson: String): ContainerResult {
+        // mock Container results
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { getKubernetesImageCache(project)?.getKubernetesWorkloadImages() } returns setOf(
+            KubernetesWorkloadImage("ignored_image_name", MockVirtualFile("fake_virtual_file"))
+        )
+        every { getKubernetesImageCache(project)?.getKubernetesWorkloadImageNamesFromCache() } returns
+            setOf("ignored_image_name")
+        val containerService = ContainerService(project)
+        val mockkRunner = mockk<ConsoleCommandRunner>()
+        every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultJson
+        containerService.setConsoleCommandRunner(mockkRunner)
+
+        val containerResult = containerService.scan()
+        setUpContainerTest(containerResult)
+
+        // actual test run
+        project.service<SnykTaskQueueService>().scan()
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+        return containerResult
+    }
+
+    @Test
+    fun `test container image node has correct amount of leaf(issue) nodes`() {
+        val containerResult = prepareContainerTreeNodesAndCaches(containerResultWithRemediationJson)
+
+        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+
+        val expectedIssuesCount = containerResult.issuesCount
+        val actualIssueNodesCount = rootContainerNode.children().asSequence().sumBy {
+            (it as TreeNode).childCount
+        }
+        assertEquals(expectedIssuesCount, actualIssueNodesCount)
     }
 
     private fun waitWhileTreeBusy() {

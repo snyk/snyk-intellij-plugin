@@ -65,9 +65,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     private fun shouldAddQuickFix(forImage: ContainerIssuesForImage): Boolean {
-        val baseImageRemediation = forImage.docker.baseImageRemediation
-        if (baseImageRemediation == null || !baseImageRemediation.isRemediationAvailable()) return false
-        if (forImage.baseImageRemediationInfo == null) return false
+        if (forImage.baseImageRemediationInfo?.isRemediationAvailable() != true) return false
 
         val baseImageName = forImage.imageName.split(":")[0]
         val imageNameToFix =
@@ -81,7 +79,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val vulnerabilityString = if (total == 1) "vulnerability" else "vulnerabilities"
         return buildString {
             val remediationString = when {
-                image.baseImageRemediationInfo != null -> "Upgrade image to a newer version"
+                image.baseImageRemediationInfo?.isRemediationAvailable() == true -> "Upgrade image to a newer version"
                 else -> ""
             }
             append("Snyk found $total $vulnerabilityString. $remediationString")

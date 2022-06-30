@@ -8,6 +8,7 @@ data class ContainerIssuesForImage(
     val vulnerabilities: List<ContainerIssue>,
     val projectName: String,
     val docker: Docker,
+    val uniqueCount: Int,
     val error: String?,
     @SerializedName("path") val imageName: String,
     @Expose val baseImageRemediationInfo: BaseImageRemediationInfo? = null,
@@ -15,9 +16,14 @@ data class ContainerIssuesForImage(
 ) {
     val obsolete: Boolean get() = vulnerabilities.any { it.obsolete }
     val ignored: Boolean get() = vulnerabilities.all { it.ignored }
-    val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
+    val groupedVulnsById: Map<String, List<ContainerIssue>> get() = vulnerabilities.groupBy { it.id }
 
     fun getSeverities() = vulnerabilities.map { it.getSeverity() }.distinct()
+
+    fun countBySeverity(severity: Severity): Int = vulnerabilities
+            .filter { it.getSeverity() == severity }
+            .distinctBy { it.id }
+            .size
 }
 
 data class Docker(val baseImageRemediation: BaseImageRemediation? = null)
@@ -57,11 +63,14 @@ data class Identifiers(
 )
 
 data class BaseImageRemediationInfo(
-    val currentImage: BaseImageInfo?,
+    val currentImage: BaseImageInfo,
     val majorUpgrades: BaseImageInfo?,
     val minorUpgrades: BaseImageInfo?,
-    val alternativeUpgrades: BaseImageInfo?
-)
+    val alternativeUpgrades: BaseImageInfo?,
+    val recommendationForUpgrade: String = "Recommendations for upgrading the base image"
+) {
+    fun isRemediationAvailable() = majorUpgrades != null || minorUpgrades != null || alternativeUpgrades != null
+}
 
 data class BaseImageInfo(
     val name: String,

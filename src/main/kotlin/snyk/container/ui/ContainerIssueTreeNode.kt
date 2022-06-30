@@ -11,20 +11,20 @@ import snyk.container.ContainerIssue
 import javax.swing.tree.DefaultMutableTreeNode
 
 class ContainerIssueTreeNode(
-    private val issue: ContainerIssue,
+    private val groupedVulns: List<ContainerIssue>,
     val project: Project,
     override val navigateToSource: () -> Unit
-) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
+) : DefaultMutableTreeNode(groupedVulns.first()), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
     override fun getDescriptionPanel(logEventNeeded: Boolean): IssueDescriptionPanelBase {
         if (logEventNeeded) getSnykAnalyticsService().logIssueInTreeIsClicked(
             IssueInTreeIsClicked.builder()
                 .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
                 .issueType(IssueInTreeIsClicked.IssueType.CONTAINER_VULNERABILITY)
-                .issueId(issue.id)
-                .severity(issue.getIssueSeverityOrNull())
+                .issueId(groupedVulns.first().id)
+                .severity(groupedVulns.first().getIssueSeverityOrNull())
                 .build()
         )
-        return ContainerIssueDetailPanel(issue)
+        return ContainerIssueDetailPanel(groupedVulns)
     }
 }

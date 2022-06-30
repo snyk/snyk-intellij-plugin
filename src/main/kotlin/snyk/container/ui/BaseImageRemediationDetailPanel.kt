@@ -61,10 +61,12 @@ class BaseImageRemediationDetailPanel(
     private fun baseRemediationInfoPanel(): JPanel {
         val panel = JPanel(GridLayoutManager(4, 4, Insets(0, 0, 0, 0), 0, 10))
 
-        panel.add(
-            JLabel("Recommendations for upgrading the base image"),
-            baseGridConstraintsAnchorWest(0)
-        )
+        imageIssues.baseImageRemediationInfo?.let {
+            panel.add(
+                JLabel(it.recommendationForUpgrade),
+                baseGridConstraintsAnchorWest(0)
+            )
+        }
 
         panel.add(
             innerRemediationInfoPanel(),
