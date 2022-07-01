@@ -4,7 +4,15 @@ version: v1.25.0
 ignore:
   '*':
     - build/*:
-        reason: None Given
+        reason: Build data
         expires: 2032-05-20T07:12:38.106Z
         created: 2022-04-20T07:12:38.108Z
+    - 'src/integTest/*:
+        reason: Test data
+        expires: 2032-07-14T12:33:33.331Z
+        created: 2022-06-14T12:33:33.333Z
+    - 'src/test/*:
+        reason: Test data
+        expires: 2032-07-14T12:33:33.331Z
+        created: 2022-06-14T12:33:33.333Z
 patch: {}

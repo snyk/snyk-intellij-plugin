@@ -120,7 +120,9 @@ class SnykSettingsDialog(
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
             usageAnalyticsCheckBox.isSelected = applicationSettings.usageAnalyticsEnabled
             crashReportingCheckBox.isSelected = applicationSettings.crashReportingEnabled
+            enableAutomaticCLIUpdateCheckbox.isSelected = applicationSettings.automaticCLIUpdatesEnabled
 
+            cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
         }
     }
@@ -458,11 +460,10 @@ class SnykSettingsDialog(
             )
         )
 
-        cliPathTextBoxWithFileBrowser.toolTipText = "The default path is ${getCliFile().absolutePath}."
-        cliPathTextBoxWithFileBrowser.text = getCliFile().absolutePath
+        cliPathTextBoxWithFileBrowser.toolTipText = "The default path is ${getCliFile().canonicalPath}."
         val descriptor = FileChooserDescriptor(true, false, false, false, false, false)
         cliPathTextBoxWithFileBrowser.addBrowseFolderListener(
-            "", "Please choose the Snyk CLI you want to use", null,
+            "", "Please choose the Snyk CLI you want to use:", null,
             descriptor,
             TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
         )
@@ -544,4 +545,7 @@ class SnykSettingsDialog(
             false
         }
     }
+
+    fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
+    fun isAutomaticCLIUpdatesEnabled() = enableAutomaticCLIUpdateCheckbox.isSelected
 }

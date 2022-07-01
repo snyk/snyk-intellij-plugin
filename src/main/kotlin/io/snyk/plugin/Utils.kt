@@ -22,7 +22,6 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
-import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -85,7 +84,7 @@ fun getSnykCliDownloaderService(): SnykCliDownloaderService = getApplicationServ
 
 fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
 
-fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName) // TODO change
+fun getCliFile() = File(pluginSettings().cliPath)
 
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 

@@ -8,8 +8,11 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
 import io.snyk.plugin.Severity
+import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.isProjectSettingsAvailable
+import org.jetbrains.kotlin.konan.file.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -24,6 +27,8 @@ import java.util.UUID
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
+    var cliPath: String = getPluginPath() + File.separator + Platform.current().snykWrapperFileName
+    var automaticCLIUpdatesEnabled: Boolean = true
     var fileListenerEnabled: Boolean = true
     var token: String? = null
     var customEndpointUrl: String? = null

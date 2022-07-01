@@ -42,6 +42,7 @@ class SnykCliDownloaderService {
     }
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
+        if (!pluginSettings().automaticCLIUpdatesEnabled) return null
         try {
             val result = createRequest(CliDownloader.LATEST_RELEASES_URL).readString()
             val response = "v" + result.removeSuffix("\n")
@@ -57,6 +58,7 @@ class SnykCliDownloaderService {
     }
 
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
+        if (!pluginSettings().automaticCLIUpdatesEnabled) return
         cliDownloadPublisher.cliDownloadStarted()
         indicator.isIndeterminate = true
         currentProgressIndicator = indicator
