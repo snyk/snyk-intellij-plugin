@@ -85,7 +85,7 @@ fun getSnykCliDownloaderService(): SnykCliDownloaderService = getApplicationServ
 
 fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
 
-fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName)
+fun getCliFile() = File(getPluginPath(), Platform.current().snykWrapperFileName) // TODO change
 
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 

@@ -3,8 +3,11 @@ package io.snyk.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
+import com.intellij.openapi.ui.TextComponentAccessor
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
@@ -13,8 +16,11 @@ import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
+import com.intellij.util.ui.GridBag
+import com.intellij.util.ui.UI
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getAmplitudeExperimentService
+import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
@@ -26,6 +32,8 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import snyk.SnykBundle
 import snyk.amplitude.api.ExperimentUser
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
 import java.awt.Insets
 import java.util.Objects.nonNull
 import java.util.UUID
@@ -68,6 +76,9 @@ class SnykSettingsDialog(
 
     private val severityEnablementPanel = SeveritiesEnablementPanel().panel
 
+    private val enableAutomaticCLIUpdateCheckbox: JCheckBox = JCheckBox()
+    private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
+
     init {
         initializeUiComponents()
         initializeValidation()
@@ -75,15 +86,18 @@ class SnykSettingsDialog(
         receiveTokenButton.isEnabled = !getSnykCliDownloaderService().isCliDownloading()
 
         ApplicationManager.getApplication().messageBus.connect(rootPanel)
-            .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
-                override fun cliDownloadStarted() {
-                    receiveTokenButton.isEnabled = false
-                }
+            .subscribe(
+                SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+                object : SnykCliDownloadListener {
+                    override fun cliDownloadStarted() {
+                        receiveTokenButton.isEnabled = false
+                    }
 
-                override fun cliDownloadFinished(succeed: Boolean) {
-                    receiveTokenButton.isEnabled = true
+                    override fun cliDownloadFinished(succeed: Boolean) {
+                        receiveTokenButton.isEnabled = true
+                    }
                 }
-            })
+            )
 
         receiveTokenButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
@@ -422,6 +436,49 @@ class SnykSettingsDialog(
                 row = 5
             )
         )
+
+        createExecutableSettingsPanel()
+    }
+
+    private fun createExecutableSettingsPanel() {
+        val executableSettingsPanel = JPanel(GridBagLayout())
+        executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable settings")
+        val gb = GridBag().setDefaultWeightX(1.0)
+            .setDefaultAnchor(GridBagConstraints.LINE_START)
+            .setDefaultFill(GridBagConstraints.HORIZONTAL)
+
+        rootPanel.add(
+            executableSettingsPanel,
+            baseGridConstraints(
+                row = 5,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                fill = UIGridConstraints.FILL_HORIZONTAL,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                indent = 0
+            )
+        )
+
+        cliPathTextBoxWithFileBrowser.toolTipText = "The default path is ${getCliFile().absolutePath}."
+        cliPathTextBoxWithFileBrowser.text = getCliFile().absolutePath
+        val descriptor = FileChooserDescriptor(true, false, false, false, false, false)
+        cliPathTextBoxWithFileBrowser.addBrowseFolderListener(
+            "", "Please choose the Snyk CLI you want to use", null,
+            descriptor,
+            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
+        )
+
+        executableSettingsPanel.add(
+            UI.PanelFactory
+                .panel(cliPathTextBoxWithFileBrowser)
+                .withLabel("Path to Snyk CLI: ").createPanel(),
+            gb.nextLine()
+        )
+
+        enableAutomaticCLIUpdateCheckbox.text = "Automatically download updates for the Snyk CLI"
+        executableSettingsPanel.add(
+            enableAutomaticCLIUpdateCheckbox,
+            gb.nextLine()
+        )
     }
 
     fun getToken(): String = try {
@@ -464,7 +521,6 @@ class SnykSettingsDialog(
             }
             validationInfo
         }).installOn(textField)
-
 
         textField.document.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(event: DocumentEvent) {
