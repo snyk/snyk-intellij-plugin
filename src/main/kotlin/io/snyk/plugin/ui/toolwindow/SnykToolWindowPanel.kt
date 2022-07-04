@@ -638,7 +638,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         descriptionPanel.removeAll()
 
         val statePanel = StatePanel(
-            "Downloading Snyk CLI...",
+            "Installing Snyk plugin dependencies...",
             "Stop Downloading"
         ) {
             getSnykCliDownloaderService().stopCliDownload()
