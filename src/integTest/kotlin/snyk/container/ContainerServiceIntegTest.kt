@@ -10,6 +10,7 @@ import io.mockk.verify
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.setupDummyCliFile
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.junit.Test
 import snyk.container.TestYamls.podYaml
 
@@ -24,6 +25,21 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         .getResource(("container-test-results/debian-nginx-fake_critical_only.json"))!!.readText(Charsets.UTF_8)
     private val containerDoubleJenkinsWithPathJson = javaClass.classLoader
         .getResource(("container-test-results/container-double-jenkins-with-path.json"))!!.readText(Charsets.UTF_8)
+    private val containerArrayDoubleAuthFailureJson =
+        """
+            [
+              {
+                "ok": false,
+                "error": "Authentication failed. Please check the API token on https://snyk.io",
+                "path": "nginx:1.17.1"
+              },
+              {
+                "ok": false,
+                "error": "Authentication failed. Please check the API token on https://snyk.io",
+                "path": "nginx:1.22"
+              }
+            ]
+        """.trimIndent()
 
     override fun setUp() {
         super.setUp()
@@ -195,6 +211,30 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         assertTrue(
             "ContainerResult should hold NO_IMAGES_TO_SCAN_ERROR inside",
             containerResult.getFirstError() == ContainerService.NO_IMAGES_TO_SCAN_ERROR
+        )
+    }
+
+    @Test
+    fun `not Authenticated multi-images scan should produce correct ContainerResult`() {
+        // create KubernetesImageCache mock
+        val cache = spyk(KubernetesImageCache(project))
+        val fakeVirtualFile = createFile("fake.file", "").virtualFile
+        every { cache.getKubernetesWorkloadImages() } returns
+            setOf(KubernetesWorkloadImage("fake-image", fakeVirtualFile))
+        cut.setKubernetesImageCache(cache)
+        // create CLI mock
+        val mockkRunner = mockk<ConsoleCommandRunner>()
+        every { mockkRunner.execute(any(), any(), any(), project) } returns containerArrayDoubleAuthFailureJson
+        cut.setConsoleCommandRunner(mockkRunner)
+
+        val containerResult = cut.scan()
+
+        assertFalse("Container scan should NOT succeed", containerResult.isSuccessful())
+        val allCliIssues = containerResult.allCliIssues
+        assertNull("Images with issues should be NOT found", allCliIssues)
+        assertTrue(
+            "ContainerResult should hold CliError with AUTH_FAILED_TEXT inside",
+            containerResult.getFirstError()!!.message.startsWith(SnykToolWindowPanel.AUTH_FAILED_TEXT)
         )
     }
 }

@@ -12,6 +12,7 @@ import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.AUTH_FAILED_TEXT
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.errorHandler.SentryErrorReporter
@@ -132,7 +133,13 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
                     getSentryErrorMessage(rawStr, allErrors.joinToString("\n") { it.message })
                 ))
             }
-            return@getResultOrError getProductResult(cliIssues, allErrors)
+            val authError = allErrors.find { it.message.startsWith(AUTH_FAILED_TEXT) }
+            // if any Auth failure error persist then we should treat all results as Auth failure
+            return@getResultOrError if (authError != null) {
+                getErrorResult(authError.message)
+            } else {
+                getProductResult(cliIssues, allErrors)
+            }
         }
 
     private fun getSentryErrorMessage(rawStr: String, originalErrorMessage: String): String =
