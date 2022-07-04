@@ -20,6 +20,6 @@ class SCLogger private constructor() : DCLoggerBase(
 
     companion object {
         val instance = SCLogger()
-        const val presentableName = "SnykCode"
+        const val presentableName = "Snyk Code"
     }
 }
