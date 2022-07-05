@@ -15,7 +15,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 class SnykCodeService(val project: Project) {
 
     fun scan() {
-        SCLogger.instance.logInfo("Re-Analyse Project requested for: $project")
+        SCLogger.instance.logInfo("Re-analyse Project requested for: $project")
         SnykCodeIgnoreInfoHolder.instance.createDcIgnoreIfNeeded(project)
         RunUtils.instance.rescanInBackgroundCancellableDelayed(project, 0, false, false)
         getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningStarted()
