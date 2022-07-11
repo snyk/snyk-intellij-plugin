@@ -70,7 +70,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         settingsStateService.crashReportingEnabled = snykSettingsDialog.isCrashReportingEnabled()
 
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
-        settingsStateService.cliPath = snykSettingsDialog.getCliPath()
+        settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
 
         snykSettingsDialog.saveScanTypeChanges()
         snykSettingsDialog.saveSeveritiesEnablementChanges()
