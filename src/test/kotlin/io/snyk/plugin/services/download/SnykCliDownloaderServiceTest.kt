@@ -36,18 +36,18 @@ class SnykCliDownloaderServiceTest {
     @Test
     fun `requestLatestReleasesInformation should returns null if updates disabled`() {
         val cut = SnykCliDownloaderService()
-        every { settingsStateService.automaticCLIUpdatesEnabled } returns false
+        every { settingsStateService.manageBinariesAutomatically } returns false
 
         assertNull(cut.requestLatestReleasesInformation())
 
-        verify { settingsStateService.automaticCLIUpdatesEnabled }
+        verify { settingsStateService.manageBinariesAutomatically }
         confirmVerified(settingsStateService)
     }
 
     @Test
     fun `downloadLatestRelease should return without doing anything if updates disabled`() {
         val cut = SnykCliDownloaderService()
-        every { settingsStateService.automaticCLIUpdatesEnabled } returns false
+        every { settingsStateService.manageBinariesAutomatically } returns false
         every { settingsStateService.cliPath } returns "dummyPath"
         every { isCliInstalled() } returns false
         mockkObject(SnykBalloonNotificationHelper)
@@ -55,7 +55,7 @@ class SnykCliDownloaderServiceTest {
 
         cut.downloadLatestRelease(mockk(), mockk())
 
-        verify { settingsStateService.automaticCLIUpdatesEnabled }
+        verify { settingsStateService.manageBinariesAutomatically }
         verify { settingsStateService.cliPath }
         verify(exactly = 1) {
             SnykBalloonNotificationHelper.showError(

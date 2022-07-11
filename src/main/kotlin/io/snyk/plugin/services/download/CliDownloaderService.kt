@@ -44,7 +44,7 @@ class SnykCliDownloaderService {
     }
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
-        if (!pluginSettings().automaticCLIUpdatesEnabled) return null
+        if (!pluginSettings().manageBinariesAutomatically) return null
         try {
             val result = createRequest(CliDownloader.LATEST_RELEASES_URL).readString()
             val response = "v" + result.removeSuffix("\n")
@@ -60,7 +60,7 @@ class SnykCliDownloaderService {
     }
 
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
-        if (!pluginSettings().automaticCLIUpdatesEnabled) {
+        if (!pluginSettings().manageBinariesAutomatically) {
             if (!isCliInstalled()) {
                 val msg =
                     "The plugin cannot scan without Snyk CLI, but automatic download is disabled. " +

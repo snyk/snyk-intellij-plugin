@@ -102,7 +102,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     fun testDontDownloadCLIIfUpdatesDisabled() {
         val downloaderMock = setupMockForDownloadTest()
         val settings = setupAppSettingsForDownloadTests()
-        settings.automaticCLIUpdatesEnabled = false
+        settings.manageBinariesAutomatically = false
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         snykTaskQueueService.scan()

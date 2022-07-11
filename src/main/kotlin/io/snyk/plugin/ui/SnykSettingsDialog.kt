@@ -16,6 +16,7 @@ import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
+import com.intellij.util.FontUtil
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.UI
 import io.snyk.plugin.events.SnykCliDownloadListener
@@ -76,7 +77,7 @@ class SnykSettingsDialog(
 
     private val severityEnablementPanel = SeveritiesEnablementPanel().panel
 
-    private val enableAutomaticCLIUpdateCheckbox: JCheckBox = JCheckBox()
+    private val manageBinariesAutomatically: JCheckBox = JCheckBox()
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
 
     init {
@@ -120,7 +121,7 @@ class SnykSettingsDialog(
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
             usageAnalyticsCheckBox.isSelected = applicationSettings.usageAnalyticsEnabled
             crashReportingCheckBox.isSelected = applicationSettings.crashReportingEnabled
-            enableAutomaticCLIUpdateCheckbox.isSelected = applicationSettings.automaticCLIUpdatesEnabled
+            manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
 
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
@@ -393,6 +394,8 @@ class SnykSettingsDialog(
             )
         }
 
+        createExecutableSettingsPanel(4)
+
         /** User experience ------------------ */
 
         val userExperiencePanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
@@ -401,7 +404,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             userExperiencePanel,
             baseGridConstraints(
-                row = 4,
+                row = 5,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
@@ -438,11 +441,9 @@ class SnykSettingsDialog(
                 row = 5
             )
         )
-
-        createExecutableSettingsPanel()
     }
 
-    private fun createExecutableSettingsPanel() {
+    private fun createExecutableSettingsPanel(row: Int) {
         val executableSettingsPanel = JPanel(GridBagLayout())
         executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable settings")
         val gb = GridBag().setDefaultWeightX(1.0)
@@ -452,7 +453,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             executableSettingsPanel,
             baseGridConstraints(
-                row = 5,
+                row = row,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
@@ -475,9 +476,22 @@ class SnykSettingsDialog(
             gb.nextLine()
         )
 
-        enableAutomaticCLIUpdateCheckbox.text = "Automatically download updates for the Snyk CLI"
+        manageBinariesAutomatically.text = "Automatically manage needed binaries"
         executableSettingsPanel.add(
-            enableAutomaticCLIUpdateCheckbox,
+            manageBinariesAutomatically,
+            gb.nextLine()
+        )
+        val descriptionLabelManageBinaries =
+            JLabel(
+                "<html>These options allow you to customize the handling, where and how plugin " +
+                    "dependencies are downloaded.<br>" +
+                    "If <i>Automatically manage needed binaries</i> is unchecked, " +
+                    "please make sure to select a valid path to an <br>" +
+                    "existing Snyk CLI.</html>"
+            )
+        descriptionLabelManageBinaries.font = FontUtil.minusOne(descriptionLabelManageBinaries.font)
+        executableSettingsPanel.add(
+            descriptionLabelManageBinaries,
             gb.nextLine()
         )
     }
@@ -547,5 +561,5 @@ class SnykSettingsDialog(
     }
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
-    fun isAutomaticCLIUpdatesEnabled() = enableAutomaticCLIUpdateCheckbox.isSelected
+    fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
 }

@@ -36,7 +36,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isCrashReportingModified() ||
         snykSettingsDialog.isScanTypeChanged() ||
         snykSettingsDialog.isSeverityEnablementChanged() ||
-        snykSettingsDialog.isAutomaticCLIUpdatesEnabled() != settingsStateService.automaticCLIUpdatesEnabled ||
+        snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
         snykSettingsDialog.getCliPath() != settingsStateService.cliPath
 
     private fun isCoreParamsModified() = isTokenModified() ||
@@ -69,7 +69,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         settingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
         settingsStateService.crashReportingEnabled = snykSettingsDialog.isCrashReportingEnabled()
 
-        settingsStateService.automaticCLIUpdatesEnabled = snykSettingsDialog.isAutomaticCLIUpdatesEnabled()
+        settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
         settingsStateService.cliPath = snykSettingsDialog.getCliPath()
 
         snykSettingsDialog.saveScanTypeChanges()

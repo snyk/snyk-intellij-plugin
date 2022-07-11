@@ -28,7 +28,7 @@ import java.util.UUID
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
     var cliPath: String = getPluginPath() + File.separator + Platform.current().snykWrapperFileName
-    var automaticCLIUpdatesEnabled: Boolean = true
+    var manageBinariesAutomatically: Boolean = true
     var fileListenerEnabled: Boolean = true
     var token: String? = null
     var customEndpointUrl: String? = null
