@@ -44,9 +44,11 @@ fun resetSettings(project: Project?) {
 }
 
 /** low level avoiding download the CLI file */
-fun mockCliDownload() {
+fun mockCliDownload(): RequestBuilder {
     val requestBuilderMockk = mockk<RequestBuilder>(relaxed = true)
     justRun { requestBuilderMockk.saveToFile(any(), any()) }
     mockkObject(HttpRequestHelper)
     every { HttpRequestHelper.createRequest(CliDownloader.LATEST_RELEASE_DOWNLOAD_URL) } returns requestBuilderMockk
+    every { HttpRequestHelper.createRequest(CliDownloader.LATEST_RELEASES_URL) } returns requestBuilderMockk
+    return requestBuilderMockk
 }

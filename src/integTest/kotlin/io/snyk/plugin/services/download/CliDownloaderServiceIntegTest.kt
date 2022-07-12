@@ -7,6 +7,7 @@ import com.intellij.util.io.HttpRequests
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -15,8 +16,10 @@ import io.snyk.plugin.mockCliDownload
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.apache.http.HttpStatus
 import org.junit.Test
+import java.io.File
 import java.net.SocketTimeoutException
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -28,12 +31,15 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     private lateinit var downloader: CliDownloader
     private lateinit var cut: SnykCliDownloaderService
     private lateinit var cutSpy: SnykCliDownloaderService
-    private val cliFile = getCliFile()
+    private lateinit var cliFile: File
 
     override fun setUp() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { pluginSettings() } returns SnykApplicationSettingsStateService()
+        cliFile = getCliFile()
         cut = project.service()
         cutSpy = spyk(cut)
         errorHandler = mockk()
@@ -51,6 +57,9 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
+    /**
+     * Needs an internet connection - real test if release info can be downloaded
+     */
     @Test
     fun testGetLatestReleasesInformation() {
         val latestReleaseInfo = project.service<SnykCliDownloaderService>().requestLatestReleasesInformation()
@@ -170,25 +179,18 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     @Test
     fun testCliSilentAutoUpdateWhenPreviousUpdateInfoIsNull() {
         val currentDate = LocalDate.now()
-
         val settings = pluginSettings()
-
-        settings.cliVersion = ""
         settings.lastCheckDate = null
-
         ensureCliFileExistent()
-
-        every { downloader.downloadFile(any(), any(), any()) } returns cliFile
+        every { cutSpy.requestLatestReleasesInformation() } returns LatestReleaseInfo(
+            "http://testUrl", "testReleaseInfo", "testTag"
+        )
+        justRun { cutSpy.downloadLatestRelease(any(), any()) }
 
         cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
 
-        assertTrue(getCliFile().exists())
-
         assertEquals(currentDate, settings.getLastCheckDate())
-        assertEquals(
-            cutSpy.getLatestReleaseInfo()!!.tagName,
-            "v" + settings.cliVersion
-        )
+        verify { cutSpy.downloadLatestRelease(any(), any()) }
     }
 
     @Test

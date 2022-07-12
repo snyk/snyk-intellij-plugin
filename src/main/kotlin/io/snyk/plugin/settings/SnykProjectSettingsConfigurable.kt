@@ -18,11 +18,11 @@ import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
 
-    private val applicationSettingsStateService
+    private val settingsStateService
         get() = pluginSettings()
 
-    val snykSettingsDialog: SnykSettingsDialog =
-        SnykSettingsDialog(project, applicationSettingsStateService, this)
+    var snykSettingsDialog: SnykSettingsDialog =
+        SnykSettingsDialog(project, settingsStateService, this)
 
     override fun getId(): String = "io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
 
@@ -35,7 +35,9 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isSendUsageAnalyticsModified() ||
         isCrashReportingModified() ||
         snykSettingsDialog.isScanTypeChanged() ||
-        snykSettingsDialog.isSeverityEnablementChanged()
+        snykSettingsDialog.isSeverityEnablementChanged() ||
+        snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
+        snykSettingsDialog.getCliPath() != settingsStateService.cliPath
 
     private fun isCoreParamsModified() = isTokenModified() ||
         isCustomEndpointModified() ||
@@ -54,17 +56,22 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         val productSelectionChanged = snykSettingsDialog.isScanTypeChanged()
         val severitySelectionChanged = snykSettingsDialog.isSeverityEnablementChanged()
 
-        applicationSettingsStateService.customEndpointUrl = customEndpoint
+        settingsStateService.customEndpointUrl = customEndpoint
         SnykCodeParams.instance.apiUrl = customEndpoint
         SnykCodeParams.instance.isDisableSslVerification = snykSettingsDialog.isIgnoreUnknownCA()
 
-        applicationSettingsStateService.token = snykSettingsDialog.getToken()
+        settingsStateService.token = snykSettingsDialog.getToken()
         SnykCodeParams.instance.sessionToken = snykSettingsDialog.getToken()
 
-        applicationSettingsStateService.organization = snykSettingsDialog.getOrganization()
-        applicationSettingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
-        applicationSettingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
-        applicationSettingsStateService.crashReportingEnabled = snykSettingsDialog.isCrashReportingEnabled()
+        settingsStateService.organization = snykSettingsDialog.getOrganization()
+        settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
+
+        settingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
+        settingsStateService.crashReportingEnabled = snykSettingsDialog.isCrashReportingEnabled()
+
+        settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
+        settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
+
         snykSettingsDialog.saveScanTypeChanges()
         snykSettingsDialog.saveSeveritiesEnablementChanges()
 
@@ -77,29 +84,29 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
         }
         if (productSelectionChanged || severitySelectionChanged) {
-            applicationSettingsStateService.matchFilteringWithEnablement()
+            settingsStateService.matchFilteringWithEnablement()
             getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
             getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
         }
     }
 
     private fun isTokenModified(): Boolean =
-        snykSettingsDialog.getToken() != applicationSettingsStateService.token
+        snykSettingsDialog.getToken() != settingsStateService.token
 
     private fun isCustomEndpointModified(): Boolean =
-        snykSettingsDialog.getCustomEndpoint() != applicationSettingsStateService.customEndpointUrl
+        snykSettingsDialog.getCustomEndpoint() != settingsStateService.customEndpointUrl
 
     private fun isOrganizationModified(): Boolean =
-        snykSettingsDialog.getOrganization() != applicationSettingsStateService.organization
+        snykSettingsDialog.getOrganization() != settingsStateService.organization
 
     private fun isIgnoreUnknownCAModified(): Boolean =
-        snykSettingsDialog.isIgnoreUnknownCA() != applicationSettingsStateService.ignoreUnknownCA
+        snykSettingsDialog.isIgnoreUnknownCA() != settingsStateService.ignoreUnknownCA
 
     private fun isSendUsageAnalyticsModified(): Boolean =
-        snykSettingsDialog.isUsageAnalyticsEnabled() != applicationSettingsStateService.usageAnalyticsEnabled
+        snykSettingsDialog.isUsageAnalyticsEnabled() != settingsStateService.usageAnalyticsEnabled
 
     private fun isCrashReportingModified(): Boolean =
-        snykSettingsDialog.isCrashReportingEnabled() != applicationSettingsStateService.crashReportingEnabled
+        snykSettingsDialog.isCrashReportingEnabled() != settingsStateService.crashReportingEnabled
 
     private fun isAdditionalParametersModified(): Boolean = isProjectSettingsAvailable(project) &&
         snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(project)?.additionalParameters

@@ -9,9 +9,11 @@ import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.tail
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -42,6 +44,7 @@ class SnykCliDownloaderService {
     }
 
     fun requestLatestReleasesInformation(): LatestReleaseInfo? {
+        if (!pluginSettings().manageBinariesAutomatically) return null
         try {
             val result = createRequest(CliDownloader.LATEST_RELEASES_URL).readString()
             val response = "v" + result.removeSuffix("\n")
@@ -57,6 +60,15 @@ class SnykCliDownloaderService {
     }
 
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
+        if (!pluginSettings().manageBinariesAutomatically) {
+            if (!isCliInstalled()) {
+                val msg =
+                    "The plugin cannot scan without Snyk CLI, but automatic download is disabled. " +
+                        "Please put a Snyk CLI executable in ${pluginSettings().cliPath} and retry."
+                SnykBalloonNotificationHelper.showError(msg, project)
+            }
+            return
+        }
         cliDownloadPublisher.cliDownloadStarted()
         indicator.isIndeterminate = true
         currentProgressIndicator = indicator
