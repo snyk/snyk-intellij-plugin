@@ -1,6 +1,12 @@
 # Snyk Changelog
 
-## [2.4.38]
+## [2.4.40]
+
+### Fixed
+
+- Plugin does not work in Jetbrains IDEs that are delivered without Kotlin
+
+## [2.4.39]
 
 ### Added
 
