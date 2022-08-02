@@ -412,7 +412,7 @@ class SnykSettingsDialog(
             )
         )
 
-        usageAnalyticsCheckBox.text = "Help us with anonymous usage analytics"
+        usageAnalyticsCheckBox.text = "Send usage statistics to Snyk"
         userExperiencePanel.add(
             usageAnalyticsCheckBox,
             baseGridConstraints(
@@ -422,7 +422,7 @@ class SnykSettingsDialog(
             )
         )
 
-        crashReportingCheckBox.text = "Allow automatically sending crash reports"
+        crashReportingCheckBox.text = "Send error reports to Snyk"
         userExperiencePanel.add(
             crashReportingCheckBox,
             baseGridConstraints(

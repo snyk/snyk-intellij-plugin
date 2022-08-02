@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.41]
+
+### Changed
+
+- Wording for sending crash reports and analytics to Snyk
+
 ## [2.4.40]
 
 ### Fixed
