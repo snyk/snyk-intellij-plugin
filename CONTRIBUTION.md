@@ -56,6 +56,14 @@ Should be mostly done trough [IntelliJ Platform Testing Framework](https://plugi
 
 Mocks are [not recommended](https://plugins.jetbrains.com/docs/intellij/testing-plugins.html#mocks) by Jetbrains, but we heavily (and successfully) use Mockk framework. Just be careful not to mock whole world and make sure you're testing real functionality and not mocked one.
 
+### Running the extension
+
+- From the toolbar click `Run` -> `Run`
+- Click `Edit Configuration` -> `Add new configuration`
+- Select `Gradle` from the configuration list
+- Type `runIde` in the `Run` textbox to select the `runIde` run command
+- Click `Apply` and `Run` to run the extension`
+
 ### Useful Links:
 - [IntelliJ Platform Plugin SDK](https://plugins.jetbrains.com/docs/intellij) - that's your "Holy book" :)
 - [Gradle IntelliJ Plugin](https://github.com/JetBrains/gradle-intellij-plugin) - needed for plugin development. See it's
