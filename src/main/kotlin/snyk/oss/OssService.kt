@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.CliAdapter
 import snyk.common.SnykError
+import snyk.pluginInfo
 
 /**
  * Wrap work with Snyk CLI for OSS (`test` command).
@@ -28,6 +29,10 @@ class OssService(project: Project) : CliAdapter<OssVulnerabilitiesForFile, OssRe
     override fun buildExtraOptions(): List<String> {
         val settings = pluginSettings()
         val options: MutableList<String> = mutableListOf()
+
+        if (pluginInfo.integrationEnvironment.contains("RIDER")) {
+            options.add("--all-projects")
+        }
 
         options.add("--json")
 
