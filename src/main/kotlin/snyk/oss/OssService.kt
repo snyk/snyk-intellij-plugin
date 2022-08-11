@@ -30,13 +30,16 @@ class OssService(project: Project) : CliAdapter<OssVulnerabilitiesForFile, OssRe
         val settings = pluginSettings()
         val options: MutableList<String> = mutableListOf()
 
-        if (pluginInfo.integrationEnvironment.contains("RIDER")) {
-            options.add("--all-projects")
-        }
-
         options.add("--json")
 
         val additionalParameters = settings.getAdditionalParameters(project)
+        val hasRiderParam = additionalParameters != null &&
+            additionalParameters.contains("RIDER")
+
+        if (pluginInfo.integrationEnvironment.contains("RIDER") &&
+            !hasRiderParam) {
+            options.add("--all-projects")
+        }
 
         if (additionalParameters != null && additionalParameters.trim().isNotEmpty()) {
             options.addAll(additionalParameters.trim().split(" "))

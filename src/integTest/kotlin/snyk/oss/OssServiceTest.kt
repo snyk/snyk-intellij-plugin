@@ -106,6 +106,25 @@ class OssServiceTest : LightPlatformTestCase() {
     }
 
     @Test
+    fun testBuildCliCommandsListDoNotAddAllProjectsTwice() {
+        setupDummyCliFile()
+        val pluginInformation = PluginInformation(
+            integrationName = "INTEGRATION_NAME",
+            integrationVersion = "1.0.0",
+            integrationEnvironment = "INTEGRATION_ENV_RIDER",
+            integrationEnvironmentVersion = "1.0.0"
+        )
+
+        mockPluginInformation(pluginInformation)
+        project.service<SnykProjectSettingsStateService>().additionalParameters =
+            "--file=package.json --configuration-matching='iamaRegex' --all-projects"
+
+        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
+        val allProjectsCliCommands = cliCommands.filter { it == "--all-projects" }
+        assertTrue(allProjectsCliCommands.size == 1)
+    }
+
+    @Test
     fun testGroupVulnerabilities() {
         val cli = ossService
 
