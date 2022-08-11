@@ -19,6 +19,7 @@ import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
 import snyk.PluginInformation
 import snyk.errorHandler.SentryErrorReporter
+import snyk.oss.OssService.Companion.ALL_PROJECTS_PARAM
 import snyk.pluginInfo
 
 class OssServiceTest : LightPlatformTestCase() {
@@ -119,9 +120,10 @@ class OssServiceTest : LightPlatformTestCase() {
         project.service<SnykProjectSettingsStateService>().additionalParameters =
             "--file=package.json --configuration-matching='iamaRegex' --all-projects"
 
-        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
-        val allProjectsCliCommands = cliCommands.filter { it == "--all-projects" }
-        assertTrue(allProjectsCliCommands.size == 1)
+        val countAllProjectsParams = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
+            .count{ i -> i == ALL_PROJECTS_PARAM }
+
+        assertTrue(countAllProjectsParams == 1)
     }
 
     @Test
