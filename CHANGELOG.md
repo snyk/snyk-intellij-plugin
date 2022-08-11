@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.43]
+
+### Fixed
+
+- `--all-projects` enabled by default for Rider IDE
+
 ## [2.4.41]
 
 ### Changed

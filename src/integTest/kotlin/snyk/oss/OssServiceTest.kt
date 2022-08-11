@@ -5,6 +5,7 @@ import com.intellij.testFramework.LightPlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.cli.ConsoleCommandRunner
@@ -16,7 +17,10 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.junit.Test
+import snyk.PluginInformation
 import snyk.errorHandler.SentryErrorReporter
+import snyk.oss.OssService.Companion.ALL_PROJECTS_PARAM
+import snyk.pluginInfo
 
 class OssServiceTest : LightPlatformTestCase() {
 
@@ -83,6 +87,43 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains("--file=package.json"))
         assertTrue(cliCommands.contains("--configuration-matching='iamaRegex'"))
         assertTrue(cliCommands.contains("--sub-project=snyk"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListWithRiderIde() {
+        setupDummyCliFile()
+        val pluginInformation = PluginInformation(
+            integrationName = "INTEGRATION_NAME",
+            integrationVersion = "1.0.0",
+            integrationEnvironment = "INTEGRATION_ENV_RIDER",
+            integrationEnvironmentVersion = "1.0.0"
+        )
+
+        mockPluginInformation(pluginInformation)
+
+        val cliCommands = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
+
+        assertTrue(cliCommands.contains("--all-projects"))
+    }
+
+    @Test
+    fun testBuildCliCommandsListDoNotAddAllProjectsTwice() {
+        setupDummyCliFile()
+        val pluginInformation = PluginInformation(
+            integrationName = "INTEGRATION_NAME",
+            integrationVersion = "1.0.0",
+            integrationEnvironment = "INTEGRATION_ENV_RIDER",
+            integrationEnvironmentVersion = "1.0.0"
+        )
+
+        mockPluginInformation(pluginInformation)
+        project.service<SnykProjectSettingsStateService>().additionalParameters =
+            "--file=package.json --configuration-matching='iamaRegex' --all-projects"
+
+        val countAllProjectsParams = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
+            .count{ i -> i == ALL_PROJECTS_PARAM }
+
+        assertTrue(countAllProjectsParams == 1)
     }
 
     @Test
@@ -380,4 +421,9 @@ class OssServiceTest : LightPlatformTestCase() {
 
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
         .getResource(resourceName)!!.readText(Charsets.UTF_8)
+
+    private fun mockPluginInformation(pluginInfoMock: PluginInformation) {
+        mockkStatic("snyk.PluginInformationKt")
+        every { pluginInfo } returns pluginInfoMock
+    }
 }
