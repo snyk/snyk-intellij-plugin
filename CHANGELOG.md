@@ -2,6 +2,10 @@
 
 ## [2.4.43]
 
+### Changed
+
+- minimum IntelliJ Platform version is now 2020.3 with JDK 11
+
 ### Fixed
 
 - `--all-projects` enabled by default for Rider IDE
