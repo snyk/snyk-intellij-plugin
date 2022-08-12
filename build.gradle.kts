@@ -69,7 +69,7 @@ detekt {
 tasks {
     withType<KotlinCompile> {
         kotlinOptions.jvmTarget = "11"
-        kotlinOptions.languageVersion = "1.5"
+        kotlinOptions.languageVersion = "1.7"
     }
 
     withType<Detekt> {
