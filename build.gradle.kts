@@ -64,16 +64,6 @@ detekt {
     config = files("$projectDir/.github/detekt/detekt-config.yml")
     baseline = file("$projectDir/.github/detekt/detekt-baseline.xml")
     buildUponDefaultConfig = true
-
-    reports {
-        sarif {
-            enabled = true
-            destination = file("$buildDir/detekt.sarif")
-        }
-        html.enabled = false
-        xml.enabled = false
-        txt.enabled = false
-    }
 }
 
 tasks {
@@ -84,6 +74,15 @@ tasks {
 
     withType<Detekt> {
         jvmTarget = "11"
+        reports {
+            sarif {
+                required.set(true)
+                outputLocation.set(file("$buildDir/detekt.sarif"))
+            }
+            html.required.set(false)
+            xml.required.set(false)
+            txt.required.set(false)
+        }
     }
 
     withType<ProcessResources> {
