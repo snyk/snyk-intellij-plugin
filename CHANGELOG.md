@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.44]
+
+### Fixed
+
+- allow Snyk Code to be enabled during first authentication from preference dialog
+
 ## [2.4.43]
 
 ### Fixed

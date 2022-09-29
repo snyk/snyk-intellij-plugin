@@ -10,6 +10,8 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.net.CliConfigSettings
+import io.snyk.plugin.net.LocalCodeEngine
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
@@ -36,15 +38,19 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         application.replaceService(SnykApplicationSettingsStateService::class.java, settings, application)
         application.replaceService(SnykApiService::class.java, snykApiServiceMock, application)
         application.replaceService(SnykAnalyticsService::class.java, analyticsService, application)
-        application.replaceService(AmplitudeExperimentService::class.java, amplitudeExperimentationServiceMock, application)
+        application.replaceService(
+            AmplitudeExperimentService::class.java,
+            amplitudeExperimentationServiceMock,
+            application
+        )
 
         project.replaceService(SnykTaskQueueService::class.java, taskQueueService, project)
 
         every { settings.token } returns null
         every { settings.sastOnServerEnabled } returns true
         every { settings.localCodeEngineEnabled } returns false
-        every { snykApiServiceMock.sastSettings?.sastEnabled } returns true
-        every { snykApiServiceMock.sastSettings?.localCodeEngine?.enabled } returns false
+        every { snykApiServiceMock.getSastSettings()?.sastEnabled } returns true
+        every { snykApiServiceMock.getSastSettings()?.localCodeEngine?.enabled } returns false
     }
 
     override fun tearDown() {
@@ -76,6 +82,11 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     fun `should not display onboarding panel and run scan directly`() {
         every { settings.token } returns "test-token"
         every { settings.pluginFirstRun } returns true
+        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+            true,
+            LocalCodeEngine(false),
+            false
+        )
         justRun { taskQueueService.scan() }
 
         cut = SnykToolWindowPanel(project)
@@ -91,6 +102,11 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `should automatically enable all products on first run after Auth`() {
+        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+            true,
+            LocalCodeEngine(false),
+            false
+        )
         val application = ApplicationManager.getApplication()
         application.replaceService(
             SnykApplicationSettingsStateService::class.java,
@@ -103,7 +119,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         SnykToolWindowPanel(project)
 
         verify(exactly = 1, timeout = 5000) {
-            snykApiServiceMock.sastSettings
+            snykApiServiceMock.getSastSettings()
         }
         assertTrue(pluginSettings().ossScanEnable)
         assertTrue(pluginSettings().snykCodeSecurityIssuesScanEnable)

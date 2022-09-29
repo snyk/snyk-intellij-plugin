@@ -45,7 +45,7 @@ class ScanTypesPanel(
     private var snykCodeComment: JLabel? = null
     private var snykCodeAlertHyperLinkLabel = HyperlinkLabel()
     private var snykCodeReCheckLinkLabel = LinkLabel.create("Check again") {
-        checkSastEnable()
+        checkSastEnabled()
     }
 
     private var currentOssScanEnabled = settings.ossScanEnable
@@ -186,7 +186,7 @@ class ScanTypesPanel(
             codeQualityCheckbox?.addItemListener {
                 snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
             }
-            checkSastEnable()
+            checkSastEnabled()
         }
     }.apply {
         name = "scanTypesPanel"
@@ -207,15 +207,20 @@ class ScanTypesPanel(
         }
     }
 
-    private fun checkSastEnable() {
+    fun checkSastEnabled(token: String? = pluginSettings().token) {
         setSnykCodeAvailability(false)
+        if (token.isNullOrBlank()) {
+            showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")
+            return
+        }
+
         val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
         showSnykCodeAlert(
             if (snykCodeAvailable) "" else "Snyk Code only works in SAAS mode (i.e. no Custom Endpoint usage)"
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                val sastCliConfigSettings = getSnykApiService().sastSettings
+                val sastCliConfigSettings = getSnykApiService().getSastSettings(token)
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 when (settings.sastOnServerEnabled) {
@@ -229,6 +234,7 @@ class ScanTypesPanel(
                             doShowFilesToUpload()
                         }
                     }
+
                     false -> {
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false
@@ -244,6 +250,7 @@ class ScanTypesPanel(
                             }
                         )
                     }
+
                     null -> {
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false

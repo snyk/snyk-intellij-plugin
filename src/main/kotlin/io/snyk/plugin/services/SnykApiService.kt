@@ -23,11 +23,10 @@ import javax.net.ssl.X509TrustManager
 
 @Service
 class SnykApiService : Disposable {
-
-    val sastSettings: CliConfigSettings?
-        get() {
-            return getSnykApiClient()?.sastSettings(pluginSettings().organization)
-        }
+    fun getSastSettings(token: String? = pluginSettings().token): CliConfigSettings? {
+        if (token == null) return null
+        return getSnykApiClient(token)?.sastSettings(pluginSettings().organization)
+    }
 
     val userId: String?
         get() = getSnykApiClient()?.getUserId()
@@ -98,33 +97,37 @@ class SnykApiService : Disposable {
 
     private var currentUniqSnykApiClient: UniqSnykApiClient? = null
 
-    private fun getSnykApiClient(): SnykApiClient? {
+    private fun getSnykApiClient(token: String? = pluginSettings().token): SnykApiClient? {
+        if (token.isNullOrBlank()) {
+            return currentUniqSnykApiClient?.snykApiClient
+        }
         val appSettings = pluginSettings()
         var endpoint = appSettings.customEndpointUrl
         if (endpoint.isNullOrEmpty()) endpoint = "https://snyk.io/api/"
 
-        val token = appSettings.token ?: ""
         val baseUrl: String = if (endpoint.endsWith('/')) endpoint else "$endpoint/"
         val disableSslVerification = appSettings.ignoreUnknownCA
-
-        if (currentUniqSnykApiClient?.token != token ||
-            currentUniqSnykApiClient?.baseUrl != baseUrl ||
-            currentUniqSnykApiClient?.disableSslVerification != disableSslVerification
+        if (currentUniqSnykApiClient?.token == token &&
+            currentUniqSnykApiClient?.baseUrl == baseUrl &&
+            currentUniqSnykApiClient?.disableSslVerification == disableSslVerification
         ) {
-            log.debug("Creating new SnykApiClient")
-            currentUniqSnykApiClient = try {
-                val retrofit = createRetrofit(token, baseUrl, disableSslVerification)
-                UniqSnykApiClient(
-                    snykApiClient = SnykApiClient(retrofit),
-                    token = token,
-                    baseUrl = baseUrl,
-                    disableSslVerification = disableSslVerification
-                )
-            } catch (t: Throwable) {
-                log.warn("Failed to create Retrofit client for endpoint: $endpoint", t)
-                null
-            }
+            return currentUniqSnykApiClient?.snykApiClient
         }
+
+        log.debug("Creating new SnykApiClient")
+        currentUniqSnykApiClient = try {
+            val retrofit = createRetrofit(token, baseUrl, disableSslVerification)
+            UniqSnykApiClient(
+                snykApiClient = SnykApiClient(retrofit),
+                token = token,
+                baseUrl = baseUrl,
+                disableSslVerification = disableSslVerification
+            )
+        } catch (t: Throwable) {
+            log.warn("Failed to create Retrofit client for endpoint: $endpoint", t)
+            null
+        }
+
         return currentUniqSnykApiClient?.snykApiClient
     }
 

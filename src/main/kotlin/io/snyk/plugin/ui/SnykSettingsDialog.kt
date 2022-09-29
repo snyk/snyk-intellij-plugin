@@ -20,9 +20,7 @@ import com.intellij.util.FontUtil
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.UI
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isProjectSettingsAvailable
@@ -32,7 +30,6 @@ import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import snyk.SnykBundle
-import snyk.amplitude.api.ExperimentUser
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
@@ -105,12 +102,7 @@ class SnykSettingsDialog(
                 snykProjectSettingsConfigurable.apply()
                 val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 tokenTextField.text = token
-
-                val analytics = getSnykAnalyticsService()
-                val userId = analytics.obtainUserId(token)
-                analytics.setUserId(userId)
-
-                getAmplitudeExperimentService().fetch(ExperimentUser(userId))
+                this.scanTypesPanelOuter.checkSastEnabled(token)
             }
         }
 

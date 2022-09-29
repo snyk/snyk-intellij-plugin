@@ -476,7 +476,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun enableCodeScanAccordingToServerSetting() {
         pluginSettings().apply {
-            val sastSettings = getSnykApiService().sastSettings
+            val sastSettings = getSnykApiService().getSastSettings()
             sastOnServerEnabled = sastSettings?.sastEnabled
             localCodeEngineEnabled = sastSettings?.localCodeEngine?.enabled
             val codeScanAllowed = sastOnServerEnabled == true && localCodeEngineEnabled != true
