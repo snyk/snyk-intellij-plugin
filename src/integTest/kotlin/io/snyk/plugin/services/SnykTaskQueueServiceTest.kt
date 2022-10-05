@@ -36,6 +36,8 @@ import org.junit.Test
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
+import snyk.trust.WorkspaceTrustService
+import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 
 @Suppress("FunctionName")
@@ -51,6 +53,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         mockSnykApiServiceSastEnabled()
         replaceSnykApiServiceMockInContainer()
         mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkStatic("snyk.trust.TrustedProjectsKt")
         downloaderServiceMock = spyk(SnykCliDownloaderService())
         every { downloaderServiceMock.requestLatestReleasesInformation() } returns LatestReleaseInfo(
             "http://testUrl",
@@ -58,6 +61,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
             "testTag"
         )
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
     }
 
     private fun mockSnykApiServiceSastEnabled() {

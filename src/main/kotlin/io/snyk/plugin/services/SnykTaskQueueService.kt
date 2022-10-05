@@ -30,6 +30,8 @@ import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
+import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.nio.file.Paths
 
 @Service
 class SnykTaskQueueService(val project: Project) {
@@ -73,6 +75,10 @@ class SnykTaskQueueService(val project: Project) {
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk wait for changed files to be saved on disk", true) {
             override fun run(indicator: ProgressIndicator) {
+                project.basePath?.let {
+                    if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(Paths.get(it))) return
+                }
+
                 ApplicationManager.getApplication().invokeAndWait {
                     FileDocumentManager.getInstance().saveAllDocuments()
                 }

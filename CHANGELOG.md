@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.4.48]
+### Added
+
+- Project trust feature.
+
 ## [2.4.47]
 
 ### Fixed
