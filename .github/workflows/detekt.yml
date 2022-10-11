@@ -6,7 +6,7 @@ on:
 
 jobs:
   detekt:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2

@@ -7,7 +7,7 @@ on:
 jobs:
   gradleValidation:
     name: Validate Gradle Wrapper
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
@@ -50,7 +50,7 @@ jobs:
   pluginVerifier:
     name: Plugin Verifier
     needs: gradleValidation
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
         uses: actions/checkout@v2
