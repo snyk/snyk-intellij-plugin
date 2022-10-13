@@ -123,8 +123,8 @@ class SnykApiService : Disposable {
                 baseUrl = baseUrl,
                 disableSslVerification = disableSslVerification
             )
-        } catch (t: Throwable) {
-            log.warn("Failed to create Retrofit client for endpoint: $endpoint", t)
+        } catch (ignore: RuntimeException) {
+            log.warn("Failed to create Retrofit client for endpoint: $endpoint", ignore)
             null
         }
 
