@@ -11,7 +11,7 @@ plugins {
     id("org.jetbrains.changelog") version "1.2.1"
     id("org.jetbrains.intellij") version "1.1.2"
     id("org.jetbrains.kotlin.jvm") version "1.5.10"
-    id("io.gitlab.arturbosch.detekt") version ("1.17.1")
+    id("io.gitlab.arturbosch.detekt") version ("1.21.0")
     id("pl.allegro.tech.build.axion-release") version "1.13.6"
 }
 
@@ -27,8 +27,8 @@ repositories {
 dependencies {
     implementation("org.commonmark:commonmark:0.19.0")
     implementation("com.google.code.gson:gson:2.9.0")
-    implementation("com.segment.analytics.java:analytics:3.2.0")
-    implementation("io.sentry:sentry:6.0.0")
+    implementation("com.segment.analytics.java:analytics:3.3.1")
+    implementation("io.sentry:sentry:6.4.2")
     implementation("io.snyk.code.sdk:snyk-code-client:2.3.4")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
     implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
@@ -44,7 +44,7 @@ dependencies {
     testImplementation("org.awaitility:awaitility:4.2.0")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.4.32")
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.20.0")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.21.0")
 }
 
 // configuration for gradle-intellij-plugin plugin.

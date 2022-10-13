@@ -12,12 +12,12 @@ complexity:
     ignorePrivate: true
     ignoreDeprecated: true
     excludes: [ '**/integTest/**', '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+
 style:
   ReturnCount:
     active: true
     max: 5
-    excludedFunctions:
-      - 'equals'
+    excludedFunctions: 'equals'
     excludeLabeled: false
     excludeReturnFromLambda: true
     excludeGuardClauses: true
