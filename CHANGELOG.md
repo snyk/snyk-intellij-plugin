@@ -1,6 +1,6 @@
 # Snyk Changelog
 
-## [2.4.44]
+## [2.4.45]
 
 ### Fixed
 
