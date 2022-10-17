@@ -1,10 +1,13 @@
 package io.snyk.plugin.settings
 
 import com.intellij.openapi.options.SearchableConfigurable
+import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getAmplitudeExperimentService
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
@@ -14,6 +17,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
+import snyk.amplitude.api.ExperimentUser
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
@@ -87,6 +91,13 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             settingsStateService.matchFilteringWithEnablement()
             getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
             getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
+        }
+
+        runBackgroundableTask("Identifying with Analytics service", project, true) {
+            val analytics = getSnykAnalyticsService()
+            val userId = analytics.obtainUserId(snykSettingsDialog.getToken())
+            analytics.setUserId(userId)
+            getAmplitudeExperimentService().fetch(ExperimentUser(userId))
         }
     }
 

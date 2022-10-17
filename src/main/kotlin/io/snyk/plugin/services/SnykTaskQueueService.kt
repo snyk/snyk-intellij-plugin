@@ -156,7 +156,10 @@ class SnykTaskQueueService(val project: Project) {
     private fun scheduleSnykCodeScan() {
         object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
             override fun run(indicator: ProgressIndicator) {
-                val sastCliConfigSettings = getSnykApiService().sastSettings
+                if (settings.token.isNullOrBlank()) {
+                    return
+                }
+                val sastCliConfigSettings = getSnykApiService().getSastSettings(settings.token)
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 settings.reportFalsePositivesEnabled = sastCliConfigSettings?.reportFalsePositivesEnabled

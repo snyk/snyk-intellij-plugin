@@ -1,9 +1,10 @@
 package io.snyk.plugin.services
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
-import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -19,6 +20,8 @@ import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.net.CliConfigSettings
+import io.snyk.plugin.net.LocalCodeEngine
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
@@ -39,11 +42,14 @@ import java.util.concurrent.TimeUnit
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     private lateinit var downloaderServiceMock: SnykCliDownloaderService
+    private lateinit var snykApiServiceMock: SnykApiService
 
     override fun setUp() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        mockSnykApiServiceSastEnabled()
+        replaceSnykApiServiceMockInContainer()
         mockkStatic("io.snyk.plugin.UtilsKt")
         downloaderServiceMock = spyk(SnykCliDownloaderService())
         every { downloaderServiceMock.requestLatestReleasesInformation() } returns LatestReleaseInfo(
@@ -52,6 +58,20 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
             "testTag"
         )
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
+    }
+
+    private fun mockSnykApiServiceSastEnabled() {
+        snykApiServiceMock = mockk()
+        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+            true,
+            LocalCodeEngine(false),
+            false
+        )
+        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
+            true,
+            LocalCodeEngine(false),
+            false
+        )
     }
 
     override fun tearDown() {
@@ -68,8 +88,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
         snykTaskQueueService.scan()
-        // needed due to luck of disposing services by Idea test framework (bug?)
-        Disposer.dispose(service<SnykApiService>())
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
@@ -90,8 +108,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         snykTaskQueueService.scan()
-        // needed due to luck of disposing services by Idea test framework (bug?)
-        Disposer.dispose(service<SnykApiService>())
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
@@ -106,8 +122,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         snykTaskQueueService.scan()
-        // needed due to luck of disposing services by Idea test framework (bug?)
-        Disposer.dispose(service<SnykApiService>())
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
@@ -153,14 +167,11 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.ossScanEnable = false
         settings.snykCodeSecurityIssuesScanEnable = true
         settings.snykCodeQualityIssuesScanEnable = true
+        settings.token = "testToken"
 
         snykTaskQueueService.scan()
-        // needed due to luck of disposing services by Idea test framework (bug?)
-        Disposer.dispose(service<SnykApiService>())
 
-        assertNull(settings.sastOnServerEnabled)
-        assertFalse(settings.snykCodeSecurityIssuesScanEnable)
-        assertFalse(settings.snykCodeQualityIssuesScanEnable)
+        verify { snykApiServiceMock.getSastSettings(any()) }
     }
 
     @Test
@@ -183,12 +194,25 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val settings = pluginSettings()
         settings.sastOnServerEnabled = true
         settings.localCodeEngineEnabled = true
+        settings.token = "testToken"
+        // overwrite default setup
+        snykApiServiceMock = mockk(relaxed = true)
+        replaceSnykApiServiceMockInContainer()
+        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+            true,
+            LocalCodeEngine(true),
+            false
+        )
 
         snykTaskQueueService.scan()
-        Disposer.dispose(service<SnykApiService>())
 
         assertThat(settings.snykCodeSecurityIssuesScanEnable, equalTo(false))
         assertThat(settings.snykCodeQualityIssuesScanEnable, equalTo(false))
+    }
+
+    private fun replaceSnykApiServiceMockInContainer() {
+        val application = ApplicationManager.getApplication()
+        application.replaceService(SnykApiService::class.java, snykApiServiceMock, application)
     }
 
     @Test
