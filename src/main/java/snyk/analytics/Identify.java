@@ -56,7 +56,7 @@ public class Identify extends Event {
     }
 
     /**
-     * when a User record is an actual user or when it’s a “service account”
+     * when a User record is an actual user or when it’s a "service account"
      */
     public Builder accountType(AccountType accountType) {
       this.properties.put("accountType", accountType.getAccountType());

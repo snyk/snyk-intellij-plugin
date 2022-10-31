@@ -322,6 +322,20 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     @Test
+    fun `Ignore JSON parsing failures in IaC scan results`() {
+        mockkObject(SnykBalloonNotificationHelper)
+
+        val error = SnykError("Invalid JSON file", project.basePath.toString(), 1021)
+        val iacResult = IacResult(emptyList(), listOf(error))
+        scanPublisher.scanningIacFinished(iacResult)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertEquals(
+            SnykToolWindowPanel.IAC_ROOT_TEXT + SnykToolWindowPanel.NO_ISSUES_FOUND_TEXT,
+            toolWindowPanel.getRootIacIssuesTreeNode().userObject
+        )
+    }
+
+    @Test
     fun `test should display NO_CONTAINER_IMAGES_FOUND after scan when no Container images found`() {
         mockkObject(SnykBalloonNotificationHelper)
 

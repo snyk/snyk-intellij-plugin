@@ -45,7 +45,7 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
 
     private fun getErrorResult(errorMsg: String): R {
         logger.warn(errorMsg)
-        return getProductResult(null, listOf(SnykError(errorMsg, projectPath)))
+        return getProductResult(null, listOf(SnykError(errorMsg,projectPath)))
     }
 
     protected abstract fun getProductResult(cliIssues: List<CliIssues>?, snykErrors: List<SnykError> = emptyList()): R
@@ -94,9 +94,9 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             }
             isErrorCliJsonString(rawStr) -> getResultOrError(reportExceptions, rawStr) {
                 // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
-                val cliError = Gson().fromJson(rawStr, CliError::class.java)
+                val cliError: CliError = Gson().fromJson(rawStr, CliError::class.java)
                 // `Gson().fromJson` could put `null` value into not-null field
-                val snykError = SnykError(cliError.message, cliError.path)
+                val snykError = SnykError(cliError.message, cliError.path, cliError.errorCode)
                 return@getResultOrError getProductResult(null, listOf(snykError))
             }
             else -> getErrorResult(rawStr)
