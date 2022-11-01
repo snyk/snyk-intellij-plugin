@@ -322,7 +322,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     @Test
-    fun `Ignore JSON parsing failures in IaC scan results`() {
+    fun `test should ignore JSON parsing failures in IaC scan results`() {
         mockkObject(SnykBalloonNotificationHelper)
 
         val error = SnykError("Invalid JSON file", project.basePath.toString(), 1021)
