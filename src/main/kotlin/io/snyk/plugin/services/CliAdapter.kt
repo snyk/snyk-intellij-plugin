@@ -45,7 +45,7 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
 
     private fun getErrorResult(errorMsg: String): R {
         logger.warn(errorMsg)
-        return getProductResult(null, listOf(SnykError(errorMsg,projectPath)))
+        return getProductResult(null, listOf(SnykError(errorMsg, projectPath)))
     }
 
     protected abstract fun getProductResult(cliIssues: List<CliIssues>?, snykErrors: List<SnykError> = emptyList()): R

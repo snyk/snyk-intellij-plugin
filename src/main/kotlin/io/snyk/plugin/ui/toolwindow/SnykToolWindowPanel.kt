@@ -100,8 +100,6 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
 
-private const val FailedToParseJsonErrorCode = 1021
-
 /**
  * Main panel for Snyk tool window.
  */
@@ -818,12 +816,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         }
                 }
             }
-            iacResult.errors.forEach { snykError ->
-                if (snykError.code != FailedToParseJsonErrorCode) {
-                    rootIacIssuesTreeNode.add(
-                        ErrorTreeNode(snykError, project, navigateToIaCIssue(snykError.path, 0))
-                    )
-                }
+            iacResult.getVisibleErrors().forEach { snykError ->
+                rootIacIssuesTreeNode.add(
+                    ErrorTreeNode(snykError, project, navigateToIaCIssue(snykError.path, 0))
+                )
             }
         }
 
