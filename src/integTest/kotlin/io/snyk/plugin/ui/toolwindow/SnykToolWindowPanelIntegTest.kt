@@ -57,6 +57,7 @@ import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueDetailPanel
 import snyk.container.ui.ContainerIssueTreeNode
+import snyk.iac.IacError
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -292,7 +293,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test when no IAC supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError = SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString())
+        val snykError = SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString(), IacError.NO_IAC_FILES_CODE)
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
         scanPublisher.scanningIacError(snykErrorControl)
