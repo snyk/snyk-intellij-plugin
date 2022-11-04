@@ -186,7 +186,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningIacFinished(iacResult: IacResult) {
                     ApplicationManager.getApplication().invokeLater {
                         displayIacResults(iacResult)
-                        notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
+                        if (iacResult.getVisibleErrors().isNotEmpty()) {
+                            notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
+                        }
                         refreshAnnotationsForOpenFiles(project)
                     }
                 }
@@ -234,6 +236,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningIacError(snykError: SnykError) {
                     var iacResultsCount: Int? = null
                     ApplicationManager.getApplication().invokeLater {
+                        // if results are all ignorable error codes, mark as no supported IaC files found, otherwise error
                         if (snykError.code == IacError.NO_IAC_FILES_CODE) {
                             iacResultsCount = NODE_NOT_SUPPORTED_STATE
                         } else {

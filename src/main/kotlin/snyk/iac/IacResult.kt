@@ -26,6 +26,10 @@ class IacResult(
         }
     }
 
+    override fun getFirstError(): SnykError? {
+        return getVisibleErrors().firstOrNull()
+    }
+
     fun getVisibleErrors(): List<SnykError> {
         return errors.filter { it.code == null || !IgnorableErrorCodes.contains(it.code) }
     }
