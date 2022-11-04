@@ -236,7 +236,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningIacError(snykError: SnykError) {
                     var iacResultsCount: Int? = null
                     ApplicationManager.getApplication().invokeLater {
-                        // if results are all ignorable error codes, mark as no supported IaC files found, otherwise error
                         if (snykError.code == IacError.NO_IAC_FILES_CODE) {
                             iacResultsCount = NODE_NOT_SUPPORTED_STATE
                         } else {
