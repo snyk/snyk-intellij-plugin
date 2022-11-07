@@ -85,6 +85,7 @@ import snyk.container.ContainerResult
 import snyk.container.ContainerService
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueTreeNode
+import snyk.iac.IacError
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
 import snyk.iac.ui.toolwindow.IacFileTreeNode
@@ -185,7 +186,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningIacFinished(iacResult: IacResult) {
                     ApplicationManager.getApplication().invokeLater {
                         displayIacResults(iacResult)
-                        notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
+                        if (iacResult.getVisibleErrors().isNotEmpty()) {
+                            notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
+                        }
                         refreshAnnotationsForOpenFiles(project)
                     }
                 }
@@ -233,7 +236,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 override fun scanningIacError(snykError: SnykError) {
                     var iacResultsCount: Int? = null
                     ApplicationManager.getApplication().invokeLater {
-                        if (snykError.message.startsWith(NO_IAC_FILES)) {
+                        if (snykError.code == IacError.NO_IAC_FILES_CODE) {
                             iacResultsCount = NODE_NOT_SUPPORTED_STATE
                         } else {
                             SnykBalloonNotificationHelper.showError(snykError.message, project)
@@ -816,7 +819,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         }
                 }
             }
-            iacResult.errors.forEach { snykError ->
+            iacResult.getVisibleErrors().forEach { snykError ->
                 rootIacIssuesTreeNode.add(
                     ErrorTreeNode(snykError, project, navigateToIaCIssue(snykError.path, 0))
                 )

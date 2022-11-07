@@ -6,5 +6,8 @@ data class CliError(
     @SerializedName("error")
     val message: String,
 
-    val path: String
+    val path: String,
+
+    @SerializedName("code")
+    val errorCode: Int? = null
 )

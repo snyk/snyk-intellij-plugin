@@ -57,7 +57,9 @@ import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueDetailPanel
 import snyk.container.ui.ContainerIssueTreeNode
+import snyk.iac.IacError
 import snyk.iac.IacIssue
+import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.iac.IgnoreButtonActionListener
@@ -291,7 +293,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test when no IAC supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError = SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString())
+        val snykError = SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString(), IacError.NO_IAC_FILES_CODE)
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
         scanPublisher.scanningIacError(snykErrorControl)
@@ -319,6 +321,40 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull(jEditorPane)
         jEditorPane!!
         assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_IAC_FILES))
+    }
+
+    @Test
+    fun `test should ignore IaC failures in IaC scan results (no issues found)`() {
+        mockkObject(SnykBalloonNotificationHelper)
+        val jsonError = SnykError("Failed to parse JSON file", project.basePath.toString(), 1021)
+        val inputError = SnykError("Failed to parse input", project.basePath.toString(), 2105)
+        val iacResult = IacResult(emptyList(), listOf(jsonError, inputError))
+        scanPublisher.scanningIacFinished(iacResult)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertEquals(
+            SnykToolWindowPanel.IAC_ROOT_TEXT + SnykToolWindowPanel.NO_ISSUES_FOUND_TEXT,
+            toolWindowPanel.getRootIacIssuesTreeNode().userObject
+        )
+    }
+
+    @Test
+    fun `test should ignore IaC failures in IaC scan results (issues found)`() {
+        mockkObject(SnykBalloonNotificationHelper)
+        val iacIssue = IacIssue(
+            id = "SNYK-CC-TF-74",
+            title = "Credentials are configured via provider attributes",
+            lineNumber = 1,
+            severity = "", publicId = "", documentation = "", issue = "", impact = ""
+        )
+        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), "k8s-deployment.yaml", "src/k8s-deployment.yaml", "npm")
+        val jsonError = SnykError("Failed to parse JSON file", project.basePath.toString(), 1021)
+        val iacResult = IacResult(listOf(iacIssuesForFile), listOf(jsonError))
+        scanPublisher.scanningIacFinished(iacResult)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertEquals(
+            SnykToolWindowPanel.IAC_ROOT_TEXT + " - 1 unique issue",
+            toolWindowPanel.getRootIacIssuesTreeNode().userObject
+        )
     }
 
     @Test

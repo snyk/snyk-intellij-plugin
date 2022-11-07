@@ -20,7 +20,7 @@ abstract class CliResult<CliIssues>(
 
     protected abstract fun countBySeverity(severity: Severity): Int?
 
-    fun getFirstError(): SnykError? = errors.firstOrNull()
+    open fun getFirstError(): SnykError? = errors.firstOrNull()
 
     fun criticalSeveritiesCount(): Int = countBySeverity(Severity.CRITICAL) ?: 0
 
