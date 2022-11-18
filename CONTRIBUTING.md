@@ -9,11 +9,11 @@ There are two projects' packages structures in source tree right now:
 
 **todo:** Unify project packages structure to either `io.snyk.plugin` or `snyk`
 
-Ideally all communication between components/services should happen through events' mechanism (see `SnykScanListener` and it's usages/implementations as example). 
+Ideally all communication between components/services should happen through events' mechanism (see `SnykScanListener` and it's usages/implementations as example).
 
-**todo:** But that's not always true presently. :( 
+**todo:** But that's not always true presently. :(
 
-All communication through network should go through `HttpClient`/`ApiClient` from `.net` package to reuse Client whenever possible (mostly to reuse Interceptors, SSL Certificate handlers, timeouts, etc.) 
+All communication through network should go through `HttpClient`/`ApiClient` from `.net` package to reuse Client whenever possible (mostly to reuse Interceptors, SSL Certificate handlers, timeouts, etc.)
 
 **todo:** Unify `.net` packages from `io.snyk.plugin` and `snyk` roots
 
@@ -23,7 +23,7 @@ None-CLI product (SnykCode) communicate directly to Code backend using `java-cod
 
 **todo:** Unify `.snykcode` network related classes with `.net` package classes.
 
-`ProductType` holds textual representation for each supported product and should be the source of truth and the only place for such texts. 
+`ProductType` holds textual representation for each supported product and should be the source of truth and the only place for such texts.
 
 All cached scan results (except SnykCode?) should be holding in `SnykCachedResults` service and requested/updated there when needed.
 
@@ -37,9 +37,9 @@ Any new scan/re-scan should be executed through `SnykTaskQueueService`
 
 Scan related options/settings are held inside `SnykApplicationSettingsStateService` while for the representation of scan results in the Tree we have also _filters_ (by Severity or Product) which should operate on top of the _settings_.
 
-For UI (especially on top level) we're trying to use Idea built-in panels and factory classes/methods like `SimpleToolWindowPanel` or `JPanel`/`JBPanel` with `BorderLayout` as it seems to be more "native" for Idea. For more complicated custom panels we use `JPanel` with `GridConstraints` (see `io.snyk.plugin.ui.UIUtils` for the clue) 
+For UI (especially on top level) we're trying to use Idea built-in panels and factory classes/methods like `SimpleToolWindowPanel` or `JPanel`/`JBPanel` with `BorderLayout` as it seems to be more "native" for Idea. For more complicated custom panels we use `JPanel` with `GridConstraints` (see `io.snyk.plugin.ui.UIUtils` for the clue)
 
-Beware of needed wrapping of any UI related code inside of `ApplicationManager.getApplication().invokeLater{}` if you call it from any background thread. 
+Beware of needed wrapping of any UI related code inside of `ApplicationManager.getApplication().invokeLater{}` if you call it from any background thread.
 
 All our instances of Idea's `@Service` classes should be called through correspondent wrapper `get<xxx>Service()` in `io.snyk.plugin.Utils` as some checks need to be done (especially for project's services). Also, Jetbrains changed already in the past recommended way to invoke such services, so would be nice to have such invocations centralised for possible future changes.
 
@@ -63,6 +63,14 @@ Mocks are [not recommended](https://plugins.jetbrains.com/docs/intellij/testing-
 - Select `Gradle` from the configuration list
 - Type `runIde` in the `Run` textbox to select the `runIde` run command
 - Click `Apply` and `Run` to run the extension`
+
+### Target specific IDE distribution
+If you want to run the plugin in other IDE distribution (e.g. Rider), you should pass set IDE `Contents` directory as a `localIdeDirectory` property in `gradle.properties`.
+
+Here's an example for local Rider installation:
+`localIdeDirectory=/Users/michel/Library/Application Support/JetBrains/Toolbox/apps/Rider/ch-0/221.5787.36/Rider.app/Contents`
+
+You can copy the full path from IDE Settings in the JetBrains Toolbox.
 
 ### Useful Links:
 - [IntelliJ Platform Plugin SDK](https://plugins.jetbrains.com/docs/intellij) - that's your "Holy book" :)
