@@ -1,5 +1,17 @@
 # Snyk Changelog
 
+## [2.4.47]
+
+### Fixed
+
+- Snyk Code issues not highlighted in the editor.
+
+## [2.4.46]
+
+### Fixed
+
+- IaC scans producing errors when fail to parse IaC-like files.
+
 ## [2.4.45]
 
 ### Fixed
@@ -64,7 +76,7 @@
 - Some minor UI renaming and alignments
 
 ### Added
-- Navigation from the Editor (using QuickFix's functionality at annotations) to Snyk ToolWindow 
+- Navigation from the Editor (using QuickFix's functionality at annotations) to Snyk ToolWindow
 (correspondent node in the Tree opened and Description shown) for:
   - Open Source scan results;
   - SnykCode scan results;
@@ -84,10 +96,10 @@
 
 ### Fixed
 - Unify names for Types of Scan (Snyk Products) in different places of UI
-- Other minor UI improvements (including updated Severity icons) 
+- Other minor UI improvements (including updated Severity icons)
 
 ### Changed
-- Separation of **Filtering**(for results in the Tree) and **Enablement**(in the Settings)for: 
+- Separation of **Filtering**(for results in the Tree) and **Enablement**(in the Settings)for:
   - Types of Scan (Snyk Products)
   - Severities.
 
@@ -99,7 +111,7 @@
   * encode and compress POST/PUT requests
   * update fallbacks for supported extensions and configFiles
   * do not proceed (send) files if only configFiles presence
- 
+
 ### Changed
 - Show specific description when no IaC or OSS files found but corresponded scan performed
 
