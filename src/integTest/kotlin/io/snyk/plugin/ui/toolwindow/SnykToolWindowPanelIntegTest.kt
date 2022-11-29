@@ -66,6 +66,7 @@ import snyk.iac.IgnoreButtonActionListener
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.Vulnerability
+import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JLabel
@@ -94,12 +95,14 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        mockkStatic("snyk.trust.TrustedProjectsKt")
         pluginSettings().token = fakeApiToken // needed to avoid forced Auth panel showing
         pluginSettings().pluginFirstRun = false
         // ToolWindow need to be reinitialised for every test as Project is recreated for Heavy tests
         // also we MUST do it *before* any actual test code due to initialisation of SnykScanListener in init{}
         toolWindowPanel = project.service()
         setupDummyCliFile()
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
     }
 
     override fun tearDown() {

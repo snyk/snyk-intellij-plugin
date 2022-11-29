@@ -35,6 +35,7 @@ dependencies {
         exclude(group = "org.slf4j")
     }
     implementation("ly.iterative.itly:sdk-jvm:1.2.11")
+    testImplementation("com.google.jimfs:jimfs:1.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.10.0")
     testImplementation("junit:junit:4.13.2") {
         exclude(group = "org.hamcrest")

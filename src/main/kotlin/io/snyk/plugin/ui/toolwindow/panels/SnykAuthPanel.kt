@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
@@ -24,12 +25,15 @@ import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPaneFixedSize
 import io.snyk.plugin.ui.getStandardLayout
+import snyk.SnykBundle
 import snyk.amplitude.api.ExperimentUser
 import snyk.analytics.AuthenticateButtonIsClicked
 import snyk.analytics.AuthenticateButtonIsClicked.EventSource
 import snyk.analytics.AuthenticateButtonIsClicked.Ide
 import snyk.analytics.AuthenticateButtonIsClicked.builder
+import snyk.trust.WorkspaceTrustService
 import java.awt.event.ActionEvent
+import java.nio.file.Paths
 import javax.swing.AbstractAction
 import javax.swing.JButton
 import javax.swing.JLabel
@@ -39,7 +43,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
 
     init {
         name = "authPanel"
-        val authButton = JButton(object : AbstractAction(AUTHENTICATE_BUTTON_TEXT) {
+        val authButton = JButton(object : AbstractAction(TRUST_AND_SCAN_BUTTON_TEXT) {
             override fun actionPerformed(e: ActionEvent?) {
                 val analytics = getSnykAnalyticsService()
                 analytics.logAuthenticateButtonIsClicked(authenticateEvent())
@@ -48,6 +52,12 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                 val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 pluginSettings().token = token
                 SnykCodeParams.instance.sessionToken = token
+
+                // explicitly add the project to workspace trusted paths, because
+                // scan can be auto-triggered depending on "settings.pluginFirstRun" value
+                project.basePath?.let {
+                    service<WorkspaceTrustService>().addTrustedPath(Paths.get(it))
+                }
 
                 val userId = analytics.obtainUserId(token)
                 if (userId.isNotBlank()) {
@@ -102,12 +112,18 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
     }
 
     private fun descriptionLabelText(): String {
+        val trustWarningDescription = SnykBundle.message("snyk.panel.auth.trust.warning.text")
         return """
-        |<html><ol>
+        |<html>
+        |<ol>
         |  <li align="left">Authenticate to Snyk.io</li>
         |  <li align="left">Analyze code for issues and vulnerabilities</li>
         |  <li align="left">Improve your code and upgrade dependencies</li>
         |</ol>
+        |<br>
+        |$trustWarningDescription
+        |<br>
+        |<br>
         |</html>
         """.trimMargin()
     }
@@ -115,7 +131,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
     override fun dispose() {}
 
     companion object {
-        const val AUTHENTICATE_BUTTON_TEXT = "Test code now"
+        const val TRUST_AND_SCAN_BUTTON_TEXT = "Trust project and scan"
         val messagePolicyAndTermsHtml =
             """
                 <br>
