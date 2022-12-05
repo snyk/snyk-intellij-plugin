@@ -81,11 +81,11 @@ object SnykBalloonNotifications {
     }
 
     fun showFeedbackRequest(project: Project) = SnykBalloonNotificationHelper.showInfo(
-        "<html>Have any ideas or feedback for us? <br>Let's sync and improve our extension.</html>",
+        "<html>Have any ideas or feedback for us? <br>Get in touch with us.</html>",
         project,
-        NotificationAction.createSimpleExpiring("Schedule a meeting") {
+        NotificationAction.createSimpleExpiring("Get in touch") {
             pluginSettings().showFeedbackRequest = false
-            BrowserUtil.browse("https://calendly.com/snyk-georgi/45min")
+            BrowserUtil.browse("https://snyk.io/contact-us/?utm_source=JETBRAINS_IDE")
         },
         NotificationAction.createSimpleExpiring("Don’t show again") {
             pluginSettings().showFeedbackRequest = false
