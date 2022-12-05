@@ -1,5 +1,14 @@
 # Snyk Changelog
 
+## [2.4.49]
+### Added
+
+- Support for IntelliJ 2022.3.
+
+### Fixed
+
+- Feedback url.
+
 ## [2.4.48]
 ### Added
 
