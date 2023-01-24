@@ -1,9 +1,9 @@
 package snyk.amplitude.api
 
 import com.intellij.openapi.diagnostic.logger
+import io.snyk.plugin.net.RetrofitClientFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import snyk.net.HttpClient
 import java.io.IOException
 
@@ -55,11 +55,7 @@ class AmplitudeExperimentApiClient private constructor(
 
     private fun createRetrofitIfNeeded(): Retrofit {
         if (!::retrofit.isInitialized) {
-            retrofit = Retrofit.Builder()
-                .client(httpClient)
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+            retrofit = RetrofitClientFactory.getInstance().createRetrofit("", baseUrl) // don't leak token to amplitude
         }
         return retrofit
     }

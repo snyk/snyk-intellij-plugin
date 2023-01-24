@@ -18,26 +18,9 @@ class AdvisorServiceImpl : AdvisorService, Disposable {
 
     private var savedToken: String? = pluginSettings().token
 
-    private var apiClient: AdvisorApiClient? = createAdvisorApiClient(pluginSettings().token)
-
     private fun getApiClient(): AdvisorApiClient? {
-        val actualToken = pluginSettings().token
-        if (actualToken != savedToken) {
-            savedToken = actualToken
-            apiClient = createAdvisorApiClient(token = actualToken)
-        }
-        return apiClient
+        return AdvisorApiClient()
     }
-
-    private fun createAdvisorApiClient(token: String?): AdvisorApiClient? =
-        //TODO(pavel): customize parameter here
-        if (token.isNullOrBlank()) {
-            log.warn("Token cannot be empty")
-            null
-        } else {
-            AdvisorApiClient.create(token = token)
-        }
-
     override fun requestPackageInfos(project: Project?,
                                      packageManager: AdvisorPackageManager,
                                      packageNames: List<String>,
