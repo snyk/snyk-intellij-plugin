@@ -23,19 +23,9 @@ class AdvisorApiClientTest {
     val server: MockWebServer = MockWebServer()
 
     private lateinit var clientUnderTest: AdvisorApiClient
-    private val mockHttpClient: HttpClient = HttpClient().apply {
-        connectTimeout = 1
-        readTimeout = 1
-        writeTimeout = 1
-    }
-
     @Before
     fun setUp() {
-        clientUnderTest = AdvisorApiClient.create(
-            baseUrl = server.url("/").toString(),
-            token = "",
-            httpClient = mockHttpClient
-        )!!
+        clientUnderTest = AdvisorApiClient(server.url("/").toString())
     }
 
     @Test

@@ -33,7 +33,8 @@ class RetrofitClientFactory {
     fun createRetrofit(
         token: String,
         baseUrl: String,
-        requestLogging: Boolean = true
+        requestLogging: Boolean = false,
+        additionalInterceptors: List<okhttp3.Interceptor> = emptyList()
     ): Retrofit {
         val logging = HttpLoggingInterceptor()
         // set your desired log level
@@ -65,10 +66,11 @@ class RetrofitClientFactory {
         val client = okHttpClientBuilder
             .addInterceptor(TokenInterceptor(token))
             .addInterceptor(logging)
-            .build()
+
+        additionalInterceptors.forEach { client.addInterceptor(it) }
 
         return Retrofit.Builder()
-            .client(client)
+            .client(client.build())
             .baseUrl(baseUrl)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

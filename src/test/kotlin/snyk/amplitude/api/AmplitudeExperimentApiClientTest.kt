@@ -18,6 +18,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import snyk.net.HttpClient
+import snyk.pluginInfo
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
@@ -37,12 +38,16 @@ class AmplitudeExperimentApiClientTest {
     fun setUp() {
         clientUnderTest = AmplitudeExperimentApiClient.create(
             baseUrl = server.url("/").toString(),
-            apiKey = "",
-            httpClient = mockHttpClient
+            apiKey = ""
         )
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkStatic("snyk.PluginInformationKt")
+
+        every { pluginInfo.integrationName } returns "snyk"
+        every { pluginInfo.integrationVersion } returns "1.2.3"
         every { pluginSettings().userAnonymousId } returns UUID.randomUUID().toString()
+        every { pluginSettings().ignoreUnknownCA } returns false
     }
 
     @After

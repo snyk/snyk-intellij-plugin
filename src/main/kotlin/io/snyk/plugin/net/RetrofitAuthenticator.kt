@@ -7,10 +7,17 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
 
-class RetrofitAuthenticator : Authenticator {
-    override fun authenticate(route: Route?, response: Response): Request? {
+const val PROXY_AUTHORIZATION_HEADER_NAME = "Proxy-Authorization"
+
+class RetrofitAuthenticator(
+    private var httpConfigurable: HttpConfigurable? = null
+) : Authenticator {
+    override fun authenticate(route: Route?, response: Response): Request {
+        if (httpConfigurable == null) {
+            httpConfigurable = HttpConfigurable.getInstance()
+        }
         val prompt = "Snyk: Please enter your proxy credentials for connecting"
-        val auth = HttpConfigurable.getInstance().getPromptedAuthentication(response.request.url.host, prompt)
+        val auth = httpConfigurable!!.getPromptedAuthentication(response.request.url.host, prompt)
 
         if (auth.userName == null || auth.password == null) {
             return response.request
@@ -18,7 +25,7 @@ class RetrofitAuthenticator : Authenticator {
 
         val credential = Credentials.basic(auth.userName, String(auth.password))
         return response.request.newBuilder()
-            .header("Proxy-Authorization", credential)
+            .header(PROXY_AUTHORIZATION_HEADER_NAME, credential)
             .build()
     }
 }
