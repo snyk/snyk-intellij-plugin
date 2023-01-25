@@ -33,7 +33,7 @@ class SnykApiService {
 
         log.debug("Creating new SnykApiClient")
         return try {
-            val retrofit = RetrofitClientFactory.getInstance().createRetrofit(token, baseUrl, true)
+            val retrofit = RetrofitClientFactory.getInstance().createRetrofit(token, baseUrl)
             return SnykApiClient(retrofit)
         } catch (ignore: RuntimeException) {
             log.warn("Failed to create Retrofit client for endpoint: $endpoint", ignore)

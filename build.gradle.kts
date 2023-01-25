@@ -22,6 +22,7 @@ description = properties("pluginName")
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -29,7 +30,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.9.0")
     implementation("com.segment.analytics.java:analytics:3.3.1")
     implementation("io.sentry:sentry:6.4.2")
-    implementation("io.snyk.code.sdk:snyk-code-client:2.3.4")
+    implementation("io.snyk.code.sdk:snyk-code-client:2.3.5")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
     implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
         exclude(group = "org.slf4j")
