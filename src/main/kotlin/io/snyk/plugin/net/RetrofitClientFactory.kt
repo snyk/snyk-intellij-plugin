@@ -1,15 +1,12 @@
 package io.snyk.plugin.net
 
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.util.proxy.CommonProxy
 import io.snyk.plugin.pluginSettings
-import okhttp3.Authenticator
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.net.URI
 import java.security.KeyManagementException
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
@@ -41,7 +38,7 @@ class RetrofitClientFactory {
         val logging = HttpLoggingInterceptor()
         // set your desired log level
         if (requestLogging) {
-            logging.setLevel(HttpLoggingInterceptor.Level.HEADERS)
+            logging.setLevel(HttpLoggingInterceptor.Level.BODY)
         } else {
             logging.setLevel(HttpLoggingInterceptor.Level.NONE)
         }
@@ -49,11 +46,7 @@ class RetrofitClientFactory {
         val okHttpClientBuilder = OkHttpClient.Builder()
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-
-        CommonProxy.getInstance().select(URI(baseUrl)).firstOrNull()?.apply {
-            okHttpClientBuilder.proxy(this)
-            okHttpClientBuilder.proxyAuthenticator(Authenticator.JAVA_NET_AUTHENTICATOR)
-        }
+            .proxyAuthenticator(RetrofitAuthenticator())
 
         if (pluginSettings().ignoreUnknownCA) {
             val x509TrustManager = buildUnsafeTrustManager()
