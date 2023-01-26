@@ -2,12 +2,10 @@ package snyk.advisor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
-import io.snyk.plugin.pluginSettings
 import snyk.advisor.api.AdvisorApiClient
 import snyk.advisor.api.PackageInfo
 

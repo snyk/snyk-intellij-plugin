@@ -28,11 +28,6 @@ class AmplitudeExperimentApiClientTest {
     val server: MockWebServer = MockWebServer()
 
     private lateinit var clientUnderTest: AmplitudeExperimentApiClient
-    private val mockHttpClient: HttpClient = HttpClient().apply {
-        connectTimeout = 1
-        readTimeout = 1
-        writeTimeout = 1
-    }
 
     @Before
     fun setUp() {
