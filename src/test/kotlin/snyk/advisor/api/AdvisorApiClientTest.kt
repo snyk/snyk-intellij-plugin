@@ -14,7 +14,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import snyk.advisor.AdvisorPackageManager
-import snyk.net.HttpClient
 import java.nio.charset.StandardCharsets
 
 class AdvisorApiClientTest {
