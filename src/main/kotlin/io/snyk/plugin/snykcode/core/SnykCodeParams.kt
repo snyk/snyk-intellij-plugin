@@ -1,11 +1,9 @@
 package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeParamsBase
-import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.codeRestApi
-import snyk.common.toSnykCodeApiUrl
 
 class SnykCodeParams private constructor() : DeepCodeParamsBase(
     true,
