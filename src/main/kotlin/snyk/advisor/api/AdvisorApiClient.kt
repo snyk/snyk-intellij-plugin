@@ -2,7 +2,6 @@ package snyk.advisor.api
 
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.net.RetrofitClientFactory
-import io.snyk.plugin.pluginSettings
 import retrofit2.Retrofit
 import snyk.advisor.AdvisorPackageManager
 
@@ -40,7 +39,6 @@ class AdvisorApiClient constructor(
 
     private fun createRetrofitIfNeeded(): Retrofit {
         if (!::retrofit.isInitialized) {
-            val token = pluginSettings().token ?: ""
             retrofit = RetrofitClientFactory.getInstance().createRetrofit(baseUrl)
         }
         return retrofit
