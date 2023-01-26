@@ -10,11 +10,11 @@ import snyk.common.toSnykCodeApiUrl
 
 val codeRestApi =
     DeepCodeRestApiImpl(
-        pluginSettings().token?.let {
-            RetrofitClientFactory.getInstance().createRetrofit(
-                it,
-                toSnykCodeApiUrl(pluginSettings().customEndpointUrl),
-                Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled,
-                listOf(Base64EncodeRequestInterceptor())
-            )
-        })
+        RetrofitClientFactory.getInstance().createRetrofit(
+            pluginSettings().token ?: "",
+            toSnykCodeApiUrl(pluginSettings().customEndpointUrl),
+            Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled,
+            listOf(Base64EncodeRequestInterceptor())
+        )
+    )
+
