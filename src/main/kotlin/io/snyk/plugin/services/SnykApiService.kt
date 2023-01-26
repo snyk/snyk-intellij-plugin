@@ -10,9 +10,8 @@ import io.snyk.plugin.pluginSettings
 
 @Service
 class SnykApiService {
-    fun getSastSettings(token: String? = pluginSettings().token): CliConfigSettings? {
-        if (token == null) return null
-        return getSnykApiClient(token)?.sastSettings(pluginSettings().organization)
+    fun getSastSettings(): CliConfigSettings? {
+        return getSnykApiClient()?.sastSettings(pluginSettings().organization)
     }
 
     val userId: String?
@@ -21,22 +20,17 @@ class SnykApiService {
     fun reportFalsePositive(payload: FalsePositivePayload): Boolean =
         getSnykApiClient()?.reportFalsePositive(payload) ?: false
 
-    private fun getSnykApiClient(token: String? = pluginSettings().token): SnykApiClient? {
-        if (token.isNullOrBlank()) {
+    private fun getSnykApiClient(): SnykApiClient? {
+        if (pluginSettings().token.isNullOrBlank()) {
             return null
         }
-        val appSettings = pluginSettings()
-        var endpoint = appSettings.customEndpointUrl
-        if (endpoint.isNullOrEmpty()) endpoint = "https://snyk.io/api/"
-
-        val baseUrl: String = if (endpoint.endsWith('/')) endpoint else "$endpoint/"
 
         log.debug("Creating new SnykApiClient")
         return try {
-            val retrofit = RetrofitClientFactory.getInstance().createRetrofit(token, baseUrl)
+            val retrofit = RetrofitClientFactory.getInstance().createRetrofit()
             return SnykApiClient(retrofit)
         } catch (ignore: RuntimeException) {
-            log.warn("Failed to create Retrofit client for endpoint: $endpoint", ignore)
+            log.warn("Failed to create Retrofit client", ignore)
             null
         }
     }

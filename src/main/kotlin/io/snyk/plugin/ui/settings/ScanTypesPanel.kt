@@ -212,9 +212,9 @@ class ScanTypesPanel(
         }
     }
 
-    fun checkSastEnabled(token: String? = pluginSettings().token) {
+    fun checkSastEnabled() {
         setSnykCodeAvailability(false)
-        if (token.isNullOrBlank()) {
+        if (pluginSettings().token.isNullOrBlank()) {
             showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")
             return
         }
@@ -225,7 +225,7 @@ class ScanTypesPanel(
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                val sastCliConfigSettings = getSnykApiService().getSastSettings(token)
+                val sastCliConfigSettings = getSnykApiService().getSastSettings()
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 when (settings.sastOnServerEnabled) {

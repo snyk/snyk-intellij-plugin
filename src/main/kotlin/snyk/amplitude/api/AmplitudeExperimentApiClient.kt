@@ -58,7 +58,6 @@ class AmplitudeExperimentApiClient private constructor(
                 interceptors = listOf(AmplitudeApiKeyInterceptor(apiKey))
             }
             retrofit = RetrofitClientFactory.getInstance().createRetrofit(
-                "", // don't leak token to amplitude
                 baseUrl,
                 false,
                 interceptors

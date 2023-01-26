@@ -7,6 +7,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import snyk.common.getEndpointUrl
 import java.security.KeyManagementException
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
@@ -31,8 +32,7 @@ class RetrofitClientFactory {
     }
 
     fun createRetrofit(
-        token: String,
-        baseUrl: String,
+        baseUrl: String = getEndpointUrl(),
         requestLogging: Boolean = false,
         additionalInterceptors: List<okhttp3.Interceptor> = emptyList()
     ): Retrofit {
@@ -64,7 +64,7 @@ class RetrofitClientFactory {
             }
         }
         val client = okHttpClientBuilder
-            .addInterceptor(TokenInterceptor(token))
+            .addInterceptor(TokenInterceptor())
             .addInterceptor(logging)
 
         additionalInterceptors.forEach { client.addInterceptor(it) }

@@ -82,7 +82,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     fun `should not display onboarding panel and run scan directly`() {
         every { settings.token } returns "test-token"
         every { settings.pluginFirstRun } returns true
-        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false),
             false
@@ -102,7 +102,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
     @Test
     fun `should automatically enable all products on first run after Auth`() {
-        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false),
             false

@@ -66,12 +66,28 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://customerTestEndpoint"
+            val expectedEndpoint = "https://customerTestEndpoint/"
             pluginSettings().customEndpointUrl = expectedEndpoint
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
             assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+        } finally {
+            pluginSettings().customEndpointUrl = oldEndpoint
+        }
+    }
+
+    @Test
+    fun testSetupCliEnvironmentVariablesWithCustomEndpointNoTrailingSlash() {
+        val oldEndpoint = pluginSettings().customEndpointUrl
+        try {
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedEndpoint = "https://customerTestEndpoint"
+            pluginSettings().customEndpointUrl = expectedEndpoint
+
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+            assertEquals("$expectedEndpoint/", generalCommandLine.environment["SNYK_API"])
         } finally {
             pluginSettings().customEndpointUrl = oldEndpoint
         }

@@ -140,7 +140,7 @@ val <T> List<T>.head: T
     get() = first()
 
 fun isUrlValid(url: String?): Boolean =
-    url == null || url.isEmpty() || try {
+    url.isNullOrEmpty() || try {
         URL(url).toURI()
         true
     } catch (throwable: Throwable) {

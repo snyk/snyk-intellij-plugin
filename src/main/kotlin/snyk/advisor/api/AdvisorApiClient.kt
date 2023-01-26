@@ -41,7 +41,7 @@ class AdvisorApiClient constructor(
     private fun createRetrofitIfNeeded(): Retrofit {
         if (!::retrofit.isInitialized) {
             val token = pluginSettings().token ?: ""
-            retrofit = RetrofitClientFactory.getInstance().createRetrofit(token, baseUrl)
+            retrofit = RetrofitClientFactory.getInstance().createRetrofit(baseUrl)
         }
         return retrofit
     }

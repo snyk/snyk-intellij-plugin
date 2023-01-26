@@ -48,6 +48,7 @@ class AmplitudeExperimentApiClientTest {
         every { pluginInfo.integrationVersion } returns "1.2.3"
         every { pluginSettings().userAnonymousId } returns UUID.randomUUID().toString()
         every { pluginSettings().ignoreUnknownCA } returns false
+        every { pluginSettings().customEndpointUrl } returns "https://amplitude.com"
     }
 
     @After

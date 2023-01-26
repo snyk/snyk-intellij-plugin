@@ -4,6 +4,7 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
+import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.TextComponentAccessor
@@ -102,7 +103,9 @@ class SnykSettingsDialog(
                 snykProjectSettingsConfigurable.apply()
                 val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 tokenTextField.text = token
-                this.scanTypesPanelOuter.checkSastEnabled(token)
+                runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
+                    this.scanTypesPanelOuter.checkSastEnabled()
+                }
             }
         }
 

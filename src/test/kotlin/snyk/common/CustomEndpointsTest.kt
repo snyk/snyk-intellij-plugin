@@ -1,5 +1,7 @@
 package snyk.common
 
+import junit.framework.TestCase
+import junit.framework.TestCase.*
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.Assert.assertThat
 import org.junit.Test
@@ -33,11 +35,11 @@ class CustomEndpointsTest {
     }
 
     @Test
-    fun `isSaaS and isSingleTenant works with no-host(but syntactically correct) URI`() {
+    fun `isSaaS and isSnykTenant works with no-host(but syntactically correct) URI`() {
         val uriWithNoHost = URI("http:/")
 
         assertThat(uriWithNoHost.isSaaS(), equalTo(false))
-        assertThat(uriWithNoHost.isSingleTenant(), equalTo(false))
+        assertThat(uriWithNoHost.isSnykTenant(), equalTo(false))
     }
 
     @Test
@@ -93,5 +95,53 @@ class CustomEndpointsTest {
         val settingsUrl = toSnykCodeSettingsUrl("https://app.random-uuid.snyk.io/api")
 
         assertThat(settingsUrl, equalTo("https://app.random-uuid.snyk.io/manage/snyk-code"))
+    }
+
+    @Test
+    fun `isSnykAPI true when api subdomain and snyk domain`() {
+        val uri = URI("https://api.snyk.io")
+        assertTrue(uri.isSnykApi())
+    }
+
+    @Test
+    fun `isSnykAPI false for api subdomain and not snyk domain`() {
+        val uri = URI("https://api.NOTSNYK.io")
+        assertFalse(uri.isSnykApi())
+    }
+
+    @Test
+    fun `isSnykAPI false for non api path and snyk domain`() {
+        val uri = URI("https://snyk.io/notapi")
+        assertFalse(uri.isSnykApi())
+    }
+
+    @Test
+    fun `isSnykAPI true for api path and snyk domain`() {
+        val uri = URI("https://snyk.io/api")
+        assertTrue(uri.isSnykApi())
+    }
+
+    @Test
+    fun `non-api snyk domain does not need token`() {
+        val uri = "https://snyk.io"
+        assertFalse(needsSnykToken(uri))
+    }
+
+    @Test
+    fun `non snyk domain does not need token`() {
+        val uri = "https://NOTSNYK.io"
+        assertFalse(needsSnykToken(uri))
+    }
+
+    @Test
+    fun `api snyk path needs token`() {
+        val uri = "https://snyk.io/api"
+        assertTrue(needsSnykToken(uri))
+    }
+
+    @Test
+    fun `api snyk domain needs token`() {
+        val uri = "https://api.snyk.io"
+        assertTrue(needsSnykToken(uri))
     }
 }
