@@ -59,7 +59,6 @@ class AdvisorServiceImpl : AdvisorService, Disposable {
     override fun dispose() {}
 
     companion object {
-        private val log = logger<AdvisorServiceImpl>()
         private const val POLLING_THRESHOLD = 100 //sec
     }
 }
