@@ -16,8 +16,6 @@ class AdvisorServiceImpl : AdvisorService, Disposable {
 
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
 
-    private var savedToken: String? = pluginSettings().token
-
     private fun getApiClient(): AdvisorApiClient? {
         return AdvisorApiClient()
     }
