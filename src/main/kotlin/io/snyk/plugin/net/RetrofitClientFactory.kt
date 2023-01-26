@@ -22,6 +22,7 @@ class RetrofitClientFactory {
     companion object {
         private val log = logger<RetrofitClientFactory>()
         private val instance = RetrofitClientFactory()
+        private const val socketTimeout = 60L
         fun getInstance() = instance
     }
 
@@ -45,8 +46,8 @@ class RetrofitClientFactory {
         }
 
         val okHttpClientBuilder = OkHttpClient.Builder()
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(socketTimeout, TimeUnit.SECONDS)
+            .writeTimeout(socketTimeout, TimeUnit.SECONDS)
             .proxyAuthenticator(RetrofitAuthenticator())
 
         if (pluginSettings().ignoreUnknownCA) {

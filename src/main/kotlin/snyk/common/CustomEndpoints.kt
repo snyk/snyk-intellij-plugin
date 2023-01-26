@@ -70,8 +70,8 @@ internal fun URI.isSnykTenant() =
     this.host != null && this.host.startsWith("app") && this.host.endsWith("snyk.io")
 
 internal fun URI.isSnykApi() =
-    this.host != null && this.host.startsWith("api") && this.host.endsWith("snyk.io")
-        || this.host != null && this.host.endsWith("snyk.io") && this.path.startsWith("/api")
+    this.host != null && this.host.startsWith("api") && this.host.endsWith("snyk.io") ||
+        this.host != null && this.host.endsWith("snyk.io") && this.path.startsWith("/api")
 
 internal fun String.removeTrailingSlashesIfPresent(): String {
     val candidate = this.replace(Regex("/+$"), "")

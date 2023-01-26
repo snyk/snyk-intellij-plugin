@@ -6,7 +6,7 @@ import okhttp3.Response
 import snyk.common.needsSnykToken
 import snyk.pluginInfo
 
-class TokenInterceptor() : Interceptor {
+class TokenInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request().newBuilder()
 

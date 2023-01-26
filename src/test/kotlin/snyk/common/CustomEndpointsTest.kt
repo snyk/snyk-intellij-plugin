@@ -1,7 +1,7 @@
 package snyk.common
 
-import junit.framework.TestCase
-import junit.framework.TestCase.*
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.Assert.assertThat
 import org.junit.Test
