@@ -1,5 +1,6 @@
 package ai.deepcode.javaclient.core;
 
+import io.snyk.plugin.snykcode.core.SnykCodeFile;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
@@ -25,8 +26,8 @@ public abstract class HashContentUtilsBase {
   }
 
   void removeProjectHashContent(@NotNull Object project) {
-    mapFile2Hash.keySet().removeIf(f -> platformDependentUtils.getProject(f) == project);
-    mapFile2Content.keySet().removeIf(f -> platformDependentUtils.getProject(f) == project);
+    mapFile2Hash.keySet().removeIf(f -> f instanceof SnykCodeFile && platformDependentUtils.getProject(f) == project);
+    mapFile2Content.keySet().removeIf(f -> f instanceof SnykCodeFile && platformDependentUtils.getProject(f) == project);
   }
 
   // ?? com.intellij.openapi.util.text.StringUtil.toHexString
