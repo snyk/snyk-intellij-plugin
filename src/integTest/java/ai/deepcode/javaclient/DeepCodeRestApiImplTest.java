@@ -215,8 +215,7 @@ public class DeepCodeRestApiImplTest {
 
     String fileText;
     try {
-      // ?? com.intellij.openapi.util.io.FileUtil#loadFile(java.io.File, java.nio.charset.Charset)
-      fileText = Files.readString(Paths.get(absolutePath));
+      fileText = new String(Files.readAllBytes(Paths.get(absolutePath)));
       String hash = getHash(fileText);
       System.out.printf("File hash: %1$s\n", hash);
       FileHashRequest fileHashRequest = new FileHashRequest();
@@ -311,7 +310,7 @@ public class DeepCodeRestApiImplTest {
     String fileText;
     try {
       // ?? com.intellij.openapi.util.io.FileUtil#loadFile(java.io.File, java.nio.charset.Charset)
-      fileText = Files.readString(Paths.get(absolutePath));
+      fileText = new String(Files.readAllBytes(Paths.get(absolutePath)));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -331,7 +330,7 @@ public class DeepCodeRestApiImplTest {
     assertNotNull(
       "`bundleId` should be initialized at `_030_createBundle_from_source()`", bundleId);
     final String deepcodedFilePath =
-      createFileHashRequest(null).keySet().stream().findFirst().orElseThrow();
+      createFileHashRequest(null).keySet().stream().findFirst().orElseThrow(() -> new RuntimeException("No files to analyse"));
     final List<String> analysedFiles = Collections.singletonList(deepcodedFilePath);
     GetAnalysisResponse response = doAnalysisAndWait(analysedFiles, null);
     assertAndPrintGetAnalysisResponse(response);
