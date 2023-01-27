@@ -18,7 +18,7 @@ public class HashContentUtilsMock extends HashContentUtilsBase {
   @Override
   public @NotNull String doGetFileContent(@NotNull Object file) {
     try {
-      return Files.readString(Paths.get(((File) file).getAbsolutePath()));
+      return new String(Files.readAllBytes(Paths.get(((File) file).getAbsolutePath())));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
