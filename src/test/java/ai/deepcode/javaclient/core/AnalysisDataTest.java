@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
@@ -185,7 +186,7 @@ public class AnalysisDataTest {
 
     File file = File.createTempFile("analysisDataTest", "tmp");
     file.deleteOnExit();
-    Files.writeString(file.toPath(), "testtestest");
+    Files.write(file.toPath(), "testtestest".getBytes(StandardCharsets.UTF_8));
 
     analysisData.updateCachedResultsForFiles(project, Collections.singleton(file), progress);
 
