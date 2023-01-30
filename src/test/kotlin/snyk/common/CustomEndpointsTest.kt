@@ -135,13 +135,21 @@ class CustomEndpointsTest {
 
     @Test
     fun `api snyk path needs token`() {
-        val uri = "https://snyk.io/api"
+        var uri = "https://snyk.io/api"
+        assertTrue(needsSnykToken(uri))
+        uri = "https://app.eu.snyk.io/api"
+        assertTrue(needsSnykToken(uri))
+        uri = "https://app.au.snyk.io/api"
         assertTrue(needsSnykToken(uri))
     }
 
     @Test
     fun `api snyk domain needs token`() {
-        val uri = "https://api.snyk.io"
+        var uri = "https://api.snyk.io"
+        assertTrue(needsSnykToken(uri))
+        uri = "https://app.eu.snyk.io"
+        assertTrue(needsSnykToken(uri))
+        uri = "https://app.au.snyk.io"
         assertTrue(needsSnykToken(uri))
     }
 }

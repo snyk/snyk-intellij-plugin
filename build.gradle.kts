@@ -81,7 +81,7 @@ tasks {
     }
 
     withType<Detekt> {
-        jvmTarget = "1.8"
+        jvmTarget = jdk
         reports {
             sarif {
                 required.set(true)
