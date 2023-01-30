@@ -15,6 +15,7 @@ import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import snyk.common.getEndpointUrl
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
 import java.net.URLEncoder
@@ -90,10 +91,8 @@ open class ConsoleCommandRunner {
         if (apiToken.isNotEmpty()) {
             commandLine.environment["SNYK_TOKEN"] = apiToken
         }
-        val customEndpoint = pluginSettings().customEndpointUrl
-        if (customEndpoint != null && customEndpoint.isNotEmpty()) {
-            commandLine.environment["SNYK_API"] = customEndpoint
-        }
+        commandLine.environment["SNYK_API"] = getEndpointUrl()
+
         if (!pluginSettings().usageAnalyticsEnabled) {
             commandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"
         }

@@ -40,6 +40,8 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
 
       - name: Test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           ./gradlew test integTest verifyPlugin clean
           git clean -d --force

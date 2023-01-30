@@ -165,7 +165,7 @@ class SnykTaskQueueService(val project: Project) {
                 if (settings.token.isNullOrBlank()) {
                     return
                 }
-                val sastCliConfigSettings = getSnykApiService().getSastSettings(settings.token)
+                val sastCliConfigSettings = getSnykApiService().getSastSettings()
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 settings.reportFalsePositivesEnabled = sastCliConfigSettings?.reportFalsePositivesEnabled

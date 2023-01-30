@@ -10,7 +10,7 @@ fun properties(key: String) = project.findProperty(key).toString()
 plugins {
     id("org.jetbrains.changelog") version "1.2.1"
     id("org.jetbrains.intellij") version "1.1.2"
-    id("org.jetbrains.kotlin.jvm") version "1.5.10"
+    id("org.jetbrains.kotlin.jvm") version "1.8.0"
     id("io.gitlab.arturbosch.detekt") version ("1.21.0")
     id("pl.allegro.tech.build.axion-release") version "1.13.6"
 }
@@ -20,8 +20,11 @@ version = scmVersion.version
 group = properties("pluginGroup")
 description = properties("pluginName")
 
+val jdk = "1.8"
+
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -29,7 +32,6 @@ dependencies {
     implementation("com.google.code.gson:gson:2.9.0")
     implementation("com.segment.analytics.java:analytics:3.3.1")
     implementation("io.sentry:sentry:6.4.2")
-    implementation("io.snyk.code.sdk:snyk-code-client:2.3.4")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
     implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
         exclude(group = "org.slf4j")
@@ -69,12 +71,17 @@ detekt {
 
 tasks {
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = jdk
         kotlinOptions.languageVersion = "1.3"
     }
 
+    withType<JavaCompile> {
+        targetCompatibility = jdk
+        sourceCompatibility = jdk
+    }
+
     withType<Detekt> {
-        jvmTarget = "1.8"
+        jvmTarget = jdk
         reports {
             sarif {
                 required.set(true)

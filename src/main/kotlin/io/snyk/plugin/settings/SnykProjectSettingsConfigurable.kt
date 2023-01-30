@@ -61,8 +61,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         val severitySelectionChanged = snykSettingsDialog.isSeverityEnablementChanged()
 
         settingsStateService.customEndpointUrl = customEndpoint
-        SnykCodeParams.instance.apiUrl = customEndpoint
-        SnykCodeParams.instance.isDisableSslVerification = snykSettingsDialog.isIgnoreUnknownCA()
 
         settingsStateService.token = snykSettingsDialog.getToken()
         SnykCodeParams.instance.sessionToken = snykSettingsDialog.getToken()

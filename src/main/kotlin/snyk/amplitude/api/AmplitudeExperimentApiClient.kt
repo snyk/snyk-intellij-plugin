@@ -1,15 +1,13 @@
 package snyk.amplitude.api
 
 import com.intellij.openapi.diagnostic.logger
-import okhttp3.OkHttpClient
+import io.snyk.plugin.net.RetrofitClientFactory
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import snyk.net.HttpClient
 import java.io.IOException
 
 class AmplitudeExperimentApiClient private constructor(
     private val baseUrl: String,
-    private val httpClient: OkHttpClient
+    private val apiKey: String
 ) {
     private val log = logger<AmplitudeExperimentApiClient>()
     private lateinit var retrofit: Retrofit
@@ -55,11 +53,15 @@ class AmplitudeExperimentApiClient private constructor(
 
     private fun createRetrofitIfNeeded(): Retrofit {
         if (!::retrofit.isInitialized) {
-            retrofit = Retrofit.Builder()
-                .client(httpClient)
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+            var interceptors = emptyList<okhttp3.Interceptor>()
+            if (apiKey.isNotBlank()) {
+                interceptors = listOf(AmplitudeApiKeyInterceptor(apiKey))
+            }
+            retrofit = RetrofitClientFactory.getInstance().createRetrofit(
+                baseUrl,
+                false,
+                interceptors
+            )
         }
         return retrofit
     }
@@ -67,13 +69,9 @@ class AmplitudeExperimentApiClient private constructor(
     companion object {
         fun create(
             baseUrl: String = "https://api.lab.amplitude.com/",
-            apiKey: String,
-            httpClient: HttpClient = HttpClient()
+            apiKey: String
         ): AmplitudeExperimentApiClient {
-            if (apiKey.isNotBlank()) {
-                httpClient.interceptors = httpClient.interceptors.plus(AmplitudeApiKeyInterceptor(apiKey))
-            }
-            return AmplitudeExperimentApiClient(baseUrl, httpClient.build())
+            return AmplitudeExperimentApiClient(baseUrl, apiKey)
         }
     }
 

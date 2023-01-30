@@ -1,17 +1,12 @@
 package snyk.advisor.api
 
 import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.net.TokenInterceptor
-import okhttp3.OkHttpClient
-import org.jetbrains.annotations.TestOnly
+import io.snyk.plugin.net.RetrofitClientFactory
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import snyk.advisor.AdvisorPackageManager
-import snyk.net.HttpClient
 
-class AdvisorApiClient private constructor(
-    private val baseUrl: String,
-    private val httpClient: OkHttpClient
+class AdvisorApiClient constructor(
+    private val baseUrl: String = "https://api.snyk.io/unstable/advisor/"
 ) {
     private lateinit var retrofit: Retrofit
     private lateinit var scoreServiceEndpoint: ScoreService
@@ -35,7 +30,6 @@ class AdvisorApiClient private constructor(
         }
     }
 
-    @TestOnly
     internal fun scoreService(): ScoreService {
         if (!::scoreServiceEndpoint.isInitialized) {
             scoreServiceEndpoint = createRetrofitIfNeeded().create(ScoreService::class.java)
@@ -45,32 +39,12 @@ class AdvisorApiClient private constructor(
 
     private fun createRetrofitIfNeeded(): Retrofit {
         if (!::retrofit.isInitialized) {
-            retrofit = Retrofit.Builder()
-                .client(httpClient)
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+            retrofit = RetrofitClientFactory.getInstance().createRetrofit(baseUrl)
         }
         return retrofit
     }
 
     companion object {
         private val log = logger<AdvisorApiClient>()
-        fun create(
-            //TODO(pavel): migrate baseUrl from String to Endpoint object
-            baseUrl: String = "https://api.snyk.io/unstable/advisor/",
-            token: String,
-            httpClient: HttpClient = HttpClient()
-        ): AdvisorApiClient? {
-            if (token.isNotBlank()) {
-                httpClient.interceptors = httpClient.interceptors.plus(TokenInterceptor(token))
-            }
-            return try {
-                AdvisorApiClient(baseUrl, httpClient.build())
-            } catch (t: Throwable) {
-                log.warn("Failed to create HttpClient: ${t.message}", t)
-                return null
-            }
-        }
     }
 }

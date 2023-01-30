@@ -1,6 +1,7 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
   <ManuallySuppressedIssues>
+    <ID>EmptyFunctionBlock:RetrofitClientFactory.kt$RetrofitClientFactory.&lt;no name provided>${}</ID>
   </ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:115</ID>
@@ -37,10 +38,12 @@
     <ID>EmptyClassBlock:CliError.kt$CliError${ }</ID>
     <ID>EmptyDefaultConstructor:SnykBulkFileListener.kt$SnykBulkFileListener$()</ID>
     <ID>EmptyDefaultConstructor:SnykCliAuthenticationService.kt$AuthDialog$()</ID>
-    <ID>EmptyFunctionBlock:SnykApiService.kt$SnykApiService.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:SnykApiService.kt$SnykApiService.&lt;no name provided>${}</ID>
     <ID>EmptyFunctionBlock:SnykAuthPanel.kt$SnykAuthPanel${}</ID>
     <ID>EmptyFunctionBlock:SnykToolWindowPanel.kt$SnykToolWindowPanel${ }</ID>
-    <ID>ForbiddenComment:ScanTypesPanel.kt$ScanTypesPanel$// todo: change to setTextWithHyperlink() after move to sinceId &gt;= 211</ID>
+    <ID>ForbiddenComment:ScanTypesPanel.kt$ScanTypesPanel$// todo: change to setTextWithHyperlink() after move to
+      sinceId >= 211
+    </ID>
     <ID>ForbiddenComment:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$//todo: case if no Component exist (action invoked from Search?)</ID>
     <ID>ForbiddenComment:SnykToolWindowPanel.kt$SnykToolWindowPanel$// todo: open package manager file, if any and was not opened yet</ID>
     <ID>ForbiddenComment:Vulnerability.kt$Vulnerability$// todo: (by Pavel)</ID>
@@ -55,9 +58,15 @@
     <ID>LongMethod:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$private fun diffPanel(exampleCommitFix: ExampleCommitFix, rowCount: Int): JComponent</ID>
     <ID>LongMethod:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$override fun customizeCellRenderer( tree: JTree, value: Any, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean )</ID>
     <ID>LongParameterList:SnykAuthPanel.kt$SnykAuthPanel$( row: Int, column: Int = 0, rowSpan: Int = 1, colSpan: Int = 1, anchor: Int = GridConstraints.ANCHOR_CENTER, fill: Int = GridConstraints.FILL_NONE, HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, minimumSize: Dimension? = null, preferredSize: Dimension? = null, maximumSize: Dimension? = null, indent: Int = 1, useParentLayout: Boolean = false )</ID>
-    <ID>LongParameterList:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$( beforeLinkText: String = "", linkText: String, afterLinkText: String = "", toolTipText: String, customFont: Font? = null, onClick: (HyperlinkEvent) -&gt; Unit)</ID>
+    <ID>LongParameterList:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$( beforeLinkText: String = "",
+      linkText: String, afterLinkText: String = "", toolTipText: String, customFont: Font? = null, onClick:
+      (HyperlinkEvent) -> Unit)
+    </ID>
     <ID>LongParameterList:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$( row: Int, column: Int = 0, rowSpan: Int = 1, colSpan: Int = 1, anchor: Int = GridConstraints.ANCHOR_WEST, fill: Int = GridConstraints.FILL_NONE, HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, minimumSize: Dimension? = null, preferredSize: Dimension? = null, maximumSize: Dimension? = null, indent: Int = 1, useParentLayout: Boolean = false )</ID>
-    <ID>LongParameterList:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$( panel: JPanel, startingColumn: Int, items: Array&lt;String&gt;, separator: String = " | ", firstSeparator: Boolean = true, opaqueSeparator: Boolean = true, buildUrl: (String) -&gt; String )</ID>
+    <ID>LongParameterList:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$( panel: JPanel,
+      startingColumn: Int, items: Array&lt;String>, separator: String = " | ", firstSeparator: Boolean = true,
+      opaqueSeparator: Boolean = true, buildUrl: (String) -> String )
+    </ID>
     <ID>LongParameterList:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$( row: Int, column: Int = 0, rowSpan: Int = 1, colSpan: Int = 1, anchor: Int = GridConstraints.ANCHOR_WEST, fill: Int = GridConstraints.FILL_NONE, HSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, VSizePolicy: Int = GridConstraints.SIZEPOLICY_FIXED, minimumSize: Dimension? = null, preferredSize: Dimension? = null, maximumSize: Dimension? = null, indent: Int = 1, useParentLayout: Boolean = false )</ID>
     <ID>MagicNumber:CliCheckingPanel.kt$CliCheckingPanel$3</ID>
     <ID>MagicNumber:CliErrorPanel.kt$CliErrorPanel$10</ID>
@@ -125,37 +134,82 @@
     <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$5</ID>
     <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$50</ID>
     <ID>MagicNumber:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$9</ID>
-    <ID>MaxLineLength:ConsoleCommandRunner.kt$ConsoleCommandRunner$val processOutput = ScriptRunnerUtil.getProcessOutput(processHandler, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)</ID>
-    <ID>MaxLineLength:EventPropertiesProviderTest.kt$EventPropertiesProviderTest$@Suppress("UNCHECKED_CAST") val actualAnalysisDetails = actualAnalysis.map["analysisDetails"] as java.util.HashMap&lt;*, *&gt;</ID>
-    <ID>MaxLineLength:ScanTypesPanel.kt$ScanTypesPanel$runOnClick = { startSastEnablementCheckLoop(parentDisposable, onSuccess = { doShowFilesToUpload() }) }</ID>
-    <ID>MaxLineLength:ScanTypesPanel.kt$ScanTypesPanel$snykCodeCheckbox?.text = SNYK_CODE_SECURITY_ISSUES + if (showAlert) " (you can enable it later in the Settings)" else ""</ID>
-    <ID>MaxLineLength:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$"Thank you for using Snyk! Want to help us by taking part in Snyk’s plugin research and get a \$100 Amazon gift card in return?"</ID>
+    <ID>MaxLineLength:ConsoleCommandRunner.kt$ConsoleCommandRunner$val processOutput =
+      ScriptRunnerUtil.getProcessOutput(processHandler, ScriptRunnerUtil.STDOUT_OUTPUT_KEY_FILTER, 720000)
+    </ID>
+    <ID>MaxLineLength:EventPropertiesProviderTest.kt$EventPropertiesProviderTest$@Suppress("UNCHECKED_CAST") val
+      actualAnalysisDetails = actualAnalysis.map["analysisDetails"] as java.util.HashMap&lt;*, *>
+    </ID>
+    <ID>MaxLineLength:ScanTypesPanel.kt$ScanTypesPanel$runOnClick = { startSastEnablementCheckLoop(parentDisposable,
+      onSuccess = { doShowFilesToUpload() }) }
+    </ID>
+    <ID>MaxLineLength:ScanTypesPanel.kt$ScanTypesPanel$snykCodeCheckbox?.text = SNYK_CODE_SECURITY_ISSUES + if
+      (showAlert) " (you can enable it later in the Settings)" else ""
+    </ID>
+    <ID>MaxLineLength:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$"Thank you for using Snyk! Want to
+      help us by taking part in Snyk’s plugin research and get a \$100 Amazon gift card in return?"
+    </ID>
     <ID>MaxLineLength:SnykBalloonNotifications.kt$SnykBalloonNotifications.Companion$private</ID>
-    <ID>MaxLineLength:SnykBulkFileListener.kt$SnykBulkFileListener$// bulk files change event (like `git checkout`) - better to drop cache and perform full rescan later</ID>
-    <ID>MaxLineLength:SnykCliAuthenticationService.kt$AuthDialog$val scrollPane = JBScrollPane(viewer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)</ID>
-    <ID>MaxLineLength:SnykCliAuthenticationService.kt$SnykCliAuthenticationService.&lt;no name provided&gt;$ If a browser window doesn't open after a few seconds, please &lt;a href=</ID>
-    <ID>MaxLineLength:SnykCliAuthenticationService.kt$SnykCliAuthenticationService.&lt;no name provided&gt;$ Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.&lt;br&gt;&lt;br&gt;</ID>
+    <ID>MaxLineLength:SnykBulkFileListener.kt$SnykBulkFileListener$// bulk files change event (like `git checkout`) -
+      better to drop cache and perform full rescan later
+    </ID>
+    <ID>MaxLineLength:SnykCliAuthenticationService.kt$AuthDialog$val scrollPane = JBScrollPane(viewer,
+      ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
+    </ID>
+    <ID>MaxLineLength:SnykCliAuthenticationService.kt$SnykCliAuthenticationService.&lt;no name provided>$ If a browser
+      window doesn't open after a few seconds, please &lt;a href=
+    </ID>
+    <ID>MaxLineLength:SnykCliAuthenticationService.kt$SnykCliAuthenticationService.&lt;no name provided>$ Once the
+      authentication is complete, return to the IDE and you'll be ready to start using Snyk.&lt;br>&lt;br>
+    </ID>
     <ID>MaxLineLength:SnykCliDownloaderService.kt$SnykCliDownloaderService$&amp;&amp;</ID>
     <ID>MaxLineLength:SnykCliDownloaderService.kt$SnykCliDownloaderService$tailrec</ID>
     <ID>MaxLineLength:SnykCliService.kt$SnykCliService$*</ID>
     <ID>MaxLineLength:SnykCliService.kt$SnykCliService$?:</ID>
-    <ID>MaxLineLength:SnykCodeIgnoreInfoHolder.kt$SnykCodeIgnoreInfoHolder$SnykBalloonNotifications.showInfo("We added generic .dcignore file to upload only project's source code.", project)</ID>
-    <ID>MaxLineLength:SnykCodeParams.kt$SnykCodeParams$setApiUrl(toSnykCodeApiUrl(getApplicationSettingsStateService().customEndpointUrl), getApplicationSettingsStateService().ignoreUnknownCA)</ID>
+    <ID>MaxLineLength:SnykCodeIgnoreInfoHolder.kt$SnykCodeIgnoreInfoHolder$SnykBalloonNotifications.showInfo("We added
+      generic .dcignore file to upload only project's source code.", project)
+    </ID>
+    <ID>
+      MaxLineLength:SnykCodeParams.kt$SnykCodeParams$setApiUrl(toSnykCodeApiUrl(getApplicationSettingsStateService().customEndpointUrl),
+      getApplicationSettingsStateService().ignoreUnknownCA)
+    </ID>
     <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$&amp;&amp;</ID>
-    <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$project.service&lt;SnykProjectSettingsStateService&gt;().additionalParameters = snykSettingsDialog.getAdditionalParameters()</ID>
-    <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$service&lt;SnykAnalyticsService&gt;().setAnalyticsCollectionEnabled(applicationSettingsStateService.usageAnalyticsEnabled)</ID>
-    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$if (descriptionPanel.components.firstOrNull() is JScrollPane) return</ID>
-    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$isSnykCodeRunning(project) &amp;&amp; settings.snykCodeQualityIssuesScanEnable -&gt; "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"</ID>
-    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$isSnykCodeRunning(project) &amp;&amp; settings.snykCodeSecurityIssuesScanEnable -&gt; "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (scanning...)"</ID>
+    <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$project.service&lt;SnykProjectSettingsStateService>().additionalParameters
+      = snykSettingsDialog.getAdditionalParameters()
+    </ID>
+    <ID>MaxLineLength:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable$service&lt;SnykAnalyticsService>().setAnalyticsCollectionEnabled(applicationSettingsStateService.usageAnalyticsEnabled)</ID>
+    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$if (descriptionPanel.components.firstOrNull() is
+      JScrollPane) return
+    </ID>
+    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$isSnykCodeRunning(project) &amp;&amp;
+      settings.snykCodeQualityIssuesScanEnable -> "$SNYKCODE_QUALITY_ISSUES_ROOT_TEXT (scanning...)"
+    </ID>
+    <ID>MaxLineLength:SnykToolWindowPanel.kt$SnykToolWindowPanel$isSnykCodeRunning(project) &amp;&amp;
+      settings.snykCodeSecurityIssuesScanEnable -> "$SNYKCODE_SECURITY_ISSUES_ROOT_TEXT (scanning...)"
+    </ID>
     <ID>MaxLineLength:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$else</ID>
-    <ID>MaxLineLength:UIUtils.kt$return Font(currentFont.name, if (style &gt;= 0) style else currentFont.style, if (size &gt;= 0) size else currentFont.size)</ID>
-    <ID>MaxLineLength:Vulnerability.kt$Vulnerability$// How about using comparator for tree nodes? Issue I see atm: this code cannot handle other issues e.g. critical if this will come later.</ID>
-    <ID>MaxLineLength:Vulnerability.kt$Vulnerability$// todo: replace lateinit with nullable val(r) or do pre-transformation of data to address possible json field absence</ID>
-    <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$addRowOfItemsToPanel(panel, 0, cwes) { "https://cwe.mitre.org/data/definitions/${it.removePrefix("CWE-")}.html" }</ID>
-    <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$addRowOfItemsToPanel(panel, lastColumn, arrayOf("CVSS $cvssScore")) { "https://www.first.org/cvss/calculator/3.1#$cvsSv3" }</ID>
+    <ID>MaxLineLength:UIUtils.kt$return Font(currentFont.name, if (style >= 0) style else currentFont.style, if (size >=
+      0) size else currentFont.size)
+    </ID>
+    <ID>MaxLineLength:Vulnerability.kt$Vulnerability$// How about using comparator for tree nodes? Issue I see atm: this
+      code cannot handle other issues e.g. critical if this will come later.
+    </ID>
+    <ID>MaxLineLength:Vulnerability.kt$Vulnerability$// todo: replace lateinit with nullable val(r) or do
+      pre-transformation of data to address possible json field absence
+    </ID>
+    <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$addRowOfItemsToPanel(panel, 0,
+      cwes) { "https://cwe.mitre.org/data/definitions/${it.removePrefix("CWE-")}.html" }
+    </ID>
+    <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$addRowOfItemsToPanel(panel,
+      lastColumn, arrayOf("CVSS $cvssScore")) { "https://www.first.org/cvss/calculator/3.1#$cvsSv3" }
+    </ID>
     <ID>MaxLineLength:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel$fun boldLabel(text: String)</ID>
-    <ID>MaxLineLength:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$text = SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + availabilityPostfix.ifEmpty { " (disabled)" }</ID>
-    <ID>MaxLineLength:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$text = SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + availabilityPostfix.ifEmpty { " (disabled)" }</ID>
+    <ID>MaxLineLength:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$text =
+      SnykToolWindowPanel.SNYKCODE_QUALITY_ISSUES_ROOT_TEXT + availabilityPostfix.ifEmpty { " (disabled)" }
+    </ID>
+    <ID>MaxLineLength:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer$text =
+      SnykToolWindowPanel.SNYKCODE_SECURITY_ISSUES_ROOT_TEXT + availabilityPostfix.ifEmpty { " (disabled)" }
+    </ID>
     <ID>MaximumLineLength:io.snyk.plugin.analytics.EventPropertiesProviderTest.kt:45</ID>
     <ID>MaximumLineLength:io.snyk.plugin.cli.ConsoleCommandRunner.kt:69</ID>
     <ID>MaximumLineLength:io.snyk.plugin.services.SnykCliAuthenticationService.kt:144</ID>
@@ -397,26 +451,37 @@
     <ID>TooGenericExceptionCaught:SnykApiClient.kt$SnykApiClient$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:SnykApiService.kt$SnykApiService$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:Utils.kt$throwable: Throwable</ID>
-    <ID>TooGenericExceptionThrown:SnykCodeIgnoreInfoHolder.kt$SnykCodeIgnoreInfoHolder$throw RuntimeException("full.dcignore can not be found in plugin's resources")</ID>
+    <ID>TooGenericExceptionThrown:SnykCodeIgnoreInfoHolder.kt$SnykCodeIgnoreInfoHolder$throw
+      RuntimeException("full.dcignore can not be found in plugin's resources")
+    </ID>
     <ID>TooManyFunctions:PDU.kt$PDU : PlatformDependentUtilsBase</ID>
     <ID>TooManyFunctions:SnykBalloonNotifications.kt$SnykBalloonNotifications$Companion</ID>
-    <ID>TooManyFunctions:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable : SearchableConfigurable</ID>
+    <ID>TooManyFunctions:SnykProjectSettingsConfigurable.kt$SnykProjectSettingsConfigurable : SearchableConfigurable
+    </ID>
     <ID>TooManyFunctions:SnykSettingsDialog.kt$SnykSettingsDialog</ID>
     <ID>TooManyFunctions:SnykToolWindowPanel.kt$SnykToolWindowPanel : JPanelDisposable</ID>
     <ID>TooManyFunctions:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel : JPanel</ID>
     <ID>TooManyFunctions:Utils.kt$io.snyk.plugin.Utils.kt</ID>
     <ID>TooManyFunctions:VulnerabilityDescriptionPanel.kt$VulnerabilityDescriptionPanel : JPanel</ID>
-    <ID>UnusedPrivateMember:AdvisorService.kt$AdvisorService$packageInfo: (PackageInfo) -&gt; Unit</ID>
-    <ID>UnusedPrivateMember:AdvisorService.kt$AdvisorService$private val log = logger&lt;AdvisorService&gt;()</ID>
-    <ID>UnusedPrivateMember:SnykToolWindowPanel.kt$SnykToolWindowPanel$val nodesToReload = listOfNotNull( newCliTreeNodeText?.let { rootCliTreeNode }, newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode }, newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode } )</ID>
-    <ID>UnusedPrivateMember:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$val columnNumber = startOffset - lineStartOffset</ID>
+    <ID>UnusedPrivateMember:AdvisorService.kt$AdvisorService$packageInfo: (PackageInfo) -> Unit</ID>
+    <ID>UnusedPrivateMember:AdvisorService.kt$AdvisorService$private val log = logger&lt;AdvisorService>()</ID>
+    <ID>UnusedPrivateMember:SnykToolWindowPanel.kt$SnykToolWindowPanel$val nodesToReload = listOfNotNull(
+      newCliTreeNodeText?.let { rootCliTreeNode }, newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode },
+      newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode } )
+    </ID>
+    <ID>UnusedPrivateMember:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$val columnNumber = startOffset -
+      lineStartOffset
+    </ID>
     <ID>UnusedPrivateMember:SuggestionDescriptionPanel.kt$SuggestionDescriptionPanel$val endOffset = range.end</ID>
-    <ID>UnusedPrivateMember:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer.Companion$private val GRAYED_STRIKEOUT_ATTRIBUTES = SimpleTextAttributes(SimpleTextAttributes.STYLE_STRIKEOUT, UIUtil.getInactiveTextColor())</ID>
+    <ID>UnusedPrivateMember:VulnerabilityTreeCellRenderer.kt$VulnerabilityTreeCellRenderer.Companion$private val
+      GRAYED_STRIKEOUT_ATTRIBUTES = SimpleTextAttributes(SimpleTextAttributes.STYLE_STRIKEOUT,
+      UIUtil.getInactiveTextColor())
+    </ID>
     <ID>UtilityClassWithPublicConstructor:PackageManagerIconProvider.kt$PackageManagerIconProvider</ID>
     <ID>UtilityClassWithPublicConstructor:Severity.kt$Severity</ID>
     <ID>UtilityClassWithPublicConstructor:SnykBalloonNotifications.kt$SnykBalloonNotifications</ID>
-    <ID>VariableNaming:Vulnerability.kt$Identifiers$lateinit var CVE: Array&lt;String&gt;</ID>
-    <ID>VariableNaming:Vulnerability.kt$Identifiers$lateinit var CWE: Array&lt;String&gt;</ID>
+    <ID>VariableNaming:Vulnerability.kt$Identifiers$lateinit var CVE: Array&lt;String></ID>
+    <ID>VariableNaming:Vulnerability.kt$Identifiers$lateinit var CWE: Array&lt;String></ID>
     <ID>VariableNaming:Vulnerability.kt$Vulnerability$var CVSSv3: String? = null</ID>
     <ID>WildcardImport:SnykApplicationSettingsStateService.kt$import com.intellij.openapi.components.*</ID>
     <ID>WildcardImport:SnykBalloonNotifications.kt$import com.intellij.notification.*</ID>

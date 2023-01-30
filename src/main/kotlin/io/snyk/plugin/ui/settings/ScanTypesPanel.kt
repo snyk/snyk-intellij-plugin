@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.settings
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.HyperlinkLabel
@@ -45,7 +46,9 @@ class ScanTypesPanel(
     private var snykCodeComment: JLabel? = null
     private var snykCodeAlertHyperLinkLabel = HyperlinkLabel()
     private var snykCodeReCheckLinkLabel = LinkLabel.create("Check again") {
-        checkSastEnabled()
+        runBackgroundableTask("Checking Snyk Code enablement in organisation", project, true) {
+            checkSastEnabled()
+        }
     }
 
     private var currentOssScanEnabled = settings.ossScanEnable
@@ -64,7 +67,7 @@ class ScanTypesPanel(
             }
         }
     }.apply {
-        border = JBUI.Borders.empty(0)
+        border = JBUI.Borders.empty()
         this.isVisible = false
     }
 
@@ -186,7 +189,9 @@ class ScanTypesPanel(
             codeQualityCheckbox?.addItemListener {
                 snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
             }
-            checkSastEnabled()
+            runBackgroundableTask("Checking Snyk Code enablement in organisation", project, true) {
+                checkSastEnabled()
+            }
         }
     }.apply {
         name = "scanTypesPanel"
@@ -207,9 +212,9 @@ class ScanTypesPanel(
         }
     }
 
-    fun checkSastEnabled(token: String? = pluginSettings().token) {
+    fun checkSastEnabled() {
         setSnykCodeAvailability(false)
-        if (token.isNullOrBlank()) {
+        if (pluginSettings().token.isNullOrBlank()) {
             showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")
             return
         }
@@ -220,7 +225,7 @@ class ScanTypesPanel(
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                val sastCliConfigSettings = getSnykApiService().getSastSettings(token)
+                val sastCliConfigSettings = getSnykApiService().getSastSettings()
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 when (settings.sastOnServerEnabled) {

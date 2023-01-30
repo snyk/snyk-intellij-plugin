@@ -36,7 +36,6 @@ import org.junit.Test
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
-import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 
@@ -66,7 +65,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     private fun mockSnykApiServiceSastEnabled() {
         snykApiServiceMock = mockk()
-        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false),
             false
@@ -175,7 +174,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         snykTaskQueueService.scan()
 
-        verify { snykApiServiceMock.getSastSettings(any()) }
+        verify { snykApiServiceMock.getSastSettings() }
     }
 
     @Test
@@ -202,7 +201,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         // overwrite default setup
         snykApiServiceMock = mockk(relaxed = true)
         replaceSnykApiServiceMockInContainer()
-        every { snykApiServiceMock.getSastSettings(any()) } returns CliConfigSettings(
+        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(true),
             false
