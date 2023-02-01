@@ -129,7 +129,7 @@ public abstract class DeepCodeUtilsBase {
           + " "
           + filtersResponse.getStatusDescription());
 
-      // updated 05.2022
+      // updated 01.2023
       supportedExtensions =
         new HashSet<>(
           Arrays.asList(
@@ -178,7 +178,8 @@ public abstract class DeepCodeUtilsBase {
         new HashSet<>(
           Arrays.asList(
             ".gitignore",
-            ".dcignore"
+            ".dcignore",
+            ".snyk"
           )
         );
     }
