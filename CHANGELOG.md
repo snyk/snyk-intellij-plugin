@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Fixed IaC false positive warnings
+- IaC false positive warnings
 
 ## [2.4.51]
 
