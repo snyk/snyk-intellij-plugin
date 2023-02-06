@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.52]
+
+### Fixed
+
+- Fixed IaC false positive warnings
+
 ## [2.4.51]
 
 ### Added
