@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.53]
+
+### Fixed
+
+- IaC false positive warnings for YAML files
+
 ## [2.4.52]
 
 ### Fixed
