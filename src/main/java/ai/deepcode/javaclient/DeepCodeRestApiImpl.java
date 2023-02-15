@@ -118,24 +118,28 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
-      @Header("Session-Token") String token, @Body FileContentRequest files);
+      @Header("Session-Token") String token,
+      @Header("snyk-org-name") String orgName,
+      @Body FileContentRequest files);
 
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
-      @Header("Session-Token") String token, @Body FileHashRequest files);
+      @Header("Session-Token") String token,
+      @Header("snyk-org-name") String orgName,
+      @Body FileHashRequest files);
   }
 
-  private static <Req> CreateBundleResponse doCreateBundle(String token, Req request) {
+  private static <Req> CreateBundleResponse doCreateBundle(String token, String orgName, Req request) {
     CreateBundleCall createBundleCall = retrofit.create(CreateBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
       if (request instanceof FileContentRequest)
         retrofitResponse =
-          createBundleCall.doCreateBundle(token, (FileContentRequest) request).execute();
+          createBundleCall.doCreateBundle(token, orgName, (FileContentRequest) request).execute();
       else if (request instanceof FileHashRequest)
         retrofitResponse =
-          createBundleCall.doCreateBundle(token, (FileHashRequest) request).execute();
+          createBundleCall.doCreateBundle(token, orgName, (FileHashRequest) request).execute();
       else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
@@ -175,8 +179,8 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse createBundle(String token, FileContentRequest files) {
-    return doCreateBundle(token, files);
+  public CreateBundleResponse createBundle(String token, String orgName, FileContentRequest files) {
+    return doCreateBundle(token, orgName, files);
   }
 
   /**
@@ -186,8 +190,8 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse createBundle(String token, FileHashRequest files) {
-    return doCreateBundle(token, files);
+  public CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files) {
+    return doCreateBundle(token, orgName, files);
   }
 
   private interface CheckBundleCall {
@@ -195,6 +199,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @GET("bundle/{bundleId}")
     Call<CreateBundleResponse> doCheckBundle(
       @Header("Session-Token") String token,
+      @Header("snyk-org-name") String orgName,
       @Path(value = "bundleId", encoded = true) String bundleId);
   }
 
@@ -206,11 +211,11 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse checkBundle(String token, String bundleId) {
+  public CreateBundleResponse checkBundle(String token, String orgName, String bundleId) {
     CheckBundleCall checkBundleCall = retrofit.create(CheckBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
-      retrofitResponse = checkBundleCall.doCheckBundle(token, bundleId).execute();
+      retrofitResponse = checkBundleCall.doCheckBundle(token, orgName, bundleId).execute();
     } catch (IOException e) {
       return new CreateBundleResponse();
     }
@@ -244,6 +249,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
       @Header("Session-Token") String token,
+      @Header("snyk-org-name") String orgName,
       @Path(value = "bundleId", encoded = true) String bundleId,
       @Body ExtendBundleWithHashRequest extendBundleWithHashRequest);
 
@@ -251,6 +257,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
       @Header("Session-Token") String token,
+      @Header("snyk-org-name") String orgName,
       @Path(value = "bundleId", encoded = true) String bundleId,
       @Body ExtendBundleWithContentRequest extendBundleWithContentRequest);
   }
@@ -264,19 +271,19 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   @Override
   @NotNull
   public <Req> CreateBundleResponse extendBundle(
-    String token, String bundleId, Req request) {
+    String token, String orgName, String bundleId, Req request) {
     ExtendBundleCall extendBundleCall = retrofit.create(ExtendBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
       if (request instanceof ExtendBundleWithHashRequest)
         retrofitResponse =
           extendBundleCall
-            .doExtendBundle(token, bundleId, (ExtendBundleWithHashRequest) request)
+            .doExtendBundle(token, orgName, bundleId, (ExtendBundleWithHashRequest) request)
             .execute();
       else if (request instanceof ExtendBundleWithContentRequest)
         retrofitResponse =
           extendBundleCall
-            .doExtendBundle(token, bundleId, (ExtendBundleWithContentRequest) request)
+            .doExtendBundle(token, orgName, bundleId, (ExtendBundleWithContentRequest) request)
             .execute();
       else throw new IllegalArgumentException();
     } catch (IOException e) {
@@ -318,7 +325,9 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("analysis")
     Call<GetAnalysisResponse> doGetAnalysis(
-      @Header("Session-Token") String token, @Body GetAnalysisRequest filesToAnalyse);
+      @Header("Session-Token") String token,
+      @Header("snyk-org-name") String orgName,
+      @Body GetAnalysisRequest filesToAnalyse);
   }
 
   /**
@@ -330,18 +339,18 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   @NotNull
   public GetAnalysisResponse getAnalysis(
     String token,
+    String orgName,
     String bundleId,
     Integer severity,
     List<String> filesToAnalyse,
     String shard,
-    String ideProductName,
-    String orgDisplayName
+    String ideProductName
   ) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =
         getAnalysisCall
-          .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard, ideProductName, orgDisplayName))
+          .doGetAnalysis(token, orgName, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard, ideProductName, orgName))
           .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();
