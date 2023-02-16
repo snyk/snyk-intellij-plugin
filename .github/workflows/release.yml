@@ -42,6 +42,7 @@ jobs:
       - name: Test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
         run: |
           ./gradlew test integTest verifyPlugin clean
           git clean -d --force

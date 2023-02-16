@@ -559,7 +559,7 @@ public abstract class AnalysisDataBase {
     @NotNull String bundleId
   ) throws TokenInvalid401Exception, BundleIdExpire404Exception, ApiCallNotSucceedException {
     CreateBundleResponse checkBundleResponse =
-      restApi.checkBundle(deepCodeParams.getSessionToken(), bundleId);
+      restApi.checkBundle(deepCodeParams.getSessionToken(), deepCodeParams.getOrgDisplayName(), bundleId);
     checkApiCallSucceed(project, checkBundleResponse, "Bad CheckBundle request: ");
     return checkBundleResponse.getMissingFiles();
   }
@@ -592,11 +592,12 @@ public abstract class AnalysisDataBase {
     final CreateBundleResponse bundleResponse;
     // check if bundleID for the project already been created
     if (parentBundleId.isEmpty())
-      bundleResponse = restApi.createBundle(deepCodeParams.getSessionToken(), request);
+      bundleResponse = restApi.createBundle(deepCodeParams.getSessionToken(), deepCodeParams.getOrgDisplayName(), request);
     else {
       bundleResponse =
         restApi.extendBundle(
           deepCodeParams.getSessionToken(),
+          deepCodeParams.getOrgDisplayName(),
           parentBundleId,
           new ExtendBundleWithHashRequest(request, removedFiles));
     }
@@ -632,6 +633,7 @@ public abstract class AnalysisDataBase {
     EmptyResponse uploadFilesResponse =
       restApi.extendBundle(
         deepCodeParams.getSessionToken(),
+        deepCodeParams.getOrgDisplayName(),
         bundleId,
         new ExtendBundleWithContentRequest(files, Collections.emptyList()));
     checkApiCallSucceed(project, uploadFilesResponse, "Bad UploadFiles request: ");
@@ -655,12 +657,12 @@ public abstract class AnalysisDataBase {
       response =
         restApi.getAnalysis(
           deepCodeParams.getSessionToken(),
+          deepCodeParams.getOrgDisplayName(),
           bundleId,
           deepCodeParams.getMinSeverity(),
           filesToAnalyse,
           HashContentUtilsBase.calculateHash(pdUtils.getProjectName(project)),
-          deepCodeParams.getIdeProductName(),
-          deepCodeParams.getOrgDisplayName());
+          deepCodeParams.getIdeProductName());
 
       pdUtils.progressCheckCanceled(progress);
       dcLogger.logInfo(response.toString());

@@ -16,7 +16,7 @@ public interface DeepCodeRestApi {
    * @return {@link CreateBundleResponse} instance
    */
   @NotNull
-  CreateBundleResponse createBundle(String token, FileContentRequest files);
+  CreateBundleResponse createBundle(String token, String orgName, FileContentRequest files);
 
   /**
    * Creates a new bundle for file(s) with Hash.
@@ -24,7 +24,7 @@ public interface DeepCodeRestApi {
    * @return {@link CreateBundleResponse} instance
    */
   @NotNull
-  CreateBundleResponse createBundle(String token, FileHashRequest files);
+  CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files);
 
   /**
    * Checks the status of a bundle.
@@ -33,7 +33,7 @@ public interface DeepCodeRestApi {
    * @return {@link CreateBundleResponse} instance
    */
   @NotNull
-  CreateBundleResponse checkBundle(String token, String bundleId);
+  CreateBundleResponse checkBundle(String token, String orgName, String bundleId);
 
   /**
    * Creates a new bundle by extending a previously uploaded one.
@@ -43,7 +43,7 @@ public interface DeepCodeRestApi {
    */
   @NotNull
   <Req> CreateBundleResponse extendBundle(
-    String token, String bundleId, Req request);
+    String token, String orgName, String bundleId, Req request);
 
   /**
    * Starts a new bundle analysis or checks its current status and available results.
@@ -53,12 +53,12 @@ public interface DeepCodeRestApi {
   @NotNull
   GetAnalysisResponse getAnalysis(
     String token,
+    String orgName,
     String bundleId,
     Integer severity,
     List<String> filesToAnalyse,
     String shard,
-    String ideProductName,
-    String orgDisplayName
+    String ideProductName
   );
 
   /**

@@ -16,7 +16,7 @@ public class GetAnalysisRequest {
    * @param severity
    * @param shard          uniq String (hash) per Project to optimize jobs on backend (run on the same worker to reuse caches)
    * @param ideProductName specific IDE
-   * @param orgDisplayName clients snyk organization name
+   * @param orgName clients snyk organization name
    * @param prioritized
    * @param legacy
    */
@@ -26,12 +26,12 @@ public class GetAnalysisRequest {
     Integer severity,
     String shard,
     String ideProductName,
-    String orgDisplayName,
+    String orgName,
     boolean prioritized,
     boolean legacy
   ) {
     this.key = new GetAnalysisKey(bundleHash, limitToFiles, shard);
-    this.analysisContext = new AnalysisContext(ideProductName, orgDisplayName);
+    this.analysisContext = new AnalysisContext(ideProductName, orgName);
     this.severity = severity;
     this.prioritized = prioritized;
     this.legacy = legacy;
@@ -43,9 +43,9 @@ public class GetAnalysisRequest {
     Integer severity,
     String shard,
     String ideProductName,
-    String orgDisplayName
+    String orgName
   ) {
-    this(bundleHash, limitToFiles, severity, shard, ideProductName, orgDisplayName, false, true);
+    this(bundleHash, limitToFiles, severity, shard, ideProductName, orgName, false, true);
   }
 
   private static class GetAnalysisKey {
@@ -102,26 +102,42 @@ public class GetAnalysisRequest {
     }
   }
 
+  private static class AnalysisContextOrg {
+    private final String name;
+
+    public AnalysisContextOrg(String name) {
+      this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      AnalysisContextOrg that = (AnalysisContextOrg) o;
+      return Objects.equals(name, that.name);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name);
+    }
+
+    @Override
+    public String toString() {
+      return "AnalysisContextOrg{" +
+        "name='" + name + '\'' +
+        '}';
+    }
+  }
+
   private static class AnalysisContext {
     private final String flow;
     private final String initiator = "IDE";
-    private final String orgDisplayName;
+    private AnalysisContextOrg org;
 
-    public AnalysisContext(String flow, String orgDisplayName) {
+    public AnalysisContext(String flow, String orgName) {
       this.flow = flow;
-      this.orgDisplayName = orgDisplayName;
-    }
-
-    public String getFlow() {
-      return flow;
-    }
-
-    public String getOrgDisplayName() {
-      return orgDisplayName;
-    }
-
-    public String getInitiator() {
-      return initiator;
+      this.org = new AnalysisContextOrg(orgName);
     }
 
     @Override
@@ -129,12 +145,12 @@ public class GetAnalysisRequest {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       AnalysisContext that = (AnalysisContext) o;
-      return Objects.equals(flow, that.flow) && Objects.equals(orgDisplayName, that.orgDisplayName);
+      return Objects.equals(flow, that.flow) && Objects.equals(org, that.org);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(flow, orgDisplayName);
+      return Objects.hash(flow, org);
     }
 
     @Override
@@ -142,7 +158,7 @@ public class GetAnalysisRequest {
       return "AnalysisContext{" +
         "flow='" + flow + '\'' +
         ", initiator='" + initiator + '\'' +
-        ", orgDisplayName='" + orgDisplayName + '\'' +
+        ", org='" + org + '\'' +
         '}';
     }
   }

@@ -48,6 +48,7 @@ jobs:
         run: ./gradlew clean check -x detekt
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
 
   pluginVerifier:
     name: Plugin Verifier

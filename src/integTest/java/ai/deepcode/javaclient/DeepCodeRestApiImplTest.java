@@ -51,6 +51,7 @@ public class DeepCodeRestApiImplTest {
 
   // !!! Will works only with already logged sessionToken
   private static final String loggedToken = System.getenv("SNYK_TOKEN");
+  private static final String loggedOrgName = System.getenv("SNYK_ORG_NAME");
   private static final String baseUrl = System.getenv("DEEPROXY_API_URL");
 
   private static String bundleId = null;
@@ -78,7 +79,7 @@ public class DeepCodeRestApiImplTest {
   @Test
   public void _030_createBundle_from_source() throws NoSuchAlgorithmException {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
-    CreateBundleResponse response = createBundleFromSource(loggedToken);
+    CreateBundleResponse response = createBundleFromSource(loggedToken, loggedOrgName);
     assertNotNull(response);
     System.out.printf(
       "Create Bundle call return:\nStatus code [%1$d] %3$s \nBundleId: [%2$s]\n",
@@ -88,13 +89,13 @@ public class DeepCodeRestApiImplTest {
   }
 
   @NotNull
-  private CreateBundleResponse createBundleFromSource(String token)
+  private CreateBundleResponse createBundleFromSource(String token, String orgName)
     throws NoSuchAlgorithmException {
     FileContentRequest fileContent = new FileContentRequest();
     fileContent.put(
       "/AnnotatorTest.java",
       new FileHash2ContentRequest(getHash(testFileContent), testFileContent));
-    CreateBundleResponse response = restApiClient.createBundle(token, fileContent);
+    CreateBundleResponse response = restApiClient.createBundle(token, orgName, fileContent);
     return response;
   }
 
@@ -102,15 +103,16 @@ public class DeepCodeRestApiImplTest {
   public void _031_createBundle_wrong_request() throws NoSuchAlgorithmException {
     System.out.println("\n--------------Create Bundle with wrong requests----------------\n");
     final String brokenToken = "fff";
-    CreateBundleResponse response = createBundleFromSource(brokenToken);
+    final String brokenOrgName = "org-name";
+    CreateBundleResponse response = createBundleFromSource(brokenToken, brokenOrgName);
     assertNotNull(response);
     assertEquals(
       "Create Bundle call with malformed token should not be accepted by server",
       401,
       response.getStatusCode());
     System.out.printf(
-      "Create Bundle call with malformed token [%1$s] is not accepted by server with Status code [%2$d].\n",
-      brokenToken, response.getStatusCode());
+      "Create Bundle call with malformed token [%1$s] and org name [%2$s] is not accepted by server with Status code [%3$d].\n",
+      brokenToken, brokenOrgName, response.getStatusCode());
   }
 
   @Test
@@ -123,7 +125,7 @@ public class DeepCodeRestApiImplTest {
   @NotNull
   private CreateBundleResponse createBundleWithHash() {
     FileHashRequest files = createFileHashRequest(null);
-    CreateBundleResponse response = restApiClient.createBundle(loggedToken, files);
+    CreateBundleResponse response = restApiClient.createBundle(loggedToken, loggedOrgName, files);
     assertNotNull(response);
     System.out.printf(
       "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -139,7 +141,7 @@ public class DeepCodeRestApiImplTest {
     System.out.println("\n--------------Check Bundle----------------\n");
     FileHashRequest fileHashRequest = createFileHashRequest(null);
     CreateBundleResponse createBundleResponse =
-      restApiClient.createBundle(loggedToken, fileHashRequest);
+      restApiClient.createBundle(loggedToken, loggedOrgName, fileHashRequest);
     assertNotNull(createBundleResponse);
     System.out.printf(
       "\nCreate Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -151,7 +153,7 @@ public class DeepCodeRestApiImplTest {
     assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
 
     CreateBundleResponse checkBundleResponse =
-      restApiClient.checkBundle(loggedToken, createBundleResponse.getBundleHash());
+      restApiClient.checkBundle(loggedToken, loggedOrgName, createBundleResponse.getBundleHash());
     assertNotNull(checkBundleResponse);
     System.out.printf(
       "\nCheck Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -177,7 +179,7 @@ public class DeepCodeRestApiImplTest {
     assertEquals(200, uploadFileResponse.getStatusCode());
 
     CreateBundleResponse createBundleResponse1 =
-      restApiClient.checkBundle(loggedToken, createBundleResponse.getBundleHash());
+      restApiClient.checkBundle(loggedToken, loggedOrgName, createBundleResponse.getBundleHash());
     assertNotNull(createBundleResponse1);
     System.out.printf(
       "\nCheck Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -261,7 +263,7 @@ public class DeepCodeRestApiImplTest {
       new ExtendBundleWithHashRequest(newFileHashRequest, Collections.emptyList());
     CreateBundleResponse extendBundleResponse =
       restApiClient.extendBundle(
-        loggedToken, createBundleResponse.getBundleHash(), extendBundleWithHashRequest);
+        loggedToken, loggedOrgName, createBundleResponse.getBundleHash(), extendBundleWithHashRequest);
     assertNotNull(extendBundleResponse);
     System.out.printf(
       "Extend Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -278,7 +280,7 @@ public class DeepCodeRestApiImplTest {
     System.out.println("\n--------------Upload Files by Hash----------------\n");
     FileHashRequest fileHashRequest = createFileHashRequest(null);
     CreateBundleResponse createBundleResponse =
-      restApiClient.createBundle(loggedToken, fileHashRequest);
+      restApiClient.createBundle(loggedToken, loggedOrgName, fileHashRequest);
     assertNotNull(createBundleResponse);
     System.out.printf(
       "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -321,7 +323,7 @@ public class DeepCodeRestApiImplTest {
     map.put(filePath, new FileHash2ContentRequest(fileHash, fileText));
     ExtendBundleWithContentRequest ebr =
       new ExtendBundleWithContentRequest(map, Collections.emptyList());
-    return restApiClient.extendBundle(loggedToken, createBundleResponse.getBundleHash(), ebr);
+    return restApiClient.extendBundle(loggedToken, loggedOrgName, createBundleResponse.getBundleHash(), ebr);
   }
 
   @Test
@@ -348,12 +350,12 @@ public class DeepCodeRestApiImplTest {
     for (int i = 0; i < 120; i++) {
       response = restApiClient.getAnalysis(
         loggedToken,
+        loggedOrgName,
         bundleId,
         severity,
         analysedFiles,
         bundleId,
-        "test-java-client-ide",
-        "test-java-client-org"
+        "test-java-client-ide"
       );
       if (response.getStatus().equals("COMPLETE")) break;
       Thread.sleep(1000);
