@@ -3,6 +3,7 @@ package io.snyk.plugin.services.download
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
@@ -18,6 +19,8 @@ import java.io.IOException
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
+
+private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
 
 @Service
 class SnykCliDownloaderService {

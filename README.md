@@ -1,5 +1,6 @@
 # Snyk
 
+
 [![Version](https://img.shields.io/jetbrains/plugin/v/10972.svg)](https://plugins.jetbrains.com/plugin/10972)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/10972.svg)](https://plugins.jetbrains.com/plugin/10972)
 

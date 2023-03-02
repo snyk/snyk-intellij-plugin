@@ -8,6 +8,7 @@ import java.util.Properties
 class Platform(val snykWrapperFileName: String) {
     companion object {
         val LINUX = Platform("snyk-linux")
+        val LINUX_ARM = Platform("snyk-linux-arm64")
         val LINUX_ALPINE = Platform("snyk-alpine")
         val MAC_OS = Platform("snyk-macos")
         val WINDOWS = Platform("snyk-win.exe")
