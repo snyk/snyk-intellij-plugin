@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.54]
+
+### Added
+
+- support for Jetbrains 2023.1 platform
+
 ## [2.4.53]
 
 ### Fixed
