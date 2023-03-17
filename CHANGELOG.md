@@ -1,6 +1,6 @@
 # Snyk Changelog
 
-## [2.4.54]
+## [2.4.55]
 
 ### Added
 
