@@ -16,8 +16,10 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.getEndpointUrl
+import snyk.common.isFedramp
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
+import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.Charset
 
@@ -88,10 +90,17 @@ open class ConsoleCommandRunner {
      * Setup environment variables for CLI.
      */
     fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
+        val endpoint = getEndpointUrl()
+
         if (apiToken.isNotEmpty()) {
-            commandLine.environment["SNYK_TOKEN"] = apiToken
+            if (URI(endpoint).isFedramp()) {
+                commandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = apiToken
+                commandLine.environment["INTERNAL_SNYK_AUTH_ENABLED"] = "1"
+            } else {
+                commandLine.environment["SNYK_TOKEN"] = apiToken
+            }
         }
-        commandLine.environment["SNYK_API"] = getEndpointUrl()
+        commandLine.environment["SNYK_API"] = endpoint
 
         if (!pluginSettings().usageAnalyticsEnabled) {
             commandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"

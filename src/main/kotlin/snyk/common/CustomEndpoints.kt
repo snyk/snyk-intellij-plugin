@@ -83,6 +83,9 @@ internal fun URI.isSnykApi() =
     this.host != null && this.host.startsWith("api") && this.host.endsWith("snyk.io") ||
         this.host != null && this.host.endsWith("snyk.io") && this.path.startsWith("/api")
 
+internal fun URI.isFedramp() =
+    this.host != null && this.host.endsWith("snykgov.io")
+
 internal fun String.removeTrailingSlashesIfPresent(): String {
     val candidate = this.replace(Regex("/+$"), "")
     return try {
