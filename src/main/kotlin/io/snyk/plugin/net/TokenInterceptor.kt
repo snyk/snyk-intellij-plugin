@@ -25,7 +25,7 @@ class TokenInterceptor : Interceptor {
             if (!token.startsWith('{')) {
                 request.addHeader("Authorization", "token $token")
             } else {
-                val bearerToken = unmarshalToken(token)
+                val bearerToken = Gson().fromJson(token, OAuthToken::class.java)
                 val expiry = LocalDateTime.parse(bearerToken.expiry)
                 if (expiry.isBefore(LocalDateTime.now().plusMinutes(2))) {
                     getWhoamiService(project)?.execute()
@@ -38,10 +38,6 @@ class TokenInterceptor : Interceptor {
             .addHeader("User-Agent", "snyk-intellij-plugin/${pluginInfo.integrationVersion}")
             .addHeader("x-snyk-ide", "${pluginInfo.integrationName}-${pluginInfo.integrationVersion}")
         return chain.proceed(request.build())
-    }
-
-    private fun unmarshalToken(token: String?): OAuthToken {
-        return Gson().fromJson(token, OAuthToken::class.java)
     }
 }
 
