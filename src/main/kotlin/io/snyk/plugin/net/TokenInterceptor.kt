@@ -1,6 +1,8 @@
 package io.snyk.plugin.net
 
 import com.google.gson.Gson
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
@@ -10,6 +12,9 @@ import snyk.pluginInfo
 import java.time.LocalDateTime
 
 class TokenInterceptor : Interceptor {
+    // project is not relevant but needed for the CLI call to refresh the token
+    val project: Project? = ProjectManager.getInstance().openProjects.firstOrNull()
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request().newBuilder()
 
@@ -23,7 +28,7 @@ class TokenInterceptor : Interceptor {
                 val bearerToken = unmarshalToken(token)
                 val expiry = LocalDateTime.parse(bearerToken.expiry)
                 if (expiry.isBefore(LocalDateTime.now().plusMinutes(2))) {
-                    getWhoamiService().execute()
+                    getWhoamiService(project)?.execute()
                 }
                 request.addHeader("Authorization", "bearer $bearerToken")
             }
