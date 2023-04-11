@@ -1,6 +1,5 @@
 package snyk.whoami
 
-import WhoamiIssues
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.CliResult
 import snyk.common.SnykError

@@ -47,6 +47,7 @@ import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
+import snyk.whoami.WhoamiService
 import java.io.File
 import java.net.URL
 import java.security.KeyStore
@@ -97,6 +98,7 @@ fun getSnykAnalyticsService(): SnykAnalyticsService = getApplicationService()
 fun getSnykAdvisorModel(): SnykAdvisorModel = getApplicationService()
 
 fun getAdvisorService(): AdvisorService = getApplicationService<AdvisorServiceImpl>()
+fun getWhoamiService(): WhoamiService = getApplicationService()
 
 fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
