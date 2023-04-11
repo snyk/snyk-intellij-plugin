@@ -128,11 +128,6 @@ class SnykCliAuthenticationService(val project: Project) {
         val cli: MutableList<String> = mutableListOf(getCliFile().absolutePath)
         cli.addAll(commands)
 
-        val customEndpoint = settings.customEndpointUrl
-        if (customEndpoint != null && customEndpoint.isNotEmpty()) {
-            cli.add("--API=$customEndpoint")
-        }
-
         if (settings.ignoreUnknownCA) {
             cli.add("--insecure")
         }

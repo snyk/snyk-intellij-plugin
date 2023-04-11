@@ -91,11 +91,12 @@ open class ConsoleCommandRunner {
      */
     fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
         val endpoint = getEndpointUrl()
+        commandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"] = "1"
 
         if (apiToken.isNotEmpty()) {
             if (URI(endpoint).isFedramp()) {
+                commandLine.environment["SNYK_TOKEN"] = null
                 commandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = apiToken
-                commandLine.environment["INTERNAL_SNYK_AUTH_ENABLED"] = "1"
             } else {
                 commandLine.environment["SNYK_TOKEN"] = apiToken
             }
