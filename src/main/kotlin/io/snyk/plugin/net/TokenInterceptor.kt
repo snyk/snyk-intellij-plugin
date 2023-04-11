@@ -30,7 +30,7 @@ class TokenInterceptor : Interceptor {
                 if (expiry.isBefore(LocalDateTime.now().plusMinutes(2))) {
                     getWhoamiService(project)?.execute()
                 }
-                request.addHeader("Authorization", "bearer $bearerToken")
+                request.addHeader("Authorization", "bearer ${bearerToken.accessToken}")
             }
         }
         request.addHeader("Accept", "application/json")

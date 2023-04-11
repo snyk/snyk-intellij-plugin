@@ -98,6 +98,7 @@ fun getSnykAnalyticsService(): SnykAnalyticsService = getApplicationService()
 fun getSnykAdvisorModel(): SnykAdvisorModel = getApplicationService()
 
 fun getAdvisorService(): AdvisorService = getApplicationService<AdvisorServiceImpl>()
+
 fun getWhoamiService(project: Project?): WhoamiService? = project?.serviceIfNotDisposed()
 
 fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
