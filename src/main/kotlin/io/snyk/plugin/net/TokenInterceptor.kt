@@ -30,7 +30,7 @@ class TokenInterceptor : Interceptor {
                 if (expiry.isBefore(LocalDateTime.now().plusMinutes(2))) {
                     getWhoamiService(project)?.execute()
                 }
-                request.addHeader("Authorization", "bearer ${bearerToken.accessToken}")
+                request.addHeader("Authorization", "bearer ${bearerToken.access_token}")
             }
         }
         request.addHeader("Accept", "application/json")
@@ -44,16 +44,16 @@ class TokenInterceptor : Interceptor {
 data class OAuthToken(
     // AccessToken is the token that authorizes and authenticates
     // the requests.
-    val accessToken: String,
+    val access_token: String,
 
     // TokenType is the type of token.
     // The Type method returns either this or "Bearer", the default.
-    val tokenType: String = "Bearer",
+    val token_type: String = "Bearer",
 
     // RefreshToken is a token that's used by the application
     // (as opposed to the user) to refresh the access token
     // if it expires.
-    val refreshToken: String? = null,
+    val refresh_token: String? = null,
 
     // Expiry is the optional expiration time of the access token.
     //

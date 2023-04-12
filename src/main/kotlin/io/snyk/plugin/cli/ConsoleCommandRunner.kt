@@ -16,7 +16,7 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.getEndpointUrl
-import snyk.common.isFedramp
+import snyk.common.isOauth
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
 import java.net.URI
@@ -94,7 +94,7 @@ open class ConsoleCommandRunner {
         commandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"] = "1"
 
         if (apiToken.isNotEmpty()) {
-            if (URI(endpoint).isFedramp()) {
+            if (URI(endpoint).isOauth()) {
                 commandLine.environment["SNYK_TOKEN"] = null
                 commandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = apiToken
             } else {

@@ -22,7 +22,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.lang.StringEscapeUtils.escapeHtml
 import snyk.common.getEndpointUrl
-import snyk.common.isFedramp
+import snyk.common.isOauth
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.StringSelection
@@ -73,7 +73,7 @@ class SnykCliAuthenticationService(val project: Project) {
                 dialog.onCancel = { indicator.cancel() }
                 val endpoint = URI(getEndpointUrl())
                 var commands = buildCliCommands(listOf("auth"))
-                if (endpoint.isFedramp()) {
+                if (endpoint.isOauth()) {
                     commands = buildCliCommands(listOf("auth", "--auth-type=oauth"))
                 }
                 val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
@@ -111,7 +111,7 @@ class SnykCliAuthenticationService(val project: Project) {
         val endpoint = URI(getEndpointUrl())
         val getConfigApiTask: () -> Unit = {
             var key = "INTERNAL_OAUTH_TOKEN_STORAGE"
-            if (!endpoint.isFedramp()) {
+            if (!endpoint.isOauth()) {
                 key = "api"
             }
             val commands = buildCliCommands(listOf("config", "get", key))

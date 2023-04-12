@@ -83,7 +83,7 @@ internal fun URI.isSnykApi() =
     this.host != null && this.host.startsWith("api") && this.host.endsWith("snyk.io") ||
         this.host != null && this.host.endsWith("snyk.io") && this.path.startsWith("/api")
 
-internal fun URI.isFedramp() =
+internal fun URI.isOauth() =
     this.host != null && this.host.endsWith("snykgov.io")
 
 internal fun String.removeTrailingSlashesIfPresent(): String {
