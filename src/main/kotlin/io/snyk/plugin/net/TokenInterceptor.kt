@@ -3,6 +3,7 @@ package io.snyk.plugin.net
 import com.google.gson.Gson
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
@@ -29,6 +30,7 @@ class TokenInterceptor : Interceptor {
                 val expiry = LocalDateTime.parse(bearerToken.expiry)
                 if (expiry.isBefore(LocalDateTime.now().plusMinutes(2))) {
                     getWhoamiService(project)?.execute()
+                    getSnykCliAuthenticationService(project)?.executeGetConfigApiCommand()
                 }
                 request.addHeader("Authorization", "bearer ${bearerToken.access_token}")
             }

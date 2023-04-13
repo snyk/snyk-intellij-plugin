@@ -95,8 +95,8 @@ open class ConsoleCommandRunner {
 
         if (apiToken.isNotEmpty()) {
             if (URI(endpoint).isOauth()) {
-                commandLine.environment["SNYK_TOKEN"] = null
                 commandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = apiToken
+                commandLine.environment.remove("SNYK_TOKEN")
             } else {
                 commandLine.environment["SNYK_TOKEN"] = apiToken
             }

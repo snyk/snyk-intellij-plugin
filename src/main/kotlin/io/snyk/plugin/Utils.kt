@@ -79,7 +79,7 @@ fun getContainerService(project: Project): ContainerService? = project.serviceIf
 
 fun getAmplitudeExperimentService(): AmplitudeExperimentService = getApplicationService()
 
-fun getSnykCliAuthenticationService(project: Project): SnykCliAuthenticationService? = project.serviceIfNotDisposed()
+fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationService? = project?.serviceIfNotDisposed()
 
 fun getSnykCliDownloaderService(): SnykCliDownloaderService = getApplicationService()
 

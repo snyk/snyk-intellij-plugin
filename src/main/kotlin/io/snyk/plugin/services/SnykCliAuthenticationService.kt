@@ -107,7 +107,7 @@ class SnykCliAuthenticationService(val project: Project) {
         isAuthenticated = dialog.showAndGet()
     }
 
-    private fun executeGetConfigApiCommand() {
+    fun executeGetConfigApiCommand() {
         val endpoint = URI(getEndpointUrl())
         val getConfigApiTask: () -> Unit = {
             var key = "INTERNAL_OAUTH_TOKEN_STORAGE"
