@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.56]
+
+### Fixed
+
+- normalize/clean Snyk Code endpoint URL
+
 ## [2.4.55]
 
 ### Added
