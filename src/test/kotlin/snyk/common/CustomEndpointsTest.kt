@@ -75,6 +75,15 @@ class CustomEndpointsTest {
     }
 
     @Test
+    fun `toSnykCodeApiUrl returns correct deeproxy url for SaaS deployments using api url`() {
+        val apiUrlForProduction = toSnykCodeApiUrl("https://api.eu.snyk.io/api")
+        val apiUrlForDevelopment = toSnykCodeApiUrl("https://dev.api.eu.snyk.io/api")
+
+        assertThat(apiUrlForProduction, equalTo("https://deeproxy.eu.snyk.io/"))
+        assertThat(apiUrlForDevelopment, equalTo("https://deeproxy.dev.eu.snyk.io/"))
+    }
+
+    @Test
     fun `toSnykCodeApiUrl returns correct deeproxy url for Single Tenant deployments`() {
         val apiUrl = toSnykCodeApiUrl("https://app.random-uuid.snyk.io/api")
 

@@ -9,8 +9,15 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
     val uri = URI(endpoint)
 
     return when {
-        uri.isSaaS() -> endpoint.replace("https://", "https://deeproxy.").removeSuffix("api")
-        uri.isSnykTenant() -> endpoint.replace("app", "deeproxy").removeSuffix("api")
+        uri.isSaaS() -> endpoint
+            .replace("https://", "https://deeproxy.")
+            .replace("api.", "")
+            .removeSuffix("api")
+
+        uri.isSnykTenant() -> endpoint
+            .replace("api.", "")
+            .replace("app", "deeproxy").removeSuffix("api")
+
         else -> "https://deeproxy.snyk.io/"
     }
 }
