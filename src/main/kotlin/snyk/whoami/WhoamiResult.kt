@@ -5,11 +5,11 @@ import io.snyk.plugin.cli.CliResult
 import snyk.common.SnykError
 
 class WhoamiResult(
-    allWhoamiIssues: List<WhoamiIssues>?,
+    allWhoamiOutputs: List<WhoamiOutput>?,
     errors: List<SnykError> = emptyList()
-) : CliResult<WhoamiIssues>(allWhoamiIssues, errors) {
+) : CliResult<WhoamiOutput>(allWhoamiOutputs, errors) {
 
-    override val issuesCount = allWhoamiIssues?.sumBy { it.uniqueCount }
+    override val issuesCount = allWhoamiOutputs?.sumBy { it.uniqueCount }
 
     override fun countBySeverity(severity: Severity): Int {
         return 0

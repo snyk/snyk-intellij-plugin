@@ -1,6 +1,6 @@
 package snyk.whoami
 
-data class WhoamiIssues(
+data class WhoamiOutput(
     val uniqueCount: Int
 ) {
 }

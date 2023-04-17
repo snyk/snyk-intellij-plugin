@@ -9,17 +9,17 @@ import snyk.common.SnykError
  * Wrap work with Snyk CLI for `whoami` command.
  */
 @Service
-class WhoamiService(project: Project) : CliAdapter<WhoamiIssues, WhoamiResult>(project) {
+class WhoamiService(project: Project) : CliAdapter<WhoamiOutput, WhoamiResult>(project) {
 
     fun execute(): WhoamiResult = execute(listOf("whoami"))
 
-    override fun getProductResult(cliIssues: List<WhoamiIssues>?, snykErrors: List<SnykError>): WhoamiResult =
+    override fun getProductResult(cliIssues: List<WhoamiOutput>?, snykErrors: List<SnykError>): WhoamiResult =
         WhoamiResult(cliIssues, snykErrors)
 
-    override fun sanitizeCliIssues(cliIssues: WhoamiIssues): WhoamiIssues =
+    override fun sanitizeCliIssues(cliIssues: WhoamiOutput): WhoamiOutput =
         cliIssues.copy()
 
-    override fun getCliIIssuesClass(): Class<WhoamiIssues> = WhoamiIssues::class.java
+    override fun getCliIIssuesClass(): Class<WhoamiOutput> = WhoamiOutput::class.java
 
     override fun buildExtraOptions(): List<String> {
         val options: MutableList<String> = mutableListOf()

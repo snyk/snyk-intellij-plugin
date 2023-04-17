@@ -8,15 +8,16 @@ import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
 import okhttp3.Response
+import org.jetbrains.annotations.TestOnly
 import snyk.common.needsSnykToken
 import snyk.pluginInfo
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 
-class TokenInterceptor : Interceptor {
-    // project is not relevant but needed for the CLI call to refresh the token
-    val project: Project? = ProjectManager.getInstance().openProjects.firstOrNull()
+class TokenInterceptor(private val projectManager: ProjectManager = ProjectManager.getInstance()) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
+        val project = projectManager.openProjects.firstOrNull()
         val request = chain.request().newBuilder()
 
         val endpoint = chain.request().url.toString()
@@ -27,8 +28,8 @@ class TokenInterceptor : Interceptor {
                 request.addHeader("Authorization", "token $token")
             } else {
                 val bearerToken = Gson().fromJson(token, OAuthToken::class.java)
-                val expiry = LocalDateTime.parse(bearerToken.expiry)
-                if (expiry.isBefore(LocalDateTime.now().plusMinutes(2))) {
+                val expiry = OffsetDateTime.parse(bearerToken.expiry)
+                if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {
                     getWhoamiService(project)?.execute()
                     getSnykCliAuthenticationService(project)?.executeGetConfigApiCommand()
                 }

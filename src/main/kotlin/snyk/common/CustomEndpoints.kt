@@ -71,17 +71,19 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
  * Checks if the deployment type is SaaS (production or development).
  */
 internal fun URI.isSaaS() =
-    this.host != null && !this.host.startsWith("app") && this.host.endsWith("snyk.io")
+    this.host != null && !this.host.startsWith("app") && isSnykDomain()
 
 /**
  * Checks if the deployment type is Single Tenant.
  */
 internal fun URI.isSnykTenant() =
-    this.host != null && this.host.startsWith("app") && this.host.endsWith("snyk.io")
+    this.host != null && this.host.startsWith("app") && isSnykDomain()
 
 internal fun URI.isSnykApi() =
-    this.host != null && this.host.startsWith("api") && this.host.endsWith("snyk.io") ||
-        this.host != null && this.host.endsWith("snyk.io") && this.path.startsWith("/api")
+    this.host != null && this.host.startsWith("api") && (isSnykDomain())||
+        this.host != null && isSnykDomain() && this.path.startsWith("/api")
+
+private fun URI.isSnykDomain() = this.host.endsWith("snyk.io") || this.host.endsWith("snykgov.io")
 
 internal fun URI.isOauth() =
     this.host != null && this.host.endsWith("snykgov.io")

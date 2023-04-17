@@ -1,0 +1,80 @@
+package io.snyk.plugin.net
+
+import com.google.gson.Gson
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
+import io.mockk.InternalPlatformDsl.toStr
+import io.mockk.clearAllMocks
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
+import io.snyk.plugin.getSnykCliAuthenticationService
+import io.snyk.plugin.getWhoamiService
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykCliAuthenticationService
+import okhttp3.HttpUrl
+import okhttp3.Interceptor.Chain
+import okhttp3.Request
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import snyk.pluginInfo
+import snyk.whoami.WhoamiService
+import java.time.OffsetDateTime
+
+
+class TokenInterceptorTest {
+    val projectManager = mockk<ProjectManager>()
+    val tokenInterceptor = TokenInterceptor(projectManager)
+
+    val chain = mockk<Chain>(relaxed = true)
+    val requestMock = mockk<Request.Builder>(relaxed = true)
+    val project = mockk<Project>(relaxed = true)
+    val whoamiService = mockk<WhoamiService>(relaxed = true)
+    val authenticationService = mockk<SnykCliAuthenticationService>(relaxed = true)
+
+    @Before
+    fun setUp() {
+        unmockkAll()
+        clearAllMocks()
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkStatic("snyk.PluginInformationKt")
+
+        every { chain.request().newBuilder() } returns requestMock
+        every { chain.request().url } returns HttpUrl.Builder()
+            .scheme("https")
+            .host("app.snykgov.io")
+            .addPathSegment("api")
+            .build()
+        every { projectManager.openProjects } returns arrayOf(project)
+        every { pluginInfo } returns mockk(relaxed = true)
+
+        every { getWhoamiService(project) } returns whoamiService
+        every { getSnykCliAuthenticationService(project) } returns authenticationService
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    @Test
+    fun `whoami is called when token is expiring`() {
+        val token = OAuthToken(access_token = "A",
+            refresh_token = "B",
+            expiry = OffsetDateTime.now().minusSeconds(1).toString()
+        )
+
+        every { pluginSettings().token } returns Gson().toJson(token)
+
+        tokenInterceptor.intercept(chain)
+
+        verify { requestMock.addHeader(eq("Authorization"), eq("bearer ${token.access_token}")) }
+        verify { requestMock.addHeader(eq("Accept"), eq("application/json")) }
+        verify { whoamiService.execute() }
+        verify { authenticationService.executeGetConfigApiCommand() }
+    }
+}
