@@ -2,11 +2,12 @@
 <SmellBaseline>
   <ManuallySuppressedIssues>
     <ID>EmptyFunctionBlock:RetrofitClientFactory.kt$RetrofitClientFactory.&lt;no name provided>${}</ID>
-    <ID>ComplexCondition:RetrofitAuthenticator.kt$RetrofitAuthenticator$auth == null || auth.userName.isNullOrBlank() ||
-      auth.password==null || auth.password.isEmpty()
-    </ID>
+
     <ID>ReturnCount:RetrofitAuthenticator.kt$RetrofitAuthenticator$override fun authenticate(route: Route?, response:
       Response): Request
+    </ID>
+    <ID>ComplexCondition:RetrofitAuthenticator.kt$RetrofitAuthenticator$auth == null || auth.userName.isNullOrBlank() ||
+      auth.password == null || auth.password.isEmpty()
     </ID>
   </ManuallySuppressedIssues>
   <CurrentIssues>
