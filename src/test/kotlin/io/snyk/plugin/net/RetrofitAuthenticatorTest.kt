@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
 import okhttp3.Response
 import okhttp3.Route
 import org.junit.Test
@@ -56,6 +57,6 @@ class RetrofitAuthenticatorTest {
         val request = cut.authenticate(route, response)
 
         val authHeader = request!!.headers[PROXY_AUTHORIZATION_HEADER_NAME]
-        assertEquals(null, authHeader)
+        assertNull(authHeader)
     }
 }
