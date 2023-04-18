@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.57]
+
+### Fixed
+
+- Network requests when proxy authentication not required.
+
 ## [2.4.56]
 
 ### Fixed
