@@ -118,14 +118,14 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
-      @Header("Authorization") String token,
+      @Header("Session-Token") String token,
       @Header("snyk-org-name") String orgName,
       @Body FileContentRequest files);
 
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
-      @Header("Authorization") String token,
+      @Header("Session-Token") String token,
       @Header("snyk-org-name") String orgName,
       @Body FileHashRequest files);
   }
@@ -198,7 +198,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     //    @retrofit2.http.Headers("Content-Type: application/json")
     @GET("bundle/{bundleId}")
     Call<CreateBundleResponse> doCheckBundle(
-      @Header("Authorization") String token,
+      @Header("Session-Token") String token,
       @Header("snyk-org-name") String orgName,
       @Path(value = "bundleId", encoded = true) String bundleId);
   }
@@ -248,7 +248,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
-      @Header("Authorization") String token,
+      @Header("Session-Token") String token,
       @Header("snyk-org-name") String orgName,
       @Path(value = "bundleId", encoded = true) String bundleId,
       @Body ExtendBundleWithHashRequest extendBundleWithHashRequest);
@@ -256,7 +256,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
-      @Header("Authorization") String token,
+      @Header("Session-Token") String token,
       @Header("snyk-org-name") String orgName,
       @Path(value = "bundleId", encoded = true) String bundleId,
       @Body ExtendBundleWithContentRequest extendBundleWithContentRequest);
@@ -325,7 +325,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("analysis")
     Call<GetAnalysisResponse> doGetAnalysis(
-      @Header("Authorization") String token,
+      @Header("Session-Token") String token,
       @Header("snyk-org-name") String orgName,
       @Body GetAnalysisRequest filesToAnalyse);
   }
@@ -377,7 +377,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
 
   private interface GetFiltersCall {
     @GET("filters")
-    Call<GetFiltersResponse> doGetFilters(@Header("Authorization") String token);
+    Call<GetFiltersResponse> doGetFilters(@Header("Session-Token") String token);
   }
 
   /**
