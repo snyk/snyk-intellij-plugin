@@ -34,7 +34,6 @@ open class ConsoleCommandRunner {
         outputConsumer: (line: String) -> Unit = {}
     ): String {
         logger.info("Call to execute commands: $commands")
-
         val generalCommandLine = GeneralCommandLine(commands)
 
         generalCommandLine.charset = Charset.forName("UTF-8")
@@ -96,18 +95,23 @@ open class ConsoleCommandRunner {
         val oauthEnvVar = "INTERNAL_OAUTH_TOKEN_STORAGE"
         val snykTokenEnvVar = "SNYK_TOKEN"
 
+        val oauthEnabled = URI(endpoint).isOauth()
+        if (oauthEnabled) {
+            commandLine.environment[oauthEnabledEnvVar] = "1"
+            commandLine.environment.remove(snykTokenEnvVar)
+        } else {
+            commandLine.environment.remove(oauthEnvVar)
+            commandLine.environment.remove(oauthEnabledEnvVar)
+        }
 
         if (apiToken.isNotEmpty()) {
-            if (URI(endpoint).isOauth()) {
-                commandLine.environment[oauthEnabledEnvVar] = "1"
+            if (oauthEnabled) {
                 commandLine.environment[oauthEnvVar] = apiToken
-                commandLine.environment.remove(snykTokenEnvVar)
             } else {
                 commandLine.environment[snykTokenEnvVar] = apiToken
-                commandLine.environment.remove(oauthEnvVar)
-                commandLine.environment.remove(oauthEnabledEnvVar)
             }
         }
+
         commandLine.environment["SNYK_API"] = endpoint
 
         if (!pluginSettings().usageAnalyticsEnabled) {
