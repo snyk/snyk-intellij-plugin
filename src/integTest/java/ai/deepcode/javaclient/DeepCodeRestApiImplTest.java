@@ -38,16 +38,7 @@ import static org.junit.Assert.assertTrue;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DeepCodeRestApiImplTest {
 
-  private final String testFileContent =
-    "public class AnnotatorTest {\n"
-      + "  public static void delay(long millis) {\n"
-      + "    try {\n"
-      + "      Thread.sleep(millis);\n"
-      + "    } catch (InterruptedException e) {\n"
-      + "      e.printStackTrace();\n"
-      + "    }\n"
-      + "  }\n"
-      + "}\n";
+  public static final String TEST_FILE = "test-fixtures/code-test.js";
 
   // !!! Will works only with already logged sessionToken
   private static final String loggedToken = System.getenv("SNYK_TOKEN");
@@ -77,7 +68,7 @@ public class DeepCodeRestApiImplTest {
   }
 
   @Test
-  public void _030_createBundle_from_source() throws NoSuchAlgorithmException {
+  public void _030_createBundle_from_source() throws NoSuchAlgorithmException, IOException {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
     CreateBundleResponse response = createBundleFromSource(loggedToken, loggedOrgName);
     assertNotNull(response);
@@ -90,17 +81,25 @@ public class DeepCodeRestApiImplTest {
 
   @NotNull
   private CreateBundleResponse createBundleFromSource(String token, String orgName)
-    throws NoSuchAlgorithmException {
+    throws NoSuchAlgorithmException, IOException {
+    final File testFile =
+      new File(getClass().getClassLoader().getResource(TEST_FILE).getFile());
+    String absolutePath = testFile.getAbsolutePath();
+    String deepCodedPath = absolutePath.startsWith("/") ? absolutePath : "/" + absolutePath;
+    System.out.printf("\nAbs File: %1$s\n", absolutePath);
+    System.out.printf("\nDeepcoded File: %1$s\n", deepCodedPath);
+    System.out.println("-----------------");
     FileContentRequest fileContent = new FileContentRequest();
+    String fileText = new String(Files.readAllBytes(testFile.toPath()));
     fileContent.put(
-      "/AnnotatorTest.java",
-      new FileHash2ContentRequest(getHash(testFileContent), testFileContent));
+      deepCodedPath,
+      new FileHash2ContentRequest(getHash(fileText), fileText));
     CreateBundleResponse response = restApiClient.createBundle(token, orgName, fileContent);
     return response;
   }
 
   @Test
-  public void _031_createBundle_wrong_request() throws NoSuchAlgorithmException {
+  public void _031_createBundle_wrong_request() throws NoSuchAlgorithmException, IOException {
     System.out.println("\n--------------Create Bundle with wrong requests----------------\n");
     final String brokenToken = "fff";
     final String brokenOrgName = "org-name";
@@ -198,13 +197,11 @@ public class DeepCodeRestApiImplTest {
 
   private FileHashRequest createFileHashRequest(String fakeFileName) {
     final File testFile =
-      new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
+      new File(getClass().getClassLoader().getResource(TEST_FILE).getFile());
     String absolutePath = testFile.getAbsolutePath();
     String deepCodedPath =
       (absolutePath.startsWith("/") ? "" : "/")
-        + ((fakeFileName == null)
-        ? absolutePath
-        : absolutePath.replace("AnnotatorTest.java", fakeFileName));
+        + (fakeFileName == null ? absolutePath : absolutePath.replace(TEST_FILE, fakeFileName));
     System.out.printf("\nFile: %1$s\n", deepCodedPath);
     System.out.println("-----------------");
 
@@ -306,7 +303,7 @@ public class DeepCodeRestApiImplTest {
     CreateBundleResponse createBundleResponse, FileHashRequest fileHashRequest) {
     final File testFile =
       new File(
-        Objects.requireNonNull(getClass().getClassLoader().getResource("AnnotatorTest.java"))
+        Objects.requireNonNull(getClass().getClassLoader().getResource(TEST_FILE))
           .getFile());
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
@@ -367,7 +364,7 @@ public class DeepCodeRestApiImplTest {
     assertNotNull(response);
     System.out.printf(
       "Get Analysis call for test file: \n-----------\n %1$s \n-----------\nreturns Status code: %2$s \n%3$s\n",
-      testFileContent, response.getStatusCode(), response);
+      TEST_FILE, response.getStatusCode(), response);
     assertEquals(COMPLETE, response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());
   }

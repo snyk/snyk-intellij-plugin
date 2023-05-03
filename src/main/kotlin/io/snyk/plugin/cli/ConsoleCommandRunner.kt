@@ -91,14 +91,21 @@ open class ConsoleCommandRunner {
      */
     fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
         val endpoint = getEndpointUrl()
-        commandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"] = "1"
+
+        val oauthEnabledEnvVar = "INTERNAL_SNYK_OAUTH_ENABLED"
+        val oauthEnvVar = "INTERNAL_OAUTH_TOKEN_STORAGE"
+        val snykTokenEnvVar = "SNYK_TOKEN"
+
 
         if (apiToken.isNotEmpty()) {
             if (URI(endpoint).isOauth()) {
-                commandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = apiToken
-                commandLine.environment.remove("SNYK_TOKEN")
+                commandLine.environment[oauthEnabledEnvVar] = "1"
+                commandLine.environment[oauthEnvVar] = apiToken
+                commandLine.environment.remove(snykTokenEnvVar)
             } else {
-                commandLine.environment["SNYK_TOKEN"] = apiToken
+                commandLine.environment[snykTokenEnvVar] = apiToken
+                commandLine.environment.remove(oauthEnvVar)
+                commandLine.environment.remove(oauthEnabledEnvVar)
             }
         }
         commandLine.environment["SNYK_API"] = endpoint

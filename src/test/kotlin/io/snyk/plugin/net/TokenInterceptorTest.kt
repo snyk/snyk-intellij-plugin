@@ -3,7 +3,6 @@ package io.snyk.plugin.net
 import com.google.gson.Gson
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import io.mockk.InternalPlatformDsl.toStr
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -24,16 +23,15 @@ import snyk.pluginInfo
 import snyk.whoami.WhoamiService
 import java.time.OffsetDateTime
 
-
 class TokenInterceptorTest {
-    val projectManager = mockk<ProjectManager>()
-    val tokenInterceptor = TokenInterceptor(projectManager)
+    private val projectManager = mockk<ProjectManager>()
+    private val tokenInterceptor = TokenInterceptor(projectManager)
+    private val chain = mockk<Chain>(relaxed = true)
+    private val requestMock = mockk<Request.Builder>(relaxed = true)
+    private val whoamiService = mockk<WhoamiService>(relaxed = true)
+    private val authenticationService = mockk<SnykCliAuthenticationService>(relaxed = true)
 
-    val chain = mockk<Chain>(relaxed = true)
-    val requestMock = mockk<Request.Builder>(relaxed = true)
     val project = mockk<Project>(relaxed = true)
-    val whoamiService = mockk<WhoamiService>(relaxed = true)
-    val authenticationService = mockk<SnykCliAuthenticationService>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -44,11 +42,8 @@ class TokenInterceptorTest {
         mockkStatic("snyk.PluginInformationKt")
 
         every { chain.request().newBuilder() } returns requestMock
-        every { chain.request().url } returns HttpUrl.Builder()
-            .scheme("https")
-            .host("app.snykgov.io")
-            .addPathSegment("api")
-            .build()
+        every { chain.request().url } returns HttpUrl.Builder().scheme("https").host("app.snykgov.io")
+            .addPathSegment("api").build()
         every { projectManager.openProjects } returns arrayOf(project)
         every { pluginInfo } returns mockk(relaxed = true)
 
@@ -63,9 +58,8 @@ class TokenInterceptorTest {
 
     @Test
     fun `whoami is called when token is expiring`() {
-        val token = OAuthToken(access_token = "A",
-            refresh_token = "B",
-            expiry = OffsetDateTime.now().minusSeconds(1).toString()
+        val token = OAuthToken(
+            access_token = "A", refresh_token = "B", expiry = OffsetDateTime.now().minusSeconds(1).toString()
         )
 
         every { pluginSettings().token } returns Gson().toJson(token)

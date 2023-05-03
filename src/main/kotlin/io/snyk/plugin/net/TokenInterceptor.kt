@@ -1,32 +1,29 @@
 package io.snyk.plugin.net
 
 import com.google.gson.Gson
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.jetbrains.annotations.TestOnly
 import snyk.common.needsSnykToken
 import snyk.pluginInfo
-import java.time.LocalDateTime
 import java.time.OffsetDateTime
 
 class TokenInterceptor(private val projectManager: ProjectManager = ProjectManager.getInstance()) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val project = projectManager.openProjects.firstOrNull()
         val request = chain.request().newBuilder()
-
         val endpoint = chain.request().url.toString()
-        val token = pluginSettings().token
-        if (needsSnykToken(endpoint) && !token.isNullOrEmpty()) {
-            // if token is not a json, then it's an API token, so we check the first char for a brace
-            if (!token.startsWith('{')) {
+
+        if (needsSnykToken(endpoint)) {
+            val token = pluginSettings().token
+
+            if (token?.startsWith('{') == false) {
                 request.addHeader("Authorization", "token $token")
             } else {
+                val project = projectManager.openProjects.firstOrNull()
                 val bearerToken = Gson().fromJson(token, OAuthToken::class.java)
                 val expiry = OffsetDateTime.parse(bearerToken.expiry)
                 if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {
@@ -44,6 +41,7 @@ class TokenInterceptor(private val projectManager: ProjectManager = ProjectManag
     }
 }
 
+@Suppress("PropertyName")
 data class OAuthToken(
     // AccessToken is the token that authorizes and authenticates
     // the requests.
