@@ -66,7 +66,7 @@ class TokenInterceptorTest {
 
         tokenInterceptor.intercept(chain)
 
-        verify { requestMock.addHeader(eq("Authorization"), eq("bearer ${token.access_token}")) }
+        verify { requestMock.addHeader(eq("Authorization"), eq("Bearer ${token.access_token}")) }
         verify { requestMock.addHeader(eq("Accept"), eq("application/json")) }
         verify { whoamiService.execute() }
         verify { authenticationService.executeGetConfigApiCommand() }
