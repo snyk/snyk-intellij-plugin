@@ -29,11 +29,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static ai.deepcode.javaclient.DeepCodeRestApiImpl.API_URL;
 import static ai.deepcode.javaclient.core.AnalysisDataBase.COMPLETE;
+import static io.snyk.plugin.snykcode.CodeRestApiKt.newCodeRestApi;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static snyk.common.CustomEndpointsKt.toSnykCodeApiUrl;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DeepCodeRestApiImplTest {
@@ -47,7 +50,15 @@ public class DeepCodeRestApiImplTest {
 
   private static String bundleId = null;
 
-  private static final DeepCodeRestApi restApiClient = new DeepCodeRestApiImpl();
+  private static final DeepCodeRestApi restApiClient = getDeepCodeRestApi();
+
+  @NotNull
+  private static DeepCodeRestApi getDeepCodeRestApi() {
+    if (baseUrl != null && !baseUrl.isEmpty()) {
+      return newCodeRestApi(baseUrl);
+    }
+    return newCodeRestApi(toSnykCodeApiUrl(API_URL));
+  }
 
   @Test
   public void _025_getFilters() {

@@ -18,19 +18,24 @@ class TokenInterceptor(private val projectManager: ProjectManager = ProjectManag
         val endpoint = chain.request().url.toString()
 
         if (needsSnykToken(endpoint)) {
-            val token = pluginSettings().token
+            val token = pluginSettings().token ?: return chain.proceed(request.build())
 
-            if (token?.startsWith('{') == false) {
-                request.addHeader("Authorization", "token $token")
+            val oldSnykCodeHeaderName = "Session-Token"
+            val authorizationHeaderName = "Authorization"
+            request.removeHeader(oldSnykCodeHeaderName)
+            if (!token.startsWith('{')) {
+                request.addHeader(oldSnykCodeHeaderName, token)
+                request.addHeader(authorizationHeaderName, "token $token")
             } else {
                 val project = projectManager.openProjects.firstOrNull()
-                val bearerToken = Gson().fromJson(token, OAuthToken::class.java)
-                val expiry = OffsetDateTime.parse(bearerToken.expiry)
+                val oAuthToken = Gson().fromJson(token, OAuthToken::class.java)
+                val expiry = OffsetDateTime.parse(oAuthToken.expiry)
                 if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {
                     getWhoamiService(project)?.execute()
                     getSnykCliAuthenticationService(project)?.executeGetConfigApiCommand()
                 }
-                request.addHeader("Authorization", "bearer ${bearerToken.access_token}")
+                request.addHeader(authorizationHeaderName, "Bearer ${oAuthToken.access_token}")
+                request.addHeader(oldSnykCodeHeaderName, "Bearer ${oAuthToken.access_token}")
             }
         }
         request.addHeader("Accept", "application/json")

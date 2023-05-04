@@ -40,7 +40,7 @@ fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
 
 fun needsSnykToken(endpoint: String): Boolean {
     val uri = URI(endpoint)
-    return uri.isSnykApi()
+    return uri.isSnykApi() || uri.isSnykTenant()
 }
 
 fun getEndpointUrl(): String {
@@ -80,7 +80,7 @@ fun URI.isSnykTenant() =
     this.host != null && this.host.startsWith("app") && isSnykDomain()
 
 fun URI.isSnykApi() =
-    this.host != null && this.host.startsWith("api") && (isSnykDomain()) ||
+    this.host != null && (this.host.startsWith("api") || this.host.startsWith("deeproxy")) && (isSnykDomain()) ||
         this.host != null && isSnykDomain() && this.path.startsWith("/api")
 
 fun URI.isSnykDomain() = this.host.endsWith("snyk.io") || this.host.endsWith("snykgov.io")

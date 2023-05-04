@@ -7,7 +7,7 @@ import retrofit2.Retrofit
 /**
  * Main entrypoint for using Snyk API.
  */
-class SnykApiClient constructor(
+class SnykApiClient(
     retrofit: Retrofit
 ) {
     private val cliConfigServiceEndpoint: CliConfigService = retrofit.create(CliConfigService::class.java)
