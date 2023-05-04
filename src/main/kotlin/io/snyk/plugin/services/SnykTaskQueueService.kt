@@ -274,7 +274,6 @@ class SnykTaskQueueService(val project: Project) {
                             SnykError("unknown IaC error", project.basePath ?: "")
                         else
                             scanPublisher?.scanningIacError(error)
-
                     }
                 }
                 logger.debug("IaC scan completed")
