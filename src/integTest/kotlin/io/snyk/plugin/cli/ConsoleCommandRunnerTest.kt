@@ -32,9 +32,12 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import snyk.PLUGIN_ID
+import snyk.common.isOauth
 import snyk.errorHandler.SentryErrorReporter
 import snyk.oss.OssService
+import java.net.URI
 import java.net.URLEncoder
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
@@ -72,6 +75,52 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
             assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+        } finally {
+            pluginSettings().customEndpointUrl = oldEndpoint
+        }
+    }
+
+    @Test
+    fun testSetupCliEnvironmentVariablesWithOAuthEndpoint() {
+        val oldEndpoint = pluginSettings().customEndpointUrl
+        try {
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedEndpoint = "https://snykgov.io/"
+            generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
+            assertTrue(URI(expectedEndpoint).isOauth())
+
+            pluginSettings().customEndpointUrl = expectedEndpoint
+
+            val token = """{ "access_token":"IntelliJ TEST"}"""
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
+
+            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+            assertEquals(null, generalCommandLine.environment["SNYK_TOKEN"])
+            assertEquals(token, generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"])
+            assertEquals("1", generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
+        } finally {
+            pluginSettings().customEndpointUrl = oldEndpoint
+        }
+    }
+
+    @Test
+    fun testSetupCliEnvironmentVariablesWithNonOAuthEndpoint() {
+        val oldEndpoint = pluginSettings().customEndpointUrl
+        try {
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedEndpoint = "https://snyk.io/"
+            generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = "{}"
+            assertFalse(URI(expectedEndpoint).isOauth())
+
+            pluginSettings().customEndpointUrl = expectedEndpoint
+
+            val token = UUID.randomUUID().toString()
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
+
+            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+            assertEquals(token, generalCommandLine.environment["SNYK_TOKEN"])
+            assertEquals(null, generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"])
+            assertEquals(null, generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
         } finally {
             pluginSettings().customEndpointUrl = oldEndpoint
         }

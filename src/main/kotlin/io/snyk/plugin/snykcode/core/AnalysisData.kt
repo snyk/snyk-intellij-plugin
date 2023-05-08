@@ -1,14 +1,14 @@
 package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.AnalysisDataBase
-import io.snyk.plugin.snykcode.codeRestApi
+import io.snyk.plugin.snykcode.newCodeRestApi
 
 class AnalysisData private constructor() : AnalysisDataBase(
     PDU.instance,
     HashContentUtils.instance,
     SnykCodeParams.instance,
     SCLogger.instance,
-    codeRestApi
+    newCodeRestApi()
 ) {
     override fun updateUIonFilesRemovalFromCache(files: MutableCollection<Any>) {
         //probably not needed yet

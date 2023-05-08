@@ -34,7 +34,7 @@ class RetrofitAuthenticatorTest {
 
         val request = cut.authenticate(route, response)
 
-        val authHeader = request!!.headers[PROXY_AUTHORIZATION_HEADER_NAME]
+        val authHeader = request.headers[PROXY_AUTHORIZATION_HEADER_NAME]
         assertNotNull(authHeader)
         assertEquals("Basic dXNlcm5hbWU6cHc=", authHeader)
         assertEquals("dXNlcm5hbWU6cHc=", Base64.encode("username:pw".toByteArray()))

@@ -19,7 +19,7 @@ import snyk.errorHandler.SentryErrorReporter
 
 /**
  * Wrap work with Snyk CLI.
- * See [Kotlin's generic type's magic](https://kotlinlang.org/docs/generics.htm).
+ * See [Kotlin's generic type's magic](https://kotlinlang.org/docs/generics.html).
  */
 abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Project) {
 

@@ -5,7 +5,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vcs.changes.ChangeListManager
-import io.snyk.plugin.snykcode.codeRestApi
+import io.snyk.plugin.snykcode.newCodeRestApi
 
 class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
     AnalysisData.instance,
@@ -13,7 +13,7 @@ class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
     SnykCodeIgnoreInfoHolder.instance,
     PDU.instance,
     SCLogger.instance,
-    codeRestApi
+    newCodeRestApi()
 ) {
     private val scLogger: SCLogger = SCLogger.instance
 

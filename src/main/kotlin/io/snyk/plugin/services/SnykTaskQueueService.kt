@@ -185,6 +185,7 @@ class SnykTaskQueueService(val project: Project) {
                             scanPublisher?.scanningStarted()
                         }
                     }
+
                     false -> {
                         SnykBalloonNotifications.showSastForOrgEnablement(project)
                         scanPublisher?.scanningSnykCodeError(
@@ -193,6 +194,7 @@ class SnykTaskQueueService(val project: Project) {
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false
                     }
+
                     null -> {
                         SnykBalloonNotifications.showNetworkErrorAlert(project)
                         scanPublisher?.scanningSnykCodeError(
@@ -267,7 +269,11 @@ class SnykTaskQueueService(val project: Project) {
                         }
                         scanPublisher?.scanningIacFinished(iacResult)
                     } else {
-                        scanPublisher?.scanningIacError(iacResult.getFirstError()!!)
+                        val error = iacResult.getFirstError()
+                        if (error == null)
+                            SnykError("unknown IaC error", project.basePath ?: "")
+                        else
+                            scanPublisher?.scanningIacError(error)
                     }
                 }
                 logger.debug("IaC scan completed")

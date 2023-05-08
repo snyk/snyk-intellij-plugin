@@ -16,8 +16,10 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.getEndpointUrl
+import snyk.common.isOauth
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
+import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.Charset
 
@@ -32,7 +34,6 @@ open class ConsoleCommandRunner {
         outputConsumer: (line: String) -> Unit = {}
     ): String {
         logger.info("Call to execute commands: $commands")
-
         val generalCommandLine = GeneralCommandLine(commands)
 
         generalCommandLine.charset = Charset.forName("UTF-8")
@@ -88,10 +89,30 @@ open class ConsoleCommandRunner {
      * Setup environment variables for CLI.
      */
     fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
-        if (apiToken.isNotEmpty()) {
-            commandLine.environment["SNYK_TOKEN"] = apiToken
+        val endpoint = getEndpointUrl()
+
+        val oauthEnabledEnvVar = "INTERNAL_SNYK_OAUTH_ENABLED"
+        val oauthEnvVar = "INTERNAL_OAUTH_TOKEN_STORAGE"
+        val snykTokenEnvVar = "SNYK_TOKEN"
+
+        val oauthEnabled = URI(endpoint).isOauth()
+        if (oauthEnabled) {
+            commandLine.environment[oauthEnabledEnvVar] = "1"
+            commandLine.environment.remove(snykTokenEnvVar)
+        } else {
+            commandLine.environment.remove(oauthEnvVar)
+            commandLine.environment.remove(oauthEnabledEnvVar)
         }
-        commandLine.environment["SNYK_API"] = getEndpointUrl()
+
+        if (apiToken.isNotEmpty()) {
+            if (oauthEnabled) {
+                commandLine.environment[oauthEnvVar] = apiToken
+            } else {
+                commandLine.environment[snykTokenEnvVar] = apiToken
+            }
+        }
+
+        commandLine.environment["SNYK_API"] = endpoint
 
         if (!pluginSettings().usageAnalyticsEnabled) {
             commandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"

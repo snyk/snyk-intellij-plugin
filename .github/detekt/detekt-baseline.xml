@@ -2,13 +2,20 @@
 <SmellBaseline>
   <ManuallySuppressedIssues>
     <ID>EmptyFunctionBlock:RetrofitClientFactory.kt$RetrofitClientFactory.&lt;no name provided>${}</ID>
-
     <ID>ReturnCount:RetrofitAuthenticator.kt$RetrofitAuthenticator$override fun authenticate(route: Route?, response:
       Response): Request
     </ID>
     <ID>ComplexCondition:RetrofitAuthenticator.kt$RetrofitAuthenticator$auth == null || auth.userName.isNullOrBlank() ||
       auth.password == null || auth.password.isEmpty()
     </ID>
+    <ID>ConstructorParameterNaming:TokenInterceptor.kt$OAuthToken$val access_token: String</ID>
+    <ID>ConstructorParameterNaming:TokenInterceptor.kt$OAuthToken$val token_type: String = "Bearer"</ID>
+    <ID>ConstructorParameterNaming:TokenInterceptor.kt$OAuthToken$val refresh_token: String? = null</ID>
+    <ID>SwallowedException:CustomEndpoints.kt$e: NullPointerException</ID>
+    <ID>TooGenericExceptionCaught:CustomEndpoints.kt$e: NullPointerException</ID>
+    <ID>SwallowedException:CustomEndpoints.kt$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:CustomEndpoints.kt$e: RuntimeException</ID>
+    <ID>MatchingDeclarationName:DeepCodeRestApiTest.kt$DeepCodeRestApiImplTest</ID>
   </ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:115</ID>

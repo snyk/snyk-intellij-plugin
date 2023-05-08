@@ -34,7 +34,7 @@ class IacResult(
     }
 
     override fun getFirstError(): SnykError? {
-        return getVisibleErrors().firstOrNull()
+        return getVisibleErrors().firstOrNull() ?: return errors.firstOrNull()
     }
 
     fun getVisibleErrors(): List<SnykError> {

@@ -157,4 +157,11 @@ class CustomEndpointsTest {
         val uri = "https://api.snyk.io"
         assertTrue(needsSnykToken(uri))
     }
+
+    @Test
+    fun `isOauth true for the right URI`() {
+        val uri = URI("https://snykgov.io")
+        assertTrue(uri.isOauth())
+    }
+
 }

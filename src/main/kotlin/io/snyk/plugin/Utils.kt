@@ -47,6 +47,7 @@ import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
+import snyk.whoami.WhoamiService
 import java.io.File
 import java.net.URL
 import java.security.KeyStore
@@ -78,7 +79,7 @@ fun getContainerService(project: Project): ContainerService? = project.serviceIf
 
 fun getAmplitudeExperimentService(): AmplitudeExperimentService = getApplicationService()
 
-fun getSnykCliAuthenticationService(project: Project): SnykCliAuthenticationService? = project.serviceIfNotDisposed()
+fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationService? = project?.serviceIfNotDisposed()
 
 fun getSnykCliDownloaderService(): SnykCliDownloaderService = getApplicationService()
 
@@ -97,6 +98,8 @@ fun getSnykAnalyticsService(): SnykAnalyticsService = getApplicationService()
 fun getSnykAdvisorModel(): SnykAdvisorModel = getApplicationService()
 
 fun getAdvisorService(): AdvisorService = getApplicationService<AdvisorServiceImpl>()
+
+fun getWhoamiService(project: Project?): WhoamiService? = project?.serviceIfNotDisposed()
 
 fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
@@ -123,7 +126,7 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
  */
 private inline fun <reified T : Any> getApplicationService(): T {
     val serviceClass = T::class.java
-    return ApplicationManager.getApplication().getService(serviceClass)
+    return ApplicationManager.getApplication()?.getService(serviceClass)
         ?: throw RuntimeException("Cannot find service ${serviceClass.name} (classloader=${serviceClass.classLoader})")
 }
 

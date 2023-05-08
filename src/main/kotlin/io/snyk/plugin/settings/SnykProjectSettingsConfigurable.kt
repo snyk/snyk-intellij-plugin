@@ -13,11 +13,15 @@ import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
+import io.snyk.plugin.net.RetrofitClientFactory
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.snykcode.codeRestApi
 import io.snyk.plugin.snykcode.core.SnykCodeParams
+import io.snyk.plugin.snykcode.newCodeRestApi
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
 import snyk.amplitude.api.ExperimentUser
+import snyk.common.toSnykCodeApiUrl
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
@@ -60,6 +64,12 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         val productSelectionChanged = snykSettingsDialog.isScanTypeChanged()
         val severitySelectionChanged = snykSettingsDialog.isSeverityEnablementChanged()
 
+        if (settingsStateService.customEndpointUrl != customEndpoint) {
+            settingsStateService.customEndpointUrl = customEndpoint
+            val snykCodeApi = toSnykCodeApiUrl(customEndpoint)
+            RetrofitClientFactory.getInstance().createRetrofit(snykCodeApi)
+            codeRestApi = newCodeRestApi(snykCodeApi)
+        }
         settingsStateService.customEndpointUrl = customEndpoint
 
         settingsStateService.token = snykSettingsDialog.getToken()

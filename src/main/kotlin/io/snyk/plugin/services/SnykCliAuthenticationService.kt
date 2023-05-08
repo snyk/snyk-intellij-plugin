@@ -21,10 +21,13 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.lang.StringEscapeUtils.escapeHtml
+import snyk.common.getEndpointUrl
+import snyk.common.isOauth
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
+import java.net.URI
 import javax.swing.AbstractAction
 import javax.swing.Action
 import javax.swing.JComponent
@@ -68,9 +71,13 @@ class SnykCliAuthenticationService(val project: Project) {
         object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
             override fun run(indicator: ProgressIndicator) {
                 dialog.onCancel = { indicator.cancel() }
-                val commands = buildCliCommands(listOf("auth"))
+                val endpoint = URI(getEndpointUrl())
+                var commands = buildCliCommands(listOf("auth"))
+                if (endpoint.isOauth()) {
+                    commands = buildCliCommands(listOf("auth", "--auth-type=oauth"))
+                }
                 val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
-                    if (line.startsWith("https://") && line.contains("/login?token=")) {
+                    if (line.startsWith("https://")) {
                         val htmlLink = escapeHtml(line.removeLineEnd())
                         val htmlText =
                             """<html>
@@ -100,9 +107,14 @@ class SnykCliAuthenticationService(val project: Project) {
         isAuthenticated = dialog.showAndGet()
     }
 
-    private fun executeGetConfigApiCommand() {
+    fun executeGetConfigApiCommand() {
+        val endpoint = URI(getEndpointUrl())
         val getConfigApiTask: () -> Unit = {
-            val commands = buildCliCommands(listOf("config", "get", "api"))
+            var key = "INTERNAL_OAUTH_TOKEN_STORAGE"
+            if (!endpoint.isOauth()) {
+                key = "api"
+            }
+            val commands = buildCliCommands(listOf("config", "get", key))
             val getConfigApiOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
             token = getConfigApiOutput.removeLineEnd()
         }
@@ -115,11 +127,6 @@ class SnykCliAuthenticationService(val project: Project) {
         val settings = pluginSettings()
         val cli: MutableList<String> = mutableListOf(getCliFile().absolutePath)
         cli.addAll(commands)
-
-        val customEndpoint = settings.customEndpointUrl
-        if (customEndpoint != null && customEndpoint.isNotEmpty()) {
-            cli.add("--API=$customEndpoint")
-        }
 
         if (settings.ignoreUnknownCA) {
             cli.add("--insecure")
