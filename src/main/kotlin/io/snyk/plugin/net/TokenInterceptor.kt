@@ -11,7 +11,7 @@ import snyk.common.needsSnykToken
 import snyk.pluginInfo
 import java.time.OffsetDateTime
 
-class TokenInterceptor(private val projectManager: ProjectManager = ProjectManager.getInstance()) : Interceptor {
+class TokenInterceptor(private var projectManager: ProjectManager? = null) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request().newBuilder()
@@ -27,7 +27,10 @@ class TokenInterceptor(private val projectManager: ProjectManager = ProjectManag
                 request.addHeader(oldSnykCodeHeaderName, token)
                 request.addHeader(authorizationHeaderName, "token $token")
             } else {
-                val project = projectManager.openProjects.firstOrNull()
+                if (projectManager == null) {
+                    projectManager = ProjectManager.getInstance()
+                }
+                val project = projectManager?.openProjects!!.firstOrNull()
                 val oAuthToken = Gson().fromJson(token, OAuthToken::class.java)
                 val expiry = OffsetDateTime.parse(oAuthToken.expiry)
                 if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {

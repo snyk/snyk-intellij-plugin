@@ -41,15 +41,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class DeepCodeRestApiImpl implements DeepCodeRestApi {
 
-  static final String API_URL = "https://deeproxy.snyk.io/";
+  public static final String API_URL = "https://deeproxy.snyk.io/";
 
   private static Retrofit retrofit = buildRetrofit(API_URL, false, false);
 
   public DeepCodeRestApiImpl(Retrofit retrofit) {
     DeepCodeRestApiImpl.retrofit = retrofit;
-  }
-
-  public DeepCodeRestApiImpl() {
   }
 
   // Create simple REST adapter which points the baseUrl.

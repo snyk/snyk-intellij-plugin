@@ -2,6 +2,7 @@ package io.snyk.plugin.net
 
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.http.conn.ssl.NoopHostnameVerifier
@@ -35,7 +36,8 @@ class RetrofitClientFactory {
     fun createRetrofit(
         baseUrl: String = getEndpointUrl(),
         requestLogging: Boolean = false,
-        additionalInterceptors: List<okhttp3.Interceptor> = emptyList()
+        additionalInterceptors: List<okhttp3.Interceptor> = emptyList(),
+        settings: SnykApplicationSettingsStateService = pluginSettings()
     ): Retrofit {
         val logging = HttpLoggingInterceptor()
         // set your desired log level
@@ -50,7 +52,7 @@ class RetrofitClientFactory {
             .writeTimeout(socketTimeout, TimeUnit.SECONDS)
             .proxyAuthenticator(RetrofitAuthenticator())
 
-        if (pluginSettings().ignoreUnknownCA) {
+        if (settings.ignoreUnknownCA) {
             val x509TrustManager = buildUnsafeTrustManager()
             val trustAllCertificates = arrayOf<TrustManager>(x509TrustManager)
             try {

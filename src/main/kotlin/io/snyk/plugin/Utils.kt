@@ -126,7 +126,7 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
  */
 private inline fun <reified T : Any> getApplicationService(): T {
     val serviceClass = T::class.java
-    return ApplicationManager.getApplication().getService(serviceClass)
+    return ApplicationManager.getApplication()?.getService(serviceClass)
         ?: throw RuntimeException("Cannot find service ${serviceClass.name} (classloader=${serviceClass.classLoader})")
 }
 

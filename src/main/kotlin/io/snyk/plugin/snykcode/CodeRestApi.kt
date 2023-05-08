@@ -9,9 +9,16 @@ import io.snyk.plugin.snykcode.core.SCLogger
 import snyk.common.getEndpointUrl
 import snyk.common.toSnykCodeApiUrl
 
-var codeRestApi: DeepCodeRestApi = newCodeRestApi()
+var codeRestApi: DeepCodeRestApi? = null
+    get() {
+        if (field == null)
+            codeRestApi = newCodeRestApi()
+        return field
+    }
 
-fun newCodeRestApi(endpoint: String = toSnykCodeApiUrl(getEndpointUrl())): DeepCodeRestApi {
+fun newCodeRestApi(
+    endpoint: String = toSnykCodeApiUrl(getEndpointUrl())
+): DeepCodeRestApi {
     val requestLogger = Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled
     val additionalInterceptors = listOf(Base64EncodeRequestInterceptor())
     val retrofit = RetrofitClientFactory.getInstance().createRetrofit(
@@ -19,6 +26,5 @@ fun newCodeRestApi(endpoint: String = toSnykCodeApiUrl(getEndpointUrl())): DeepC
         requestLogger,
         additionalInterceptors
     )
-    codeRestApi = DeepCodeRestApiImpl(retrofit)
-    return codeRestApi
+    return DeepCodeRestApiImpl(retrofit)
 }

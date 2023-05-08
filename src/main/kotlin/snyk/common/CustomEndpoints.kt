@@ -9,6 +9,7 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
     val uri = URI(endpoint)
 
     return when {
+        uri.isDeeproxy() -> endpoint
         uri.isSaaS() ->
             endpoint
                 .replace("https://", "https://deeproxy.")
@@ -44,7 +45,13 @@ fun needsSnykToken(endpoint: String): Boolean {
 }
 
 fun getEndpointUrl(): String {
-    val customEndpointUrl = resolveCustomEndpoint(pluginSettings().customEndpointUrl)
+    val endpointUrl = try {
+        pluginSettings().customEndpointUrl
+    } catch (e: RuntimeException) {
+        // This is a workaround for the case when the plugin is not initialized yet.
+        ""
+    }
+    val customEndpointUrl = resolveCustomEndpoint(endpointUrl)
     return if (customEndpointUrl.endsWith('/')) customEndpointUrl else "$customEndpointUrl/"
 }
 
@@ -83,7 +90,9 @@ fun URI.isSnykApi() =
     this.host != null && (this.host.startsWith("api") || this.host.startsWith("deeproxy")) && (isSnykDomain()) ||
         this.host != null && isSnykDomain() && this.path.startsWith("/api")
 
-fun URI.isSnykDomain() = this.host.endsWith("snyk.io") || this.host.endsWith("snykgov.io")
+fun URI.isSnykDomain() = this.host != null && (this.host.endsWith("snyk.io") || this.host.endsWith("snykgov.io"))
+
+fun URI.isDeeproxy() = this.isSnykDomain() && this.host.startsWith("deeproxy")
 
 fun URI.isOauth() =
     this.host != null && this.host.endsWith("snykgov.io")

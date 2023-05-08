@@ -40,12 +40,12 @@ class TokenInterceptorTest {
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic("snyk.PluginInformationKt")
+        every { pluginInfo } returns mockk(relaxed = true)
 
         every { chain.request().newBuilder() } returns requestMock
         every { chain.request().url } returns HttpUrl.Builder().scheme("https").host("app.snykgov.io")
             .addPathSegment("api").build()
         every { projectManager.openProjects } returns arrayOf(project)
-        every { pluginInfo } returns mockk(relaxed = true)
 
         every { getWhoamiService(project) } returns whoamiService
         every { getSnykCliAuthenticationService(project) } returns authenticationService
