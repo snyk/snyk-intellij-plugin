@@ -90,6 +90,7 @@ import snyk.iac.IacResult
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
+import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.nio.file.InvalidPathException
@@ -692,21 +693,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .filter { settings.hasSeverityEnabledAndFiltered(it.head.getSeverity()) }
                         .sortedByDescending { it.head.getSeverity() }
                         .forEach {
-                            val treeNode: VulnerabilityTreeNode = try {
-                                val dirPath = vulnsForFile.path
-                                val targetFilePath = vulnsForFile.sanitizedTargetFile
-                                val filePath = if (Paths.get(targetFilePath).isAbsolute) {
-                                    targetFilePath
-                                } else {
-                                    Paths.get(dirPath, targetFilePath).toString()
-                                }
-                                val navigateToSource = navigateToOssVulnerability(filePath, it.head)
-                                VulnerabilityTreeNode(it, project, navigateToSource)
+                            val navigateToSource = try {
+                                val filePath = sanitizeNavigationalFilePath(vulnsForFile)
+                                navigateToOssVulnerability(filePath, it.head)
                             } catch (ignore: InvalidPathException) {
-                                // skip navigation if path is invalid
-                                VulnerabilityTreeNode(it, project) {}
+                                // empty navigation function for invalid path
+                                {}
                             }
-                            fileTreeNode.add(treeNode)
+                            fileTreeNode.add(VulnerabilityTreeNode(it, project, navigateToSource))
                         }
                 }
             }
@@ -722,6 +716,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         )
 
         smartReloadRootNode(rootOssTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
+    }
+
+    fun sanitizeNavigationalFilePath(vulnsForFile: OssVulnerabilitiesForFile): String {
+        val dirPath = vulnsForFile.path
+        val targetFilePath = vulnsForFile.sanitizedTargetFile
+        val filePath = if (Paths.get(targetFilePath).isAbsolute) {
+            targetFilePath
+        } else {
+            Paths.get(dirPath, targetFilePath).toString()
+        }
+        return filePath
     }
 
     private fun displaySnykCodeResults(snykCodeResults: SnykCodeResults?) {
