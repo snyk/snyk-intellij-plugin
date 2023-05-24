@@ -7,7 +7,6 @@ import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -107,8 +106,6 @@ import javax.swing.tree.TreePath
  */
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
-    private val logger = logger<SnykToolWindowPanel>()
-
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
 
     private val rootTreeNode = DefaultMutableTreeNode("")
@@ -707,10 +704,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                                 VulnerabilityTreeNode(it, project, navigateToSource)
                             } catch (ignore: InvalidPathException) {
                                 // skip navigation if path is invalid
-                                logger.warn(
-                                    "Invalid path: ${vulnsForFile.path} " +
-                                        "| ${vulnsForFile.sanitizedTargetFile} for navigation"
-                                )
                                 VulnerabilityTreeNode(it, project) {}
                             }
                             fileTreeNode.add(treeNode)

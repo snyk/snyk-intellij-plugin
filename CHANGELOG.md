@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.59]
+
+### Fixed
+
+- Sanitize paths when creating Treenodes in Snyk Open Source
+
 ## [2.4.57]
 
 ### Fixed
