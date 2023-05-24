@@ -93,6 +93,7 @@ import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
+import java.nio.file.InvalidPathException
 import java.nio.file.Paths
 import java.util.Objects.nonNull
 import javax.swing.JPanel
@@ -203,8 +204,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
                 private fun notifyAboutErrorsIfNeeded(prodType: ProductType, cliResult: CliResult<*>) {
                     if (cliResult.isSuccessful() && cliResult.errors.isNotEmpty()) {
-                        val message = "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
-                            cliResult.errors.joinToString(", ") { it.path }
+                        val message =
+                            "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
+                                cliResult.errors.joinToString(", ") { it.path }
                         SnykBalloonNotificationHelper.showError(message, project,
                             NotificationAction.createSimpleExpiring("Open Snyk Tool Window") {
                                 snykToolWindow(project)?.show()
@@ -365,11 +367,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             BorderLayout.CENTER
                         )
                     }
+
                     is ErrorHolderTreeNode -> {
                         selectedNode.getSnykError()?.let {
                             displaySnykError(it)
                         } ?: displayEmptyDescription()
                     }
+
                     else -> displayEmptyDescription()
                 }
             } else {
@@ -445,6 +449,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 // don't trigger scan for Default project i.e. no project opened state
                 if (project.basePath != null) triggerScan()
             }
+
             else -> displayEmptyDescription()
         }
     }
@@ -690,11 +695,25 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .filter { settings.hasSeverityEnabledAndFiltered(it.head.getSeverity()) }
                         .sortedByDescending { it.head.getSeverity() }
                         .forEach {
-                            val navigateToSource = navigateToOssVulnerability(
-                                filePath = Paths.get(vulnsForFile.path, vulnsForFile.sanitizedTargetFile).toString(),
-                                vulnerability = it.head
-                            )
-                            fileTreeNode.add(VulnerabilityTreeNode(it, project, navigateToSource))
+                            val treeNode: VulnerabilityTreeNode = try {
+                                val dirPath = vulnsForFile.path
+                                val targetFilePath = vulnsForFile.sanitizedTargetFile
+                                val filePath = if (Paths.get(targetFilePath).isAbsolute) {
+                                    targetFilePath
+                                } else {
+                                    Paths.get(dirPath, targetFilePath).toString()
+                                }
+                                val navigateToSource = navigateToOssVulnerability(filePath, it.head)
+                                VulnerabilityTreeNode(it, project, navigateToSource)
+                            } catch (ignore: InvalidPathException) {
+                                // skip navigation if path is invalid
+                                logger.warn(
+                                    "Invalid path: ${vulnsForFile.path} " +
+                                        "| ${vulnsForFile.sanitizedTargetFile} for navigation"
+                                )
+                                VulnerabilityTreeNode(it, project) {}
+                            }
+                            fileTreeNode.add(treeNode)
                         }
                 }
             }
@@ -953,7 +972,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private fun displaySelectVulnerabilityMessage() {
         val scrollPanelCandidate = descriptionPanel.components.firstOrNull()
         if (scrollPanelCandidate is JScrollPane &&
-            scrollPanelCandidate.components.firstOrNull() is IssueDescriptionPanel) {
+            scrollPanelCandidate.components.firstOrNull() is IssueDescriptionPanel
+        ) {
             // vulnerability/suggestion already selected
             return
         }
@@ -1105,7 +1125,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 if it is not already available locally in your Docker daemon.<br><br>
                 $CONTAINER_DOCS_TEXT_WITH_LINK
             """.trimIndent()
-
 
         val CONTAINER_SCAN_START_TEXT =
             "Snyk Container scan for vulnerabilities.<br><br>$CONTAINER_SCAN_COMMON_POSTFIX"
