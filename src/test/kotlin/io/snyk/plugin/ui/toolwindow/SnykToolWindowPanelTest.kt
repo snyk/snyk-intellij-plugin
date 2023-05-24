@@ -20,7 +20,9 @@ import io.snyk.plugin.services.SnykTaskQueueService
 import org.junit.Test
 import snyk.UIComponentFinder
 import snyk.amplitude.AmplitudeExperimentService
+import snyk.oss.OssVulnerabilitiesForFile
 import java.awt.Container
+import java.io.File
 
 class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     private val analyticsService: SnykAnalyticsService = mockk(relaxed = true)
@@ -76,6 +78,44 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         assertNotNull(authPanel)
         val treePanel = UIComponentFinder.getJPanelByName(cut, "treePanel")
         assertNotNull(treePanel)
+    }
+
+    @Test
+    fun `sanitizeNavigationalFilePath should return a valid filepath when given abs path in displayTargetFile`() {
+        val tempFile = File.createTempFile("package", ".json")
+        tempFile.deleteOnExit()
+        val absPath = tempFile.toPath().toAbsolutePath()
+        val vulnsForFile =
+            OssVulnerabilitiesForFile(
+                displayTargetFile = absPath.toString(),
+                path = absPath.parent.toString(),
+                packageManager = "npm",
+                vulnerabilities = emptyList()
+            )
+        cut = SnykToolWindowPanel(project)
+
+        val filePath = cut.sanitizeNavigationalFilePath(vulnsForFile)
+
+        assertEquals(absPath.toString(), filePath)
+    }
+
+    @Test
+    fun `sanitizeNavigationalFilePath should return a valid filepath when given rel path in displayTargetFile`() {
+        val tempFile = File.createTempFile("package", ".json")
+        tempFile.deleteOnExit()
+        val absPath = tempFile.toPath().toAbsolutePath()
+        val vulnsForFile =
+            OssVulnerabilitiesForFile(
+                displayTargetFile = tempFile.name,
+                path = absPath.parent.toString(),
+                packageManager = "npm",
+                vulnerabilities = emptyList()
+            )
+        cut = SnykToolWindowPanel(project)
+
+        val filePath = cut.sanitizeNavigationalFilePath(vulnsForFile)
+
+        assertEquals(absPath.toString(), filePath)
     }
 
     @Test
