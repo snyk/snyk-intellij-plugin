@@ -12,15 +12,16 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 
     val codeSubdomain = "deeproxy"
     val snykCodeApiUrl = when {
-        uri.isDeeproxy() -> endpoint
-        uri.isDev() -> endpoint
-            .replace("https://dev.", "https://${codeSubdomain}.dev.")
+        uri.isDeeproxy() ->
+            endpoint
 
-        uri.isSnykTenant() -> endpoint
-            .replace("https://", "https://$codeSubdomain.")
+        uri.isDev() ->
+            endpoint.replace("https://dev.", "https://$codeSubdomain.dev.")
 
-        else ->
-            "https://${codeSubdomain}.snyk.io/"
+        uri.isSnykTenant() ->
+            endpoint.replace("https://", "https://$codeSubdomain.")
+
+        else -> "https://$codeSubdomain.snyk.io/"
     }
     return snykCodeApiUrl.removeSuffix("api").replace("app.", "")
 }
@@ -29,13 +30,19 @@ fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
     val baseUrl = when {
-        uri.host == "snyk.io" -> "https://app.snyk.io/"
-        uri.isDev() -> endpoint
-            .replace("https://dev.app.", "https://app.dev.")
-            .replace("https://dev.", "https://app.dev.")
+        uri.host == "snyk.io" ->
+            "https://app.snyk.io/"
 
-        uri.isSnykTenant() -> endpoint
-        else -> "https://app.snyk.io/"
+        uri.isDev() ->
+            endpoint
+                .replace("https://dev.app.", "https://app.dev.")
+                .replace("https://dev.", "https://app.dev.")
+
+        uri.isSnykTenant() ->
+            endpoint
+
+        else ->
+            "https://app.snyk.io/"
     }
 
     return baseUrl.removeSuffix("api").suffixIfNot("/") + "manage/snyk-code"
@@ -82,10 +89,7 @@ fun URI.isSnykTenant() =
 fun URI.isSnykApi() = isSnykDomain() && (host.startsWith("api.") || path.endsWith("/api"))
 
 fun URI.toSnykAPIv1(): URI {
-    val host = host
-        .replaceFirst("app.", "api.")
-        .replaceFirst("deeproxy.", "api.")
-        .prefixIfNot("api.")
+    val host = host.replaceFirst("app.", "api.").replaceFirst("deeproxy.", "api.").prefixIfNot("api.")
 
     return URI(scheme, host, "/v1/", null)
 }
@@ -103,7 +107,7 @@ internal fun String.removeTrailingSlashesIfPresent(): String {
     return try {
         URI(candidate)
         candidate
-    } catch (e: URISyntaxException) {
+    } catch (ignored: URISyntaxException) {
         this
     }
 }
