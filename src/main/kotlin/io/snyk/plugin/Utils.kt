@@ -45,6 +45,7 @@ import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
+import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
@@ -117,7 +118,8 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
     if (this.isDisposed) return null
     return try {
         getService(T::class.java)
-    } catch (ignored: Throwable) {
+    } catch (t: Throwable) {
+        SentryErrorReporter.captureException(t)
         null
     }
 }
