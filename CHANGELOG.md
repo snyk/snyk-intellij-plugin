@@ -1,5 +1,12 @@
 # Snyk Changelog
 
+## [2.4.60]
+
+### Fixed
+
+- validate endpoint addresses
+- handle exceptions in settings better
+
 ## [2.4.59]
 
 ### Fixed
