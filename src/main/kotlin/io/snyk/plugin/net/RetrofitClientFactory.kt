@@ -6,6 +6,7 @@ import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.http.conn.ssl.NoopHostnameVerifier
+import org.jetbrains.kotlin.util.suffixIfNot
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import snyk.common.getEndpointUrl
@@ -72,9 +73,11 @@ class RetrofitClientFactory {
 
         additionalInterceptors.forEach { client.addInterceptor(it) }
 
+        val sanitizedBaseURL = baseUrl.suffixIfNot("/")
+
         return Retrofit.Builder()
             .client(client.build())
-            .baseUrl(baseUrl)
+            .baseUrl(sanitizedBaseURL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

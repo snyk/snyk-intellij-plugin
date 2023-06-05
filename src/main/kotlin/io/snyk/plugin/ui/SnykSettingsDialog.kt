@@ -3,6 +3,7 @@ package io.snyk.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
@@ -78,6 +79,8 @@ class SnykSettingsDialog(
     private val manageBinariesAutomatically: JCheckBox = JCheckBox()
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
 
+    private val logger = Logger.getInstance(this::class.java)
+
     init {
         initializeUiComponents()
         initializeValidation()
@@ -100,7 +103,11 @@ class SnykSettingsDialog(
 
         receiveTokenButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
-                snykProjectSettingsConfigurable.apply()
+                try {
+                    snykProjectSettingsConfigurable.apply()
+                } catch (e: Exception) {
+                    logger.error("Failed to apply Snyk settings", e)
+                }
                 val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 tokenTextField.text = token
                 runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
@@ -542,7 +549,7 @@ class SnykSettingsDialog(
     }
 
     private fun isTokenValid(token: String?): Boolean {
-        if (token == null || token.isEmpty()) {
+        if (token.isNullOrEmpty()) {
             return true
         }
 
