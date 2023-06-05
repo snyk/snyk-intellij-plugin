@@ -73,7 +73,7 @@ fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
 /**
  * Resolves the custom endpoint.
  *
- * If the [endpointUrl] is null or empty, then [https://app.snyk.io/api](https://appsnyk.io/api) will be used.
+ * If the [endpointUrl] is null or empty, then [https://app.snyk.io/api](https://app.snyk.io/api) will be used.
  */
 internal fun resolveCustomEndpoint(endpointUrl: String?): String {
     return if (endpointUrl.isNullOrEmpty()) {
