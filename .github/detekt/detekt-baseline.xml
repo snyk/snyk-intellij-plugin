@@ -16,6 +16,8 @@
     <ID>SwallowedException:CustomEndpoints.kt$e: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:CustomEndpoints.kt$e: RuntimeException</ID>
     <ID>MatchingDeclarationName:DeepCodeRestApiTest.kt$DeepCodeRestApiImplTest</ID>
+    <ID>TooGenericExceptionCaught:SnykSettingsDialog.kt$SnykSettingsDialog$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SnykToolWindowPanel.kt$SnykToolWindowPanel$e: Exception</ID>
   </ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:115</ID>

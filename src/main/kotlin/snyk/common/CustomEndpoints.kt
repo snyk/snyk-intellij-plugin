@@ -1,6 +1,8 @@
 package snyk.common
 
 import io.snyk.plugin.pluginSettings
+import org.jetbrains.kotlin.util.prefixIfNot
+import org.jetbrains.kotlin.util.suffixIfNot
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -8,40 +10,40 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
 
-    return when {
+    val codeSubdomain = "deeproxy"
+    val snykCodeApiUrl = when {
         uri.isDeeproxy() -> endpoint
-        uri.isSaaS() ->
-            endpoint
-                .replace("https://", "https://deeproxy.")
-                .replace("api.", "")
-                .removeSuffix("api")
+        uri.isDev() -> endpoint
+            .replace("https://dev.", "https://${codeSubdomain}.dev.")
 
-        uri.isSnykTenant() ->
-            endpoint
-                .replace("api.", "")
-                .replace("app", "deeproxy").removeSuffix("api")
+        uri.isSnykTenant() -> endpoint
+            .replace("https://", "https://$codeSubdomain.")
 
         else ->
-            "https://deeproxy.snyk.io/"
+            "https://${codeSubdomain}.snyk.io/"
     }
+    return snykCodeApiUrl.removeSuffix("api").replace("app.", "")
 }
 
 fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
-
     val baseUrl = when {
-        uri.isSaaS() -> endpoint.replace("https://", "https://app.").removeSuffix("api")
-        uri.isSnykTenant() -> endpoint.removeSuffix("api")
+        uri.host == "snyk.io" -> "https://app.snyk.io/"
+        uri.isDev() -> endpoint
+            .replace("https://dev.app.", "https://app.dev.")
+            .replace("https://dev.", "https://app.dev.")
+
+        uri.isSnykTenant() -> endpoint
         else -> "https://app.snyk.io/"
     }
 
-    return "${baseUrl}manage/snyk-code"
+    return baseUrl.removeSuffix("api").suffixIfNot("/") + "manage/snyk-code"
 }
 
 fun needsSnykToken(endpoint: String): Boolean {
     val uri = URI(endpoint)
-    return uri.isSnykApi() || uri.isSnykTenant()
+    return uri.isSnykApi() || uri.isSnykTenant() || uri.isDeeproxy()
 }
 
 fun getEndpointUrl(): String {
@@ -58,44 +60,43 @@ fun getEndpointUrl(): String {
 fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
-    return uri.isSaaS() || uri.isSnykTenant()
+    return uri.isSnykTenant()
 }
 
 /**
  * Resolves the custom endpoint.
  *
- * If the [endpointUrl] is null or empty, then [https://snyk.io/api](https://snyk.io/api) will be used.
+ * If the [endpointUrl] is null or empty, then [https://app.snyk.io/api](https://appsnyk.io/api) will be used.
  */
 internal fun resolveCustomEndpoint(endpointUrl: String?): String {
     return if (endpointUrl.isNullOrEmpty()) {
-        "https://snyk.io/api"
+        "https://app.snyk.io/api"
     } else {
         endpointUrl.removeTrailingSlashesIfPresent()
     }
 }
 
-/**
- * Checks if the deployment type is SaaS (production or development).
- */
-fun URI.isSaaS() =
-    this.host != null && !this.host.startsWith("app") && isSnykDomain()
-
-/**
- * Checks if the deployment type is Single Tenant.
- */
 fun URI.isSnykTenant() =
-    this.host != null && this.host.startsWith("app") && isSnykDomain()
+    isSnykDomain() && (host.startsWith("app.") || host == "snyk.io" || isDev()) && path.endsWith("/api")
 
-fun URI.isSnykApi() =
-    this.host != null && (this.host.startsWith("api") || this.host.startsWith("deeproxy")) && (isSnykDomain()) ||
-        this.host != null && isSnykDomain() && this.path.startsWith("/api")
+fun URI.isSnykApi() = isSnykDomain() && (host.startsWith("api.") || path.endsWith("/api"))
 
-fun URI.isSnykDomain() = this.host != null && (this.host.endsWith("snyk.io") || this.host.endsWith("snykgov.io"))
+fun URI.toSnykAPIv1(): URI {
+    val host = host
+        .replaceFirst("app.", "api.")
+        .replaceFirst("deeproxy.", "api.")
+        .prefixIfNot("api.")
 
-fun URI.isDeeproxy() = this.isSnykDomain() && this.host.startsWith("deeproxy")
+    return URI(scheme, host, "/v1/", null)
+}
 
-fun URI.isOauth() =
-    this.host != null && this.host.endsWith("snykgov.io")
+fun URI.isSnykDomain() = host != null && (host.endsWith("snyk.io") || host.endsWith("snykgov.io"))
+
+fun URI.isDeeproxy() = isSnykDomain() && host.startsWith("deeproxy.")
+
+fun URI.isOauth() = host != null && host.endsWith(".snykgov.io")
+
+fun URI.isDev() = isSnykDomain() && host.startsWith("dev.")
 
 internal fun String.removeTrailingSlashesIfPresent(): String {
     val candidate = this.replace(Regex("/+$"), "")

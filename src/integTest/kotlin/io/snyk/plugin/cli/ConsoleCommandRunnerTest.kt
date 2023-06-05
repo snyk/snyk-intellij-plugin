@@ -85,7 +85,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://snykgov.io/"
+            val expectedEndpoint = "https://app.xxx.snykgov.io/"
             generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
             assertTrue(URI(expectedEndpoint).isOauth())
 

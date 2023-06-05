@@ -14,8 +14,8 @@ class CustomEndpointsTest {
         val endpointForNull = resolveCustomEndpoint(null)
         val endpointForEmpty = resolveCustomEndpoint("")
 
-        assertThat(endpointForNull, equalTo("https://snyk.io/api"))
-        assertThat(endpointForEmpty, equalTo("https://snyk.io/api"))
+        assertThat(endpointForNull, equalTo("https://app.snyk.io/api"))
+        assertThat(endpointForEmpty, equalTo("https://app.snyk.io/api"))
     }
 
     @Test
@@ -32,14 +32,6 @@ class CustomEndpointsTest {
         val endpointWithNoHost = "http:/".removeTrailingSlashesIfPresent()
 
         assertThat(endpointWithNoHost, equalTo("http:/"))
-    }
-
-    @Test
-    fun `isSaaS and isSnykTenant works with no-host(but syntactically correct) URI`() {
-        val uriWithNoHost = URI("http:/")
-
-        assertThat(uriWithNoHost.isSaaS(), equalTo(false))
-        assertThat(uriWithNoHost.isSnykTenant(), equalTo(false))
     }
 
     @Test
@@ -66,6 +58,14 @@ class CustomEndpointsTest {
     }
 
     @Test
+    fun `toSnykApiUrlV1 returns correct API URL`() {
+        assertThat(URI("https://snyk.io/api").toSnykAPIv1().toString(), equalTo("https://api.snyk.io/v1/"))
+        assertThat(URI("https://app.snyk.io/api").toSnykAPIv1().toString(), equalTo("https://api.snyk.io/v1/"))
+        assertThat(URI("https://app.eu.snyk.io/api").toSnykAPIv1().toString(), equalTo("https://api.eu.snyk.io/v1/"))
+        assertThat(URI("https://dev.snyk.io/api").toSnykAPIv1().toString(), equalTo("https://api.dev.snyk.io/v1/"))
+    }
+
+    @Test
     fun `toSnykCodeApiUrl returns correct deeproxy url for SaaS deployments`() {
         val apiUrlForProduction = toSnykCodeApiUrl("https://snyk.io/api")
         val apiUrlForDevelopment = toSnykCodeApiUrl("https://dev.snyk.io/api")
@@ -76,8 +76,8 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeApiUrl returns correct deeproxy url for SaaS deployments using api url`() {
-        val apiUrlForProduction = toSnykCodeApiUrl("https://api.eu.snyk.io/api")
-        val apiUrlForDevelopment = toSnykCodeApiUrl("https://dev.api.eu.snyk.io/api")
+        val apiUrlForProduction = toSnykCodeApiUrl("https://app.eu.snyk.io/api")
+        val apiUrlForDevelopment = toSnykCodeApiUrl("https://dev.app.eu.snyk.io/api")
 
         assertThat(apiUrlForProduction, equalTo("https://deeproxy.eu.snyk.io/"))
         assertThat(apiUrlForDevelopment, equalTo("https://deeproxy.dev.eu.snyk.io/"))
@@ -92,11 +92,16 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeSettingsUrl returns correct settings url for SaaS deployments`() {
-        val productionSettingsUrl = toSnykCodeSettingsUrl("https://snyk.io/api")
-        val developmentSettingsUrl = toSnykCodeSettingsUrl("https://dev.snyk.io/api")
-
-        assertThat(productionSettingsUrl, equalTo("https://app.snyk.io/manage/snyk-code"))
-        assertThat(developmentSettingsUrl, equalTo("https://app.dev.snyk.io/manage/snyk-code"))
+        assertThat(toSnykCodeSettingsUrl("https://snyk.io/api"), equalTo("https://app.snyk.io/manage/snyk-code"))
+        assertThat(
+            toSnykCodeSettingsUrl("https://dev.snyk.io/api"), equalTo("https://app.dev.snyk.io/manage/snyk-code")
+        )
+        assertThat(
+            toSnykCodeSettingsUrl("https://dev.app.eu.snyk.io"), equalTo("https://app.dev.eu.snyk.io/manage/snyk-code")
+        )
+        assertThat(
+            toSnykCodeSettingsUrl("https://something.eu.snyk.io"), equalTo("https://app.snyk.io/manage/snyk-code")
+        )
     }
 
     @Test
@@ -125,12 +130,6 @@ class CustomEndpointsTest {
     }
 
     @Test
-    fun `isSnykAPI true for api path and snyk domain`() {
-        val uri = URI("https://snyk.io/api")
-        assertTrue(uri.isSnykApi())
-    }
-
-    @Test
     fun `non-api snyk domain does not need token`() {
         val uri = "https://snyk.io"
         assertFalse(needsSnykToken(uri))
@@ -144,7 +143,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `api snyk path needs token`() {
-        var uri = "https://snyk.io/api"
+        var uri = "https://api.snyk.io/v1"
         assertTrue(needsSnykToken(uri))
         uri = "https://app.eu.snyk.io/api"
         assertTrue(needsSnykToken(uri))
@@ -160,7 +159,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `isOauth true for the right URI`() {
-        val uri = URI("https://snykgov.io")
+        val uri = URI("https://app.xxx.snykgov.io")
         assertTrue(uri.isOauth())
     }
 

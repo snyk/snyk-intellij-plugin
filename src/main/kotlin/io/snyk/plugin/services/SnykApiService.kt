@@ -7,6 +7,9 @@ import io.snyk.plugin.net.FalsePositivePayload
 import io.snyk.plugin.net.RetrofitClientFactory
 import io.snyk.plugin.net.SnykApiClient
 import io.snyk.plugin.pluginSettings
+import snyk.common.getEndpointUrl
+import snyk.common.toSnykAPIv1
+import java.net.URI
 
 @Service
 class SnykApiService {
@@ -27,7 +30,8 @@ class SnykApiService {
 
         log.debug("Creating new SnykApiClient")
         return try {
-            val retrofit = RetrofitClientFactory.getInstance().createRetrofit()
+            val apiUri = URI(getEndpointUrl()).toSnykAPIv1()
+            val retrofit = RetrofitClientFactory.getInstance().createRetrofit(apiUri.toString())
             return SnykApiClient(retrofit)
         } catch (ignore: RuntimeException) {
             log.warn("Failed to create Retrofit client", ignore)

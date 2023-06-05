@@ -7,6 +7,7 @@ import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -108,7 +109,7 @@ import javax.swing.tree.TreePath
 @Service
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
-
+    private val logger = Logger.getInstance(this::class.java)
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
@@ -442,17 +443,22 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> {
                 pluginSettings().pluginFirstRun = false
-                enableCodeScanAccordingToServerSetting()
-                displayEmptyDescription()
-                // don't trigger scan for Default project i.e. no project opened state
-                if (project.basePath != null) triggerScan()
+                try {
+                    enableCodeScanAccordingToServerSetting()
+                    displayEmptyDescription()
+                    // don't trigger scan for Default project i.e. no project opened state
+                    if (project.basePath != null) triggerScan()
+                } catch (e: Exception) {
+                    displaySnykError(SnykError(e.message ?: "Exception while initializing plugin {${e.message}", ""))
+                    logger.error("Failed to apply Snyk settings", e)
+                }
             }
 
             else -> displayEmptyDescription()
         }
     }
 
-    fun triggerScan() {
+    private fun triggerScan() {
         getSnykAnalyticsService().logAnalysisIsTriggered(
             AnalysisIsTriggered.builder()
                 .analysisType(getSelectedProducts(pluginSettings()))

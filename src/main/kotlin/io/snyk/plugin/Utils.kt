@@ -42,6 +42,7 @@ import snyk.advisor.SnykAdvisorModel
 import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
+import snyk.common.isSnykTenant
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.iac.IacScanService
@@ -142,13 +143,16 @@ val <T> List<T>.tail: List<T>
 val <T> List<T>.head: T
     get() = first()
 
-fun isUrlValid(url: String?): Boolean =
-    url.isNullOrEmpty() || try {
-        URL(url).toURI()
-        true
+fun isUrlValid(url: String?): Boolean {
+    url.isNullOrEmpty() && return true
+
+    return try {
+        val uri = URL(url).toURI()
+        return uri.isSnykTenant()
     } catch (throwable: Throwable) {
         false
     }
+}
 
 fun isOssRunning(project: Project): Boolean {
     val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
