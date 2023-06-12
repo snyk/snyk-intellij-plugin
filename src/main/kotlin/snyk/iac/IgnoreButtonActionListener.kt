@@ -6,8 +6,8 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.calcRelativeToProjectPath
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.relativePathToContentRoot
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.NotNull
 import snyk.common.IgnoreException
@@ -36,10 +36,9 @@ class IgnoreButtonActionListener(
     ) : Task.Backgroundable(project, "Ignoring issue...") {
         override fun run(@NotNull progressIndicator: ProgressIndicator) {
             try {
-                val relativeFilePath = if (psiFile != null) {
-                    calcRelativeToProjectPath(psiFile.virtualFile, project)
-                        .replace(".../", "")
-                        .replace("…/", "")
+                val relativeFilePath: String = if (psiFile != null) {
+                    psiFile.relativePathToContentRoot(project)?.toString()
+                        ?: throw IgnoreException("Project base path is null or blank. Cannot determine relative path.")
                 } else {
                     "*"
                 }
