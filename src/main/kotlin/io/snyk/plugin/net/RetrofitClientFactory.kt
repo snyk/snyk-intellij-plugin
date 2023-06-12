@@ -3,10 +3,10 @@ package io.snyk.plugin.net
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.suffixIfNot
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.http.conn.ssl.NoopHostnameVerifier
-import org.jetbrains.kotlin.util.suffixIfNot
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import snyk.common.getEndpointUrl
