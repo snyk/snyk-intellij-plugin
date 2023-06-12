@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.61]
+
+### Fixed
+
+- calculate relative paths in IaC ignore functionality differently to avoid issues with `...` showing up sometimes
+
 ## [2.4.60]
 
 ### Fixed
