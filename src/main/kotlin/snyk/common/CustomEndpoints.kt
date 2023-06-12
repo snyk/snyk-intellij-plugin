@@ -1,8 +1,8 @@
 package snyk.common
 
 import io.snyk.plugin.pluginSettings
-import org.jetbrains.kotlin.util.prefixIfNot
-import org.jetbrains.kotlin.util.suffixIfNot
+import io.snyk.plugin.prefixIfNot
+import io.snyk.plugin.suffixIfNot
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -89,7 +89,10 @@ fun URI.isSnykTenant() =
 fun URI.isSnykApi() = isSnykDomain() && (host.startsWith("api.") || path.endsWith("/api"))
 
 fun URI.toSnykAPIv1(): URI {
-    val host = host.replaceFirst("app.", "api.").replaceFirst("deeproxy.", "api.").prefixIfNot("api.")
+    val host = host
+        .replaceFirst("app.", "api.")
+        .replaceFirst("deeproxy.", "api.")
+        .prefixIfNot("api.")
 
     return URI(scheme, host, "/v1/", null)
 }

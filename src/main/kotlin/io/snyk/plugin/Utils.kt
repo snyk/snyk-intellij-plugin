@@ -338,3 +338,17 @@ fun showSettings(project: Project, componentNameToFocus: String, componentHelpHi
             }
         }
 }
+
+fun String.suffixIfNot(suffix: String): String {
+    if (!this.endsWith(suffix)) {
+        return this + suffix
+    }
+    return this
+}
+
+fun String.prefixIfNot(prefix: String): String {
+    if (!this.startsWith(prefix)) {
+        return prefix + this
+    }
+    return this
+}
