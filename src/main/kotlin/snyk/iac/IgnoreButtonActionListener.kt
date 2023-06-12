@@ -6,7 +6,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.calcRelativeToProjectPath
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.NotNull
@@ -14,6 +13,7 @@ import snyk.common.IgnoreException
 import snyk.common.IgnoreService
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+import java.nio.file.Paths
 import javax.swing.JButton
 
 class IgnoreButtonActionListener(
@@ -37,9 +37,11 @@ class IgnoreButtonActionListener(
         override fun run(@NotNull progressIndicator: ProgressIndicator) {
             try {
                 val relativeFilePath = if (psiFile != null) {
-                    calcRelativeToProjectPath(psiFile.virtualFile, project)
-                        .replace(".../", "")
-                        .replace("…/", "")
+                    val basePath = project.basePath
+                        ?: throw IgnoreException("Project base path is null or blank. Cannot determine relative path.")
+
+                    val projectBasePath = Paths.get(basePath)
+                    projectBasePath.relativize(psiFile.virtualFile.toNioPath()).toString()
                 } else {
                     "*"
                 }
