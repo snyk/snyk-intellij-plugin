@@ -7,6 +7,7 @@ import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.options.ShowSettingsUtil
@@ -355,8 +356,13 @@ fun String.prefixIfNot(prefix: String): String {
     return this
 }
 
-fun VirtualFile.contentRoot(project: Project) =
-    ProjectRootManager.getInstance(project).fileIndex.getContentRootForFile(this)
+fun VirtualFile.contentRoot(project: Project): VirtualFile? {
+    var file: VirtualFile? = null
+    ReadAction.run<RuntimeException> {
+        file = ProjectRootManager.getInstance(project).fileIndex.getContentRootForFile(this)
+    }
+    return file
+}
 
 fun PsiFile.contentRoot(project: Project) = this.virtualFile.contentRoot(project)
 fun PsiFile.relativePathToContentRoot(project: Project): Path? =
