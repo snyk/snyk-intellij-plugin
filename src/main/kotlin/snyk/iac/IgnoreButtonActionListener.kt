@@ -37,12 +37,12 @@ class IgnoreButtonActionListener(
         override fun run(@NotNull progressIndicator: ProgressIndicator) {
             try {
                 val relativeFilePath: String = if (psiFile != null) {
-                    psiFile.relativePathToContentRoot(project)?.toString()
-                        ?: throw IgnoreException("Project base path is null or blank. Cannot determine relative path.")
+                    psiFile.relativePathToContentRoot(project)?.toString() ?: throw IgnoreException(
+                        "Project base path is null or blank. Cannot determine relative path."
+                    )
                 } else {
                     "*"
                 }
-
                 val path = ignoreService.buildPath(issue, relativeFilePath)
                 ignoreService.ignoreInstance(issue.id, path)
 
@@ -60,8 +60,7 @@ class IgnoreButtonActionListener(
                 }
             } catch (e: IgnoreException) {
                 SnykBalloonNotificationHelper.showError(
-                    "Ignoring did not succeed. Error message: ${e.message})",
-                    project
+                    "Ignoring did not succeed. Error message: ${e.message})", project
                 )
             }
         }

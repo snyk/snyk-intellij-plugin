@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.62]
+
+### Fixed
+
+- remove error message after ignoring IaC issue
+
 ## [2.4.61]
 
 ### Fixed
