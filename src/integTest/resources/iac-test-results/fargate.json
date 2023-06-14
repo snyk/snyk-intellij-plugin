@@ -47,7 +47,7 @@
         "resolve": "Set `Properties.ImageScanningConfiguration` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-61",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-61",
       "path": [
         "[DocId:0]",
         "Resources[EcrDockerRepository]",
@@ -79,7 +79,7 @@
         "resolve": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-124",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-124",
       "path": [
         "[DocId:0]",
         "Resources[CodePipelineArtifactBucket]",
@@ -115,7 +115,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-95",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-95",
       "path": [
         "[DocId:0]",
         "Resources[DefaultContainerBucket]",
@@ -151,7 +151,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicAcls` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-95",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-95",
       "path": [
         "[DocId:0]",
         "Resources[CodePipelineArtifactBucket]",
@@ -185,7 +185,7 @@
         "resolve": "Set `Properties.EncryptionConfiguration.KmsKey` attribute to customer managed KMS key"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-418",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-418",
       "path": [
         "[DocId:0]",
         "Resources[EcrDockerRepository]",
@@ -221,7 +221,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-96",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-96",
       "path": [
         "[DocId:0]",
         "Resources[DefaultContainerBucket]",
@@ -254,7 +254,7 @@
         "resolve": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-405",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-405",
       "path": [
         "[DocId:0]",
         "Resources[ApplicationLoadBalancer]",
@@ -286,7 +286,7 @@
         "resolve": "Set `Properties.Scheme` attribute to `internal`"
       },
       "lineNumber": 569,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-48",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-48",
       "path": [
         "[DocId:0]",
         "Resources",
@@ -319,7 +319,7 @@
         "resolve": "Set `Properties.ImageTagMutability` attribute to `IMMUTABLE`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-126",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-126",
       "path": [
         "[DocId:0]",
         "Resources[EcrDockerRepository]",
@@ -351,7 +351,7 @@
         "resolve": "Set `Properties.VersioningConfiguration.Status` attribute to `Enabled`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-124",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-124",
       "path": [
         "[DocId:0]",
         "Resources[DefaultContainerBucket]",
@@ -384,7 +384,7 @@
         "resolve": "Set `KmsMasterKeyId` attribute to KMS key for example `alias/aws/sns`"
       },
       "lineNumber": 893,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-55",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-55",
       "path": [
         "[DocId:0]",
         "Resources",
@@ -420,7 +420,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.BlockPublicPolicy` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-96",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-96",
       "path": [
         "[DocId:0]",
         "Resources[CodePipelineArtifactBucket]",
@@ -456,7 +456,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-97",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-97",
       "path": [
         "[DocId:0]",
         "Resources[DefaultContainerBucket]",
@@ -490,7 +490,7 @@
         "resolve": "Set `Properties.KmsMasterKeyId` attribute to a customer managed key id "
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-422",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-422",
       "path": [
         "[DocId:0]",
         "Resources[LoadBalancerAlarmTopic]",
@@ -525,7 +525,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.IgnorePublicAcls` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-97",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-97",
       "path": [
         "[DocId:0]",
         "Resources[CodePipelineArtifactBucket]",
@@ -561,7 +561,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-98",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-98",
       "path": [
         "[DocId:0]",
         "Resources[DefaultContainerBucket]",
@@ -595,7 +595,7 @@
         "resolve": "Set `Properties.KmsKeyId` attribute with customer managed key id"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-AWS-415",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-415",
       "path": [
         "[DocId:0]",
         "Resources[DefaultLogGroup]",
@@ -630,7 +630,7 @@
         "resolve": "Set `Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets` attribute to `true`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-98",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-98",
       "path": [
         "[DocId:0]",
         "Resources[CodePipelineArtifactBucket]",
@@ -663,7 +663,7 @@
         "resolve": "Set `Properties.ClusterSettings.Name` attribute to `containerInsights`, and `Properties.ClusterSettings.Value` to `enabled`"
       },
       "lineNumber": 23,
-      "documentation": "https://snyk.io/security-rules/SNYK-CC-TF-128",
+      "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-128",
       "path": [
         "[DocId:0]",
         "Resources[FargateEcsCluster]",
