@@ -17,7 +17,6 @@ import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import snyk.net.HttpClient
 import snyk.pluginInfo
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -41,6 +40,8 @@ class AmplitudeExperimentApiClientTest {
 
         every { pluginInfo.integrationName } returns "snyk"
         every { pluginInfo.integrationVersion } returns "1.2.3"
+        every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
+        every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
         every { pluginSettings().userAnonymousId } returns UUID.randomUUID().toString()
         every { pluginSettings().ignoreUnknownCA } returns false
         every { pluginSettings().customEndpointUrl } returns "https://amplitude.com"
