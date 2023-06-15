@@ -67,7 +67,7 @@ class DeepCodeRestApiImplTest {
     @Test
     fun _025_getFilters() {
         println("\n--------------Get Filters----------------\n")
-        val response: GetFiltersResponse = restApiClient!!.getFilters(loggedToken)
+        val response: GetFiltersResponse = restApiClient!!.getFilters()
         Assert.assertNotNull(response)
         val errorMsg = ("Get Filters return status code: ["
             + response.statusCode
@@ -84,10 +84,9 @@ class DeepCodeRestApiImplTest {
     @Test
     fun _030_createBundle_from_source() {
         println("\n--------------Create Bundle from Source----------------\n")
-        val response = createBundleFromSource(
-            loggedToken,
-            loggedOrgName
-        )
+
+        val response = createBundleFromSource(loggedOrgName)
+
         Assert.assertNotNull(response)
         System.out.printf(
             "Create Bundle call return:\nStatus code [%1\$d] %3\$s \nBundleId: [%2\$s]\n",
@@ -98,7 +97,7 @@ class DeepCodeRestApiImplTest {
     }
 
     @Throws(NoSuchAlgorithmException::class, IOException::class)
-    private fun createBundleFromSource(token: String, orgName: String?): CreateBundleResponse {
+    private fun createBundleFromSource(orgName: String?): CreateBundleResponse {
         val testFile =
             File(javaClass.classLoader.getResource(TEST_FILE)!!.file)
         val absolutePath = testFile.absolutePath
@@ -110,7 +109,6 @@ class DeepCodeRestApiImplTest {
         val fileText = String(Files.readAllBytes(testFile.toPath()))
         fileContent[deepCodedPath] = FileHash2ContentRequest(getHash(fileText), fileText)
         return restApiClient!!.createBundle(
-            token,
             orgName,
             fileContent
         )
@@ -122,7 +120,7 @@ class DeepCodeRestApiImplTest {
         println("\n--------------Create Bundle with wrong requests----------------\n")
         val brokenToken = "fff"
         val brokenOrgName = "org-name"
-        val response = createBundleFromSource(brokenToken, brokenOrgName)
+        val response = createBundleFromSource(brokenOrgName)
         Assert.assertNotNull(response)
         Assert.assertEquals(
             "Create Bundle call with malformed token should not be accepted by server",
@@ -130,7 +128,8 @@ class DeepCodeRestApiImplTest {
             response.statusCode.toLong()
         )
         System.out.printf(
-            "Create Bundle call with malformed token [%1\$s] and org name [%2\$s] is not accepted by server with Status code [%3\$d].\n",
+            "Create Bundle call with malformed token [%1\$s] " +
+                "and org name [%2\$s] is not accepted by server with Status code [%3\$d].\n",
             brokenToken, brokenOrgName, response.statusCode
         )
     }
@@ -146,7 +145,6 @@ class DeepCodeRestApiImplTest {
         val files = createFileHashRequest(null)
         val response: CreateBundleResponse =
             restApiClient!!.createBundle(
-                loggedToken,
                 loggedOrgName,
                 files
             )
@@ -167,7 +165,6 @@ class DeepCodeRestApiImplTest {
         val fileHashRequest = createFileHashRequest(null)
         val createBundleResponse: CreateBundleResponse =
             restApiClient!!.createBundle(
-                loggedToken,
                 loggedOrgName,
                 fileHashRequest
             )
@@ -183,7 +180,6 @@ class DeepCodeRestApiImplTest {
         Assert.assertFalse("List of missingFiles is empty.", createBundleResponse.missingFiles.isEmpty())
         val checkBundleResponse: CreateBundleResponse =
             restApiClient!!.checkBundle(
-                loggedToken,
                 loggedOrgName,
                 createBundleResponse.bundleHash
             )
@@ -213,7 +209,6 @@ class DeepCodeRestApiImplTest {
         Assert.assertEquals(200, uploadFileResponse.statusCode.toLong())
         val createBundleResponse1: CreateBundleResponse =
             restApiClient!!.checkBundle(
-                loggedToken,
                 loggedOrgName,
                 createBundleResponse.bundleHash
             )
@@ -292,7 +287,6 @@ class DeepCodeRestApiImplTest {
         val extendBundleWithHashRequest = ExtendBundleWithHashRequest(newFileHashRequest, emptyList())
         val extendBundleResponse: CreateBundleResponse =
             restApiClient!!.extendBundle<ExtendBundleWithHashRequest>(
-                loggedToken,
                 loggedOrgName,
                 createBundleResponse.bundleHash,
                 extendBundleWithHashRequest
@@ -315,7 +309,6 @@ class DeepCodeRestApiImplTest {
         val fileHashRequest = createFileHashRequest(null)
         val createBundleResponse: CreateBundleResponse =
             restApiClient!!.createBundle(
-                loggedToken,
                 loggedOrgName,
                 fileHashRequest
             )
@@ -361,7 +354,6 @@ class DeepCodeRestApiImplTest {
         map[filePath] = FileHash2ContentRequest(fileHash, fileText)
         val ebr = ExtendBundleWithContentRequest(map, emptyList())
         return restApiClient!!.extendBundle<ExtendBundleWithContentRequest>(
-            loggedToken,
             loggedOrgName,
             createBundleResponse.bundleHash,
             ebr
@@ -396,7 +388,6 @@ class DeepCodeRestApiImplTest {
         var response: GetAnalysisResponse? = null
         for (i in 0..119) {
             response = restApiClient!!.getAnalysis(
-                loggedToken,
                 loggedOrgName,
                 bundleId,
                 severity,

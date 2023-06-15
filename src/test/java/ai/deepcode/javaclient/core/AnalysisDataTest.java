@@ -75,17 +75,17 @@ public class AnalysisDataTest {
       new CreateBundleResponse("bundleHash", Collections.emptyList());
 
     @Override
-    public @NotNull CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files) {
+    public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
       return bundleResponseWithMissedFile;
     }
 
     @Override
-    public @NotNull <Req> CreateBundleResponse extendBundle(String token, String orgName, String bundleId, Req request) {
+    public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
       return bundleResponseWithMissedFile;
     }
 
     @Override
-    public @NotNull CreateBundleResponse checkBundle(String token, String orgName, String bundleId) {
+    public @NotNull CreateBundleResponse checkBundle(String orgName, String bundleId) {
       return bundleResponseWithMissedFile;
     }
   }
@@ -96,9 +96,9 @@ public class AnalysisDataTest {
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
         reUploadCounter[0] = reUploadCounter[0] + 1;
-        return super.createBundle(token, orgName, files);
+        return super.createBundle(orgName, files);
       }
     };
 
@@ -130,7 +130,7 @@ public class AnalysisDataTest {
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
         reUploadCounter[0] = reUploadCounter[0] + 1;
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
@@ -139,7 +139,7 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull <Req> CreateBundleResponse extendBundle(String token, String orgName, String bundleId, Req request) {
+      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
         final CreateBundleResponse response = new CreateBundleResponse();
         response.setStatusCode(404);
         return response;
@@ -163,7 +163,7 @@ public class AnalysisDataTest {
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
         response.setStatusCode(200);
@@ -171,9 +171,9 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull <Req> CreateBundleResponse extendBundle(String token, String orgName, String bundleId, Req request) {
+      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
         reUploadCounter[0] = reUploadCounter[0] + 1;
-        return super.extendBundle(token, orgName, bundleId, request);
+        return super.extendBundle(orgName, bundleId, request);
       }
     };
 
@@ -199,7 +199,6 @@ public class AnalysisDataTest {
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
       public @NotNull GetAnalysisResponse getAnalysis(
-        String token,
         String orgName,
         String bundleId,
         Integer severity,
@@ -252,7 +251,7 @@ public class AnalysisDataTest {
 
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
         response.setStatusCode(200);
@@ -260,7 +259,7 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull <Req> CreateBundleResponse extendBundle(String token, String orgName, String bundleId, Req request) {
+      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.emptyList());
         response.setStatusCode(200);
@@ -268,7 +267,7 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull CreateBundleResponse checkBundle(String token, String orgName, String bundleId) {
+      public @NotNull CreateBundleResponse checkBundle(String orgName, String bundleId) {
         final CreateBundleResponse response = new CreateBundleResponse("bundleHash", Collections.emptyList());
         response.setStatusCode(200);
         response.setStatusDescription("Fake successful bundle check");
@@ -277,7 +276,6 @@ public class AnalysisDataTest {
 
       @Override
       public @NotNull GetAnalysisResponse getAnalysis(
-        String token,
         String orgName,
         String bundleId,
         Integer severity,

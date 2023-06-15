@@ -347,7 +347,7 @@ public abstract class AnalysisDataBase {
     // no needs to check login here as it will be checked anyway during every api response's check
     // if (!LoginUtils.isLogged(project, false)) return EMPTY_MAP;
 
-    List<String> missingFiles = null;
+    List<String> missingFiles;
     try {
       missingFiles = createBundleStep(project, filesToProceed, filesToRemove, progress);
     } catch (ApiCallNotSucceedException e) {
@@ -559,7 +559,7 @@ public abstract class AnalysisDataBase {
     @NotNull String bundleId
   ) throws TokenInvalid401Exception, BundleIdExpire404Exception, ApiCallNotSucceedException {
     CreateBundleResponse checkBundleResponse =
-      restApi.checkBundle(deepCodeParams.getSessionToken(), deepCodeParams.getOrgDisplayName(), bundleId);
+      restApi.checkBundle(deepCodeParams.getOrgDisplayName(), bundleId);
     checkApiCallSucceed(project, checkBundleResponse, "Bad CheckBundle request: ");
     return checkBundleResponse.getMissingFiles();
   }
@@ -592,11 +592,10 @@ public abstract class AnalysisDataBase {
     final CreateBundleResponse bundleResponse;
     // check if bundleID for the project already been created
     if (parentBundleId.isEmpty())
-      bundleResponse = restApi.createBundle(deepCodeParams.getSessionToken(), deepCodeParams.getOrgDisplayName(), request);
+      bundleResponse = restApi.createBundle(deepCodeParams.getOrgDisplayName(), request);
     else {
       bundleResponse =
         restApi.extendBundle(
-          deepCodeParams.getSessionToken(),
           deepCodeParams.getOrgDisplayName(),
           parentBundleId,
           new ExtendBundleWithHashRequest(request, removedFiles));
@@ -632,7 +631,6 @@ public abstract class AnalysisDataBase {
     // todo make network request in parallel with collecting data
     EmptyResponse uploadFilesResponse =
       restApi.extendBundle(
-        deepCodeParams.getSessionToken(),
         deepCodeParams.getOrgDisplayName(),
         bundleId,
         new ExtendBundleWithContentRequest(files, Collections.emptyList()));
@@ -656,7 +654,6 @@ public abstract class AnalysisDataBase {
       if (counter > 0) pdUtils.delay(PlatformDependentUtilsBase.DEFAULT_DELAY, progress);
       response =
         restApi.getAnalysis(
-          deepCodeParams.getSessionToken(),
           deepCodeParams.getOrgDisplayName(),
           bundleId,
           deepCodeParams.getMinSeverity(),
