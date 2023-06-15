@@ -45,11 +45,11 @@ import java.util.Objects
 */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class DeepCodeRestApiImplTest {
-    private val settings = SnykApplicationSettingsStateService()
 
     @Before
     fun setUp() {
         unmockkAll()
+        val settings = SnykApplicationSettingsStateService()
         settings.token = loggedToken
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { pluginSettings() } returns settings
