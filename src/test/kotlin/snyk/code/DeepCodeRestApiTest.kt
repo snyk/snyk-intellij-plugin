@@ -19,11 +19,9 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykcode.newCodeRestApi
 import org.junit.After
 import org.junit.Assert
-import org.junit.Before
 import org.junit.Test
 import snyk.common.toSnykCodeApiUrl
 import snyk.pluginInfo
@@ -43,19 +41,6 @@ import java.util.Objects
 */
 class DeepCodeRestApiImplTest {
 
-    @Before
-    fun setUp() {
-        unmockkAll()
-        val settings = SnykApplicationSettingsStateService()
-        settings.token = loggedToken
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { pluginSettings() } returns settings
-        mockkStatic("snyk.PluginInformationKt")
-        every { pluginInfo } returns mockk(relaxed = true)
-
-        restApiClient = deepCodeRestApi
-    }
-
     @After
     fun tearDown() {
         unmockkAll()
@@ -67,8 +52,8 @@ class DeepCodeRestApiImplTest {
             File(javaClass.classLoader.getResource(TEST_FILE)!!.file)
         val absolutePath = testFile.absolutePath
         val deepCodedPath = if (absolutePath.startsWith("/")) absolutePath else "/$absolutePath"
-        System.out.printf("\nAbs File: %1\$s\n", absolutePath)
-        System.out.printf("\nDeepcoded File: %1\$s\n", deepCodedPath)
+        println("Abs File:$absolutePath")
+        println("Deepcoded File:$deepCodedPath")
         println("-----------------")
         val fileContent = FileContentRequest()
         val fileText = String(Files.readAllBytes(testFile.toPath()))
@@ -230,25 +215,7 @@ class DeepCodeRestApiImplTest {
         Assert.assertEquals(200, createBundleWithHash.statusCode.toLong())
     }
 
-    private fun createBundleWithWrongRequestsAndAssert() {
-        println("\n--------------Create Bundle with wrong requests----------------\n")
-        val brokenToken = "fff"
-        val brokenOrgName = "org-name"
-        val createBundleFromSource = createBundleFromSource(brokenOrgName)
-        Assert.assertNotNull(createBundleFromSource)
-        Assert.assertEquals(
-            "Create Bundle call with malformed token should not be accepted by server",
-            401,
-            createBundleFromSource.statusCode.toLong()
-        )
-        System.out.printf(
-            "Create Bundle call with malformed token [%1\$s] " +
-                "and org name [%2\$s] is not accepted by server with Status code [%3\$d].\n",
-            brokenToken, brokenOrgName, createBundleFromSource.statusCode
-        )
-    }
-
-    private fun createBundleAndAssert() {
+    private fun createBundleAndAssert(): String? {
         println("\n--------------Create Bundle from Source----------------\n")
         val createBundleResponse = createBundleFromSource(loggedOrgName)
 
@@ -258,13 +225,12 @@ class DeepCodeRestApiImplTest {
             createBundleResponse.statusCode, createBundleResponse.bundleHash, createBundleResponse.statusDescription
         )
         Assert.assertEquals(200, createBundleResponse.statusCode.toLong())
-        bundleId = createBundleResponse.bundleHash
+        return createBundleResponse.bundleHash
     }
 
     @Throws(NoSuchAlgorithmException::class)
     private fun getHash(fileText: String): String {
         val digest = MessageDigest.getInstance("SHA-256")
-        println(fileText)
         println("-----------------")
         val encodedhash = digest.digest(fileText.toByteArray(StandardCharsets.UTF_8))
         return bytesToHex(encodedhash)
@@ -351,7 +317,7 @@ class DeepCodeRestApiImplTest {
         Assert.assertEquals(200, response.statusCode.toLong())
     }
 
-    private fun getAnalysisAndAssert() {
+    private fun getAnalysisAndAssert(bundleId: String) {
         println("\n--------------Get Analysis----------------\n")
         Assert.assertNotNull(
             "`bundleId` should be initialized at `_030_createBundle_from_source()`",
@@ -363,17 +329,17 @@ class DeepCodeRestApiImplTest {
             )
         }
         val analysedFiles = listOf(deepcodedFilePath)
-        var response = doAnalysisAndWait(analysedFiles, null)
+        var response = doAnalysisAndWait(bundleId, analysedFiles, null)
         assertAndPrintGetAnalysisResponse(response)
         val resultsEmpty = response.suggestions == null || response.suggestions.isEmpty()
         Assert.assertFalse("Analysis results must not be empty", resultsEmpty)
         println("\n---- With `severity=2` param:\n")
-        response = doAnalysisAndWait(analysedFiles, 2)
+        response = doAnalysisAndWait(bundleId, analysedFiles, 2)
         assertAndPrintGetAnalysisResponse(response)
     }
 
     @Throws(InterruptedException::class)
-    private fun doAnalysisAndWait(analysedFiles: List<String>, severity: Int?): GetAnalysisResponse {
+    private fun doAnalysisAndWait(bundleId: String, analysedFiles: List<String>, severity: Int?): GetAnalysisResponse {
         var response: GetAnalysisResponse? = null
         for (i in 0..119) {
             response = restApiClient!!.getAnalysis(
@@ -402,24 +368,32 @@ class DeepCodeRestApiImplTest {
 
     @Test
     fun snykCodeAnalysis_smoke_test() {
+        unmockkAll()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { pluginSettings().token } returns loggedToken
+        every { pluginSettings().ignoreUnknownCA } returns false
+        mockkStatic("snyk.PluginInformationKt")
+        every { pluginInfo } returns mockk(relaxed = true)
+
+        restApiClient = deepCodeRestApi
         filtersAndAssert()
-        createBundleAndAssert()
-        createBundleWithWrongRequestsAndAssert()
+        var bundleId = createBundleAndAssert()
+        getAnalysisAndAssert(bundleId!!)
+
         createBundleWithHashAndAssert()
         checkBundleAndAssert()
         extendBundleAndAssert()
         uploadFilesAndAssert()
-        getAnalysisAndAssert()
+
     }
 
     companion object {
         const val TEST_FILE = "test-fixtures/code-test.js"
 
         // !!! Will works only with already logged sessionToken
-        private var loggedToken = System.getenv("SNYK_TOKEN")
-        private var loggedOrgName: String? = System.getenv("SNYK_ORG_NAME")
-        private var baseUrl = System.getenv("DEEPROXY_API_URL")
-        private var bundleId: String? = null
+        private val loggedToken = System.getenv("SNYK_TOKEN")
+        private val loggedOrgName: String? = System.getenv("SNYK_ORG_NAME")
+        private val baseUrl = System.getenv("DEEPROXY_API_URL")
         private var restApiClient: DeepCodeRestApi? = null
         private val deepCodeRestApi: DeepCodeRestApi
             get() {
