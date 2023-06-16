@@ -13,9 +13,11 @@ import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykCliAuthenticationService
+import junit.framework.TestCase.assertEquals
 import okhttp3.HttpUrl
 import okhttp3.Interceptor.Chain
 import okhttp3.Request
+import org.apache.commons.lang.SystemUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -41,8 +43,13 @@ class TokenInterceptorTest {
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic("snyk.PluginInformationKt")
         every { pluginInfo } returns mockk(relaxed = true)
+        every { pluginInfo.integrationName } returns "Snyk Intellij Plugin"
+        every { pluginInfo.integrationVersion } returns "2.4.61"
+        every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
+        every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
         every { chain.request().newBuilder() } returns requestMock
+        every { requestMock.addHeader(any(), any()) } returns requestMock
         every { chain.request().url } returns HttpUrl.Builder().scheme("https").host("app.snykgov.io")
             .addPathSegment("api").build()
         every { projectManager.openProjects } returns arrayOf(project)
@@ -70,5 +77,32 @@ class TokenInterceptorTest {
         verify { requestMock.addHeader(eq("Accept"), eq("application/json")) }
         verify { whoamiService.execute() }
         verify { authenticationService.executeGetConfigApiCommand() }
+    }
+
+    @Test
+    fun `user agent header is added`() {
+        val expectedHeader = tokenInterceptor.getUserAgentString()
+        every { pluginSettings().token } returns "abcd"
+
+        tokenInterceptor.intercept(chain)
+
+        verify { requestMock.addHeader("User-Agent", expectedHeader) }
+    }
+
+    @Test
+    fun `user agent string is correct`() {
+        tokenInterceptor.getUserAgentString()
+
+        verify { pluginInfo.integrationName }
+        verify { pluginInfo.integrationVersion }
+        verify { pluginInfo.integrationEnvironment }
+        verify { pluginInfo.integrationEnvironmentVersion }
+
+        val expectedUserAgent =
+            """IntelliJ IDEA/2020.3.2 (${SystemUtils.OS_NAME};${SystemUtils.OS_ARCH}) Snyk Intellij Plugin/2.4.61 (IntelliJ IDEA/2020.3.2)"""
+
+        assertEquals(
+            expectedUserAgent, tokenInterceptor.getUserAgentString()
+        )
     }
 }
