@@ -113,7 +113,7 @@ public abstract class DeepCodeUtilsBase {
    */
   private void initSupportedExtentionsAndConfigFiles() {
     GetFiltersResponse filtersResponse =
-      restApi.getFilters(deepCodeParams.getSessionToken());
+      restApi.getFilters();
     if (filtersResponse.getStatusCode() == 200) {
       supportedExtensions =
         filtersResponse.getExtensions().stream()

@@ -18,6 +18,9 @@
     <ID>MatchingDeclarationName:DeepCodeRestApiTest.kt$DeepCodeRestApiImplTest</ID>
     <ID>TooGenericExceptionCaught:SnykSettingsDialog.kt$SnykSettingsDialog$e: Exception</ID>
     <ID>TooGenericExceptionCaught:SnykToolWindowPanel.kt$SnykToolWindowPanel$e: Exception</ID>
+    <ID>LongMethod:DeepCodeRestApiTest.kt$DeepCodeRestApiImplTest$@Test fun snykCodeAnalysis()</ID>
+    <ID>LongMethod:DeepCodeRestApiTest.kt$DeepCodeRestApiImplTest$private fun checkBundle()</ID>
+    <ID>LongMethod:DeepCodeRestApiTest.kt$DeepCodeRestApiImplTest$private fun checkBundleAndAssert()</ID>
   </ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>ChainWrapping:io.snyk.plugin.services.SnykCliDownloaderService.kt:115</ID>

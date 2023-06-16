@@ -73,7 +73,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
       final TrustManager[] trustAllCertificates = new TrustManager[]{x509TrustManager};
 
       try {
-        final String sslProtocol = "SSL";
+        final String sslProtocol = "TLSv1.3";
         SSLContext sslContext = SSLContext.getInstance(sslProtocol);
         sslContext.init(null, trustAllCertificates, new SecureRandom());
         SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
@@ -174,7 +174,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse createBundle(String token, String orgName, FileContentRequest files) {
+  public CreateBundleResponse createBundle(String orgName, FileContentRequest files) {
     return doCreateBundle(orgName, files);
   }
 
@@ -185,7 +185,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse createBundle(String token, String orgName, FileHashRequest files) {
+  public CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
     return doCreateBundle(orgName, files);
   }
 
@@ -205,7 +205,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse checkBundle(String token, String orgName, String bundleId) {
+  public CreateBundleResponse checkBundle(String orgName, String bundleId) {
     CheckBundleCall checkBundleCall = retrofit.create(CheckBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
@@ -264,7 +264,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   @Override
   @NotNull
   public <Req> CreateBundleResponse extendBundle(
-    String token, String orgName, String bundleId, Req request) {
+    String orgName, String bundleId, Req request) {
     ExtendBundleCall extendBundleCall = retrofit.create(ExtendBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
@@ -330,7 +330,6 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   @Override
   @NotNull
   public GetAnalysisResponse getAnalysis(
-    String token,
     String orgName,
     String bundleId,
     Integer severity,
@@ -369,7 +368,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
 
   private interface GetFiltersCall {
     @GET("filters")
-    Call<GetFiltersResponse> doGetFilters(@Header("Session-Token") String token);
+    Call<GetFiltersResponse> doGetFilters();
   }
 
   /**
@@ -379,10 +378,10 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public GetFiltersResponse getFilters(String token) {
+  public GetFiltersResponse getFilters() {
     GetFiltersCall getFiltersCall = retrofit.create(GetFiltersCall.class);
     try {
-      Response<GetFiltersResponse> retrofitResponse = getFiltersCall.doGetFilters(token).execute();
+      Response<GetFiltersResponse> retrofitResponse = getFiltersCall.doGetFilters().execute();
       GetFiltersResponse result = retrofitResponse.body();
       if (result == null) result = new GetFiltersResponse();
       result.setStatusCode(retrofitResponse.code());
