@@ -65,13 +65,24 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
         line2matcher -> {
           final int lineIndex = line2matcher.getKey();
           final PathMatcher pathMatcher = line2matcher.getValue();
-          return pathMatcher.matches(path)
-            &&
-            // An optional prefix "!" which negates the pattern;
-            // any matching file excluded by a _previous_ pattern will become included again.
-            map_ignore2ReIncludePathMatchers.get(ignoreFile).entrySet().stream()
-              .filter(e -> e.getKey() > lineIndex)
-              .noneMatch(e -> e.getValue().matches(path));
+          boolean matches = pathMatcher.matches(path);
+          if (matches) {
+            dcLogger.logInfo(
+              "isIgnoredFile: "
+                + pdUtils.getFilePath(ignoreFile)
+                + " line: "
+                + lineIndex
+                + " path: "
+                + filePath
+                + " matches: "
+                + true);
+          }
+          // An optional prefix "!" which negates the pattern;
+          // any matching file excluded by a _previous_ pattern will become included again.
+          boolean includeAgain = map_ignore2ReIncludePathMatchers.get(ignoreFile).entrySet().stream()
+            .filter(e -> e.getKey() > lineIndex)
+            .noneMatch(e -> e.getValue().matches(path));
+          return matches && includeAgain;
         });
   }
 
@@ -183,8 +194,19 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
 
       // glob sanity check for validity
       try {
+        String glob = prefix + line + postfix;
         PathMatcher globToMatch =
-          FileSystems.getDefault().getPathMatcher("glob:" + prefix + line + postfix);
+          FileSystems.getDefault().getPathMatcher("glob:" + glob);
+
+        dcLogger.logInfo(
+          "parse_ignoreFile2Globs: "
+            + pdUtils.getFilePath(ignoreFile)
+            + " line: "
+            + lineIndex
+            + " pattern: "
+            + glob
+            + " isReIncludePattern: "
+            + isReIncludePattern);
 
         if (isReIncludePattern) {
           reIncludedMatchers.put(lineIndex, globToMatch);
