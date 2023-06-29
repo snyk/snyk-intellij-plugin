@@ -2,3 +2,7 @@
 # Check syntax on https://deepcode.freshdesk.com/support/solutions/articles/60000531055-how-can-i-ignore-files-or-directories-
 # Check examples on https://github.com/github/gitignore
 
+node_modules/
+bin/
+build/
+classes/
