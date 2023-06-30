@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.4.63]
+
+### Fixed
+
+- don't populate `.dcignore` with default ignore patterns
+
 ## [2.4.62]
 
 ### Fixed
