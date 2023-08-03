@@ -4,6 +4,7 @@ package snyk.trust
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.ui.Messages
 import snyk.SnykBundle
@@ -18,14 +19,14 @@ private val LOG = Logger.getInstance("snyk.trust.TrustedProjects")
  *
  * @return `false` if the user chose not to scan the project at all; `true` otherwise
  */
-fun confirmScanningAndSetWorkspaceTrustedStateIfNeeded(projectFileOrDir: Path): Boolean {
+fun confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project: Project, projectFileOrDir: Path): Boolean {
     val projectDir = if (Files.isDirectory(projectFileOrDir)) projectFileOrDir else projectFileOrDir.parent
 
     val trustService = service<WorkspaceTrustService>()
     val trustedState = trustService.isPathTrusted(projectDir)
     if (!trustedState) {
         LOG.info("Asking user to trust the project ${projectDir.fileName}")
-        return when (confirmScanningUntrustedProject(projectDir)) {
+        return when (confirmScanningUntrustedProject(project, projectDir)) {
             ScanUntrustedProjectChoice.TRUST_AND_SCAN -> {
                 trustService.addTrustedPath(projectDir)
                 true
@@ -38,7 +39,7 @@ fun confirmScanningAndSetWorkspaceTrustedStateIfNeeded(projectFileOrDir: Path): 
     return true
 }
 
-private fun confirmScanningUntrustedProject(projectDir: Path): ScanUntrustedProjectChoice {
+private fun confirmScanningUntrustedProject(project: Project, projectDir: Path): ScanUntrustedProjectChoice {
     val fileName = projectDir.fileName ?: projectDir.toString()
     val title = SnykBundle.message("snyk.trust.dialog.warning.title", fileName)
     val message = SnykBundle.message("snyk.trust.dialog.warning.text")
@@ -53,9 +54,9 @@ private fun confirmScanningUntrustedProject(projectDir: Path): ScanUntrustedProj
             .icon(Messages.getWarningIcon())
             .yesText(trustButton)
             .noText(distrustButton)
-            .show()
+            .ask(project)
 
-        choice = if (result == Messages.YES) {
+        choice = if (result) {
             LOG.info("User trusts the project $fileName for scans")
             ScanUntrustedProjectChoice.TRUST_AND_SCAN
         } else {

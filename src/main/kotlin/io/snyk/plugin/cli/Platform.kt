@@ -2,7 +2,6 @@ package io.snyk.plugin.cli
 
 import java.io.IOException
 import java.nio.file.Paths
-import java.util.Locale
 import java.util.Properties
 
 class Platform(val snykWrapperFileName: String) {
@@ -18,7 +17,7 @@ class Platform(val snykWrapperFileName: String) {
         @Suppress("MoveVariableDeclarationIntoWhen")
         @Throws(PlatformDetectionException::class)
         fun detect(systemProperties: Properties): Platform {
-            val architectureName = (systemProperties["os.name"] as String).toLowerCase(Locale.ENGLISH)
+            val architectureName = (systemProperties["os.name"] as String).lowercase()
             return when (architectureName) {
                 "linux" -> if (Paths.get("/etc/alpine-release").toFile().exists()) LINUX_ALPINE else LINUX
                 "mac os x", "darwin", "osx" -> MAC_OS

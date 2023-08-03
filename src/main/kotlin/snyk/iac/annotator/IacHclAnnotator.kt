@@ -7,9 +7,9 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import com.intellij.psi.util.elementType
-import org.intellij.plugins.hcl.psi.HCLBlock
-import org.intellij.plugins.hcl.psi.HCLElement
-import org.intellij.plugins.hcl.psi.HCLProperty
+import org.intellij.terraform.hcl.psi.HCLBlock
+import org.intellij.terraform.hcl.psi.HCLElement
+import org.intellij.terraform.hcl.psi.HCLProperty
 import snyk.iac.IacIssue
 
 private val LOG = logger<IacHclAnnotator>()

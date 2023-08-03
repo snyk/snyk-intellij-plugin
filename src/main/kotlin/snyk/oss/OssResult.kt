@@ -9,10 +9,10 @@ class OssResult(
     errors: List<SnykError> = emptyList()
 ) : CliResult<OssVulnerabilitiesForFile>(allOssVulnerabilities, errors) {
 
-    override val issuesCount = allOssVulnerabilities?.sumBy { it.uniqueCount }
+    override val issuesCount = allOssVulnerabilities?.sumOf { it.uniqueCount }
 
     override fun countBySeverity(severity: Severity): Int? {
-        return allCliIssues?.sumBy { vulnerabilitiesForFile ->
+        return allCliIssues?.sumOf { vulnerabilitiesForFile ->
             vulnerabilitiesForFile.vulnerabilities
                 .filter { it.getSeverity() == severity }
                 .distinctBy { it.id }

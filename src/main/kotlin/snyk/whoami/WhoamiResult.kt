@@ -9,7 +9,7 @@ class WhoamiResult(
     errors: List<SnykError> = emptyList()
 ) : CliResult<WhoamiOutput>(allWhoamiOutputs, errors) {
 
-    override val issuesCount = allWhoamiOutputs?.sumBy { it.uniqueCount }
+    override val issuesCount = allWhoamiOutputs?.sumOf { it.uniqueCount }
 
     override fun countBySeverity(severity: Severity): Int {
         return 0
