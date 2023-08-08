@@ -3,15 +3,12 @@ package snyk.container
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.PerformInBackgroundOption
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.RunnableCallable
 import com.intellij.util.concurrency.NonUrgentExecutor
 import com.jetbrains.rd.util.concurrentMapOf
+import java.util.concurrent.Callable
 
 @Service
 class KubernetesImageCache(val project: Project) {
@@ -23,23 +20,13 @@ class KubernetesImageCache(val project: Project) {
     }
 
     fun scanProjectForKubernetesFiles() {
-        val callable = RunnableCallable {
+        val callable = Callable {
             ProjectRootManager.getInstance(project).fileIndex.iterateContent { virtualFile ->
                 extractFromFileAndAddToCache(virtualFile)
                 true
             }
         }
-        object : Task.Backgroundable(
-            project,
-            "Scanning project for Kubernetes files",
-            true,
-            PerformInBackgroundOption.ALWAYS_BACKGROUND
-        ) {
-            override fun run(indicator: ProgressIndicator) {
-                ReadAction.nonBlocking(callable).wrapProgress(indicator).submit(NonUrgentExecutor.getInstance())
-            }
-        }.queue()
-
+        ReadAction.nonBlocking(callable).submit(NonUrgentExecutor.getInstance())
     }
 
     fun getKubernetesWorkloadFilesFromCache(): Set<VirtualFile> = images.keys
