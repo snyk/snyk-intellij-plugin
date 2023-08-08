@@ -190,7 +190,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
             val generalCommandLine = GeneralCommandLine("")
             val expectedProxy =
-                "http://${encodedLogin}:${encodedPassword}@" +
+                "http://$encodedLogin:$encodedPassword@" +
                     "${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")

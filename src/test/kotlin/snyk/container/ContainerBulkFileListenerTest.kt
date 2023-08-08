@@ -28,7 +28,6 @@ import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.notExists
 
-@Suppress("FunctionName")
 class ContainerBulkFileListenerTest : BasePlatformTestCase() {
 
     override fun setUp() {
@@ -49,17 +48,17 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         imageCache.clear()
     }
 
-    private fun createNewFileInProjectRoot(name: String): File {
+    private fun createNewFileInProjectRoot(): File {
         val projectPath = Paths.get(project.basePath!!)
         if (projectPath.notExists(LinkOption.NOFOLLOW_LINKS)) {
             projectPath.createDirectories()
         }
-        return File(project.basePath + File.separator + name).apply { createNewFile() }
+        return File(project.basePath + File.separator + "kubernetes-test.yaml").apply { createNewFile() }
     }
 
     fun `test Container should update image cache when yaml file is changed`() {
         setUpContainerTest()
-        val path = createNewFileInProjectRoot("kubernetes-test.yaml").toPath()
+        val path = createNewFileInProjectRoot().toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
         val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
         require(virtualFile != null)
@@ -289,7 +288,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         createFakeContainerResultInCache(psiFile)
         assertFalse(isContainerUpdateNeeded())
 
-        var exceptionThrown = false
+        val exceptionThrown: Boolean
         val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
         try {
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ExceptionProducerFileListener())
@@ -300,7 +299,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
             exceptionThrown = try {
                 FileDocumentManager.getInstance().saveAllDocuments()
                 false
-            } catch (e: RuntimeException) {
+            } catch (ignored: RuntimeException) {
                 true
             }
         } finally {

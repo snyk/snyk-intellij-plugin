@@ -116,9 +116,9 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
 
     private fun setUpTest(): SnykCodeFile {
         val filePathToCheck = project.basePath + "/node_modules/1.js"
-        File(filePathToCheck).parentFile.mkdirs()
-            && File(filePathToCheck).createNewFile()
-            || throw IOException("Failed to create file $filePathToCheck")
+        File(filePathToCheck).parentFile.mkdirs() &&
+            File(filePathToCheck).createNewFile() ||
+            throw IOException("Failed to create file $filePathToCheck")
 
         val fileToCheck = findFile(project, filePathToCheck)
         initiateAllMissedIgnoreFilesRescan()

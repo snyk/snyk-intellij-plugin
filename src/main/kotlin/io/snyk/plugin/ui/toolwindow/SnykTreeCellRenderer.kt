@@ -107,8 +107,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
             is IacFileTreeNode -> {
                 val iacVulnerabilitiesForFile = value.userObject as IacIssuesForFile
-                nodeIcon =
-                    PackageManagerIconProvider.getIcon(iacVulnerabilitiesForFile.packageManager.lowercase(Locale.getDefault()))
+                nodeIcon = PackageManagerIconProvider.getIcon(
+                    iacVulnerabilitiesForFile.packageManager.lowercase(Locale.getDefault())
+                )
                 text = iacVulnerabilitiesForFile.targetFile + ProductType.IAC.getCountText(value.childCount)
 
                 val snykCachedResults = getSnykCachedResults(value.project)
