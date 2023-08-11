@@ -59,10 +59,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install Snyk
-        run: |
-          curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
-          sudo chmod +x ./snyk
-          sudo mv ./snyk /usr/bin/
+        uses: snyk/actions/setup@0.4.0
 
       - name: Snyk Monitor SCA
         run: snyk monitor --all-projects --exclude=integTest --org=${{ vars.PLATFORM_HAMMERHEAD_ORG_ID }}
