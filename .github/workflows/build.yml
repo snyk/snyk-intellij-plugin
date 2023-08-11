@@ -50,6 +50,22 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
 
+  snyk:
+    name: Snyk Tests
+    needs: gradleValidation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Sources
+        uses: actions/checkout@v2
+
+      - name: Install Snyk
+        uses: snyk/actions/setup@0.4.0
+
+      - name: Snyk Monitor SCA
+        run: snyk monitor --all-projects --exclude=integTest --org=${{ vars.PLATFORM_HAMMERHEAD_ORG_ID }}
+        env:
+          SNYK_TOKEN: ${{ secrets.HAMMERHEAD_SNYK_INTELLIJ_PLUGIN_TOKEN }}
+
   pluginVerifier:
     name: Plugin Verifier
     needs: gradleValidation
