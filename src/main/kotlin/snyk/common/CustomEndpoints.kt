@@ -105,6 +105,15 @@ fun URI.isOauth() = host != null && host.endsWith(".snykgov.io")
 
 fun URI.isDev() = isSnykDomain() && host.startsWith("dev.")
 
+fun URI.isFedramp() = isOauth() && host.contains("fedramp")
+
+fun isFedramp(): Boolean {
+    val settings = pluginSettings()
+    return settings.customEndpointUrl
+        ?.let { URI(it) }
+        ?.isFedramp() ?: false
+}
+
 internal fun String.removeTrailingSlashesIfPresent(): String {
     val candidate = this.replace(Regex("/+$"), "")
     return try {
