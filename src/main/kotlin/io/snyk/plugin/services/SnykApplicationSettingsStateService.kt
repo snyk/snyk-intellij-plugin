@@ -49,6 +49,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     var sastOnServerEnabled: Boolean? = null
     var localCodeEngineEnabled: Boolean? = null
+    var localCodeEngineUrl: String? = ""
     var reportFalsePositivesEnabled: Boolean? = null
     var usageAnalyticsEnabled = true
     var crashReportingEnabled = true

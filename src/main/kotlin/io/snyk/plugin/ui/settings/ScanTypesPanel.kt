@@ -16,6 +16,7 @@ import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
@@ -218,26 +219,20 @@ class ScanTypesPanel(
             showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")
             return
         }
-
+        val sastCliConfigSettings: CliConfigSettings? = getSnykApiService().getSastSettings();
+        settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
+        settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
+        settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
         val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
         showSnykCodeAlert(
             if (snykCodeAvailable) "" else "Snyk Code only works in SAAS mode (i.e. no Custom Endpoint usage)"
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                val sastCliConfigSettings = getSnykApiService().getSastSettings()
-                settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
-                settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
+
                 when (settings.sastOnServerEnabled) {
                     true -> {
-                        if (settings.localCodeEngineEnabled == true) {
-                            showSnykCodeAlert(
-                                message = "Snyk Code is configured to use a Local Code Engine instance." +
-                                    " This setup is not yet supported."
-                            )
-                        } else {
-                            doShowFilesToUpload()
-                        }
+                        doShowFilesToUpload()
                     }
 
                     false -> {

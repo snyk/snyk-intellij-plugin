@@ -168,22 +168,12 @@ class SnykTaskQueueService(val project: Project) {
                 val sastCliConfigSettings = getSnykApiService().getSastSettings()
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
+                settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
                 settings.reportFalsePositivesEnabled = sastCliConfigSettings?.reportFalsePositivesEnabled
                 when (settings.sastOnServerEnabled) {
                     true -> {
-                        if (settings.localCodeEngineEnabled == true) {
-                            SnykBalloonNotifications.showSastForLocalCodeEngineMessage(project)
-                            scanPublisher?.scanningSnykCodeError(
-                                SnykError(
-                                    SnykBalloonNotifications.sastForLocalCodeEngineMessage, project.basePath ?: ""
-                                )
-                            )
-                            settings.snykCodeSecurityIssuesScanEnable = false
-                            settings.snykCodeQualityIssuesScanEnable = false
-                        } else {
-                            getSnykCode(project)?.scan()
-                            scanPublisher?.scanningStarted()
-                        }
+                        getSnykCode(project)?.scan()
+                        scanPublisher?.scanningStarted()
                     }
 
                     false -> {

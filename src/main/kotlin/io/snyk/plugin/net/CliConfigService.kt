@@ -25,7 +25,13 @@ data class CliConfigSettings(
     val localCodeEngine: LocalCodeEngine,
 
     @SerializedName("reportFalsePositivesEnabled")
-    val reportFalsePositivesEnabled: Boolean
+    val reportFalsePositivesEnabled: Boolean,
+
+    @SerializedName("code")
+    val code: Int,
+
+    @SerializedName("userMessage")
+    val userMessage: String
 )
 
 /**
@@ -33,5 +39,11 @@ data class CliConfigSettings(
  */
 data class LocalCodeEngine(
     @SerializedName("enabled")
-    val enabled: Boolean
+    val enabled: Boolean,
+
+    @SerializedName("url")
+    val url: String,
+
+    @SerializedName("allowCloudUpload")
+    val allowCloudUpload: Boolean
 )

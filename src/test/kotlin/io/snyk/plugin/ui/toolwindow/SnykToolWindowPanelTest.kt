@@ -124,8 +124,10 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { settings.pluginFirstRun } returns true
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
-            LocalCodeEngine(false),
-            false
+            LocalCodeEngine(false, "", false),
+            false,
+            200,
+            ""
         )
         justRun { taskQueueService.scan() }
 
@@ -144,8 +146,10 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     fun `should automatically enable all products on first run after Auth`() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
-            LocalCodeEngine(false),
-            false
+            LocalCodeEngine(false, "", false),
+            false,
+            200,
+            ""
         )
         val application = ApplicationManager.getApplication()
         application.replaceService(

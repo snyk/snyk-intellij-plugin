@@ -67,13 +67,17 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         snykApiServiceMock = mockk()
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
-            LocalCodeEngine(false),
-            false
+            LocalCodeEngine(false, "", false),
+            false,
+            200,
+            ""
         )
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
-            LocalCodeEngine(false),
-            false
+            LocalCodeEngine(false, "", false),
+                false,
+            200,
+            ""
         )
     }
 
@@ -192,7 +196,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     }
 
     @Test
-    fun `test should disable Code settings when LCE is enabled`() {
+    fun `test should enables Code settings when LCE is enabled`() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         val settings = pluginSettings()
         settings.sastOnServerEnabled = true
@@ -203,8 +207,10 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         replaceSnykApiServiceMockInContainer()
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
-            LocalCodeEngine(true),
-            false
+            LocalCodeEngine(true, "http://local.engine", false),
+            false,
+            200,
+            ""
         )
 
         snykTaskQueueService.scan()

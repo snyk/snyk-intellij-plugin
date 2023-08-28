@@ -95,11 +95,9 @@ fun insertTitleAndResizableTextIntoPanelColumns(
 
 fun snykCodeAvailabilityPostfix(): String {
     val sastOnServerEnabled = pluginSettings().sastOnServerEnabled
-    val localCodeEngineEnabled = pluginSettings().localCodeEngineEnabled
     return when {
         !isSnykCodeAvailable(pluginSettings().customEndpointUrl) -> " (disabled for endpoint)"
-        (sastOnServerEnabled == null && localCodeEngineEnabled == null) -> " (unreachable server settings)"
-        (sastOnServerEnabled != false && localCodeEngineEnabled == true) -> " (disabled due to Local Code Engine)"
+        sastOnServerEnabled == null -> " (unreachable server settings)"
         sastOnServerEnabled != true -> " (disabled in Snyk.io)"
         else -> ""
     }

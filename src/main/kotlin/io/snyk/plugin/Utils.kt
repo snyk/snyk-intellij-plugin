@@ -44,6 +44,7 @@ import snyk.advisor.SnykAdvisorModel
 import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
+import snyk.common.isLocalCodeEngine
 import snyk.common.isSnykTenant
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
@@ -153,7 +154,8 @@ fun isUrlValid(url: String?): Boolean {
 
     return try {
         val uri = URL(url).toURI()
-        return uri.isSnykTenant()
+
+        return uri.isSnykTenant() || uri.isLocalCodeEngine()
     } catch (throwable: Throwable) {
         false
     }
