@@ -23,8 +23,6 @@ class AmplitudeExperimentServiceTest {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { pluginSettings() } returns SnykApplicationSettingsStateService()
-        cut = AmplitudeExperimentService()
-        cut.setApiClient(amplitudeApiClientMock)
         user = ExperimentUser("testUser")
     }
 
@@ -37,8 +35,21 @@ class AmplitudeExperimentServiceTest {
     fun `fetch should call amplitude for data with the userId`() {
         every { amplitudeApiClientMock.allVariants(any()) } returns emptyMap()
 
+        cut = AmplitudeExperimentService()
+        cut.setApiClient(amplitudeApiClientMock)
         cut.fetch(user)
 
         verify(exactly = 1) { amplitudeApiClientMock.allVariants(user) }
+    }
+
+    @Test
+    fun `fetch should not call amplitude for data with the userId when fedramp`() {
+        every { amplitudeApiClientMock.allVariants(any()) } returns emptyMap()
+        pluginSettings().customEndpointUrl = "https://api.fedramp.snykgov.io"
+        cut = AmplitudeExperimentService()
+
+        cut.fetch(user)
+
+        verify(exactly = 0) { amplitudeApiClientMock.allVariants(user) }
     }
 }

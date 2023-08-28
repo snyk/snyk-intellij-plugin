@@ -163,4 +163,15 @@ class CustomEndpointsTest {
         assertTrue(uri.isOauth())
     }
 
+    @Test
+    fun `isFedramp true for the right URI`() {
+        val uri = URI("https://app.fedramp.snykgov.io")
+        assertTrue(uri.isFedramp())
+    }
+
+    @Test
+    fun `isFedramp false for the right URI`() {
+        val uri = URI("https://app.fedddramp.snykgov.io")
+        assertFalse(uri.isFedramp())
+    }
 }
