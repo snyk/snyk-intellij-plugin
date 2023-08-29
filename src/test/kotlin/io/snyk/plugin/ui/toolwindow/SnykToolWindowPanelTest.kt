@@ -125,9 +125,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-            false,
-            200,
-            ""
+            false
         )
         justRun { taskQueueService.scan() }
 
@@ -147,9 +145,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-            false,
-            200,
-            ""
+            false
         )
         val application = ApplicationManager.getApplication()
         application.replaceService(

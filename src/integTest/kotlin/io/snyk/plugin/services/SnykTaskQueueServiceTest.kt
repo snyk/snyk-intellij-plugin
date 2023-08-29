@@ -68,16 +68,12 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-            false,
-            200,
-            ""
+            false
         )
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-                false,
-            200,
-            ""
+                false
         )
     }
 
@@ -208,9 +204,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(true, "http://local.engine", false),
-            false,
-            200,
-            ""
+            false
         )
 
         snykTaskQueueService.scan()

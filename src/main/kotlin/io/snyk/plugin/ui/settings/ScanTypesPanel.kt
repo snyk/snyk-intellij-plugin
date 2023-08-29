@@ -219,7 +219,7 @@ class ScanTypesPanel(
             showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")
             return
         }
-        val sastCliConfigSettings: CliConfigSettings? = getSnykApiService().getSastSettings();
+        val sastCliConfigSettings: CliConfigSettings? = getSnykApiService().getSastSettings()
         settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
         settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
         settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url

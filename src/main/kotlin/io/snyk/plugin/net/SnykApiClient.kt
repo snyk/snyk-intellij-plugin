@@ -32,9 +32,10 @@ class SnykApiClient(
             val response = retrofitCall.execute()
             if (!response.isSuccessful) {
                 if (response.code() == 422) {
-                    val cliConfigSetting = Gson().fromJson<CliConfigSettings?>(response.errorBody()?.string(), CliConfigSettings::class.java)
-                    if (cliConfigSetting?.userMessage?.isNotEmpty() == true) {
-                        throw ClientException(cliConfigSetting.userMessage)
+                    val responseBodyString = response.errorBody()?.string();
+                    val errorBody= Gson().fromJson<SastSettingsError?>(responseBodyString, CliConfigSettings::class.java)
+                    if (errorBody?.userMessage?.isNotEmpty() == true) {
+                        throw ClientException(errorBody.userMessage)
                     }
                     return null
                 }
@@ -43,13 +44,13 @@ class SnykApiClient(
             } else {
                 return response.body()
             }
+        } catch (t: ClientException) {
+            val defaultErrorMsg = "Your org's SAST settings are misconfigured."
+            val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
+            SnykBalloonNotificationHelper.showError(userMessage, null)
+            return null
         } catch (t: Throwable) {
             log.warn("Failed to execute '$apiName' network request: ${t.message}", t)
-            if (t is ClientException) {
-                val userMessage = if (t.message.isNullOrEmpty()) "Your org's SAST settings are misconfigured." else t.message!!
-                SnykBalloonNotificationHelper.showError(userMessage, null)
-                return null
-            }
             return executeRequest(apiName, retrofitCall.clone(), retryCounter - 1)
         }
     }
