@@ -33,7 +33,7 @@ class SnykApiClient(
             if (!response.isSuccessful) {
                 if (response.code() == 422) {
                     val responseBodyString = response.errorBody()?.string();
-                    val errorBody= Gson().fromJson<SastSettingsError?>(responseBodyString, CliConfigSettings::class.java)
+                    val errorBody= Gson().fromJson<CliConfigSettingsError?>(responseBodyString, CliConfigSettings::class.java)
                     if (errorBody?.userMessage?.isNotEmpty() == true) {
                         throw ClientException(errorBody.userMessage)
                     }

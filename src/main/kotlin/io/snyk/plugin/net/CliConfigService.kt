@@ -28,7 +28,7 @@ data class CliConfigSettings(
     val reportFalsePositivesEnabled: Boolean
 )
 
-data class SastSettingsError(
+data class CliConfigSettingsError(
     @SerializedName("userMessage")
     val userMessage: String
 )

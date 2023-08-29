@@ -32,7 +32,7 @@ fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
     if (uri.isLocalCodeEngine()) {
-        return uri.toString();
+        return uri.toString()
     }
     val baseUrl = when {
         uri.host == "snyk.io" ->
