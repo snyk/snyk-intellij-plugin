@@ -75,7 +75,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithFedrampCustomEndpoint() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
@@ -91,7 +90,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithOAuthEndpoint() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
