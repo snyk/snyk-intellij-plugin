@@ -84,12 +84,16 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
 }
 
 fun URI.isSnykTenant() =
-    isSnykDomain() && (host.startsWith("app.") || host == "snyk.io" || isDev()) && path.endsWith("/api")
+    isSnykDomain() &&
+        path.lowercase().endsWith("/api") &&
+        (host.lowercase().startsWith("app.") ||
+            host.lowercase() == "snyk.io" ||
+            isDev())
 
-fun URI.isSnykApi() = isSnykDomain() && (host.startsWith("api.") || path.endsWith("/api"))
+fun URI.isSnykApi() = isSnykDomain() && (host.lowercase().startsWith("api.") || path.lowercase().endsWith("/api"))
 
 fun URI.toSnykAPIv1(): URI {
-    val host = host
+    val host = host.lowercase()
         .replaceFirst("app.", "api.")
         .replaceFirst("deeproxy.", "api.")
         .prefixIfNot("api.")
@@ -97,15 +101,21 @@ fun URI.toSnykAPIv1(): URI {
     return URI(scheme, host, "/v1/", null)
 }
 
-fun URI.isSnykDomain() = host != null && (host.endsWith("snyk.io") || host.endsWith("snykgov.io"))
+fun URI.isSnykDomain() = host != null &&
+    (
+        host.lowercase().endsWith(".snyk.io") ||
+            host.lowercase() == "snyk.io" ||
+            host.lowercase().endsWith(".snykgov.io"))
 
-fun URI.isDeeproxy() = isSnykDomain() && host.startsWith("deeproxy.")
+fun URI.isDeeproxy() = isSnykDomain() && host.lowercase().startsWith("deeproxy.")
 
-fun URI.isOauth() = host != null && host.endsWith(".snykgov.io")
+fun URI.isSnykGov() = host != null && host.lowercase().endsWith(".snykgov.io")
 
-fun URI.isDev() = isSnykDomain() && host.startsWith("dev.")
+fun URI.isOauth() = isSnykGov()
 
-fun URI.isFedramp() = isOauth() && host.contains("fedramp")
+fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
+
+fun URI.isFedramp() = isSnykGov()
 
 fun isFedramp(): Boolean {
     val settings = pluginSettings()

@@ -119,7 +119,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `isSnykAPI false for api subdomain and not snyk domain`() {
-        val uri = URI("https://api.NOTSNYK.io")
+        val uri = URI("https://api.notsnyk.io")
         assertFalse(uri.isSnykApi())
     }
 
@@ -171,7 +171,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `isFedramp false for the right URI`() {
-        val uri = URI("https://app.fedddramp.snykgov.io")
+        val uri = URI("https://app.fedddramp.snykagov.io")
         assertFalse(uri.isFedramp())
     }
 }
