@@ -38,6 +38,7 @@ import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
+import java.util.Locale
 import javax.swing.Icon
 import javax.swing.JTree
 
@@ -69,7 +70,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
             is FileTreeNode -> {
                 val fileVulns = value.userObject as OssVulnerabilitiesForFile
-                nodeIcon = PackageManagerIconProvider.getIcon(fileVulns.packageManager.toLowerCase())
+                nodeIcon = PackageManagerIconProvider.getIcon(fileVulns.packageManager.lowercase(Locale.getDefault()))
                 text = fileVulns.sanitizedTargetFile + ProductType.OSS.getCountText(value.childCount)
 
                 val snykCachedResults = getSnykCachedResults(value.project)
@@ -106,7 +107,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
             is IacFileTreeNode -> {
                 val iacVulnerabilitiesForFile = value.userObject as IacIssuesForFile
-                nodeIcon = PackageManagerIconProvider.getIcon(iacVulnerabilitiesForFile.packageManager.toLowerCase())
+                nodeIcon = PackageManagerIconProvider.getIcon(
+                    iacVulnerabilitiesForFile.packageManager.lowercase(Locale.getDefault())
+                )
                 text = iacVulnerabilitiesForFile.targetFile + ProductType.IAC.getCountText(value.childCount)
 
                 val snykCachedResults = getSnykCachedResults(value.project)

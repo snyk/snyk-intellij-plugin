@@ -101,11 +101,13 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
         }
 
-        runBackgroundableTask("Identifying with Analytics service", project, true) {
-            val analytics = getSnykAnalyticsService()
-            val userId = analytics.obtainUserId(snykSettingsDialog.getToken())
-            analytics.setUserId(userId)
-            getAmplitudeExperimentService().fetch(ExperimentUser(userId))
+        if (pluginSettings().usageAnalyticsEnabled) {
+            runBackgroundableTask("Identifying with Analytics service", project, true) {
+                val analytics = getSnykAnalyticsService()
+                val userId = analytics.obtainUserId(snykSettingsDialog.getToken())
+                analytics.setUserId(userId)
+                getAmplitudeExperimentService().fetch(ExperimentUser(userId))
+            }
         }
     }
 

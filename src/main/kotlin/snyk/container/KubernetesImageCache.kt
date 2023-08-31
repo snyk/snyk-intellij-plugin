@@ -1,13 +1,14 @@
 package snyk.container
 
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.runBackgroundableTask
-import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.concurrency.NonUrgentExecutor
 import com.jetbrains.rd.util.concurrentMapOf
+import java.util.concurrent.Callable
 
 @Service
 class KubernetesImageCache(val project: Project) {
@@ -19,15 +20,13 @@ class KubernetesImageCache(val project: Project) {
     }
 
     fun scanProjectForKubernetesFiles() {
-        val title = "Snyk: Scanning For Kubernetes Files..."
-        runBackgroundableTask(title, project, true) { progress ->
-            DumbService.getInstance(project).runReadActionInSmartMode {
-                ProjectRootManager.getInstance(project).fileIndex.iterateContent { virtualFile ->
-                    this.extractFromFile(virtualFile)
-                    !progress.isCanceled
-                }
+        val callable = Callable {
+            ProjectRootManager.getInstance(project).fileIndex.iterateContent { virtualFile ->
+                extractFromFileAndAddToCache(virtualFile)
+                true
             }
         }
+        ReadAction.nonBlocking(callable).submit(NonUrgentExecutor.getInstance())
     }
 
     fun getKubernetesWorkloadFilesFromCache(): Set<VirtualFile> = images.keys
@@ -46,12 +45,12 @@ class KubernetesImageCache(val project: Project) {
 
     fun updateCache(files: Set<VirtualFile>) {
         files.forEach { file ->
-            extractFromFile(file)
+            extractFromFileAndAddToCache(file)
         }
     }
 
     /** public for Tests only */
-    fun extractFromFile(file: VirtualFile) {
+    fun extractFromFileAndAddToCache(file: VirtualFile) {
         val extractFromFile = YAMLImageExtractor.extractFromFile(file, project)
         if (extractFromFile.isNotEmpty()) {
             logger.debug("${if (images.contains(file)) "updated" else "added"} $file in cache")

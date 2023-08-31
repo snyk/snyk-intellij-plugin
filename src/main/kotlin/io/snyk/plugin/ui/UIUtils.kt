@@ -9,6 +9,7 @@ import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
+import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.JBHtmlEditorKit
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -124,7 +125,7 @@ fun getReadOnlyClickableHtmlJEditorPaneFixedSize(
     // don't remove that!
     // Some magic (side-effect? customStyleSheet?) happens when JBHtmlEditorKit() initializing
     // that make html tags like <em>, <p>, <ul> etc. be treated properly inside JEditorPane
-    JBHtmlEditorKit()
+    HTMLEditorKitBuilder.simple()
 
     return JEditorPane(
         "text/html",
@@ -137,7 +138,7 @@ fun getReadOnlyClickableHtmlJEditorPaneFixedSize(
         // instead of the value in javax.swing.text.html.default.css
         val fontColor = UIUtil.getTextFieldForeground()
         val bodyRule = UIUtil.displayPropertiesToCSS(font, fontColor) +
-            "a { color: #${ColorUtil.toHex(JBUI.CurrentTheme.Link.linkColor())}; }"
+            "a { color: #${ColorUtil.toHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)}; }"
         (document as HTMLDocument).styleSheet.addRule(bodyRule)
 
         (document as HTMLDocument).styleSheet.addRule(

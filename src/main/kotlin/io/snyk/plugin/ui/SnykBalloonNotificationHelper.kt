@@ -2,8 +2,6 @@ package io.snyk.plugin.ui
 
 import com.intellij.icons.AllIcons
 import com.intellij.notification.Notification
-import com.intellij.notification.NotificationDisplayType
-import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -14,7 +12,9 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.openapi.updateSettings.impl.pluginsAdvertisement.notificationGroup
 import com.intellij.ui.awt.RelativePoint
+import icons.SnykIcons
 import java.awt.Color
 import java.awt.Component
 import java.awt.Point
@@ -24,9 +24,7 @@ object SnykBalloonNotificationHelper {
 
     private val logger = logger<SnykBalloonNotifications>()
     const val title = "Snyk"
-    private const val groupNeedAction = "SnykNeedAction"
     private const val groupAutoHide = "SnykAutoHide"
-    val GROUP = NotificationGroup(groupNeedAction, NotificationDisplayType.STICKY_BALLOON)
 
     fun showError(message: String, project: Project?, vararg actions: AnAction) {
         showNotification(message, project, NotificationType.ERROR, *actions)
@@ -52,10 +50,12 @@ object SnykBalloonNotificationHelper {
         val notification = if (actions.isEmpty()) {
             Notification(groupAutoHide, title, message, type)
         } else {
-            GROUP.createNotification(title, message, type).apply {
+            notificationGroup.createNotification(title, message, type).apply {
                 actions.forEach { this.addAction(it) }
             }
         }
+
+        notification.setIcon(SnykIcons.TOOL_WINDOW)
         // workaround for https://youtrack.jetbrains.com/issue/IDEA-220408/notifications-with-project=null-is-not-shown-anymore
         if (project != null) {
             notification.notify(project)

@@ -22,10 +22,10 @@ class IacResult(
 
     var iacScanNeeded: Boolean = false
 
-    override val issuesCount get() = allCliIssues?.sumBy { it.uniqueCount }
+    override val issuesCount get() = allCliIssues?.sumOf { it.uniqueCount }
 
     override fun countBySeverity(severity: Severity): Int? {
-        return allCliIssues?.sumBy { issuesForFile ->
+        return allCliIssues?.sumOf { issuesForFile ->
             issuesForFile.infrastructureAsCodeIssues
                 .filter { it.getSeverity() == severity }
                 .distinctBy { it.id }

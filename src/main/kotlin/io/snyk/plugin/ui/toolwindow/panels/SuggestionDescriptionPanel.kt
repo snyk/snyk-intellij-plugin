@@ -180,14 +180,14 @@ class SuggestionDescriptionPanel(
         val maxFilenameLength = markers.asSequence()
             .filter { it.file.isNotEmpty() }
             .map { it.file.substringAfterLast('/', "").length }
-            .max()
+            .maxOrNull() ?: 0
 
         val allStepPanels = mutableListOf<JPanel>()
         markers.forEachIndexed { index, markerRange ->
             val stepPanel = stepPanel(
                 index = index,
                 markerRange = markerRange,
-                maxFilenameLength = max(snykCodeFile.virtualFile.name.length, maxFilenameLength ?: 0),
+                maxFilenameLength = max(snykCodeFile.virtualFile.name.length, maxFilenameLength),
                 allStepPanels = allStepPanels
             )
 
@@ -290,10 +290,7 @@ class SuggestionDescriptionPanel(
 
         panel.add(tabbedPanel, panelGridConstraints(2, indent = 1))
 
-        val maxRowCount = fixes.take(examplesCount)
-            .map { it.lines.size }
-            .max()
-            ?: 0
+        val maxRowCount = fixes.take(examplesCount).maxOfOrNull { it.lines.size } ?: 0
         fixes.take(examplesCount).forEach { exampleCommitFix ->
             val shortURL = exampleCommitFix.commitURL
                 .removePrefix("https://")

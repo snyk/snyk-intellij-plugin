@@ -11,15 +11,15 @@ class SnykCodeResults(
 
     private val files: Set<SnykCodeFile> by lazy { file2suggestions.keys }
 
-    val totalCount: Int by lazy { files.sumBy { getCount(it, null) } }
+    val totalCount: Int by lazy { files.sumOf { getCount(it, null) } }
 
-    val totalCriticalCount: Int by lazy { files.sumBy { criticalCount(it) } }
+    val totalCriticalCount: Int by lazy { files.sumOf { criticalCount(it) } }
 
-    val totalErrorsCount: Int by lazy { files.sumBy { errorsCount(it) } }
+    val totalErrorsCount: Int by lazy { files.sumOf { errorsCount(it) } }
 
-    val totalWarnsCount: Int by lazy { files.sumBy { warnsCount(it) } }
+    val totalWarnsCount: Int by lazy { files.sumOf { warnsCount(it) } }
 
-    val totalInfosCount: Int by lazy { files.sumBy { infosCount(it) } }
+    val totalInfosCount: Int by lazy { files.sumOf { infosCount(it) } }
 
     fun cloneFiltered(filter: (SuggestionForFile) -> Boolean): SnykCodeResults {
         return SnykCodeResults(
@@ -65,7 +65,7 @@ class SnykCodeResults(
     private fun getCount(file: SnykCodeFile, severity: Severity?) =
         suggestions(file)
             .filter { severity == null || it.getSeverityAsEnum() == severity }
-            .sumBy { it.ranges.size }
+            .sumOf { it.ranges.size }
 
     override fun equals(other: Any?): Boolean {
         return other is SnykCodeResults &&

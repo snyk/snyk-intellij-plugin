@@ -46,7 +46,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
         val expandNodeChildActionsGroup = DefaultActionGroup()
         expandNodeChildActionsGroup.add(ExpandNodeChildAction(tree))
-        PopupHandler.installPopupHandler(tree, expandNodeChildActionsGroup, "SnykTree", actionManager)
+        PopupHandler.installPopupMenu(tree, expandNodeChildActionsGroup, "SnykTree")
 
         actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup)
         actionGroup.addSeparator()
@@ -56,6 +56,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
         actionGroup.addAll(actionManager.getAction("io.snyk.plugin.MiscActions") as DefaultActionGroup)
 
         actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, false)
+        actionToolbar.targetComponent = this
         initialiseToolbarUpdater()
         toolbar = actionToolbar.component
 
