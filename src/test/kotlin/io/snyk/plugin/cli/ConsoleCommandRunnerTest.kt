@@ -75,6 +75,21 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
+    fun testSetupCliEnvironmentVariablesWithFedrampCustomEndpoint() {
+        val oldEndpoint = pluginSettings().customEndpointUrl
+        try {
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedEndpoint = "https://api.fedramp.snykgov.io/"
+            pluginSettings().customEndpointUrl = expectedEndpoint
+
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+            assertEquals("1", generalCommandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"])
+        } finally {
+            pluginSettings().customEndpointUrl = oldEndpoint
+        }
+    }
+
     fun testSetupCliEnvironmentVariablesWithOAuthEndpoint() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
