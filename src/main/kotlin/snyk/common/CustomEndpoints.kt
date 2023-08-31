@@ -88,7 +88,7 @@ fun URI.isSnykTenant() =
         path.lowercase().endsWith("/api") &&
         (
             host.lowercase().startsWith("app.") ||
-            host.lowercase() == "snyk.io" ||
+                host.lowercase() == "snyk.io" ||
                 isDev()
             )
 
