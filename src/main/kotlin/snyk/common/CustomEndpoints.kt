@@ -109,7 +109,8 @@ fun URI.isSnykDomain() = host != null &&
     (
         host.lowercase().endsWith(".snyk.io") ||
             host.lowercase() == "snyk.io" ||
-            host.lowercase().endsWith(".snykgov.io"))
+            host.lowercase().endsWith(".snykgov.io")
+        )
 
 fun URI.isDeeproxy() = isSnykDomain() && host.lowercase().startsWith("deeproxy.")
 
