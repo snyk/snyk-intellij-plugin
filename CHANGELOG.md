@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.5.1]
+
+### Changed
+
+- Disable analytics and error reporting for snykgov.io domain
+
 ## [2.5.0]
 
 ### Changed
