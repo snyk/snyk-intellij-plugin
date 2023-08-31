@@ -2,11 +2,14 @@ package snyk.advisor.api
 
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.net.RetrofitClientFactory
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import retrofit2.Retrofit
 import snyk.advisor.AdvisorPackageManager
 
-class AdvisorApiClient constructor(
-    private val baseUrl: String = "https://api.snyk.io/unstable/advisor/"
+class AdvisorApiClient(
+    private val baseUrl: String = "https://api.snyk.io/unstable/advisor/",
+    private val settings: SnykApplicationSettingsStateService = pluginSettings()
 ) {
     private lateinit var retrofit: Retrofit
     private lateinit var scoreServiceEndpoint: ScoreService
@@ -32,14 +35,14 @@ class AdvisorApiClient constructor(
 
     internal fun scoreService(): ScoreService {
         if (!::scoreServiceEndpoint.isInitialized) {
-            scoreServiceEndpoint = createRetrofitIfNeeded().create(ScoreService::class.java)
+            scoreServiceEndpoint = createRetrofitIfNeeded(settings).create(ScoreService::class.java)
         }
         return scoreServiceEndpoint
     }
 
-    private fun createRetrofitIfNeeded(): Retrofit {
+    private fun createRetrofitIfNeeded(settings: SnykApplicationSettingsStateService): Retrofit {
         if (!::retrofit.isInitialized) {
-            retrofit = RetrofitClientFactory.getInstance().createRetrofit(baseUrl)
+            retrofit = RetrofitClientFactory.getInstance().createRetrofit(baseUrl, settings = settings)
         }
         return retrofit
     }

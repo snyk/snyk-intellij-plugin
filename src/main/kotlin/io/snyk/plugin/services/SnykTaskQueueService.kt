@@ -76,7 +76,7 @@ class SnykTaskQueueService(val project: Project) {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk wait for changed files to be saved on disk", true) {
             override fun run(indicator: ProgressIndicator) {
                 project.basePath?.let {
-                    if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(Paths.get(it))) return
+                    if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project, Paths.get(it))) return
                 }
 
                 ApplicationManager.getApplication().invokeAndWait {

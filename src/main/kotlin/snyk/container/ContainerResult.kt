@@ -11,10 +11,10 @@ class ContainerResult(
 
     var rescanNeeded: Boolean = false
 
-    override val issuesCount: Int? get() = allCliIssues?.sumBy { it.uniqueCount }
+    override val issuesCount: Int? get() = allCliIssues?.sumOf { it.uniqueCount }
 
     override fun countBySeverity(severity: Severity): Int? {
-        return allCliIssues?.sumBy { issuesForFile ->
+        return allCliIssues?.sumOf { issuesForFile ->
             issuesForFile.vulnerabilities
                 .filter { it.getSeverity() == severity }
                 .distinctBy { it.id }

@@ -6,8 +6,8 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.HyperlinkLabel
+import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
-import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
@@ -45,7 +45,7 @@ class ScanTypesPanel(
     private var codeQualityCheckbox: JBCheckBox? = null
     private var snykCodeComment: JLabel? = null
     private var snykCodeAlertHyperLinkLabel = HyperlinkLabel()
-    private var snykCodeReCheckLinkLabel = LinkLabel.create("Check again") {
+    private var snykCodeReCheckLinkLabel = ActionLink("Check again") {
         runBackgroundableTask("Checking Snyk Code enablement in organisation", project, true) {
             checkSastEnabled()
         }

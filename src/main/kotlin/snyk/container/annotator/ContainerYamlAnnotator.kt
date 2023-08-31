@@ -42,7 +42,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
             .forEach { forImage ->
                 val severityToShow = forImage.getSeverities()
                     .filter { AnnotatorCommon.isSeverityToShow(it) }
-                    .max() ?: Severity.UNKNOWN
+                    .maxOrNull() ?: Severity.UNKNOWN
                 val annotationMessage = annotationMessage(forImage)
                 forImage.workloadImages
                     .filter { it.virtualFile == psiFile.virtualFile }

@@ -60,7 +60,7 @@ object SentryErrorReporter {
 
     fun submitErrorReport(
         error: Throwable,
-        consumer: Consumer<SubmittedReportInfo>,
+        consumer: Consumer<in SubmittedReportInfo>,
         attachments: List<Attachment> = emptyList(),
         description: String = ""
     ) {

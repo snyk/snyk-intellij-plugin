@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow.panels
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
@@ -59,11 +60,15 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     service<WorkspaceTrustService>().addTrustedPath(Paths.get(it))
                 }
 
-                val userId = analytics.obtainUserId(token)
-                if (userId.isNotBlank()) {
-                    analytics.setUserId(userId)
-                    analytics.identify()
-                    getAmplitudeExperimentService().fetch(ExperimentUser(userId))
+                if (pluginSettings().usageAnalyticsEnabled) {
+                    val userId = analytics.obtainUserId(token)
+                    if (userId.isNotBlank()) {
+                        runBackgroundableTask("Snyk: Fetching experiments", project, true) {
+                            analytics.setUserId(userId)
+                            analytics.identify()
+                            getAmplitudeExperimentService().fetch(ExperimentUser(userId))
+                        }
+                    }
                 }
                 getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
             }

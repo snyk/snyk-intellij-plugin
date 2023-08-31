@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.5.0]
+
+### Changed
+
+- Fix compatibility issues; only support Jetbrains 2023.x for plugin versions > 2.5.0
+
 ## [2.4.63]
 
 ### Fixed

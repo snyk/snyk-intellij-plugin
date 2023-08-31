@@ -8,6 +8,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
+import java.util.Locale
 import javax.xml.bind.DatatypeConverter
 
 class CliDownloader {
@@ -21,13 +22,13 @@ class CliDownloader {
     fun calculateSha256(bytes: ByteArray): String {
         return DatatypeConverter.printHexBinary(
             MessageDigest.getInstance("SHA-256").digest(bytes)
-        ).toLowerCase()
+        ).lowercase(Locale.getDefault())
     }
 
     @Throws(ChecksumVerificationException::class)
     fun verifyChecksum(expectedSha: String, bytes: ByteArray) {
         val sha256 = calculateSha256(bytes)
-        if (sha256.toLowerCase() != expectedSha.toLowerCase()) {
+        if (sha256.lowercase(Locale.getDefault()) != expectedSha.lowercase(Locale.getDefault())) {
             throw ChecksumVerificationException("Expected $expectedSha, but downloaded file has $sha256")
         }
     }

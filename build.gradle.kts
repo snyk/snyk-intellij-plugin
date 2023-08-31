@@ -1,6 +1,7 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -8,10 +9,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
-    id("org.jetbrains.changelog") version "1.2.1"
-    id("org.jetbrains.intellij") version "1.1.2"
-    id("org.jetbrains.kotlin.jvm") version "1.8.0"
-    id("io.gitlab.arturbosch.detekt") version ("1.21.0")
+    id("org.jetbrains.changelog") version "2.1.2"
+    id("org.jetbrains.intellij") version "1.15.0"
+    id("org.jetbrains.kotlin.jvm") version "1.9.0"
+    id("io.gitlab.arturbosch.detekt") version ("1.23.1")
     id("pl.allegro.tech.build.axion-release") version "1.13.6"
 }
 
@@ -20,7 +21,7 @@ version = scmVersion.version
 group = properties("pluginGroup")
 description = properties("pluginName")
 
-val jdk = "1.8"
+val jdk = "17"
 
 repositories {
     mavenCentral()
@@ -28,26 +29,35 @@ repositories {
 }
 
 dependencies {
-    implementation("org.commonmark:commonmark:0.19.0")
-    implementation("com.google.code.gson:gson:2.9.0")
-    implementation("com.segment.analytics.java:analytics:3.3.1")
-    implementation("io.sentry:sentry:6.4.2")
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
+    implementation("org.commonmark:commonmark:0.21.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.segment.analytics.java:analytics:3.4.0")
+    implementation("io.sentry:sentry:6.27.0")
+    implementation("javax.xml.bind:jaxb-api:2.3.1") // necessary because since JDK 9 not included
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("com.squareup.okhttp3:logging-interceptor")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
     implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
         exclude(group = "org.slf4j")
     }
-    implementation("ly.iterative.itly:sdk-jvm:1.2.11")
-    testImplementation("com.google.jimfs:jimfs:1.2")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.10.0")
+    implementation("ly.iterative.itly:sdk-jvm:1.2.11") {
+        exclude(group = "org.slf4j")
+    }
+    implementation("com.segment.analytics.java:analytics:3.4.0")
+
+    testImplementation("com.google.jimfs:jimfs:1.3.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver")
+
     testImplementation("junit:junit:4.13.2") {
         exclude(group = "org.hamcrest")
     }
     testImplementation("org.hamcrest:hamcrest:2.2")
-    testImplementation("io.mockk:mockk:1.12.2") // updating this breaks tests
+    testImplementation("io.mockk:mockk:1.13.5")
     testImplementation("org.awaitility:awaitility:4.2.0")
-    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.4.32")
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.21.0")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.1")
 }
 
 // configuration for gradle-intellij-plugin plugin.
@@ -64,7 +74,7 @@ intellij {
 // configure for detekt plugin.
 // read more: https://detekt.github.io/detekt/kotlindsl.html
 detekt {
-    config = files("$projectDir/.github/detekt/detekt-config.yml")
+    config.setFrom("$projectDir/.github/detekt/detekt-config.yml")
     baseline = file("$projectDir/.github/detekt/detekt-baseline.xml")
     buildUponDefaultConfig = true
 }
@@ -72,7 +82,7 @@ detekt {
 tasks {
     withType<KotlinCompile> {
         kotlinOptions.jvmTarget = jdk
-        kotlinOptions.languageVersion = "1.3"
+        kotlinOptions.languageVersion = "1.9"
     }
 
     withType<JavaCompile> {
@@ -136,7 +146,7 @@ tasks {
             }.joinToString("\n").run { markdownToHTML(this) }
         )
 
-        changeNotes.set(provider { changelog.getLatest().toHTML() })
+        changeNotes.set(provider { changelog.renderItem(changelog.getLatest(), Changelog.OutputType.HTML) })
     }
 
     publishPlugin {
@@ -160,27 +170,5 @@ tasks {
                 org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.INVALID_PLUGIN
             )
         )
-        verificationReportsDir.set("$rootDir.path/reports/pluginVerifier")
     }
 }
-
-sourceSets {
-    create("integTest") {
-        compileClasspath += sourceSets.main.get().output
-        runtimeClasspath += sourceSets.main.get().output
-    }
-}
-val integTestImplementation: Configuration by configurations.getting {
-    extendsFrom(configurations.implementation.get(), configurations.testImplementation.get())
-}
-configurations["integTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
-
-val integTest = task<Test>("integTest") {
-    description = "Runs the integration tests."
-    group = "verification"
-
-    testClassesDirs = sourceSets["integTest"].output.classesDirs
-    classpath = sourceSets["integTest"].runtimeClasspath
-    shouldRunAfter("test")
-}
-tasks.check { dependsOn(integTest) }

@@ -15,12 +15,10 @@ import static org.junit.Assert.assertTrue;
 
 public class DeepCodeIgnoreInfoHolderTest {
 
-  private final File basicIgnoreFile =
-    new File(getClass().getClassLoader().getResource("basic/.dcignore").getPath());
+  private final File basicIgnoreFile = new File("src/test/resources/basic/.dcignore");
   private final File basicProject = basicIgnoreFile.getParentFile();
 
-  private final File fullDcignoreFile =
-    new File(getClass().getClassLoader().getResource("full/.dcignore").getPath());
+  private final File fullDcignoreFile = new File("src/test/resources/full/.dcignore");
   private final File fullDcignoreProject = fullDcignoreFile.getParentFile();
 
   @Test

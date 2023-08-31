@@ -1,5 +1,7 @@
 package snyk.oss.annotator
 
+import java.util.Locale
+
 object AnnotatorHelper {
 
     fun isFileSupported(filePath: String): Boolean =
@@ -28,5 +30,5 @@ object AnnotatorHelper {
             "poetry.lock",
             "mix.exs",
             "mix.lock"
-        ).any { filePath.toLowerCase().endsWith(it) }
+        ).any { filePath.lowercase(Locale.getDefault()).endsWith(it) }
 }

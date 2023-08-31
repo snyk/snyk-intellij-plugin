@@ -17,7 +17,6 @@ import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.IssueInTreeIsClicked
 import snyk.analytics.PluginIsInstalled
 import snyk.analytics.PluginIsUninstalled
-import snyk.analytics.ProductSelectionIsViewed
 import snyk.analytics.QuickFixIsDisplayed
 import snyk.analytics.QuickFixIsTriggered
 import snyk.analytics.WelcomeIsViewed
@@ -37,7 +36,7 @@ class SnykAnalyticsService : Disposable {
     private var userId = ""
 
     init {
-        userId = obtainUserId(settings.token)
+        if (settings.usageAnalyticsEnabled) userId = obtainUserId(settings.token)
     }
 
     fun initAnalyticsReporter(project: Project) = project.messageBus.connect().subscribe(
@@ -147,8 +146,13 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun obtainUserId(token: String?): String {
-        if (token.isNullOrBlank() || !settings.usageAnalyticsEnabled || isFedramp()) {
+        if (!settings.usageAnalyticsEnabled || isFedramp()) {
             log.warn("Token is null or empty, or analytics disabled. User public id will not be obtained.")
+            return ""
+        }
+
+        if (token.isNullOrBlank()) {
+            log.warn("Token is null or empty, user public id will not be obtained.")
             return ""
         }
         val userId = getSnykApiService().userId
@@ -174,16 +178,6 @@ class SnykAnalyticsService : Disposable {
 
         catchAll(log, "welcomeIsViewed") {
             itly.logWelcomeIsViewed(userId, event)
-        }
-    }
-
-    fun logProductSelectionIsViewed(event: ProductSelectionIsViewed) {
-        if (!settings.usageAnalyticsEnabled || isFedramp() || userId.isBlank()) {
-            return
-        }
-
-        catchAll(log, "productSelectionIsViewed") {
-            itly.logProductSelectionIsViewed(userId, event)
         }
     }
 
