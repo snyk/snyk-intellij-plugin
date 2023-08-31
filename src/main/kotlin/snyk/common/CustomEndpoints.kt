@@ -86,9 +86,11 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
 fun URI.isSnykTenant() =
     isSnykDomain() &&
         path.lowercase().endsWith("/api") &&
-        (host.lowercase().startsWith("app.") ||
+        (
+            host.lowercase().startsWith("app.") ||
             host.lowercase() == "snyk.io" ||
-            isDev())
+                isDev()
+            )
 
 fun URI.isSnykApi() = isSnykDomain() && (host.lowercase().startsWith("api.") || path.lowercase().endsWith("/api"))
 
@@ -96,7 +98,9 @@ fun URI.toSnykAPIv1(): URI {
     val host = host.lowercase()
         .replaceFirst("app.", "api.")
         .replaceFirst("deeproxy.", "api.")
-        .prefixIfNot("api.")
+        .prefixIfNot(
+            "api."
+        )
 
     return URI(scheme, host, "/v1/", null)
 }
