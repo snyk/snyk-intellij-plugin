@@ -28,15 +28,13 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
 import snyk.PLUGIN_ID
 import snyk.common.isOauth
 import snyk.errorHandler.SentryErrorReporter
 import snyk.oss.OssService
 import java.net.URI
 import java.net.URLEncoder
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +43,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     private val ossService: OssService
         get() = getOssService(project) ?: throw IllegalStateException("OSS service should be available")
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()
@@ -56,7 +53,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         every { SentryErrorReporter.captureException(any()) } returns SentryId()
     }
 
-    @After
     override fun tearDown() {
         unmockkAll()
         resetSettings(project)
@@ -64,7 +60,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithCustomEndpoint() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
@@ -80,7 +75,21 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
+    fun testSetupCliEnvironmentVariablesWithFedrampCustomEndpoint() {
+        val oldEndpoint = pluginSettings().customEndpointUrl
+        try {
+            val generalCommandLine = GeneralCommandLine("")
+            val expectedEndpoint = "https://api.fedramp.snykgov.io/"
+            pluginSettings().customEndpointUrl = expectedEndpoint
+
+            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+            assertEquals("1", generalCommandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"])
+        } finally {
+            pluginSettings().customEndpointUrl = oldEndpoint
+        }
+    }
+
     fun testSetupCliEnvironmentVariablesWithOAuthEndpoint() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
@@ -103,7 +112,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithNonOAuthEndpoint() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
@@ -126,7 +134,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithCustomEndpointNoTrailingSlash() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
@@ -142,7 +149,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithDisabledUsageAnalytics() {
         val originalUsageAnalyticsEnabled = pluginSettings().usageAnalyticsEnabled
         try {
@@ -156,7 +162,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithProxyWithoutAuth() {
         val httpConfigurable = HttpConfigurable.getInstance()
         val originalProxyHost = httpConfigurable.PROXY_HOST
@@ -180,7 +185,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithProxyWithAuth() {
         val httpConfigurable = HttpConfigurable.getInstance()
         val originalProxyHost = httpConfigurable.PROXY_HOST
@@ -201,7 +205,8 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
             val generalCommandLine = GeneralCommandLine("")
             val expectedProxy =
-                "http://${encodedLogin}:${encodedPassword}@${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
+                "http://$encodedLogin:$encodedPassword@" +
+                    "${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
@@ -216,7 +221,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariablesWithProxyWithCancelledAuth() {
         val httpConfigurable = HttpConfigurable.getInstance()
         val originalProxyHost = httpConfigurable.PROXY_HOST
@@ -251,7 +255,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testSetupCliEnvironmentVariables() {
         val generalCommandLine = GeneralCommandLine("")
         val snykPluginVersion = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
@@ -262,11 +265,10 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         assertEquals("JETBRAINS_IDE", generalCommandLine.environment["SNYK_INTEGRATION_NAME"])
         assertEquals(snykPluginVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
         assertEquals("INTELLIJ IDEA IC", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"])
-        assertEquals("2020.2", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"])
+        assertEquals("2023.1", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"])
     }
 
     @Suppress("SwallowedException")
-    @Test
     fun testCommandExecutionRequestWhileCliIsDownloading() {
         val cliFile = getCliFile()
         cliFile.delete()
@@ -325,14 +327,13 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         verify(exactly = 0) { SentryErrorReporter.captureException(any()) }
     }
 
-    @Test
     fun testErrorReportedWhenExecutionTimeoutExpire() {
         val registryValue = Registry.get("snyk.timeout.results.waiting")
         val defaultValue = registryValue.asInteger()
         assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
         registryValue.setValue(100)
         val seconds = "3"
-        val sleepCommand = if (System.getProperty("os.name").toLowerCase().contains("win")) {
+        val sleepCommand = if (System.getProperty("os.name").lowercase(Locale.getDefault()).contains("win")) {
             // see https://www.ibm.com/support/pages/timeout-command-run-batch-job-exits-immediately-and-returns-error-input-redirection-not-supported-exiting-process-immediately
             listOf("ping", "-n", seconds, "localhost")
         } else {

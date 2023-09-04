@@ -7,7 +7,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.startup.StartupActivity
+import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.snykcode.SnykCodeBulkFileListener
 import io.snyk.plugin.snykcode.core.AnalysisData
@@ -27,12 +27,12 @@ import java.util.Date
 
 private val LOG = logger<SnykPostStartupActivity>()
 
-class SnykPostStartupActivity : StartupActivity.DumbAware {
+class SnykPostStartupActivity : ProjectActivity {
 
     private var listenersActivated = false
     val settings = pluginSettings()
 
-    override fun runActivity(project: Project) {
+    override suspend fun execute(project: Project) {
         PluginInstaller.addStateListener(UninstallListener())
 
         // clean up left-overs in case project wasn't properly closed before

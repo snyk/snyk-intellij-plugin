@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.toolwindow
 
-import snyk.common.UIComponentFinder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.replaceService
@@ -13,6 +12,7 @@ import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import org.junit.Test
+import snyk.common.UIComponentFinder
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import javax.swing.JButton
@@ -28,7 +28,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
         super.setUp()
         unmockkAll()
         mockkStatic("snyk.trust.TrustedProjectsKt")
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
         val application = ApplicationManager.getApplication()
         application.replaceService(SnykAnalyticsService::class.java, analyticsService, application)
         application.replaceService(WorkspaceTrustService::class.java, workspaceTrustServiceMock, application)

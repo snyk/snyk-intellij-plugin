@@ -1,10 +1,8 @@
 package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
-import snyk.common.UIComponentFinder
 import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.application.impl.ApplicationInfoImpl
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
@@ -47,6 +45,7 @@ import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
 import org.junit.Test
 import snyk.common.SnykError
+import snyk.common.UIComponentFinder
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -102,7 +101,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         // also we MUST do it *before* any actual test code due to initialisation of SnykScanListener in init{}
         toolWindowPanel = project.service()
         setupDummyCliFile()
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
     }
 
     override fun tearDown() {
@@ -556,7 +555,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val mediumSeverityFilterAction =
             ActionManager.getInstance().getAction("io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction")
                 as SnykTreeMediumSeverityFilterAction
-        mediumSeverityFilterAction.setSelected(TestActionEvent(), false)
+        mediumSeverityFilterAction.setSelected(TestActionEvent.createTestEvent(), false)
 
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
@@ -885,15 +884,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private fun waitWhileTreeBusy() {
         val tree = toolWindowPanel.getTree()
-        // hack to avoid "File accessed outside allowed roots" check in tests
-        // needed due to com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess.assertAccessInTests
-        val prevIsInStressTest = ApplicationInfoImpl.isInStressTest()
-        ApplicationInfoImpl.setInStressTest(true)
-        try {
-            PlatformTestUtil.waitWhileBusy(tree)
-        } finally {
-            ApplicationInfoImpl.setInStressTest(prevIsInStressTest)
-        }
+        PlatformTestUtil.waitWhileBusy(tree)
     }
 
     @Test

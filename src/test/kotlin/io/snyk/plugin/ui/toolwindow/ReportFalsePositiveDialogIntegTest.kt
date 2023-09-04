@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.toolwindow
 
-import snyk.common.UIComponentFinder
 import com.intellij.CommonBundle
 import com.intellij.openapi.ui.DialogWrapper.CLOSE_EXIT_CODE
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -9,6 +8,7 @@ import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_F
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.TITLE_TEXT
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.WARN_MESSAGE_TEXT
 import org.junit.Test
+import snyk.common.UIComponentFinder
 import javax.swing.Action
 import javax.swing.JPanel
 

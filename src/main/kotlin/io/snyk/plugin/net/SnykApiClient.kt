@@ -27,7 +27,7 @@ class SnykApiClient(
 
     private fun <T> executeRequest(apiName: String, retrofitCall: Call<T>, retryCounter: Int = 2): T? {
         if (retryCounter < 0) return null
-        try {
+        return try {
             log.debug("Executing request to $apiName")
             val response = retrofitCall.execute()
             if (!response.isSuccessful) {
@@ -40,9 +40,9 @@ class SnykApiClient(
                     return null
                 }
                 log.warn("Failed to execute `$apiName` call: ${response.errorBody()?.string()}")
-                return executeRequest(apiName, retrofitCall.clone(), retryCounter - 1)
+                executeRequest(apiName, retrofitCall.clone(), retryCounter - 1)
             } else {
-                return response.body()
+                response.body()
             }
         } catch (t: ClientException) {
             val defaultErrorMsg = "Your org's SAST settings are misconfigured."
@@ -51,7 +51,7 @@ class SnykApiClient(
             return null
         } catch (t: Throwable) {
             log.warn("Failed to execute '$apiName' network request: ${t.message}", t)
-            return executeRequest(apiName, retrofitCall.clone(), retryCounter - 1)
+            executeRequest(apiName, retrofitCall.clone(), retryCounter - 1)
         }
     }
 

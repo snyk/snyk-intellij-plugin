@@ -71,7 +71,8 @@ class AmplitudeExperimentApiClient private constructor(
             baseUrl: String = "https://api.lab.amplitude.com/",
             apiKey: String
         ): AmplitudeExperimentApiClient {
-            return AmplitudeExperimentApiClient(baseUrl, apiKey)
+            val client = AmplitudeExperimentApiClient(baseUrl, apiKey)
+            return client
         }
     }
 

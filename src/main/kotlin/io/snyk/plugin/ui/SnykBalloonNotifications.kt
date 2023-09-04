@@ -3,6 +3,7 @@ package io.snyk.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationAction
+import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.options.ShowSettingsUtil
@@ -16,7 +17,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.snykToolWindow
 import io.snyk.plugin.startSastEnablementCheckLoop
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper.GROUP
 import snyk.common.toSnykCodeSettingsUrl
 import java.awt.event.MouseEvent
 
@@ -25,30 +25,45 @@ object SnykBalloonNotifications {
     private val logger = logger<SnykBalloonNotifications>()
     private val alarm = Alarm()
 
+    const val sastForLocalCodeEngineMessage = "Snyk Code is configured to use a Local Code Engine instance." +
+        "This setup is not yet supported."
     const val sastForOrgEnablementMessage = "Snyk Code is disabled by your organisation's configuration."
     const val networkErrorAlertMessage = "Not able to connect to Snyk server."
+
+    private val notificationGroup = NotificationGroupManager.getInstance().getNotificationGroup("Snyk")
 
     fun showWelcomeNotification(project: Project) {
         val welcomeMessage = "Welcome to Snyk! Check out our tool window to start analyzing your code"
         logger.info(welcomeMessage)
-        val notification = GROUP.createNotification(
+        val notification = notificationGroup.createNotification(
             welcomeMessage,
             NotificationType.INFORMATION
         ).addAction(
-            NotificationAction.createSimpleExpiring("Configure Snyk\u2026") {
+            NotificationAction.createSimpleExpiring("CONFIGURE SNYK\u2026") {
                 snykToolWindow(project)?.show()
             }
         )
         notification.notify(project)
     }
 
+    fun showSastForLocalCodeEngineMessage(project: Project): Notification {
+        return SnykBalloonNotificationHelper.showInfo(
+            sastForLocalCodeEngineMessage,
+            project,
+            NotificationAction.createSimpleExpiring("SNYK SETTINGS") {
+                ShowSettingsUtil.getInstance()
+                    .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
+            }
+        )
+    }
+
     fun showSastForOrgEnablement(project: Project): Notification {
         val notification = SnykBalloonNotificationHelper.showInfo(
             "$sastForOrgEnablementMessage To enable navigate to ",
             project,
-            NotificationAction.createSimpleExpiring("Snyk > Settings > Snyk Code") {
+            NotificationAction.createSimpleExpiring("SNYK > SETTINGS > SNYK CODE") {
                 BrowserUtil.browse(toSnykCodeSettingsUrl(pluginSettings().customEndpointUrl))
-                startSastEnablementCheckLoop(project)
+                startSastEnablementCheckLoop(parentDisposable = project)
             }
         )
         var currentAttempt = 1
@@ -82,7 +97,7 @@ object SnykBalloonNotifications {
     fun showNetworkErrorAlert(project: Project) = SnykBalloonNotificationHelper.showError(
         "$networkErrorAlertMessage Check connection and network settings.",
         project,
-        NotificationAction.createSimpleExpiring("Snyk Settings") {
+        NotificationAction.createSimpleExpiring("SNYK SETTINGS") {
             ShowSettingsUtil.getInstance()
                 .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
         }

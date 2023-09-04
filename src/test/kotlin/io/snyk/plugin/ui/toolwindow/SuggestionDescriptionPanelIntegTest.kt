@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.toolwindow
 
-import snyk.common.UIComponentFinder
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -9,6 +8,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import org.junit.Test
+import snyk.common.UIComponentFinder
 import javax.swing.JButton
 
 @Suppress("FunctionName")

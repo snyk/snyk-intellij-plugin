@@ -17,11 +17,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -70,9 +69,6 @@ public class AnalysisDataTest {
   private static class RestApiMockWithBrokenFileUpload extends DeepCodeRestApiMock {
     protected final CreateBundleResponse bundleResponseWithMissedFile =
       new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
-
-    protected final CreateBundleResponse bundleResponseWithoutMissedFile =
-      new CreateBundleResponse("bundleHash", Collections.emptyList());
 
     @Override
     public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
@@ -186,7 +182,7 @@ public class AnalysisDataTest {
 
     File file = File.createTempFile("analysisDataTest", "tmp");
     file.deleteOnExit();
-    Files.write(file.toPath(), "testtestest".getBytes(StandardCharsets.UTF_8));
+    Files.writeString(file.toPath(), "testtestest");
 
     analysisData.updateCachedResultsForFiles(project, Collections.singleton(file), progress);
 
@@ -237,7 +233,7 @@ public class AnalysisDataTest {
     nonCompleteAnalysisResponse.setStatusCode(200);
     nonCompleteAnalysisResponse.setStatusDescription("Fake non-complete getAnalysis");
 
-    final Queue<GetAnalysisResponse> responses = new LinkedList<>(Arrays.asList(
+    final Queue<GetAnalysisResponse> responses = new ArrayDeque<>(Arrays.asList(
       nonCompleteAnalysisResponse,
       nonCompleteAnalysisResponse,
       failed404AnalysisResponse,

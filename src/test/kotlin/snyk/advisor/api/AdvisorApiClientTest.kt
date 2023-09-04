@@ -1,30 +1,42 @@
 package snyk.advisor.api
 
 import com.google.gson.Gson
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.buffer
 import okio.source
-import org.hamcrest.collection.IsCollectionWithSize.hasSize
-import org.hamcrest.core.IsEqual.equalTo
-import org.hamcrest.core.IsNull.notNullValue
-import org.hamcrest.core.IsNull.nullValue
-import org.junit.Assert.assertThat
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
+import snyk.PluginInformation
 import snyk.advisor.AdvisorPackageManager
+import snyk.pluginInfo
 import java.nio.charset.StandardCharsets
 
 class AdvisorApiClientTest {
-    @JvmField
-    @Rule
-    val server: MockWebServer = MockWebServer()
-
     private lateinit var clientUnderTest: AdvisorApiClient
+    private val server = MockWebServer()
+    private lateinit var settings: SnykApplicationSettingsStateService
+
     @Before
     fun setUp() {
-        clientUnderTest = AdvisorApiClient(server.url("/").toString())
+        unmockkAll()
+        mockkStatic("snyk.PluginInformationKt")
+        val pluginInformation = PluginInformation(
+            "testIntegrationName",
+            "testIntegrationVersion",
+            "testIntegrationEnvironment",
+            "testIntegrationEnvironmentVersion"
+        )
+        every { pluginInfo } returns pluginInformation
+        settings = SnykApplicationSettingsStateService()
+        clientUnderTest = AdvisorApiClient(server.url("/").toString(), settings)
     }
 
     @Test
@@ -34,7 +46,7 @@ class AdvisorApiClientTest {
 
         val response = advisorScoreService.scoresNpmPackages(listOf()).execute()
 
-        assertThat(response.code(), equalTo(404))
+        assertEquals(404, response.code())
     }
 
     @Test
@@ -51,25 +63,25 @@ class AdvisorApiClientTest {
         val response = advisorScoreService.scoresNpmPackages(listOf()).execute()
 
         // asserts
-        assertThat(response.code(), equalTo(200))
+        assertEquals(200, response.code())
 
         val npmPackagesInfo = response.body()
-        assertThat(npmPackagesInfo, notNullValue())
-        assertThat(npmPackagesInfo, hasSize(2))
+        assertNotNull(npmPackagesInfo)
+        assertEquals(2, npmPackagesInfo?.size)
 
         val jqueryPackageInfo = npmPackagesInfo?.first()
-        assertThat(jqueryPackageInfo?.name, equalTo("jquery"))
-        assertThat(jqueryPackageInfo?.score, equalTo(0.97142857))
-        assertThat(jqueryPackageInfo?.pending, equalTo(false))
-        assertThat(jqueryPackageInfo?.error, nullValue())
-        assertThat(jqueryPackageInfo?.labels, equalTo(expectedPackageInfoLabels))
+        assertEquals("jquery", jqueryPackageInfo?.name)
+        assertEquals(0.97142857, jqueryPackageInfo?.score)
+        assertEquals(false, jqueryPackageInfo?.pending)
+        assertNull(jqueryPackageInfo?.error)
+        assertEquals(expectedPackageInfoLabels, jqueryPackageInfo?.labels)
 
         val vuePackageInfo = npmPackagesInfo?.last()
-        assertThat(vuePackageInfo?.name, equalTo("vue"))
-        assertThat(vuePackageInfo?.score, equalTo(0.9475))
-        assertThat(vuePackageInfo?.pending, equalTo(true))
-        assertThat(vuePackageInfo?.error, nullValue())
-        assertThat(vuePackageInfo?.labels, equalTo(expectedPackageInfoLabels))
+        assertEquals("vue", vuePackageInfo?.name)
+        assertEquals(0.9475, vuePackageInfo?.score)
+        assertEquals(true, vuePackageInfo?.pending)
+        assertNull(vuePackageInfo?.error)
+        assertEquals(expectedPackageInfoLabels, vuePackageInfo?.labels)
     }
 
     @Test
@@ -80,15 +92,15 @@ class AdvisorApiClientTest {
         val response = advisorScoreService.scoresPythonPackages(listOf("non-existing-package")).execute()
 
         // asserts
-        assertThat(response.code(), equalTo(200))
+        assertEquals(200, response.code())
 
         val npmPackagesInfo = response.body()
-        assertThat(npmPackagesInfo, notNullValue())
-        assertThat(npmPackagesInfo, hasSize(1))
+        assertNotNull(npmPackagesInfo)
+        assertEquals(1, npmPackagesInfo?.size)
 
         val nonExistingPackageInfo = npmPackagesInfo?.first()
-        assertThat(nonExistingPackageInfo?.name, equalTo("non-existing-package"))
-        assertThat(nonExistingPackageInfo?.error, equalTo("not found"))
+        assertEquals("non-existing-package", nonExistingPackageInfo?.name)
+        assertEquals("not found", nonExistingPackageInfo?.error)
     }
 
     @Test
@@ -98,7 +110,7 @@ class AdvisorApiClientTest {
 
         val response = advisorScoreService.scoresPythonPackages(listOf()).execute()
 
-        assertThat(response.code(), equalTo(404))
+        assertEquals(404, response.code())
     }
 
     @Test
@@ -115,25 +127,25 @@ class AdvisorApiClientTest {
         val response = advisorScoreService.scoresNpmPackages(listOf()).execute()
 
         // asserts
-        assertThat(response.code(), equalTo(200))
+        assertEquals(200, response.code())
 
         val pythonPackageInfo = response.body()
-        assertThat(pythonPackageInfo, notNullValue())
-        assertThat(pythonPackageInfo, hasSize(2))
+        assertNotNull(pythonPackageInfo)
+        assertEquals(2, pythonPackageInfo?.size)
 
         val djangoPackageInfo = pythonPackageInfo?.first()
-        assertThat(djangoPackageInfo?.name, equalTo("django"))
-        assertThat(djangoPackageInfo?.score, equalTo(0.9114285714285715))
-        assertThat(djangoPackageInfo?.pending, equalTo(false))
-        assertThat(djangoPackageInfo?.error, nullValue())
-        assertThat(djangoPackageInfo?.labels, equalTo(expectedPackageInfoLabels))
+        assertEquals("django", djangoPackageInfo?.name)
+        assertEquals(0.9114285714285715, djangoPackageInfo?.score)
+        assertEquals(false, djangoPackageInfo?.pending)
+        assertNull(djangoPackageInfo?.error)
+        assertEquals(expectedPackageInfoLabels, djangoPackageInfo?.labels)
 
         val tomlPackageInfo = pythonPackageInfo?.last()
-        assertThat(tomlPackageInfo?.name, equalTo("toml"))
-        assertThat(tomlPackageInfo?.score, equalTo(0.8678571428571429))
-        assertThat(tomlPackageInfo?.pending, equalTo(true))
-        assertThat(tomlPackageInfo?.error, nullValue())
-        assertThat(tomlPackageInfo?.labels, equalTo(expectedPackageInfoLabels))
+        assertEquals("toml", tomlPackageInfo?.name)
+        assertEquals(0.8678571428571429, tomlPackageInfo?.score)
+        assertEquals(true, tomlPackageInfo?.pending)
+        assertNull(tomlPackageInfo?.error)
+        assertEquals(expectedPackageInfoLabels, tomlPackageInfo?.labels)
     }
 
     @Test
@@ -144,15 +156,15 @@ class AdvisorApiClientTest {
         val response = advisorScoreService.scoresPythonPackages(listOf("non-existing-package")).execute()
 
         // asserts
-        assertThat(response.code(), equalTo(200))
+        assertEquals(200, response.code())
 
         val pythonPackagesInfo = response.body()
-        assertThat(pythonPackagesInfo, notNullValue())
-        assertThat(pythonPackagesInfo, hasSize(1))
+        assertNotNull(pythonPackagesInfo)
+        assertEquals(1, pythonPackagesInfo?.size)
 
         val nonExistingPackageInfo = pythonPackagesInfo?.first()
-        assertThat(nonExistingPackageInfo?.name, equalTo("non-existing-package"))
-        assertThat(nonExistingPackageInfo?.error, equalTo("not found"))
+        assertEquals("non-existing-package", nonExistingPackageInfo?.name)
+        assertEquals("not found", nonExistingPackageInfo?.error)
     }
 
     @Test
@@ -175,11 +187,11 @@ class AdvisorApiClientTest {
     }
 
     private fun assertInfos(expectedInfos: List<PackageInfo>, actualInfos: List<PackageInfo>?) {
-        assertThat(actualInfos, notNullValue())
-        assertThat(actualInfos, hasSize(expectedInfos.size))
+        assertNotNull(actualInfos)
+        assertEquals(expectedInfos.size, actualInfos?.size)
 
         actualInfos?.forEachIndexed { index, actual ->
-            assertThat(actual, equalTo(expectedInfos[index]))
+            assertEquals(expectedInfos[index], actual)
         }
     }
 }

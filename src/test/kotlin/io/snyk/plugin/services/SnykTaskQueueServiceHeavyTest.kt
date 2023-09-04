@@ -5,9 +5,7 @@ import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.unmockkAll
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.resetSettings
-import org.junit.Test
 
-@Suppress("FunctionName")
 class SnykTaskQueueServiceHeavyTest : HeavyPlatformTestCase() {
 
     override fun setUp() {
@@ -22,7 +20,6 @@ class SnykTaskQueueServiceHeavyTest : HeavyPlatformTestCase() {
         super.tearDown()
     }
 
-    @Test
     fun `test service request for disposed project`() {
         PlatformTestUtil.forceCloseProjectWithoutSaving(project)
 

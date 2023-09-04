@@ -44,7 +44,6 @@ import snyk.advisor.SnykAdvisorModel
 import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
-import snyk.common.isLocalCodeEngine
 import snyk.common.isSnykTenant
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
@@ -54,6 +53,7 @@ import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
 import snyk.whoami.WhoamiService
 import java.io.File
+import java.net.URI
 import java.net.URL
 import java.nio.file.Path
 import java.security.KeyStore
@@ -137,7 +137,7 @@ private inline fun <reified T : Any> getApplicationService(): T {
         ?: throw RuntimeException("Cannot find service ${serviceClass.name} (classloader=${serviceClass.classLoader})")
 }
 
-fun <L> getSyncPublisher(project: Project, topic: Topic<L>): L? {
+fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {
     val messageBus = project.messageBus
     if (messageBus.isDisposed) return null
     return messageBus.syncPublisher(topic)
@@ -153,9 +153,8 @@ fun isUrlValid(url: String?): Boolean {
     url.isNullOrEmpty() && return true
 
     return try {
-        val uri = URL(url).toURI()
-
-        return uri.isSnykTenant() || uri.isLocalCodeEngine()
+        val uri = url?.let { URI.create(it) }
+        return uri?.isSnykTenant() ?: false
     } catch (throwable: Throwable) {
         false
     }
@@ -293,10 +292,9 @@ fun navigateToSource(
     selectionEndOffset: Int? = null
 ) {
     if (!virtualFile.isValid) return
-    val psiFile = RunUtils.computeInReadActionInSmartMode(
-        project,
-        Computable { PsiManager.getInstance(project).findFile(virtualFile) }
-    ) ?: return
+    val psiFile = RunUtils.computeInReadActionInSmartMode(project) {
+        PsiManager.getInstance(project).findFile(virtualFile)
+    } ?: return
     val textLength = psiFile.textLength
     if (selectionStartOffset in (0 until textLength)) {
         // jump to Source

@@ -1,9 +1,11 @@
-package io.snyk.plugin.snykcode.core
+package io.snyk.plugin.core
 
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import io.snyk.plugin.snykcode.core.PDU
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import java.io.File
 
 @Suppress("FunctionName")

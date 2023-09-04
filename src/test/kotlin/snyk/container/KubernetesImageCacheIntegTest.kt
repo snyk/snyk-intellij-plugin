@@ -51,7 +51,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     @Test
     fun `extractFromFile should find yaml files and extract images`() {
         val file = createFile(fileName, podYaml()).virtualFile
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images = cut.getKubernetesWorkloadImages()
 
         assertEquals(1, images.size)
@@ -149,7 +149,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `should return Kubernetes Workload Files`() {
         val file = createFile(fileName, podYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val files: Set<VirtualFile> = cut.getKubernetesWorkloadFilesFromCache()
 
         assertEquals(1, files.size)
@@ -160,7 +160,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `should not parse non yaml files`() {
         val file = createFile("not-a-yaml-file.zaml", podYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val files: Set<VirtualFile> = cut.getKubernetesWorkloadFilesFromCache()
 
         assertEmpty(files)
@@ -170,7 +170,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `should return Kubernetes Workload Image Names`() {
         val file = createFile(fileName, podYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
 
         assertEquals(1, images.size)
@@ -181,7 +181,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `should return Kubernetes Workload Images with correct line number`() {
         val file = createFile(fileName, podYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images: Set<KubernetesWorkloadImage> = cut.getKubernetesWorkloadImages()
 
         assertEquals(1, images.size)
@@ -192,7 +192,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `should remove file from cache when all images from file (cached before) been removed`() {
         val psiFile = createFile(fileName, podYaml())
         val virtualFile = psiFile.virtualFile
-        cut.extractFromFile(virtualFile)
+        cut.extractFromFileAndAddToCache(virtualFile)
         val controlImages: Set<KubernetesWorkloadImage> = cut.getKubernetesWorkloadImages()
         assertEquals(1, controlImages.size)
 
@@ -201,7 +201,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
                 ?.setText("")
         }
         FileDocumentManager.getInstance().saveAllDocuments()
-        cut.extractFromFile(virtualFile)
+        cut.extractFromFileAndAddToCache(virtualFile)
 
         val images = cut.getKubernetesWorkloadImages()
         assertEquals(0, images.size)
@@ -212,14 +212,14 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     private fun executeExtract(yaml: String): Set<String> {
         val file = createFile(fileName, yaml).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         return cut.getKubernetesWorkloadImageNamesFromCache()
     }
 
     @Test
     fun `extract images from Helm generated yaml with image names inside quotes`() {
         val file = createFile(fileName, helmYaml()).virtualFile
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images = cut.getKubernetesWorkloadImages()
 
         assertEquals(1, images.size)
@@ -229,7 +229,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     @Test
     fun `no images extracted from yaml with invalid image names`() {
         val file = createFile(fileName, singleQuoteImageNameBrokenYaml()).virtualFile
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images = cut.getKubernetesWorkloadImages()
 
         assertEquals(0, images.size)
@@ -239,7 +239,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `distinct Kubernetes Workload Image Names for calling CLI`() {
         val file = createFile(fileName, duplicatedImageNameYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
 
         assertEquals(1, images.size)
@@ -250,7 +250,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `image Path followed by comment is extracted`() {
         val file = createFile(fileName, imagePathFollowedByCommentYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
 
         assertEquals(1, images.size)
@@ -261,7 +261,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `image Path commented is NOT extracted`() {
         val file = createFile(fileName, imagePathCommentedYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
 
         assertEquals(0, images.size)
@@ -271,7 +271,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `image Path with port and tag is extracted`() {
         val file = createFile(fileName, imagePathWithPortAndTagYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
 
         assertEquals(1, images.size)
@@ -282,7 +282,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
     fun `image Path with digest is extracted`() {
         val file = createFile(fileName, imagePathWithDigestYaml()).virtualFile
 
-        cut.extractFromFile(file)
+        cut.extractFromFileAndAddToCache(file)
         val images: Set<String> = cut.getKubernetesWorkloadImageNamesFromCache()
 
         assertEquals(1, images.size)

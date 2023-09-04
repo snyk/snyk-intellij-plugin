@@ -74,7 +74,7 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
             // jenkins/jenkins      -> jenkins/jenkins/jenkins
             // jenkins/jenkins:lts  -> jenkins/jenkins:lts/jenkins
             // so for `jenkins/jenkins:lts/jenkins` we should choose latter (longest match)
-            nameCandidates.size > 1 -> nameCandidates.maxBy { it.length }!!
+            nameCandidates.size > 1 -> nameCandidates.maxByOrNull { it.length }!!
             // fallback in case our sanitizing fail
             else -> cliReturnedImageName
         }

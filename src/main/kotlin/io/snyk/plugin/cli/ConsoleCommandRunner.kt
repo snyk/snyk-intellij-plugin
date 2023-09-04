@@ -16,6 +16,7 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.getEndpointUrl
+import snyk.common.isFedramp
 import snyk.common.isOauth
 import snyk.errorHandler.SentryErrorReporter
 import snyk.pluginInfo
@@ -95,7 +96,8 @@ open class ConsoleCommandRunner {
         val oauthEnvVar = "INTERNAL_OAUTH_TOKEN_STORAGE"
         val snykTokenEnvVar = "SNYK_TOKEN"
 
-        val oauthEnabled = URI(endpoint).isOauth()
+        val endpointURI = URI(endpoint)
+        val oauthEnabled = endpointURI.isOauth()
         if (oauthEnabled) {
             commandLine.environment[oauthEnabledEnvVar] = "1"
             commandLine.environment.remove(snykTokenEnvVar)
@@ -114,7 +116,7 @@ open class ConsoleCommandRunner {
 
         commandLine.environment["SNYK_API"] = endpoint
 
-        if (!pluginSettings().usageAnalyticsEnabled) {
+        if (!pluginSettings().usageAnalyticsEnabled || endpointURI.isFedramp()) {
             commandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"
         }
 

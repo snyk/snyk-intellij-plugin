@@ -101,7 +101,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         verify { cache.getKubernetesWorkloadImages() }
         assertEquals(
             expectedContainerResult.issuesCount,
-            scanResult.allCliIssues?.sumBy { it.groupedVulnsById.size }
+            scanResult.allCliIssues?.sumOf { it.groupedVulnsById.size }
         )
         return Pair(expectedContainerResult, scanResult)
     }
@@ -111,7 +111,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         val file = createFile(fileName, podYaml())
         val cache = spyk(KubernetesImageCache(project))
         cut.setKubernetesImageCache(cache)
-        cache.extractFromFile(file.virtualFile)
+        cache.extractFromFileAndAddToCache(file.virtualFile)
         return cache
     }
 

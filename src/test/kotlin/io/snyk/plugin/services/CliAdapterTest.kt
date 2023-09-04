@@ -7,7 +7,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
-import org.junit.Test
 import snyk.common.SnykError
 
 class CliAdapterTest : LightPlatformTestCase() {
@@ -38,7 +37,6 @@ class CliAdapterTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
-    @Test
     fun testBuildCliCommandsListWithInsecureParameter() {
         setupDummyCliFile()
 
@@ -49,7 +47,6 @@ class CliAdapterTest : LightPlatformTestCase() {
         assertTrue(defaultCommands.contains("--insecure"))
     }
 
-    @Test
     fun testBuildCliCommandsListWithOrganizationParameter() {
         setupDummyCliFile()
 

@@ -10,24 +10,24 @@ import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
-import com.intellij.util.io.exists
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
-import org.junit.Test
 import snyk.container.ui.ContainerImageTreeNode
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.notExists
 
-@Suppress("FunctionName")
 class ContainerBulkFileListenerTest : BasePlatformTestCase() {
 
     override fun setUp() {
@@ -48,18 +48,17 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         imageCache.clear()
     }
 
-    private fun createNewFileInProjectRoot(name: String): File {
+    private fun createNewFileInProjectRoot(): File {
         val projectPath = Paths.get(project.basePath!!)
-        if (!projectPath.exists()) {
+        if (projectPath.notExists(LinkOption.NOFOLLOW_LINKS)) {
             projectPath.createDirectories()
         }
-        return File(project.basePath + File.separator + name).apply { createNewFile() }
+        return File(project.basePath + File.separator + "kubernetes-test.yaml").apply { createNewFile() }
     }
 
-    @Test
     fun `test Container should update image cache when yaml file is changed`() {
         setUpContainerTest()
-        val path = createNewFileInProjectRoot("kubernetes-test.yaml").toPath()
+        val path = createNewFileInProjectRoot().toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
         val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
         require(virtualFile != null)
@@ -71,10 +70,13 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
                 ?.setText(TestYamls.podYaml())
         }
         FileDocumentManager.getInstance().saveAllDocuments()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
-        val kubernetesWorkloadImages = imageCache.getKubernetesWorkloadImages()
-
-        assertNotNull(kubernetesWorkloadImages)
+        var kubernetesWorkloadImages = imageCache.getKubernetesWorkloadImages()
+        await().atMost(5, TimeUnit.SECONDS).until {
+            kubernetesWorkloadImages = imageCache.getKubernetesWorkloadImages()
+            kubernetesWorkloadImages.isNotEmpty()
+        }
         assertNotEmpty(kubernetesWorkloadImages)
         assertEquals(1, kubernetesWorkloadImages.size)
         assertEquals(path, kubernetesWorkloadImages.first().virtualFile.toNioPath())
@@ -82,7 +84,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         virtualFile.toNioPath().delete(true)
     }
 
-    @Test
     fun `test Container should delete images from cache when yaml file is deleted`() {
         setUpContainerTest()
         val file = myFixture.addFileToProject("kubernetes-test.yaml", "")
@@ -92,13 +93,23 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
                 ?.setText(TestYamls.podYaml())
         }
         FileDocumentManager.getInstance().saveAllDocuments()
-        assertNotEmpty(imageCache.getKubernetesWorkloadImages())
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
+
+        var kubernetesWorkloadImages: Set<KubernetesWorkloadImage>
+        await().atMost(5, TimeUnit.SECONDS).until {
+            kubernetesWorkloadImages = imageCache.getKubernetesWorkloadImages()
+            kubernetesWorkloadImages.isNotEmpty()
+        }
 
         ApplicationManager.getApplication().runWriteAction {
             file.virtualFile.delete(null)
         }
         FileDocumentManager.getInstance().saveAllDocuments()
-        assertEmpty(imageCache.getKubernetesWorkloadImages())
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
+
+        await().atMost(5, TimeUnit.SECONDS).until {
+            imageCache.getKubernetesWorkloadImages().isEmpty()
+        }
     }
 
     /**
@@ -132,20 +143,21 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
             uniqueCount = 1,
             error = null,
             imageName = "nginx",
-            workloadImages = listOf(KubernetesWorkloadImage(
-                image = "nginx",
-                virtualFile = addedPsiFile.virtualFile
-            ))
+            workloadImages = listOf(
+                KubernetesWorkloadImage(
+                    image = "nginx",
+                    virtualFile = addedPsiFile.virtualFile
+                )
+            )
         )
         val fakeContainerResult = ContainerResult(listOf(issuesForImage))
         val toolWindowPanel = project.service<SnykToolWindowPanel>()
         getSnykCachedResults(project)?.currentContainerResult = fakeContainerResult
         toolWindowPanel.getRootContainerIssuesTreeNode().add(ContainerImageTreeNode(issuesForImage, project) {})
 
-        getKubernetesImageCache(project)?.extractFromFile(addedPsiFile.virtualFile)
+        getKubernetesImageCache(project)?.extractFromFileAndAddToCache(addedPsiFile.virtualFile)
     }
 
-    @Test
     fun `test ContainerResults should drop cache and mark rescanNeeded when Container supported file CHANGED`() {
         setUpContainerTest()
         val psiFile = myFixture.configureByText("existing.yaml", TestYamls.podYaml())
@@ -162,7 +174,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         await().atMost(2, TimeUnit.SECONDS).until { containerCacheInvalidatedForFile(psiFile) }
     }
 
-    @Test
     fun `test ContainerResults should mark rescanNeeded when Container supported file CREATED`() {
         setUpContainerTest()
         createFakeContainerResultInCache()
@@ -178,7 +189,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         )
     }
 
-    @Test
     fun `test ContainerResults should mark rescanNeeded when Container supported file COPIED`() {
         setUpContainerTest()
         val originalFile = myFixture.addFileToProject("existing.yaml", TestYamls.podYaml())
@@ -199,7 +209,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         )
     }
 
-    @Test
     fun `test ContainerResults should drop cache and mark rescanNeeded when Container supported file MOVED`() {
         setUpContainerTest()
         val originalFile = myFixture.addFileToProject("existing.yaml", TestYamls.podYaml())
@@ -219,7 +228,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         )
     }
 
-    @Test
     fun `test ContainerResults should drop cache and mark rescanNeeded when Container supported file RENAMED`() {
         setUpContainerTest()
         val originalFile = myFixture.addFileToProject("existing.yaml", TestYamls.podYaml())
@@ -238,7 +246,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         )
     }
 
-    @Test
     fun `test ContainerResults should drop cache and mark rescanNeeded when Container supported file DELETED`() {
         setUpContainerTest()
         val originalFile = myFixture.addFileToProject("existing.yaml", TestYamls.podYaml())
@@ -257,7 +264,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         )
     }
 
-    @Test
     fun `test ContainerResults should drop cache and mark rescanNeeded when cached file wiped it content`() {
         setUpContainerTest()
         val psiFile = myFixture.addFileToProject("existing.yaml", TestYamls.podYaml())
@@ -276,14 +282,13 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         )
     }
 
-    @Test
     fun `test Container should update cache even if any other cache update fail with Exception`() {
         setUpContainerTest()
         val psiFile = myFixture.configureByText("existing.yaml", TestYamls.podYaml())
         createFakeContainerResultInCache(psiFile)
         assertFalse(isContainerUpdateNeeded())
 
-        var exceptionThrown = false
+        val exceptionThrown: Boolean
         val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
         try {
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ExceptionProducerFileListener())
@@ -294,7 +299,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
             exceptionThrown = try {
                 FileDocumentManager.getInstance().saveAllDocuments()
                 false
-            } catch (e: ControlException) {
+            } catch (ignored: RuntimeException) {
                 true
             }
         } finally {

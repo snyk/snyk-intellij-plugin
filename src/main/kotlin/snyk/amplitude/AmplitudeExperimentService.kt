@@ -3,11 +3,13 @@ package snyk.amplitude
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
+import io.snyk.plugin.pluginSettings
 import org.jetbrains.annotations.TestOnly
 import snyk.amplitude.api.AmplitudeExperimentApiClient
 import snyk.amplitude.api.AmplitudeExperimentApiClient.Defaults.FALLBACK_VARIANT
 import snyk.amplitude.api.ExperimentUser
 import snyk.amplitude.api.Variant
+import snyk.common.isFedramp
 import java.io.IOException
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
@@ -28,7 +30,12 @@ class AmplitudeExperimentService : Disposable {
             val prop = Properties()
             prop.load(javaClass.classLoader.getResourceAsStream("application.properties"))
             val apiKey = prop.getProperty("amplitude.experiment.api-key") ?: ""
-            apiClient = AmplitudeExperimentApiClient.create(apiKey = apiKey)
+            val settings = pluginSettings()
+            if (settings.usageAnalyticsEnabled && !isFedramp()) {
+                apiClient = AmplitudeExperimentApiClient.create(apiKey = apiKey)
+            } else {
+                LOG.debug("Amplitude experiment disabled.")
+            }
         } catch (e: IllegalArgumentException) {
             LOG.warn("Property file contains a malformed Unicode escape sequence", e)
         } catch (e: IOException) {

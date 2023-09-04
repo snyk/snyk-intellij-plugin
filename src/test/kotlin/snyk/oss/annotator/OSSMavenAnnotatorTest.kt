@@ -1,7 +1,6 @@
 package snyk.oss.annotator
 
 import com.google.gson.Gson
-import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.application.WriteAction

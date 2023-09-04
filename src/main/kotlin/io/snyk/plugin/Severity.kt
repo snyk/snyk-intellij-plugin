@@ -15,7 +15,7 @@ enum class Severity {
     HIGH,
     CRITICAL;
 
-    override fun toString(): String = super.toString().toLowerCase()
+    override fun toString(): String = super.toString().lowercase()
 
     fun toPresentableString(): String =
         when (this) {

@@ -1,16 +1,24 @@
-package io.snyk.plugin.snykcode.core
+package io.snyk.plugin.core
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.getSnykCode
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
+import io.snyk.plugin.snykcode.core.SnykCodeUtils
+import org.awaitility.Awaitility.await
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 // `Heavy` tests should be used due to Project partial re-usage/erasure:
 // .dcignore is deleted between calls but Project is not reopened in BasePlatformTestCase
@@ -20,6 +28,9 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
     override fun setUp() {
         super.setUp()
         resetSettings(project)
+        if (!FileUtil.exists(project.basePath)) {
+            project.basePath?.let { File(it) }?.let { FileUtil.createDirectory(it) }
+        }
         ModuleRootModificationUtil.addContentRoot(module, project.basePath!!)
     }
 
@@ -55,6 +66,7 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
 
     private fun refreshVirtualFileSystem() {
         ApplicationManager.getApplication().runWriteAction {
+            FileDocumentManager.getInstance().saveAllDocuments()
             VirtualFileManager.getInstance().syncRefresh()
         }
     }
@@ -83,10 +95,11 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         File(dcignoreFilePath).writeText("2.js")
         // trigger BulkFileListener to proceed .dcignore file change
         refreshVirtualFileSystem()
-        assertTrue(
-            "File $filePathToCheck should be excluded(ignored) by updated .dcignore",
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
+
+        await().atMost(5, TimeUnit.SECONDS).until {
             SnykCodeIgnoreInfoHolder.instance.isIgnoredFile(file)
-        )
+        }
     }
 
     fun testIgnoreCacheUpdateOnProjectClose() {
@@ -103,8 +116,9 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
 
     private fun setUpTest(): SnykCodeFile {
         val filePathToCheck = project.basePath + "/node_modules/1.js"
-        File(filePathToCheck).parentFile.mkdir()
-        File(filePathToCheck).createNewFile()
+        File(filePathToCheck).parentFile.mkdirs() &&
+            File(filePathToCheck).createNewFile() ||
+            throw IOException("Failed to create file $filePathToCheck")
 
         val fileToCheck = findFile(project, filePathToCheck)
         initiateAllMissedIgnoreFilesRescan()

@@ -4,21 +4,19 @@ import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import snyk.net.HttpClient
 
 class SnykApiClientTest {
-    @JvmField
-    @Rule
-    val server: MockWebServer = MockWebServer()
+    private lateinit var server: MockWebServer
 
     private lateinit var apiClientUnderTest: SnykApiClient
 
     @Before
     fun setUp() {
+        server = MockWebServer()
         val httpClient = HttpClient().apply {
             connectTimeout = 1
             readTimeout = 1

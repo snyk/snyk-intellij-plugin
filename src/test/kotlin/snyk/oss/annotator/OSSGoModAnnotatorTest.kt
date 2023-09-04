@@ -18,8 +18,6 @@ import org.hamcrest.collection.IsCollectionWithSize
 import org.junit.Assert
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThat
-import org.junit.Before
-import org.junit.Test
 import snyk.common.SnykCachedResults
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssResult
@@ -47,7 +45,6 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
 
     override fun isWriteActionRequired(): Boolean = true
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()
@@ -64,14 +61,12 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         super.tearDown()
     }
 
-    @Test
     fun `test getPackageName`() {
         val issue = createOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
         val actualPackageName = cut.getIntroducingPackage(issue)
         assertEquals("github.com/gin-gonic/gin", actualPackageName)
     }
 
-    @Test
     fun `test getIssues should not return any issue if no oss issue exists`() {
         every { snykCachedResults.currentOssResults } returns null
 
@@ -80,7 +75,6 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         Assert.assertEquals(null, issues)
     }
 
-    @Test
     fun `test getIssues should return issues if they exist`() {
         every { snykCachedResults.currentOssResults } returns createOssResultWithIssues()
 
@@ -90,7 +84,6 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         assertThat(issues!!.vulnerabilities, IsCollectionWithSize.hasSize(11))
     }
 
-    @Test
     fun `test apply should trigger newAnnotation call`() {
         every { snykCachedResults.currentOssResults } returns createOssResultWithIssues()
 
@@ -99,7 +92,6 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         verify { annotationHolderMock.newAnnotation(any(), any()) }
     }
 
-    @Test
     fun `test textRange`() {
         val ossResult = createOssResultWithIssues()
         val issue = ossResult.allCliIssues!!.first().vulnerabilities[0]
@@ -112,7 +104,6 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         assertEquals(expectedRange, actualRange)
     }
 
-    @Test
     fun `test annotation message should contain issue title`() {
         val vulnerability = createOssResultWithIssues().allCliIssues!!.first().vulnerabilities[0]
 
@@ -121,7 +112,6 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         assertTrue(actual.contains(vulnerability.title) && actual.contains(vulnerability.name))
     }
 
-    @Test
     fun `test apply should not add a quickfix`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         val result = createOssResultWithIssues()

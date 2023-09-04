@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.toolwindow.settings
 
-import snyk.common.UIComponentFinder.getComponentByName
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatform4TestCase
@@ -17,6 +16,7 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import org.junit.Test
 import snyk.common.ProductType
+import snyk.common.UIComponentFinder.getComponentByName
 import snyk.common.isSnykCodeAvailable
 import snyk.container.KubernetesImageCache
 
