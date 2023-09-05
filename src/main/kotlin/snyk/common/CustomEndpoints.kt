@@ -2,6 +2,7 @@ package snyk.common
 
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.suffixIfNot
+import io.snyk.plugin.prefixIfNot
 import java.net.URI
 import java.net.URISyntaxException
 
