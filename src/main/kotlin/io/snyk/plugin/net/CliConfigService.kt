@@ -30,7 +30,10 @@ data class CliConfigSettings(
 
 data class CliConfigSettingsError(
     @SerializedName("userMessage")
-    val userMessage: String
+    val userMessage: String,
+
+    @SerializedName("code")
+    val code: Int?
 )
 
 /**

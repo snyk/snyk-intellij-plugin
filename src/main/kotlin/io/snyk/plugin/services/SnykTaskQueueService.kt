@@ -25,6 +25,7 @@ import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -165,7 +166,12 @@ class SnykTaskQueueService(val project: Project) {
                 if (settings.token.isNullOrBlank()) {
                     return
                 }
-                val sastCliConfigSettings = getSnykApiService().getSastSettings()
+                val sastCliConfigSettings = try {
+                    getSnykApiService().getSastSettings()
+                } catch (t: ClientException) {
+                    null
+                }
+
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url

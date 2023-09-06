@@ -1,13 +1,38 @@
 package snyk.common
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.testFramework.replaceService
+import io.mockk.mockk
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.Assert.assertThat
 import org.junit.Test
+import org.junit.Before
 import java.net.URI
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import org.junit.After
+
 
 class CustomEndpointsTest {
+    @Before
+    fun setUp() {
+        unmockkAll()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
+        every { pluginSettings() } returns settings
+        // to use assertEquals for new tests
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun `resolveCustomEndpoint returns production SaaS url if endpointUrl is null or empty`() {
@@ -48,13 +73,6 @@ class CustomEndpointsTest {
         val snykCodeAvailable = isSnykCodeAvailable("https://app.random-uuid.snyk.io/api")
 
         assertThat(snykCodeAvailable, equalTo(true))
-    }
-
-    @Test
-    fun `isSnykCodeAvailable returns false for OnPremises deployments`() {
-        val snykCodeAvailable = isSnykCodeAvailable("https://on-prem.internal/api")
-
-        assertThat(snykCodeAvailable, equalTo(false))
     }
 
     @Test

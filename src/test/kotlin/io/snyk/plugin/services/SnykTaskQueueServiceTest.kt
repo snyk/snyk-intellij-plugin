@@ -32,7 +32,6 @@ import io.snyk.plugin.setupDummyCliFile
 import org.awaitility.Awaitility.await
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
-import org.junit.Test
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
@@ -60,7 +59,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
             "testTag"
         )
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
     }
 
     private fun mockSnykApiServiceSastEnabled() {
@@ -73,7 +72,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-                false
+            false
         )
     }
 
@@ -84,24 +83,23 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
-    @Test
     fun testSnykTaskQueueService() {
         setupDummyCliFile()
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
         snykTaskQueueService.scan()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
         snykTaskQueueService.downloadLatestRelease()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
-
         assertNull(snykTaskQueueService.ossScanProgressIndicator)
     }
 
-    @Test
     fun testCliDownloadBeforeScanIfNeeded() {
         val cliFile = getCliFile()
         val downloaderMock = setupMockForDownloadTest()
@@ -111,13 +109,13 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         snykTaskQueueService.scan()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
         verify { downloaderMock.downloadFile(any(), any(), any()) }
     }
 
-    @Test
     fun testDontDownloadCLIIfUpdatesDisabled() {
         val downloaderMock = setupMockForDownloadTest()
         val settings = setupAppSettingsForDownloadTests()
@@ -125,6 +123,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         snykTaskQueueService.scan()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
@@ -152,7 +151,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         return downloaderMock
     }
 
-    @Test
     fun testProjectClosedWhileTaskRunning() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
@@ -163,7 +161,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         snykTaskQueueService.downloadLatestRelease()
     }
 
-    @Test
     fun testSastEnablementCheckInScan() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         val settings = pluginSettings()
@@ -173,44 +170,45 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         settings.token = "testToken"
 
         snykTaskQueueService.scan()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         verify { snykApiServiceMock.getSastSettings() }
     }
 
-    @Test
     fun `test reportFalsePositivesEnabled should be unknown in initial settings state`() {
         val settings = pluginSettings()
 
         assertNull(settings.reportFalsePositivesEnabled)
     }
 
-    @Test
     fun `test LCE should be unknown in initial settings state`() {
         val settings = pluginSettings()
 
         assertNull(settings.localCodeEngineEnabled)
     }
 
-    @Test
-    fun `test should enables Code settings when LCE is enabled`() {
+    fun `test Code is enabled when local engine is enabled`() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         val settings = pluginSettings()
         settings.sastOnServerEnabled = true
         settings.localCodeEngineEnabled = true
+        settings.snykCodeQualityIssuesScanEnable = true
+        settings.snykCodeSecurityIssuesScanEnable = true
         settings.token = "testToken"
         // overwrite default setup
         snykApiServiceMock = mockk(relaxed = true)
         replaceSnykApiServiceMockInContainer()
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
-            LocalCodeEngine(true, "http://local.engine", false),
+            LocalCodeEngine(true, "http://foo.bar", false),
             false
         )
 
         snykTaskQueueService.scan()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
-        assertThat(settings.snykCodeSecurityIssuesScanEnable, equalTo(false))
-        assertThat(settings.snykCodeQualityIssuesScanEnable, equalTo(false))
+        assertThat(settings.snykCodeSecurityIssuesScanEnable, equalTo(true))
+        assertThat(settings.snykCodeQualityIssuesScanEnable, equalTo(true))
     }
 
     private fun replaceSnykApiServiceMockInContainer() {
@@ -218,7 +216,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         application.replaceService(SnykApiService::class.java, snykApiServiceMock, application)
     }
 
-    @Test
     fun testIacScanTriggeredAndProduceResults() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         val settings = pluginSettings()
@@ -236,11 +233,11 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { getIacService(project)?.scan() } returns fakeIacResult
 
         snykTaskQueueService.scan()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertEquals(fakeIacResult, getSnykCachedResults(project)?.currentIacResult)
     }
 
-    @Test
     fun testContainerScanTriggeredAndProduceResults() {
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isContainerEnabled() } returns true
@@ -259,6 +256,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         getSnykCachedResults(project)?.currentContainerResult = null
 
         snykTaskQueueService.scan()
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         await().atMost(2, TimeUnit.SECONDS).until {
             getSnykCachedResults(project)?.currentContainerResult != null

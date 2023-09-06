@@ -2,7 +2,6 @@ package io.snyk.plugin.net
 
 import com.google.gson.Gson
 import com.intellij.openapi.diagnostic.logger
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import retrofit2.Call
 import retrofit2.Retrofit
 
@@ -32,8 +31,8 @@ class SnykApiClient(
             val response = retrofitCall.execute()
             if (!response.isSuccessful) {
                 if (response.code() == 422) {
-                    val responseBodyString = response.errorBody()?.string();
-                    val errorBody= Gson().fromJson<CliConfigSettingsError?>(responseBodyString, CliConfigSettings::class.java)
+                    val responseBodyString = response.errorBody()?.string()
+                    val errorBody= Gson().fromJson<CliConfigSettingsError?>(responseBodyString, CliConfigSettingsError::class.java)
                     if (errorBody?.userMessage?.isNotEmpty() == true) {
                         throw ClientException(errorBody.userMessage)
                     }
@@ -45,10 +44,8 @@ class SnykApiClient(
                 response.body()
             }
         } catch (t: ClientException) {
-            val defaultErrorMsg = "Your org's SAST settings are misconfigured."
-            val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
-            SnykBalloonNotificationHelper.showError(userMessage, null)
-            return null
+            // Consumers are expected to handle ClientException throws.
+            throw t
         } catch (t: Throwable) {
             log.warn("Failed to execute '$apiName' network request: ${t.message}", t)
             executeRequest(apiName, retrofitCall.clone(), retryCounter - 1)

@@ -43,6 +43,7 @@ import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.navigateToSource
+import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykToolWindow
@@ -488,7 +489,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun enableCodeScanAccordingToServerSetting() {
         pluginSettings().apply {
-            val sastSettings = getSnykApiService().getSastSettings()
+            val sastSettings = try {
+                getSnykApiService().getSastSettings()
+            } catch (t: ClientException) {
+                null
+            }
             sastOnServerEnabled = sastSettings?.sastEnabled
             val codeScanAllowed = sastOnServerEnabled == true
             snykCodeSecurityIssuesScanEnable = this.snykCodeSecurityIssuesScanEnable && codeScanAllowed

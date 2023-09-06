@@ -17,6 +17,7 @@ import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.net.CliConfigSettings
+import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
@@ -219,13 +220,28 @@ class ScanTypesPanel(
             showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")
             return
         }
-        val sastCliConfigSettings: CliConfigSettings? = getSnykApiService().getSastSettings()
+
+        var sastSettingsError: String = ""
+        val sastCliConfigSettings: CliConfigSettings? =
+        try {
+            getSnykApiService().getSastSettings()
+        } catch (t: ClientException) {
+            val defaultErrorMsg = "Your org's SAST settings are misconfigured."
+            val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
+            SnykBalloonNotificationHelper.showError(userMessage, null)
+            sastSettingsError = userMessage;
+            null
+        }
+
         settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
         settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
         settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
         val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
+        if (sastSettingsError.isNotEmpty()) {
+            showSnykCodeAlert(sastSettingsError)
+        }
         showSnykCodeAlert(
-            if (snykCodeAvailable) "" else "Snyk Code only works in SAAS mode (i.e. no Custom Endpoint usage)"
+            if (sastSettingsError.isNotEmpty()) sastSettingsError else ""
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
