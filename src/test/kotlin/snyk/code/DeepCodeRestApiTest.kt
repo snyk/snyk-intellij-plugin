@@ -19,6 +19,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykcode.newCodeRestApi
 import org.junit.After
 import org.junit.Assert
@@ -368,10 +369,15 @@ class DeepCodeRestApiImplTest {
 
     @Test
     fun snykCodeAnalysis_smoke_test() {
+        // This test will fail on your local machine, unless you have a valid prod `SNYK_TOKEN`
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
+        val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
+        every { pluginSettings() } returns settings
         every { pluginSettings().token } returns loggedToken
+        every { pluginSettings().localCodeEngineEnabled } returns false
         every { pluginSettings().ignoreUnknownCA } returns false
+
         mockkStatic("snyk.PluginInformationKt")
         every { pluginInfo } returns mockk(relaxed = true)
 

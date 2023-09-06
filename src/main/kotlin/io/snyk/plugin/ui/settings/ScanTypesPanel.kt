@@ -237,9 +237,6 @@ class ScanTypesPanel(
         settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
         settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
         val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
-        if (sastSettingsError.isNotEmpty()) {
-            showSnykCodeAlert(sastSettingsError)
-        }
         showSnykCodeAlert(
             if (sastSettingsError.isNotEmpty()) sastSettingsError else ""
         )

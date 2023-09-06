@@ -19,8 +19,6 @@ class TokenInterceptor(private var projectManager: ProjectManager? = null) : Int
         val endpoint = chain.request().url.toString()
 
         if (needsSnykToken(endpoint)) {
-        // this is temporary. `app.local.host` is not an unknown host be we need to add headers to it
-//        if (true) {
             val token = pluginSettings().token ?: return chain.proceed(request.build())
 
             val oldSnykCodeHeaderName = "Session-Token"

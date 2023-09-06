@@ -187,30 +187,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         assertNull(settings.localCodeEngineEnabled)
     }
 
-    fun `test Code is enabled when local engine is enabled`() {
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = pluginSettings()
-        settings.sastOnServerEnabled = true
-        settings.localCodeEngineEnabled = true
-        settings.snykCodeQualityIssuesScanEnable = true
-        settings.snykCodeSecurityIssuesScanEnable = true
-        settings.token = "testToken"
-        // overwrite default setup
-        snykApiServiceMock = mockk(relaxed = true)
-        replaceSnykApiServiceMockInContainer()
-        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
-            true,
-            LocalCodeEngine(true, "http://foo.bar", false),
-            false
-        )
-
-        snykTaskQueueService.scan()
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        assertThat(settings.snykCodeSecurityIssuesScanEnable, equalTo(true))
-        assertThat(settings.snykCodeQualityIssuesScanEnable, equalTo(true))
-    }
-
     private fun replaceSnykApiServiceMockInContainer() {
         val application = ApplicationManager.getApplication()
         application.replaceService(SnykApiService::class.java, snykApiServiceMock, application)

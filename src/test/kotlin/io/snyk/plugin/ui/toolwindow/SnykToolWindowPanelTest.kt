@@ -144,7 +144,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     fun `should automatically enable all products on first run after Auth`() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
-            LocalCodeEngine(false, "", false),
+            LocalCodeEngine(true, "http://foo.bar/api", false),
             false
         )
         val application = ApplicationManager.getApplication()
