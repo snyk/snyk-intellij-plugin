@@ -98,7 +98,7 @@ fun snykCodeAvailabilityPostfix(): String {
     val sastOnServerEnabled = pluginSettings().sastOnServerEnabled
     val sastSettingsError = pluginSettings().sastSettingsError
     return when {
-        sastSettingsError == true -> " (Snyk Code settings couldn't be fetched)"
+        sastSettingsError == true -> " (Snyk Code settings misconfigured)"
         sastOnServerEnabled == false -> " (disabled in Snyk.io)"
         !isSnykCodeAvailable(pluginSettings().customEndpointUrl) -> " (disabled for endpoint)"
         sastOnServerEnabled == null -> " (unreachable server settings)"
