@@ -96,10 +96,12 @@ fun insertTitleAndResizableTextIntoPanelColumns(
 
 fun snykCodeAvailabilityPostfix(): String {
     val sastOnServerEnabled = pluginSettings().sastOnServerEnabled
+    val sastSettingsError = pluginSettings().sastSettingsError
     return when {
+        sastSettingsError == true -> " (Snyk Code settings couldn't be fetched)"
+        sastOnServerEnabled == false -> " (disabled in Snyk.io)"
         !isSnykCodeAvailable(pluginSettings().customEndpointUrl) -> " (disabled for endpoint)"
         sastOnServerEnabled == null -> " (unreachable server settings)"
-        sastOnServerEnabled != true -> " (disabled in Snyk.io)"
         else -> ""
     }
 }

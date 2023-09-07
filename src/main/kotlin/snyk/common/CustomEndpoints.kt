@@ -9,12 +9,12 @@ import java.net.URISyntaxException
 fun toSnykCodeApiUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
-    if (uri.isLocalCodeEngine()) {
-        return pluginSettings().localCodeEngineUrl!!
-    }
 
     val codeSubdomain = "deeproxy"
     val snykCodeApiUrl = when {
+        uri.isLocalCodeEngine() ->
+            return pluginSettings().localCodeEngineUrl!!
+
         uri.isDeeproxy() ->
             endpoint
 
@@ -32,10 +32,10 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
-    if (uri.isLocalCodeEngine()) {
-        return uri.toString()
-    }
+
     val baseUrl = when {
+        uri.isLocalCodeEngine() -> return uri.toString()
+
         uri.host == "snyk.io" ->
             "https://app.snyk.io/"
 

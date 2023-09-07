@@ -168,7 +168,7 @@ class SnykTaskQueueService(val project: Project) {
                 }
                 val sastCliConfigSettings = try {
                     getSnykApiService().getSastSettings()
-                } catch (t: ClientException) {
+                } catch (ignored: ClientException) {
                     null
                 }
 

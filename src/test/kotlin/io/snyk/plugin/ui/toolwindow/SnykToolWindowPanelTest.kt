@@ -144,6 +144,34 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     fun `should automatically enable all products on first run after Auth`() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
+            LocalCodeEngine(false, "", false),
+            false
+        )
+        val application = ApplicationManager.getApplication()
+        application.replaceService(
+            SnykApplicationSettingsStateService::class.java,
+            SnykApplicationSettingsStateService(),
+            application
+        )
+        pluginSettings().token = "test-token"
+        pluginSettings().pluginFirstRun = true
+
+        SnykToolWindowPanel(project)
+
+        verify(exactly = 1, timeout = 5000) {
+            snykApiServiceMock.getSastSettings()
+        }
+        assertTrue(pluginSettings().ossScanEnable)
+        assertTrue(pluginSettings().snykCodeSecurityIssuesScanEnable)
+        assertTrue(pluginSettings().snykCodeQualityIssuesScanEnable)
+        assertTrue(pluginSettings().iacScanEnabled)
+        assertTrue(pluginSettings().containerScanEnabled)
+    }
+
+    @Test
+    fun `should automatically enable all products on first run after Auth, with local engine enabled`() {
+        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
+            true,
             LocalCodeEngine(true, "http://foo.bar/api", false),
             false
         )

@@ -2,6 +2,7 @@ package io.snyk.plugin.net
 
 import com.google.gson.Gson
 import com.intellij.openapi.diagnostic.logger
+import io.ktor.http.HttpStatusCode
 import retrofit2.Call
 import retrofit2.Retrofit
 
@@ -30,7 +31,7 @@ class SnykApiClient(
             log.debug("Executing request to $apiName")
             val response = retrofitCall.execute()
             if (!response.isSuccessful) {
-                if (response.code() == 422) {
+                if (response.code() == HttpStatusCode.UnprocessableEntity.value) {
                     val responseBodyString = response.errorBody()?.string()
                     val errorBody= Gson().fromJson<CliConfigSettingsError?>(responseBodyString, CliConfigSettingsError::class.java)
                     if (errorBody?.userMessage?.isNotEmpty() == true) {

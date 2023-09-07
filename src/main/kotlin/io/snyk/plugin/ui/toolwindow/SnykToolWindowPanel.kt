@@ -491,7 +491,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         pluginSettings().apply {
             val sastSettings = try {
                 getSnykApiService().getSastSettings()
-            } catch (t: ClientException) {
+            } catch (ignored: ClientException) {
                 null
             }
             sastOnServerEnabled = sastSettings?.sastEnabled

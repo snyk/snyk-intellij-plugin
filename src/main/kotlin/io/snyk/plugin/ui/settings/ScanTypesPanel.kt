@@ -224,8 +224,11 @@ class ScanTypesPanel(
         var sastSettingsError: String = ""
         val sastCliConfigSettings: CliConfigSettings? =
         try {
-            getSnykApiService().getSastSettings()
+            val sastSettings = getSnykApiService().getSastSettings()
+            settings.sastSettingsError = false
+            sastSettings
         } catch (t: ClientException) {
+            settings.sastSettingsError = true;
             val defaultErrorMsg = "Your org's SAST settings are misconfigured."
             val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
             SnykBalloonNotificationHelper.showError(userMessage, null)
@@ -238,7 +241,7 @@ class ScanTypesPanel(
         settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
         val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
         showSnykCodeAlert(
-            if (sastSettingsError.isNotEmpty()) sastSettingsError else ""
+            sastSettingsError.ifEmpty { "" }
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {

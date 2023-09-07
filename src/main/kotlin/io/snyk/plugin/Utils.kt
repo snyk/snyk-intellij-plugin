@@ -196,7 +196,7 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
         if (settings.sastOnServerEnabled != true) {
             settings.sastOnServerEnabled = try {
                 getSnykApiService().getSastSettings()?.sastEnabled ?: false
-            } catch (t: ClientException) {
+            } catch (ignored: ClientException) {
                 false
             }
 
