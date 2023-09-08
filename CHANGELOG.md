@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.5.2]
+
+### Added
+
+- Snyk Code support for on-prem solutions (Snyk Code Local Engine) 
+
 ## [2.5.1]
 
 ### Changed
