@@ -222,8 +222,7 @@ class ScanTypesPanel(
         }
 
         var sastSettingsError: String = ""
-        val sastCliConfigSettings: CliConfigSettings? =
-        try {
+        val sastCliConfigSettings: CliConfigSettings? = try {
             val sastSettings = getSnykApiService().getSastSettings()
             settings.sastSettingsError = false
             sastSettings

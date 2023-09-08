@@ -33,7 +33,10 @@ class SnykApiClient(
             if (!response.isSuccessful) {
                 if (response.code() == HttpStatusCode.UnprocessableEntity.value) {
                     val responseBodyString = response.errorBody()?.string()
-                    val errorBody= Gson().fromJson<CliConfigSettingsError?>(responseBodyString, CliConfigSettingsError::class.java)
+                    val errorBody = Gson().fromJson<CliConfigSettingsError?>(
+                        responseBodyString,
+                        CliConfigSettingsError::class.java
+                    )
                     if (errorBody?.userMessage?.isNotEmpty() == true) {
                         throw ClientException(errorBody.userMessage)
                     }
