@@ -227,11 +227,11 @@ class ScanTypesPanel(
             settings.sastSettingsError = false
             sastSettings
         } catch (t: ClientException) {
-            settings.sastSettingsError = true;
+            settings.sastSettingsError = true
             val defaultErrorMsg = "Your org's SAST settings are misconfigured."
             val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
             SnykBalloonNotificationHelper.showError(userMessage, null)
-            sastSettingsError = userMessage;
+            sastSettingsError = userMessage
             null
         }
 

@@ -6,6 +6,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase.assertEquals
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.Assert.assertThat
 import org.junit.Test
@@ -13,7 +14,6 @@ import org.junit.Before
 import java.net.URI
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import junit.framework.TestCase.assertEquals
 import org.junit.After
 
 class CustomEndpointsTest {
@@ -69,7 +69,7 @@ class CustomEndpointsTest {
         every { pluginSettings().localCodeEngineUrl } returns "http://foo.bar/api"
         every { pluginSettings().localCodeEngineEnabled } returns true
 
-        assertEquals(isSnykCodeAvailable("https://foo.bar/api"),true)
+        assertEquals(isSnykCodeAvailable("https://foo.bar/api"), true)
     }
 
     @Test
