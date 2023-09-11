@@ -25,8 +25,6 @@ object SnykBalloonNotifications {
     private val logger = logger<SnykBalloonNotifications>()
     private val alarm = Alarm()
 
-    const val sastForLocalCodeEngineMessage = "Snyk Code is configured to use a Local Code Engine instance." +
-        "This setup is not yet supported."
     const val sastForOrgEnablementMessage = "Snyk Code is disabled by your organisation's configuration."
     const val networkErrorAlertMessage = "Not able to connect to Snyk server."
 
@@ -44,17 +42,6 @@ object SnykBalloonNotifications {
             }
         )
         notification.notify(project)
-    }
-
-    fun showSastForLocalCodeEngineMessage(project: Project): Notification {
-        return SnykBalloonNotificationHelper.showInfo(
-            sastForLocalCodeEngineMessage,
-            project,
-            NotificationAction.createSimpleExpiring("SNYK SETTINGS") {
-                ShowSettingsUtil.getInstance()
-                    .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
-            }
-        )
     }
 
     fun showSastForOrgEnablement(project: Project): Notification {

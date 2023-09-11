@@ -28,10 +28,24 @@ data class CliConfigSettings(
     val reportFalsePositivesEnabled: Boolean
 )
 
+data class CliConfigSettingsError(
+    @SerializedName("userMessage")
+    val userMessage: String,
+
+    @SerializedName("code")
+    val code: Int?
+)
+
 /**
  * SAST local code engine configuration.
  */
 data class LocalCodeEngine(
     @SerializedName("enabled")
-    val enabled: Boolean
+    val enabled: Boolean,
+
+    @SerializedName("url")
+    val url: String,
+
+    @SerializedName("allowCloudUpload")
+    val allowCloudUpload: Boolean
 )

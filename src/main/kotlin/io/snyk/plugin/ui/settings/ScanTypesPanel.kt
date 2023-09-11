@@ -16,6 +16,8 @@ import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.net.CliConfigSettings
+import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
@@ -219,25 +221,33 @@ class ScanTypesPanel(
             return
         }
 
+        var sastSettingsError: String = ""
+        val sastCliConfigSettings: CliConfigSettings? = try {
+            val sastSettings = getSnykApiService().getSastSettings()
+            settings.sastSettingsError = false
+            sastSettings
+        } catch (t: ClientException) {
+            settings.sastSettingsError = true
+            val defaultErrorMsg = "Your org's SAST settings are misconfigured."
+            val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
+            SnykBalloonNotificationHelper.showError(userMessage, null)
+            sastSettingsError = userMessage
+            null
+        }
+
+        settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
+        settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
+        settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
         val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
         showSnykCodeAlert(
-            if (snykCodeAvailable) "" else "Snyk Code only works in SAAS mode (i.e. no Custom Endpoint usage)"
+            sastSettingsError.ifEmpty { "" }
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-                val sastCliConfigSettings = getSnykApiService().getSastSettings()
-                settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
-                settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
+
                 when (settings.sastOnServerEnabled) {
                     true -> {
-                        if (settings.localCodeEngineEnabled == true) {
-                            showSnykCodeAlert(
-                                message = "Snyk Code is configured to use a Local Code Engine instance." +
-                                    " This setup is not yet supported."
-                            )
-                        } else {
-                            doShowFilesToUpload()
-                        }
+                        doShowFilesToUpload()
                     }
 
                     false -> {

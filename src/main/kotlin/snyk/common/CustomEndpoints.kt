@@ -1,8 +1,8 @@
 package snyk.common
 
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.prefixIfNot
 import io.snyk.plugin.suffixIfNot
+import io.snyk.plugin.prefixIfNot
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -12,6 +12,9 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 
     val codeSubdomain = "deeproxy"
     val snykCodeApiUrl = when {
+        uri.isLocalCodeEngine() ->
+            return pluginSettings().localCodeEngineUrl!!
+
         uri.isDeeproxy() ->
             endpoint
 
@@ -29,7 +32,10 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
+
     val baseUrl = when {
+        uri.isLocalCodeEngine() -> return uri.toString()
+
         uri.host == "snyk.io" ->
             "https://app.snyk.io/"
 
@@ -50,7 +56,7 @@ fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
 
 fun needsSnykToken(endpoint: String): Boolean {
     val uri = URI(endpoint)
-    return uri.isSnykApi() || uri.isSnykTenant() || uri.isDeeproxy()
+    return uri.isSnykApi() || uri.isSnykTenant() || uri.isDeeproxy() || uri.isLocalCodeEngine()
 }
 
 fun getEndpointUrl(): String {
@@ -67,7 +73,7 @@ fun getEndpointUrl(): String {
 fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
-    return uri.isSnykTenant()
+    return uri.isSnykTenant() || uri.isLocalCodeEngine()
 }
 
 /**
@@ -128,6 +134,8 @@ fun isFedramp(): Boolean {
         ?.let { URI(it) }
         ?.isFedramp() ?: false
 }
+
+fun URI.isLocalCodeEngine() = pluginSettings().localCodeEngineEnabled == true
 
 internal fun String.removeTrailingSlashesIfPresent(): String {
     val candidate = this.replace(Regex("/+$"), "")

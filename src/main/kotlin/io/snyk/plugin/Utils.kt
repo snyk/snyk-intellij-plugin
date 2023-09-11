@@ -24,6 +24,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
+import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -193,7 +194,12 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     lateinit var checkIfSastEnabled: () -> Unit
     checkIfSastEnabled = {
         if (settings.sastOnServerEnabled != true) {
-            settings.sastOnServerEnabled = getSnykApiService().getSastSettings()?.sastEnabled ?: false
+            settings.sastOnServerEnabled = try {
+                getSnykApiService().getSastSettings()?.sastEnabled ?: false
+            } catch (ignored: ClientException) {
+                false
+            }
+
             if (settings.sastOnServerEnabled == true) {
                 onSuccess.invoke()
             } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {

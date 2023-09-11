@@ -25,6 +25,7 @@ import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -165,25 +166,20 @@ class SnykTaskQueueService(val project: Project) {
                 if (settings.token.isNullOrBlank()) {
                     return
                 }
-                val sastCliConfigSettings = getSnykApiService().getSastSettings()
+                val sastCliConfigSettings = try {
+                    getSnykApiService().getSastSettings()
+                } catch (ignored: ClientException) {
+                    null
+                }
+
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
+                settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
                 settings.reportFalsePositivesEnabled = sastCliConfigSettings?.reportFalsePositivesEnabled
                 when (settings.sastOnServerEnabled) {
                     true -> {
-                        if (settings.localCodeEngineEnabled == true) {
-                            SnykBalloonNotifications.showSastForLocalCodeEngineMessage(project)
-                            scanPublisher?.scanningSnykCodeError(
-                                SnykError(
-                                    SnykBalloonNotifications.sastForLocalCodeEngineMessage, project.basePath ?: ""
-                                )
-                            )
-                            settings.snykCodeSecurityIssuesScanEnable = false
-                            settings.snykCodeQualityIssuesScanEnable = false
-                        } else {
-                            getSnykCode(project)?.scan()
-                            scanPublisher?.scanningStarted()
-                        }
+                        getSnykCode(project)?.scan()
+                        scanPublisher?.scanningStarted()
                     }
 
                     false -> {

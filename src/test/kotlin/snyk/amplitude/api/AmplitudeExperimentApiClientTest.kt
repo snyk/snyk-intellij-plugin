@@ -1,9 +1,11 @@
 package snyk.amplitude.api
 
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.buffer
@@ -54,6 +56,8 @@ class AmplitudeExperimentApiClientTest {
 
     @Test
     fun `sdkVardata should return 200 by multiple variants`() {
+        val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
+        every { pluginSettings() } returns settings
         server.enqueueResponse("sdk-vardata_multiple-variants_200.json", 200)
         val amplitudeVariantService = clientUnderTest.variantService()
 
@@ -79,6 +83,8 @@ class AmplitudeExperimentApiClientTest {
 
     @Test
     fun `sdkVardata should return 200 by empty user id`() {
+        val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
+        every { pluginSettings() } returns settings
         server.enqueueResponse("sdk-vardata_empty-response_200.json", 200)
         val amplitudeVariantService = clientUnderTest.variantService()
 
@@ -89,6 +95,8 @@ class AmplitudeExperimentApiClientTest {
 
     @Test
     fun `allVariants should return multiple variants`() {
+        val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
+        every { pluginSettings() } returns settings
         server.enqueueResponse("sdk-vardata_multiple-variants_200.json", 200)
 
         val actualVariants = clientUnderTest.allVariants(ExperimentUser("random-user-id"))
