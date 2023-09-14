@@ -25,6 +25,12 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
 
     override fun setConsentGiven(project: Any) = Unit
 
+    // This is needed because when an org changes via plugin settings,
+    // `DeepCodeParamsBase.getOrgDisplayName` is referring to a stalled value
+    override fun getOrgDisplayName(): String? {
+        return pluginSettings().organization
+    }
+
     companion object {
         val instance = SnykCodeParams()
     }
