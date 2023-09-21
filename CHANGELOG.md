@@ -1,5 +1,12 @@
 # Snyk Changelog
 
+## [2.5.3]
+
+### Fixed
+
+- updated dependencies
+
+
 ## [2.5.2]
 
 ### Added
