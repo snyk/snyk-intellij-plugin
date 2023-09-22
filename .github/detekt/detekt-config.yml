@@ -8,6 +8,8 @@ formatting:
     active: false
   ParameterListWrapping:
     active: false
+  NoWildcardImports:
+    active: false
 
 complexity:
   # don't count private & deprecated
@@ -25,5 +27,3 @@ style:
     excludeLabeled: false
     excludeReturnFromLambda: true
     excludeGuardClauses: true
-  NoWildcardImports:
-    active: false
