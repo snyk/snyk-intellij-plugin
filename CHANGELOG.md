@@ -9,6 +9,10 @@
 
 ## [2.5.3]
 
+### Changed
+
+- display up to 70 characters of the filepath in the tree view
+
 ### Fixed
 
 - updated dependencies
