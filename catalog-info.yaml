@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: snyk-intellij-plugin
+  annotations:
+    github.com/project-slug: snyk/snyk-intellij-plugin
+    github.com/team-slug: snyk/hammerhead
+spec:
+  type: ide-plugin
+  lifecycle: "-"
+  owner: hammerhead
