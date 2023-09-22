@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.11.0"))
     implementation("org.commonmark:commonmark:0.21.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.segment.analytics.java:analytics:3.4.0")
@@ -38,12 +38,16 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
-    implementation("ly.iterative.itly:plugin-iteratively:1.2.11")
-    implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.12.7.1")
+    implementation("org.json:json:20230227")
+    implementation("ly.iterative.itly:plugin-iteratively:1.2.11") {
+        exclude(group = "com.fasterxml.jackson.core")
         exclude(group = "org.slf4j")
     }
+    implementation("ly.iterative.itly:plugin-schema-validator:1.2.11")
     implementation("ly.iterative.itly:sdk-jvm:1.2.11") {
         exclude(group = "org.slf4j")
+        exclude(group = "org.json")
     }
     implementation("com.segment.analytics.java:analytics:3.4.0")
 
