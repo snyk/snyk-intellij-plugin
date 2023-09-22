@@ -40,20 +40,13 @@ import java.util.*
 import javax.swing.Icon
 import javax.swing.JTree
 
-private const val MAX_FILE_TREE_NODE_LENGTH = 70
+private const val MAX_FILE_TREE_NODE_LENGTH = 60
 
 class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
     @Suppress("UNCHECKED_CAST")
     override fun customizeCellRenderer(
-        tree: JTree,
-        value: Any,
-        selected: Boolean,
-        expanded: Boolean,
-        leaf: Boolean,
-        row: Int,
-        hasFocus: Boolean
+        tree: JTree, value: Any, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean
     ) {
-
         var nodeIcon: Icon? = null
         var text: String? = null
         var attributes = SimpleTextAttributes.REGULAR_ATTRIBUTES
@@ -73,20 +66,20 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             is FileTreeNode -> {
                 val fileVulns = value.userObject as OssVulnerabilitiesForFile
                 nodeIcon = PackageManagerIconProvider.getIcon(fileVulns.packageManager.lowercase(Locale.getDefault()))
-                toolTipText = GotoFileCellRenderer.getRelativePath(fileVulns.virtualFile, value.project) +
-                        fileVulns.sanitizedTargetFile + ProductType.OSS.getCountText(value.childCount)
+                toolTipText = GotoFileCellRenderer.getRelativePath(
+                    fileVulns.virtualFile, value.project
+                ) + fileVulns.sanitizedTargetFile + ProductType.OSS.getCountText(value.childCount)
 
                 text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
                     "..." + it.substring(
-                        it.length - 47,
-                        it.length
+                        it.length - MAX_FILE_TREE_NODE_LENGTH, it.length
                     )
                 }
 
                 val snykCachedResults = getSnykCachedResults(value.project)
                 if (snykCachedResults?.currentOssResults == null) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    text += obsoleteSuffix
+                    text += OBSOLETE_SUFFIX
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
@@ -115,8 +108,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
                 text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
                     "..." + it.substring(
-                        it.length - 47,
-                        it.length
+                        it.length - MAX_FILE_TREE_NODE_LENGTH, it.length
                     )
                 }
 
@@ -124,7 +116,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 nodeIcon = psiFile?.getIcon(Iconable.ICON_FLAG_READ_STATUS)
                 if (!AnalysisData.instance.isFileInCache(file)) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    text += obsoleteSuffix
+                    text += OBSOLETE_SUFFIX
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
@@ -135,23 +127,20 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     iacVulnerabilitiesForFile.packageManager.lowercase(Locale.getDefault())
                 )
                 toolTipText = GotoFileCellRenderer.getRelativePath(
-                    iacVulnerabilitiesForFile.virtualFile,
-                    value.project
+                    iacVulnerabilitiesForFile.virtualFile, value.project
                 ) + ProductType.IAC.getCountText(value.childCount)
 
                 text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
                     "..." + it.substring(
-                        it.length - 47,
-                        it.length
+                        it.length - MAX_FILE_TREE_NODE_LENGTH, it.length
                     )
                 }
-
 
                 val snykCachedResults = getSnykCachedResults(value.project)
                 if (snykCachedResults?.currentIacResult == null || iacVulnerabilitiesForFile.obsolete) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
-                    text += obsoleteSuffix
+                    text += OBSOLETE_SUFFIX
                 }
             }
 
@@ -164,7 +153,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 if (snykCachedResults?.currentContainerResult == null || issuesForImage.obsolete) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
-                    text += obsoleteSuffix
+                    text += OBSOLETE_SUFFIX
                 }
             }
 
@@ -180,8 +169,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverity())
                 val prefix = if (issue.lineNumber > 0) "line ${issue.lineNumber}: " else ""
                 text = prefix + issue.title + when {
-                    issue.ignored -> ignoredSuffix
-                    snykCachedResults?.currentIacResult == null || issue.obsolete -> obsoleteSuffix
+                    issue.ignored -> IGNORED_SUFFIX
+                    snykCachedResults?.currentIacResult == null || issue.obsolete -> OBSOLETE_SUFFIX
                     else -> ""
                 }
                 if (snykCachedResults?.currentIacResult == null || issue.ignored || issue.obsolete) {
@@ -195,8 +184,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val snykCachedResults = getSnykCachedResults(value.project)
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverity())
                 text = issue.title + when {
-                    issue.ignored -> ignoredSuffix
-                    snykCachedResults?.currentContainerResult == null || issue.obsolete -> obsoleteSuffix
+                    issue.ignored -> IGNORED_SUFFIX
+                    snykCachedResults?.currentContainerResult == null || issue.obsolete -> OBSOLETE_SUFFIX
                     else -> ""
                 }
                 if (snykCachedResults?.currentContainerResult == null || issue.ignored || issue.obsolete) {
@@ -217,7 +206,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 text = if (settings.ossScanEnable) {
                     value.userObject.toString()
                 } else {
-                    SnykToolWindowPanel.OSS_ROOT_TEXT + disabledSuffix
+                    SnykToolWindowPanel.OSS_ROOT_TEXT + DISABLED_SUFFIX
                 }
             }
 
@@ -233,8 +222,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 text = if (settings.snykCodeSecurityIssuesScanEnable) {
                     value.userObject.toString()
                 } else {
-                    SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT +
-                            snykCodeAvailabilityPostfix().ifEmpty { disabledSuffix }
+                    SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT + snykCodeAvailabilityPostfix()
+                        .ifEmpty { DISABLED_SUFFIX }
                 }
             }
 
@@ -250,8 +239,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 text = if (settings.snykCodeQualityIssuesScanEnable) {
                     value.userObject.toString()
                 } else {
-                    SnykToolWindowPanel.CODE_QUALITY_ROOT_TEXT +
-                            snykCodeAvailabilityPostfix().ifEmpty { disabledSuffix }
+                    SnykToolWindowPanel.CODE_QUALITY_ROOT_TEXT + snykCodeAvailabilityPostfix()
+                        .ifEmpty { DISABLED_SUFFIX }
                 }
             }
 
@@ -267,7 +256,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 text = if (settings.iacScanEnabled) {
                     value.userObject.toString()
                 } else {
-                    SnykToolWindowPanel.IAC_ROOT_TEXT + disabledSuffix
+                    SnykToolWindowPanel.IAC_ROOT_TEXT + DISABLED_SUFFIX
                 }
             }
 
@@ -283,7 +272,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 text = if (settings.containerScanEnabled) {
                     value.userObject.toString()
                 } else {
-                    SnykToolWindowPanel.CONTAINER_ROOT_TEXT + disabledSuffix
+                    SnykToolWindowPanel.CONTAINER_ROOT_TEXT + DISABLED_SUFFIX
                 }
             }
         }
@@ -293,8 +282,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
     }
 
     companion object {
-        private const val obsoleteSuffix = " (obsolete)"
-        private const val ignoredSuffix = " (ignored)"
-        private const val disabledSuffix = " (disabled in Settings)"
+        private const val OBSOLETE_SUFFIX = " (obsolete)"
+        private const val IGNORED_SUFFIX = " (ignored)"
+        private const val DISABLED_SUFFIX = " (disabled in Settings)"
     }
 }
