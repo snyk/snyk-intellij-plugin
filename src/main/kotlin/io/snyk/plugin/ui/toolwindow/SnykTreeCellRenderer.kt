@@ -19,7 +19,11 @@ import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.*
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
@@ -66,9 +70,13 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             is FileTreeNode -> {
                 val fileVulns = value.userObject as OssVulnerabilitiesForFile
                 nodeIcon = PackageManagerIconProvider.getIcon(fileVulns.packageManager.lowercase(Locale.getDefault()))
-                toolTipText = GotoFileCellRenderer.getRelativePath(
-                    fileVulns.virtualFile, value.project
-                ) + fileVulns.sanitizedTargetFile + ProductType.OSS.getCountText(value.childCount)
+                val relativePath = fileVulns.virtualFile?.let {
+                    GotoFileCellRenderer.getRelativePath(
+                        fileVulns.virtualFile, value.project
+                    )
+                } ?: ""
+                toolTipText =
+                    relativePath + fileVulns.sanitizedTargetFile + ProductType.OSS.getCountText(value.childCount)
 
                 text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
                     "..." + it.substring(
@@ -126,9 +134,12 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 nodeIcon = PackageManagerIconProvider.getIcon(
                     iacVulnerabilitiesForFile.packageManager.lowercase(Locale.getDefault())
                 )
-                toolTipText = GotoFileCellRenderer.getRelativePath(
-                    iacVulnerabilitiesForFile.virtualFile, value.project
-                ) + ProductType.IAC.getCountText(value.childCount)
+                val relativePath = iacVulnerabilitiesForFile.virtualFile?.let {
+                    GotoFileCellRenderer.getRelativePath(
+                        iacVulnerabilitiesForFile.virtualFile, value.project
+                    )
+                } ?: iacVulnerabilitiesForFile.targetFilePath
+                toolTipText = relativePath + ProductType.IAC.getCountText(value.childCount)
 
                 text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
                     "..." + it.substring(

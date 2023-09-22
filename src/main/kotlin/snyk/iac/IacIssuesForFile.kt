@@ -13,7 +13,7 @@ data class IacIssuesForFile(
     val ignored: Boolean get() = infrastructureAsCodeIssues.all { it.ignored }
     val uniqueCount: Int get() = infrastructureAsCodeIssues.groupBy { it.id }.size
 
-    val virtualFile: VirtualFile = LocalFileSystem.getInstance().findFileByPath(this.targetFilePath)!!
+    val virtualFile: VirtualFile? = LocalFileSystem.getInstance().findFileByPath(this.targetFilePath)
 }
 
 /* Real json Example: src/integTest/resources/iac-test-results/infrastructure-as-code-goof.json */
