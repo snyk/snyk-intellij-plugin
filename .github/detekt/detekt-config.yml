@@ -6,8 +6,6 @@ formatting:
     continuationIndentSize: 8
   MaxLineLength:
     active: false
-  NoWildcardImports:
-    active: false
   ParameterListWrapping:
     active: false
 
@@ -27,4 +25,5 @@ style:
     excludeLabeled: false
     excludeReturnFromLambda: true
     excludeGuardClauses: true
-
+  NoWildcardImports:
+    active: false
