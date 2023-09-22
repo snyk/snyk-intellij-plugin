@@ -14,7 +14,7 @@ data class OssVulnerabilitiesForFile(
 
     val sanitizedTargetFile: String get() = displayTargetFile.replace("-lock", "")
 
-    val virtualFile: VirtualFile = LocalFileSystem.getInstance().findFileByPath(this.path)!!
+    val virtualFile: VirtualFile? = LocalFileSystem.getInstance().findFileByPath(this.path)
 
     fun toGroupedResult(): OssGroupedResult {
         val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })

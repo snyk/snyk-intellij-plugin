@@ -95,7 +95,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         mockkStatic("snyk.trust.TrustedProjectsKt")
-        mockkStatic(GotoFileCellRenderer::class)
         pluginSettings().token = fakeApiToken // needed to avoid forced Auth panel showing
         pluginSettings().pluginFirstRun = false
         // ToolWindow need to be reinitialised for every test as Project is recreated for Heavy tests
@@ -103,6 +102,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         toolWindowPanel = project.service()
         setupDummyCliFile()
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
+        mockkStatic(GotoFileCellRenderer::class)
         every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
     }
 

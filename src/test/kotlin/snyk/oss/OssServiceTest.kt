@@ -1,5 +1,6 @@
 package snyk.oss
 
+import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.mockk.every
@@ -16,7 +17,6 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
-import org.junit.Test
 import snyk.PluginInformation
 import snyk.errorHandler.SentryErrorReporter
 import snyk.oss.OssService.Companion.ALL_PROJECTS_PARAM
@@ -41,6 +41,8 @@ class OssServiceTest : LightPlatformTestCase() {
         settingsStateService.organization = ""
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = ""
+        mockkStatic(GotoFileCellRenderer::class)
+        every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
     }
 
     override fun tearDown() {
@@ -53,7 +55,6 @@ class OssServiceTest : LightPlatformTestCase() {
     private val ossService: OssService
         get() = getOssService(project) ?: throw IllegalStateException("OSS service should be available")
 
-    @Test
     fun testBuildCliCommandsListWithDefaults() {
         setupDummyCliFile()
 
@@ -64,7 +65,6 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains("--json"))
     }
 
-    @Test
     fun testBuildCliCommandsListWithFileParameter() {
         setupDummyCliFile()
 
@@ -75,7 +75,6 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains("--file=package.json"))
     }
 
-    @Test
     fun testBuildCliCommandsListWithMultiAdditionalParameters() {
         setupDummyCliFile()
 
@@ -89,7 +88,6 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains("--sub-project=snyk"))
     }
 
-    @Test
     fun testBuildCliCommandsListWithRiderIde() {
         setupDummyCliFile()
         val pluginInformation = PluginInformation(
@@ -106,7 +104,6 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains("--all-projects"))
     }
 
-    @Test
     fun testBuildCliCommandsListDoNotAddAllProjectsTwice() {
         setupDummyCliFile()
         val pluginInformation = PluginInformation(
@@ -120,13 +117,12 @@ class OssServiceTest : LightPlatformTestCase() {
         project.service<SnykProjectSettingsStateService>().additionalParameters =
             "--file=package.json --configuration-matching='iamaRegex' --all-projects"
 
-        val countAllProjectsParams = ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
-            .count{ i -> i == ALL_PROJECTS_PARAM }
+        val countAllProjectsParams =
+            ossService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command")).count { i -> i == ALL_PROJECTS_PARAM }
 
         assertTrue(countAllProjectsParams == 1)
     }
 
-    @Test
     fun testGroupVulnerabilities() {
         val cli = ossService
 
@@ -138,7 +134,6 @@ class OssServiceTest : LightPlatformTestCase() {
         assertEquals(36, cliGroupedResult.pathsCount)
     }
 
-    @Test
     fun testGroupVulnerabilitiesForGoof() {
         val cli = ossService
 
@@ -150,14 +145,15 @@ class OssServiceTest : LightPlatformTestCase() {
         assertEquals(310, cliGroupedResult.pathsCount)
     }
 
-    @Test
     fun testScanWithErrorResult() {
         setupDummyCliFile()
 
         val mockRunner = mockk<ConsoleCommandRunner>()
 
         every {
-            mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
+            mockRunner.execute(
+                listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project
+            )
         } returns """
               {
                   "ok": false,
@@ -173,18 +169,20 @@ class OssServiceTest : LightPlatformTestCase() {
         assertFalse(cliResult.isSuccessful())
         assertEquals(
             "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
-            cliResult.getFirstError()!!.message)
+            cliResult.getFirstError()!!.message
+        )
         assertEquals("/Users/user/Desktop/example-npm-project", cliResult.getFirstError()!!.path)
     }
 
-    @Test
     fun testScanWithSuccessfulCliResult() {
         setupDummyCliFile()
 
         val mockRunner = mockk<ConsoleCommandRunner>()
 
         every {
-            mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
+            mockRunner.execute(
+                listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project
+            )
         } returns getResourceAsString("group-vulnerabilities-test.json")
 
         ossService.setConsoleCommandRunner(mockRunner)
@@ -202,14 +200,15 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(vulnerabilityIds.contains("npm:qs:20140806-1"))
     }
 
-    @Test
     fun testScanWithLicenseVulnerabilities() {
         setupDummyCliFile()
 
         val mockRunner = mockk<ConsoleCommandRunner>()
 
         every {
-            mockRunner.execute(listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project)
+            mockRunner.execute(
+                listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project
+            )
         } returns getResourceAsString("licence-vulnerabilities.json")
 
         ossService.setConsoleCommandRunner(mockRunner)
@@ -224,110 +223,123 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(vulnerabilityIds.contains("snyk:lic:pip:six:MIT"))
     }
 
-    @Test
     fun testConvertRawCliStringToCliResult() {
 
-        val sigleObjectCliResult = ossService
-            .convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
-        assertTrue(sigleObjectCliResult.isSuccessful())
+        val singleObjectCliResult =
+            ossService.convertRawCliStringToCliResult(getResourceAsString("group-vulnerabilities-test.json"))
+        assertTrue(singleObjectCliResult.isSuccessful())
 
-        val arrayObjectCliResult = ossService
-            .convertRawCliStringToCliResult(getResourceAsString("vulnerabilities-array-cli-result.json"))
+        val arrayObjectCliResult =
+            ossService.convertRawCliStringToCliResult(getResourceAsString("vulnerabilities-array-cli-result.json"))
         assertTrue(arrayObjectCliResult.isSuccessful())
 
-        val jsonErrorCliResult = ossService.convertRawCliStringToCliResult("""
+        val jsonErrorCliResult = ossService.convertRawCliStringToCliResult(
+            """
                     {
                       "ok": false,
                       "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
                       "path": "/Users/user/Desktop/example-npm-project"
                     }
-                """.trimIndent())
+                """.trimIndent()
+        )
         assertFalse(jsonErrorCliResult.isSuccessful())
-        assertEquals("Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
-            jsonErrorCliResult.getFirstError()!!.message)
+        assertEquals(
+            "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
+            jsonErrorCliResult.getFirstError()!!.message
+        )
         assertEquals("/Users/user/Desktop/example-npm-project", jsonErrorCliResult.getFirstError()!!.path)
 
-        val rawErrorCliResult = ossService.convertRawCliStringToCliResult("""
+        val rawErrorCliResult = ossService.convertRawCliStringToCliResult(
+            """
                     Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.
-                """.trimIndent())
+                """.trimIndent()
+        )
         assertFalse(rawErrorCliResult.isSuccessful())
-        assertEquals("Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.",
-            rawErrorCliResult.getFirstError()!!.message)
+        assertEquals(
+            "Missing node_modules folder: we can't test without dependencies. Please run 'npm install' first.",
+            rawErrorCliResult.getFirstError()!!.message
+        )
         assertEquals(project.basePath, rawErrorCliResult.getFirstError()!!.path)
     }
 
-    @Test
     fun testConvertRawCliStringWithLicenseVulnsToCliResult() {
 
         val rawMissedFixedInFieldCliString = getResourceAsString("licence-vulnerabilities.json")
         val cliResult = ossService.convertRawCliStringToCliResult(rawMissedFixedInFieldCliString)
         assertTrue(cliResult.isSuccessful())
         assertNotNull(cliResult.allCliIssues?.find { it ->
-            it.vulnerabilities
-                .any { vulnerability -> vulnerability.fixedIn == null }
+            it.vulnerabilities.any { vulnerability -> vulnerability.fixedIn == null }
         })
 
         touchAllFields(cliResult)
     }
 
-    @Test
     fun testConvertRawCliStringToCliResultWithEmptyRawString() {
         val cliResult = ossService.convertRawCliStringToCliResult("")
         assertFalse(cliResult.isSuccessful())
     }
 
-    @Test
     fun testConvertMisformedErrorAsArrayJson() {
-        val cliResult = ossService.convertRawCliStringToCliResult("""
+        val cliResult = ossService.convertRawCliStringToCliResult(
+            """
                     {
                       "ok": false,
                       "error": ["could not be","array here"],
                       "path": "some/path/here"
                     }
-                """.trimIndent())
+                """.trimIndent()
+        )
 
         assertFalse(cliResult.isSuccessful())
-        assertTrue(cliResult.getFirstError()!!.message.contains(
-            "Expected a string but was BEGIN_ARRAY"
-        ))
+        assertTrue(
+            cliResult.getFirstError()!!.message.contains(
+                "Expected a string but was BEGIN_ARRAY"
+            )
+        )
     }
 
-    @Test
     fun testConvertMisformedErrorPathTagJson() {
-        val cliResult2 = ossService.convertRawCliStringToCliResult("""
+        val cliResult2 = ossService.convertRawCliStringToCliResult(
+            """
                     {
                       "ok": false,
                       "error": "error",
                       "path_not_provided": ""
                     }
-                """.trimIndent())
+                """.trimIndent()
+        )
 
         assertFalse(cliResult2.isSuccessful())
-        assertTrue(cliResult2.getFirstError()!!.message.contains(
-            "Parameter specified as non-null is null: method snyk.common.SnykError.<init>, parameter path"
-        ))
+        assertTrue(
+            cliResult2.getFirstError()!!.message.contains(
+                "Parameter specified as non-null is null: method snyk.common.SnykError.<init>, parameter path"
+            )
+        )
     }
 
-    @Test
     fun testConvertMisformedResultArrayJson() {
-        val cliResult1 = ossService.convertRawCliStringToCliResult("""
+        val cliResult1 = ossService.convertRawCliStringToCliResult(
+            """
             {
               "vulnerabilities": "SHOULD_BE_ARRAY_HERE",
               "packageManager": "npm",
               "displayTargetFile": "package-lock.json",
               "path": "D:\\TestProjects\\goof"
             }
-            """.trimIndent())
+            """.trimIndent()
+        )
 
         assertFalse(cliResult1.isSuccessful())
-        assertTrue(cliResult1.getFirstError()!!.message.contains(
-            "Expected BEGIN_ARRAY but was STRING"
-        ))
+        assertTrue(
+            cliResult1.getFirstError()!!.message.contains(
+                "Expected BEGIN_ARRAY but was STRING"
+            )
+        )
     }
 
-    @Test
     fun testConvertMisformedResultNestedJson() {
-        val cliResult2 = ossService.convertRawCliStringToCliResult("""
+        val cliResult2 = ossService.convertRawCliStringToCliResult(
+            """
             {
               "vulnerabilities": [
                 {
@@ -338,27 +350,30 @@ class OssServiceTest : LightPlatformTestCase() {
               "displayTargetFile": "package-lock.json",
               "path": "D:\\TestProjects\\goof"
             }
-            """.trimIndent())
+            """.trimIndent()
+        )
 
         assertFalse(cliResult2.isSuccessful())
-        assertTrue(cliResult2.getFirstError()!!.message.contains(
-            "Parameter specified as non-null is null: method snyk.oss.Vulnerability.copy, parameter id"
-        ))
+        assertTrue(
+            cliResult2.getFirstError()!!.message.contains(
+                "Parameter specified as non-null is null: method snyk.oss.Vulnerability.copy, parameter id"
+            )
+        )
     }
 
-    @Test
     fun testConvertMisformedResultRootTagJson() {
         val rawCliString = getResourceAsString("misformed-vulnerabilities-test.json")
 
         val cliResult3 = ossService.convertRawCliStringToCliResult(rawCliString)
 
         assertFalse(cliResult3.isSuccessful())
-        assertTrue(cliResult3.getFirstError()!!.message.contains(
-            "Parameter specified as non-null is null: method snyk.oss.OssVulnerabilitiesForFile.copy, parameter displayTargetFile"
-        ))
+        assertTrue(
+            cliResult3.getFirstError()!!.message.contains(
+                "Parameter specified as non-null is null: method snyk.oss.OssVulnerabilitiesForFile.copy, parameter displayTargetFile"
+            )
+        )
     }
 
-    @Test
     fun testConvertGoodAndMisformedResultJson() {
         mockkObject(SentryErrorReporter)
         val rawCliString = getResourceAsString("vulnerabilities-array-with-error-and-result-test.json")
@@ -368,19 +383,22 @@ class OssServiceTest : LightPlatformTestCase() {
         assertTrue(cliResult3.isSuccessful())
         assertTrue(cliResult3.allCliIssues?.size == 1)
         assertTrue(cliResult3.errors.size == 2)
-        assertTrue(cliResult3.errors[0].message.contains(
-            "Expected a string but was BEGIN_ARRAY"
-        ))
-        assertTrue(cliResult3.errors[1].message.contains(
-            "Parameter specified as non-null is null"
-        ))
+        assertTrue(
+            cliResult3.errors[0].message.contains(
+                "Expected a string but was BEGIN_ARRAY"
+            )
+        )
+        assertTrue(
+            cliResult3.errors[1].message.contains(
+                "Parameter specified as non-null is null"
+            )
+        )
         // only one error reported for all json array parsing exceptions
         verify(exactly = 1, timeout = 2000) {
             SentryErrorReporter.captureException(any())
         }
     }
 
-    @Test
     fun testConvertRawCliStringToCliResultFieldsInitialisation() {
         val rawCliString = getResourceAsString("group-vulnerabilities-goof-test.json")
         val cliResult = ossService.convertRawCliStringToCliResult(rawCliString)
@@ -419,8 +437,8 @@ class OssServiceTest : LightPlatformTestCase() {
         }
     }
 
-    private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
-        .getResource(resourceName)!!.readText(Charsets.UTF_8)
+    private fun getResourceAsString(resourceName: String): String =
+        javaClass.classLoader.getResource(resourceName)!!.readText(Charsets.UTF_8)
 
     private fun mockPluginInformation(pluginInfoMock: PluginInformation) {
         mockkStatic("snyk.PluginInformationKt")
