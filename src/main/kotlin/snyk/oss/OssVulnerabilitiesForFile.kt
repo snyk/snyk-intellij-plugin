@@ -1,5 +1,8 @@
 package snyk.oss
 
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
+
 data class OssVulnerabilitiesForFile(
     val vulnerabilities: List<Vulnerability>,
     private val displayTargetFile: String,
@@ -10,6 +13,8 @@ data class OssVulnerabilitiesForFile(
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
 
     val sanitizedTargetFile: String get() = displayTargetFile.replace("-lock", "")
+
+    val virtualFile: VirtualFile = LocalFileSystem.getInstance().findFileByPath(this.path)!!
 
     fun toGroupedResult(): OssGroupedResult {
         val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })

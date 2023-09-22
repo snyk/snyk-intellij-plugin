@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.icons.AllIcons
+import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
 import com.intellij.openapi.util.Iconable
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.SimpleTextAttributes
@@ -18,14 +19,11 @@ import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.*
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import org.jetbrains.kotlin.idea.base.util.letIf
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.container.ContainerIssue
@@ -38,11 +36,14 @@ import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
-import java.util.Locale
+import java.util.*
 import javax.swing.Icon
 import javax.swing.JTree
 
+private const val MAX_FILE_TREE_NODE_LENGTH = 70
+
 class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
+    @Suppress("UNCHECKED_CAST")
     override fun customizeCellRenderer(
         tree: JTree,
         value: Any,
@@ -68,10 +69,19 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
+
             is FileTreeNode -> {
                 val fileVulns = value.userObject as OssVulnerabilitiesForFile
                 nodeIcon = PackageManagerIconProvider.getIcon(fileVulns.packageManager.lowercase(Locale.getDefault()))
-                text = fileVulns.sanitizedTargetFile + ProductType.OSS.getCountText(value.childCount)
+                toolTipText = GotoFileCellRenderer.getRelativePath(fileVulns.virtualFile, value.project) +
+                        fileVulns.sanitizedTargetFile + ProductType.OSS.getCountText(value.childCount)
+
+                text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
+                    "..." + it.substring(
+                        it.length - 47,
+                        it.length
+                    )
+                }
 
                 val snykCachedResults = getSnykCachedResults(value.project)
                 if (snykCachedResults?.currentOssResults == null) {
@@ -80,6 +90,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
+
             is SuggestionTreeNode -> {
                 val (suggestion, index) = value.userObject as Pair<SuggestionForFile, Int>
                 nodeIcon = SnykIcons.getSeverityIcon(suggestion.getSeverityAsEnum())
@@ -94,9 +105,21 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
+
             is SnykCodeFileTreeNode -> {
                 val (file, productType) = value.userObject as Pair<SnykCodeFile, ProductType>
-                text = PDU.toSnykCodeFile(file).virtualFile.name + productType.getCountText(value.childCount)
+                toolTipText =
+                    GotoFileCellRenderer.getRelativePath(file.virtualFile, file.project) + productType.getCountText(
+                        value.childCount
+                    )
+
+                text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
+                    "..." + it.substring(
+                        it.length - 47,
+                        it.length
+                    )
+                }
+
                 val psiFile = PDU.toPsiFile(file)
                 nodeIcon = psiFile?.getIcon(Iconable.ICON_FLAG_READ_STATUS)
                 if (!AnalysisData.instance.isFileInCache(file)) {
@@ -105,12 +128,24 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
+
             is IacFileTreeNode -> {
                 val iacVulnerabilitiesForFile = value.userObject as IacIssuesForFile
                 nodeIcon = PackageManagerIconProvider.getIcon(
                     iacVulnerabilitiesForFile.packageManager.lowercase(Locale.getDefault())
                 )
-                text = iacVulnerabilitiesForFile.targetFile + ProductType.IAC.getCountText(value.childCount)
+                toolTipText = GotoFileCellRenderer.getRelativePath(
+                    iacVulnerabilitiesForFile.virtualFile,
+                    value.project
+                ) + ProductType.IAC.getCountText(value.childCount)
+
+                text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
+                    "..." + it.substring(
+                        it.length - 47,
+                        it.length
+                    )
+                }
+
 
                 val snykCachedResults = getSnykCachedResults(value.project)
                 if (snykCachedResults?.currentIacResult == null || iacVulnerabilitiesForFile.obsolete) {
@@ -119,6 +154,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     text += obsoleteSuffix
                 }
             }
+
             is ContainerImageTreeNode -> {
                 val issuesForImage = value.userObject as ContainerIssuesForImage
                 nodeIcon = SnykIcons.CONTAINER_IMAGE
@@ -131,11 +167,13 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     text += obsoleteSuffix
                 }
             }
+
             is ErrorTreeNode -> {
                 val snykError = value.userObject as SnykError
                 text = snykError.path + " - " + snykError.message
                 nodeIcon = AllIcons.General.Error
             }
+
             is IacIssueTreeNode -> {
                 val issue = (value.userObject as IacIssue)
                 val snykCachedResults = getSnykCachedResults(value.project)
@@ -151,6 +189,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
+
             is ContainerIssueTreeNode -> {
                 val issue = value.userObject as ContainerIssue
                 val snykCachedResults = getSnykCachedResults(value.project)
@@ -165,6 +204,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
+
             is RootOssTreeNode -> {
                 val settings = pluginSettings()
                 if (settings.ossScanEnable && settings.treeFiltering.ossResults) {
@@ -180,6 +220,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     SnykToolWindowPanel.OSS_ROOT_TEXT + disabledSuffix
                 }
             }
+
             is RootSecurityIssuesTreeNode -> {
                 val settings = pluginSettings()
                 if (settings.snykCodeSecurityIssuesScanEnable && settings.treeFiltering.codeSecurityResults) {
@@ -193,9 +234,10 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     value.userObject.toString()
                 } else {
                     SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT +
-                        snykCodeAvailabilityPostfix().ifEmpty { disabledSuffix }
+                            snykCodeAvailabilityPostfix().ifEmpty { disabledSuffix }
                 }
             }
+
             is RootQualityIssuesTreeNode -> {
                 val settings = pluginSettings()
                 if (settings.snykCodeQualityIssuesScanEnable && settings.treeFiltering.codeQualityResults) {
@@ -209,9 +251,10 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     value.userObject.toString()
                 } else {
                     SnykToolWindowPanel.CODE_QUALITY_ROOT_TEXT +
-                        snykCodeAvailabilityPostfix().ifEmpty { disabledSuffix }
+                            snykCodeAvailabilityPostfix().ifEmpty { disabledSuffix }
                 }
             }
+
             is RootIacIssuesTreeNode -> {
                 val settings = pluginSettings()
                 if (settings.iacScanEnabled && settings.treeFiltering.iacResults) {
@@ -227,6 +270,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     SnykToolWindowPanel.IAC_ROOT_TEXT + disabledSuffix
                 }
             }
+
             is RootContainerIssuesTreeNode -> {
                 val settings = pluginSettings()
                 if (settings.containerScanEnabled && settings.treeFiltering.containerResults) {
