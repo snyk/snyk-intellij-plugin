@@ -8,6 +8,8 @@ formatting:
     active: false
   NoWildcardImports:
     active: false
+  ParameterListWrapping:
+    active: false
 
 complexity:
   # don't count private & deprecated
