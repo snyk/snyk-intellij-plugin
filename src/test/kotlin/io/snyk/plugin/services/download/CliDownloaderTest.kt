@@ -75,7 +75,7 @@ class CliDownloaderTest {
         val expectedSha = cut.calculateSha256("wrong sha".toByteArray())
 
         mockCliDownload()
-
+        every { pluginSettings() } returns SnykApplicationSettingsStateService()
         try {
             cut.downloadFile(testFile, expectedSha, mockk(relaxed = true))
             fail("Should have thrown ChecksumVerificationException")
