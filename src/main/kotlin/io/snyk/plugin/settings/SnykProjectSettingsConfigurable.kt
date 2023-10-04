@@ -45,7 +45,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         snykSettingsDialog.isScanTypeChanged() ||
         snykSettingsDialog.isSeverityEnablementChanged() ||
         snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
-        snykSettingsDialog.getCliPath() != settingsStateService.cliPath
+        snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
+        snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL
 
     private fun isCoreParamsModified() = isTokenModified() ||
         isCustomEndpointModified() ||
@@ -83,6 +84,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
         settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
+        settingsStateService.cliBaseDownloadURL = snykSettingsDialog.getCliBaseDownloadURL().trim()
 
         snykSettingsDialog.saveScanTypeChanges()
         snykSettingsDialog.saveSeveritiesEnablementChanges()

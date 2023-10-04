@@ -2,6 +2,7 @@ package io.snyk.plugin.services.download
 
 import com.intellij.openapi.progress.ProgressIndicator
 import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import java.io.File
 import java.nio.file.AtomicMoveNotSupportedException
@@ -13,10 +14,14 @@ import javax.xml.bind.DatatypeConverter
 
 class CliDownloader {
     companion object {
-        const val BASE_URL = "https://static.snyk.io"
-        const val LATEST_RELEASES_URL = "$BASE_URL/cli/latest/version"
-        val LATEST_RELEASE_DOWNLOAD_URL = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}"
-        val SHA256_DOWNLOAD_URL = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}.sha256"
+        val BASE_URL: String
+            get() = pluginSettings().cliBaseDownloadURL
+        val LATEST_RELEASES_URL: String
+            get() = "$BASE_URL/cli/latest/version"
+        val LATEST_RELEASE_DOWNLOAD_URL: String
+            get() = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}"
+        val SHA256_DOWNLOAD_URL: String
+            get() = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}.sha256"
     }
 
     fun calculateSha256(bytes: ByteArray): String {

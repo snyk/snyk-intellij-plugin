@@ -78,6 +78,7 @@ class SnykSettingsDialog(
 
     private val manageBinariesAutomatically: JCheckBox = JCheckBox()
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
+    private val cliBaseDownloadUrlTextField = JTextField()
 
     private val logger = Logger.getInstance(this::class.java)
 
@@ -126,6 +127,7 @@ class SnykSettingsDialog(
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
 
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
+            cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
         }
     }
@@ -463,6 +465,15 @@ class SnykSettingsDialog(
             )
         )
 
+        cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://static.snyk.io. " +
+            "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://static.snyk.io/fips"
+        executableSettingsPanel.add(
+            UI.PanelFactory
+                .panel(cliBaseDownloadUrlTextField)
+                .withLabel("Base URL to download the CLI: ").createPanel(),
+            gb.nextLine()
+        )
+
         cliPathTextBoxWithFileBrowser.toolTipText = "The default path is ${getCliFile().canonicalPath}."
         val descriptor = FileChooserDescriptor(true, false, false, false, false, false)
         cliPathTextBoxWithFileBrowser.addBrowseFolderListener(
@@ -564,4 +575,5 @@ class SnykSettingsDialog(
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
+    fun getCliBaseDownloadURL(): String = cliBaseDownloadUrlTextField.text
 }
