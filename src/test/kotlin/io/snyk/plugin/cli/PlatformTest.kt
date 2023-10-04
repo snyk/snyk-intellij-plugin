@@ -2,7 +2,7 @@ package io.snyk.plugin.cli
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.*
+import java.util.Properties
 
 class PlatformTest {
 
@@ -20,6 +20,10 @@ class PlatformTest {
 
         properties["os.name"] = "darwin"
         assertTrue(Platform.MAC_OS == Platform.detect(properties))
+
+        properties["os.name"] = "darwin"
+        properties["os.arch"] = "aarch64"
+        assertTrue(Platform.MAC_OS_ARM64 == Platform.detect(properties))
 
         properties["os.name"] = "osx"
         assertTrue(Platform.MAC_OS == Platform.detect(properties))
