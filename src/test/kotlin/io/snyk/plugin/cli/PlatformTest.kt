@@ -36,6 +36,7 @@ class PlatformTest {
     fun testDetectPlatformException() {
         val properties = Properties()
         properties["os.name"] = "Not supported CPU type"
+        properties["os.arch"] = "dont care"
 
         Platform.detect(properties)
     }
