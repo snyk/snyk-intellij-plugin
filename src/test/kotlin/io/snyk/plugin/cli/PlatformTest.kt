@@ -9,6 +9,7 @@ class PlatformTest {
     @Test
     fun testDetectPlatform() {
         val properties = Properties()
+        properties["os.arch"] = "something"
 
         properties["os.name"] = "linux"
 
@@ -18,15 +19,15 @@ class PlatformTest {
         properties["os.name"] = "mac os x"
         assertTrue(Platform.MAC_OS == Platform.detect(properties))
 
+        properties["os.name"] = "osx"
+        assertTrue(Platform.MAC_OS == Platform.detect(properties))
+
         properties["os.name"] = "darwin"
         assertTrue(Platform.MAC_OS == Platform.detect(properties))
 
         properties["os.name"] = "darwin"
         properties["os.arch"] = "aarch64"
         assertTrue(Platform.MAC_OS_ARM64 == Platform.detect(properties))
-
-        properties["os.name"] = "osx"
-        assertTrue(Platform.MAC_OS == Platform.detect(properties))
 
         properties["os.name"] = "windows"
         assertTrue(Platform.WINDOWS == Platform.detect(properties))
