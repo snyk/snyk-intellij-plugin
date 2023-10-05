@@ -98,6 +98,8 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
         every { downloader.calculateSha256(any()) } returns "wrong-sha"
         justRun { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
+        // this is needed, but I don't know why the config is not picked up from setUp()
+        every { pluginSettings() } returns SnykApplicationSettingsStateService()
 
         cutSpy.downloadLatestRelease(indicator, project)
 

@@ -1,5 +1,12 @@
 # Snyk Changelog
 
+## [2.5.4]
+
+### Added
+
+- support for arm64 CLI on macOS
+- support to configure base URL for CLI downloads
+
 ## [2.5.3]
 
 ### Fixed
