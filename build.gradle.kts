@@ -42,11 +42,9 @@ dependencies {
     implementation("org.json:json:20230227")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11") {
         exclude(group = "com.fasterxml.jackson.core")
-        exclude(group = "org.slf4j")
     }
     implementation("ly.iterative.itly:plugin-schema-validator:1.2.11")
     implementation("ly.iterative.itly:sdk-jvm:1.2.11") {
-        exclude(group = "org.slf4j")
         exclude(group = "org.json")
     }
     implementation("com.segment.analytics.java:analytics:3.4.0")
