@@ -6,6 +6,7 @@
 
 - support for arm64 CLI on macOS
 - support to configure base URL for CLI downloads
+- display up to 70 characters of the filepath in the tree view
 
 ## [2.5.3]
 

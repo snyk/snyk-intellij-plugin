@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
+import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
 import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.components.service
@@ -73,7 +74,6 @@ import javax.swing.JPanel
 import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
 
-@Suppress("FunctionName")
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private val iacGoofJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")
@@ -102,6 +102,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         toolWindowPanel = project.service()
         setupDummyCliFile()
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
+        mockkStatic(GotoFileCellRenderer::class)
+        every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
     }
 
     override fun tearDown() {
@@ -183,19 +185,32 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     private val fakeSuggestionForFile = SuggestionForFile(
-        /* id = */ "id",
-        /* rule = */ "rule",
-        /* message = */ "message",
-        /* title = */ "title",
-        /* text = */ "text",
-        /* severity = */ 2,
-        /* repoDatasetSize = */ 0,
-        /* exampleCommitDescriptions = */ emptyList(),
-        /* exampleCommitFixes = */ emptyList(),
-        /* ranges = */ listOf(mockk(relaxed = true)),
-        /* categories = */ emptyList(),
-        /* tags = */ emptyList(),
-        /* cwe = */ emptyList()
+        /* id = */
+        "id",
+        /* rule = */
+        "rule",
+        /* message = */
+        "message",
+        /* title = */
+        "title",
+        /* text = */
+        "text",
+        /* severity = */
+        2,
+        /* repoDatasetSize = */
+        0,
+        /* exampleCommitDescriptions = */
+        emptyList(),
+        /* exampleCommitFixes = */
+        emptyList(),
+        /* ranges = */
+        listOf(mockk(relaxed = true)),
+        /* categories = */
+        emptyList(),
+        /* tags = */
+        emptyList(),
+        /* cwe = */
+        emptyList()
     )
     private val fakeContainerIssue1 = ContainerIssue(
         id = "fakeId1",
@@ -245,7 +260,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 uniqueCount = 1,
                 error = null,
                 imageName = "fake-image-name1"
-            )),
+            )
+        ),
         listOf(
             SnykError(
                 message = "fake error message",
@@ -254,7 +270,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     )
 
-    @Test
     fun `test when no OSS supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
@@ -295,7 +310,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test when no IAC supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError = SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString(), IacError.NO_IAC_FILES_CODE)
+        val snykError =
+            SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString(), IacError.NO_IAC_FILES_CODE)
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
         scanPublisher.scanningIacError(snykErrorControl)
@@ -339,16 +355,20 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     }
 
-    @Test
     fun `test should ignore IaC failures in IaC scan results (issues found)`() {
         mockkObject(SnykBalloonNotificationHelper)
         val iacIssue = IacIssue(
             id = "SNYK-CC-TF-74",
             title = "Credentials are configured via provider attributes",
             lineNumber = 1,
-            severity = "", publicId = "", documentation = "", issue = "", impact = ""
+            severity = "",
+            publicId = "",
+            documentation = "",
+            issue = "",
+            impact = ""
         )
-        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), "k8s-deployment.yaml", "src/k8s-deployment.yaml", "npm")
+        val iacIssuesForFile =
+            IacIssuesForFile(listOf(iacIssue), "k8s-deployment.yaml", "src/k8s-deployment.yaml", "npm")
         val jsonError = SnykError("Failed to parse JSON file", project.basePath.toString(), 1021)
         val iacResult = IacResult(listOf(iacIssuesForFile), listOf(jsonError))
         scanPublisher.scanningIacFinished(iacResult)
@@ -359,7 +379,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     }
 
-    @Test
     fun `test should display NO_CONTAINER_IMAGES_FOUND after scan when no Container images found`() {
         mockkObject(SnykBalloonNotificationHelper)
 
@@ -381,7 +400,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     }
 
-    @Test
     fun `test should display CONTAINER_NO_IMAGES_FOUND_TEXT after scan when no Container images found and Container node selected`() {
         val snykError = ContainerService.NO_IMAGES_TO_SCAN_ERROR
 
@@ -393,11 +411,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val noImagesFoundPane = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
             JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_NO_IMAGES_FOUND_TEXT)
+            SnykToolWindowPanel.CONTAINER_NO_IMAGES_FOUND_TEXT
+        )
         assertNotNull(noImagesFoundPane)
     }
 
-    @Test
     fun `test should display CONTAINER_NO_ISSUES_FOUND_TEXT after scan when no Container issues found and Container node selected`() {
         scanPublisher.scanningContainerFinished(ContainerResult(emptyList()))
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -407,11 +425,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val noIssuesFoundPane = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
             JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_NO_ISSUES_FOUND_TEXT)
+            SnykToolWindowPanel.CONTAINER_NO_ISSUES_FOUND_TEXT
+        )
         assertNotNull(noIssuesFoundPane)
     }
 
-    @Test
     fun `test should display CONTAINER_SCAN_START_TEXT before any scan performed and Container node selected`() {
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
@@ -419,11 +437,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val startContainerScanPane = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
             JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_SCAN_START_TEXT)
+            SnykToolWindowPanel.CONTAINER_SCAN_START_TEXT
+        )
         assertNotNull(startContainerScanPane)
     }
 
-    @Test
     fun `test should display CONTAINER_SCAN_RUNNING_TEXT before any scan performed and Container node selected`() {
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
@@ -433,11 +451,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val containerScanRunningPane = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
             JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_SCAN_RUNNING_TEXT)
+            SnykToolWindowPanel.CONTAINER_SCAN_RUNNING_TEXT
+        )
         assertNotNull(containerScanRunningPane)
     }
 
-    @Test
     fun `test OSS scan should redirect to Auth panel if token is invalid`() {
         mockkObject(SnykBalloonNotificationHelper)
         val snykErrorControl = SnykError("control", project.basePath.toString())
@@ -462,7 +480,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull(authPanel)
     }
 
-    @Test
     fun `test Container scan should redirect to Auth panel if token is invalid`() {
         mockkObject(SnykBalloonNotificationHelper)
         val snykErrorControl = SnykError("control", project.basePath.toString())
@@ -487,7 +504,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull(authPanel)
     }
 
-    @Test
     fun `test Container node should show no child when disabled`() {
         mockkObject(SnykBalloonNotificationHelper)
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
@@ -507,7 +523,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertTrue(rootContainerNode.childCount == 0)
     }
 
-    @Test
     fun `test should display '(error)' in OSS root tree node when result is empty and error occurs`() {
         val snykError = SnykError("an error", project.basePath.toString())
         scanPublisher.scanningOssError(snykError)
@@ -521,7 +536,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     }
 
-    @Test
     fun `test should display 'scanning' in OSS root tree node when it is scanning`() {
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isOssRunning(project) } returns true
@@ -535,7 +549,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     }
 
-    @Test
     fun testSeverityFilterForIacResult() {
         // pre-test setup
         prepareTreeWithFakeIacResults()
@@ -562,7 +575,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertFalse("Medium severity IaC results should NOT be shown after filtering", isMediumSeverityShown())
     }
 
-    @Test
     fun testIacErrorShown() {
         // pre-test setup
         setUpIacTest()
@@ -597,7 +609,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertTrue(pathTextArea?.text == iacError.path)
     }
 
-    @Test
     fun test_WhenIacIssueIgnored_ThenItMarkedIgnored_AndButtonRemainsDisabled() {
         // pre-test setup
         prepareTreeWithFakeIacResults()
@@ -652,7 +663,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     }
 
-    @Test
     fun `test all root nodes are shown`() {
         setUpIacTest()
         setUpContainerTest(null)
@@ -675,7 +685,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         }
     }
 
-    @Test
     fun `test container error shown`() {
         // mock Container results
         val containerError = SnykError("fake error", "fake path")
@@ -706,7 +715,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertTrue(pathTextArea?.text == containerError.path)
     }
 
-    @Test
     fun `test container image nodes with description shown`() {
         // pre-test setup
         setUpContainerTest(fakeContainerResult)
@@ -740,7 +748,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull(baseImageRemediationDetailPanel)
     }
 
-    @Test
     fun `test container image node and Failed-to-scan image shown`() {
         // pre-test setup
         setUpContainerTest(fakeContainerResultWithError)
@@ -774,7 +781,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         }
     }
 
-    @Test
     fun `test container issue nodes with description shown`() {
         // pre-test setup
         setUpContainerTest(fakeContainerResult)
@@ -804,7 +810,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull("ContainerIssueDetailPanel should be shown on issue node selection", containerIssueDetailPanel)
     }
 
-    @Test
     fun `test container image nodes with remediation description shown`() {
         prepareContainerTreeNodesAndCaches(containerResultWithRemediationJson)
 
@@ -869,7 +874,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         return containerResult
     }
 
-    @Test
     fun `test container image node has correct amount of leaf(issue) nodes`() {
         val containerResult = prepareContainerTreeNodesAndCaches(containerResultWithRemediationJson)
 
@@ -887,7 +891,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.waitWhileBusy(tree)
     }
 
-    @Test
     fun `test IaC node selected and Description shown on external request`() {
         // pre-test setup
         prepareTreeWithFakeIacResults()
@@ -915,7 +918,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull("IacSuggestionDescriptionPanel should not be null", iacDescriptionPanel)
     }
 
-    @Test
     fun `test OSS node selected and Description shown on external request`() {
         prepareTreeWithFakeOssResults()
 
@@ -941,7 +943,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull("VulnerabilityDescriptionPanel should not be null", vulnerabilityDescriptionPanel)
     }
 
-    @Test
     fun `test Code node selected and Description shown on external request`() {
         prepareTreeWithFakeCodeResults()
 
@@ -968,7 +969,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull("SuggestionDescriptionPanel should not be null", suggestionDescriptionPanel)
     }
 
-    @Test
     fun `test Container node selected and Description shown on external request`() {
         // prepare Tree with fake Container results
         setUpContainerTest(null)

@@ -4,6 +4,12 @@
 formatting:
   Indentation:
     continuationIndentSize: 8
+  MaxLineLength:
+    active: false
+  ParameterListWrapping:
+    active: false
+  NoWildcardImports:
+    active: false
 
 complexity:
   # don't count private & deprecated
