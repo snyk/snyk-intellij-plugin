@@ -34,7 +34,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Snyk
         uses: snyk/actions/setup@0.4.0
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # PluginVerifier has been compiled by a more recent version of the Java - Java 11.
       # That's why, we are using not version 8 here, but 11.
@@ -84,7 +84,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
