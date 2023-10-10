@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.UUID;
 
 import static ai.deepcode.javaclient.core.AnalysisDataBase.COMPLETE;
 import static org.junit.Assert.assertEquals;
@@ -71,17 +72,17 @@ public class AnalysisDataTest {
       new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
 
     @Override
-    public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
+    public @NotNull CreateBundleResponse createBundle(String orgName, String requestId, FileHashRequest files) {
       return bundleResponseWithMissedFile;
     }
 
     @Override
-    public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
+    public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String requestId, String bundleId, Req request) {
       return bundleResponseWithMissedFile;
     }
 
     @Override
-    public @NotNull CreateBundleResponse checkBundle(String orgName, String bundleId) {
+    public @NotNull CreateBundleResponse checkBundle(String orgName, String requestId, String bundleId) {
       return bundleResponseWithMissedFile;
     }
   }
@@ -92,9 +93,9 @@ public class AnalysisDataTest {
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, String requestId, FileHashRequest files) {
         reUploadCounter[0] = reUploadCounter[0] + 1;
-        return super.createBundle(orgName, files);
+        return super.createBundle(orgName, requestId, files);
       }
     };
 
@@ -105,7 +106,7 @@ public class AnalysisDataTest {
     final String project = "Project4";
     final String progress = "Progress Indicator";
 
-    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress, UUID.randomUUID().toString());
 
     assertEquals("Should be made 3 attempts to re-create bundle if operation does not succeed", 3, reUploadCounter[0]);
   }
@@ -120,13 +121,14 @@ public class AnalysisDataTest {
     analysisData = new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger, restApi);
     final String project = "Project5";
     final String progress = "Progress Indicator";
-    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+    String requestId = UUID.randomUUID().toString();
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress, requestId);
 
     // try to extend expired bundle
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, String requestId, FileHashRequest files) {
         reUploadCounter[0] = reUploadCounter[0] + 1;
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
@@ -135,7 +137,7 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
+      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String requestId, String bundleId, Req request) {
         final CreateBundleResponse response = new CreateBundleResponse();
         response.setStatusCode(404);
         return response;
@@ -144,7 +146,7 @@ public class AnalysisDataTest {
     analysisData = new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger, restApi);
 
     // --------------------------- actual test --------------------
-    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress, requestId);
 
     assertEquals(
       "Should be made 2 attempts to re-create bundle if extendBundle does not succeed",
@@ -159,7 +161,7 @@ public class AnalysisDataTest {
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, String requestId, FileHashRequest files) {
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
         response.setStatusCode(200);
@@ -167,9 +169,9 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
+      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String requestId, String bundleId, Req request) {
         reUploadCounter[0] = reUploadCounter[0] + 1;
-        return super.extendBundle(orgName, bundleId, request);
+        return super.extendBundle(orgName, requestId, bundleId, request);
       }
     };
 
@@ -184,7 +186,7 @@ public class AnalysisDataTest {
     file.deleteOnExit();
     Files.writeString(file.toPath(), "testtestest");
 
-    analysisData.updateCachedResultsForFiles(project, Collections.singleton(file), progress);
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton(file), progress, UUID.randomUUID().toString());
 
     assertEquals("Should have made 10 attempts to re-upload files if operation does not succeed", 10, reUploadCounter[0]);
   }
@@ -196,6 +198,7 @@ public class AnalysisDataTest {
       @Override
       public @NotNull GetAnalysisResponse getAnalysis(
         String orgName,
+        String requestId,
         String bundleId,
         Integer severity,
         List<String> filesToAnalyse,
@@ -213,7 +216,7 @@ public class AnalysisDataTest {
     final String project = "Project2";
     final String progress = "Progress Indicator";
 
-    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress, UUID.randomUUID().toString());
   }
 
   // getAnalysis recover (continue polling) if operation sometimes does not succeed with 404
@@ -247,7 +250,7 @@ public class AnalysisDataTest {
 
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
+      public @NotNull CreateBundleResponse createBundle(String orgName, String requestId, FileHashRequest files) {
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
         response.setStatusCode(200);
@@ -255,7 +258,7 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
+      public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String requestId, String bundleId, Req request) {
         final CreateBundleResponse response =
           new CreateBundleResponse("bundleHash", Collections.emptyList());
         response.setStatusCode(200);
@@ -263,7 +266,7 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull CreateBundleResponse checkBundle(String orgName, String bundleId) {
+      public @NotNull CreateBundleResponse checkBundle(String orgName, String requestId, String bundleId) {
         final CreateBundleResponse response = new CreateBundleResponse("bundleHash", Collections.emptyList());
         response.setStatusCode(200);
         response.setStatusDescription("Fake successful bundle check");
@@ -273,6 +276,7 @@ public class AnalysisDataTest {
       @Override
       public @NotNull GetAnalysisResponse getAnalysis(
         String orgName,
+        String requestId,
         String bundleId,
         Integer severity,
         List<String> filesToAnalyse,
@@ -293,14 +297,13 @@ public class AnalysisDataTest {
         return 10_000L; // 10 sec
       }
     };
-    ;
     analysisData = new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger, restApi);
 
     // --------------------------- actual test --------------------
     final String project = "Project3";
     final String progress = "Progress Indicator";
 
-    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress, UUID.randomUUID().toString());
 
     assertTrue(
       "Analysis should complete despite getting 404s in the middle of polling",
