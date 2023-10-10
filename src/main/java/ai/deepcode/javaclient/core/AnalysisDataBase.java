@@ -209,7 +209,8 @@ public abstract class AnalysisDataBase {
   public void updateCachedResultsForFiles(
     @NotNull Object project,
     @NotNull Collection<Object> allProjectFiles,
-    @NotNull Object progress) {
+    @NotNull Object progress,
+    @NotNull String requestId) {
     Collection<Object> filesToRemove = mapProject2RemovedFiles.remove(project);
     if (filesToRemove == null) {
       filesToRemove = Collections.emptyList();
@@ -258,11 +259,11 @@ public abstract class AnalysisDataBase {
         dcLogger.logInfo("Files to remove: " + filesToRemove.size() + " files: " + filesToRemove);
       }
       mapFile2Suggestions.putAll(
-        retrieveSuggestions(project, filesToProceed, filesToRemove, progress)
+        retrieveSuggestions(project, filesToProceed, filesToRemove, progress, requestId)
       );
     } catch (BundleIdExpire404Exception e) {
       // re-try to create bundle from scratch
-      retryFullUpdateCachedResults(project, allProjectFiles, progress, 2);
+      retryFullUpdateCachedResults(project, allProjectFiles, progress, 2, requestId);
     } finally {
       MUTEX.unlock();
       dcLogger.logInfo("MUTEX RELEASED, hold count = " + MUTEX.getHoldCount());
@@ -275,7 +276,8 @@ public abstract class AnalysisDataBase {
     @NotNull Object project,
     @NotNull Collection<Object> allProjectFiles,
     @NotNull Object progress,
-    int attemptCounter
+    int attemptCounter,
+    @NotNull String requestId
   ) {
     if (attemptCounter <= 0) {
       showWarnIfNeeded(project, "Operations with bundle failed. Please try again later or contact Snyk support");
@@ -284,10 +286,10 @@ public abstract class AnalysisDataBase {
     removeProjectFromCaches(project);
     try {
       mapFile2Suggestions.putAll(
-        retrieveSuggestions(project, allProjectFiles, Collections.emptyList(), progress)
+        retrieveSuggestions(project, allProjectFiles, Collections.emptyList(), progress, requestId)
       );
     } catch (BundleIdExpire404Exception ex) {
-      retryFullUpdateCachedResults(project, allProjectFiles, progress, attemptCounter - 1);
+      retryFullUpdateCachedResults(project, allProjectFiles, progress, attemptCounter - 1, requestId);
     }
   }
 
@@ -338,7 +340,8 @@ public abstract class AnalysisDataBase {
     @NotNull Object project,
     @NotNull Collection<Object> filesToProceed,
     @NotNull Collection<Object> filesToRemove,
-    @NotNull Object progress
+    @NotNull Object progress,
+    @NotNull String requestId
   ) throws BundleIdExpire404Exception {
     if (filesToProceed.isEmpty() && filesToRemove.isEmpty()) {
       dcLogger.logWarn("Both filesToProceed and filesToRemove are empty");
@@ -349,7 +352,7 @@ public abstract class AnalysisDataBase {
 
     List<String> missingFiles;
     try {
-      missingFiles = createBundleStep(project, filesToProceed, filesToRemove, progress);
+      missingFiles = createBundleStep(project, filesToProceed, filesToRemove, progress, requestId);
     } catch (ApiCallNotSucceedException e) {
       // re-try createBundleStep from scratch for few times, i.e. do the same as if parent bundle is expired
       mapProject2BundleId.put(project, "");
@@ -361,7 +364,7 @@ public abstract class AnalysisDataBase {
     if (filesToProceed.isEmpty()) { // no sense to proceed
       return EMPTY_MAP;
     }
-    boolean filesUploaded = uploadFilesStep(project, filesToProceed, missingFiles, progress);
+    boolean filesUploaded = uploadFilesStep(project, filesToProceed, missingFiles, progress, requestId);
     if (!filesUploaded) { // no sense to proceed
       return EMPTY_MAP;
     }
@@ -378,7 +381,7 @@ public abstract class AnalysisDataBase {
       filesToProceed.stream().map(pdUtils::getDeepCodedFilePath).collect(Collectors.toList());
     GetAnalysisResponse getAnalysisResponse;
     try {
-      getAnalysisResponse = doGetAnalysis(project, bundleId, progress, filesToAnalyse);
+      getAnalysisResponse = doGetAnalysis(project, bundleId, progress, filesToAnalyse, requestId);
     } catch (TokenInvalid401Exception e) {
       return EMPTY_MAP;
     }
@@ -398,7 +401,8 @@ public abstract class AnalysisDataBase {
     @NotNull Object project,
     @NotNull Collection<Object> filesToProceed,
     @NotNull Collection<Object> filesToRemove,
-    @NotNull Object progress
+    @NotNull Object progress,
+    @NotNull String requestId
   ) throws BundleIdExpire404Exception, ApiCallNotSucceedException, TokenInvalid401Exception {
     long startTime = System.currentTimeMillis();
     pdUtils.progressSetText(progress, PREPARE_FILES_TEXT);
@@ -426,14 +430,14 @@ public abstract class AnalysisDataBase {
       sizePath2Hash += (path.length() + hash.length()) * 2L; // rough estimation of bytes occupied
       if (sizePath2Hash > MAX_BUNDLE_SIZE) {
         CreateBundleResponse tempBundleResponse =
-          makeNewBundle(project, hashRequest, Collections.emptyList());
+          makeNewBundle(project, hashRequest, Collections.emptyList(), requestId);
         sizePath2Hash = 0;
         hashRequest.clear();
       }
     }
     // todo break removeFiles in chunks less then MAX_BANDLE_SIZE
     //  needed ?? we do full rescan for large amount of files to remove
-    CreateBundleResponse createBundleResponse = makeNewBundle(project, hashRequest, filesToRemove);
+    CreateBundleResponse createBundleResponse = makeNewBundle(project, hashRequest, filesToRemove, requestId);
 
     final String bundleId = createBundleResponse.getBundleHash();
 
@@ -456,7 +460,8 @@ public abstract class AnalysisDataBase {
     @NotNull Object project,
     @NotNull Collection<Object> filesToProceed,
     @NotNull List<String> missingFiles,
-    @NotNull Object progress
+    @NotNull Object progress,
+    @NotNull String requestId
   ) throws BundleIdExpire404Exception {
     long startTime = System.currentTimeMillis();
     pdUtils.progressSetText(progress, UPLOADING_FILES_TEXT);
@@ -482,8 +487,8 @@ public abstract class AnalysisDataBase {
         }
         List<String> newMissingFiles;
         try {
-          uploadFiles(project, filesToProceed, missingFiles, bundleId, progress);
-          newMissingFiles = checkBundle(project, bundleId);
+          uploadFiles(project, filesToProceed, missingFiles, bundleId, progress, requestId);
+          newMissingFiles = checkBundle(project, bundleId, requestId);
         } catch (TokenInvalid401Exception e) {
           break;
         } catch (ApiCallNotSucceedException e) {
@@ -506,7 +511,8 @@ public abstract class AnalysisDataBase {
     @NotNull Collection<Object> filesToProceed,
     @NotNull List<String> missingFiles,
     @NotNull String bundleId,
-    @NotNull Object progress
+    @NotNull Object progress,
+    @NotNull String requestId
   ) throws ApiCallNotSucceedException, TokenInvalid401Exception, BundleIdExpire404Exception {
     Map<String, Object> mapPath2File =
       filesToProceed.stream().collect(Collectors.toMap(pdUtils::getDeepCodedFilePath, it -> it));
@@ -536,7 +542,7 @@ public abstract class AnalysisDataBase {
       final long fileSize = pdUtils.getFileSize(file); // .getVirtualFile().getLength();
       if (fileChunkSize + fileSize > MAX_BUNDLE_SIZE) {
         dcLogger.logInfo("Files-chunk size: " + fileChunkSize);
-        doUploadFiles(project, filesChunk, bundleId, progress);
+        doUploadFiles(project, filesChunk, bundleId, progress, requestId);
         fileChunkSize = 0;
         filesChunk.clear();
       }
@@ -546,7 +552,7 @@ public abstract class AnalysisDataBase {
     if (brokenMissingFilesCount > 0)
       dcLogger.logWarn(brokenMissingFilesCount + brokenMissingFilesMessage);
     dcLogger.logInfo("Last filesToProceed-chunk size: " + fileChunkSize);
-    doUploadFiles(project, filesChunk, bundleId, progress);
+    doUploadFiles(project, filesChunk, bundleId, progress, requestId);
   }
 
   /**
@@ -556,10 +562,11 @@ public abstract class AnalysisDataBase {
    */
   private List<String> checkBundle(
     @NotNull Object project,
-    @NotNull String bundleId
+    @NotNull String bundleId,
+    @NotNull String requestId
   ) throws TokenInvalid401Exception, BundleIdExpire404Exception, ApiCallNotSucceedException {
     CreateBundleResponse checkBundleResponse =
-      restApi.checkBundle(deepCodeParams.getOrgDisplayName(), bundleId);
+      restApi.checkBundle(deepCodeParams.getOrgDisplayName(), requestId, bundleId);
     checkApiCallSucceed(project, checkBundleResponse, "Bad CheckBundle request: ");
     return checkBundleResponse.getMissingFiles();
   }
@@ -567,7 +574,8 @@ public abstract class AnalysisDataBase {
   private CreateBundleResponse makeNewBundle(
     @NotNull Object project,
     @NotNull FileHashRequest request,
-    @NotNull Collection<Object> filesToRemove
+    @NotNull Collection<Object> filesToRemove,
+    @NotNull String requestId
   ) throws BundleIdExpire404Exception, ApiCallNotSucceedException, TokenInvalid401Exception {
     final String parentBundleId = mapProject2BundleId.getOrDefault(project, "");
     if (!parentBundleId.isEmpty()
@@ -592,11 +600,12 @@ public abstract class AnalysisDataBase {
     final CreateBundleResponse bundleResponse;
     // check if bundleID for the project already been created
     if (parentBundleId.isEmpty())
-      bundleResponse = restApi.createBundle(deepCodeParams.getOrgDisplayName(), request);
+      bundleResponse = restApi.createBundle(deepCodeParams.getOrgDisplayName(), requestId, request);
     else {
       bundleResponse =
         restApi.extendBundle(
           deepCodeParams.getOrgDisplayName(),
+          requestId,
           parentBundleId,
           new ExtendBundleWithHashRequest(request, removedFiles));
     }
@@ -614,7 +623,8 @@ public abstract class AnalysisDataBase {
     @NotNull Object project,
     @NotNull Collection<Object> psiFiles,
     @NotNull String bundleId,
-    @NotNull Object progress
+    @NotNull Object progress,
+    @NotNull String requestId
   ) throws ApiCallNotSucceedException, TokenInvalid401Exception, BundleIdExpire404Exception {
     dcLogger.logInfo("Uploading " + psiFiles.size() + " files... ");
     if (psiFiles.isEmpty()) return;
@@ -632,6 +642,7 @@ public abstract class AnalysisDataBase {
     EmptyResponse uploadFilesResponse =
       restApi.extendBundle(
         deepCodeParams.getOrgDisplayName(),
+        requestId,
         bundleId,
         new ExtendBundleWithContentRequest(files, Collections.emptyList()));
     checkApiCallSucceed(project, uploadFilesResponse, "Bad UploadFiles request: ");
@@ -642,7 +653,8 @@ public abstract class AnalysisDataBase {
     @NotNull Object project,
     @NotNull String bundleId,
     @NotNull Object progress,
-    List<String> filesToAnalyse
+    List<String> filesToAnalyse,
+    @NotNull String requestId
   ) throws TokenInvalid401Exception {
     GetAnalysisResponse response;
     int counter = 0;
@@ -655,6 +667,7 @@ public abstract class AnalysisDataBase {
       response =
         restApi.getAnalysis(
           deepCodeParams.getOrgDisplayName(),
+          requestId,
           bundleId,
           deepCodeParams.getMinSeverity(),
           filesToAnalyse,

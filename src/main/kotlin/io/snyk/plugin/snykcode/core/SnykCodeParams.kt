@@ -13,7 +13,7 @@ class SnykCodeParams private constructor() : DeepCodeParamsBase(
     1,
     pluginSettings().token,
     "",
-    "${SCLogger.presentableName}-Jetbrains",
+    "${SCLogger.PRESENTABLE_NAME}-Jetbrains",
     pluginSettings().organization,
     { getWaitForResultsTimeout() },
     codeRestApi
