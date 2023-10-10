@@ -71,11 +71,17 @@ class DeepCodeRestApiImplTest {
         val testFile =
             File(javaClass.classLoader.getResource(TEST_FILE)!!.file)
         val absolutePath = testFile.absolutePath
-        val deepCodedPath = ((if (absolutePath.startsWith("/")) "" else "/")
-            + if (fakeFileName == null) absolutePath else absolutePath.replace(
-            TEST_FILE,
-            fakeFileName
-        ))
+        val deepCodedPath = (
+            (if (absolutePath.startsWith("/")) "" else "/") +
+                if (fakeFileName == null) {
+                    absolutePath
+                } else {
+                    absolutePath.replace(
+                        TEST_FILE,
+                        fakeFileName
+                    )
+                }
+            )
         System.out.printf("\nFile: %1\$s\n", deepCodedPath)
         println("-----------------")
 
@@ -127,15 +133,18 @@ class DeepCodeRestApiImplTest {
         println("\n--------------Get Filters----------------\n")
         val filtersResponse: GetFiltersResponse = restApiClient!!.filters
         Assert.assertNotNull(filtersResponse)
-        val errorMsg = ("Get Filters return status code: ["
-            + filtersResponse.statusCode
-            + "] "
-            + filtersResponse.statusDescription
-            + "\n")
+        val errorMsg = (
+            "Get Filters return status code: [" +
+                filtersResponse.statusCode +
+                "] " +
+                filtersResponse.statusDescription +
+                "\n"
+            )
         Assert.assertEquals(errorMsg, 200, filtersResponse.statusCode.toLong())
         System.out.printf(
             "Get Filters call returns next filters: \nextensions: %1\$s \nconfigFiles: %2\$s\n",
-            filtersResponse.extensions, filtersResponse.configFiles
+            filtersResponse.extensions,
+            filtersResponse.configFiles
         )
     }
 
@@ -207,7 +216,8 @@ class DeepCodeRestApiImplTest {
         )
         Assert.assertEquals(200, checkBundleResponseNew.statusCode.toLong())
         Assert.assertTrue(
-            "List of missingFiles is NOT empty.", checkBundleResponseNew.missingFiles.isEmpty()
+            "List of missingFiles is NOT empty.",
+            checkBundleResponseNew.missingFiles.isEmpty()
         )
         Assert.assertEquals(
             "Checked and returned bundleId's are different.",
@@ -229,7 +239,9 @@ class DeepCodeRestApiImplTest {
         Assert.assertNotNull(createBundleResponse)
         System.out.printf(
             "Create Bundle call return:\nStatus code [%1\$d] %3\$s \nBundleId: [%2\$s]\n",
-            createBundleResponse.statusCode, createBundleResponse.bundleHash, createBundleResponse.statusDescription
+            createBundleResponse.statusCode,
+            createBundleResponse.bundleHash,
+            createBundleResponse.statusDescription
         )
         Assert.assertEquals(200, createBundleResponse.statusCode.toLong())
         return createBundleResponse.bundleHash
@@ -371,7 +383,9 @@ class DeepCodeRestApiImplTest {
         Assert.assertNotNull(response)
         System.out.printf(
             "Get Analysis call for test file: \n-----------\n %1\$s \n-----------\nreturns Status code: %2\$s \n%3\$s\n",
-            TEST_FILE, response.statusCode, response
+            TEST_FILE,
+            response.statusCode,
+            response
         )
         Assert.assertEquals(AnalysisDataBase.COMPLETE, response.status)
         Assert.assertEquals("Get Analysis request not succeed", 200, response.statusCode.toLong())
@@ -400,7 +414,6 @@ class DeepCodeRestApiImplTest {
         checkBundleAndAssert()
         extendBundleAndAssert()
         uploadFilesAndAssert()
-
     }
 
     companion object {
@@ -415,7 +428,9 @@ class DeepCodeRestApiImplTest {
             get() {
                 return if (baseUrl != null && !baseUrl.isEmpty()) {
                     newCodeRestApi(baseUrl)
-                } else newCodeRestApi(toSnykCodeApiUrl(DeepCodeRestApiImpl.API_URL))
+                } else {
+                    newCodeRestApi(toSnykCodeApiUrl(DeepCodeRestApiImpl.API_URL))
+                }
             }
 
         // in this test we explicitly allow it to test that hashing works
