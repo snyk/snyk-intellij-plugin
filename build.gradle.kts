@@ -40,14 +40,16 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.12.7.1")
     implementation("org.json:json:20230227")
+    implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11") {
         exclude(group = "com.fasterxml.jackson.core")
     }
-    implementation("ly.iterative.itly:plugin-schema-validator:1.2.11")
+    implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
+        exclude(group = "org.slf4j")
+    }
     implementation("ly.iterative.itly:sdk-jvm:1.2.11") {
         exclude(group = "org.json")
     }
-    implementation("com.segment.analytics.java:analytics:3.4.0")
 
     testImplementation("com.google.jimfs:jimfs:1.3.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")

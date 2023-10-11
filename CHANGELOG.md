@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+## [2.5.5]
+
+### Fixed
+- Exception occurring due to a dependency conflict
+- Add a requestID to all Snyk Code requests for better error analysis
+
 ## [2.5.4]
 
 ### Added
