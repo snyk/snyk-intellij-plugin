@@ -10,7 +10,7 @@ fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
     id("org.jetbrains.changelog") version "2.1.2"
-    id("org.jetbrains.intellij") version "1.15.0"
+    id("org.jetbrains.intellij") version "1.16.0"
     id("org.jetbrains.kotlin.jvm") version "1.9.0"
     id("io.gitlab.arturbosch.detekt") version ("1.23.1")
     id("pl.allegro.tech.build.axion-release") version "1.13.6"

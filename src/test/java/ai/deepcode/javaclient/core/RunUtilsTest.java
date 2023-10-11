@@ -43,7 +43,8 @@ public class RunUtilsTest {
         public void updateCachedResultsForFiles(
           @NotNull Object project,
           @NotNull Collection<Object> allProjectFiles,
-          @NotNull Object progress) {
+          @NotNull Object progress,
+          @NotNull String requestId) {
         }
       };
 

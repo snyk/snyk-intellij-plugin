@@ -68,7 +68,7 @@ class RunUtils private constructor() : RunUtilsBase(
     }
 
     private class MyBackgroundable(project: Project, title: String, private val consumer: Consumer<Any>) :
-        Backgroundable(project, "${SCLogger.presentableName}: $title") {
+        Backgroundable(project, "${SCLogger.PRESENTABLE_NAME}: $title") {
 
         override fun run(indicator: ProgressIndicator) {
             indicator.isIndeterminate = false

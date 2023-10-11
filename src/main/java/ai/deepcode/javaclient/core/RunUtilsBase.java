@@ -1,12 +1,12 @@
 package ai.deepcode.javaclient.core;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -45,7 +45,7 @@ public abstract class RunUtilsBase {
       (progress) -> {
         dcLogger.logInfo(
           "New Process ["
-            + progress.toString()
+            + progress
             + "] \nstarted at "
             + pdUtils.getProjectName(project));
         getRunningProgresses(project).add(progress);
@@ -54,7 +54,7 @@ public abstract class RunUtilsBase {
 
         dcLogger.logInfo(
           "Process ["
-            + progress.toString()
+            + progress
             + "] \nending at "
             + pdUtils.getProjectName(project));
         getRunningProgresses(project).remove(progress);
@@ -62,7 +62,6 @@ public abstract class RunUtilsBase {
     if (!reuseCurrentProgress(project, title, wrappedConsumer)) {
       doBackgroundRun(project, title, wrappedConsumer);
     }
-    ;
   }
 
   /**
@@ -164,7 +163,7 @@ public abstract class RunUtilsBase {
             "Previous Process cancelling for "
               + pdUtils.getFileName(file)
               + "\nProgress ["
-              + prevProgress.toString()
+              + prevProgress
               + "]");
           cancelProgress(prevProgress);
           getRunningProgresses(project).remove(prevProgress);
@@ -173,7 +172,7 @@ public abstract class RunUtilsBase {
         getRunningProgresses(project).add(progress);
 
         // small delay to let new consequent requests proceed and cancel current one
-        pdUtils.delay(pdUtils.DEFAULT_DELAY_SMALL, progress);
+        pdUtils.delay(PlatformDependentUtilsBase.DEFAULT_DELAY_SMALL, progress);
 
         Consumer<Object> actualRunnable = mapFile2Runnable.get(fileId);
         if (actualRunnable != null) {
@@ -189,7 +188,7 @@ public abstract class RunUtilsBase {
 
           // final delay before actual heavy Network request
           // to let new consequent requests proceed and cancel current one
-          pdUtils.delay(pdUtils.DEFAULT_DELAY, progress);
+          pdUtils.delay(PlatformDependentUtilsBase.DEFAULT_DELAY, progress);
           actualRunnable.accept(progress);
 
         } else {
@@ -207,11 +206,11 @@ public abstract class RunUtilsBase {
 
   private static final Map<Object, Object> mapProject2CancellableIndicator =
     new ConcurrentHashMap<>();
-  private static final Map<Object, Long> mapProject2CancellableRequestId =
+  private static final Map<Object, String> mapProject2CancellableRequestId =
     new ConcurrentHashMap<>();
 
-  private static final Map<Object, Long> mapProject2RequestId = new ConcurrentHashMap<>();
-  private static final Set<Long> bulkModeRequests = ConcurrentHashMap.newKeySet();
+  private static final Map<Object, String> mapProject2RequestId = new ConcurrentHashMap<>();
+  private static final Set<String> bulkModeRequests = ConcurrentHashMap.newKeySet();
 
   protected abstract void bulkModeUnset(@NotNull Object project);
   // BulkMode.unset(project);
@@ -226,7 +225,7 @@ public abstract class RunUtilsBase {
     int delayMilliseconds,
     boolean inBulkMode,
     boolean invalidateCaches) {
-    final long requestId = System.currentTimeMillis();
+    String requestId = UUID.randomUUID().toString();
     dcLogger.logInfo(
       "rescanInBackgroundCancellableDelayed requested for: ["
         + pdUtils.getProjectName(project)
@@ -235,7 +234,7 @@ public abstract class RunUtilsBase {
     projectsWithFullRescanRequested.add(project);
 
     // To proceed multiple events in a bunch (every <delayMilliseconds>)
-    Long prevRequestId = mapProject2RequestId.put(project, requestId);
+    String prevRequestId = mapProject2RequestId.put(project, requestId);
     if (inBulkMode) bulkModeRequests.add(requestId);
     if (prevRequestId != null) {
       if (bulkModeRequests.remove(prevRequestId)) {
@@ -263,14 +262,14 @@ public abstract class RunUtilsBase {
             "Previous Rescan cancelling for "
               + pdUtils.getProjectName(project)
               + "\nProgress ["
-              + prevProgressIndicator.toString()
+              + prevProgressIndicator
               + "]");
           cancelProgress(prevProgressIndicator);
         }
         getRunningProgresses(project).add(progress);
 
         // unset BulkMode if cancelled process did run under BulkMode
-        Long prevReqId = mapProject2CancellableRequestId.put(project, requestId);
+        String prevReqId = mapProject2CancellableRequestId.put(project, requestId);
         if (prevReqId != null && bulkModeRequests.remove(prevReqId)) {
           bulkModeUnset(project);
         }
@@ -280,7 +279,7 @@ public abstract class RunUtilsBase {
           // or to let Idea proceed internal events (.gitignore update)
           pdUtils.delay(delayMilliseconds, progress);
 
-          Long actualRequestId = mapProject2RequestId.get(project);
+          String actualRequestId = mapProject2RequestId.get(project);
           if (actualRequestId != null) {
             dcLogger.logInfo(
               "New Rescan started for ["
@@ -291,7 +290,7 @@ public abstract class RunUtilsBase {
 
             // actual rescan
             if (invalidateCaches) analysisData.removeProjectFromCaches(project);
-            updateCachedAnalysisResults(project, progress);
+            updateCachedAnalysisResults(project, progress, actualRequestId);
 
             if (bulkModeRequests.remove(actualRequestId)) {
               bulkModeUnset(project);
@@ -306,23 +305,12 @@ public abstract class RunUtilsBase {
       });
   }
 
-  public void asyncAnalyseProjectAndUpdatePanel(@Nullable Object project) {
-    final Object[] projects =
-      (project == null) ? pdUtils.getOpenProjects() : new Object[]{project};
-    for (Object prj : projects) {
-      if (!isFullRescanRequested(prj)) {
-        rescanInBackgroundCancellableDelayed(
-          prj, PlatformDependentUtilsBase.DEFAULT_DELAY_SMALL, false);
-      }
-    }
-  }
-
-  public void updateCachedAnalysisResults(@NotNull Object project, @NotNull Object progress) {
+  public void updateCachedAnalysisResults(@NotNull Object project, @NotNull Object progress, @NotNull String requestId) {
     try {
       final List<Object> allSupportedFilesInProject =
         deepCodeUtils.getAllSupportedFilesInProject(project, true, progress);
 
-      analysisData.updateCachedResultsForFiles(project, allSupportedFilesInProject, progress);
+      analysisData.updateCachedResultsForFiles(project, allSupportedFilesInProject, progress, requestId);
 
     } finally {
       projectsWithFullRescanRequested.remove(project);

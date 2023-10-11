@@ -19,7 +19,7 @@ var codeRestApi: DeepCodeRestApi? = null
 fun newCodeRestApi(
     endpoint: String = toSnykCodeApiUrl(getEndpointUrl())
 ): DeepCodeRestApi {
-    val requestLogger = Logger.getInstance(SCLogger.presentableName + "RequestLogging").isDebugEnabled
+    val requestLogger = Logger.getInstance(SCLogger.PRESENTABLE_NAME + "RequestLogging").isDebugEnabled
     val additionalInterceptors = listOf(Base64EncodeRequestInterceptor())
     val retrofit = RetrofitClientFactory.getInstance().createRetrofit(
         endpoint,

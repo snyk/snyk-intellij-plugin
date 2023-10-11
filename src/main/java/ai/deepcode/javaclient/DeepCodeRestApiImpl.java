@@ -116,25 +116,27 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
       @Header("snyk-org-name") String orgName,
+      @Header("snyk-request-id") String requestId,
       @Body FileContentRequest files);
 
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
       @Header("snyk-org-name") String orgName,
+      @Header("snyk-request-id") String requestId,
       @Body FileHashRequest files);
   }
 
-  private static <Req> CreateBundleResponse doCreateBundle(String orgName, Req request) {
+  private static <Req> CreateBundleResponse doCreateBundle(String orgName, String requestId, Req request) {
     CreateBundleCall createBundleCall = retrofit.create(CreateBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
       if (request instanceof FileContentRequest)
         retrofitResponse =
-          createBundleCall.doCreateBundle(orgName, (FileContentRequest) request).execute();
+          createBundleCall.doCreateBundle(orgName, requestId, (FileContentRequest) request).execute();
       else if (request instanceof FileHashRequest)
         retrofitResponse =
-          createBundleCall.doCreateBundle(orgName, (FileHashRequest) request).execute();
+          createBundleCall.doCreateBundle(orgName, requestId, (FileHashRequest) request).execute();
       else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
@@ -144,26 +146,14 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
       result = new CreateBundleResponse();
     }
     result.setStatusCode(retrofitResponse.code());
-    switch (retrofitResponse.code()) {
-      case 200:
-        result.setStatusDescription("The bundle creation was successful");
-        break;
-      case 400:
-        result.setStatusDescription("Request content doesn't match the specifications");
-        break;
-      case 401:
-        result.setStatusDescription("Missing sessionToken or incomplete login process");
-        break;
-      case 403:
-        result.setStatusDescription("Unauthorized access to requested repository");
-        break;
-      case 404:
-        result.setStatusDescription("Unable to resolve requested oid");
-        break;
-      default:
-        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-        break;
-    }
+	  switch (retrofitResponse.code()) {
+		  case 200 -> result.setStatusDescription("The bundle creation was successful");
+		  case 400 -> result.setStatusDescription("Request content doesn't match the specifications");
+		  case 401 -> result.setStatusDescription("Missing sessionToken or incomplete login process");
+		  case 403 -> result.setStatusDescription("Unauthorized access to requested repository");
+		  case 404 -> result.setStatusDescription("Unable to resolve requested oid");
+		  default -> result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+	  }
     return result;
   }
 
@@ -174,8 +164,8 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse createBundle(String orgName, FileContentRequest files) {
-    return doCreateBundle(orgName, files);
+  public CreateBundleResponse createBundle(String orgName, String requestId, FileContentRequest files) {
+    return doCreateBundle(orgName, requestId, files);
   }
 
   /**
@@ -185,8 +175,8 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
-    return doCreateBundle(orgName, files);
+  public CreateBundleResponse createBundle(String orgName, String requestId, FileHashRequest files) {
+    return doCreateBundle(orgName, requestId, files);
   }
 
   private interface CheckBundleCall {
@@ -194,6 +184,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @GET("bundle/{bundleId}")
     Call<CreateBundleResponse> doCheckBundle(
       @Header("snyk-org-name") String orgName,
+      @Header("snyk-request-id") String requestId,
       @Path(value = "bundleId", encoded = true) String bundleId);
   }
 
@@ -205,11 +196,11 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    */
   @Override
   @NotNull
-  public CreateBundleResponse checkBundle(String orgName, String bundleId) {
+  public CreateBundleResponse checkBundle(String orgName, String requestId, String bundleId) {
     CheckBundleCall checkBundleCall = retrofit.create(CheckBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
-      retrofitResponse = checkBundleCall.doCheckBundle(orgName, bundleId).execute();
+      retrofitResponse = checkBundleCall.doCheckBundle(orgName, requestId, bundleId).execute();
     } catch (IOException e) {
       return new CreateBundleResponse();
     }
@@ -218,23 +209,13 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
       result = new CreateBundleResponse();
     }
     result.setStatusCode(retrofitResponse.code());
-    switch (retrofitResponse.code()) {
-      case 200:
-        result.setStatusDescription("The bundle checked successfully");
-        break;
-      case 401:
-        result.setStatusDescription("Missing sessionToken or incomplete login process");
-        break;
-      case 403:
-        result.setStatusDescription("Unauthorized access to parent bundle");
-        break;
-      case 404:
-        result.setStatusDescription("Uploaded bundle has expired");
-        break;
-      default:
-        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-        break;
-    }
+	  switch (retrofitResponse.code()) {
+		  case 200 -> result.setStatusDescription("The bundle checked successfully");
+		  case 401 -> result.setStatusDescription("Missing sessionToken or incomplete login process");
+		  case 403 -> result.setStatusDescription("Unauthorized access to parent bundle");
+		  case 404 -> result.setStatusDescription("Uploaded bundle has expired");
+		  default -> result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+	  }
     return result;
   }
 
@@ -244,6 +225,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     Call<CreateBundleResponse> doExtendBundle(
 
       @Header("snyk-org-name") String orgName,
+      @Header("snyk-request-id") String requestId,
       @Path(value = "bundleId", encoded = true) String bundleId,
       @Body ExtendBundleWithHashRequest extendBundleWithHashRequest);
 
@@ -251,6 +233,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
       @Header("snyk-org-name") String orgName,
+      @Header("snyk-request-id") String requestId,
       @Path(value = "bundleId", encoded = true) String bundleId,
       @Body ExtendBundleWithContentRequest extendBundleWithContentRequest);
   }
@@ -264,52 +247,43 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   @Override
   @NotNull
   public <Req> CreateBundleResponse extendBundle(
-    String orgName, String bundleId, Req request) {
+    String orgName, String requestId, String bundleId, Req request) {
     ExtendBundleCall extendBundleCall = retrofit.create(ExtendBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
       if (request instanceof ExtendBundleWithHashRequest)
         retrofitResponse =
           extendBundleCall
-            .doExtendBundle(orgName, bundleId, (ExtendBundleWithHashRequest) request)
+            .doExtendBundle(orgName, requestId, bundleId, (ExtendBundleWithHashRequest) request)
             .execute();
       else if (request instanceof ExtendBundleWithContentRequest)
         retrofitResponse =
           extendBundleCall
-            .doExtendBundle(orgName, bundleId, (ExtendBundleWithContentRequest) request)
+            .doExtendBundle(orgName, requestId, bundleId, (ExtendBundleWithContentRequest) request)
             .execute();
       else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
     }
+	  return getCreateBundleResponse(retrofitResponse);
+  }
+
+  @NotNull
+  private static CreateBundleResponse getCreateBundleResponse(Response<CreateBundleResponse> retrofitResponse) {
     CreateBundleResponse result = retrofitResponse.body();
     if (result == null) {
       result = new CreateBundleResponse();
     }
     result.setStatusCode(retrofitResponse.code());
     switch (retrofitResponse.code()) {
-      case 200:
-        result.setStatusDescription("The bundle extension was successful");
-        break;
-      case 400:
-        result.setStatusDescription(
+      case 200 -> result.setStatusDescription("The bundle extension was successful");
+      case 400 -> result.setStatusDescription(
           "Attempted to extend a git bundle, or ended up with an empty bundle after the extension");
-        break;
-      case 401:
-        result.setStatusDescription("Missing sessionToken or incomplete login process");
-        break;
-      case 403:
-        result.setStatusDescription("Unauthorized access to parent bundle");
-        break;
-      case 404:
-        result.setStatusDescription("Parent bundle has expired");
-        break;
-      case 413:
-        result.setStatusDescription("Payload too large");
-        break;
-      default:
-        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-        break;
+      case 401 -> result.setStatusDescription("Missing sessionToken or incomplete login process");
+      case 403 -> result.setStatusDescription("Unauthorized access to parent bundle");
+      case 404 -> result.setStatusDescription("Parent bundle has expired");
+      case 413 -> result.setStatusDescription("Payload too large");
+      default -> result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
     }
     return result;
   }
@@ -319,6 +293,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @POST("analysis")
     Call<GetAnalysisResponse> doGetAnalysis(
       @Header("snyk-org-name") String orgName,
+      @Header("snyk-request-id") String requestId,
       @Body GetAnalysisRequest filesToAnalyse);
   }
 
@@ -331,6 +306,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   @NotNull
   public GetAnalysisResponse getAnalysis(
     String orgName,
+    String requestId,
     String bundleId,
     Integer severity,
     List<String> filesToAnalyse,
@@ -341,29 +317,26 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     try {
       Response<GetAnalysisResponse> retrofitResponse =
         getAnalysisCall
-          .doGetAnalysis(orgName, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard, ideProductName, orgName))
+          .doGetAnalysis(orgName, requestId, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard, ideProductName, orgName))
           .execute();
-      GetAnalysisResponse result = retrofitResponse.body();
-      if (result == null) result = new GetAnalysisResponse();
-      result.setStatusCode(retrofitResponse.code());
-      switch (retrofitResponse.code()) {
-        case 200:
-          result.setStatusDescription("The analysis request was successful");
-          break;
-        case 401:
-          result.setStatusDescription("Missing sessionToken or incomplete login process");
-          break;
-        case 403:
-          result.setStatusDescription("Unauthorized access to requested repository");
-          break;
-        default:
-          result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-          break;
-      }
-      return result;
+	    return getGetAnalysisResponse(retrofitResponse);
     } catch (IOException e) {
       return new GetAnalysisResponse();
     }
+  }
+
+  @NotNull
+  private static GetAnalysisResponse getGetAnalysisResponse(Response<GetAnalysisResponse> retrofitResponse) {
+    GetAnalysisResponse result = retrofitResponse.body();
+    if (result == null) result = new GetAnalysisResponse();
+    result.setStatusCode(retrofitResponse.code());
+    switch (retrofitResponse.code()) {
+      case 200 -> result.setStatusDescription("The analysis request was successful");
+      case 401 -> result.setStatusDescription("Missing sessionToken or incomplete login process");
+      case 403 -> result.setStatusDescription("Unauthorized access to requested repository");
+      default -> result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+    }
+    return result;
   }
 
   private interface GetFiltersCall {
@@ -385,17 +358,11 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
       GetFiltersResponse result = retrofitResponse.body();
       if (result == null) result = new GetFiltersResponse();
       result.setStatusCode(retrofitResponse.code());
-      switch (retrofitResponse.code()) {
-        case 200:
-          result.setStatusDescription("The filters request was successful");
-          break;
-        case 401:
-          result.setStatusDescription("Missing sessionToken or incomplete login process");
-          break;
-        default:
-          result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-          break;
-      }
+	    switch (retrofitResponse.code()) {
+		    case 200 -> result.setStatusDescription("The filters request was successful");
+		    case 401 -> result.setStatusDescription("Missing sessionToken or incomplete login process");
+		    default -> result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+	    }
       return result;
     } catch (IOException e) {
       return new GetFiltersResponse();

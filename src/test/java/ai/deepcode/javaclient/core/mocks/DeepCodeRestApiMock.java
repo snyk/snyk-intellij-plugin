@@ -12,28 +12,29 @@ import java.util.List;
 
 public class DeepCodeRestApiMock implements DeepCodeRestApi {
   @Override
-  public @NotNull CreateBundleResponse createBundle(String orgName, FileContentRequest files) {
+  public @NotNull CreateBundleResponse createBundle(String orgName, String requestId, FileContentRequest files) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public @NotNull CreateBundleResponse createBundle(String orgName, FileHashRequest files) {
+  public @NotNull CreateBundleResponse createBundle(String orgName, String requestId, FileHashRequest files) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public @NotNull CreateBundleResponse checkBundle(String orgName, String bundleId) {
+  public @NotNull CreateBundleResponse checkBundle(String orgName, String requestId, String bundleId) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String bundleId, Req request) {
+  public @NotNull <Req> CreateBundleResponse extendBundle(String orgName, String requestId, String bundleId, Req request) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public @NotNull GetAnalysisResponse getAnalysis(
     String orgName,
+    String requestId,
     String bundleId,
     Integer severity,
     List<String> filesToAnalyse,
