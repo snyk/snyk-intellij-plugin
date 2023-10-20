@@ -1,5 +1,11 @@
 # Snyk Changelog
 
+
+## [2.5.6]
+
+### Fixed
+- Update vulnerability in org.json dependency [high severity]
+
 ## [2.5.5]
 
 ### Fixed

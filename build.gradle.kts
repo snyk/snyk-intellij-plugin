@@ -39,7 +39,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.12.7.1")
-    implementation("org.json:json:20230227")
+    implementation("org.json:json:20231013")
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11") {
         exclude(group = "com.fasterxml.jackson.core")
