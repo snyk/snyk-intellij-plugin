@@ -6,6 +6,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
+import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
@@ -29,8 +30,12 @@ import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
+import snyk.common.lsp.LSPClientWrapper
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.nio.file.Paths
 
@@ -40,6 +45,7 @@ class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
     private val taskQueueIac = BackgroundTaskQueue(project, "Snyk: Iac")
     private val taskQueueContainer = BackgroundTaskQueue(project, "Snyk: Container")
+    val ls = LSPClientWrapper()
 
     private val settings
         get() = pluginSettings()
@@ -73,8 +79,22 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
+    fun initializeLanguageServer() {
+        waitUntilCliDownloadedIfNeeded(EmptyProgressIndicator())
+        ls.initialize()
+        GlobalScope.launch {
+            ls.process.errorStream.bufferedReader().forEachLine { println(it) }
+        }
+        GlobalScope.launch {
+            ls.startListening()
+        }
+
+        ls.sendInitializeMessage(project)
+    }
+
     fun scan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk wait for changed files to be saved on disk", true) {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
                 project.basePath?.let {
                     if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project, Paths.get(it))) return
@@ -84,14 +104,12 @@ class SnykTaskQueueService(val project: Project) {
                     FileDocumentManager.getInstance().saveAllDocuments()
                 }
                 indicator.checkCanceled()
+                waitUntilCliDownloadedIfNeeded(indicator)
+                indicator.checkCanceled()
 
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
                     scheduleSnykCodeScan()
                 }
-
-                waitUntilCliDownloadedIfNeeded(indicator)
-                indicator.checkCanceled()
-
                 if (settings.ossScanEnable) {
                     scheduleOssScan()
                 }

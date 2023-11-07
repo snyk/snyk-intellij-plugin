@@ -66,6 +66,7 @@ class SnykPostStartupActivity : ProjectActivity {
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             getSnykTaskQueueService(project)?.downloadLatestRelease()
+            getSnykTaskQueueService(project)?.initializeLanguageServer()
         }
 
         val feedbackRequestShownMoreThenTwoWeeksAgo =
