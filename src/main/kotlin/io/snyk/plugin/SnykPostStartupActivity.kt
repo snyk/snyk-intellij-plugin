@@ -23,7 +23,7 @@ import snyk.iac.IacBulkFileListener
 import snyk.oss.OssBulkFileListener
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.Date
+import java.util.*
 
 private val LOG = logger<SnykPostStartupActivity>()
 
@@ -67,6 +67,7 @@ class SnykPostStartupActivity : ProjectActivity {
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             getSnykTaskQueueService(project)?.downloadLatestRelease()
             getSnykTaskQueueService(project)?.initializeLanguageServer()
+            getAnalyticsScanListener(project)?.initScanListener()
         }
 
         val feedbackRequestShownMoreThenTwoWeeksAgo =

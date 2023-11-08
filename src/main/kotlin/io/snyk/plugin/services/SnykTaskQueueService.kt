@@ -1,7 +1,6 @@
 package io.snyk.plugin.services
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
@@ -34,12 +33,9 @@ import io.snyk.plugin.ui.SnykBalloonNotifications
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import org.apache.commons.lang.SystemUtils
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.common.lsp.commands.ScanDoneEvent
-import snyk.pluginInfo
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.nio.file.Paths
 
@@ -198,6 +194,7 @@ class SnykTaskQueueService(val project: Project) {
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
                 settings.reportFalsePositivesEnabled = sastCliConfigSettings?.reportFalsePositivesEnabled
+                val start = System.currentTimeMillis()
                 when (settings.sastOnServerEnabled) {
                     true -> {
                         getSnykCode(project)?.scan()
@@ -231,7 +228,6 @@ class SnykTaskQueueService(val project: Project) {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk Open Source is scanning", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return
-                val start = System.currentTimeMillis()
                 val snykCachedResults = getSnykCachedResults(project) ?: return
                 if (snykCachedResults.currentOssResults != null) return
 
@@ -243,7 +239,6 @@ class SnykTaskQueueService(val project: Project) {
                 } finally {
                     ossScanProgressIndicator = null
                 }
-                val end = System.currentTimeMillis()
                 if (ossResult == null || project.isDisposed) return
 
                 if (indicator.isCanceled) {
@@ -251,15 +246,6 @@ class SnykTaskQueueService(val project: Project) {
                 } else {
                     if (ossResult.isSuccessful()) {
                         scanPublisher?.scanningOssFinished(ossResult)
-                        val scanDoneEvent = getScanDoneEvent(
-                            end - start,
-                            "Snyk Open Source",
-                            ossResult.criticalSeveritiesCount(),
-                            ossResult.highSeveritiesCount(),
-                            ossResult.mediumSeveritiesCount(),
-                            ossResult.lowSeveritiesCount()
-                        )
-                        ls.sendReportAnalyticsCommand(scanDoneEvent)
                     } else {
                         scanPublisher?.scanningOssError(ossResult.getFirstError()!!)
                     }
@@ -267,37 +253,6 @@ class SnykTaskQueueService(val project: Project) {
                 DaemonCodeAnalyzer.getInstance(project).restart()
             }
         })
-    }
-
-    private fun getScanDoneEvent(
-        duration: Long, product: String, critical: Int, high: Int, medium: Int, low: Int
-    ): ScanDoneEvent {
-        return ScanDoneEvent(
-            ScanDoneEvent.Data(
-                type = "analytics",
-                attributes = ScanDoneEvent.Attributes(
-                    deviceId = settings.userAnonymousId,
-                    application = ApplicationInfo.getInstance().fullApplicationName,
-                    applicationVersion = ApplicationInfo.getInstance().fullVersion,
-                    os = SystemUtils.OS_NAME,
-                    arch = SystemUtils.OS_ARCH,
-                    integrationName = pluginInfo.integrationName,
-                    integrationVersion = pluginInfo.integrationVersion,
-                    integrationEnvironment = pluginInfo.integrationEnvironment,
-                    integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion,
-                    eventType = "Scan done",
-                    status = "Succeeded",
-                    scanType = product,
-                    uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(
-                        critical = critical,
-                        high = high,
-                        medium = medium,
-                        low = low
-                    ),
-                    durationMs = "$duration",
-                )
-            )
-        )
     }
 
     private fun scheduleIacScan() {
