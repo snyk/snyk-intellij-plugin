@@ -47,80 +47,82 @@ class AnalyticsScanListener(val project: Project) {
         )
     }
 
+    private val snykScanListener = object : SnykScanListener {
+        var start: Long = 0
+
+        override fun scanningStarted() {
+            start = System.currentTimeMillis()
+        }
+
+        override fun scanningOssFinished(ossResult: OssResult) {
+            val scanDoneEvent = getScanDoneEvent(
+                System.currentTimeMillis() - start,
+                "Snyk Open Source",
+                ossResult.criticalSeveritiesCount(),
+                ossResult.highSeveritiesCount(),
+                ossResult.mediumSeveritiesCount(),
+                ossResult.lowSeveritiesCount()
+            )
+            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+        }
+
+        override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
+            snykCodeResults?.let {
+                val scanDoneEvent = getScanDoneEvent(
+                    System.currentTimeMillis() - start,
+                    "Snyk Code",
+                    snykCodeResults.totalCriticalCount,
+                    snykCodeResults.totalErrorsCount,
+                    snykCodeResults.totalWarnsCount,
+                    snykCodeResults.totalInfosCount,
+                )
+                getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+            }
+        }
+
+        override fun scanningIacFinished(iacResult: IacResult) {
+            val scanDoneEvent = getScanDoneEvent(
+                System.currentTimeMillis() - start,
+                "Snyk IaC",
+                iacResult.criticalSeveritiesCount(),
+                iacResult.highSeveritiesCount(),
+                iacResult.mediumSeveritiesCount(),
+                iacResult.lowSeveritiesCount()
+            )
+            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+        }
+
+        override fun scanningOssError(snykError: SnykError) {
+            // do nothing
+        }
+
+        override fun scanningIacError(snykError: SnykError) {
+            // do nothing
+        }
+
+        override fun scanningSnykCodeError(snykError: SnykError) {
+            // do nothing
+        }
+
+        override fun scanningContainerFinished(containerResult: ContainerResult) {
+            val scanDoneEvent = getScanDoneEvent(
+                System.currentTimeMillis() - start,
+                "Snyk Container",
+                containerResult.criticalSeveritiesCount(),
+                containerResult.highSeveritiesCount(),
+                containerResult.mediumSeveritiesCount(),
+                containerResult.lowSeveritiesCount()
+            )
+            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+        }
+
+        override fun scanningContainerError(snykError: SnykError) {
+            // do nothing
+        }
+    }
+
     fun initScanListener() = project.messageBus.connect().subscribe(
         SnykScanListener.SNYK_SCAN_TOPIC,
-        object : SnykScanListener {
-            var start: Long = 0
-
-            override fun scanningStarted() {
-                start = System.currentTimeMillis()
-            }
-
-            override fun scanningOssFinished(ossResult: OssResult) {
-                val scanDoneEvent = getScanDoneEvent(
-                    System.currentTimeMillis() - start,
-                    "Snyk Open Source",
-                    ossResult.criticalSeveritiesCount(),
-                    ossResult.highSeveritiesCount(),
-                    ossResult.mediumSeveritiesCount(),
-                    ossResult.lowSeveritiesCount()
-                )
-                getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
-            }
-
-            override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
-                snykCodeResults?.let {
-                    val scanDoneEvent = getScanDoneEvent(
-                        System.currentTimeMillis() - start,
-                        "Snyk Code",
-                        snykCodeResults.totalCriticalCount,
-                        snykCodeResults.totalErrorsCount,
-                        snykCodeResults.totalWarnsCount,
-                        snykCodeResults.totalInfosCount,
-                    )
-                    getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
-                }
-            }
-
-            override fun scanningIacFinished(iacResult: IacResult) {
-                val scanDoneEvent = getScanDoneEvent(
-                    System.currentTimeMillis() - start,
-                    "Snyk IaC",
-                    iacResult.criticalSeveritiesCount(),
-                    iacResult.highSeveritiesCount(),
-                    iacResult.mediumSeveritiesCount(),
-                    iacResult.lowSeveritiesCount()
-                )
-                getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
-            }
-
-            override fun scanningOssError(snykError: SnykError) {
-                // do nothing
-            }
-
-            override fun scanningIacError(snykError: SnykError) {
-                // do nothing
-            }
-
-            override fun scanningSnykCodeError(snykError: SnykError) {
-                // do nothing
-            }
-
-            override fun scanningContainerFinished(containerResult: ContainerResult) {
-                val scanDoneEvent = getScanDoneEvent(
-                    System.currentTimeMillis() - start,
-                    "Snyk Container",
-                    containerResult.criticalSeveritiesCount(),
-                    containerResult.highSeveritiesCount(),
-                    containerResult.mediumSeveritiesCount(),
-                    containerResult.lowSeveritiesCount()
-                )
-                getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
-            }
-
-            override fun scanningContainerError(snykError: SnykError) {
-                // do nothing
-            }
-        },
+        snykScanListener,
     )
 }
