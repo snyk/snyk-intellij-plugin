@@ -5,18 +5,24 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.apache.commons.lang.SystemUtils
+import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.pluginInfo
+import java.util.concurrent.CompletableFuture
 
 class AnalyticsScanListenerTest {
+    private lateinit var cut: AnalyticsScanListener
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
     private val settings = SnykApplicationSettingsStateService()
@@ -32,6 +38,7 @@ class AnalyticsScanListenerTest {
         every { pluginInfo.integrationVersion } returns "2.4.61"
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
+        cut = AnalyticsScanListener(projectMock)
     }
 
     @After
@@ -41,7 +48,6 @@ class AnalyticsScanListenerTest {
 
     @Test
     fun testGetScanDone() {
-        val cut = AnalyticsScanListener(projectMock)
         val scanDoneEvent = cut.getScanDoneEvent(
             1,
             "product",
@@ -70,5 +76,61 @@ class AnalyticsScanListenerTest {
         assertEquals(settings.userAnonymousId, scanDoneEvent.data.attributes.deviceId)
 
         assertNotNull(scanDoneEvent.data.attributes.timestampFinished)
+    }
+
+    @Test
+    fun `testScanListener scanningIacFinished should call language server to report analytics`() {
+        val languageServerWrapper = LanguageServerWrapper("dummy")
+        languageServerWrapper.languageServer = lsMock
+        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(null)
+
+        cut.snykScanListener.scanningIacFinished(mockk(relaxed = true))
+
+        verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    }
+
+    @Test
+    fun `testScanListener scanningOssFinished should call language server to report analytics`() {
+        val languageServerWrapper = LanguageServerWrapper("dummy")
+        languageServerWrapper.languageServer = lsMock
+        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(null)
+
+        cut.snykScanListener.scanningOssFinished(mockk(relaxed = true))
+
+        verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    }
+
+    @Test
+    fun `testScanListener scanningCodeFinished should call language server to report analytics`() {
+        val languageServerWrapper = LanguageServerWrapper("dummy")
+        languageServerWrapper.languageServer = lsMock
+        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(null)
+
+        cut.snykScanListener.scanningSnykCodeFinished(mockk(relaxed = true))
+
+        verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    }
+
+    @Test
+    fun `testScanListener scanningContainerFinished should call language server to report analytics`() {
+        val languageServerWrapper = LanguageServerWrapper("dummy")
+        languageServerWrapper.languageServer = lsMock
+        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(null)
+
+        cut.snykScanListener.scanningContainerFinished(mockk(relaxed = true))
+
+        verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
     }
 }

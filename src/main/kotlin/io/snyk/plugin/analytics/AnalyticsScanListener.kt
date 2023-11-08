@@ -47,7 +47,7 @@ class AnalyticsScanListener(val project: Project) {
         )
     }
 
-    private val snykScanListener = object : SnykScanListener {
+    val snykScanListener = object : SnykScanListener {
         var start: Long = 0
 
         override fun scanningStarted() {
