@@ -66,8 +66,12 @@ class SnykPostStartupActivity : ProjectActivity {
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             getSnykTaskQueueService(project)?.downloadLatestRelease()
-            getSnykTaskQueueService(project)?.initializeLanguageServer()
-            getAnalyticsScanListener(project)?.initScanListener()
+            try {
+                getSnykTaskQueueService(project)?.initializeLanguageServer()
+                getAnalyticsScanListener(project)?.initScanListener()
+            } catch (ignored: Exception) {
+                // do nothing to not break UX for analytics
+            }
         }
 
         val feedbackRequestShownMoreThenTwoWeeksAgo =

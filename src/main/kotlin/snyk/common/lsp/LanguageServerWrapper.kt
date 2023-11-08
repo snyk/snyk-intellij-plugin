@@ -70,11 +70,15 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
     }
 
     fun sendReportAnalyticsCommand(scanDoneEvent: ScanDoneEvent) {
-        val eventString = gson.toJson(scanDoneEvent)
-        val param = ExecuteCommandParams()
-        param.command = "snyk.reportAnalytics"
-        param.arguments = listOf(eventString)
-        languageServer.workspaceService.executeCommand(param)
+        try {
+            val eventString = gson.toJson(scanDoneEvent)
+            val param = ExecuteCommandParams()
+            param.command = "snyk.reportAnalytics"
+            param.arguments = listOf(eventString)
+            languageServer.workspaceService.executeCommand(param)
+        } catch (ignored: Exception) {
+            // do nothing to not break UX for analytics
+        }
     }
 
     fun getInitializationOptions(): LanguageServerSettings {
