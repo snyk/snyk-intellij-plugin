@@ -252,7 +252,7 @@ class SnykTaskQueueService(val project: Project) {
                     if (ossResult.isSuccessful()) {
                         scanPublisher?.scanningOssFinished(ossResult)
                         val scanDoneEvent = getScanDoneEvent(
-                            end-start,
+                            end - start,
                             "Snyk Open Source",
                             ossResult.criticalSeveritiesCount(),
                             ossResult.highSeveritiesCount(),
@@ -274,7 +274,8 @@ class SnykTaskQueueService(val project: Project) {
     ): ScanDoneEvent {
         return ScanDoneEvent(
             ScanDoneEvent.Data(
-                type = "analytics", attributes = ScanDoneEvent.Attributes(
+                type = "analytics",
+                attributes = ScanDoneEvent.Attributes(
                     deviceId = settings.userAnonymousId,
                     application = ApplicationInfo.getInstance().fullApplicationName,
                     applicationVersion = ApplicationInfo.getInstance().fullVersion,
@@ -288,7 +289,10 @@ class SnykTaskQueueService(val project: Project) {
                     status = "Succeeded",
                     scanType = product,
                     uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(
-                        critical = critical, high = high, medium = medium, low = low
+                        critical = critical,
+                        high = high,
+                        medium = medium,
+                        low = low
                     ),
                     durationMs = "$duration",
                 )
@@ -326,8 +330,11 @@ class SnykTaskQueueService(val project: Project) {
                         scanPublisher?.scanningIacFinished(iacResult)
                     } else {
                         val error = iacResult.getFirstError()
-                        if (error == null) SnykError("unknown IaC error", project.basePath ?: "")
-                        else scanPublisher?.scanningIacError(error)
+                        if (error == null) {
+                            SnykError("unknown IaC error", project.basePath ?: "")
+                        } else {
+                            scanPublisher?.scanningIacError(error)
+                        }
                     }
                 }
                 logger.debug("IaC scan completed")
