@@ -7,7 +7,7 @@ import io.snyk.plugin.pluginSettings
 import org.apache.commons.lang.SystemUtils
 import snyk.pluginInfo
 
-data class Settings(
+data class LanguageServerSettings(
     @SerializedName("activateSnykOpenSource") val activateSnykOpenSource: String? = "false",
     @SerializedName("activateSnykCode") val activateSnykCode: String? = "false",
     @SerializedName("activateSnykIac") val activateSnykIac: String? = "false",

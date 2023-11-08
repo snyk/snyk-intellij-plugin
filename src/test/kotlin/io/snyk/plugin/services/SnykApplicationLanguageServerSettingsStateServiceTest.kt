@@ -5,7 +5,7 @@ import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.junit.Test
 
-class SnykApplicationSettingsStateServiceTest {
+class SnykApplicationLanguageServerSettingsStateServiceTest {
 
     @Test
     fun hasSeverityEnabled_allSeveritiesEnabledByDefault() {
