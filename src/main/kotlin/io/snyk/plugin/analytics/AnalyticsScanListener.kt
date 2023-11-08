@@ -1,6 +1,5 @@
 package io.snyk.plugin.analytics
 
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykScanListener
@@ -15,43 +14,43 @@ import snyk.iac.IacResult
 import snyk.oss.OssResult
 import snyk.pluginInfo
 
-@Service
+@Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
+    fun getScanDoneEvent(
+        duration: Long, product: String, critical: Int, high: Int, medium: Int, low: Int
+    ): ScanDoneEvent {
+        return ScanDoneEvent(
+            ScanDoneEvent.Data(
+                type = "analytics",
+                attributes = ScanDoneEvent.Attributes(
+                    deviceId = pluginSettings().userAnonymousId,
+                    application = pluginInfo.integrationName,
+                    applicationVersion = pluginInfo.integrationVersion,
+                    os = SystemUtils.OS_NAME,
+                    arch = SystemUtils.OS_ARCH,
+                    integrationName = pluginInfo.integrationName,
+                    integrationVersion = pluginInfo.integrationVersion,
+                    integrationEnvironment = pluginInfo.integrationEnvironment,
+                    integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion,
+                    eventType = "Scan done",
+                    status = "Succeeded",
+                    scanType = product,
+                    uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(
+                        critical = critical,
+                        high = high,
+                        medium = medium,
+                        low = low
+                    ),
+                    durationMs = "$duration",
+                )
+            )
+        )
+    }
+
     fun initScanListener() = project.messageBus.connect().subscribe(
         SnykScanListener.SNYK_SCAN_TOPIC,
         object : SnykScanListener {
             var start: Long = 0
-
-            private fun getScanDoneEvent(
-                duration: Long, product: String, critical: Int, high: Int, medium: Int, low: Int
-            ): ScanDoneEvent {
-                return ScanDoneEvent(
-                    ScanDoneEvent.Data(
-                        type = "analytics",
-                        attributes = ScanDoneEvent.Attributes(
-                            deviceId = pluginSettings().userAnonymousId,
-                            application = ApplicationInfo.getInstance().fullApplicationName,
-                            applicationVersion = ApplicationInfo.getInstance().fullVersion,
-                            os = SystemUtils.OS_NAME,
-                            arch = SystemUtils.OS_ARCH,
-                            integrationName = pluginInfo.integrationName,
-                            integrationVersion = pluginInfo.integrationVersion,
-                            integrationEnvironment = pluginInfo.integrationEnvironment,
-                            integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion,
-                            eventType = "Scan done",
-                            status = "Succeeded",
-                            scanType = product,
-                            uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(
-                                critical = critical,
-                                high = high,
-                                medium = medium,
-                                low = low
-                            ),
-                            durationMs = "$duration",
-                        )
-                    )
-                )
-            }
 
             override fun scanningStarted() {
                 start = System.currentTimeMillis()
