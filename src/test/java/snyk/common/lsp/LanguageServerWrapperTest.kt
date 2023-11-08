@@ -7,8 +7,10 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import junit.framework.TestCase.assertEquals
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.services.LanguageServer
@@ -22,13 +24,14 @@ class LanguageServerWrapperTest {
 
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
+    private val settings = SnykApplicationSettingsStateService()
     private lateinit var cut: LanguageServerWrapper
 
     @Before
     fun setUp() {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { pluginSettings() } returns SnykApplicationSettingsStateService()
+        every { pluginSettings() } returns settings
         mockkStatic("snyk.PluginInformationKt")
         every { pluginInfo } returns mockk(relaxed = true)
         every { pluginInfo.integrationName } returns "Snyk Intellij Plugin"
@@ -66,5 +69,22 @@ class LanguageServerWrapperTest {
         cut.sendReportAnalyticsCommand(mockk(relaxed = true))
 
         verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    }
+
+    @Test
+    fun getInitializationOptions() {
+        settings.token = "testToken"
+        settings.customEndpointUrl = "testEndpoint/"
+        settings.ignoreUnknownCA = true
+        settings.cliPath = "testCliPath"
+
+        val actual = cut.getInitializationOptions()
+
+        assertEquals("false", actual.activateSnykCode)
+        assertEquals("false", actual.activateSnykIac)
+        assertEquals("false", actual.activateSnykOpenSource)
+        assertEquals(settings.token, actual.token)
+        assertEquals("${settings.ignoreUnknownCA}", actual.insecure)
+        assertEquals(getCliFile().absolutePath, actual.cliPath)
     }
 }

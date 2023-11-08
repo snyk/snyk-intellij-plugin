@@ -77,7 +77,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
         languageServer.workspaceService.executeCommand(param)
     }
 
-    private fun getInitializationOptions(): LanguageServerSettings {
+    fun getInitializationOptions(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
             activateSnykOpenSource = "false",
