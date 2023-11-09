@@ -40,11 +40,13 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
     lateinit var process: Process
 
     fun initialize() {
-        val cmd = listOf(lsPath, "language-server", "-l", "debug")
+        val snykLanguageClient = SnykLanguageClient()
+        languageClient = snykLanguageClient
+        val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
+        val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
         val processBuilder = ProcessBuilder(cmd)
         process = processBuilder.start()
-        languageClient = SnykLanguageClient()
         launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
         languageServer = launcher.remoteProxy
     }
