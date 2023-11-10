@@ -4,15 +4,12 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.SnykCodeResults
-import org.apache.commons.lang.SystemUtils
 import snyk.common.SnykError
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
-import snyk.pluginInfo
 
 @Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
@@ -21,19 +18,7 @@ class AnalyticsScanListener(val project: Project) {
     ): ScanDoneEvent {
         return ScanDoneEvent(
             ScanDoneEvent.Data(
-                type = "analytics",
                 attributes = ScanDoneEvent.Attributes(
-                    deviceId = pluginSettings().userAnonymousId,
-                    application = pluginInfo.integrationName,
-                    applicationVersion = pluginInfo.integrationVersion,
-                    os = SystemUtils.OS_NAME,
-                    arch = SystemUtils.OS_ARCH,
-                    integrationName = pluginInfo.integrationName,
-                    integrationVersion = pluginInfo.integrationVersion,
-                    integrationEnvironment = pluginInfo.integrationEnvironment,
-                    integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion,
-                    eventType = "Scan done",
-                    status = "Succeeded",
                     scanType = product,
                     uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(
                         critical = critical,
@@ -92,18 +77,6 @@ class AnalyticsScanListener(val project: Project) {
             getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
         }
 
-        override fun scanningOssError(snykError: SnykError) {
-            // do nothing
-        }
-
-        override fun scanningIacError(snykError: SnykError) {
-            // do nothing
-        }
-
-        override fun scanningSnykCodeError(snykError: SnykError) {
-            // do nothing
-        }
-
         override fun scanningContainerFinished(containerResult: ContainerResult) {
             val scanDoneEvent = getScanDoneEvent(
                 System.currentTimeMillis() - start,
@@ -114,6 +87,18 @@ class AnalyticsScanListener(val project: Project) {
                 containerResult.lowSeveritiesCount()
             )
             getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+        }
+
+        override fun scanningOssError(snykError: SnykError) {
+            // do nothing
+        }
+
+        override fun scanningIacError(snykError: SnykError) {
+            // do nothing
+        }
+
+        override fun scanningSnykCodeError(snykError: SnykError) {
+            // do nothing
         }
 
         override fun scanningContainerError(snykError: SnykError) {
