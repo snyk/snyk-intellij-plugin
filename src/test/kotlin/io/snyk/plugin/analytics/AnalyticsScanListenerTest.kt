@@ -63,8 +63,8 @@ class AnalyticsScanListenerTest {
         assertEquals(1, scanDoneEvent.data.attributes.uniqueIssueCount.medium)
         assertEquals(1, scanDoneEvent.data.attributes.uniqueIssueCount.low)
 
-        assertEquals("Snyk Intellij Plugin", scanDoneEvent.data.attributes.application)
-        assertEquals("2.4.61", scanDoneEvent.data.attributes.applicationVersion)
+        assertEquals("IntelliJ IDEA", scanDoneEvent.data.attributes.application)
+        assertEquals("2020.3.2", scanDoneEvent.data.attributes.applicationVersion)
         assertEquals("IntelliJ IDEA", scanDoneEvent.data.attributes.integrationEnvironment)
         assertEquals("2020.3.2", scanDoneEvent.data.attributes.integrationEnvironmentVersion)
         assertEquals(SystemUtils.OS_NAME, scanDoneEvent.data.attributes.os)
