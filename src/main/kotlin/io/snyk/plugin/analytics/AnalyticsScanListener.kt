@@ -52,17 +52,21 @@ class AnalyticsScanListener(val project: Project) {
         }
 
         override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
-            snykCodeResults?.let {
-                val scanDoneEvent = getScanDoneEvent(
-                    System.currentTimeMillis() - start,
-                    "Snyk Code",
+            val duration = System.currentTimeMillis() - start
+            val product = "Snyk Code"
+            val scanDoneEvent = if (snykCodeResults != null) {
+                getScanDoneEvent(
+                    duration,
+                    product,
                     snykCodeResults.totalCriticalCount,
                     snykCodeResults.totalErrorsCount,
                     snykCodeResults.totalWarnsCount,
                     snykCodeResults.totalInfosCount,
                 )
-                getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+            } else {
+                getScanDoneEvent(duration, product, 0, 0, 0, 0)
             }
+            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningIacFinished(iacResult: IacResult) {
