@@ -30,6 +30,8 @@ repositories {
 
 dependencies {
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.11.0"))
+    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.21.1")
+
     implementation("org.commonmark:commonmark:0.21.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.segment.analytics.java:analytics:3.4.0")

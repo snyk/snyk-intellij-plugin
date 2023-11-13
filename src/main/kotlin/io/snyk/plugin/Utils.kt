@@ -14,7 +14,6 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
@@ -24,6 +23,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
+import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
@@ -55,7 +55,6 @@ import snyk.oss.OssTextRangeFinder
 import snyk.whoami.WhoamiService
 import java.io.File
 import java.net.URI
-import java.net.URL
 import java.nio.file.Path
 import java.security.KeyStore
 import java.util.Objects.nonNull
@@ -81,6 +80,7 @@ fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.s
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
 
 fun getSnykCachedResults(project: Project): SnykCachedResults? = project.serviceIfNotDisposed()
+fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? = project.serviceIfNotDisposed()
 
 fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
 
