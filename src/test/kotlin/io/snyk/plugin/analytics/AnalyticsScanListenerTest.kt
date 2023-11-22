@@ -6,12 +6,13 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getArch
+import io.snyk.plugin.getOS
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
-import org.apache.commons.lang.SystemUtils
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
@@ -67,8 +68,8 @@ class AnalyticsScanListenerTest {
         assertEquals("2020.3.2", scanDoneEvent.data.attributes.applicationVersion)
         assertEquals("IntelliJ IDEA", scanDoneEvent.data.attributes.integrationEnvironment)
         assertEquals("2020.3.2", scanDoneEvent.data.attributes.integrationEnvironmentVersion)
-        assertEquals(SystemUtils.OS_NAME, scanDoneEvent.data.attributes.os)
-        assertEquals(SystemUtils.OS_ARCH, scanDoneEvent.data.attributes.arch)
+        assertEquals(getOS(), scanDoneEvent.data.attributes.os)
+        assertEquals(getArch(), scanDoneEvent.data.attributes.arch)
 
         assertEquals("analytics", scanDoneEvent.data.type)
         assertEquals("Scan done", scanDoneEvent.data.attributes.eventType)
