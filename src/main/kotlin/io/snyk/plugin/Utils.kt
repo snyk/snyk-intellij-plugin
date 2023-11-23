@@ -384,7 +384,7 @@ fun getOS(): String {
         "lin" to "linux"
     )
     val osName = SystemUtils.OS_NAME.toString().lowercase().substring(0, END_INDEX_FOR_OS_MATCHING)
-    return osMap[osName] ?: "unknown"
+    return osMap[osName] ?: osName
 }
 
 fun getArch(): String {
@@ -397,5 +397,5 @@ fun getArch(): String {
         "x8632" to "386",
         "386" to "386",
     )
-    return archMap[value] ?: "unknown"
+    return archMap[value] ?: value
 }
