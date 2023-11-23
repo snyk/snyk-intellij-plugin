@@ -1,8 +1,7 @@
 package io.snyk.plugin.analytics
 
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import org.hamcrest.core.IsEqual.equalTo
-import org.junit.Assert.assertThat
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import snyk.advisor.AdvisorPackageManager
 import snyk.analytics.AnalysisIsReady.AnalysisType
@@ -21,7 +20,7 @@ class ItlyHelperTest {
 
         val actualProducts = getSelectedProducts(settings)
 
-        assertThat(actualProducts.size, equalTo(0))
+        assertEquals(0, actualProducts.size)
     }
 
     @Test
@@ -35,8 +34,8 @@ class ItlyHelperTest {
 
         val actualProducts = getSelectedProducts(settings)
 
-        assertThat(actualProducts.size, equalTo(1))
-        assertThat(actualProducts[0], equalTo(AnalysisType.SNYK_OPEN_SOURCE.analysisType))
+        assertEquals(1, actualProducts.size)
+        assertEquals(AnalysisType.SNYK_OPEN_SOURCE.analysisType, actualProducts[0])
     }
 
     @Test
@@ -45,7 +44,7 @@ class ItlyHelperTest {
 
         val actualEcosystem = npmPackageManager.getEcosystem()
 
-        assertThat(actualEcosystem, equalTo(HealthScoreIsClicked.Ecosystem.NPM))
+        assertEquals(HealthScoreIsClicked.Ecosystem.NPM, actualEcosystem)
     }
 
     @Test
@@ -54,6 +53,6 @@ class ItlyHelperTest {
 
         val actualEcosystem = pythonPackageManager.getEcosystem()
 
-        assertThat(actualEcosystem, equalTo(HealthScoreIsClicked.Ecosystem.PYTHON))
+        assertEquals(HealthScoreIsClicked.Ecosystem.PYTHON, actualEcosystem)
     }
 }
