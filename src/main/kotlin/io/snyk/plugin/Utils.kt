@@ -39,6 +39,7 @@ import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.apache.commons.lang.SystemUtils
 import snyk.advisor.AdvisorService
 import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
@@ -373,3 +374,28 @@ fun VirtualFile.contentRoot(project: Project): VirtualFile? {
 fun PsiFile.contentRoot(project: Project) = this.virtualFile.contentRoot(project)
 fun PsiFile.relativePathToContentRoot(project: Project): Path? =
     this.contentRoot(project)?.toNioPath()?.relativize(this.virtualFile.toNioPath())
+
+private const val END_INDEX_FOR_OS_MATCHING = 3
+
+fun getOS(): String {
+    val osMap = mapOf(
+        "mac" to "macOS",
+        "win" to "windows",
+        "lin" to "linux"
+    )
+    val osName = SystemUtils.OS_NAME.toString().lowercase().substring(0, END_INDEX_FOR_OS_MATCHING)
+    return osMap[osName] ?: osName
+}
+
+fun getArch(): String {
+    val value: String = SystemUtils.OS_ARCH.toString().lowercase()
+    val archMap = mapOf(
+        "x8664" to "x86_64",
+        "amd64" to "x86_64",
+        "arm64" to "arm64",
+        "aarch64" to "arm64",
+        "x8632" to "386",
+        "386" to "386",
+    )
+    return archMap[value] ?: value
+}

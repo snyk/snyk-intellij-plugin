@@ -1,8 +1,9 @@
 package snyk.common.lsp.commands
 
 import com.google.gson.annotations.SerializedName
+import io.snyk.plugin.getArch
+import io.snyk.plugin.getOS
 import io.snyk.plugin.pluginSettings
-import org.apache.commons.lang.SystemUtils
 import snyk.pluginInfo
 import java.time.ZonedDateTime
 
@@ -15,23 +16,40 @@ data class ScanDoneEvent(
     )
 
     data class Attributes(
-        @SerializedName("deviceId") val deviceId: String = pluginSettings().userAnonymousId,
+        @SerializedName("device_id") val deviceId: String = pluginSettings().userAnonymousId,
         @SerializedName("application") val application: String = pluginInfo.integrationEnvironment,
         @SerializedName("application_version")
         val applicationVersion: String = pluginInfo.integrationEnvironmentVersion,
-        @SerializedName("os") val os: String = SystemUtils.OS_NAME,
-        @SerializedName("arch") val arch: String = SystemUtils.OS_ARCH,
-        @SerializedName("integration_name") val integrationName: String = pluginInfo.integrationName,
-        @SerializedName("integration_version") val integrationVersion: String = pluginInfo.integrationVersion,
+        @SerializedName("os") val os: String = getOS(),
+        @SerializedName("arch") val arch: String = getArch(),
+
+        @SerializedName("integration_name")
+        val integrationName: String = pluginInfo.integrationName,
+
+        @SerializedName("integration_version")
+        val integrationVersion: String = pluginInfo.integrationVersion,
+
         @SerializedName("integration_environment")
         val integrationEnvironment: String = pluginInfo.integrationEnvironment,
+
         @SerializedName("integration_environment_version")
         val integrationEnvironmentVersion: String = pluginInfo.integrationEnvironmentVersion,
-        @SerializedName("event_type") val eventType: String = "Scan done",
-        @SerializedName("status") val status: String = "Succeeded",
-        @SerializedName("scan_type") val scanType: String,
-        @SerializedName("unique_issue_count") val uniqueIssueCount: UniqueIssueCount,
-        @SerializedName("duration_ms") val durationMs: String,
+
+        @SerializedName("event_type")
+        val eventType: String = "Scan done",
+
+        @SerializedName("status")
+        val status: String = "Succeeded",
+
+        @SerializedName("scan_type")
+        val scanType: String,
+
+        @SerializedName("unique_issue_count")
+        val uniqueIssueCount: UniqueIssueCount,
+
+        @SerializedName("duration_ms")
+        val durationMs: String,
+
         @SerializedName("timestamp_finished")
         val timestampFinished: String = ZonedDateTime.now().withZoneSameInstant(java.time.ZoneOffset.UTC).toString()
     )
