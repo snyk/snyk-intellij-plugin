@@ -1,9 +1,8 @@
 package snyk.amplitude.api
 
 import com.google.gson.Gson
-import org.hamcrest.core.IsEqual.equalTo
-import org.hamcrest.core.IsNull.notNullValue
-import org.junit.Assert.assertThat
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class VariantTest {
@@ -15,8 +14,8 @@ class VariantTest {
 
         val variant = gson.fromJson(json, Variant::class.java)
 
-        assertThat(variant, notNullValue())
-        assertThat(variant.value, equalTo("on"))
+        assertNotNull(variant)
+        assertEquals("on", variant.value)
     }
 
     @Test
@@ -25,7 +24,7 @@ class VariantTest {
 
         val variant = gson.fromJson(json, Variant::class.java)
 
-        assertThat(variant, notNullValue())
-        assertThat(variant.value, equalTo("on"))
+        assertNotNull(variant)
+        assertEquals("on", variant.value)
     }
 }
