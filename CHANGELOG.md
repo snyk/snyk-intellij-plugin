@@ -1,5 +1,7 @@
 # Snyk Changelog
-
+## [2.5.8]
+### Added
+- support for IntelliJ 2023.3 platform
 
 ## [2.5.6]
 
