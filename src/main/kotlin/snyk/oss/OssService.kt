@@ -15,8 +15,10 @@ class OssService(project: Project) : CliAdapter<OssVulnerabilitiesForFile, OssRe
 
     fun scan(): OssResult = execute(listOf("test"))
 
-    override fun getProductResult(cliIssues: List<OssVulnerabilitiesForFile>?, snykErrors: List<SnykError>): OssResult =
-        OssResult(cliIssues, snykErrors)
+    override fun getProductResult(cliIssues: List<OssVulnerabilitiesForFile>?, snykErrors: List<SnykError>): OssResult {
+        cliIssues?.parallelStream()?.forEach { it.project = project }
+        return OssResult(cliIssues, snykErrors)
+    }
 
     override fun sanitizeCliIssues(cliIssues: OssVulnerabilitiesForFile): OssVulnerabilitiesForFile =
         // .copy() will check nullability of fields

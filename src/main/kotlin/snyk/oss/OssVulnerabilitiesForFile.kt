@@ -1,5 +1,7 @@
 package snyk.oss
 
+import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 
@@ -10,20 +12,29 @@ data class OssVulnerabilitiesForFile(
     val path: String,
     val remediation: Remediation? = null
 ) {
+    var project: Project? = null
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
 
     val sanitizedTargetFile: String get() = displayTargetFile.replace("-lock", "")
-
     val virtualFile: VirtualFile? = LocalFileSystem.getInstance().findFileByPath(this.path)
 
-    fun toGroupedResult(): OssGroupedResult {
-        val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })
-        val uniqueCount = id2vulnerabilities.keys.size
-        val pathsCount = id2vulnerabilities.values.flatten().size
+    var relPathCached: String? = null
 
-        return OssGroupedResult(id2vulnerabilities, uniqueCount, pathsCount)
+    fun getRelativePath(): String {
+        if (relPathCached == null && project != null && virtualFile != null) {
+            relPathCached = GotoFileCellRenderer.getRelativePath(virtualFile, project)
+        }
+        return relPathCached ?: ""
     }
 
-    data class Upgrade(val upgradeTo: String)
-    data class Remediation(val upgrade: Map<String, Upgrade>)
+fun toGroupedResult(): OssGroupedResult {
+    val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })
+    val uniqueCount = id2vulnerabilities.keys.size
+    val pathsCount = id2vulnerabilities.values.flatten().size
+
+    return OssGroupedResult(id2vulnerabilities, uniqueCount, pathsCount)
+}
+
+data class Upgrade(val upgradeTo: String)
+data class Remediation(val upgrade: Map<String, Upgrade>)
 }

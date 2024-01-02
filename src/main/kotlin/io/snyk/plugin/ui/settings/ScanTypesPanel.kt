@@ -8,14 +8,11 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
-import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykApiService
-import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
@@ -53,134 +50,89 @@ class ScanTypesPanel(
         }
     }
 
-    private var currentOssScanEnabled = settings.ossScanEnable
     private var currentCodeSecurityScanEnabled = settings.snykCodeSecurityIssuesScanEnable
     private var currentCodeQualityScanEnabled = settings.snykCodeQualityIssuesScanEnable
     private var currentIacScanPanelEnabled = settings.iacScanEnabled
     private var currentContainerScanEnabled = settings.containerScanEnabled
 
-    val codeAlertPanel = panel {
+    val codeAlertPanel = com.intellij.ui.dsl.builder.panel {
         row {
-            cell {
-                snykCodeAlertHyperLinkLabel()
-                    .withLargeLeftGap()
-                snykCodeReCheckLinkLabel()
-                    .withLargeLeftGap()
-            }
+            cell(snykCodeAlertHyperLinkLabel)
+            cell(snykCodeReCheckLinkLabel)
         }
     }.apply {
         border = JBUI.Borders.empty()
         this.isVisible = false
     }
 
-    val panel = panel {
+    val panel = com.intellij.ui.dsl.builder.panel {
         row {
-            cell {
-                checkBox(
-                    text = ProductType.OSS.productSelectionName,
-                    getter = { settings.ossScanEnable },
-                    setter = { settings.ossScanEnable = it },
-                    comment = cliScanComments
-                ).component.apply {
-                    this.addItemListener {
-                        isLastProductDisabling(this, currentOssScanEnabled)
-                        currentOssScanEnabled = this.isSelected
-                    }
-                    name = ProductType.OSS.toString()
-                }
+            checkBox(ProductType.OSS.productSelectionName).applyToComponent {
+                cliScanComments?.let { comment(it) }
                 label("").component.convertIntoHelpHintLabel(ProductType.OSS.description)
+                this.addItemListener {
+                    isLastProductDisabling(this, settings.ossScanEnable)
+                    settings.ossScanEnable = this.isSelected
+                }
+                model.isSelected = settings.ossScanEnable
             }
         }
         row {
-            cell {
-                checkBox(
-                    text = ProductType.ADVISOR.productSelectionName,
-                    getter = { settings.advisorEnable },
-                    setter = { settings.advisorEnable = it }
-                )
-                label("").component.convertIntoHelpHintLabel(
-                    "Discover the health (maintenance, community, popularity & security)\n" +
-                        "status of your open source packages"
-                )
-            }
-        }
-        if (isIacEnabled()) {
-            row {
-                cell {
-                    checkBox(
-                        text = ProductType.IAC.productSelectionName,
-                        getter = { settings.iacScanEnabled },
-                        setter = { settings.iacScanEnabled = it }
-                    ).component.apply {
-                        this.addItemListener {
-                            isLastProductDisabling(this, currentIacScanPanelEnabled)
-                            currentIacScanPanelEnabled = this.isSelected
-                        }
-                        name = ProductType.IAC.toString()
-                    }
-                    label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
+            checkBox(ProductType.ADVISOR.productSelectionName).applyToComponent {
+                label("").component.convertIntoHelpHintLabel(ProductType.ADVISOR.description)
+                this.addItemListener {
+                    isLastProductDisabling(this, settings.advisorEnable)
+                    settings.advisorEnable = this.isSelected
                 }
-            }
-        }
-        if (isContainerEnabled()) {
-            row {
-                cell {
-                    checkBox(
-                        text = ProductType.CONTAINER.productSelectionName,
-                        getter = { settings.containerScanEnabled },
-                        setter = { enabled ->
-                            settings.containerScanEnabled = enabled
-                            val imagesCache = getKubernetesImageCache(project)
-                            if (enabled) imagesCache?.scanProjectForKubernetesFiles() else imagesCache?.clear()
-                        }
-                    ).component.apply {
-                        this.addItemListener {
-                            isLastProductDisabling(this, currentContainerScanEnabled)
-                            currentContainerScanEnabled = this.isSelected
-                        }
-                        name = ProductType.CONTAINER.toString()
-                    }
-                    label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
-                }
+                model.isSelected = settings.advisorEnable
             }
         }
         row {
-            cell {
-                codeSecurityCheckbox = checkBox(
-                    text = ProductType.CODE_SECURITY.productSelectionName,
-                    getter = { settings.snykCodeSecurityIssuesScanEnable },
-                    setter = { settings.snykCodeSecurityIssuesScanEnable = it }
-                )
-                    .component.apply {
-                        this.addItemListener {
-                            isLastProductDisabling(this, currentCodeSecurityScanEnabled)
-                            currentCodeSecurityScanEnabled = this.isSelected
-                        }
-                        name = ProductType.CODE_SECURITY.toString()
-                    }
+            checkBox(ProductType.IAC.productSelectionName).applyToComponent {
+                label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
+                this.addItemListener {
+                    isLastProductDisabling(this, settings.iacScanEnabled)
+                    settings.iacScanEnabled = this.isSelected
+                }
+                model.isSelected = settings.iacScanEnabled
+            }
+        }
+        row {
+            checkBox(ProductType.CONTAINER.productSelectionName).applyToComponent {
+                label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
+                this.addItemListener {
+                    isLastProductDisabling(this, settings.containerScanEnabled)
+                    settings.containerScanEnabled = this.isSelected
+                    val imagesCache = getKubernetesImageCache(project)
+                    if (this.isSelected) imagesCache?.scanProjectForKubernetesFiles() else imagesCache?.clear()
+                }
+                model.isSelected = settings.containerScanEnabled
+            }
+        }
+        row {
+            checkBox(ProductType.CODE_SECURITY.productSelectionName).applyToComponent {
+                codeSecurityCheckbox = this
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_SECURITY.description)
-
-                if (!simplifyForOnboardPanel) {
-                    codeQualityCheckbox = checkBox(
-                        text = ProductType.CODE_QUALITY.productSelectionName,
-                        getter = { settings.snykCodeQualityIssuesScanEnable },
-                        setter = { settings.snykCodeQualityIssuesScanEnable = it }
-                    )
-                        .withLargeLeftGap()
-                        .component.apply {
-                            this.addItemListener {
-                                isLastProductDisabling(this, currentCodeQualityScanEnabled)
-                                currentCodeQualityScanEnabled = this.isSelected
-                            }
-                            name = ProductType.CODE_QUALITY.toString()
-                        }
-                    label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
+                this.addItemListener {
+                    isLastProductDisabling(this, currentCodeSecurityScanEnabled)
+                    currentCodeSecurityScanEnabled = this.isSelected
+                    settings.snykCodeSecurityIssuesScanEnable = this.isSelected
                 }
+                model.isSelected = settings.snykCodeSecurityIssuesScanEnable
+            }
+            checkBox(ProductType.CODE_QUALITY.productSelectionName).applyToComponent {
+                codeQualityCheckbox = this
+                label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
+                this.addItemListener {
+                    isLastProductDisabling(this, currentCodeQualityScanEnabled)
+                    currentCodeQualityScanEnabled = this.isSelected
+                    settings.snykCodeQualityIssuesScanEnable = this.isSelected
+                }
+                model.isSelected = settings.snykCodeQualityIssuesScanEnable
             }
         }
         row {
             snykCodeComment = label("")
-                .withLargeLeftGap()
                 .component.apply {
                     foreground = UIUtil.getContextHelpForeground()
                 }
@@ -368,7 +320,7 @@ class ScanTypesPanel(
 
     private fun isLastProductDisabling(component: JBCheckBox, wasEnabled: Boolean): Boolean {
         val onlyOneEnabled = arrayOf(
-            currentOssScanEnabled,
+            settings.ossScanEnable,
             currentCodeSecurityScanEnabled,
             currentCodeQualityScanEnabled,
             currentIacScanPanelEnabled,

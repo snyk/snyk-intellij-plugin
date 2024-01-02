@@ -695,7 +695,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ossResult.allCliIssues?.forEach { vulnsForFile ->
                 if (vulnsForFile.vulnerabilities.isNotEmpty()) {
                     val ossGroupedResult = vulnsForFile.toGroupedResult()
-
                     val fileTreeNode = FileTreeNode(vulnsForFile, project)
                     rootOssTreeNode.add(fileTreeNode)
 
