@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.icons.AllIcons
-import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
 import com.intellij.openapi.util.Iconable
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.SimpleTextAttributes
@@ -72,7 +71,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 nodeIcon = getIcon(fileVulns.packageManager.lowercase(Locale.getDefault()))
                 toolTipText =
                     buildString {
-                        append(fileVulns.getRelativePath())
+                        append(fileVulns.relativePath ?: "")
                         append(fileVulns.sanitizedTargetFile)
                         append(ProductType.OSS.getCountText(value.childCount))
                     }
@@ -107,10 +106,12 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
             is SnykCodeFileTreeNode -> {
                 val (file, productType) = value.userObject as Pair<SnykCodeFile, ProductType>
+                val relativePath = file.getRelativePath()
                 toolTipText =
-                    GotoFileCellRenderer.getRelativePath(file.virtualFile, file.project) + productType.getCountText(
-                        value.childCount
-                    )
+                    buildString {
+                        append(relativePath)
+                        append(productType.getCountText(value.childCount))
+                    }
 
                 text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
                     "..." + it.substring(
@@ -132,12 +133,12 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 nodeIcon = getIcon(
                     iacVulnerabilitiesForFile.packageManager.lowercase(Locale.getDefault())
                 )
-                val relativePath = iacVulnerabilitiesForFile.virtualFile?.let {
-                    GotoFileCellRenderer.getRelativePath(
-                        iacVulnerabilitiesForFile.virtualFile, value.project
-                    )
-                } ?: iacVulnerabilitiesForFile.targetFilePath
-                toolTipText = relativePath + ProductType.IAC.getCountText(value.childCount)
+                val relativePath =
+                    iacVulnerabilitiesForFile.relativePath ?: iacVulnerabilitiesForFile.targetFilePath
+                toolTipText = buildString {
+                    append(relativePath)
+                    append(ProductType.IAC.getCountText(value.childCount))
+                }
 
                 text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
                     "..." + it.substring(

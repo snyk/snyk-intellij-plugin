@@ -1,7 +1,9 @@
 package snyk.iac
 
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import snyk.common.RelativePathHelper
 
 data class IacIssuesForFile(
     val infrastructureAsCodeIssues: List<IacIssue>,
@@ -13,7 +15,18 @@ data class IacIssuesForFile(
     val ignored: Boolean get() = infrastructureAsCodeIssues.all { it.ignored }
     val uniqueCount: Int get() = infrastructureAsCodeIssues.groupBy { it.id }.size
 
-    val virtualFile: VirtualFile? = LocalFileSystem.getInstance().findFileByPath(this.targetFilePath)
-}
+    val virtualFile: VirtualFile
+        get() = LocalFileSystem.getInstance().findFileByPath(this.targetFilePath)!!
 
-/* Real json Example: src/integTest/resources/iac-test-results/infrastructure-as-code-goof.json */
+    var project: Project? = null
+
+    // this is necessary as the creation of the class by the GSon is not initializing fields
+    private var relativePathHelper: RelativePathHelper? = null
+        get() = field ?: RelativePathHelper()
+
+    var relativePath: String? = null
+        get() = field ?: project?.let {
+            field = relativePathHelper!!.getRelativePath(virtualFile, it)
+            return field
+        }
+}

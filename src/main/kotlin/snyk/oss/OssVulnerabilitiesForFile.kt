@@ -1,9 +1,9 @@
 package snyk.oss
 
-import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import snyk.common.RelativePathHelper
 
 data class OssVulnerabilitiesForFile(
     val vulnerabilities: List<Vulnerability>,
@@ -12,29 +12,32 @@ data class OssVulnerabilitiesForFile(
     val path: String,
     val remediation: Remediation? = null
 ) {
-    var project: Project? = null
     val uniqueCount: Int get() = vulnerabilities.groupBy { it.id }.size
 
     val sanitizedTargetFile: String get() = displayTargetFile.replace("-lock", "")
-    val virtualFile: VirtualFile? = LocalFileSystem.getInstance().findFileByPath(this.path)
+    val virtualFile: VirtualFile
+        get() = LocalFileSystem.getInstance().findFileByPath(this.path)!!
 
-    var relPathCached: String? = null
+    var project: Project? = null
 
-    fun getRelativePath(): String {
-        if (relPathCached == null && project != null && virtualFile != null) {
-            relPathCached = GotoFileCellRenderer.getRelativePath(virtualFile, project)
+    // this is necessary as the creation of the class by the GSon is not initializing fields
+    private var relativePathHelper: RelativePathHelper? = null
+        get() = field ?: RelativePathHelper()
+
+    var relativePath: String? = null
+        get() = field ?: project?.let {
+            field = relativePathHelper!!.getRelativePath(virtualFile, it)
+            return field
         }
-        return relPathCached ?: ""
+
+    fun toGroupedResult(): OssGroupedResult {
+        val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })
+        val uniqueCount = id2vulnerabilities.keys.size
+        val pathsCount = id2vulnerabilities.values.flatten().size
+
+        return OssGroupedResult(id2vulnerabilities, uniqueCount, pathsCount)
     }
 
-fun toGroupedResult(): OssGroupedResult {
-    val id2vulnerabilities = vulnerabilities.groupBy({ it.id }, { it })
-    val uniqueCount = id2vulnerabilities.keys.size
-    val pathsCount = id2vulnerabilities.values.flatten().size
-
-    return OssGroupedResult(id2vulnerabilities, uniqueCount, pathsCount)
-}
-
-data class Upgrade(val upgradeTo: String)
-data class Remediation(val upgrade: Map<String, Upgrade>)
+    data class Upgrade(val upgradeTo: String)
+    data class Remediation(val upgrade: Map<String, Upgrade>)
 }

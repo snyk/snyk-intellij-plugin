@@ -5,17 +5,17 @@ import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.components.ActionLink
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.ui.HTMLEditorKitBuilder
-import com.intellij.util.ui.JBHtmlEditorKit
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.LabelProvider
-import org.apache.commons.lang.StringEscapeUtils
+import org.apache.commons.text.StringEscapeUtils
 import snyk.common.isSnykCodeAvailable
 import java.awt.Color
 import java.awt.Container
@@ -242,7 +242,7 @@ fun descriptionHeaderPanel(
     cvssV3: String? = null,
     id: String? = null,
     idUrl: String? = null,
-    customLabels: List<JLabel> = emptyList()
+    customLabels: List<ActionLink> = emptyList()
 ): DescriptionHeaderPanel {
     val panel = DescriptionHeaderPanel()
     val font14 = getFont(-1, 14, panel.font)
@@ -297,7 +297,7 @@ class DescriptionHeaderPanel : JPanel()
 fun addRowOfItemsToPanel(
     panel: JPanel,
     startingColumn: Int,
-    items: List<JLabel>,
+    items: List<ActionLink>,
     separator: String = " | ",
     firstSeparator: Boolean = true,
     opaqueSeparator: Boolean = true,
@@ -353,12 +353,13 @@ fun wrapWithScrollPane(panel: JPanel): JScrollPane {
 }
 
 fun txtToHtml(s: String): String {
-    val escapedHtml = StringEscapeUtils.escapeHtml(s)
+    val escapedHtml = StringEscapeUtils.escapeHtml4(s)
     val newLineConverted = escapedHtml
         .replace("\n", "<br>")
         .replace("\t", "&nbsp; &nbsp; &nbsp;")
     // html link converter "stolen" from https://stackoverflow.com/a/12053940/7577274
-    val str = "(?i)\\b((?:https?://|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:\'\".,<>?«»“”‘’]))"
+    val str =
+        "(?i)\\b((?:https?://|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:\'\".,<>?«»“”‘’]))"
     val patt: Pattern = Pattern.compile(str)
     val matcher: Matcher = patt.matcher(newLineConverted)
     return matcher.replaceAll("<a href=\"$1\">$1</a>")

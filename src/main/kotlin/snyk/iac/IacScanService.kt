@@ -8,7 +8,7 @@ import snyk.common.SnykError
 /**
  * Wrap work with Snyk CLI for IaC (`iac test` command).
  */
-@Service
+@Service(Service.Level.PROJECT)
 class IacScanService(project: Project) : CliAdapter<IacIssuesForFile, IacResult>(project) {
 
     fun scan(): IacResult = execute(listOf("iac", "test"))
@@ -16,11 +16,17 @@ class IacScanService(project: Project) : CliAdapter<IacIssuesForFile, IacResult>
     override fun getProductResult(cliIssues: List<IacIssuesForFile>?, snykErrors: List<SnykError>): IacResult =
         IacResult(cliIssues, snykErrors)
 
-    override fun sanitizeCliIssues(cliIssues: IacIssuesForFile): IacIssuesForFile =
+    override fun sanitizeCliIssues(cliIssues: IacIssuesForFile): IacIssuesForFile {
         // .copy() will check nullability of fields
-        cliIssues.copy(
+        val sanitized = cliIssues.copy(
             infrastructureAsCodeIssues = cliIssues.infrastructureAsCodeIssues.map { it.copy() }
         )
+
+        // determine relative path for each issue at scan time
+        sanitized.project = project
+        sanitized.relativePath
+        return sanitized
+    }
 
     override fun getCliIIssuesClass(): Class<IacIssuesForFile> = IacIssuesForFile::class.java
 

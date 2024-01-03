@@ -10,21 +10,25 @@ import snyk.pluginInfo
 /**
  * Wrap work with Snyk CLI for OSS (`test` command).
  */
-@Service
+@Service(Service.Level.PROJECT)
 class OssService(project: Project) : CliAdapter<OssVulnerabilitiesForFile, OssResult>(project) {
 
     fun scan(): OssResult = execute(listOf("test"))
 
     override fun getProductResult(cliIssues: List<OssVulnerabilitiesForFile>?, snykErrors: List<SnykError>): OssResult {
-        cliIssues?.parallelStream()?.forEach { it.project = project }
         return OssResult(cliIssues, snykErrors)
     }
 
-    override fun sanitizeCliIssues(cliIssues: OssVulnerabilitiesForFile): OssVulnerabilitiesForFile =
+    override fun sanitizeCliIssues(cliIssues: OssVulnerabilitiesForFile): OssVulnerabilitiesForFile {
         // .copy() will check nullability of fields
-        cliIssues.copy(
+        val sanitized = cliIssues.copy(
             vulnerabilities = cliIssues.vulnerabilities.map { it.copy() }
         )
+        // determine relative path for each issue at scan time
+        sanitized.project = project
+        sanitized.relativePath
+        return sanitized
+    }
 
     override fun getCliIIssuesClass(): Class<OssVulnerabilitiesForFile> = OssVulnerabilitiesForFile::class.java
 

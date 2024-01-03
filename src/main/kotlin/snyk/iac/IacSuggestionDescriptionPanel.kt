@@ -12,8 +12,8 @@ import io.snyk.plugin.ui.getFont
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
-import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
 import io.snyk.plugin.ui.toolwindow.LabelProvider
+import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.common.IgnoreService
@@ -123,7 +123,7 @@ class IacSuggestionDescriptionPanel(
             panel.add(boldLabel("References"), baseGridConstraintsAnchorWest(row = 1))
             issue.references.forEachIndexed { index, s ->
                 val label = try {
-                    labelProvider.createLinkLabel(URL(s), s)
+                    labelProvider.createActionLink(URL(s), s)
                 } catch (e: MalformedURLException) {
                     JLabel(s)
                 }

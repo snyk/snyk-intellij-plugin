@@ -56,7 +56,7 @@ class LabelProviderTest {
 
         assertEquals(LinkLabel::class, output::class)
         assertEquals(cwe, output.text)
-        verifyLinkLabelCreated(LabelProvider.cweBaseUrl + "/${cwe.removePrefix("CWE-")}.html")
+        verifyLinkLabelCreated(LabelProvider.CWE_BASE_URL + "/${cwe.removePrefix("CWE-")}.html")
     }
 
     @Test
@@ -67,7 +67,7 @@ class LabelProviderTest {
 
         assertEquals(LinkLabel::class, output::class)
         assertEquals(cve, output.text)
-        verifyLinkLabelCreated(LabelProvider.cveBaseUrl + "=$cve")
+        verifyLinkLabelCreated(LabelProvider.CVE_BASE_URL + "=$cve")
     }
 
     @Test
@@ -78,7 +78,7 @@ class LabelProviderTest {
 
         assertEquals(LinkLabel::class, output::class)
         assertEquals(id, output.text)
-        verifyLinkLabelCreated(LabelProvider.vulnerabilityBaseUrl + "/$id")
+        verifyLinkLabelCreated(LabelProvider.VULNERABILITY_BASE_URL + "/$id")
     }
 
     @Test
@@ -101,7 +101,7 @@ class LabelProviderTest {
 
         assertEquals(LinkLabel::class, output::class)
         assertEquals(id.toUpperCase(), output.text)
-        verifyLinkLabelCreated(LabelProvider.vulnerabilityBaseUrl + "/$id")
+        verifyLinkLabelCreated(LabelProvider.VULNERABILITY_BASE_URL + "/$id")
     }
 
     @Test
@@ -113,7 +113,7 @@ class LabelProviderTest {
         assertEquals(LinkLabel::class, output::class)
         assertEquals(cvssText, output.text)
 
-        verifyLinkLabelCreated(LabelProvider.cvssBaseUrl + "#$cvssId")
+        verifyLinkLabelCreated(LabelProvider.CVSS_BASE_URL + "#$cvssId")
     }
 
     @Test
@@ -121,7 +121,7 @@ class LabelProviderTest {
         val url = "https://snyk.io/reference"
         val text = "reference"
 
-        val label: JLabel = LabelProvider().createLinkLabel(URL(url), text)
+        val label: JLabel = LabelProvider().createActionLink(URL(url), text)
 
         assertEquals(text, label.text)
         verifyLinkLabelCreated(url)
