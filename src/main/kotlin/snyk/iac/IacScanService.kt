@@ -1,8 +1,13 @@
 package snyk.iac
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.services.CliAdapter
+import snyk.common.RelativePathHelper
 import snyk.common.SnykError
 
 /**
@@ -18,14 +23,40 @@ class IacScanService(project: Project) : CliAdapter<IacIssuesForFile, IacResult>
 
     override fun sanitizeCliIssues(cliIssues: IacIssuesForFile): IacIssuesForFile {
         // .copy() will check nullability of fields
+        // determine relative path for each issue at scan time
+
+        val helper = RelativePathHelper()
+        val virtualFile = LocalFileSystem.getInstance().findFileByPath(cliIssues.targetFilePath)
+        val relativePath = virtualFile?.let { helper.getRelativePath(virtualFile, project) }
+
         val sanitized = cliIssues.copy(
-            infrastructureAsCodeIssues = cliIssues.infrastructureAsCodeIssues.map { it.copy() }
+            virtualFile = virtualFile,
+            project = project,
+            relativePath = relativePath,
+            infrastructureAsCodeIssues = cliIssues.infrastructureAsCodeIssues
+                .map {
+                    if (it.lineStartOffset > 0 || virtualFile == null || !virtualFile.isValid) {
+                        return@map it.copy()
+                    }
+                    val lineStartOffset = determineLineStartOffset(it, virtualFile)
+                    return@map it.copy(lineStartOffset = lineStartOffset)
+                }
         )
 
-        // determine relative path for each issue at scan time
-        sanitized.project = project
-        sanitized.relativePath
         return sanitized
+    }
+
+    private fun determineLineStartOffset(it: IacIssue, virtualFile: VirtualFile): Int {
+        var lineStartOffset = it.lineStartOffset
+        ApplicationManager.getApplication().runReadAction {
+            val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+            if (document != null) {
+                val candidate = it.lineNumber - 1 // to 1-based count used in the editor
+                val lineNumber = if (0 <= candidate && candidate < document.lineCount) candidate else 0
+                lineStartOffset = document.getLineStartOffset(lineNumber)
+            }
+        }
+        return lineStartOffset
     }
 
     override fun getCliIIssuesClass(): Class<IacIssuesForFile> = IacIssuesForFile::class.java

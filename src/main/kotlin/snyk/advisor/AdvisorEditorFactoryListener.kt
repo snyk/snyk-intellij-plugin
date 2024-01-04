@@ -6,13 +6,11 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.psi.PsiCompiledElement
 import com.intellij.psi.PsiDocumentManager
 
-class AdvisorEditorFactoryListener: EditorFactoryListener {
+class AdvisorEditorFactoryListener : EditorFactoryListener {
 
     override fun editorCreated(event: EditorFactoryEvent) {
-
         val editor = event.editor
 
-        // sanity checks, examples taken from com.intellij.codeInsight.preview.ImageOrColorPreviewManager.registerListeners
         if (editor.isOneLineMode) {
             return
         }
@@ -31,9 +29,8 @@ class AdvisorEditorFactoryListener: EditorFactoryListener {
             return
         }
 
-        val advisorScoreProvider = AdvisorScoreProvider(editor)
+        val advisorScoreProvider = AdvisorScoreProvider(editor, psiFile)
 
         editor.registerLineExtensionPainter(advisorScoreProvider::getLineExtensions)
-
     }
 }

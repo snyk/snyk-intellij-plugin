@@ -28,7 +28,7 @@ class PackageNameProviderTest : BasePlatformTestCase() {
         fun assertPackageName(name: String?, lineNumber: Int) {
             assertEquals(
                 Pair(name, AdvisorPackageManager.PYTHON),
-                packageNameProvider.getPackageName(lineNumber)
+                packageNameProvider.getPackageName(psiFile, lineNumber)
             )
         }
 
@@ -71,7 +71,7 @@ class PackageNameProviderTest : BasePlatformTestCase() {
         fun assertPackageName(name: String?, lineNumber: Int) {
             assertEquals(
                 Pair(name, AdvisorPackageManager.NPM),
-                packageNameProvider.getPackageName(lineNumber)
+                packageNameProvider.getPackageName(psiFile, lineNumber)
             )
         }
 
@@ -106,7 +106,7 @@ class PackageNameProviderTest : BasePlatformTestCase() {
 
         assertEquals(
             null,
-            packageNameProvider.getPackageName(3)
+            packageNameProvider.getPackageName(psiFile, 3)
         )
     }
 }

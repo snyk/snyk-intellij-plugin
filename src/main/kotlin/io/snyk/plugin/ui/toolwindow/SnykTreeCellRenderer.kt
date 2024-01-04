@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.util.Iconable
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.util.ui.UIUtil
@@ -10,7 +9,6 @@ import icons.SnykIcons
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
@@ -106,7 +104,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
             is SnykCodeFileTreeNode -> {
                 val (file, productType) = value.userObject as Pair<SnykCodeFile, ProductType>
-                val relativePath = file.getRelativePath()
+                val relativePath = file.relativePath
                 toolTipText =
                     buildString {
                         append(relativePath)
@@ -119,8 +117,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     )
                 }
 
-                val psiFile = PDU.toPsiFile(file)
-                nodeIcon = psiFile?.getIcon(Iconable.ICON_FLAG_READ_STATUS)
+                nodeIcon = file.icon
                 if (!AnalysisData.instance.isFileInCache(file)) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     text += OBSOLETE_SUFFIX

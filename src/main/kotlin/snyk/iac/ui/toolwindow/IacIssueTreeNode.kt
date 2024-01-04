@@ -18,7 +18,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 class IacIssueTreeNode(
     private val issue: IacIssue,
     val project: Project,
-    override val navigateToSource: () -> Unit
+    override val navigateToSource: () -> Unit,
 ) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
     override fun getDescriptionPanel(logEventNeeded: Boolean): IssueDescriptionPanelBase {
