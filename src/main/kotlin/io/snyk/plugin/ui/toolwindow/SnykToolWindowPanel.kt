@@ -8,7 +8,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
@@ -859,28 +858,31 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootContainerIssuesTreeNode.removeAllChildren()
 
-        fun navigateToImage(imageName: String): () -> Unit = {
-            val targetImage = getKubernetesImageCache(project)
-                ?.getKubernetesWorkloadImages()
-                ?.find { it.image == imageName }
-            val virtualFile = targetImage?.virtualFile
-            val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
-            if (virtualFile != null && virtualFile.isValid && line != null) {
-                val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                if (document != null) {
-                    val lineNumber = if (0 <= line && line < document.lineCount) line else 0
-                    val lineStartOffset = document.getLineStartOffset(lineNumber)
-                    navigateToSource(project, virtualFile, lineStartOffset)
-                }
+        fun navigateToImage(issuesForImage: ContainerIssuesForImage?, virtualFile: VirtualFile?): () -> Unit = {
+            val image = issuesForImage?.workloadImages?.get(0)
+
+            var file = virtualFile
+            if (image != null) {
+                file = image.virtualFile
+            }
+
+            if (file?.isValid == true) {
+                navigateToSource(project, file, image?.lineStartOffset ?: 0)
             }
         }
 
         val settings = pluginSettings()
         if (settings.containerScanEnabled && settings.treeFiltering.containerResults) {
             containerResult.allCliIssues?.forEach { issuesForImage ->
+                val virtualFile = issuesForImage.workloadImages[0].virtualFile
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
                     val imageTreeNode =
-                        ContainerImageTreeNode(issuesForImage, project, navigateToImage(issuesForImage.imageName))
+                        ContainerImageTreeNode(
+                            issuesForImage, project, navigateToImage(
+                                issuesForImage,
+                                virtualFile
+                            )
+                        )
                     rootContainerIssuesTreeNode.add(imageTreeNode)
 
                     issuesForImage.groupedVulnsById.values
@@ -888,14 +890,19 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .sortedByDescending { it.head.getSeverity() }
                         .forEach {
                             imageTreeNode.add(
-                                ContainerIssueTreeNode(it, project, navigateToImage(issuesForImage.imageName))
+                                ContainerIssueTreeNode(
+                                    it, project, navigateToImage(
+                                        issuesForImage,
+                                        virtualFile
+                                    )
+                                )
                             )
                         }
                 }
             }
             containerResult.errors.forEach { snykError ->
                 rootContainerIssuesTreeNode.add(
-                    ErrorTreeNode(snykError, project, navigateToImage(snykError.path))
+                    ErrorTreeNode(snykError, project, navigateToImage(null, snykError.virtualFile))
                 )
             }
         }

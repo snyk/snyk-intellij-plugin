@@ -289,7 +289,7 @@ class ScanTypesPanel(
         } else {
             codeAlertPanel.isVisible = showAlert
             // todo: change to setTextWithHyperlink() after move to sinceId >= 211
-            snykCodeAlertHyperLinkLabel.setHyperlinkText(message, linkText, "")
+            snykCodeAlertHyperLinkLabel.setTextWithHyperlink("$message<hyperlink>$linkText</hyperlink>")
             snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
             if (runOnClick == null) {
                 currentHyperlinkListener?.let { snykCodeAlertHyperLinkLabel.removeHyperlinkListener(it) }
