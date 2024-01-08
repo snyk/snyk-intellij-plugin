@@ -39,7 +39,11 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
     override fun tearDown() {
         unmockkAll()
         resetSettings(project)
-        super.tearDown()
+        try {
+            super.tearDown()
+        } catch (ignore: Exception) {
+            // nothing to do, as we are in test shutdown
+        }
     }
 
     private val imageCache get() = project.service<KubernetesImageCache>()

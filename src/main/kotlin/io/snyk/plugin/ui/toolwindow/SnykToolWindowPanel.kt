@@ -859,7 +859,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         rootContainerIssuesTreeNode.removeAllChildren()
 
         fun navigateToImage(issuesForImage: ContainerIssuesForImage?, virtualFile: VirtualFile?): () -> Unit = {
-            val image = issuesForImage?.workloadImages?.get(0)
+            val image = issuesForImage?.workloadImages?.getOrNull(0)
 
             var file = virtualFile
             if (image != null) {
@@ -874,7 +874,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         val settings = pluginSettings()
         if (settings.containerScanEnabled && settings.treeFiltering.containerResults) {
             containerResult.allCliIssues?.forEach { issuesForImage ->
-                val virtualFile = issuesForImage.workloadImages[0].virtualFile
+                val image = issuesForImage.workloadImages.getOrNull(0)
+                val virtualFile = image?.virtualFile
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
                     val imageTreeNode =
                         ContainerImageTreeNode(

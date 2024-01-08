@@ -46,6 +46,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
         val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
         val processBuilder = ProcessBuilder(cmd)
+
         process = processBuilder.start()
         launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
         languageServer = launcher.remoteProxy

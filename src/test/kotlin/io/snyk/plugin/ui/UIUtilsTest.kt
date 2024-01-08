@@ -1,7 +1,7 @@
 package io.snyk.plugin.ui
 
+import com.intellij.ui.components.ActionLink
 import org.junit.Test
-import javax.swing.JLabel
 
 class UIUtilsTest {
 
@@ -9,7 +9,7 @@ class UIUtilsTest {
     fun `descriptionHeaderPanel should not fail with customLabels`() {
         descriptionHeaderPanel(
             issueNaming = "test naming",
-            customLabels = (1..10).toList().map { JLabel(it.toString()) }
+            customLabels = (1..10).toList().map { ActionLink(it.toString()) }
         )
     }
 }

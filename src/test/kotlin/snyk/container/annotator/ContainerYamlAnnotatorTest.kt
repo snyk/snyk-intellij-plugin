@@ -3,6 +3,7 @@
 package snyk.container.annotator
 
 import com.google.gson.Gson
+import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationBuilder
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.HighlightSeverity
@@ -20,10 +21,6 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import org.hamcrest.collection.IsCollectionWithSize.hasSize
-import org.junit.Assert.assertThat
-import org.junit.Before
-import org.junit.Test
 import snyk.common.SnykCachedResults
 import snyk.container.BaseImageInfo
 import snyk.container.BaseImageRemediation
@@ -45,10 +42,10 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         javaClass.classLoader.getResource("container-test-results/nginx-with-remediation.json")!!
             .readText(Charsets.UTF_8)
 
-    lateinit var virtualFile: VirtualFile
+    private lateinit var virtualFile: VirtualFile
     private lateinit var psiFile: PsiFile
 
-    val snykCachedResults: SnykCachedResults = mockk(relaxed = true)
+    private val snykCachedResults: SnykCachedResults = mockk(relaxed = true)
 
     override fun getTestDataPath(): String {
         val resource = ContainerYamlAnnotator::class.java.getResource("/test-fixtures/container/annotator")
@@ -58,7 +55,6 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
     override fun isWriteActionRequired(): Boolean = true
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()
@@ -77,25 +73,22 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         super.tearDown()
     }
 
-    @Test
     fun `test getIssues should not return any issue if no container issue exists`() {
         every { snykCachedResults.currentContainerResult } returns null
 
         val issues = cut.getContainerIssuesForImages(psiFile)
 
-        assertThat(issues, hasSize(0))
+        assertEquals(0, issues.size)
     }
 
-    @Test
     fun `test getIssues should return one issue if only one container issue exists`() {
         every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
 
         val issues = cut.getContainerIssuesForImages(psiFile)
 
-        assertThat(issues, hasSize(1))
+        assertEquals(1, issues.size)
     }
 
-    @Test
     fun `test apply should trigger newAnnotation call`() {
         every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
 
@@ -104,7 +97,6 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         verify { annotationHolderMock.newAnnotation(any(), any()) }
     }
 
-    @Test
     fun `test apply for disabled Severity should not trigger newAnnotation call`() {
         every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
         pluginSettings().mediumSeverityEnabled = false
@@ -114,35 +106,30 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         verify(exactly = 0) { annotationHolderMock.newAnnotation(HighlightSeverity.WARNING, any()) }
     }
 
-    @Test
     fun `test severity with one critical`() {
         val severities = createContainerImageForIssuesWithSeverity(Severity.CRITICAL.toString()).getSeverities()
         assertEquals(1, severities.size)
         assertEquals(HighlightSeverity.ERROR, severities.first().getHighlightSeverity())
     }
 
-    @Test
     fun `test severity with one high`() {
         val severities = createContainerImageForIssuesWithSeverity(Severity.HIGH.toString()).getSeverities()
         assertEquals(1, severities.size)
         assertEquals(HighlightSeverity.ERROR, severities.first().getHighlightSeverity())
     }
 
-    @Test
     fun `test severity with one medium`() {
         val severities = createContainerImageForIssuesWithSeverity(Severity.MEDIUM.toString()).getSeverities()
         assertEquals(1, severities.size)
         assertEquals(HighlightSeverity.WARNING, severities.first().getHighlightSeverity())
     }
 
-    @Test
     fun `test severity with one low`() {
         val severities = createContainerImageForIssuesWithSeverity(Severity.LOW.toString()).getSeverities()
         assertEquals(1, severities.size)
         assertEquals(HighlightSeverity.WEAK_WARNING, severities.first().getHighlightSeverity())
     }
 
-    @Test
     fun `test textRange`() {
         val containerResult = createContainerResultWithIssueOnLine21()
         val line = 21
@@ -156,7 +143,6 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         assertEquals(expectedRange, actualRange)
     }
 
-    @Test
     fun `test annotation message should display vulnerability count 1 for severity critical and remediation`() {
         val expected = "Snyk found 1 vulnerability. Upgrade image to a newer version"
         val image = createContainerImageForIssuesWithSeverity(Severity.CRITICAL.toString())
@@ -167,7 +153,6 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         assertEquals(expected, actual)
     }
 
-    @Test
     fun `test annotation message should display vulnerability count and no remediation`() {
         val expected = "Snyk found 1 vulnerability. "
 
@@ -177,7 +162,6 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         assertEquals(expected, actual)
     }
 
-    @Test
     fun `test apply should add a quickfix if remediation advice available`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         every { snykCachedResults.currentContainerResult } returns createContainerResultWithIssueOnLine21()
@@ -187,11 +171,10 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
 
         verify {
             annotationHolderMock.newAnnotation(any(), any()).range(any<TextRange>())
-            builderMock.withFix(any())
+            builderMock.withFix(any<IntentionAction>())
         }
     }
 
-    @Test
     fun `test apply should add annotations for all duplicated images`() {
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)
         every { snykCachedResults.currentContainerResult } returns
@@ -205,7 +188,6 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
         }
     }
 
-    @Test
     fun `test apply should not add a quickfix if remediation advice base image different`() {
         val workloadImages = listOf(KubernetesWorkloadImage("nginx:1.16.0", virtualFile, 21))
         val builderMock = mockk<AnnotationBuilder>(relaxed = true)

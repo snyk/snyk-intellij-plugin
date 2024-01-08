@@ -67,6 +67,7 @@ import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.Vulnerability
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.nio.charset.Charset
 import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JLabel
@@ -172,10 +173,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     private fun prepareTreeWithFakeCodeResults() {
+        val virtualFile = super.createTempVirtualFile("test.js", null, "test", Charset.defaultCharset())
         val codeResults = SnykCodeResults(
             mapOf(
                 Pair(
-                    SnykCodeFile(project, mockk(relaxed = true)),
+                    SnykCodeFile(project, virtualFile),
                     listOf(fakeSuggestionForFile)
                 )
             )
@@ -368,7 +370,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             impact = ""
         )
         val iacIssuesForFile =
-            IacIssuesForFile(listOf(iacIssue), "k8s-deployment.yaml", "src/k8s-deployment.yaml", "npm")
+            IacIssuesForFile(listOf(iacIssue), "k8s-deployment.yaml", "src/k8s-deployment.yaml", "npm", null, project)
         val jsonError = SnykError("Failed to parse JSON file", project.basePath.toString(), 1021)
         val iacResult = IacResult(listOf(iacIssuesForFile), listOf(jsonError))
         scanPublisher.scanningIacFinished(iacResult)

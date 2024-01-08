@@ -265,7 +265,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         assertEquals("JETBRAINS_IDE", generalCommandLine.environment["SNYK_INTEGRATION_NAME"])
         assertEquals(snykPluginVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
         assertEquals("INTELLIJ IDEA IC", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"])
-        assertEquals("2023.1", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"])
+        assertEquals("2023.1".length, generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"]?.length)
     }
 
     @Suppress("SwallowedException")

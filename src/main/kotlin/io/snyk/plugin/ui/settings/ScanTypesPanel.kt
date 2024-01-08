@@ -64,6 +64,7 @@ class ScanTypesPanel(
     val panel = com.intellij.ui.dsl.builder.panel {
         row {
             checkBox(ProductType.OSS.productSelectionName).applyToComponent {
+                name = text
                 cliScanComments?.let { comment(it) }
                 label("").component.convertIntoHelpHintLabel(ProductType.OSS.description)
                 isSelected = settings.ossScanEnable
@@ -75,6 +76,7 @@ class ScanTypesPanel(
         }
         row {
             checkBox(ProductType.ADVISOR.productSelectionName).applyToComponent {
+                name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.ADVISOR.description)
                 isSelected = settings.advisorEnable
                 this.addItemListener {
@@ -85,6 +87,7 @@ class ScanTypesPanel(
         }
         row {
             checkBox(ProductType.IAC.productSelectionName).applyToComponent {
+                name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
                 isSelected = settings.iacScanEnabled
                 this.addItemListener {
@@ -95,6 +98,7 @@ class ScanTypesPanel(
         }
         row {
             checkBox(ProductType.CONTAINER.productSelectionName).applyToComponent {
+                name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
                 isSelected = settings.containerScanEnabled
                 this.addItemListener {
@@ -107,6 +111,7 @@ class ScanTypesPanel(
         }
         row {
             checkBox(ProductType.CODE_SECURITY.productSelectionName).applyToComponent {
+                name = text
                 codeSecurityCheckbox = this
                 isSelected = settings.snykCodeSecurityIssuesScanEnable
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_SECURITY.description)
@@ -117,6 +122,7 @@ class ScanTypesPanel(
                 }
             }
             checkBox(ProductType.CODE_QUALITY.productSelectionName).applyToComponent {
+                name = text
                 codeQualityCheckbox = this
                 isSelected = settings.snykCodeQualityIssuesScanEnable
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)

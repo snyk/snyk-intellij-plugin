@@ -77,7 +77,7 @@ class IacJsonAnnotatorTest : IacBaseAnnotatorCase() {
             severity = "medium", publicId = "", documentation = "", issue = "", impact = ""
         )
         val iacIssuesForFile =
-            IacIssuesForFile(listOf(iacIssue), cloudformationManifestFile, file.path, "cloudformation")
+            IacIssuesForFile(listOf(iacIssue), cloudformationManifestFile, file.path, "cloudformation", null, project)
         return IacResult(listOf(iacIssuesForFile))
     }
 }

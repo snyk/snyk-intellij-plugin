@@ -36,7 +36,7 @@ class AdvisorScoreProvider(private val editor: Editor, private val psiFile: PsiF
     private var currentBalloon: Balloon? = null
     private var currentCursor: Cursor? = null
     private var editorListener: AdvisorEditorListener? = null
-    private var packageNameProvider: PackageNameProvider? = null
+    var packageNameProvider: PackageNameProvider? = null
 
     fun getLineExtensions(lineNumber: Int): Collection<LineExtensionInfo> {
         val settings = pluginSettings()
@@ -44,7 +44,7 @@ class AdvisorScoreProvider(private val editor: Editor, private val psiFile: PsiF
             return resetAndReturnEmptyList()
         }
 
-        val (packageName, packageManager) = packageNameProvider?.getPackageName(psiFile, lineNumber)
+        val (packageName, packageManager) = packageNameProvider?.getPackageName(lineNumber)
             ?: return resetAndReturnEmptyList()
 
         val info = packageName?.let {

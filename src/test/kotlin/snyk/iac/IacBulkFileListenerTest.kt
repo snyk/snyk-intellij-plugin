@@ -25,7 +25,11 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         resetSettings(project)
-        super.tearDown()
+        try {
+            super.tearDown()
+        } catch (ignore: Exception) {
+            // nothing to do as we're shutting down the test
+        }
     }
 
     /** `filePath == null` is the case when we want to check if _any_ IaC file with issues been marked as obsolete */
@@ -46,7 +50,7 @@ class IacBulkFileListenerTest : BasePlatformTestCase() {
             lineNumber = 1,
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
-        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), file, filePath, "npm")
+        val iacIssuesForFile = IacIssuesForFile(listOf(iacIssue), file, filePath, "npm", null, project)
         val iacVulnerabilities = listOf(iacIssuesForFile)
         val fakeIacResult = IacResult(iacVulnerabilities)
         getSnykCachedResults(project)?.currentIacResult = fakeIacResult

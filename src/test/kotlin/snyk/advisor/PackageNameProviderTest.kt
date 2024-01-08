@@ -23,12 +23,12 @@ class PackageNameProviderTest : BasePlatformTestCase() {
             "requirements.txt",
             getResourceAsString("advisor-build-files/requirements.txt")
         )
-        val packageNameProvider = PackageNameProvider(myFixture.editor)
+        val packageNameProvider = PackageNameProvider(myFixture.editor, AdvisorPackageManager.PYTHON)
 
         fun assertPackageName(name: String?, lineNumber: Int) {
             assertEquals(
                 Pair(name, AdvisorPackageManager.PYTHON),
-                packageNameProvider.getPackageName(psiFile, lineNumber)
+                packageNameProvider.getPackageName(lineNumber)
             )
         }
 
@@ -66,12 +66,12 @@ class PackageNameProviderTest : BasePlatformTestCase() {
             "package.json",
             getResourceAsString("advisor-build-files/package.json")
         )
-        val packageNameProvider = PackageNameProvider(myFixture.editor)
+        val packageNameProvider = PackageNameProvider(myFixture.editor, AdvisorPackageManager.NPM)
 
         fun assertPackageName(name: String?, lineNumber: Int) {
             assertEquals(
                 Pair(name, AdvisorPackageManager.NPM),
-                packageNameProvider.getPackageName(psiFile, lineNumber)
+                packageNameProvider.getPackageName(lineNumber)
             )
         }
 
@@ -102,11 +102,11 @@ class PackageNameProviderTest : BasePlatformTestCase() {
                }
             """.trimIndent()
         )
-        val packageNameProvider = PackageNameProvider(myFixture.editor)
+        val provider = AdvisorScoreProvider(myFixture.editor, myFixture.file)
 
         assertEquals(
             null,
-            packageNameProvider.getPackageName(psiFile, 3)
+            provider.packageNameProvider
         )
     }
 }

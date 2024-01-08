@@ -92,7 +92,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
         val iacIssuesForFile =
-            IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes")
+            IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes", null, project)
         return IacResult(listOf(iacIssuesForFile))
     }
 
@@ -104,7 +104,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
             severity = "", publicId = "", documentation = "", issue = "", impact = ""
         )
         val iacIssuesForFile =
-            IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes")
+            IacIssuesForFile(listOf(iacIssue), kubernetesManifestFile, file.path, "Kubernetes", null, project)
         return IacResult(listOf(iacIssuesForFile))
     }
 }

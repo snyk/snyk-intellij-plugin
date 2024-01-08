@@ -7,7 +7,6 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.junit.Before
 import org.junit.Test
-import snyk.UIComponentFinder
 import snyk.UIComponentFinder.getJButtonByText
 
 class IacSuggestionDescriptionPanelTest {
@@ -63,7 +62,7 @@ class IacSuggestionDescriptionPanelTest {
         cut = IacSuggestionDescriptionPanel(issue, null, project)
 
         issue.references.stream().forEach {
-            val label = UIComponentFinder.getJLabelByText(cut, it)
+            val label = getJButtonByText(cut, it)
             assertNotNull("Didn't find reference $it", label)
         }
     }

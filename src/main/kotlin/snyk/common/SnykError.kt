@@ -12,7 +12,11 @@ data class SnykError(
 
     init {
         if (path.isNotEmpty()) {
-            virtualFile = LocalFileSystem.getInstance().findFileByPath(this.path)
+            try {
+                virtualFile = LocalFileSystem.getInstance().findFileByPath(this.path)
+            } catch (ignore: RuntimeException) {
+                // ignore because this file is optional
+            }
         }
     }
 }
