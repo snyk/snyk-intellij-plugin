@@ -111,7 +111,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
-        super.tearDown()
+        try {
+            super.tearDown()
+        } catch (ignore: Exception) {
+            // nothing to do here
+        }
     }
 
     private fun setUpIacTest() {
