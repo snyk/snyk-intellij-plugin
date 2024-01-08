@@ -107,7 +107,7 @@ class SnykCliDownloaderService {
     }
 
     fun cliSilentAutoUpdate(indicator: ProgressIndicator, project: Project) {
-        if (isFourDaysPassedSinceLastCheck() && !ApplicationManager.getApplication().isUnitTestMode) {
+        if (isFourDaysPassedSinceLastCheck()) {
             val latestReleaseInfo = requestLatestReleasesInformation()
 
             indicator.checkCanceled()

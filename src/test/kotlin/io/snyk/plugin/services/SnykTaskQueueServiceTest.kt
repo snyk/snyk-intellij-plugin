@@ -61,6 +61,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
             "testTag"
         )
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
+        every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
     }
 
