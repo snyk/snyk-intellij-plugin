@@ -41,6 +41,7 @@ class OssServiceTest : LightPlatformTestCase() {
         settingsStateService.organization = ""
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = ""
+
         mockkStatic(GotoFileCellRenderer::class)
         every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
     }
