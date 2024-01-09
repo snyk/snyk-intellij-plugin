@@ -12,6 +12,7 @@ import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
+import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
@@ -46,6 +47,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
         val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
         val processBuilder = ProcessBuilder(cmd)
+        pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
 
         process = processBuilder.start()
         launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
