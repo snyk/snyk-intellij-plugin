@@ -12,6 +12,7 @@ import com.intellij.openapi.editor.event.VisibleAreaListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.ui.popup.Balloon
+import com.intellij.psi.PsiFile
 import com.intellij.ui.Gray
 import com.intellij.ui.JBColor
 import io.snyk.plugin.analytics.getEcosystem
@@ -25,16 +26,17 @@ import java.awt.Color
 import java.awt.Cursor
 import java.awt.Font
 
-class AdvisorScoreProvider(
-    private val editor: Editor
-) {
-    private val scoredLines: MutableMap<Int, Pair<PackageInfo, AdvisorPackageManager>> = mutableMapOf()
+private const val darkModeTextAttribute = 0x3d8065
+
+class AdvisorScoreProvider(private val editor: Editor, private val psiFile: PsiFile) {
+    private var packageManager: AdvisorPackageManager? = null
+
+    private val scoredLines: MutableMap<Int, Pair<PackageInfo, AdvisorPackageManager>>
     private var selectedScore: Int? = null
     private var currentBalloon: Balloon? = null
     private var currentCursor: Cursor? = null
     private var editorListener: AdvisorEditorListener? = null
-
-    private val packageNameProvider = PackageNameProvider(editor)
+    var packageNameProvider: PackageNameProvider? = null
 
     fun getLineExtensions(lineNumber: Int): Collection<LineExtensionInfo> {
         val settings = pluginSettings()
@@ -42,7 +44,7 @@ class AdvisorScoreProvider(
             return resetAndReturnEmptyList()
         }
 
-        val (packageName, packageManager) = packageNameProvider.getPackageName(lineNumber)
+        val (packageName, packageManager) = packageNameProvider?.getPackageName(lineNumber)
             ?: return resetAndReturnEmptyList()
 
         val info = packageName?.let {
@@ -153,11 +155,8 @@ class AdvisorScoreProvider(
 
             // not over Text in LineExtension
             val lineLength = e.editor.document.getLineEndOffset(line) - e.editor.document.getLineStartOffset(line)
-            if (e.logicalPosition.column < lineLength + LINE_EXTENSION_PREFIX.length ||
-                e.logicalPosition.column > lineLength + LINE_EXTENSION_LENGTH
-            ) return false
-
-            return true
+            return !(e.logicalPosition.column < lineLength + LINE_EXTENSION_PREFIX.length ||
+                e.logicalPosition.column > lineLength + LINE_EXTENSION_LENGTH)
         }
 
         private fun cleanCacheForRemovedLines() {
@@ -188,7 +187,9 @@ class AdvisorScoreProvider(
                 .globalScheme.getAttributes(DefaultLanguageHighlighterColors.BLOCK_COMMENT)
             return if (attributes == null || attributes.foregroundColor == null) {
                 TextAttributes(
-                    JBColor { if (EditorColorsManager.getInstance().isDarkEditor) Color(0x3d8065) else Gray._135 },
+                    JBColor.lazy {
+                        JBColor(Gray._135, Color(darkModeTextAttribute))
+                    },
                     null,
                     null,
                     null,
@@ -208,5 +209,15 @@ class AdvisorScoreProvider(
         private fun getSelectedScoreAttributes(): TextAttributes = getNormalAttributes().clone().apply {
             fontType = fontType xor Font.BOLD
         }
+    }
+
+    init {
+        this.scoredLines = mutableMapOf()
+        this.packageManager = when (psiFile.virtualFile.name) {
+            "package.json" -> AdvisorPackageManager.NPM
+            "requirements.txt" -> AdvisorPackageManager.PYTHON
+            else -> null
+        }
+        this.packageManager?.let { this.packageNameProvider = PackageNameProvider(editor, it) }
     }
 }

@@ -55,7 +55,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
         val images = cut.getKubernetesWorkloadImages()
 
         assertEquals(1, images.size)
-        assertEquals(KubernetesWorkloadImage("nginx:1.16.0", file, 8), images.first())
+        assertEquals(KubernetesWorkloadImage("nginx:1.16.0", file, 8, 85), images.first())
     }
 
     @Test
@@ -223,7 +223,7 @@ class KubernetesImageCacheIntegTest : LightPlatform4TestCase() {
         val images = cut.getKubernetesWorkloadImages()
 
         assertEquals(1, images.size)
-        assertEquals(KubernetesWorkloadImage("snyk/code-agent:latest", file, 43), images.first())
+        assertEquals(KubernetesWorkloadImage("snyk/code-agent:latest", file, 43, 1113), images.first())
     }
 
     @Test

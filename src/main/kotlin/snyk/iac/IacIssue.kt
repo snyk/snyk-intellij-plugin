@@ -13,7 +13,8 @@ data class IacIssue(
     val impact: String,
     val resolve: String? = null,
     val references: List<String> = emptyList(),
-    val path: List<String> = emptyList()
+    val path: List<String> = emptyList(),
+    val lineStartOffset: Int = 0
 ) {
     var ignored = false
     var obsolete = false

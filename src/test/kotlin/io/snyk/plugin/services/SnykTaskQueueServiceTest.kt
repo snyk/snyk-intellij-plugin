@@ -30,17 +30,17 @@ import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import org.awaitility.Awaitility.await
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.MatcherAssert.assertThat
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
+import snyk.oss.OssService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 
 @Suppress("FunctionName")
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
+    private lateinit var ossServiceMock: OssService
     private lateinit var downloaderServiceMock: SnykCliDownloaderService
     private lateinit var snykApiServiceMock: SnykApiService
 
@@ -48,6 +48,8 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        ossServiceMock = mockk(relaxed = true)
+        project.replaceService(OssService::class.java, ossServiceMock, project)
         mockSnykApiServiceSastEnabled()
         replaceSnykApiServiceMockInContainer()
         mockkStatic("io.snyk.plugin.UtilsKt")
@@ -59,6 +61,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
             "testTag"
         )
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
+        every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
     }
 
@@ -85,7 +88,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     fun testSnykTaskQueueService() {
         setupDummyCliFile()
-
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
         snykTaskQueueService.scan()

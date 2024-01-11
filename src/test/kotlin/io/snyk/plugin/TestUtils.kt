@@ -10,7 +10,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
-import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.HttpRequestHelper
 import java.io.File
 import java.nio.file.Path
@@ -48,10 +47,9 @@ fun resetSettings(project: Project?) {
 /** low level avoiding download the CLI file */
 fun mockCliDownload(): RequestBuilder {
     val requestBuilderMockk = mockk<RequestBuilder>(relaxed = true)
+    mockkObject(HttpRequestHelper)
+    every { HttpRequestHelper.createRequest(any()) } returns requestBuilderMockk
     justRun { requestBuilderMockk.saveToFile(any<File>(), any()) }
     justRun { requestBuilderMockk.saveToFile(any<Path>(), any()) }
-    mockkObject(HttpRequestHelper)
-    every { HttpRequestHelper.createRequest(CliDownloader.LATEST_RELEASE_DOWNLOAD_URL) } returns requestBuilderMockk
-    every { HttpRequestHelper.createRequest(CliDownloader.LATEST_RELEASES_URL) } returns requestBuilderMockk
     return requestBuilderMockk
 }

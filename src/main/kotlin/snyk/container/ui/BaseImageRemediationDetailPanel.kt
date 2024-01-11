@@ -4,7 +4,7 @@ import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.ui.components.labels.LinkLabel
+import com.intellij.ui.components.ActionLink
 import com.intellij.uiDesigner.core.GridLayoutManager
 import icons.SnykIcons
 import io.snyk.plugin.Severity
@@ -175,14 +175,13 @@ class BaseImageRemediationDetailPanel(
         customLabels = secondRowTitleLabels()
     )
 
-    private fun secondRowTitleLabels(): List<JLabel> {
+    private fun secondRowTitleLabels(): List<ActionLink> {
         val affectedFile2Line = targetImages.map { Pair(it.virtualFile, it.lineNumber) }
 
-        return listOf(JLabel("${imageIssues.uniqueCount} vulnerabilities")) +
-            // todo: fix UI(?)
+        return listOf(ActionLink("${imageIssues.uniqueCount} vulnerabilities")) +
             affectedFile2Line.map { (file, line) ->
                 val targetFileName = file.name + ":" + line
-                LinkLabel.create(targetFileName) {
+                ActionLink(targetFileName) {
                     navigateToTargetFile(file, line - 1) // to 1-based count used in the editor
                 }
             }

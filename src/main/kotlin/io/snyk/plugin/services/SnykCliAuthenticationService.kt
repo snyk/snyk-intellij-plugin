@@ -20,7 +20,7 @@ import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
-import org.apache.commons.lang.StringEscapeUtils.escapeHtml
+import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import snyk.common.getEndpointUrl
 import snyk.common.isOauth
 import java.awt.BorderLayout
@@ -35,7 +35,7 @@ import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.ScrollPaneConstants
 
-@Service
+@Service(Service.Level.PROJECT)
 class SnykCliAuthenticationService(val project: Project) {
     private val logger = logger<SnykCliAuthenticationService>()
 
@@ -78,7 +78,7 @@ class SnykCliAuthenticationService(val project: Project) {
                 }
                 val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
                     if (line.startsWith("https://")) {
-                        val htmlLink = escapeHtml(line.removeLineEnd())
+                        val htmlLink = escapeHtml4(line.removeLineEnd())
                         val htmlText =
                             """<html>
                                 We are now redirecting you to our auth page, go ahead and log in.<br><br>
@@ -119,7 +119,7 @@ class SnykCliAuthenticationService(val project: Project) {
             token = getConfigApiOutput.removeLineEnd()
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            getConfigApiTask, "Get Snyk API token", true, null
+            getConfigApiTask, "Get Snyk API Token", true, null
         )
     }
 
@@ -142,13 +142,13 @@ class SnykCliAuthenticationService(val project: Project) {
 
 class AuthDialog : DialogWrapper(true) {
     var onCancel: () -> Unit = {}
-    private val viewer = getReadOnlyClickableHtmlJEditorPane("Initializing authentication...")
+    private val viewer = getReadOnlyClickableHtmlJEditorPane("Initializing Authentication...")
     val copyUrlAction = CopyUrlAction()
 
     init {
         super.init()
         copyUrlAction.isEnabled = false
-        title = "Authenticating Snyk plugin"
+        title = "Authenticating Snyk Plugin"
     }
 
     override fun createCenterPanel(): JComponent {

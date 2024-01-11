@@ -37,9 +37,15 @@ object YAMLImageExtractor {
         val extractedImages = mutableListOf<KubernetesWorkloadImage>()
         getFileLines(psiFile).forEachIndexed { lineNumber, line ->
             val imageName = extractImagePathFromLine(line)
+            val lineStartOffset = psiFile.viewProvider.document?.getLineStartOffset(lineNumber) ?: 0
             if (imageName.isNotBlank()) {
                 // we report line numbers with a start index of 1 elsewhere (e.g. IaC)
-                val image = KubernetesWorkloadImage(imageName, psiFile.virtualFile, lineNumber + 1)
+                val image = KubernetesWorkloadImage(
+                    imageName,
+                    psiFile.virtualFile,
+                    lineNumber + 1,
+                    lineStartOffset
+                )
                 extractedImages.add(image)
                 logger.debug("Found image $image")
             }

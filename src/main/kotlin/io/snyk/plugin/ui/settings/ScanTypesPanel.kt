@@ -8,14 +8,11 @@ import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
-import com.intellij.ui.layout.panel
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykApiService
-import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
@@ -26,6 +23,7 @@ import snyk.common.ProductType
 import snyk.common.isSnykCodeAvailable
 import snyk.common.toSnykCodeSettingsUrl
 import java.awt.Component
+import java.awt.event.ItemEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JLabel
@@ -53,144 +51,93 @@ class ScanTypesPanel(
         }
     }
 
-    private var currentOssScanEnabled = settings.ossScanEnable
-    private var currentCodeSecurityScanEnabled = settings.snykCodeSecurityIssuesScanEnable
-    private var currentCodeQualityScanEnabled = settings.snykCodeQualityIssuesScanEnable
-    private var currentIacScanPanelEnabled = settings.iacScanEnabled
-    private var currentContainerScanEnabled = settings.containerScanEnabled
-
-    val codeAlertPanel = panel {
+    val codeAlertPanel = com.intellij.ui.dsl.builder.panel {
         row {
-            cell {
-                snykCodeAlertHyperLinkLabel()
-                    .withLargeLeftGap()
-                snykCodeReCheckLinkLabel()
-                    .withLargeLeftGap()
-            }
+            cell(snykCodeAlertHyperLinkLabel)
+            cell(snykCodeReCheckLinkLabel)
         }
     }.apply {
         border = JBUI.Borders.empty()
         this.isVisible = false
     }
 
-    val panel = panel {
+    val panel = com.intellij.ui.dsl.builder.panel {
         row {
-            cell {
-                checkBox(
-                    text = ProductType.OSS.productSelectionName,
-                    getter = { settings.ossScanEnable },
-                    setter = { settings.ossScanEnable = it },
-                    comment = cliScanComments
-                ).component.apply {
-                    this.addItemListener {
-                        isLastProductDisabling(this, currentOssScanEnabled)
-                        currentOssScanEnabled = this.isSelected
-                    }
-                    name = ProductType.OSS.toString()
-                }
+            checkBox(ProductType.OSS.productSelectionName).applyToComponent {
+                name = text
+                cliScanComments?.let { comment(it) }
                 label("").component.convertIntoHelpHintLabel(ProductType.OSS.description)
-            }
-        }
-        row {
-            cell {
-                checkBox(
-                    text = ProductType.ADVISOR.productSelectionName,
-                    getter = { settings.advisorEnable },
-                    setter = { settings.advisorEnable = it }
-                )
-                label("").component.convertIntoHelpHintLabel(
-                    "Discover the health (maintenance, community, popularity & security)\n" +
-                        "status of your open source packages"
-                )
-            }
-        }
-        if (isIacEnabled()) {
-            row {
-                cell {
-                    checkBox(
-                        text = ProductType.IAC.productSelectionName,
-                        getter = { settings.iacScanEnabled },
-                        setter = { settings.iacScanEnabled = it }
-                    ).component.apply {
-                        this.addItemListener {
-                            isLastProductDisabling(this, currentIacScanPanelEnabled)
-                            currentIacScanPanelEnabled = this.isSelected
-                        }
-                        name = ProductType.IAC.toString()
-                    }
-                    label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
-                }
-            }
-        }
-        if (isContainerEnabled()) {
-            row {
-                cell {
-                    checkBox(
-                        text = ProductType.CONTAINER.productSelectionName,
-                        getter = { settings.containerScanEnabled },
-                        setter = { enabled ->
-                            settings.containerScanEnabled = enabled
-                            val imagesCache = getKubernetesImageCache(project)
-                            if (enabled) imagesCache?.scanProjectForKubernetesFiles() else imagesCache?.clear()
-                        }
-                    ).component.apply {
-                        this.addItemListener {
-                            isLastProductDisabling(this, currentContainerScanEnabled)
-                            currentContainerScanEnabled = this.isSelected
-                        }
-                        name = ProductType.CONTAINER.toString()
-                    }
-                    label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
+                isSelected = settings.ossScanEnable
+                this.addItemListener {
+                    correctLastProductDisabled(it)
+                    settings.ossScanEnable = this.isSelected
                 }
             }
         }
         row {
-            cell {
-                codeSecurityCheckbox = checkBox(
-                    text = ProductType.CODE_SECURITY.productSelectionName,
-                    getter = { settings.snykCodeSecurityIssuesScanEnable },
-                    setter = { settings.snykCodeSecurityIssuesScanEnable = it }
-                )
-                    .component.apply {
-                        this.addItemListener {
-                            isLastProductDisabling(this, currentCodeSecurityScanEnabled)
-                            currentCodeSecurityScanEnabled = this.isSelected
-                        }
-                        name = ProductType.CODE_SECURITY.toString()
-                    }
+            checkBox(ProductType.ADVISOR.productSelectionName).applyToComponent {
+                name = text
+                label("").component.convertIntoHelpHintLabel(ProductType.ADVISOR.description)
+                isSelected = settings.advisorEnable
+                this.addItemListener {
+                    correctLastProductDisabled(it)
+                    settings.advisorEnable = this.isSelected
+                }
+            }
+        }
+        row {
+            checkBox(ProductType.IAC.productSelectionName).applyToComponent {
+                name = text
+                label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
+                isSelected = settings.iacScanEnabled
+                this.addItemListener {
+                    correctLastProductDisabled(it)
+                    settings.iacScanEnabled = this.isSelected
+                }
+            }
+        }
+        row {
+            checkBox(ProductType.CONTAINER.productSelectionName).applyToComponent {
+                name = text
+                label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
+                isSelected = settings.containerScanEnabled
+                this.addItemListener {
+                    correctLastProductDisabled(it)
+                    settings.containerScanEnabled = this.isSelected
+                    val imagesCache = getKubernetesImageCache(project)
+                    if (this.isSelected) imagesCache?.scanProjectForKubernetesFiles() else imagesCache?.clear()
+                }
+            }
+        }
+        row {
+            checkBox(ProductType.CODE_SECURITY.productSelectionName).applyToComponent {
+                name = text
+                codeSecurityCheckbox = this
+                isSelected = settings.snykCodeSecurityIssuesScanEnable
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_SECURITY.description)
-
-                if (!simplifyForOnboardPanel) {
-                    codeQualityCheckbox = checkBox(
-                        text = ProductType.CODE_QUALITY.productSelectionName,
-                        getter = { settings.snykCodeQualityIssuesScanEnable },
-                        setter = { settings.snykCodeQualityIssuesScanEnable = it }
-                    )
-                        .withLargeLeftGap()
-                        .component.apply {
-                            this.addItemListener {
-                                isLastProductDisabling(this, currentCodeQualityScanEnabled)
-                                currentCodeQualityScanEnabled = this.isSelected
-                            }
-                            name = ProductType.CODE_QUALITY.toString()
-                        }
-                    label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
+                this.addItemListener {
+                    correctLastProductDisabled(it)
+                    settings.snykCodeSecurityIssuesScanEnable = this.isSelected
+                    snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
+                }
+            }
+            checkBox(ProductType.CODE_QUALITY.productSelectionName).applyToComponent {
+                name = text
+                codeQualityCheckbox = this
+                isSelected = settings.snykCodeQualityIssuesScanEnable
+                label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
+                this.addItemListener {
+                    correctLastProductDisabled(it)
+                    settings.snykCodeQualityIssuesScanEnable = this.isSelected
+                    snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
                 }
             }
         }
         row {
             snykCodeComment = label("")
-                .withLargeLeftGap()
                 .component.apply {
                     foreground = UIUtil.getContextHelpForeground()
                 }
-
-            codeSecurityCheckbox?.addItemListener {
-                snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
-            }
-            codeQualityCheckbox?.addItemListener {
-                snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
-            }
             runBackgroundableTask("Checking Snyk Code enablement in organisation", project, true) {
                 checkSastEnabled()
             }
@@ -198,6 +145,11 @@ class ScanTypesPanel(
     }.apply {
         name = "scanTypesPanel"
         border = JBUI.Borders.empty(2)
+    }
+
+    private fun JBCheckBox.correctLastProductDisabled(it: ItemEvent) {
+        val deselected = it.stateChange == ItemEvent.DESELECTED
+        isLastProductDisabling(this, deselected)
     }
 
     private fun JLabel.convertIntoHelpHintLabel(text: String) {
@@ -221,7 +173,7 @@ class ScanTypesPanel(
             return
         }
 
-        var sastSettingsError: String = ""
+        var sastSettingsError = ""
         val sastCliConfigSettings: CliConfigSettings? = try {
             val sastSettings = getSnykApiService().getSastSettings()
             settings.sastSettingsError = false
@@ -244,15 +196,13 @@ class ScanTypesPanel(
         )
         if (snykCodeAvailable) {
             setSnykCodeComment(progressMessage = "Checking if Snyk Code enabled for organisation...") {
-
                 when (settings.sastOnServerEnabled) {
                     true -> {
                         doShowFilesToUpload()
                     }
 
                     false -> {
-                        settings.snykCodeSecurityIssuesScanEnable = false
-                        settings.snykCodeQualityIssuesScanEnable = false
+                        disableSnykCode()
                         showSnykCodeAlert(
                             message = "Snyk Code is disabled by your organisation's configuration: ",
                             linkText = "Snyk > Settings > Snyk Code",
@@ -267,8 +217,7 @@ class ScanTypesPanel(
                     }
 
                     null -> {
-                        settings.snykCodeSecurityIssuesScanEnable = false
-                        settings.snykCodeQualityIssuesScanEnable = false
+                        disableSnykCode()
                         showSnykCodeAlert(
                             message = "Not able to connect to Snyk server. Check your connection and network settings."
                         )
@@ -277,6 +226,13 @@ class ScanTypesPanel(
                 null
             }
         }
+    }
+
+    private fun disableSnykCode() {
+        codeSecurityCheckbox?.isSelected = false
+        codeQualityCheckbox?.isSelected = false
+        settings.snykCodeSecurityIssuesScanEnable = false
+        settings.snykCodeQualityIssuesScanEnable = false
     }
 
     private fun doShowFilesToUpload() {
@@ -339,7 +295,7 @@ class ScanTypesPanel(
         } else {
             codeAlertPanel.isVisible = showAlert
             // todo: change to setTextWithHyperlink() after move to sinceId >= 211
-            snykCodeAlertHyperLinkLabel.setHyperlinkText(message, linkText, "")
+            snykCodeAlertHyperLinkLabel.setTextWithHyperlink("$message<hyperlink>$linkText</hyperlink>")
             snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
             if (runOnClick == null) {
                 currentHyperlinkListener?.let { snykCodeAlertHyperLinkLabel.removeHyperlinkListener(it) }
@@ -358,24 +314,23 @@ class ScanTypesPanel(
         val enabled = (settings.sastOnServerEnabled == true) && available
         codeSecurityCheckbox?.let {
             it.isEnabled = enabled
-            it.isSelected = enabled && settings.snykCodeSecurityIssuesScanEnable
         }
         codeQualityCheckbox?.let {
             it.isEnabled = enabled
-            it.isSelected = enabled && settings.snykCodeQualityIssuesScanEnable
         }
     }
 
-    private fun isLastProductDisabling(component: JBCheckBox, wasEnabled: Boolean): Boolean {
+    private fun isLastProductDisabling(component: JBCheckBox, deselected: Boolean): Boolean {
         val onlyOneEnabled = arrayOf(
-            currentOssScanEnabled,
-            currentCodeSecurityScanEnabled,
-            currentCodeQualityScanEnabled,
-            currentIacScanPanelEnabled,
-            currentContainerScanEnabled
+            settings.ossScanEnable,
+            settings.snykCodeSecurityIssuesScanEnable,
+            settings.snykCodeQualityIssuesScanEnable,
+            settings.iacScanEnabled,
+            settings.containerScanEnabled,
+            settings.advisorEnable,
         ).count { it } == 1
 
-        if (onlyOneEnabled && wasEnabled) {
+        if (onlyOneEnabled && deselected) {
             component.isSelected = true
             SnykBalloonNotificationHelper.showWarnBalloonForComponent(
                 "At least one Scan type should be enabled",

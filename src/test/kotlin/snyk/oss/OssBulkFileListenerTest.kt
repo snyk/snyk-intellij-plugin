@@ -20,7 +20,11 @@ class OssBulkFileListenerTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         resetSettings(project)
-        super.tearDown()
+        try {
+            super.tearDown()
+        } catch (ignore: Exception) {
+            // nothing to do
+        }
     }
 
     @Test

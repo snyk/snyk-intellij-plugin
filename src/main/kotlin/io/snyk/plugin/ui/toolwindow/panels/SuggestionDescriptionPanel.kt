@@ -217,10 +217,7 @@ class SuggestionDescriptionPanel(
 
         val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
 
-        val fileToNavigate = if (markerRange.file.isNullOrEmpty()) snykCodeFile else {
-            PDU.instance.getFileByDeepcodedPath(markerRange.file, project)?.let { PDU.toSnykCodeFile(it) }
-        }
-        val fileName = fileToNavigate?.virtualFile?.name ?: markerRange.file
+        val fileName = snykCodeFile.virtualFile.name
 
         val positionLinkText = "$fileName:${markerRange.startRow}".padEnd(maxFilenameLength + 5, ' ')
 
@@ -231,9 +228,9 @@ class SuggestionDescriptionPanel(
             toolTipText = "Click to show in the Editor",
             customFont = JTextArea().font
         ) {
-            if (fileToNavigate == null || !fileToNavigate.virtualFile.isValid) return@linkLabel
+            if (!snykCodeFile.virtualFile.isValid) return@linkLabel
 
-            navigateToSource(project, fileToNavigate.virtualFile, markerRange.start, markerRange.end)
+            navigateToSource(project, snykCodeFile.virtualFile, markerRange.start, markerRange.end)
 
             allStepPanels.forEach {
                 it.background = UIUtil.getTextFieldBackground()
@@ -242,7 +239,7 @@ class SuggestionDescriptionPanel(
         }
         stepPanel.add(positionLabel, baseGridConstraintsAnchorWest(0, indent = 1))
 
-        val codeLine = codeLine(markerRange, fileToNavigate)
+        val codeLine = codeLine(markerRange, snykCodeFile)
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,

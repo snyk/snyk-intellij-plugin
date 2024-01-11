@@ -18,7 +18,6 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.apache.http.HttpStatus
-import org.junit.Test
 import java.io.File
 import java.net.SocketTimeoutException
 import java.time.LocalDate
@@ -60,7 +59,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     /**
      * Needs an internet connection - real test if release info can be downloaded
      */
-    @Test
     fun testGetLatestReleasesInformation() {
         val latestReleaseInfo = project.service<SnykCliDownloaderService>().requestLatestReleasesInformation()
 
@@ -75,7 +73,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
      * Should be THE ONLY test where we actually do download the CLI
      * !!! Do __MOCK__ cli download in ANY other test to reduce testing time needed !!!
      */
-    @Test
     fun testDownloadLatestCliRelease() {
         ensureCliFileExistent()
 
@@ -90,7 +87,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         verify { downloader.verifyChecksum(any(), any()) }
     }
 
-    @Test
     fun testDownloadLatestCliReleaseFailsWhenShaDoesNotMatch() {
         ensureCliFileExistent()
 
@@ -113,7 +109,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testDownloadLatestCliReleaseShouldHandleSocketTimeout() {
         val indicator = EmptyProgressIndicator()
         val exceptionMessage = "Read Timed Out"
@@ -130,7 +125,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testDownloadLatestCliReleaseShouldHandleHttpStatusException() {
         val httpStatusException = HttpRequests.HttpStatusException("status bad", HttpStatus.SC_GATEWAY_TIMEOUT, "url")
 
@@ -145,7 +139,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testDownloadLatestCliReleaseWhenNoReleaseInfoAvailable() {
         val cliDownloaderService = project.service<SnykCliDownloaderService>()
 
@@ -157,7 +150,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         }
     }
 
-    @Test
     fun testCliSilentAutoUpdate() {
         val currentDate = LocalDateTime.now()
 
@@ -178,7 +170,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         )
     }
 
-    @Test
     fun testCliSilentAutoUpdateWhenPreviousUpdateInfoIsNull() {
         val currentDate = LocalDate.now()
         val settings = pluginSettings()
@@ -195,7 +186,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         verify { cutSpy.downloadLatestRelease(any(), any()) }
     }
 
-    @Test
     fun testIsNewVersionAvailable() {
         pluginSettings().lastCheckDate = null
 
@@ -212,7 +202,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         assertFalse(cliDownloaderService.isNewVersionAvailable("1.342.2", "1.342.2"))
     }
 
-    @Test
     fun testCheckIsFourDaysPassedSinceLastCheck() {
         val todayDate = LocalDateTime.now()
         val lastCheckDate = todayDate.minusDays(4)

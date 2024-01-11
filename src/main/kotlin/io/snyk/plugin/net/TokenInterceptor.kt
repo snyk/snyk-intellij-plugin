@@ -7,7 +7,7 @@ import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.apache.commons.lang.SystemUtils
+import org.apache.commons.lang3.SystemUtils
 import snyk.common.needsSnykToken
 import snyk.pluginInfo
 import java.time.OffsetDateTime

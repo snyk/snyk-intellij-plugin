@@ -10,18 +10,11 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.intellij.util.net.HttpConfigurable
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import snyk.common.getEndpointUrl
-import snyk.common.isFedramp
-import snyk.common.isOauth
+import snyk.common.EnvironmentHelper
 import snyk.errorHandler.SentryErrorReporter
-import snyk.pluginInfo
-import java.net.URI
-import java.net.URLEncoder
 import java.nio.charset.Charset
 
 open class ConsoleCommandRunner {
@@ -90,53 +83,9 @@ open class ConsoleCommandRunner {
      * Setup environment variables for CLI.
      */
     fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
-        val endpoint = getEndpointUrl()
-
-        val oauthEnabledEnvVar = "INTERNAL_SNYK_OAUTH_ENABLED"
-        val oauthEnvVar = "INTERNAL_OAUTH_TOKEN_STORAGE"
-        val snykTokenEnvVar = "SNYK_TOKEN"
-
-        val endpointURI = URI(endpoint)
-        val oauthEnabled = endpointURI.isOauth()
-        if (oauthEnabled) {
-            commandLine.environment[oauthEnabledEnvVar] = "1"
-            commandLine.environment.remove(snykTokenEnvVar)
-        } else {
-            commandLine.environment.remove(oauthEnvVar)
-            commandLine.environment.remove(oauthEnabledEnvVar)
-        }
-
-        if (apiToken.isNotEmpty()) {
-            if (oauthEnabled) {
-                commandLine.environment[oauthEnvVar] = apiToken
-            } else {
-                commandLine.environment[snykTokenEnvVar] = apiToken
-            }
-        }
-
-        commandLine.environment["SNYK_API"] = endpoint
-
-        if (!pluginSettings().usageAnalyticsEnabled || endpointURI.isFedramp()) {
-            commandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"
-        }
-
-        commandLine.environment["SNYK_INTEGRATION_NAME"] = pluginInfo.integrationName
-        commandLine.environment["SNYK_INTEGRATION_VERSION"] = pluginInfo.integrationVersion
-        commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment
-        commandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"] = pluginInfo.integrationEnvironmentVersion
-        val proxySettings = HttpConfigurable.getInstance()
-        val proxyHost = proxySettings.PROXY_HOST
-        if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxyHost.isNotEmpty()) {
-            val authentication = if (proxySettings.PROXY_AUTHENTICATION) {
-                val auth = proxySettings.getPromptedAuthentication(proxyHost, "Snyk: Please enter your proxy password")
-                if (auth == null) "" else auth.userName.urlEncode() + ":" + String(auth.password).urlEncode() + "@"
-            } else ""
-            commandLine.environment["http_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
-            commandLine.environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
-        }
+        val environment = commandLine.environment
+        EnvironmentHelper.updateEnvironment(environment, apiToken)
     }
-
-    private fun String.urlEncode() = URLEncoder.encode(this, "UTF-8")
 
     companion object {
         const val PROCESS_CANCELLED_BY_USER = "PROCESS_CANCELLED_BY_USER"

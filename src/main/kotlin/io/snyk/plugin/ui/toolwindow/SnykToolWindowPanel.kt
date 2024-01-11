@@ -8,10 +8,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
@@ -695,7 +695,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             ossResult.allCliIssues?.forEach { vulnsForFile ->
                 if (vulnsForFile.vulnerabilities.isNotEmpty()) {
                     val ossGroupedResult = vulnsForFile.toGroupedResult()
-
                     val fileTreeNode = FileTreeNode(vulnsForFile, project)
                     rootOssTreeNode.add(fileTreeNode)
 
@@ -813,17 +812,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootIacIssuesTreeNode.removeAllChildren()
 
-        fun navigateToIaCIssue(filePath: String, issueLine: Int): () -> Unit = {
-            val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(filePath))
-            if (virtualFile != null && virtualFile.isValid) {
-                val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                if (document != null) {
-                    val candidate = issueLine - 1 // to 1-based count used in the editor
-                    val lineNumber = if (0 <= candidate && candidate < document.lineCount) candidate else 0
-                    val lineStartOffset = document.getLineStartOffset(lineNumber)
-
-                    navigateToSource(project, virtualFile, lineStartOffset)
-                }
+        fun navigateToIaCIssue(virtualFile: VirtualFile?, lineStartOffset: Int): () -> Unit = {
+            if (virtualFile?.isValid == true) {
+                navigateToSource(project, virtualFile, lineStartOffset)
             }
         }
 
@@ -839,8 +830,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .sortedByDescending { it.getSeverity() }
                         .forEach {
                             val navigateToSource = navigateToIaCIssue(
-                                iacVulnerabilitiesForFile.targetFilePath,
-                                it.lineNumber
+                                iacVulnerabilitiesForFile.virtualFile,
+                                it.lineStartOffset
                             )
                             fileTreeNode.add(IacIssueTreeNode(it, project, navigateToSource))
                         }
@@ -848,7 +839,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
             iacResult.getVisibleErrors().forEach { snykError ->
                 rootIacIssuesTreeNode.add(
-                    ErrorTreeNode(snykError, project, navigateToIaCIssue(snykError.path, 0))
+                    ErrorTreeNode(snykError, project, navigateToIaCIssue(snykError.virtualFile, 0))
                 )
             }
         }
@@ -867,28 +858,32 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
         rootContainerIssuesTreeNode.removeAllChildren()
 
-        fun navigateToImage(imageName: String): () -> Unit = {
-            val targetImage = getKubernetesImageCache(project)
-                ?.getKubernetesWorkloadImages()
-                ?.find { it.image == imageName }
-            val virtualFile = targetImage?.virtualFile
-            val line = targetImage?.lineNumber?.let { it - 1 } // to 1-based count used in the editor
-            if (virtualFile != null && virtualFile.isValid && line != null) {
-                val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                if (document != null) {
-                    val lineNumber = if (0 <= line && line < document.lineCount) line else 0
-                    val lineStartOffset = document.getLineStartOffset(lineNumber)
-                    navigateToSource(project, virtualFile, lineStartOffset)
-                }
+        fun navigateToImage(issuesForImage: ContainerIssuesForImage?, virtualFile: VirtualFile?): () -> Unit = {
+            val image = issuesForImage?.workloadImages?.getOrNull(0)
+
+            var file = virtualFile
+            if (image != null) {
+                file = image.virtualFile
+            }
+
+            if (file?.isValid == true) {
+                navigateToSource(project, file, image?.lineStartOffset ?: 0)
             }
         }
 
         val settings = pluginSettings()
         if (settings.containerScanEnabled && settings.treeFiltering.containerResults) {
             containerResult.allCliIssues?.forEach { issuesForImage ->
+                val image = issuesForImage.workloadImages.getOrNull(0)
+                val virtualFile = image?.virtualFile
                 if (issuesForImage.vulnerabilities.isNotEmpty()) {
                     val imageTreeNode =
-                        ContainerImageTreeNode(issuesForImage, project, navigateToImage(issuesForImage.imageName))
+                        ContainerImageTreeNode(
+                            issuesForImage, project, navigateToImage(
+                                issuesForImage,
+                                virtualFile
+                            )
+                        )
                     rootContainerIssuesTreeNode.add(imageTreeNode)
 
                     issuesForImage.groupedVulnsById.values
@@ -896,14 +891,19 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         .sortedByDescending { it.head.getSeverity() }
                         .forEach {
                             imageTreeNode.add(
-                                ContainerIssueTreeNode(it, project, navigateToImage(issuesForImage.imageName))
+                                ContainerIssueTreeNode(
+                                    it, project, navigateToImage(
+                                        issuesForImage,
+                                        virtualFile
+                                    )
+                                )
                             )
                         }
                 }
             }
             containerResult.errors.forEach { snykError ->
                 rootContainerIssuesTreeNode.add(
-                    ErrorTreeNode(snykError, project, navigateToImage(snykError.path))
+                    ErrorTreeNode(snykError, project, navigateToImage(null, snykError.virtualFile))
                 )
             }
         }
