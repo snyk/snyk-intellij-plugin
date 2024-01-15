@@ -399,3 +399,7 @@ fun getArch(): String {
     )
     return archMap[value] ?: value
 }
+
+fun VirtualFile.toPsiFile(project: Project): PsiFile? {
+    return PsiManager.getInstance(project).findFile(this)
+}

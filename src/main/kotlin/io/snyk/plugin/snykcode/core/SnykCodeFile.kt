@@ -4,7 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.vfs.VirtualFile
-import org.jetbrains.kotlin.idea.core.util.toPsiFile
+import io.snyk.plugin.toPsiFile
 import snyk.common.RelativePathHelper
 import javax.swing.Icon
 
