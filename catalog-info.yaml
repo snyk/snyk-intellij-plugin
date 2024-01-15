@@ -4,8 +4,8 @@ metadata:
   name: snyk-intellij-plugin
   annotations:
     github.com/project-slug: snyk/snyk-intellij-plugin
-    github.com/team-slug: snyk/hammerhead
+    github.com/team-slug: snyk/ide
 spec:
   type: ide-plugin
   lifecycle: "-"
-  owner: hammerhead
+  owner: ide

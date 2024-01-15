@@ -1,4 +1,13 @@
 # Snyk Changelog
+
+## [2.6.1]
+### Fixed
+- don't use kotlin library on non-kotlin IDEs
+
+## [2.6.0]
+### Fixed
+- fix threading and UI incompatibilities with 2023.3
+
 ## [2.5.8]
 ### Added
 - support for IntelliJ 2023.3 platform
