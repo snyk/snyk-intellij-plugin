@@ -70,7 +70,8 @@ dependencies {
 // read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
     version.set(properties("platformVersion"))
-
+    // https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html#intellij-extension-type
+    // type.set("GO")
     downloadSources.set(properties("platformDownloadSources").toBoolean())
 
     // plugin dependencies: uses `platformPlugins` property from the gradle.properties file.
