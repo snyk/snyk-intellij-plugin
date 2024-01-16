@@ -2,6 +2,10 @@
 
 ## [2.6.1]
 ### Fixed
+- remove more intellij-specific code and configuration
+
+## [2.6.1]
+### Fixed
 - don't use kotlin library on non-kotlin IDEs
 
 ## [2.6.0]
