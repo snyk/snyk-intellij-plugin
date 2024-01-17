@@ -24,7 +24,6 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
-import org.jetbrains.kotlin.idea.base.util.letIf
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.container.ContainerIssue
@@ -73,10 +72,12 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                         append(fileVulns.sanitizedTargetFile)
                         append(ProductType.OSS.getCountText(value.childCount))
                     }
-                text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
-                    "..." + it.substring(
-                        it.length - MAX_FILE_TREE_NODE_LENGTH, it.length
-                    )
+                text = toolTipText.apply {
+                    if (toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
+                        "..." + this.substring(
+                            this.length - MAX_FILE_TREE_NODE_LENGTH, this.length
+                        )
+                    }
                 }
 
                 val snykCachedResults = getSnykCachedResults(value.project)
@@ -111,10 +112,12 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                         append(productType.getCountText(value.childCount))
                     }
 
-                text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
-                    "..." + it.substring(
-                        it.length - MAX_FILE_TREE_NODE_LENGTH, it.length
-                    )
+                text = toolTipText.apply {
+                    if (toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
+                        "..." + this.substring(
+                            this.length - MAX_FILE_TREE_NODE_LENGTH, this.length
+                        )
+                    }
                 }
 
                 nodeIcon = file.icon
@@ -137,10 +140,12 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     append(ProductType.IAC.getCountText(value.childCount))
                 }
 
-                text = toolTipText.letIf(toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
-                    "..." + it.substring(
-                        it.length - MAX_FILE_TREE_NODE_LENGTH, it.length
-                    )
+                text = toolTipText.apply {
+                    if (toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
+                        "..." + this.substring(
+                            this.length - MAX_FILE_TREE_NODE_LENGTH, this.length
+                        )
+                    }
                 }
 
                 val snykCachedResults = getSnykCachedResults(value.project)
