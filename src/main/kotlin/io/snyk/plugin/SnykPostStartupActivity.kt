@@ -5,10 +5,13 @@ import com.intellij.ide.plugins.PluginInstaller
 import com.intellij.ide.plugins.PluginStateListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFileManager
+import io.snyk.plugin.extensions.SnykControllerImpl
+import io.snyk.plugin.extensions.SnykControllerManager
 import io.snyk.plugin.snykcode.SnykCodeBulkFileListener
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
@@ -27,7 +30,16 @@ import java.util.*
 
 private val LOG = logger<SnykPostStartupActivity>()
 
+private const val EXTENSION_POINT_CONTROLLER_MANAGER = "io.snyk.snyk-intellij-plugin.controllerManager"
+
 class SnykPostStartupActivity : ProjectActivity {
+
+    private object ExtensionPointsUtil {
+        val controllerManager =
+            ExtensionPointName.create<SnykControllerManager>(
+                EXTENSION_POINT_CONTROLLER_MANAGER
+            )
+    }
 
     private var listenersActivated = false
     val settings = pluginSettings()
@@ -94,6 +106,10 @@ class SnykPostStartupActivity : ProjectActivity {
 
         if (isContainerEnabled()) {
             getKubernetesImageCache(project)?.scanProjectForKubernetesFiles()
+        }
+
+        ExtensionPointsUtil.controllerManager.extensionList.forEach {
+            it.register(SnykControllerImpl(project))
         }
     }
 }
