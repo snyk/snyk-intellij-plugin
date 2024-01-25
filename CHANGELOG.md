@@ -1,6 +1,10 @@
 # Snyk Changelog
 
-## [2.6.1]
+## [2.7.0]
+### Added
+- Snyk controller extension point
+
+## [2.6.2]
 ### Fixed
 - remove more intellij-specific code and configuration
 

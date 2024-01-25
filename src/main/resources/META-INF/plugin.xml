@@ -100,4 +100,10 @@
               description="Snyk: Show Low severity issues"/>
     </group>
   </actions>
+
+  <extensionPoints>
+    <extensionPoint
+      name="controllerManager"
+      interface="io.snyk.plugin.extensions.SnykControllerManager"/>
+  </extensionPoints>
 </idea-plugin>
