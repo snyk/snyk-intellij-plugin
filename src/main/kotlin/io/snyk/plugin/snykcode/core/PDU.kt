@@ -209,7 +209,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
         }
 
         fun toTextRange(myTextRange: MyTextRange): TextRange {
-            return TextRange(myTextRange.start, myTextRange.end)
+            return TextRange(myTextRange.startOffset, myTextRange.endOffset)
         }
 
         val instance = PDU()

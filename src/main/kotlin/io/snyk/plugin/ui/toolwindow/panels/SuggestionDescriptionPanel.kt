@@ -128,7 +128,7 @@ class SuggestionDescriptionPanel(
         val document = PDU.toPsiFile(file)?.let { PsiDocumentManager.getInstance(file.project).getDocument(it) }
             ?: return "<No Document Found>"
         val chars = document.charsSequence
-        val startOffset = range.start
+        val startOffset = range.startOffset
         val textLength = document.textLength
 
         if (startOffset !in (0 until textLength)) return "<Wrong Pointer>"
@@ -230,7 +230,7 @@ class SuggestionDescriptionPanel(
         ) {
             if (!snykCodeFile.virtualFile.isValid) return@linkLabel
 
-            navigateToSource(project, snykCodeFile.virtualFile, markerRange.start, markerRange.end)
+            navigateToSource(project, snykCodeFile.virtualFile, markerRange.startOffset, markerRange.endOffset)
 
             allStepPanels.forEach {
                 it.background = UIUtil.getTextFieldBackground()

@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MyTextRange {
-  private final int start;
-  private final int end;
+  private final int startOffset;
+  private final int endOffset;
   private final int startRow;
   private final int endRow;
   private final int startCol;
@@ -15,9 +15,9 @@ public class MyTextRange {
   private final Map<MyTextRange, List<MyTextRange>> markers;
   private final String file;
 
-  MyTextRange(
-    int start,
-    int end,
+  public MyTextRange(
+    int startOffset,
+    int endOffset,
     int startRow,
     int endRow,
     int startCol,
@@ -25,8 +25,8 @@ public class MyTextRange {
     Map<MyTextRange, List<MyTextRange>> markers,
     String file) {
 
-    this.start = start;
-    this.end = end;
+    this.startOffset = startOffset;
+    this.endOffset = endOffset;
     this.startRow = startRow;
     this.endRow = endRow;
     this.startCol = startCol;
@@ -35,16 +35,16 @@ public class MyTextRange {
     this.file = file;
   }
 
-  MyTextRange(int start, int end) {
-    this(start, end, -1, -1, -1, -1, Collections.emptyMap(), null);
+  public MyTextRange(int startOffset, int endOffset) {
+    this(startOffset, endOffset, -1, -1, -1, -1, Collections.emptyMap(), null);
   }
 
-  public int getStart() {
-    return start;
+  public int getStartOffset() {
+    return startOffset;
   }
 
-  public int getEnd() {
-    return end;
+  public int getEndOffset() {
+    return endOffset;
   }
 
   public int getStartRow() {

@@ -39,7 +39,7 @@ class LanguageServerWrapperTest {
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
-        cut = LanguageServerWrapper("dummy")
+        cut = LanguageServerWrapper("dummy", projectMock)
         cut.languageServer = lsMock
     }
 

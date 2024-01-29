@@ -81,7 +81,7 @@ class AnalyticsScanListenerTest {
 
     @Test
     fun `testScanListener scanningIacFinished should call language server to report analytics`() {
-        val languageServerWrapper = LanguageServerWrapper("dummy")
+        val languageServerWrapper = LanguageServerWrapper("dummy", projectMock)
         languageServerWrapper.languageServer = lsMock
         every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
         every {
@@ -95,7 +95,7 @@ class AnalyticsScanListenerTest {
 
     @Test
     fun `testScanListener scanningOssFinished should call language server to report analytics`() {
-        val languageServerWrapper = LanguageServerWrapper("dummy")
+        val languageServerWrapper = LanguageServerWrapper("dummy", projectMock)
         languageServerWrapper.languageServer = lsMock
         every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
         every {
@@ -109,7 +109,7 @@ class AnalyticsScanListenerTest {
 
     @Test
     fun `testScanListener scanningCodeFinished should call language server to report analytics`() {
-        val languageServerWrapper = LanguageServerWrapper("dummy")
+        val languageServerWrapper = LanguageServerWrapper("dummy", projectMock)
         languageServerWrapper.languageServer = lsMock
         every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
         every {
@@ -123,7 +123,7 @@ class AnalyticsScanListenerTest {
 
     @Test
     fun `testScanListener scanningContainerFinished should call language server to report analytics`() {
-        val languageServerWrapper = LanguageServerWrapper("dummy")
+        val languageServerWrapper = LanguageServerWrapper("dummy", projectMock)
         languageServerWrapper.languageServer = lsMock
         every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
         every {

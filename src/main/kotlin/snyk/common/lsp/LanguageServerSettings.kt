@@ -39,7 +39,6 @@ data class LanguageServerSettings(
     @SerializedName("authenticationMethod") val authenticationMethod: AuthenticationMethod? = null,
     @SerializedName("snykCodeApi") val snykCodeApi: String? = null,
     @SerializedName("enableSnykLearnCodeActions") val enableSnykLearnCodeActions: String? = null,
-    @SerializedName("enableAnalytics") val enableAnalytics: Boolean = false // TODO: enable when service ready
 )
 
 data class SeverityFilter(

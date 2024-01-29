@@ -24,7 +24,6 @@ import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
@@ -45,7 +44,7 @@ class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
     private val taskQueueIac = BackgroundTaskQueue(project, "Snyk: Iac")
     private val taskQueueContainer = BackgroundTaskQueue(project, "Snyk: Container")
-    val ls = LanguageServerWrapper()
+    val ls = LanguageServerWrapper(project = project)
 
     private val settings
         get() = pluginSettings()
@@ -107,15 +106,17 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded(indicator)
                 indicator.checkCanceled()
 
-                if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
-                    scheduleSnykCodeScan()
-                }
-                if (settings.ossScanEnable) {
-                    scheduleOssScan()
-                }
-                if (isIacEnabled() && settings.iacScanEnabled) {
-                    scheduleIacScan()
-                }
+                ls.sendScanCommand()
+
+//                if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
+//                    scheduleSnykCodeScan()
+//                }
+//                if (settings.ossScanEnable) {
+//                    scheduleOssScan()
+//                }
+//                if (isIacEnabled() && settings.iacScanEnabled) {
+//                    scheduleIacScan()
+//                }
                 if (isContainerEnabled() && settings.containerScanEnabled) {
                     scheduleContainerScan()
                 }
@@ -126,12 +127,6 @@ class SnykTaskQueueService(val project: Project) {
     private fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
         if (isCliInstalled()) return
         // check if any CLI related scan enabled
-        val ossScanEnable = settings.ossScanEnable
-        val iacScanEnabled = isIacEnabled() && settings.iacScanEnabled
-        val containerScanEnabled = isContainerEnabled() && settings.containerScanEnabled
-        if (!(ossScanEnable || iacScanEnabled || containerScanEnabled)) {
-            return
-        }
         indicator.text = "Snyk waits for CLI to be downloaded..."
         downloadLatestRelease()
         do {

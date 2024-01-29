@@ -950,7 +950,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             val textRange = suggestion.ranges[index]
                 ?: throw IllegalArgumentException(suggestion.ranges.toString())
             if (snykCodeFile.virtualFile.isValid) {
-                navigateToSource(project, snykCodeFile.virtualFile, textRange.start, textRange.end)
+                navigateToSource(project, snykCodeFile.virtualFile, textRange.startOffset, textRange.endOffset)
             }
         }
         snykCodeResults.getSortedFiles()
