@@ -26,6 +26,10 @@ import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import java.util.concurrent.TimeUnit
 
+private const val DEFAULT_SLEEP_TIME = 100L
+private const val INITIALIZATION_TIMEOUT = 20L
+
+@Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePath) {
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
@@ -55,7 +59,6 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
     val isInitialized: Boolean
         get() = ::languageClient.isInitialized && ::languageServer.isInitialized &&
             ::process.isInitialized && process.info().startInstant().isPresent
-
 
     @OptIn(DelicateCoroutinesApi::class)
     internal fun initialize() {
@@ -106,7 +109,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
         params.initializationOptions = getInitializationOptions()
         params.workspaceFolders = workspaceFolders
 
-        languageServer.initialize(params).get(20, TimeUnit.SECONDS)
+        languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
     }
 
     fun updateWorkspaceFolders(project: Project, added: List<WorkspaceFolder>, removed: List<WorkspaceFolder>) {
@@ -127,7 +130,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
 
     private fun ensureLanguageServerInitialized() {
         while (isInitializing) {
-            Thread.sleep(100)
+            Thread.sleep(DEFAULT_SLEEP_TIME)
         }
         if (!isInitialized) {
             initialize()

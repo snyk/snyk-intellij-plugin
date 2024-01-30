@@ -4,6 +4,7 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.ide.plugins.PluginInstaller
 import com.intellij.ide.plugins.PluginStateListener
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.progress.EmptyProgressIndicator
@@ -83,9 +84,8 @@ class SnykPostStartupActivity : ProjectActivity {
             try {
                 getSnykTaskQueueService(project)?.connectProjectToLanguageServer(project)
                 getAnalyticsScanListener(project)?.initScanListener()
-            } catch (ignored: Exception) {
-                // do nothing to not break UX for analytics
-                ignored.printStackTrace()
+            } catch (e: Exception) {
+                Logger.getInstance(SnykPostStartupActivity::class.java).error(e)
             }
         }
 

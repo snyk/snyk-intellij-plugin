@@ -118,7 +118,6 @@ class SnykCliDownloaderService {
                 latestReleaseInfo.tagName.isNotEmpty() &&
                 isNewVersionAvailable(settings.cliVersion, cliVersionNumbers(latestReleaseInfo.tagName))
             ) {
-
                 downloadLatestRelease(indicator, project)
 
                 settings.lastCheckDate = Date()
@@ -133,13 +132,11 @@ class SnykCliDownloaderService {
     }
 
     fun isNewVersionAvailable(currentCliVersion: String?, newCliVersion: String?): Boolean {
-        if (currentCliVersion == null ||
-            newCliVersion == null ||
-            currentCliVersion.isEmpty() ||
-            currentCliVersion.isEmpty()
-        ) {
-            return true
-        }
+        val cliVersionsNullOrEmpty =
+            currentCliVersion == null || newCliVersion == null ||
+                currentCliVersion.isEmpty() || newCliVersion.isEmpty()
+
+        if (cliVersionsNullOrEmpty) return true
 
         tailrec fun checkIsNewVersionAvailable(
             currentCliVersionNumbers: List<String>,
@@ -158,7 +155,7 @@ class SnykCliDownloaderService {
             }
         }
 
-        return checkIsNewVersionAvailable(currentCliVersion.split('.'), newCliVersion.split('.'))
+        return checkIsNewVersionAvailable(currentCliVersion!!.split('.'), newCliVersion!!.split('.'))
     }
 
     fun getLatestReleaseInfo(): LatestReleaseInfo? = this.latestReleaseInfo

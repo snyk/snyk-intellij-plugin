@@ -30,9 +30,6 @@ import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
