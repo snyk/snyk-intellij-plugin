@@ -55,7 +55,7 @@ class LanguageServerWrapperTest {
         every { rootManagerMock.contentRoots } returns emptyArray()
         every { lsMock.initialize(any<InitializeParams>()) } returns CompletableFuture.completedFuture(null)
 
-        cut.sendInitializeMessage(projectMock)
+        cut.sendInitializeMessage()
 
         verify { lsMock.initialize(any<InitializeParams>()) }
     }

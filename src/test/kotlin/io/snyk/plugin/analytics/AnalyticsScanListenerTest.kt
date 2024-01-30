@@ -8,9 +8,9 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getArch
 import io.snyk.plugin.getOS
-import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykTaskQueueService
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.eclipse.lsp4j.ExecuteCommandParams
@@ -83,7 +83,7 @@ class AnalyticsScanListenerTest {
     fun `testScanListener scanningIacFinished should call language server to report analytics`() {
         val languageServerWrapper = LanguageServerWrapper("dummy")
         languageServerWrapper.languageServer = lsMock
-        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every { SnykTaskQueueService?.ls } returns languageServerWrapper
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
@@ -97,7 +97,7 @@ class AnalyticsScanListenerTest {
     fun `testScanListener scanningOssFinished should call language server to report analytics`() {
         val languageServerWrapper = LanguageServerWrapper("dummy")
         languageServerWrapper.languageServer = lsMock
-        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every { SnykTaskQueueService?.ls } returns languageServerWrapper
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
@@ -111,7 +111,7 @@ class AnalyticsScanListenerTest {
     fun `testScanListener scanningCodeFinished should call language server to report analytics`() {
         val languageServerWrapper = LanguageServerWrapper("dummy")
         languageServerWrapper.languageServer = lsMock
-        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every { SnykTaskQueueService?.ls } returns languageServerWrapper
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
@@ -125,7 +125,7 @@ class AnalyticsScanListenerTest {
     fun `testScanListener scanningContainerFinished should call language server to report analytics`() {
         val languageServerWrapper = LanguageServerWrapper("dummy")
         languageServerWrapper.languageServer = lsMock
-        every { getSnykTaskQueueService(projectMock)?.ls } returns languageServerWrapper
+        every { SnykTaskQueueService?.ls } returns languageServerWrapper
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)

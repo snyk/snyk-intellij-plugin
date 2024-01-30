@@ -1,5 +1,10 @@
 # Snyk Changelog
 
+## [2.7.1]
+### Fixed
+- only start up language server after CLI update (fixes lock error on Windows)
+- only start up one instance of language server, manage projects via workspace folders
+
 ## [2.7.0]
 ### Added
 - Snyk controller extension point

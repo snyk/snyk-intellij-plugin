@@ -6,6 +6,7 @@ import com.intellij.ide.plugins.PluginStateListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.startup.ProjectActivity
@@ -26,7 +27,7 @@ import snyk.iac.IacBulkFileListener
 import snyk.oss.OssBulkFileListener
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Date
 
 private val LOG = logger<SnykPostStartupActivity>()
 
@@ -62,6 +63,7 @@ class SnykPostStartupActivity : ProjectActivity {
 
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
+            // TODO: add subscription for language server messages
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, OssBulkFileListener())
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, SnykCodeBulkFileListener())
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, IacBulkFileListener())
@@ -77,12 +79,13 @@ class SnykPostStartupActivity : ProjectActivity {
         AnnotatorCommon.initRefreshing(project)
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
-            getSnykTaskQueueService(project)?.downloadLatestRelease()
+            getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded(EmptyProgressIndicator())
             try {
-                getSnykTaskQueueService(project)?.initializeLanguageServer()
+                getSnykTaskQueueService(project)?.connectProjectToLanguageServer(project)
                 getAnalyticsScanListener(project)?.initScanListener()
             } catch (ignored: Exception) {
                 // do nothing to not break UX for analytics
+                ignored.printStackTrace()
             }
         }
 

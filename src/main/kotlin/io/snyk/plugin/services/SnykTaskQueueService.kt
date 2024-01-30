@@ -6,10 +6,10 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
-import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectRootManager
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
@@ -33,6 +33,7 @@ import io.snyk.plugin.ui.SnykBalloonNotifications
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.eclipse.lsp4j.WorkspaceFolder
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
@@ -45,7 +46,6 @@ class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
     private val taskQueueIac = BackgroundTaskQueue(project, "Snyk: Iac")
     private val taskQueueContainer = BackgroundTaskQueue(project, "Snyk: Container")
-    val ls = LanguageServerWrapper()
 
     private val settings
         get() = pluginSettings()
@@ -79,18 +79,16 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    fun initializeLanguageServer() {
-        waitUntilCliDownloadedIfNeeded(EmptyProgressIndicator())
-        ls.initialize()
-        GlobalScope.launch {
-            ls.process.errorStream.bufferedReader().forEachLine { println(it) }
+    fun connectProjectToLanguageServer(project: Project) {
+        synchronized(ls) {
+            if (!ls.isInitialized && !ls.isInitializing) {
+                ls.initialize()
+            }
         }
-        GlobalScope.launch {
-            ls.startListening()
-        }
-
-        ls.sendInitializeMessage(project)
+        val addedWorkspaceFolders = ProjectRootManager.getInstance(project).contentRoots
+            .mapNotNull { WorkspaceFolder(it.url, it.name) }
+            .toCollection(mutableListOf())
+        ls.updateWorkspaceFolders(project, addedWorkspaceFolders, emptyList())
     }
 
     fun scan() {
@@ -123,21 +121,13 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    private fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
-        if (isCliInstalled()) return
-        // check if any CLI related scan enabled
-        val ossScanEnable = settings.ossScanEnable
-        val iacScanEnabled = isIacEnabled() && settings.iacScanEnabled
-        val containerScanEnabled = isContainerEnabled() && settings.containerScanEnabled
-        if (!(ossScanEnable || iacScanEnabled || containerScanEnabled)) {
-            return
-        }
+    fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
         indicator.text = "Snyk waits for CLI to be downloaded..."
         downloadLatestRelease()
         do {
             indicator.checkCanceled()
-            Thread.sleep(waitForDownloadMillis)
-        } while (isCliDownloading())
+            Thread.sleep(WAIT_FOR_DOWNLOAD_MILLIS)
+        } while (!isCliInstalled() || isCliDownloading())
     }
 
     private fun scheduleContainerScan() {
@@ -331,6 +321,7 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     companion object {
-        private const val waitForDownloadMillis = 500L
+        private const val WAIT_FOR_DOWNLOAD_MILLIS = 1000L
+        val ls = LanguageServerWrapper()
     }
 }
