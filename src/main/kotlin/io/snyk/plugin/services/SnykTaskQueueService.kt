@@ -9,7 +9,6 @@ import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectRootManager
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
@@ -30,7 +29,6 @@ import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotifications
-import org.eclipse.lsp4j.WorkspaceFolder
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
@@ -82,10 +80,7 @@ class SnykTaskQueueService(val project: Project) {
                 ls.initialize()
             }
         }
-        val addedWorkspaceFolders = ProjectRootManager.getInstance(project).contentRoots
-            .mapNotNull { WorkspaceFolder(it.url, it.name) }
-            .toCollection(mutableListOf())
-        ls.updateWorkspaceFolders(project, addedWorkspaceFolders, emptyList())
+        ls.updateWorkspaceFolders(project, ls.getWorkspaceFolders(project), emptySet())
     }
 
     fun scan() {

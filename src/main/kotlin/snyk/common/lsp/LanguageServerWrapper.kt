@@ -91,14 +91,19 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
     }
 
     private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
-        val workspaceFolders = mutableListOf<WorkspaceFolder>()
+        val workspaceFolders = mutableSetOf<WorkspaceFolder>()
         ProjectManager.getInstance().openProjects.forEach { project ->
-            ProjectRootManager.getInstance(project)
-                .contentRoots
-                .mapNotNull { WorkspaceFolder(it.url, it.name) }.toCollection(workspaceFolders)
+            workspaceFolders.addAll(getWorkspaceFolders(project))
         }
         return workspaceFolders.toList()
     }
+
+    fun getWorkspaceFolders(project: Project) =
+        ProjectRootManager.getInstance(project).contentRoots
+            .filter { it.exists() }
+            .filter { it.isDirectory }
+            .mapNotNull { WorkspaceFolder(it.url, it.name) }
+            .toSet()
 
     fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()
@@ -112,7 +117,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
         languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
     }
 
-    fun updateWorkspaceFolders(project: Project, added: List<WorkspaceFolder>, removed: List<WorkspaceFolder>) {
+    fun updateWorkspaceFolders(project: Project, added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
         RunUtils.instance.runInBackground(
             project,
             "Updating workspace folders for project: ${project.name}"
@@ -120,7 +125,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
             try {
                 ensureLanguageServerInitialized()
                 val params = DidChangeWorkspaceFoldersParams()
-                params.event = WorkspaceFoldersChangeEvent(added, removed)
+                params.event = WorkspaceFoldersChangeEvent(added.toList(), removed.toList())
                 languageServer.workspaceService.didChangeWorkspaceFolders(params)
             } catch (e: Exception) {
                 logger.error(e)

@@ -46,6 +46,7 @@ class SnykPostStartupActivity : ProjectActivity {
     private var listenersActivated = false
     val settings = pluginSettings()
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun execute(project: Project) {
         PluginInstaller.addStateListener(UninstallListener())
 
