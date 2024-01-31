@@ -143,7 +143,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     init {
         vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
-
         layout = BorderLayout()
         TreeSpeedSearch(vulnerabilitiesTree, TreeSpeedSearch.NODE_DESCRIPTOR_TOSTRING, true)
 

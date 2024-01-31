@@ -6,7 +6,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
-import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
@@ -29,10 +28,8 @@ import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykBalloonNotifications
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
@@ -45,7 +42,6 @@ class SnykTaskQueueService(val project: Project) {
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
     private val taskQueueIac = BackgroundTaskQueue(project, "Snyk: Iac")
     private val taskQueueContainer = BackgroundTaskQueue(project, "Snyk: Container")
-    val ls = LanguageServerWrapper()
 
     private val settings
         get() = pluginSettings()
@@ -79,23 +75,19 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    fun initializeLanguageServer() {
-        waitUntilCliDownloadedIfNeeded(EmptyProgressIndicator())
-        ls.initialize()
-        GlobalScope.launch {
-            ls.process.errorStream.bufferedReader().forEachLine { println(it) }
+    fun connectProjectToLanguageServer(project: Project) {
+        synchronized(ls) {
+            if (!ls.isInitialized && !ls.isInitializing) {
+                ls.initialize()
+            }
         }
-        GlobalScope.launch {
-            ls.startListening()
-        }
-
-        ls.sendInitializeMessage(project)
+        ls.updateWorkspaceFolders(project, ls.getWorkspaceFolders(project), emptySet())
     }
 
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
+                // FIXME: this should be using content roots instead of basePath
                 project.basePath?.let {
                     if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project, Paths.get(it))) return
                 }
@@ -123,21 +115,13 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    private fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
-        if (isCliInstalled()) return
-        // check if any CLI related scan enabled
-        val ossScanEnable = settings.ossScanEnable
-        val iacScanEnabled = isIacEnabled() && settings.iacScanEnabled
-        val containerScanEnabled = isContainerEnabled() && settings.containerScanEnabled
-        if (!(ossScanEnable || iacScanEnabled || containerScanEnabled)) {
-            return
-        }
+    fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
         indicator.text = "Snyk waits for CLI to be downloaded..."
-        downloadLatestRelease()
+        downloadLatestRelease(indicator)
         do {
             indicator.checkCanceled()
-            Thread.sleep(waitForDownloadMillis)
-        } while (isCliDownloading())
+            Thread.sleep(WAIT_FOR_DOWNLOAD_MILLIS)
+        } while (!isCliInstalled() || isCliDownloading())
     }
 
     private fun scheduleContainerScan() {
@@ -246,7 +230,7 @@ class SnykTaskQueueService(val project: Project) {
                     if (ossResult.isSuccessful()) {
                         scanPublisher?.scanningOssFinished(ossResult)
                     } else {
-                        scanPublisher?.scanningOssError(ossResult.getFirstError()!!)
+                        ossResult.getFirstError()?.let { scanPublisher?.scanningOssError(it) }
                     }
                 }
                 DaemonCodeAnalyzer.getInstance(project).restart()
@@ -297,12 +281,24 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun downloadLatestRelease() {
+    fun downloadLatestRelease(indicator: ProgressIndicator) {
+        // abort even before submitting a task
+        if (!pluginSettings().manageBinariesAutomatically) {
+            if (!isCliInstalled()) {
+                val msg =
+                    "The plugin cannot scan without Snyk CLI, but automatic download is disabled. " +
+                        "Please put a Snyk CLI executable in ${pluginSettings().cliPath} and retry."
+                SnykBalloonNotificationHelper.showError(msg, project)
+            }
+            indicator.cancel()
+            return
+        }
+        val cliDownloader = getSnykCliDownloaderService()
+
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI presence", true) {
             override fun run(indicator: ProgressIndicator) {
                 cliDownloadPublisher.checkCliExistsStarted()
                 if (project.isDisposed) return
-                val cliDownloader = getSnykCliDownloaderService()
 
                 if (!isCliInstalled()) {
                     cliDownloader.downloadLatestRelease(indicator, project)
@@ -331,6 +327,7 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     companion object {
-        private const val waitForDownloadMillis = 500L
+        private const val WAIT_FOR_DOWNLOAD_MILLIS = 1000L
+        val ls = LanguageServerWrapper()
     }
 }

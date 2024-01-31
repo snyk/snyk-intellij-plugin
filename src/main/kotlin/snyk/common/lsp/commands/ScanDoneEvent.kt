@@ -39,7 +39,7 @@ data class ScanDoneEvent(
         val eventType: String = "Scan done",
 
         @SerializedName("status")
-        val status: String = "Succeeded",
+        val status: String = "Success",
 
         @SerializedName("scan_type")
         val scanType: String,
