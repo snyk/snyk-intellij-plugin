@@ -16,7 +16,7 @@ import com.intellij.util.PlatformIcons
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
@@ -55,7 +55,7 @@ class SnykCliAuthenticationService(val project: Project) {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
                 val currentIndicator = ProgressManager.getInstance().progressIndicator
-                getSnykCliDownloaderService().downloadLatestRelease(currentIndicator, project)
+                getSnykTaskQueueService(project)?.downloadLatestRelease(currentIndicator)
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
             }

@@ -28,6 +28,7 @@ import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.RunUtils
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
@@ -86,6 +87,7 @@ class SnykTaskQueueService(val project: Project) {
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
+                // FIXME: this should be using content roots instead of basePath
                 project.basePath?.let {
                     if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project, Paths.get(it))) return
                 }
@@ -115,7 +117,7 @@ class SnykTaskQueueService(val project: Project) {
 
     fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
         indicator.text = "Snyk waits for CLI to be downloaded..."
-        downloadLatestRelease()
+        downloadLatestRelease(indicator)
         do {
             indicator.checkCanceled()
             Thread.sleep(WAIT_FOR_DOWNLOAD_MILLIS)
@@ -228,7 +230,7 @@ class SnykTaskQueueService(val project: Project) {
                     if (ossResult.isSuccessful()) {
                         scanPublisher?.scanningOssFinished(ossResult)
                     } else {
-                        scanPublisher?.scanningOssError(ossResult.getFirstError()!!)
+                        ossResult.getFirstError()?.let { scanPublisher?.scanningOssError(it) }
                     }
                 }
                 DaemonCodeAnalyzer.getInstance(project).restart()
@@ -279,12 +281,24 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun downloadLatestRelease() {
+    fun downloadLatestRelease(indicator: ProgressIndicator) {
+        // abort even before submitting a task
+        if (!pluginSettings().manageBinariesAutomatically) {
+            if (!isCliInstalled()) {
+                val msg =
+                    "The plugin cannot scan without Snyk CLI, but automatic download is disabled. " +
+                        "Please put a Snyk CLI executable in ${pluginSettings().cliPath} and retry."
+                SnykBalloonNotificationHelper.showError(msg, project)
+            }
+            indicator.cancel()
+            return
+        }
+        val cliDownloader = getSnykCliDownloaderService()
+
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI presence", true) {
             override fun run(indicator: ProgressIndicator) {
                 cliDownloadPublisher.checkCliExistsStarted()
                 if (project.isDisposed) return
-                val cliDownloader = getSnykCliDownloaderService()
 
                 if (!isCliInstalled()) {
                     cliDownloader.downloadLatestRelease(indicator, project)

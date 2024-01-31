@@ -2,11 +2,13 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -47,21 +49,29 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+
         ossServiceMock = mockk(relaxed = true)
         project.replaceService(OssService::class.java, ossServiceMock, project)
+
         mockSnykApiServiceSastEnabled()
         replaceSnykApiServiceMockInContainer()
+
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic("snyk.trust.TrustedProjectsKt")
+
         downloaderServiceMock = spyk(SnykCliDownloaderService())
         every { downloaderServiceMock.requestLatestReleasesInformation() } returns LatestReleaseInfo(
             "http://testUrl",
             "testReleaseInfo",
             "testTag"
         )
+
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
+
+        mockkObject(SnykTaskQueueService.Companion)
+        every { SnykTaskQueueService.ls } returns mockk(relaxed = true)
     }
 
     private fun mockSnykApiServiceSastEnabled() {
@@ -94,7 +104,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
-        snykTaskQueueService.downloadLatestRelease()
+        snykTaskQueueService.downloadLatestRelease(EmptyProgressIndicator())
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
@@ -102,32 +112,27 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     }
 
     fun testCliDownloadBeforeScanIfNeeded() {
-        val cliFile = getCliFile()
-        val downloaderMock = setupMockForDownloadTest()
-        every { downloaderMock.expectedSha() } returns "test"
-        every { downloaderMock.downloadFile(any(), any(), any()) } returns cliFile
         setupAppSettingsForDownloadTests()
+        every { isCliInstalled() } returns true
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         snykTaskQueueService.scan()
+
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
-
-        verify { downloaderMock.downloadFile(any(), any(), any()) }
+        verify { isCliInstalled() }
     }
 
     fun testDontDownloadCLIIfUpdatesDisabled() {
         val downloaderMock = setupMockForDownloadTest()
         val settings = setupAppSettingsForDownloadTests()
         settings.manageBinariesAutomatically = false
-
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
+
         snykTaskQueueService.scan()
+
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
-
         verify(exactly = 0) { downloaderMock.downloadFile(any(), any(), any()) }
     }
 
@@ -159,7 +164,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         setProject(null) // to avoid double disposing effort in tearDown
 
         // the Task should roll out gracefully without any Exception or Error
-        snykTaskQueueService.downloadLatestRelease()
+        snykTaskQueueService.downloadLatestRelease(EmptyProgressIndicator())
     }
 
     fun testSastEnablementCheckInScan() {

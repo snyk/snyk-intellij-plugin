@@ -62,6 +62,10 @@ class LanguageServerWrapperTest {
 
     @Test
     fun `sendReportAnalyticsCommand should send a reportAnalytics command to the language server`() {
+        cut.languageClient = mockk(relaxed = true)
+        val processMock = mockk<Process>(relaxed = true)
+        cut.process = processMock
+        every { processMock.info().startInstant().isPresent } returns true
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
