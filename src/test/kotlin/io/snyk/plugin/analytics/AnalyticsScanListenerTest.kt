@@ -30,7 +30,7 @@ class AnalyticsScanListenerTest {
     @Before
     fun setUp() {
         unmockkAll()
-        
+
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { pluginSettings() } returns settings
 
@@ -79,7 +79,7 @@ class AnalyticsScanListenerTest {
 
         assertEquals("analytics", scanDoneEvent.data.type)
         assertEquals("Scan done", scanDoneEvent.data.attributes.eventType)
-        assertEquals("Succeeded", scanDoneEvent.data.attributes.status)
+        assertEquals("Success", scanDoneEvent.data.attributes.status)
         assertEquals(settings.userAnonymousId, scanDoneEvent.data.attributes.deviceId)
 
         assertNotNull(scanDoneEvent.data.attributes.timestampFinished)
