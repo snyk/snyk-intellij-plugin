@@ -37,7 +37,6 @@ import snyk.oss.OssService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 
-@Suppress("FunctionName")
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     private lateinit var ossServiceMock: OssService
