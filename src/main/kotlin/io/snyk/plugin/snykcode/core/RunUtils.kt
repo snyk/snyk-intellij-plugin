@@ -8,8 +8,6 @@ import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
-import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.snykcode.SnykCodeResults
 import java.util.function.Consumer
 
@@ -64,7 +62,7 @@ class RunUtils private constructor() : RunUtilsBase(
                 AnalysisData.instance.getAnalysis(files).mapKeys { PDU.toSnykCodeFile(it.key) }
             )
         }
-        getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeFinished(scanResults)
+//        getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningSnykCodeFinished(scanResults)
     }
 
     private class MyBackgroundable(project: Project, title: String, private val consumer: Consumer<Any>) :

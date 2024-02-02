@@ -1,8 +1,9 @@
 package io.snyk.plugin.events
 
 import com.intellij.util.messages.Topic
-import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
+import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
@@ -17,7 +18,7 @@ interface SnykScanListener {
 
     fun scanningOssFinished(ossResult: OssResult)
 
-    fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?)
+    fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>)
 
     fun scanningIacFinished(iacResult: IacResult)
 

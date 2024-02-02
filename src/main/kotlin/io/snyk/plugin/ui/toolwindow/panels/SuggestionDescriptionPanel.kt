@@ -1,10 +1,6 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
-import ai.deepcode.javaclient.core.MyTextRange
-import ai.deepcode.javaclient.core.SuggestionForFile
-import ai.deepcode.javaclient.responses.ExampleCommitFix
 import com.intellij.icons.AllIcons
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
@@ -16,12 +12,10 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.isReportFalsePositivesEnabled
-import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.net.FalsePositiveContext
 import io.snyk.plugin.net.FalsePositivePayload
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
@@ -30,6 +24,8 @@ import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.FALSE_POSITIVE_REPORTED_TEXT
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
+import snyk.common.lsp.MarkerPosition
+import snyk.common.lsp.ScanIssue
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -42,24 +38,20 @@ import javax.swing.JTextArea
 import javax.swing.ScrollPaneConstants
 import javax.swing.event.HyperlinkEvent
 import kotlin.math.max
-import kotlin.math.min
 
 class SuggestionDescriptionPanel(
     private val snykCodeFile: SnykCodeFile,
-    private val suggestion: SuggestionForFile,
-    private val suggestionIndex: Int
-) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.getSeverityAsEnum()) {
+    private val issue: ScanIssue
+) : IssueDescriptionPanelBase(title = issue.title, severity = issue.getSeverityAsEnum()) {
     val project = snykCodeFile.project
-
-    private val suggestionRange: MyTextRange? = suggestion.ranges?.getOrNull(suggestionIndex)
 
     init {
         createUI()
     }
 
     override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
-        issueNaming = if (suggestion.categories.contains("Security")) "Vulnerability" else "Code Issue",
-        cwes = suggestion.cwe ?: emptyList()
+        issueNaming = if (issue.additionalData.isSecurityType) "Vulnerability" else "Code Issue",
+        cwes = issue.additionalData.cwe ?: emptyList()
     )
 
     override fun createMainBodyPanel(): Pair<JPanel, Int> {
@@ -90,7 +82,7 @@ class SuggestionDescriptionPanel(
         return panel
     }
 
-    private fun codeLine(range: MyTextRange, file: SnykCodeFile?): JTextArea {
+    private fun codeLine(range: MarkerPosition, file: SnykCodeFile?): JTextArea {
         val component = JTextArea(getLineOfCode(range, file))
         component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
         component.isEditable = false
@@ -114,7 +106,7 @@ class SuggestionDescriptionPanel(
         onClick: (HyperlinkEvent) -> Unit
     ): HyperlinkLabel {
         return HyperlinkLabel().apply {
-            this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
+            this.setTextWithHyperlink("$beforeLinkText<hyperlink>$linkText</hyperlink>$afterLinkText")
             this.toolTipText = toolTipText
             this.font = io.snyk.plugin.ui.getFont(-1, 14, customFont ?: font)
             addHyperlinkListener {
@@ -123,56 +115,36 @@ class SuggestionDescriptionPanel(
         }
     }
 
-    private fun getLineOfCode(range: MyTextRange, file: SnykCodeFile?): String {
-        if (file == null) return "<File Not Found>"
-        val document = PDU.toPsiFile(file)?.let { PsiDocumentManager.getInstance(file.project).getDocument(it) }
-            ?: return "<No Document Found>"
-        val chars = document.charsSequence
-        val startOffset = range.startOffset
-        val textLength = document.textLength
-
-        if (startOffset !in (0 until textLength)) return "<Wrong Pointer>"
-        val lineNumber = document.getLineNumber(startOffset)
-        var lineStartOffset = document.getLineStartOffset(lineNumber)
-
-        // skip all white space characters
-        while (lineStartOffset < textLength
-            && (chars[lineStartOffset] == '\t' || chars[lineStartOffset] == ' ')
-        ) {
-            lineStartOffset++
-        }
-        val lineEndOffset = document.getLineEndOffset(lineNumber)
-
-        val lineColumnPrefix = ""
-        val codeInLine = chars.subSequence(lineStartOffset, min(lineEndOffset, chars.length)).toString()
-
-        return lineColumnPrefix + codeInLine
+    private fun getLineOfCode(range: MarkerPosition, file: SnykCodeFile?): String {
+        return "to be added"
     }
 
     private fun dataFlowPanel(): JPanel? {
-        val markers = suggestionRange?.let { range ->
-            range.markers.values.flatten().distinctBy { it.startRow }
-        } ?: emptyList()
-
-        if (markers.isEmpty()) return null
-
-        val panel = JPanel()
-        panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, 5)
-
-        panel.add(
-            defaultFontLabel("Data Flow - ${markers.size} step${if (markers.size > 1) "s" else ""}", true),
-            baseGridConstraintsAnchorWest(0)
-        )
-
-        panel.add(
-            stepsPanel(markers),
-            baseGridConstraintsAnchorWest(1)
-        )
-
-        return panel
+        // FIXME
+//        val markers = issue.additionalData.markers?.let { marker ->
+//            marker.map { it.pos }.flatten().distinctBy { it.file + it.position.rows?.firstOrNull() }
+//        } ?: emptyList()
+//
+//        if (markers.isEmpty()) return null
+//
+//        val panel = JPanel()
+//        panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, 5)
+//
+//        panel.add(
+//            defaultFontLabel("Data Flow - ${markers.size} step${if (markers.size > 1) "s" else ""}", true),
+//            baseGridConstraintsAnchorWest(0)
+//        )
+//
+//        panel.add(
+//            stepsPanel(markers),
+//            baseGridConstraintsAnchorWest(1)
+//        )
+//
+//        return panel
+        return null
     }
 
-    private fun stepsPanel(markers: List<MyTextRange>): JPanel {
+    private fun stepsPanel(markers: List<MarkerPosition>): JPanel {
         val panel = JPanel()
         panel.layout = GridLayoutManager(markers.size, 1, Insets(0, 0, 0, 0), 0, 0)
         panel.background = UIUtil.getTextFieldBackground()
@@ -207,7 +179,7 @@ class SuggestionDescriptionPanel(
 
     private fun stepPanel(
         index: Int,
-        markerRange: MyTextRange,
+        markerRange: MarkerPosition,
         maxFilenameLength: Int,
         allStepPanels: MutableList<JPanel>
     ): JPanel {
@@ -219,7 +191,7 @@ class SuggestionDescriptionPanel(
 
         val fileName = snykCodeFile.virtualFile.name
 
-        val positionLinkText = "$fileName:${markerRange.startRow}".padEnd(maxFilenameLength + 5, ' ')
+        val positionLinkText = "$fileName:${markerRange.position.rows?.get(0)}".padEnd(maxFilenameLength + 5, ' ')
 
         val positionLabel = linkLabel(
             beforeLinkText = "$paddedStepNumber  ",
@@ -230,7 +202,7 @@ class SuggestionDescriptionPanel(
         ) {
             if (!snykCodeFile.virtualFile.isValid) return@linkLabel
 
-            navigateToSource(project, snykCodeFile.virtualFile, markerRange.startOffset, markerRange.endOffset)
+//            navigateToSource(project, snykCodeFile.virtualFile, markerRange.startOffset, markerRange.endOffset)
 
             allStepPanels.forEach {
                 it.background = UIUtil.getTextFieldBackground()
@@ -255,7 +227,7 @@ class SuggestionDescriptionPanel(
     }
 
     private fun fixExamplesPanel(): JPanel {
-        val fixes = suggestion.exampleCommitFixes
+        val fixes = issue.additionalData.exampleCommitFixes
         val examplesCount = fixes.size.coerceAtMost(3)
 
         val panel = JPanel()
@@ -268,7 +240,7 @@ class SuggestionDescriptionPanel(
 
         val labelText =
             if (examplesCount == 0) "No example fixes available."
-            else "This issue was fixed by ${suggestion.repoDatasetSize} projects. Here are $examplesCount example fixes."
+            else "This issue was fixed by ${issue.additionalData.repoDatasetSize} projects. Here are $examplesCount example fixes."
         panel.add(
             defaultFontLabel(labelText),
             baseGridConstraintsAnchorWest(1)
@@ -310,7 +282,7 @@ class SuggestionDescriptionPanel(
         return panel
     }
 
-    private fun diffPanel(exampleCommitFix: ExampleCommitFix, rowCount: Int): JComponent {
+    private fun diffPanel(exampleCommitFix: snyk.common.lsp.ExampleCommitFix, rowCount: Int): JComponent {
 
         fun shift(colorComponent: Int, d: Double): Int {
             val n = (colorComponent * d).toInt()
@@ -387,7 +359,7 @@ class SuggestionDescriptionPanel(
     }
 
     private fun getOverviewText(): String {
-        return suggestion.message
+        return issue.additionalData.message
     }
 
     override fun getBottomRightButtons(): List<JButton> = mutableListOf<JButton>()
@@ -407,14 +379,14 @@ class SuggestionDescriptionPanel(
                 if (dialog.showAndGet()) {
                     val payload = FalsePositivePayload(
                         topic = "False Positive",
-                        message = suggestion.message,
+                        message = issue.additionalData.message,
                         context = FalsePositiveContext(
-                            issueId = suggestion.id,
+                            issueId = issue.id,
                             userPublicId = getSnykApiService().userId ?: "",
-                            startLine = suggestionRange?.startRow ?: 1,
-                            endLine = suggestionRange?.endRow ?: 1,
+                            startLine = issue.range.start?.line ?: 1,
+                            endLine = issue.range.end?.line ?: 1,
                             primaryFilePath = snykCodeFile.virtualFile.path,
-                            vulnName = suggestion.rule,
+                            vulnName = issue.additionalData.rule,
                             fileContents = dialog.result
                         )
                     )
@@ -437,8 +409,8 @@ class SuggestionDescriptionPanel(
         }
 
     private fun getRelatedPsiFiles(): Set<PsiFile> {
-        val markersWithUniqFiles = suggestionRange?.let { range ->
-            range.markers.values.flatten().distinctBy { it.file }
+        val markersWithUniqFiles = issue.additionalData.markers?.flatMap { m ->
+            m.pos.distinctBy { it.file }
         }
         val filesFromMarkers: Set<SnykCodeFile> = markersWithUniqFiles
             ?.mapNotNull { PDU.instance.getFileByDeepcodedPath(it.file, project) }

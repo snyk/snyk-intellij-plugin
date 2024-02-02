@@ -2,10 +2,12 @@ package io.snyk.plugin.analytics
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
+import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
@@ -51,21 +53,18 @@ class AnalyticsScanListener(val project: Project) {
             getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
         }
 
-        override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
+        override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
             val duration = System.currentTimeMillis() - start
             val product = "Snyk Code"
-            val scanDoneEvent = if (snykCodeResults != null) {
-                getScanDoneEvent(
-                    duration,
-                    product,
-                    snykCodeResults.totalCriticalCount,
-                    snykCodeResults.totalErrorsCount,
-                    snykCodeResults.totalWarnsCount,
-                    snykCodeResults.totalInfosCount,
-                )
-            } else {
-                getScanDoneEvent(duration, product, 0, 0, 0, 0)
-            }
+            val issues = snykCodeResults.values.flatten()
+            val scanDoneEvent = getScanDoneEvent(
+                duration,
+                product,
+                issues.count { it.getSeverityAsEnum() == Severity.CRITICAL },
+                issues.count { it.getSeverityAsEnum() == Severity.HIGH },
+                issues.count { it.getSeverityAsEnum() == Severity.MEDIUM },
+                issues.count { it.getSeverityAsEnum() == Severity.LOW },
+            )
             getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
         }
 

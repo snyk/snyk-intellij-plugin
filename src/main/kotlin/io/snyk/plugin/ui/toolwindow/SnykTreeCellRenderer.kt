@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.toolwindow
 
-import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.icons.AllIcons
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.SimpleTextAttributes
@@ -8,9 +7,7 @@ import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
@@ -26,6 +23,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ui.ContainerImageTreeNode
@@ -89,22 +87,25 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
 
             is SuggestionTreeNode -> {
-                val (suggestion, index) = value.userObject as Pair<SuggestionForFile, Int>
-                nodeIcon = SnykIcons.getSeverityIcon(suggestion.getSeverityAsEnum())
-                val range = suggestion.ranges[index]
-                text = "line ${range.startRow}: ${
-                    if (suggestion.title.isNullOrEmpty()) suggestion.message else suggestion.title
+                val issue = value.userObject as ScanIssue
+                nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
+                val range = issue.range
+                text = "line ${range.start.line}: ${
+                    issue.title.ifEmpty { issue.additionalData.message }
                 }"
                 val parentFileNode = value.parent as SnykCodeFileTreeNode
-                val file = (parentFileNode.userObject as Pair<SnykCodeFile, ProductType>).first
-                if (!AnalysisData.instance.isFileInCache(file)) {
+                val entry =
+                    (parentFileNode.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>).first
+                val cachedIssues = getSnykCachedResults(entry.key.project)?.currentSnykCodeResults
+                if (cachedIssues?.values?.flatten()?.contains(issue) == false) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
 
             is SnykCodeFileTreeNode -> {
-                val (file, productType) = value.userObject as Pair<SnykCodeFile, ProductType>
+                val (entry, productType) = value.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>
+                val file = entry.key
                 val relativePath = file.relativePath
                 toolTipText =
                     buildString {
@@ -121,9 +122,10 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 }
 
                 nodeIcon = file.icon
-                if (!AnalysisData.instance.isFileInCache(file)) {
+                val cachedIssues = getSnykCachedResults(file.project)?.currentSnykCodeResults
+                    ?.filter { it.key.virtualFile == file.virtualFile } ?: emptyMap()
+                if (cachedIssues.isEmpty()) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    text += OBSOLETE_SUFFIX
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }

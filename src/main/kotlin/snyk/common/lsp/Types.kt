@@ -3,6 +3,13 @@
 package snyk.common.lsp
 
 import com.google.gson.annotations.SerializedName
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.VirtualFile
+import io.snyk.plugin.Severity
+import io.snyk.plugin.getDocument
+import io.snyk.plugin.toVirtualFile
+import org.eclipse.lsp4j.Range
 
 // Define the SnykScanParams data class
 data class SnykScanParams(
@@ -18,8 +25,75 @@ data class ScanIssue(
     val title: String,
     val severity: String,
     val filePath: String,
+    val range: Range,
     val additionalData: IssueData
-)
+) : Comparable<ScanIssue> {
+    var textRange: TextRange? = null
+        get() {
+            return if (startOffset == null || endOffset == null) {
+                return null
+            } else {
+                field = TextRange(startOffset!!, endOffset!!)
+                field
+            }
+        }
+    var virtualFile: VirtualFile?
+        get() {
+            return if (field == null) {
+                field = filePath.toVirtualFile()
+                field
+            } else field
+
+        }
+
+    private var document: Document?
+        get() {
+            return if (field == null) {
+                field = virtualFile?.getDocument()
+                field
+            } else field
+        }
+
+    private var startOffset: Int?
+        get() {
+            return if (field == null) {
+                field = document?.getLineStartOffset(range.start.line)?.plus(range.start.character)
+                field
+            } else field
+        }
+
+    private var endOffset: Int?
+        get() {
+            return if (field == null) {
+                field = document?.getLineStartOffset(range.end.line)?.plus(range.end.character)
+                field
+            } else field
+        }
+
+    init {
+        virtualFile = filePath.toVirtualFile()
+        document = virtualFile?.getDocument()
+        startOffset = document?.getLineStartOffset(range.start.line)?.plus(range.start.character)
+        endOffset = document?.getLineStartOffset(range.end.line)?.plus(range.end.character)
+    }
+
+    fun getSeverityAsEnum(): Severity {
+        return when (severity) {
+            "critical" -> Severity.CRITICAL
+            "high" -> Severity.HIGH
+            "medium" -> Severity.MEDIUM
+            "low" -> Severity.LOW
+            else -> Severity.UNKNOWN
+        }
+    }
+
+    override fun compareTo(other: ScanIssue): Int {
+        this.filePath.compareTo(other.filePath).let { if (it != 0) it else 0 }
+        this.range.start.line.compareTo(other.range.start.line).let { if (it != 0) it else 0 }
+        this.range.end.line.compareTo(other.range.end.line).let { if (it != 0) it else 0 }
+        return 0
+    }
+}
 
 data class ExampleCommitFix(
     @SerializedName("commitURL") val commitURL: String,

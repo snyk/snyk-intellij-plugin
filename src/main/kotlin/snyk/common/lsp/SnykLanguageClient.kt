@@ -1,17 +1,14 @@
 package snyk.common.lsp
 
 import ai.deepcode.javaclient.core.MyTextRange
-import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.StandardFileSystems
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.eclipse.lsp4j.ConfigurationParams
@@ -25,10 +22,8 @@ import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
-import org.jetbrains.kotlin.utils.addToStdlib.ifTrue
 import snyk.iac.IacResult
 import snyk.oss.OssResult
-import java.io.FileNotFoundException
 import java.util.concurrent.CompletableFuture
 
 class SnykLanguageClient(val project: Project) : LanguageClient {
@@ -96,37 +91,14 @@ class SnykLanguageClient(val project: Project) : LanguageClient {
         TODO("Not yet implemented")
     }
 
-    private fun getSnykCodeResult(snykScan: SnykScanParams): SnykCodeResults? {
+    private fun getSnykCodeResult(snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
-        val file2suggestions = mutableMapOf<SnykCodeFile, List<SuggestionForFile>>()
-        snykScan.issues.groupBy { it.filePath }.forEach { (filePath, issues) ->
-            val virtualFile =
-                StandardFileSystems.local().refreshAndFindFileByPath(filePath) ?: throw FileNotFoundException(filePath)
-            val suggestionForFiles = issues.map { issue ->
-                SuggestionForFile(
-                    issue.id,
-                    issue.additionalData.rule,
-                    issue.additionalData.message,
-                    issue.title,
-                    issue.additionalData.text,
-                    when (issue.severity) {
-                        "high" -> 0
-                        "medium" -> 1
-                        "low" -> 2
-                        else -> -1
-                    },
-                    issue.additionalData.repoDatasetSize, // is this important?
-                    getExampleCommitFixDescriptions(issue),
-                    getExampleCommitFixes(issue),
-                    getRanges(issue),
-                    issue.additionalData.isSecurityType.ifTrue { mutableListOf("Security") } ?: mutableListOf(""),
-                    emptyList(),
-                    getCWEs(issue)
-                )
-            }.toMutableList()
-            file2suggestions[SnykCodeFile(project, virtualFile)] = suggestionForFiles
-        }
-        return SnykCodeResults(file2suggestions)
+        return snykScan.issues
+            .groupBy { it.virtualFile }
+            .map { (file, issues) -> SnykCodeFile(project, file!!) to issues.sorted() }
+            .filter { it.second.isNotEmpty() }
+            .toMap()
+            .toSortedMap { o1, o2 -> o1.virtualFile.path.compareTo(o2.virtualFile.path) }
     }
 
     private fun getOssResult(snykScan: SnykScanParams): OssResult {

@@ -294,7 +294,6 @@ class ScanTypesPanel(
                     if (showAlert) " (you can enable it later in the Settings)" else ""
         } else {
             codeAlertPanel.isVisible = showAlert
-            // todo: change to setTextWithHyperlink() after move to sinceId >= 211
             snykCodeAlertHyperLinkLabel.setTextWithHyperlink("$message<hyperlink>$linkText</hyperlink>")
             snykCodeAlertHyperLinkLabel.setHyperlinkTarget(url)
             if (runOnClick == null) {
