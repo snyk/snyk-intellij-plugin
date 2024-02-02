@@ -204,14 +204,24 @@ class CustomEndpointsTest {
     }
 
     @Test
-    fun `isFedramp true for the right URI`() {
-        val uri = URI("https://app.fedramp.snykgov.io")
-        assertTrue(uri.isFedramp())
+    fun `isAnalyticsPermitted false for URIs not allowed`() {
+        var uri = URI("https://app.fedramp.snykgov.io")
+        assertFalse(uri.isAnalyticsPermitted())
+        uri = URI("https://app.eu.snyk.io/api")
+        assertFalse(uri.isAnalyticsPermitted())
+        uri = URI("https://app.au.snyk.io/api")
+        assertFalse(uri.isAnalyticsPermitted())
     }
 
     @Test
-    fun `isFedramp false for the right URI`() {
-        val uri = URI("https://app.fedddramp.snykagov.io")
-        assertFalse(uri.isFedramp())
+    fun `isAnalyticsPermitted true for the right URIs`() {
+        var uri = URI("https://app.snyk.io")
+        assertTrue(uri.isAnalyticsPermitted())
+        uri = URI("https://app.us.snyk.io")
+        assertTrue(uri.isAnalyticsPermitted())
+        uri = URI("https://app.snyk.io/api")
+        assertTrue(uri.isAnalyticsPermitted())
+        uri = URI("https://app.snyk.io/v1")
+        assertTrue(uri.isAnalyticsPermitted())
     }
 }

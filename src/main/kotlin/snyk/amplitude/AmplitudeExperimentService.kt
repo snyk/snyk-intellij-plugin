@@ -9,7 +9,7 @@ import snyk.amplitude.api.AmplitudeExperimentApiClient
 import snyk.amplitude.api.AmplitudeExperimentApiClient.Defaults.FALLBACK_VARIANT
 import snyk.amplitude.api.ExperimentUser
 import snyk.amplitude.api.Variant
-import snyk.common.isFedramp
+import snyk.common.isAnalyticsPermitted
 import java.io.IOException
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
@@ -31,7 +31,7 @@ class AmplitudeExperimentService : Disposable {
             prop.load(javaClass.classLoader.getResourceAsStream("application.properties"))
             val apiKey = prop.getProperty("amplitude.experiment.api-key") ?: ""
             val settings = pluginSettings()
-            if (settings.usageAnalyticsEnabled && !isFedramp()) {
+            if (settings.usageAnalyticsEnabled && !isAnalyticsPermitted()) {
                 apiClient = AmplitudeExperimentApiClient.create(apiKey = apiKey)
             } else {
                 LOG.debug("Amplitude experiment disabled.")

@@ -37,7 +37,7 @@ object EnvironmentHelper {
 
         environment["SNYK_API"] = endpoint
 
-        if (!pluginSettings().usageAnalyticsEnabled || endpointURI.isFedramp()) {
+        if (!pluginSettings().usageAnalyticsEnabled || !endpointURI.isAnalyticsPermitted()) {
             environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"
         }
 
