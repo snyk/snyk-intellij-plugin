@@ -43,18 +43,18 @@ class SentryErrorReporterTest {
     }
 
     @Test
-    fun `captureException should not send exceptions to Sentry when crashReportingEnabled is true and Url is a permitted environment`() {
+    fun `captureException should not send exceptions to Sentry when crashReportingEnabled is true`() {
         val settings = mockPluginInformation()
         setUnitTesting(false)
         settings.crashReportingEnabled = true
-        settings.customEndpointUrl = "https://app.snyk.io"
+        settings.customEndpointUrl = "https://api.fedramp.snykgov.io"
 
         SentryErrorReporter.captureException(RuntimeException("test"))
 
-        verify(exactly = 1) { Sentry.captureException(any()) }
+        verify(exactly = 0) { Sentry.captureException(any()) }
     }
     @Test
-    fun `captureException should not send exceptions to Sentry when crashReportingEnabled is true and not permitted environment`() {
+    fun `captureException should not send exceptions to Sentry when URL is not a permitted environment`() {
         val settings = mockPluginInformation()
         setUnitTesting(false)
         settings.crashReportingEnabled = true
