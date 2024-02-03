@@ -174,12 +174,14 @@ class CustomEndpointsTest {
 
     @Test
     fun `api snyk path needs token`() {
-        var uri = "https://api.snyk.io/v1"
-        assertTrue(needsSnykToken(uri))
-        uri = "https://app.eu.snyk.io/api"
-        assertTrue(needsSnykToken(uri))
-        uri = "https://app.au.snyk.io/api"
-        assertTrue(needsSnykToken(uri))
+        val uris = listOf(
+            "https://api.snyk.io/v1",
+            "https://app.eu.snyk.io/api",
+            "https://app.au.snyk.io/api"
+        )
+        uris.forEach { uri ->
+            assertTrue(needsSnykToken(uri))
+        }
     }
 
     @Test
@@ -205,23 +207,27 @@ class CustomEndpointsTest {
 
     @Test
     fun `isAnalyticsPermitted false for URIs not allowed`() {
-        var uri = URI("https://app.fedramp.snykgov.io")
-        assertFalse(uri.isAnalyticsPermitted())
-        uri = URI("https://app.eu.snyk.io/api")
-        assertFalse(uri.isAnalyticsPermitted())
-        uri = URI("https://app.au.snyk.io/api")
-        assertFalse(uri.isAnalyticsPermitted())
+        val uris = listOf(
+            "https://app.fedramp.snykgov.io",
+            "https://app.eu.snyk.io/api",
+            "https://app.au.snyk.io/api"
+        )
+        uris.forEach { uri ->
+            assertFalse(URI(uri).isAnalyticsPermitted())
+        }
     }
 
     @Test
     fun `isAnalyticsPermitted true for the right URIs`() {
-        var uri = URI("https://app.snyk.io")
-        assertTrue(uri.isAnalyticsPermitted())
-        uri = URI("https://app.us.snyk.io")
-        assertTrue(uri.isAnalyticsPermitted())
-        uri = URI("https://app.snyk.io/api")
-        assertTrue(uri.isAnalyticsPermitted())
-        uri = URI("https://app.snyk.io/v1")
-        assertTrue(uri.isAnalyticsPermitted())
+        val uris = listOf(
+            "https://app.snyk.io",
+            "https://app.us.snyk.io",
+            "https://app.snyk.io/api",
+            "https://app.snyk.io/v1"
+        )
+
+        uris.forEach { uri ->
+            assertTrue(URI(uri).isAnalyticsPermitted())
+        }
     }
 }
