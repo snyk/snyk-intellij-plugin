@@ -11,11 +11,14 @@ import io.sentry.Sentry
 import io.sentry.protocol.SentryId
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import junit.framework.TestCase
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import snyk.PluginInformation
+import snyk.common.isAnalyticsPermitted
 import snyk.pluginInfo
+import java.net.URI
 
 class SentryErrorReporterTest {
     @Before
@@ -43,26 +46,35 @@ class SentryErrorReporterTest {
     }
 
     @Test
-    fun `captureException should not send exceptions to Sentry when crashReportingEnabled is true`() {
+    fun `captureException should only report if permitted env`() {
         val settings = mockPluginInformation()
         setUnitTesting(false)
         settings.crashReportingEnabled = true
-        settings.customEndpointUrl = "https://api.fedramp.snykgov.io"
 
-        SentryErrorReporter.captureException(RuntimeException("test"))
+        val uris = listOf(
+            "https://app.fedramp.snykgov.io",
+            "https://app.eu.snyk.io/api",
+            "https://app.au.snyk.io/api"
+        )
 
-        verify(exactly = 0) { Sentry.captureException(any()) }
+        uris.forEach { uri ->
+            settings.customEndpointUrl = uri
+
+            SentryErrorReporter.captureException(RuntimeException("test"))
+
+            verify(exactly = 0) { Sentry.captureException(any()) }
+        }
     }
     @Test
-    fun `captureException should not send exceptions to Sentry when URL is not a permitted environment`() {
+    fun `captureException should send exceptions to Sentry when URL is a permitted environment`() {
         val settings = mockPluginInformation()
         setUnitTesting(false)
         settings.crashReportingEnabled = true
-        settings.customEndpointUrl = "https://app.eu.snyk.io"
+        settings.customEndpointUrl = "https://app.snyk.io"
 
         SentryErrorReporter.captureException(RuntimeException("test"))
 
-        verify(exactly = 0) { Sentry.captureException(any()) }
+        verify(exactly = 1) { Sentry.captureException(any()) }
     }
 
     @Test

@@ -220,6 +220,7 @@ class CustomEndpointsTest {
     @Test
     fun `isAnalyticsPermitted true for the right URIs`() {
         val uris = listOf(
+            "https://snyk.io/api",
             "https://app.snyk.io",
             "https://app.us.snyk.io",
             "https://app.snyk.io/api",
