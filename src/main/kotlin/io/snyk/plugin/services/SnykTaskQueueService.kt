@@ -290,7 +290,6 @@ class SnykTaskQueueService(val project: Project) {
                         "Please put a Snyk CLI executable in ${pluginSettings().cliPath} and retry."
                 SnykBalloonNotificationHelper.showError(msg, project)
             }
-            indicator.cancel()
             return
         }
         val cliDownloader = getSnykCliDownloaderService()

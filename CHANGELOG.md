@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.7.2]
+### Fixed
+- manually downloaded binaries were causing problems initiating scans
+
 ## [2.7.1]
 ### Fixed
 - only start up language server after CLI update (fixes lock error on Windows)
