@@ -21,7 +21,7 @@ import snyk.analytics.QuickFixIsDisplayed
 import snyk.analytics.QuickFixIsTriggered
 import snyk.analytics.WelcomeIsViewed
 import snyk.common.SnykError
-import snyk.common.isFedramp
+import snyk.common.isAnalyticsPermitted
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
@@ -146,7 +146,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun obtainUserId(token: String?): String {
-        if (!settings.usageAnalyticsEnabled || isFedramp()) {
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted()) {
             log.warn("Token is null or empty, or analytics disabled. User public id will not be obtained.")
             return ""
         }
@@ -164,7 +164,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun identify() {
-        if (!settings.usageAnalyticsEnabled || isFedramp() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted() || userId.isBlank()) {
             return
         }
 
@@ -174,7 +174,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logWelcomeIsViewed(event: WelcomeIsViewed) {
-        if (!settings.usageAnalyticsEnabled || isFedramp()) return
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted()) return
 
         catchAll(log, "welcomeIsViewed") {
             itly.logWelcomeIsViewed(userId, event)
@@ -182,7 +182,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logAnalysisIsTriggered(event: AnalysisIsTriggered) {
-        if (!settings.usageAnalyticsEnabled || isFedramp() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted() || userId.isBlank()) {
             return
         }
 
@@ -192,7 +192,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     private fun logAnalysisIsReady(event: AnalysisIsReady) {
-        if (!settings.usageAnalyticsEnabled || isFedramp() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted() || userId.isBlank()) {
             return
         }
 
@@ -202,7 +202,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logIssueInTreeIsClicked(event: IssueInTreeIsClicked) {
-        if (!settings.usageAnalyticsEnabled || isFedramp() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted() || userId.isBlank()) {
             return
         }
 
@@ -212,7 +212,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logHealthScoreIsClicked(event: HealthScoreIsClicked) {
-        if (!settings.usageAnalyticsEnabled || isFedramp() || userId.isBlank()) {
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted() || userId.isBlank()) {
             return
         }
 
@@ -222,7 +222,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logPluginIsInstalled(event: PluginIsInstalled) {
-        if (!settings.usageAnalyticsEnabled || isFedramp()) return
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted()) return
 
         catchAll(log, "pluginIsInstalled") {
             itly.logPluginIsInstalled(userId, event)
@@ -230,7 +230,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logPluginIsUninstalled(event: PluginIsUninstalled) {
-        if (!settings.usageAnalyticsEnabled || isFedramp()) return
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted()) return
 
         catchAll(log, "pluginIsUninstalled") {
             itly.logPluginIsUninstalled(userId, event)
@@ -238,7 +238,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logAuthenticateButtonIsClicked(event: AuthenticateButtonIsClicked) {
-        if (!settings.usageAnalyticsEnabled || isFedramp()) return
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted()) return
 
         catchAll(log, "authenticateButtonIsClicked") {
             itly.logAuthenticateButtonIsClicked(userId, event)
@@ -246,7 +246,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logQuickFixIsDisplayed(event: QuickFixIsDisplayed) {
-        if (!settings.usageAnalyticsEnabled || isFedramp()) return
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted()) return
 
         catchAll(log, "quickFixIsDisplayed") {
             itly.logQuickFixIsDisplayed(userId, event)
@@ -254,7 +254,7 @@ class SnykAnalyticsService : Disposable {
     }
 
     fun logQuickFixIsTriggered(event: QuickFixIsTriggered) {
-        if (!settings.usageAnalyticsEnabled || isFedramp()) return
+        if (!settings.usageAnalyticsEnabled || !isAnalyticsPermitted()) return
 
         catchAll(log, "quickFixIsTriggered") {
             itly.logQuickFixIsTriggered(userId, event)

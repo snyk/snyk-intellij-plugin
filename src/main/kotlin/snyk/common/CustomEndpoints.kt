@@ -126,13 +126,14 @@ fun URI.isOauth() = isSnykGov()
 
 fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
 
-fun URI.isFedramp() = isSnykGov()
+fun URI.isAnalyticsPermitted() = host != null &&
+    (host.lowercase() == "app.snyk.io" || host.lowercase() == "app.us.snyk.io" || host.lowercase() == "snyk.io")
 
-fun isFedramp(): Boolean {
+fun isAnalyticsPermitted(): Boolean {
     val settings = pluginSettings()
     return settings.customEndpointUrl
         ?.let { URI(it) }
-        ?.isFedramp() ?: false
+        ?.isAnalyticsPermitted() ?: true
 }
 
 fun URI.isLocalCodeEngine() = pluginSettings().localCodeEngineEnabled == true
