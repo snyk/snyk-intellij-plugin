@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.7.3]
+### Fixed
+-  only send analytics when connected to an MT US environment
+
 ## [2.7.2]
 ### Fixed
 - manually downloaded binaries were causing problems initiating scans
