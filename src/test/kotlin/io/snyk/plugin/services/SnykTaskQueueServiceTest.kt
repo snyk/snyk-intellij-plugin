@@ -128,6 +128,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val settings = setupAppSettingsForDownloadTests()
         settings.manageBinariesAutomatically = false
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        every { isCliInstalled() } returns true
 
         snykTaskQueueService.scan()
 

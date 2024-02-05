@@ -81,12 +81,12 @@ class SnykPostStartupActivity : ProjectActivity {
         AnnotatorCommon.initRefreshing(project)
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
-            getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded(EmptyProgressIndicator())
             try {
+                getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded(EmptyProgressIndicator())
                 getSnykTaskQueueService(project)?.connectProjectToLanguageServer(project)
                 getAnalyticsScanListener(project)?.initScanListener()
             } catch (e: Exception) {
-                Logger.getInstance(SnykPostStartupActivity::class.java).error(e)
+                Logger.getInstance(SnykPostStartupActivity::class.java).warn(e)
             }
         }
 
