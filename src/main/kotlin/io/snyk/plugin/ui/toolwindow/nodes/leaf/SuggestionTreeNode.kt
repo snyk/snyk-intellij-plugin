@@ -20,6 +20,7 @@ class SuggestionTreeNode(
     override val navigateToSource: () -> Unit
 ) : DefaultMutableTreeNode(Pair(suggestion, rangeIndex)), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
+    @Suppress("UNCHECKED_CAST")
     override fun getDescriptionPanel(logEventNeeded: Boolean): IssueDescriptionPanelBase {
         if (logEventNeeded) getSnykAnalyticsService().logIssueInTreeIsClicked(
             IssueInTreeIsClicked.builder()

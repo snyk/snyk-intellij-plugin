@@ -7,11 +7,10 @@ import kotlin.reflect.cast
 
 object UIComponentFinder {
 
-    @OptIn(ExperimentalStdlibApi::class)
     fun <T : Component> getComponentByName(parent: Container, clazz: KClass<T>, name: String? = null): T? =
         getComponentByCondition(parent, clazz) { name == null || name == it.name }
 
-    @OptIn(ExperimentalStdlibApi::class)
+    @Suppress("UNCHECKED_CAST")
     fun <T : Component> getComponentByCondition(parent: Container, clazz: KClass<T>, condition: (T) -> Boolean): T? {
         val components = parent.components
         var found: T? = null
