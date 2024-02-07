@@ -23,13 +23,19 @@ import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 private const val DEFAULT_SLEEP_TIME = 100L
 private const val INITIALIZATION_TIMEOUT = 20L
 
 @Suppress("TooGenericExceptionCaught")
-class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePath) {
+class LanguageServerWrapper(
+    private val lsPath: String = getCliFile().absolutePath,
+    val executorService: ExecutorService = Executors.newCachedThreadPool(),
+) {
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
 
@@ -56,8 +62,12 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
 
     var isInitializing: Boolean = false
     val isInitialized: Boolean
-        get() = ::languageClient.isInitialized && ::languageServer.isInitialized &&
-            ::process.isInitialized && process.info().startInstant().isPresent
+        get() = ::languageClient.isInitialized &&
+            ::languageServer.isInitialized &&
+            ::process.isInitialized &&
+            process.info()
+                .startInstant().isPresent &&
+            process.isAlive
 
     @OptIn(DelicateCoroutinesApi::class)
     internal fun initialize() {
@@ -89,6 +99,12 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
         }
     }
 
+    fun shutdown(): Future<*> {
+        return executorService.submit {
+            process.destroyForcibly()
+        }
+    }
+
     private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
         val workspaceFolders = mutableSetOf<WorkspaceFolder>()
         ProjectManager.getInstance().openProjects.forEach { project ->
@@ -98,11 +114,8 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
     }
 
     fun getWorkspaceFolders(project: Project) =
-        ProjectRootManager.getInstance(project).contentRoots
-            .filter { it.exists() }
-            .filter { it.isDirectory }
-            .mapNotNull { WorkspaceFolder(it.url, it.name) }
-            .toSet()
+        ProjectRootManager.getInstance(project).contentRoots.filter { it.exists() }.filter { it.isDirectory }
+            .mapNotNull { WorkspaceFolder(it.url, it.name) }.toSet()
 
     fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()
@@ -167,5 +180,10 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
                 low = ps.lowSeverityEnabled
             ),
         )
+    }
+
+    companion object {
+        private val INSTANCE = LanguageServerWrapper(executorService = Executors.newCachedThreadPool())
+        fun getInstance() = INSTANCE
     }
 }

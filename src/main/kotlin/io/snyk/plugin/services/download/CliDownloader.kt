@@ -40,7 +40,7 @@ class CliDownloader {
 
     fun downloadFile(cliFile: File, expectedSha: String, indicator: ProgressIndicator): File {
         indicator.checkCanceled()
-        val downloadFile = File.createTempFile(cliFile.name, ".download", cliFile.parentFile)
+        val downloadFile = File.createTempFile(cliFile.name, ".download", null)
         try {
             downloadFile.deleteOnExit()
 
@@ -52,6 +52,7 @@ class CliDownloader {
 
             indicator.checkCanceled()
             if (cliFile.exists()) {
+
                 cliFile.delete()
             }
             try {

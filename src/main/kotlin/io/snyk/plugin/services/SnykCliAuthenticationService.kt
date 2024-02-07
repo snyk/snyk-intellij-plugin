@@ -55,7 +55,7 @@ class SnykCliAuthenticationService(val project: Project) {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
                 val currentIndicator = ProgressManager.getInstance().progressIndicator
-                getSnykTaskQueueService(project)?.downloadLatestRelease(currentIndicator)
+                getSnykTaskQueueService(project)?.downloadLatestRelease()
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
             }

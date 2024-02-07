@@ -76,12 +76,13 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun connectProjectToLanguageServer(project: Project) {
-        synchronized(ls) {
-            if (!ls.isInitialized && !ls.isInitializing) {
-                ls.initialize()
+        synchronized(LanguageServerWrapper) {
+            val languageServerWrapper = LanguageServerWrapper.getInstance()
+            if (!languageServerWrapper.isInitialized && !languageServerWrapper.isInitializing) {
+                languageServerWrapper.initialize()
             }
+            languageServerWrapper.updateWorkspaceFolders(languageServerWrapper.getWorkspaceFolders(project), emptySet())
         }
-        ls.updateWorkspaceFolders(ls.getWorkspaceFolders(project), emptySet())
     }
 
     fun scan() {
@@ -117,7 +118,7 @@ class SnykTaskQueueService(val project: Project) {
 
     fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
         indicator.text = "Snyk waits for CLI to be downloaded..."
-        downloadLatestRelease(indicator)
+        downloadLatestRelease()
         do {
             indicator.checkCanceled()
             Thread.sleep(WAIT_FOR_DOWNLOAD_MILLIS)
@@ -281,7 +282,7 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun downloadLatestRelease(indicator: ProgressIndicator) {
+    fun downloadLatestRelease() {
         // abort even before submitting a task
         if (!pluginSettings().manageBinariesAutomatically) {
             if (!isCliInstalled()) {
@@ -327,6 +328,5 @@ class SnykTaskQueueService(val project: Project) {
 
     companion object {
         private const val WAIT_FOR_DOWNLOAD_MILLIS = 1000L
-        val ls = LanguageServerWrapper()
     }
 }
