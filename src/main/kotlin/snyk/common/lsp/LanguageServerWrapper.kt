@@ -183,7 +183,7 @@ class LanguageServerWrapper(
     }
 
     companion object {
-        private val INSTANCE = LanguageServerWrapper(executorService = Executors.newCachedThreadPool())
-        fun getInstance() = INSTANCE
+        private var INSTANCE: LanguageServerWrapper? = null
+        fun getInstance() = INSTANCE ?: LanguageServerWrapper().also { INSTANCE = it }
     }
 }
