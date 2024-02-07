@@ -81,7 +81,7 @@ class SnykTaskQueueService(val project: Project) {
                 ls.initialize()
             }
         }
-        ls.updateWorkspaceFolders(project, ls.getWorkspaceFolders(project), emptySet())
+        ls.updateWorkspaceFolders(ls.getWorkspaceFolders(project), emptySet())
     }
 
     fun scan() {

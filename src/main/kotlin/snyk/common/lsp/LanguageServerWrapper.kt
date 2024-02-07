@@ -6,7 +6,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectRootManager
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.snykcode.core.RunUtils
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -117,19 +116,14 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
         languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
     }
 
-    fun updateWorkspaceFolders(project: Project, added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
-        RunUtils.instance.runInBackground(
-            project,
-            "Updating workspace folders for project: ${project.name}"
-        ) {
-            try {
-                ensureLanguageServerInitialized()
-                val params = DidChangeWorkspaceFoldersParams()
-                params.event = WorkspaceFoldersChangeEvent(added.toList(), removed.toList())
-                languageServer.workspaceService.didChangeWorkspaceFolders(params)
-            } catch (e: Exception) {
-                logger.error(e)
-            }
+    fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
+        try {
+            ensureLanguageServerInitialized()
+            val params = DidChangeWorkspaceFoldersParams()
+            params.event = WorkspaceFoldersChangeEvent(added.toList(), removed.toList())
+            languageServer.workspaceService.didChangeWorkspaceFolders(params)
+        } catch (e: Exception) {
+            logger.error(e)
         }
     }
 
