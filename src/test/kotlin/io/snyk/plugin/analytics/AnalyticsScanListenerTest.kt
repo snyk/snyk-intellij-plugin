@@ -12,7 +12,6 @@ import io.snyk.plugin.getArch
 import io.snyk.plugin.getOS
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.SnykTaskQueueService
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.junit.After
@@ -34,8 +33,8 @@ class AnalyticsScanListenerTest {
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { pluginSettings() } returns settings
 
-        mockkObject(SnykTaskQueueService.Companion)
-        every { SnykTaskQueueService.ls } returns languageServerWrapper
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance() } returns languageServerWrapper
         justRun { languageServerWrapper.sendReportAnalyticsCommand(any()) }
 
         mockkStatic("snyk.PluginInformationKt")

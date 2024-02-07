@@ -15,6 +15,7 @@ import org.junit.Test
 import snyk.common.UIComponentFinder
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.awt.event.ActionEvent
 import javax.swing.JButton
 import javax.swing.JLabel
 
@@ -28,7 +29,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
         super.setUp()
         unmockkAll()
         mockkStatic("snyk.trust.TrustedProjectsKt")
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
         val application = ApplicationManager.getApplication()
         application.replaceService(SnykAnalyticsService::class.java, analyticsService, application)
         application.replaceService(WorkspaceTrustService::class.java, workspaceTrustServiceMock, application)
@@ -80,16 +81,17 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
 
     @Test
     fun `should send tracking to amplitude on authenticate button press`() {
-
-        every { cliAuthenticationService.authenticate() } returns ""
+        val event = mockk<ActionEvent>()
 
         val cut = SnykAuthPanel(project)
         val authenticateButton = UIComponentFinder.getComponentByCondition(cut, JButton::class) {
             it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT
         }
+        every { event.source } returns authenticateButton
+        every { cliAuthenticationService.authenticate() } returns ""
         assertNotNull(authenticateButton)
 
-        authenticateButton!!.action.actionPerformed(mockk())
+        authenticateButton!!.action.actionPerformed(event)
 
         verify { analyticsService.logAuthenticateButtonIsClicked(any()) }
     }

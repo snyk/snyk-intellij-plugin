@@ -11,6 +11,7 @@ import io.mockk.mockkObject
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.services.download.HttpRequestHelper
+import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.nio.file.Path
 
@@ -42,6 +43,7 @@ fun resetSettings(project: Project?) {
         SnykProjectSettingsStateService(),
         project
     )
+    LanguageServerWrapper.getInstance().shutdown()
 }
 
 /** low level avoiding download the CLI file */
