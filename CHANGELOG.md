@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.7.4]
+### Fixed
+- move all clean-up tasks on project close to a background task
+
 ## [2.7.3]
 ### Fixed
 -  only send analytics when connected to an MT US environment
