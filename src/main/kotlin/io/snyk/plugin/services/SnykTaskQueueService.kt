@@ -34,7 +34,6 @@ import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.nio.file.Paths
 
 @Service
 class SnykTaskQueueService(val project: Project) {
@@ -88,10 +87,7 @@ class SnykTaskQueueService(val project: Project) {
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
-                // FIXME: this should be using content roots instead of basePath
-                project.basePath?.let {
-                    if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project, Paths.get(it))) return
-                }
+                if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return
 
                 ApplicationManager.getApplication().invokeAndWait {
                     FileDocumentManager.getInstance().saveAllDocuments()

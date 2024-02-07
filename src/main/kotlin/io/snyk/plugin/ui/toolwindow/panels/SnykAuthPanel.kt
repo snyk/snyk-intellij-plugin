@@ -4,6 +4,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.runBackgroundableTask
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
@@ -14,6 +15,7 @@ import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getAmplitudeExperimentService
+import io.snyk.plugin.getContentRoots
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
@@ -34,7 +36,6 @@ import snyk.analytics.AuthenticateButtonIsClicked.Ide
 import snyk.analytics.AuthenticateButtonIsClicked.builder
 import snyk.trust.WorkspaceTrustService
 import java.awt.event.ActionEvent
-import java.nio.file.Paths
 import javax.swing.AbstractAction
 import javax.swing.JButton
 import javax.swing.JLabel
@@ -46,31 +47,41 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
         name = "authPanel"
         val authButton = JButton(object : AbstractAction(TRUST_AND_SCAN_BUTTON_TEXT) {
             override fun actionPerformed(e: ActionEvent?) {
-                val analytics = getSnykAnalyticsService()
-                analytics.logAuthenticateButtonIsClicked(authenticateEvent())
-                getSnykToolWindowPanel(project)?.cleanUiAndCaches()
+                isEnabled = false
+                val waitingMessage = "Waiting for indexing to finish..."
+                val jButton = e?.source as JButton
+                jButton.text = waitingMessage
+                DumbService.getInstance(project).runWhenSmart {
+                    val analytics = getSnykAnalyticsService()
+                    analytics.logAuthenticateButtonIsClicked(authenticateEvent())
+                    getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
-                val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
-                pluginSettings().token = token
-                SnykCodeParams.instance.sessionToken = token
+                    jButton.setText("Authenticating...")
+                    val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
+                    pluginSettings().token = token
+                    SnykCodeParams.instance.sessionToken = token
 
-                // explicitly add the project to workspace trusted paths, because
-                // scan can be auto-triggered depending on "settings.pluginFirstRun" value
-                project.basePath?.let {
-                    service<WorkspaceTrustService>().addTrustedPath(Paths.get(it))
-                }
+                    // explicitly add the project to workspace trusted paths, because
+                    // scan can be auto-triggered depending on "settings.pluginFirstRun" value
+                    jButton.setText("Trusting project paths...")
+                    val trustService = service<WorkspaceTrustService>()
+                    val paths = project.getContentRoots()
+                    for (path in paths) {
+                        trustService.addTrustedPath(path)
+                    }
 
-                if (pluginSettings().usageAnalyticsEnabled) {
-                    val userId = analytics.obtainUserId(token)
-                    if (userId.isNotBlank()) {
-                        runBackgroundableTask("Snyk: Fetching experiments", project, true) {
-                            analytics.setUserId(userId)
-                            analytics.identify()
-                            getAmplitudeExperimentService().fetch(ExperimentUser(userId))
+                    if (pluginSettings().usageAnalyticsEnabled) {
+                        val userId = analytics.obtainUserId(token)
+                        if (userId.isNotBlank()) {
+                            runBackgroundableTask("Snyk: Fetching experiments", project, true) {
+                                analytics.setUserId(userId)
+                                analytics.identify()
+                                getAmplitudeExperimentService().fetch(ExperimentUser(userId))
+                            }
                         }
                     }
+                    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
                 }
-                getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
             }
         }).apply {
             isEnabled = !getSnykCliDownloaderService().isCliDownloading()
