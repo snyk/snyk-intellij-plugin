@@ -2,7 +2,7 @@
 
 ## [2.7.4]
 ### Fixed
-- move all clean-up tasks on project close to a background task
+- move all clean-up tasks on project close to a background task and limit execution to 5s
 
 ## [2.7.3]
 ### Fixed
