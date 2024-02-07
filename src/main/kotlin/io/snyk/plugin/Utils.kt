@@ -406,7 +406,7 @@ fun VirtualFile.toPsiFile(project: Project): PsiFile? {
     return PsiManager.getInstance(project).findFile(this)
 }
 
-fun Project.getContentRoots() : SortedSet<Path> {
+fun Project.getContentRoots(): SortedSet<Path> {
     return ProjectRootManager.getInstance(this).contentRoots
         .filter { it.exists() && it.isDirectory }
         .mapNotNull { it.path.toNioPathOrNull() }
