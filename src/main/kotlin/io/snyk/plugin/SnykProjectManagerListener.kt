@@ -3,10 +3,10 @@ package io.snyk.plugin
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
-import io.snyk.plugin.services.SnykTaskQueueService.Companion.ls
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
+import snyk.common.lsp.LanguageServerWrapper
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -25,6 +25,7 @@ class SnykProjectManagerListener : ProjectManagerListener {
                     RunUtils.instance.cancelRunningIndicators(project)
                     AnalysisData.instance.removeProjectFromCaches(project)
                     SnykCodeIgnoreInfoHolder.instance.removeProject(project)
+                    val ls = LanguageServerWrapper.getInstance()
                     if (ls.isInitialized) {
                         ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFolders(project))
                     }

@@ -3,6 +3,7 @@ package io.snyk.plugin.services.download
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
@@ -12,10 +13,12 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.tail
+import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 @Service
 class SnykCliDownloaderService {
@@ -77,7 +80,16 @@ class SnykCliDownloaderService {
             indicator.text = "Downloading latest Snyk CLI release..."
             indicator.checkCanceled()
 
+            val languageServerWrapper = LanguageServerWrapper.getInstance()
             try {
+                if (languageServerWrapper.isInitialized) {
+                    try {
+                        languageServerWrapper.shutdown().get(2, TimeUnit.SECONDS)
+                    } catch (e: RuntimeException) {
+                        logger<SnykCliDownloaderService>()
+                            .warn("Language server shutdown for download took too long, couldn't shutdown", e)
+                    }
+                }
                 downloader.downloadFile(cliFile, downloader.expectedSha(), indicator)
                 pluginSettings().cliVersion = cliVersionNumbers(cliVersion)
                 pluginSettings().lastCheckDate = Date()
@@ -88,10 +100,12 @@ class SnykCliDownloaderService {
                 errorHandler.handleIOException(e, indicator, project)
             } catch (e: ChecksumVerificationException) {
                 errorHandler.handleChecksumVerificationException(e, indicator, project)
+            } finally {
+                if (succeeded) languageServerWrapper.initialize() else stopCliDownload()
             }
         } finally {
-            currentProgressIndicator = null
             cliDownloadPublisher.cliDownloadFinished(succeeded)
+            stopCliDownload()
         }
     }
 

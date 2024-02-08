@@ -7,6 +7,7 @@ import com.intellij.util.io.HttpRequests
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -18,6 +19,7 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.apache.http.HttpStatus
+import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.net.SocketTimeoutException
 import java.time.LocalDate
@@ -37,6 +39,8 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
         every { pluginSettings() } returns SnykApplicationSettingsStateService()
         cliFile = getCliFile()
         cut = project.service()

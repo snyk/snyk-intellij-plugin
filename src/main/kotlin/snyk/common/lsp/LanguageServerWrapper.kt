@@ -3,9 +3,11 @@ package snyk.common.lsp
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -23,13 +25,20 @@ import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.exists
 
 private const val DEFAULT_SLEEP_TIME = 100L
 private const val INITIALIZATION_TIMEOUT = 20L
 
 @Suppress("TooGenericExceptionCaught")
-class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePath) {
+class LanguageServerWrapper(
+    private val lsPath: String = getCliFile().absolutePath,
+    val executorService: ExecutorService = Executors.newCachedThreadPool(),
+) {
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
 
@@ -56,11 +65,19 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
 
     var isInitializing: Boolean = false
     val isInitialized: Boolean
-        get() = ::languageClient.isInitialized && ::languageServer.isInitialized &&
-            ::process.isInitialized && process.info().startInstant().isPresent
+        get() = ::languageClient.isInitialized &&
+            ::languageServer.isInitialized &&
+            ::process.isInitialized &&
+            process.info().startInstant().isPresent &&
+            process.isAlive
 
     @OptIn(DelicateCoroutinesApi::class)
     internal fun initialize() {
+        if (lsPath.toNioPathOrNull()?.exists() == false) {
+            val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
+            SnykBalloonNotificationHelper.showError(message, null)
+            return
+        }
         try {
             isInitializing = true
             val snykLanguageClient = SnykLanguageClient()
@@ -83,9 +100,15 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
 
             sendInitializeMessage()
         } catch (e: Exception) {
-            logger.error(e)
+            logger.warn(e)
         } finally {
             isInitializing = false
+        }
+    }
+
+    fun shutdown(): Future<*> {
+        return executorService.submit {
+            process.destroyForcibly()
         }
     }
 
@@ -98,11 +121,7 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
     }
 
     fun getWorkspaceFolders(project: Project) =
-        ProjectRootManager.getInstance(project).contentRoots
-            .filter { it.exists() }
-            .filter { it.isDirectory }
-            .mapNotNull { WorkspaceFolder(it.url, it.name) }
-            .toSet()
+        project.getContentRootVirtualFiles().mapNotNull { WorkspaceFolder(it.url, it.name) }.toSet()
 
     fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()
@@ -167,5 +186,10 @@ class LanguageServerWrapper(private val lsPath: String = getCliFile().absolutePa
                 low = ps.lowSeverityEnabled
             ),
         )
+    }
+
+    companion object {
+        private var INSTANCE: LanguageServerWrapper? = null
+        fun getInstance() = INSTANCE ?: LanguageServerWrapper().also { INSTANCE = it }
     }
 }

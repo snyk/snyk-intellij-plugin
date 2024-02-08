@@ -3,6 +3,8 @@
 ## [2.7.4]
 ### Fixed
 - move all clean-up tasks on project close to a background task and limit execution to 5s
+- close down & re-initialize language server when new CLI file is activated
+- change trust service to work on project content roots instead of project base dir
 
 ## [2.7.3]
 ### Fixed

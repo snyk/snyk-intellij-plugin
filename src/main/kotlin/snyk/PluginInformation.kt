@@ -26,7 +26,7 @@ private fun getPluginInformation(): PluginInformation {
     return PluginInformation(
         integrationName = "JETBRAINS_IDE",
         integrationVersion = snykPluginVersion,
-        integrationEnvironment = integrationEnvironment.toUpperCase(),
+        integrationEnvironment = integrationEnvironment.uppercase(),
         integrationEnvironmentVersion = applicationInfo.fullVersion
     )
 }

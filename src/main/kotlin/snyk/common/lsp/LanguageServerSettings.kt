@@ -4,7 +4,7 @@ package snyk.common.lsp
 
 import com.google.gson.annotations.SerializedName
 import io.snyk.plugin.pluginSettings
-import org.apache.commons.lang.SystemUtils
+import org.apache.commons.lang3.SystemUtils
 import snyk.pluginInfo
 
 data class LanguageServerSettings(

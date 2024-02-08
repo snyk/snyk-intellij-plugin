@@ -2,7 +2,6 @@ package io.snyk.plugin.services
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
-import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
@@ -32,6 +31,7 @@ import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import org.awaitility.Awaitility.await
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
@@ -68,10 +68,10 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
 
-        mockkObject(SnykTaskQueueService.Companion)
-        every { SnykTaskQueueService.ls } returns mockk(relaxed = true)
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
     }
 
     private fun mockSnykApiServiceSastEnabled() {
@@ -104,7 +104,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
-        snykTaskQueueService.downloadLatestRelease(EmptyProgressIndicator())
+        snykTaskQueueService.downloadLatestRelease()
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
@@ -165,7 +165,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         setProject(null) // to avoid double disposing effort in tearDown
 
         // the Task should roll out gracefully without any Exception or Error
-        snykTaskQueueService.downloadLatestRelease(EmptyProgressIndicator())
+        snykTaskQueueService.downloadLatestRelease()
     }
 
     fun testSastEnablementCheckInScan() {

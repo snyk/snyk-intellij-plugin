@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import snyk.pluginInfo
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 
 class LanguageServerWrapperTest {
 
@@ -39,7 +40,7 @@ class LanguageServerWrapperTest {
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
-        cut = LanguageServerWrapper("dummy")
+        cut = LanguageServerWrapper("dummy", Executors.newCachedThreadPool())
         cut.languageServer = lsMock
     }
 
@@ -66,6 +67,7 @@ class LanguageServerWrapperTest {
         val processMock = mockk<Process>(relaxed = true)
         cut.process = processMock
         every { processMock.info().startInstant().isPresent } returns true
+        every { processMock.isAlive } returns true
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)

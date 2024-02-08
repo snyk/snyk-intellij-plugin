@@ -54,8 +54,7 @@ class SnykCliAuthenticationService(val project: Project) {
     private fun downloadCliIfNeeded() {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
-                val currentIndicator = ProgressManager.getInstance().progressIndicator
-                getSnykTaskQueueService(project)?.downloadLatestRelease(currentIndicator)
+                getSnykTaskQueueService(project)?.downloadLatestRelease()
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
             }
@@ -153,7 +152,11 @@ class AuthDialog : DialogWrapper(true) {
 
     override fun createCenterPanel(): JComponent {
         val centerPanel = JPanel(BorderLayout(JBUIScale.scale(5), JBUIScale.scale(5)))
-        val scrollPane = JBScrollPane(viewer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
+        val scrollPane = JBScrollPane(
+            viewer,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        )
         centerPanel.add(scrollPane, BorderLayout.CENTER)
 
         val progressBar = JProgressBar().apply {

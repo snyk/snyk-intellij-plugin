@@ -34,7 +34,6 @@ import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.nio.file.Paths
 
 @Service
 class SnykTaskQueueService(val project: Project) {
@@ -76,27 +75,26 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun connectProjectToLanguageServer(project: Project) {
-        synchronized(ls) {
-            if (!ls.isInitialized && !ls.isInitializing) {
-                ls.initialize()
+        synchronized(LanguageServerWrapper) {
+            val languageServerWrapper = LanguageServerWrapper.getInstance()
+            if (!languageServerWrapper.isInitialized && !languageServerWrapper.isInitializing) {
+                languageServerWrapper.initialize()
+                val added = languageServerWrapper.getWorkspaceFolders(project)
+                languageServerWrapper.updateWorkspaceFolders(added, emptySet())
             }
         }
-        ls.updateWorkspaceFolders(ls.getWorkspaceFolders(project), emptySet())
     }
 
     fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
-                // FIXME: this should be using content roots instead of basePath
-                project.basePath?.let {
-                    if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project, Paths.get(it))) return
-                }
+                if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return
 
                 ApplicationManager.getApplication().invokeAndWait {
                     FileDocumentManager.getInstance().saveAllDocuments()
                 }
                 indicator.checkCanceled()
-                waitUntilCliDownloadedIfNeeded(indicator)
+                waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
@@ -115,13 +113,11 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
-        indicator.text = "Snyk waits for CLI to be downloaded..."
-        downloadLatestRelease(indicator)
+    fun waitUntilCliDownloadedIfNeeded() {
+        downloadLatestRelease()
         do {
-            indicator.checkCanceled()
             Thread.sleep(WAIT_FOR_DOWNLOAD_MILLIS)
-        } while (!isCliInstalled() || isCliDownloading())
+        } while (isCliDownloading())
     }
 
     private fun scheduleContainerScan() {
@@ -281,18 +277,21 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun downloadLatestRelease(indicator: ProgressIndicator) {
+    fun downloadLatestRelease() {
         // abort even before submitting a task
+        val cliDownloader = getSnykCliDownloaderService()
         if (!pluginSettings().manageBinariesAutomatically) {
             if (!isCliInstalled()) {
                 val msg =
                     "The plugin cannot scan without Snyk CLI, but automatic download is disabled. " +
                         "Please put a Snyk CLI executable in ${pluginSettings().cliPath} and retry."
                 SnykBalloonNotificationHelper.showError(msg, project)
+                // no need to cancel the indicator here, as isCLIDownloading() will return false
             }
+            // no need to cancel the indicator here, as isCliInstalled() will return false
+            cliDownloader.stopCliDownload()
             return
         }
-        val cliDownloader = getSnykCliDownloaderService()
 
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI presence", true) {
             override fun run(indicator: ProgressIndicator) {
@@ -327,6 +326,5 @@ class SnykTaskQueueService(val project: Project) {
 
     companion object {
         private const val WAIT_FOR_DOWNLOAD_MILLIS = 1000L
-        val ls = LanguageServerWrapper()
     }
 }

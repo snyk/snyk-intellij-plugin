@@ -3,9 +3,9 @@ package io.snyk.plugin.analytics
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.snykcode.SnykCodeResults
 import snyk.common.SnykError
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
@@ -48,7 +48,7 @@ class AnalyticsScanListener(val project: Project) {
                 ossResult.mediumSeveritiesCount(),
                 ossResult.lowSeveritiesCount()
             )
-            SnykTaskQueueService.ls.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
@@ -66,7 +66,7 @@ class AnalyticsScanListener(val project: Project) {
             } else {
                 getScanDoneEvent(duration, product, 0, 0, 0, 0)
             }
-            SnykTaskQueueService.ls.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningIacFinished(iacResult: IacResult) {
@@ -78,7 +78,7 @@ class AnalyticsScanListener(val project: Project) {
                 iacResult.mediumSeveritiesCount(),
                 iacResult.lowSeveritiesCount()
             )
-            SnykTaskQueueService.ls.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningContainerFinished(containerResult: ContainerResult) {
@@ -90,7 +90,7 @@ class AnalyticsScanListener(val project: Project) {
                 containerResult.mediumSeveritiesCount(),
                 containerResult.lowSeveritiesCount()
             )
-            SnykTaskQueueService.ls.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningOssError(snykError: SnykError) {

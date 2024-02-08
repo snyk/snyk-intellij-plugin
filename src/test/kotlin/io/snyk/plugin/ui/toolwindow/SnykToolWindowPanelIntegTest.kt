@@ -47,6 +47,7 @@ import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
 import org.junit.Test
 import snyk.common.SnykError
 import snyk.common.UIComponentFinder
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -96,13 +97,15 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         mockkStatic("snyk.trust.TrustedProjectsKt")
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
         pluginSettings().token = fakeApiToken // needed to avoid forced Auth panel showing
         pluginSettings().pluginFirstRun = false
         // ToolWindow need to be reinitialised for every test as Project is recreated for Heavy tests
         // also we MUST do it *before* any actual test code due to initialisation of SnykScanListener in init{}
         toolWindowPanel = project.service()
         setupDummyCliFile()
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
         mockkStatic(GotoFileCellRenderer::class)
         every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
     }
