@@ -5,7 +5,6 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.ide.CopyPasteManager
-import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -55,12 +54,6 @@ class SnykCliAuthenticationService(val project: Project) {
     private fun downloadCliIfNeeded() {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
-                val progress =
-                    if (!ProgressManager.getInstance().hasProgressIndicator()) {
-                        EmptyProgressIndicator()
-                    } else {
-                        ProgressManager.getInstance().progressIndicator
-                    }
                 getSnykTaskQueueService(project)?.downloadLatestRelease()
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
