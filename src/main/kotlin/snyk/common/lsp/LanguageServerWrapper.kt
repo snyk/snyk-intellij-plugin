@@ -68,14 +68,14 @@ class LanguageServerWrapper(
         get() = ::languageClient.isInitialized &&
             ::languageServer.isInitialized &&
             ::process.isInitialized &&
-            process.info()
-                .startInstant().isPresent &&
+            process.info().startInstant().isPresent &&
             process.isAlive
 
     @OptIn(DelicateCoroutinesApi::class)
     internal fun initialize() {
         if (lsPath.toNioPathOrNull()?.exists() == false) {
-            SnykBalloonNotificationHelper.showError("Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath.", null)
+            val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
+            SnykBalloonNotificationHelper.showError(message, null)
             return
         }
         try {
