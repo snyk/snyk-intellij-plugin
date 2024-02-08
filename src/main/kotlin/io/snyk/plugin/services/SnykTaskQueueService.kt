@@ -114,7 +114,7 @@ class SnykTaskQueueService(val project: Project) {
 
     fun waitUntilCliDownloadedIfNeeded(indicator: ProgressIndicator) {
         indicator.text = "Snyk waits for CLI to be downloaded..."
-        downloadLatestRelease()
+        downloadLatestRelease(indicator)
         do {
             indicator.checkCanceled()
             Thread.sleep(WAIT_FOR_DOWNLOAD_MILLIS)
@@ -278,7 +278,7 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun downloadLatestRelease() {
+    fun downloadLatestRelease(indicator: ProgressIndicator) {
         // abort even before submitting a task
         if (!pluginSettings().manageBinariesAutomatically) {
             if (!isCliInstalled()) {
@@ -292,7 +292,7 @@ class SnykTaskQueueService(val project: Project) {
         val cliDownloader = getSnykCliDownloaderService()
 
         taskQueue.run(object : Task.Backgroundable(project, "Check Snyk CLI presence", true) {
-            override fun run(indicator: ProgressIndicator) {
+            override fun run(ignored: ProgressIndicator) {
                 cliDownloadPublisher.checkCliExistsStarted()
                 if (project.isDisposed) return
 

@@ -47,6 +47,7 @@ class CliDownloader {
             val message = "Cannot create file in the configured CLI path directory ${cliFile.parent}. " +
                 "Please either change the CLI path to a writeable directory or give the " +
                 "current directory write permissions."
+            indicator.cancel()
             throw IOException(message, e)
         }
         try {

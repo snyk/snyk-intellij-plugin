@@ -5,6 +5,7 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.ide.CopyPasteManager
+import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -54,7 +55,13 @@ class SnykCliAuthenticationService(val project: Project) {
     private fun downloadCliIfNeeded() {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
-                getSnykTaskQueueService(project)?.downloadLatestRelease()
+                val progress =
+                    if (!ProgressManager.getInstance().hasProgressIndicator()) {
+                        EmptyProgressIndicator()
+                    } else {
+                        ProgressManager.getInstance().progressIndicator
+                    }
+                getSnykTaskQueueService(project)?.downloadLatestRelease(progress)
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
             }
@@ -152,7 +159,11 @@ class AuthDialog : DialogWrapper(true) {
 
     override fun createCenterPanel(): JComponent {
         val centerPanel = JPanel(BorderLayout(JBUIScale.scale(5), JBUIScale.scale(5)))
-        val scrollPane = JBScrollPane(viewer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
+        val scrollPane = JBScrollPane(
+            viewer,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        )
         centerPanel.add(scrollPane, BorderLayout.CENTER)
 
         val progressBar = JProgressBar().apply {
