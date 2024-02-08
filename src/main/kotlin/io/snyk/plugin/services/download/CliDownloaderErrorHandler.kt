@@ -44,7 +44,7 @@ class CliDownloaderErrorHandler {
     }
 
     fun getNetworkErrorNotificationMessage(exception: IOException) =
-        "The download of the Snyk CLI was interrupted by a network error (${exception.localizedMessage}). " +
+        "The download of the Snyk CLI was interrupted by an error (${exception.localizedMessage}). " +
             "Do you want to try again?"
 
     fun handleHttpStatusException(exception: HttpRequests.HttpStatusException, project: Project) {
