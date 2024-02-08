@@ -79,8 +79,9 @@ class SnykTaskQueueService(val project: Project) {
             val languageServerWrapper = LanguageServerWrapper.getInstance()
             if (!languageServerWrapper.isInitialized && !languageServerWrapper.isInitializing) {
                 languageServerWrapper.initialize()
+                val added = languageServerWrapper.getWorkspaceFolders(project)
+                languageServerWrapper.updateWorkspaceFolders(added, emptySet())
             }
-            languageServerWrapper.updateWorkspaceFolders(languageServerWrapper.getWorkspaceFolders(project), emptySet())
         }
     }
 
