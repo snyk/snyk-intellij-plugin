@@ -15,7 +15,7 @@ import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getAmplitudeExperimentService
-import io.snyk.plugin.getContentRoots
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
@@ -65,7 +65,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     // scan can be auto-triggered depending on "settings.pluginFirstRun" value
                     jButton.setText("Trusting project paths...")
                     val trustService = service<WorkspaceTrustService>()
-                    val paths = project.getContentRoots()
+                    val paths = project.getContentRootPaths()
                     for (path in paths) {
                         trustService.addTrustedPath(path)
                     }

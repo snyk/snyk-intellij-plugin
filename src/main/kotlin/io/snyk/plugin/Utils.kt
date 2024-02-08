@@ -406,9 +406,11 @@ fun VirtualFile.toPsiFile(project: Project): PsiFile? {
     return PsiManager.getInstance(project).findFile(this)
 }
 
-fun Project.getContentRoots(): SortedSet<Path> {
-    return ProjectRootManager.getInstance(this).contentRoots
-        .filter { it.exists() && it.isDirectory }
+fun Project.getContentRootPaths(): SortedSet<Path> {
+    return getContentRootVirtualFiles()
         .mapNotNull { it.path.toNioPathOrNull() }
         .toSortedSet()
 }
+
+fun Project.getContentRootVirtualFiles() = ProjectRootManager.getInstance(this).contentRoots
+    .filter { it.exists() && it.isDirectory }.toSet()

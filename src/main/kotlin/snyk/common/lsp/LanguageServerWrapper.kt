@@ -3,9 +3,9 @@ package snyk.common.lsp
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -121,8 +121,7 @@ class LanguageServerWrapper(
     }
 
     fun getWorkspaceFolders(project: Project) =
-        ProjectRootManager.getInstance(project).contentRoots.filter { it.exists() }.filter { it.isDirectory }
-            .mapNotNull { WorkspaceFolder(it.url, it.name) }.toSet()
+        project.getContentRootVirtualFiles().mapNotNull { WorkspaceFolder(it.url, it.name) }.toSet()
 
     fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()

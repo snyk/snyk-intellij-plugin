@@ -8,7 +8,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.ui.Messages
-import io.snyk.plugin.getContentRoots
+import io.snyk.plugin.getContentRootPaths
 import snyk.SnykBundle
 
 private val LOG = Logger.getInstance("snyk.trust.TrustedProjects")
@@ -20,7 +20,7 @@ private val LOG = Logger.getInstance("snyk.trust.TrustedProjects")
  * @return `false` if the user chose not to scan the project at all; `true` otherwise
  */
 fun confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project: Project): Boolean {
-    val paths = project.getContentRoots()
+    val paths = project.getContentRootPaths()
     val trustService = service<WorkspaceTrustService>()
     for (path in paths) {
         val trustedState = trustService.isPathTrusted(path)
