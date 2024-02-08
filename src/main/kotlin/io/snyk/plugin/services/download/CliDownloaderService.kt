@@ -101,11 +101,11 @@ class SnykCliDownloaderService {
             } catch (e: ChecksumVerificationException) {
                 errorHandler.handleChecksumVerificationException(e, indicator, project)
             } finally {
-                languageServerWrapper.initialize()
+                if (succeeded) languageServerWrapper.initialize() else stopCliDownload()
             }
         } finally {
-            currentProgressIndicator = null
             cliDownloadPublisher.cliDownloadFinished(succeeded)
+            stopCliDownload()
         }
     }
 

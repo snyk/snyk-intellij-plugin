@@ -4,8 +4,10 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -27,6 +29,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.exists
 
 private const val DEFAULT_SLEEP_TIME = 100L
 private const val INITIALIZATION_TIMEOUT = 20L
@@ -71,6 +74,10 @@ class LanguageServerWrapper(
 
     @OptIn(DelicateCoroutinesApi::class)
     internal fun initialize() {
+        if (lsPath.toNioPathOrNull()?.exists() == false) {
+            SnykBalloonNotificationHelper.showError("Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath.", null)
+            return
+        }
         try {
             isInitializing = true
             val snykLanguageClient = SnykLanguageClient()
@@ -93,7 +100,7 @@ class LanguageServerWrapper(
 
             sendInitializeMessage()
         } catch (e: Exception) {
-            logger.error(e)
+            logger.warn(e)
         } finally {
             isInitializing = false
         }

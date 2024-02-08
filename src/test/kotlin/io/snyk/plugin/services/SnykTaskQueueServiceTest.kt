@@ -104,7 +104,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
 
-        snykTaskQueueService.downloadLatestRelease(indicator)
+        snykTaskQueueService.downloadLatestRelease()
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
@@ -165,7 +165,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         setProject(null) // to avoid double disposing effort in tearDown
 
         // the Task should roll out gracefully without any Exception or Error
-        snykTaskQueueService.downloadLatestRelease(indicator)
+        snykTaskQueueService.downloadLatestRelease()
     }
 
     fun testSastEnablementCheckInScan() {

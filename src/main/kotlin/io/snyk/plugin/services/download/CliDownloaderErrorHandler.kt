@@ -31,9 +31,10 @@ class CliDownloaderErrorHandler {
 
     private fun retryDownload(project: Project, indicator: ProgressIndicator, message: String) {
         runBackgroundableTask("Retry Snyk CLI Download", project, false) {
+            val cliDownloaderService = project.getService(SnykCliDownloaderService::class.java)
             try {
                 // not using the service here to not causing an endless recursion (the service triggers a retry)
-                val downloader = project.getService(SnykCliDownloaderService::class.java).downloader
+                val downloader = cliDownloaderService.downloader
                 downloader.downloadFile(getCliFile(), downloader.expectedSha(), indicator)
             } catch (throwable: Throwable) { // we must catch throwable as IntelliJ could throw AssertionError
                 // IntelliJ throws an exception if we log an error, and in this case it is just the retry that failed

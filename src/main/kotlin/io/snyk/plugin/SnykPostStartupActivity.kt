@@ -7,7 +7,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.startup.ProjectActivity
@@ -82,8 +81,12 @@ class SnykPostStartupActivity : ProjectActivity {
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             try {
-                getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded(EmptyProgressIndicator())
-                getSnykTaskQueueService(project)?.connectProjectToLanguageServer(project)
+                // this returns if no download possible (isDownloading == false)
+                getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
+
+                if (isCliInstalled()) {
+                    getSnykTaskQueueService(project)?.connectProjectToLanguageServer(project)
+                }
                 getAnalyticsScanListener(project)?.initScanListener()
             } catch (e: Exception) {
                 Logger.getInstance(SnykPostStartupActivity::class.java).warn(e)
