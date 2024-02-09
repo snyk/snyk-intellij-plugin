@@ -1,17 +1,14 @@
 package snyk.common.lsp
 
-import ai.deepcode.javaclient.core.MyTextRange
-import ai.deepcode.javaclient.responses.ExampleCommitFix
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.getOpenedProjects
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import org.eclipse.lsp4j.ConfigurationParams
 import org.eclipse.lsp4j.LogTraceParams
 import org.eclipse.lsp4j.MessageActionItem
 import org.eclipse.lsp4j.MessageParams
@@ -22,14 +19,10 @@ import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
-import snyk.iac.IacResult
-import snyk.oss.OssResult
 import java.util.concurrent.CompletableFuture
 
-class SnykLanguageClient(val project: Project) : LanguageClient {
+class SnykLanguageClient : LanguageClient {
     val logger = Logger.getInstance("Snyk Language Server")
-    private val scanPublisher
-        get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)!!
 
     override fun telemetryEvent(`object`: Any?) {
         // do nothing
@@ -43,55 +36,44 @@ class SnykLanguageClient(val project: Project) : LanguageClient {
     fun snykScan(snykScan: SnykScanParams) {
         // populate SnykResultCache
         logger.info("snyk.scan notification received")
+        // TODO: feature flag!
 
-        var ossIndicator: ProgressIndicator? = null
-        var codeIndicator: ProgressIndicator? = null
-        var iacIndicator: ProgressIndicator? = null
-
-        when (snykScan.status) {
-            "inProgress" -> {
-                ProgressManager.getInstance()
-                    .run(object : Task.Backgroundable(project, "Started ${snykScan.product} scan", false, DEAF) {
-                        override fun run(indicator: ProgressIndicator) {
-                            // Your background task code here
-                            indicator.isIndeterminate = true
-                            when (snykScan.product) {
-                                "Snyk Open Source" -> ossIndicator = indicator
-                                "Snyk Code" -> codeIndicator = indicator
-                                "Snyk Infrastructure as Code" -> iacIndicator = indicator
-                            }
-                            scanPublisher.scanningStarted()
+        getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
+            when (snykScan.status) {
+                "inProgress" -> {}
+                "success" -> {
+                    logger.info("Scan completed")
+                    when (snykScan.product) {
+                        "oss" -> {
+                            // TODO implement
                         }
-                    })
-            }
 
-            "success" -> {
-                logger.info("Scan completed")
-                when (snykScan.product) {
-                    "oss" -> {
-                        ossIndicator?.cancel()
-                        scanPublisher.scanningOssFinished(getOssResult(snykScan))
-                    }
+                        "code" -> {
+                            scanPublisher.scanningSnykCodeFinished(getSnykCodeResult(project, snykScan))
+                        }
 
-                    "code" -> {
-                        codeIndicator?.cancel()
-                        scanPublisher.scanningSnykCodeFinished(getSnykCodeResult(snykScan))
-                    }
-
-                    "iac" -> {
-                        iacIndicator?.cancel()
-                        scanPublisher.scanningIacFinished(getSnykIaCResult(snykScan))
+                        "iac" -> {
+                            // TODO implement
+                        }
                     }
                 }
             }
         }
     }
 
-    private fun getSnykIaCResult(snykScan: SnykScanParams): IacResult {
-        TODO("Not yet implemented")
+    /**
+     * Get all the scan publishers for the given scan. As the folder path could apply to different projects
+     * containing that content root, we need to notify all of them.
+     */
+    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykScanListener>> {
+        return getOpenedProjects()
+            .filter {
+                it.getContentRootVirtualFiles().map { virtualFile -> virtualFile.url }.contains(snykScan.folderPath)
+            }
+            .mapNotNull { p -> getSyncPublisher(p, SnykScanListener.SNYK_SCAN_TOPIC)?.let { Pair(p, it) } }.toSet()
     }
 
-    private fun getSnykCodeResult(snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
+    private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
         return snykScan.issues
             .groupBy { it.virtualFile }
@@ -101,21 +83,13 @@ class SnykLanguageClient(val project: Project) : LanguageClient {
             .toSortedMap { o1, o2 -> o1.virtualFile.path.compareTo(o2.virtualFile.path) }
     }
 
-    private fun getOssResult(snykScan: SnykScanParams): OssResult {
-        check(snykScan.product == "Snyk Open Source") { "Expected Snyk Open Source scan result" }
-        TODO("Not yet implemented")
-    }
-
-    override fun configuration(configurationParams: ConfigurationParams?): CompletableFuture<MutableList<Any>> {
-        return super.configuration(configurationParams)
-    }
-
     override fun createProgress(params: WorkDoneProgressCreateParams?): CompletableFuture<Void> {
+        // TODO implement
         return CompletableFuture.completedFuture(null)
     }
 
     override fun notifyProgress(params: ProgressParams?) {
-        //
+        // TODO implement
     }
 
     override fun logTrace(params: LogTraceParams?) {
@@ -123,6 +97,11 @@ class SnykLanguageClient(val project: Project) : LanguageClient {
     }
 
     override fun showMessage(messageParams: MessageParams?) {
+        val project = ProjectUtil.getActiveProject()
+        if (project == null) {
+            logger.info(messageParams?.message)
+            return
+        }
         when (messageParams?.type) {
             MessageType.Error -> SnykBalloonNotificationHelper.showError(messageParams.message, project)
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
@@ -133,6 +112,7 @@ class SnykLanguageClient(val project: Project) : LanguageClient {
     }
 
     override fun showMessageRequest(requestParams: ShowMessageRequestParams?): CompletableFuture<MessageActionItem> {
+        // FIXME: implement with dialog
         return CompletableFuture.completedFuture(MessageActionItem("OK"))
     }
 
@@ -147,32 +127,4 @@ class SnykLanguageClient(val project: Project) : LanguageClient {
             }
         }
     }
-}
-
-private fun getCWEs(issue: ScanIssue): MutableList<String> {
-    return issue.additionalData.cwe?.toMutableList() ?: mutableListOf()
-}
-
-private fun getExampleCommitFixes(issue: ScanIssue): MutableList<ExampleCommitFix> {
-    return issue.additionalData.exampleCommitFixes.map { fix ->
-        ExampleCommitFix(
-            fix.commitURL,
-            fix.lines.map { ai.deepcode.javaclient.responses.ExampleLine(it.line, it.lineNumber, it.lineChange) }
-        )
-    }.toMutableList()
-}
-
-private fun getRanges(issue: ScanIssue): List<MyTextRange> {
-    val ranges = mutableListOf<MyTextRange>()
-    if (issue.additionalData.markers != null) {
-        val markers = issue.additionalData.markers
-        for (marker in markers) {
-            ranges.add(MyTextRange(marker.msg?.get(0) ?: 0, marker.msg?.get(1) ?: 0))
-        }
-    }
-    return ranges
-}
-
-private fun getExampleCommitFixDescriptions(issue: ScanIssue): MutableList<String> {
-    return issue.additionalData.exampleCommitFixes.map { it.commitURL }.toMutableList()
 }
