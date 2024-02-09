@@ -16,7 +16,7 @@ import com.intellij.util.PlatformIcons
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
@@ -54,8 +54,7 @@ class SnykCliAuthenticationService(val project: Project) {
     private fun downloadCliIfNeeded() {
         val downloadCliTask: () -> Unit = {
             if (!getCliFile().exists()) {
-                val currentIndicator = ProgressManager.getInstance().progressIndicator
-                getSnykCliDownloaderService().downloadLatestRelease(currentIndicator, project)
+                getSnykTaskQueueService(project)?.downloadLatestRelease()
             } else {
                 logger.debug("Skip CLI download, since it was already downloaded")
             }
@@ -153,7 +152,11 @@ class AuthDialog : DialogWrapper(true) {
 
     override fun createCenterPanel(): JComponent {
         val centerPanel = JPanel(BorderLayout(JBUIScale.scale(5), JBUIScale.scale(5)))
-        val scrollPane = JBScrollPane(viewer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER)
+        val scrollPane = JBScrollPane(
+            viewer,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        )
         centerPanel.add(scrollPane, BorderLayout.CENTER)
 
         val progressBar = JProgressBar().apply {

@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import snyk.pluginInfo
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 
 class LanguageServerWrapperTest {
 
@@ -39,7 +40,7 @@ class LanguageServerWrapperTest {
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
-        cut = LanguageServerWrapper("dummy", projectMock)
+        cut = LanguageServerWrapper("dummy")
         cut.languageServer = lsMock
     }
 
@@ -55,13 +56,18 @@ class LanguageServerWrapperTest {
         every { rootManagerMock.contentRoots } returns emptyArray()
         every { lsMock.initialize(any<InitializeParams>()) } returns CompletableFuture.completedFuture(null)
 
-        cut.sendInitializeMessage(projectMock)
+        cut.sendInitializeMessage()
 
         verify { lsMock.initialize(any<InitializeParams>()) }
     }
 
     @Test
     fun `sendReportAnalyticsCommand should send a reportAnalytics command to the language server`() {
+        cut.languageClient = mockk(relaxed = true)
+        val processMock = mockk<Process>(relaxed = true)
+        cut.process = processMock
+        every { processMock.info().startInstant().isPresent } returns true
+        every { processMock.isAlive } returns true
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)

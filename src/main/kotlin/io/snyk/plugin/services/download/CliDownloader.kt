@@ -5,6 +5,7 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import java.io.File
+import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -40,7 +41,15 @@ class CliDownloader {
 
     fun downloadFile(cliFile: File, expectedSha: String, indicator: ProgressIndicator): File {
         indicator.checkCanceled()
-        val downloadFile = File.createTempFile(cliFile.name, ".download", cliFile.parentFile)
+        val downloadFile = try {
+            File.createTempFile(cliFile.name, ".download", cliFile.parentFile)
+        } catch (e: Exception) {
+            val message = "Cannot create file in the configured CLI path directory ${cliFile.parent}. " +
+                "Please either change the CLI path to a writeable directory or give the " +
+                "current directory write permissions."
+            indicator.cancel()
+            throw IOException(message, e)
+        }
         try {
             downloadFile.deleteOnExit()
 
@@ -61,7 +70,7 @@ class CliDownloader {
                     StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING
                 )
-            } catch (e: AtomicMoveNotSupportedException) {
+            } catch (ignored: AtomicMoveNotSupportedException) {
                 // fallback to renameTo because of e
                 downloadFile.renameTo(cliFile)
             }

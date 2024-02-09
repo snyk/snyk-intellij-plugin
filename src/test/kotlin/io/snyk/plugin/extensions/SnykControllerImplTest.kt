@@ -1,7 +1,5 @@
 package io.snyk.plugin.extensions
 
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
@@ -10,31 +8,16 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
-import io.mockk.verify
-import io.snyk.plugin.extensions.SnykControllerImpl
-import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getContainerService
-import io.snyk.plugin.getIacService
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
-import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
-import io.snyk.plugin.net.CliConfigSettings
-import io.snyk.plugin.net.LocalCodeEngine
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.services.SnykApiService
-import io.snyk.plugin.services.SnykTaskQueueService
-import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
-import io.snyk.plugin.setupDummyCliFile
 import org.awaitility.Awaitility.await
-import snyk.container.ContainerResult
-import snyk.iac.IacResult
 import snyk.oss.OssResult
 import snyk.oss.OssService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
@@ -62,7 +45,7 @@ class SnykControllerImplTest : LightPlatformTestCase() {
         )
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any(), any()) } returns true
+        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
     }
 
     override fun tearDown() {

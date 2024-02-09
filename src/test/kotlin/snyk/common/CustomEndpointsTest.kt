@@ -174,12 +174,14 @@ class CustomEndpointsTest {
 
     @Test
     fun `api snyk path needs token`() {
-        var uri = "https://api.snyk.io/v1"
-        assertTrue(needsSnykToken(uri))
-        uri = "https://app.eu.snyk.io/api"
-        assertTrue(needsSnykToken(uri))
-        uri = "https://app.au.snyk.io/api"
-        assertTrue(needsSnykToken(uri))
+        val uris = listOf(
+            "https://api.snyk.io/v1",
+            "https://app.eu.snyk.io/api",
+            "https://app.au.snyk.io/api"
+        )
+        uris.forEach { uri ->
+            assertTrue(needsSnykToken(uri))
+        }
     }
 
     @Test
@@ -204,14 +206,29 @@ class CustomEndpointsTest {
     }
 
     @Test
-    fun `isFedramp true for the right URI`() {
-        val uri = URI("https://app.fedramp.snykgov.io")
-        assertTrue(uri.isFedramp())
+    fun `isAnalyticsPermitted false for URIs not allowed`() {
+        val uris = listOf(
+            "https://app.fedramp.snykgov.io",
+            "https://app.eu.snyk.io/api",
+            "https://app.au.snyk.io/api"
+        )
+        uris.forEach { uri ->
+            assertFalse(URI(uri).isAnalyticsPermitted())
+        }
     }
 
     @Test
-    fun `isFedramp false for the right URI`() {
-        val uri = URI("https://app.fedddramp.snykagov.io")
-        assertFalse(uri.isFedramp())
+    fun `isAnalyticsPermitted true for the right URIs`() {
+        val uris = listOf(
+            "https://snyk.io/api",
+            "https://app.snyk.io",
+            "https://app.us.snyk.io",
+            "https://app.snyk.io/api",
+            "https://app.snyk.io/v1"
+        )
+
+        uris.forEach { uri ->
+            assertTrue(URI(uri).isAnalyticsPermitted())
+        }
     }
 }

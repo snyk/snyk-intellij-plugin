@@ -21,6 +21,7 @@ class SuggestionTreeNode(
     override val navigateToSource: () -> Unit
 ) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
+    @Suppress("UNCHECKED_CAST")
     override fun getDescriptionPanel(logEventNeeded: Boolean): IssueDescriptionPanelBase {
         val issueType = if (issue.additionalData.isSecurityType) {
             CODE_SECURITY_VULNERABILITY

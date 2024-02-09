@@ -4,6 +4,7 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor
 import com.intellij.ide.plugins.PluginInstaller
 import com.intellij.ide.plugins.PluginStateListener
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
@@ -26,7 +27,7 @@ import snyk.iac.IacBulkFileListener
 import snyk.oss.OssBulkFileListener
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Date
 
 private val LOG = logger<SnykPostStartupActivity>()
 
@@ -44,6 +45,7 @@ class SnykPostStartupActivity : ProjectActivity {
     private var listenersActivated = false
     val settings = pluginSettings()
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun execute(project: Project) {
         PluginInstaller.addStateListener(UninstallListener())
 
@@ -62,6 +64,7 @@ class SnykPostStartupActivity : ProjectActivity {
 
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
+            // TODO: add subscription for language server messages
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, OssBulkFileListener())
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, SnykCodeBulkFileListener())
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, IacBulkFileListener())
@@ -77,12 +80,16 @@ class SnykPostStartupActivity : ProjectActivity {
         AnnotatorCommon.initRefreshing(project)
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
-            getSnykTaskQueueService(project)?.downloadLatestRelease()
             try {
-                getSnykTaskQueueService(project)?.initializeLanguageServer()
+                // this returns if no download possible (isDownloading == false)
+                getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
+
+                if (isCliInstalled()) {
+                    getSnykTaskQueueService(project)?.connectProjectToLanguageServer(project)
+                }
                 getAnalyticsScanListener(project)?.initScanListener()
-            } catch (ignored: Exception) {
-                // do nothing to not break UX for analytics
+            } catch (e: Exception) {
+                Logger.getInstance(SnykPostStartupActivity::class.java).warn(e)
             }
         }
 

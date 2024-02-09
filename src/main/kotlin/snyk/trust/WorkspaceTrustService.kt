@@ -16,6 +16,10 @@ class WorkspaceTrustService {
 
     fun addTrustedPath(path: Path) {
         LOG.debug("Adding trusted path: $path")
+        if (settings.getTrustedPaths().contains(path.toString())) {
+            LOG.debug("Path is already trusted: $path")
+            return
+        }
         settings.addTrustedPath(path.toString())
     }
 

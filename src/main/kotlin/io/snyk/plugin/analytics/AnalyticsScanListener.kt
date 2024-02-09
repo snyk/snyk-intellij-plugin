@@ -4,9 +4,9 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
@@ -50,7 +50,7 @@ class AnalyticsScanListener(val project: Project) {
                 ossResult.mediumSeveritiesCount(),
                 ossResult.lowSeveritiesCount()
             )
-            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
@@ -65,7 +65,7 @@ class AnalyticsScanListener(val project: Project) {
                 issues.count { it.getSeverityAsEnum() == Severity.MEDIUM },
                 issues.count { it.getSeverityAsEnum() == Severity.LOW },
             )
-            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningIacFinished(iacResult: IacResult) {
@@ -77,7 +77,7 @@ class AnalyticsScanListener(val project: Project) {
                 iacResult.mediumSeveritiesCount(),
                 iacResult.lowSeveritiesCount()
             )
-            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningContainerFinished(containerResult: ContainerResult) {
@@ -89,7 +89,7 @@ class AnalyticsScanListener(val project: Project) {
                 containerResult.mediumSeveritiesCount(),
                 containerResult.lowSeveritiesCount()
             )
-            getSnykTaskQueueService(project)?.ls?.sendReportAnalyticsCommand(scanDoneEvent)
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningOssError(snykError: SnykError) {

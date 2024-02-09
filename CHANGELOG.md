@@ -1,5 +1,24 @@
 # Snyk Changelog
 
+## [2.7.4]
+### Fixed
+- move all clean-up tasks on project close to a background task and limit execution to 5s
+- close down & re-initialize language server when new CLI file is activated
+- change trust service to work on project content roots instead of project base dir
+
+## [2.7.3]
+### Fixed
+-  only send analytics when connected to an MT US environment
+
+## [2.7.2]
+### Fixed
+- manually downloaded binaries were causing problems initiating scans
+
+## [2.7.1]
+### Fixed
+- only start up language server after CLI update (fixes lock error on Windows)
+- only start up one instance of language server, manage projects via workspace folders
+
 ## [2.7.0]
 ### Added
 - Snyk controller extension point

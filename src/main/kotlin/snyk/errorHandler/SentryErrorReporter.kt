@@ -18,7 +18,7 @@ import io.sentry.protocol.SentryId
 import io.sentry.protocol.SentryRuntime
 import io.snyk.plugin.pluginSettings
 import snyk.PropertyLoader
-import snyk.common.isFedramp
+import snyk.common.isAnalyticsPermitted
 import snyk.pluginInfo
 
 object SentryErrorReporter {
@@ -109,7 +109,7 @@ object SentryErrorReporter {
         if (ApplicationManager.getApplication().isUnitTestMode) return SentryId.EMPTY_ID
 
         val settings = pluginSettings()
-        return if (settings.crashReportingEnabled && !isFedramp()) {
+        return if (settings.crashReportingEnabled && isAnalyticsPermitted()) {
             val sentryId = Sentry.captureException(throwable)
             LOG.info("Sentry event reported: $sentryId")
             sentryId

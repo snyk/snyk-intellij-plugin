@@ -17,6 +17,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFile
@@ -64,6 +65,7 @@ import java.net.URI
 import java.nio.file.Path
 import java.security.KeyStore
 import java.util.Objects.nonNull
+import java.util.SortedSet
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
@@ -411,3 +413,12 @@ fun VirtualFile.getPsiFile(project: Project): PsiFile? {
 
 fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.getInstance().getDocument(this) }
 
+
+fun Project.getContentRootPaths(): SortedSet<Path> {
+    return getContentRootVirtualFiles()
+        .mapNotNull { it.path.toNioPathOrNull() }
+        .toSortedSet()
+}
+
+fun Project.getContentRootVirtualFiles() = ProjectRootManager.getInstance(this).contentRoots
+    .filter { it.exists() && it.isDirectory }.toSet()
