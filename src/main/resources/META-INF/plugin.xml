@@ -50,6 +50,11 @@
                  description="Preview: Enable new refactored issues tree."
                  restartRequired="true"/>
 
+    <registryKey key="snyk.preview.snyk.code.ls.enabled"
+                 defaultValue="false"
+                 description="Preview: Use Language Server as Source for Snyk Code findings."
+                 restartRequired="true"/>
+
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
   </extensions>

@@ -245,6 +245,8 @@ fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
 fun isNewRefactoredTreeEnabled(): Boolean = Registry.`is`("snyk.preview.new.refactored.tree.enabled", false)
 
+fun isSnykCodeLSEnabled(): Boolean = Registry.`is`("snyk.preview.snyk.code.ls.enabled", false)
+
 fun isReportFalsePositivesEnabled(): Boolean = Registry.`is`("snyk.code.report.false.positives.enabled", false) &&
     pluginSettings().reportFalsePositivesEnabled == true
 
