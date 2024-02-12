@@ -39,10 +39,10 @@ import javax.swing.ScrollPaneConstants
 import javax.swing.event.HyperlinkEvent
 import kotlin.math.max
 
-class SuggestionDescriptionPanelFromLS (
+class SuggestionDescriptionPanelFromLS(
     private val snykCodeFile: SnykCodeFile,
     private val issue: ScanIssue
-) : IssueDescriptionPanelBase(title = issue.title, severity = issue.getSeverityAsEnum()) {
+) : IssueDescriptionPanelBase(title = getIssueTitle(issue), severity = issue.getSeverityAsEnum()) {
     val project = snykCodeFile.project
 
     init {
@@ -50,7 +50,7 @@ class SuggestionDescriptionPanelFromLS (
     }
 
     override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
-        issueNaming = if (issue.additionalData.isSecurityType) "Vulnerability" else "Code Issue",
+        issueNaming = if (issue.additionalData.isSecurityType) "Vulnerability" else "Quality Issue",
         cwes = issue.additionalData.cwe ?: emptyList()
     )
 
@@ -239,8 +239,11 @@ class SuggestionDescriptionPanelFromLS (
         )
 
         val labelText =
-            if (examplesCount == 0) "No example fixes available."
-            else "This issue was fixed by ${issue.additionalData.repoDatasetSize} projects. Here are $examplesCount example fixes."
+            if (examplesCount == 0) {
+                "No example fixes available."
+            } else {
+                "This issue was fixed by ${issue.additionalData.repoDatasetSize} projects. Here are $examplesCount example fixes."
+            }
         panel.add(
             defaultFontLabel(labelText),
             baseGridConstraintsAnchorWest(1)
@@ -249,7 +252,7 @@ class SuggestionDescriptionPanelFromLS (
         if (examplesCount == 0) return panel
 
         val tabbedPane = JBTabbedPane()
-        //tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
+        // tabbedPane.tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT // tabs in one row
         tabbedPane.tabComponentInsets = JBInsets.create(0, 0) // no inner borders for tab content
         tabbedPane.font = io.snyk.plugin.ui.getFont(-1, 14, tabbedPane.font)
 
@@ -283,7 +286,6 @@ class SuggestionDescriptionPanelFromLS (
     }
 
     private fun diffPanel(exampleCommitFix: snyk.common.lsp.ExampleCommitFix, rowCount: Int): JComponent {
-
         fun shift(colorComponent: Int, d: Double): Int {
             val n = (colorComponent * d).toInt()
             return n.coerceIn(0, 255)
@@ -422,3 +424,10 @@ class SuggestionDescriptionPanelFromLS (
             .toSet()
     }
 }
+
+private fun getIssueTitle(issue: ScanIssue) =
+    if (issue.additionalData.isSecurityType) {
+        issue.title.split(":").firstOrNull() ?: "Unknown issue"
+    } else {
+        issue.additionalData.message.split(".").firstOrNull() ?: "Unknown issue"
+    }
