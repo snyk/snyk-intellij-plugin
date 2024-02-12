@@ -71,7 +71,7 @@ dependencies {
 intellij {
     version.set(properties("platformVersion"))
     // https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html#intellij-extension-type
-    type.set("IU")
+//    type.set("IU")
     downloadSources.set(properties("platformDownloadSources").toBoolean())
 
     // plugin dependencies: uses `platformPlugins` property from the gradle.properties file.
