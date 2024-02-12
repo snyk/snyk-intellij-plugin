@@ -130,6 +130,7 @@ class SnykCachedResults(val project: Project) {
                 override fun scanningSnykCodeError(snykError: SnykError) {
                     currentSnykCodeErrorLS = snykError
                 }
-            })
+            }
+        )
     }
 }

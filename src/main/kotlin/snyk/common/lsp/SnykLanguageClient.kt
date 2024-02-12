@@ -66,7 +66,7 @@ class SnykLanguageClient : LanguageClient {
     private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykCodeScanListenerLS>> {
         return getOpenedProjects()
             .filter {
-                it.getContentRootVirtualFiles().map { virtualFile -> virtualFile.url }.contains(snykScan.folderPath)
+                it.getContentRootVirtualFiles().map { virtualFile -> virtualFile.path }.contains(snykScan.folderPath)
             }
             .mapNotNull { p ->
                 getSyncPublisher(p, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)?.let { Pair(p, it) }

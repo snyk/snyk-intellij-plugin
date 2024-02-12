@@ -183,22 +183,22 @@ class LanguageServerWrapper(
     fun getInitializationOptions(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
-            activateSnykOpenSource = ps.ossScanEnable.toString(),
+            activateSnykOpenSource = false.toString(),
             activateSnykCodeSecurity = (isSnykCodeLSEnabled() && ps.snykCodeSecurityIssuesScanEnable).toString(),
             activateSnykCodeQuality = (isSnykCodeLSEnabled() && ps.snykCodeQualityIssuesScanEnable).toString(),
-            activateSnykIac = ps.iacScanEnabled.toString(),
+            activateSnykIac = false.toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),
             endpoint = getEndpointUrl(),
             cliPath = getCliFile().absolutePath,
             token = ps.token,
-            enableTrustedFoldersFeature = "false",
             filterSeverity = SeverityFilter(
                 critical = ps.criticalSeverityEnabled,
                 high = ps.highSeverityEnabled,
                 medium = ps.mediumSeverityEnabled,
                 low = ps.lowSeverityEnabled
             ),
+            enableTrustedFoldersFeature = "false",
             trustedFolders = service<WorkspaceTrustService>().settings.getTrustedPaths(),
             scanningMode = "auto"
         )

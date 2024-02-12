@@ -43,7 +43,6 @@ data class ScanIssue(
                 field = filePath.toVirtualFile()
                 field
             } else field
-
         }
 
     private var document: Document?

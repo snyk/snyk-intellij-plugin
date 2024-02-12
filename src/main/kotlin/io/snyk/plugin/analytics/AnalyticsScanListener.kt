@@ -42,16 +42,17 @@ class AnalyticsScanListener(val project: Project) {
     }
 
     val snykCodeScanListenerLS = object : SnykCodeScanListenerLS {
+        var start = 0L
         override fun scanningStarted() {
-            TODO("Not yet implemented")
+            start = System.currentTimeMillis()
         }
 
         override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
-            TODO("Not yet implemented")
+            // TODO("Not yet implemented")
         }
 
         override fun scanningSnykCodeError(snykError: SnykError) {
-            TODO("Not yet implemented")
+            // TODO("Not yet implemented")
         }
     }
 

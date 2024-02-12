@@ -41,17 +41,8 @@
                  defaultValue="720000"
                  description="Snyk timeout (milliseconds) to wait for results during scan"/>
 
-    <registryKey key="snyk.code.report.false.positives.enabled"
-                 defaultValue="false"
-                 description="Enable Snyk functionality to report false-positive issue/vulnerability"/>
-
-    <registryKey key="snyk.preview.new.refactored.tree.enabled"
-                 defaultValue="false"
-                 description="Preview: Enable new refactored issues tree."
-                 restartRequired="true"/>
-
     <registryKey key="snyk.preview.snyk.code.ls.enabled"
-                 defaultValue="false"
+                 defaultValue="true"
                  description="Preview: Use Language Server as Source for Snyk Code findings."
                  restartRequired="true"/>
 

@@ -10,6 +10,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
@@ -24,6 +25,7 @@ import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
@@ -47,6 +49,9 @@ class SnykTaskQueueService(val project: Project) {
 
     private val scanPublisher
         get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)
+
+    private val snykCodeScanPublisherLS
+        get() = getSyncPublisher(project, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)
 
     private val cliDownloadPublisher
         get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
@@ -97,11 +102,13 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
-                    scheduleSnykCodeScan()
-                    // TODO feature flag!
-                    LanguageServerWrapper.getInstance().sendScanCommand()
+                    if (!isSnykCodeLSEnabled()) {
+                        scheduleSnykCodeScan()
+                    } else {
+                        snykCodeScanPublisherLS?.scanningStarted()
+                        LanguageServerWrapper.getInstance().sendScanCommand()
+                    }
                 }
                 if (settings.ossScanEnable) {
                     scheduleOssScan()

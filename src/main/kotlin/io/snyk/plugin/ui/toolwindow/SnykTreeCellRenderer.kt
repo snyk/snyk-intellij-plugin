@@ -114,7 +114,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 text = "line ${range.start.line}: ${
                     issue.title.ifEmpty { issue.additionalData.message }
                 }"
-                val parentFileNode = value.parent as SnykCodeFileTreeNode
+                val parentFileNode = value.parent as SnykCodeFileTreeNodeFromLS
                 val entry =
                     (parentFileNode.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>).first
                 val cachedIssues = getSnykCachedResults(entry.key.project)?.currentSnykCodeResultsLS
