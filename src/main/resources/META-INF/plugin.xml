@@ -42,7 +42,7 @@
                  description="Snyk timeout (milliseconds) to wait for results during scan"/>
 
     <registryKey key="snyk.preview.snyk.code.ls.enabled"
-                 defaultValue="true"
+                 defaultValue="false"
                  description="Preview: Use Language Server as Source for Snyk Code findings."
                  restartRequired="true"/>
 

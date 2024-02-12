@@ -112,7 +112,11 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
                 val range = issue.range
                 text = "line ${range.start.line}: ${
-                    issue.title.ifEmpty { issue.additionalData.message }
+                    if (issue.additionalData.isSecurityType) {
+                        issue.title.split(":")[0]
+                    } else {
+                        issue.additionalData.message.split('.')[0]
+                    }
                 }"
                 val parentFileNode = value.parent as SnykCodeFileTreeNodeFromLS
                 val entry =
