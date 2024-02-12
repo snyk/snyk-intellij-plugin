@@ -7,6 +7,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -182,10 +183,9 @@ class LanguageServerWrapper(
     fun getInitializationOptions(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
-            // TODO feature flag!
             activateSnykOpenSource = ps.ossScanEnable.toString(),
-            activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
-            activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
+            activateSnykCodeSecurity = (isSnykCodeLSEnabled() && ps.snykCodeSecurityIssuesScanEnable).toString(),
+            activateSnykCodeQuality = (isSnykCodeLSEnabled() && ps.snykCodeQualityIssuesScanEnable).toString(),
             activateSnykIac = ps.iacScanEnabled.toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),

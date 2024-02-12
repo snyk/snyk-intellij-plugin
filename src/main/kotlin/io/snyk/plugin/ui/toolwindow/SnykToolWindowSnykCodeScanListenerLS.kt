@@ -22,13 +22,14 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
 @Suppress("DuplicatedCode")
-abstract class ToolWindowSnykCodeScanListenerLS(
+class SnykToolWindowSnykCodeScanListenerLS(
     val project: Project,
     private val snykToolWindowPanel: SnykToolWindowPanel,
     private val vulnerabilitiesTree: JTree,
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykCodeScanListenerLS {
+    override fun scanningStarted() = Unit
 
     override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
         ApplicationManager.getApplication().invokeLater {

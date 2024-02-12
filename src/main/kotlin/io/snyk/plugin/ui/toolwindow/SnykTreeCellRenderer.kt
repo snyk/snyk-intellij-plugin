@@ -15,6 +15,7 @@ import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
@@ -24,8 +25,10 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ui.ContainerImageTreeNode
@@ -39,6 +42,7 @@ import snyk.oss.Vulnerability
 import java.util.Locale
 import javax.swing.Icon
 import javax.swing.JTree
+import javax.swing.tree.DefaultMutableTreeNode
 
 private const val MAX_FILE_TREE_NODE_LENGTH = 60
 
@@ -103,24 +107,44 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 }
             }
 
+            is SuggestionTreeNodeFromLS -> {
+                val issue = value.userObject as ScanIssue
+                nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
+                val range = issue.range
+                text = "line ${range.start.line}: ${
+                    issue.title.ifEmpty { issue.additionalData.message }
+                }"
+                val parentFileNode = value.parent as SnykCodeFileTreeNode
+                val entry =
+                    (parentFileNode.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>).first
+                val cachedIssues = getSnykCachedResults(entry.key.project)?.currentSnykCodeResultsLS
+                if (cachedIssues?.values?.flatten()?.contains(issue) == false) {
+                    attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
+                    nodeIcon = getDisabledIcon(nodeIcon)
+                }
+            }
+
+            is SnykCodeFileTreeNodeFromLS -> {
+                val (entry, productType) =
+                    value.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>
+                val file = entry.key
+
+                val pair = updateTextTooltipAndIcon(file, productType, value)
+                nodeIcon = pair.first
+                text = pair.second
+                val cachedIssues = getSnykCachedResults(file.project)?.currentSnykCodeResultsLS
+                    ?.filter { it.key.virtualFile == file.virtualFile } ?: emptyMap()
+                if (cachedIssues.isEmpty()) {
+                    attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
+                    nodeIcon = getDisabledIcon(nodeIcon)
+                }
+            }
+
             is SnykCodeFileTreeNode -> {
                 val (file, productType) = value.userObject as Pair<SnykCodeFile, ProductType>
-                val relativePath = file.relativePath
-                toolTipText =
-                    buildString {
-                        append(relativePath)
-                        append(productType.getCountText(value.childCount))
-                    }
-
-                text = toolTipText.apply {
-                    if (toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
-                        "..." + this.substring(
-                            this.length - MAX_FILE_TREE_NODE_LENGTH, this.length
-                        )
-                    }
-                }
-
-                nodeIcon = file.icon
+                val (icon, nodeText) = updateTextTooltipAndIcon(file, productType, value)
+                nodeIcon = icon
+                text = nodeText
                 if (!AnalysisData.instance.isFileInCache(file)) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     text += OBSOLETE_SUFFIX
@@ -291,6 +315,30 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
         icon = nodeIcon
         font = UIUtil.getTreeFont()
         text?.let { append(it, attributes) }
+    }
+
+    private fun updateTextTooltipAndIcon(
+        file: SnykCodeFile,
+        productType: ProductType,
+        value: DefaultMutableTreeNode
+    ): Pair<Icon?, String?> {
+        val relativePath = file.relativePath
+        toolTipText =
+            buildString {
+                append(relativePath)
+                append(productType.getCountText(value.childCount))
+            }
+
+        val text = toolTipText.apply {
+            if (toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
+                "..." + this.substring(
+                    this.length - MAX_FILE_TREE_NODE_LENGTH, this.length
+                )
+            }
+        }
+
+        val nodeIcon = file.icon
+        return Pair(nodeIcon, text)
     }
 
     companion object {

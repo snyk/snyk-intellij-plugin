@@ -4,6 +4,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
@@ -14,7 +15,6 @@ import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
 
-// FIXME
 @Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
     fun getScanDoneEvent(
@@ -135,10 +135,10 @@ class AnalyticsScanListener(val project: Project) {
             snykScanListener,
         )
 
-        // FIXME feature flag for LS
-        project.messageBus.connect().subscribe(
-            SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
-            snykCodeScanListenerLS,
-        )
+        if (isSnykCodeLSEnabled())
+            project.messageBus.connect().subscribe(
+                SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
+                snykCodeScanListenerLS,
+            )
     }
 }

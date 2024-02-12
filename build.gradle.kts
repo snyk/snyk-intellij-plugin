@@ -10,7 +10,7 @@ fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
     id("org.jetbrains.changelog") version "2.1.2"
-    id("org.jetbrains.intellij") version "1.16.1"
+    id("org.jetbrains.intellij") version "1.17.1"
     id("org.jetbrains.kotlin.jvm") version "1.9.0"
     id("io.gitlab.arturbosch.detekt") version ("1.23.1")
     id("pl.allegro.tech.build.axion-release") version "1.13.6"
@@ -67,11 +67,11 @@ dependencies {
 }
 
 // configuration for gradle-intellij-plugin plugin.
-// read more: https://github.com/JetBrains/gradle-intellij-plugin
+// read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
     version.set(properties("platformVersion"))
     // https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html#intellij-extension-type
-    // type.set("GO")
+    type.set("IU")
     downloadSources.set(properties("platformDownloadSources").toBoolean())
 
     // plugin dependencies: uses `platformPlugins` property from the gradle.properties file.
