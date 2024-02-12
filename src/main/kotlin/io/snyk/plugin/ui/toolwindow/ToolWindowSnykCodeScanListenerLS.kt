@@ -1,17 +1,16 @@
-package io.snyk.plugin.events
+package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.messages.Topic
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
+import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
@@ -23,28 +22,22 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
 @Suppress("DuplicatedCode")
-abstract class SnykScanListenerLS(
+abstract class ToolWindowSnykCodeScanListenerLS(
     val project: Project,
     private val snykToolWindowPanel: SnykToolWindowPanel,
     private val vulnerabilitiesTree: JTree,
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
-) {
-    companion object {
-        val SNYK_SCAN_TOPIC =
-            Topic.create("Snyk scan LS", SnykScanListenerLS::class.java)
-    }
+) : SnykCodeScanListenerLS {
 
-    abstract fun scanningStarted()
-
-    fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+    override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
         ApplicationManager.getApplication().invokeLater {
             displaySnykCodeResults(snykCodeResults)
             refreshAnnotationsForOpenFiles(project)
         }
     }
 
-    abstract fun scanningSnykCodeError(snykError: SnykError)
+    override fun scanningSnykCodeError(snykError: SnykError) = Unit
 
     private fun displaySnykCodeResults(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
         if (getSnykCachedResults(project)?.currentSnykCodeError != null) return

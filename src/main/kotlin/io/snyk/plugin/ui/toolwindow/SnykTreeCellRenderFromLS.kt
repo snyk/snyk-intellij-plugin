@@ -45,7 +45,7 @@ class SnykTreeCellRendererFromLS : ColoredTreeCellRenderer() {
                 val parentFileNode = value.parent as SnykCodeFileTreeNode
                 val entry =
                     (parentFileNode.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>).first
-                val cachedIssues = getSnykCachedResults(entry.key.project)?.currentSnykCodeResults
+                val cachedIssues = getSnykCachedResults(entry.key.project)?.currentSnykCodeResultsLS
                 if (cachedIssues?.values?.flatten()?.contains(issue) == false) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
@@ -71,7 +71,7 @@ class SnykTreeCellRendererFromLS : ColoredTreeCellRenderer() {
                 }
 
                 nodeIcon = file.icon
-                val cachedIssues = getSnykCachedResults(file.project)?.currentSnykCodeResults
+                val cachedIssues = getSnykCachedResults(file.project)?.currentSnykCodeResultsLS
                     ?.filter { it.key.virtualFile == file.virtualFile } ?: emptyMap()
                 if (cachedIssues.isEmpty()) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES

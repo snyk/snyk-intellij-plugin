@@ -92,5 +92,4 @@ class RunUtils private constructor() : RunUtilsBase(
             return dumbService.runReadActionInSmartMode(computation)
         }
     }
-
 }

@@ -4,7 +4,7 @@ import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.getOpenedProjects
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.snykcode.core.SnykCodeFile
@@ -36,8 +36,6 @@ class SnykLanguageClient : LanguageClient {
     fun snykScan(snykScan: SnykScanParams) {
         // populate SnykResultCache
         logger.info("snyk.scan notification received")
-        // TODO: feature flag!
-
         getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
             when (snykScan.status) {
                 "inProgress" -> {}
@@ -65,12 +63,14 @@ class SnykLanguageClient : LanguageClient {
      * Get all the scan publishers for the given scan. As the folder path could apply to different projects
      * containing that content root, we need to notify all of them.
      */
-    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykScanListenerLS>> {
+    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykCodeScanListenerLS>> {
         return getOpenedProjects()
             .filter {
                 it.getContentRootVirtualFiles().map { virtualFile -> virtualFile.url }.contains(snykScan.folderPath)
             }
-            .mapNotNull { p -> getSyncPublisher(p, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let { Pair(p, it) } }.toSet()
+            .mapNotNull { p ->
+                getSyncPublisher(p, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)?.let { Pair(p, it) }
+            }.toSet()
     }
 
     private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {

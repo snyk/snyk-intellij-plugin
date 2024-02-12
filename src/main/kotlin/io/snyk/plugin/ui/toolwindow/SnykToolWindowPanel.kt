@@ -173,7 +173,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     }
                 }
 
-                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) {
+                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
                     ApplicationManager.getApplication().invokeLater {
                         displaySnykCodeResults(snykCodeResults)
                         refreshAnnotationsForOpenFiles(project)

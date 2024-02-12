@@ -2,8 +2,8 @@ package io.snyk.plugin.analytics
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
@@ -14,11 +14,16 @@ import snyk.container.ContainerResult
 import snyk.iac.IacResult
 import snyk.oss.OssResult
 
-@Service(Service.Level.PROJECT)
 // FIXME
+@Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
     fun getScanDoneEvent(
-        duration: Long, product: String, critical: Int, high: Int, medium: Int, low: Int
+        duration: Long,
+        product: String,
+        critical: Int,
+        high: Int,
+        medium: Int,
+        low: Int
     ): ScanDoneEvent {
         return ScanDoneEvent(
             ScanDoneEvent.Data(
@@ -36,12 +41,8 @@ class AnalyticsScanListener(val project: Project) {
         )
     }
 
-    private val snykScanListenerLS = object : SnykScanListenerLS {
+    val snykCodeScanListenerLS = object : SnykCodeScanListenerLS {
         override fun scanningStarted() {
-            TODO("Not yet implemented")
-        }
-
-        override fun scanningOssFinished(ossResult: OssResult) {
             TODO("Not yet implemented")
         }
 
@@ -49,27 +50,7 @@ class AnalyticsScanListener(val project: Project) {
             TODO("Not yet implemented")
         }
 
-        override fun scanningIacFinished(iacResult: IacResult) {
-            TODO("Not yet implemented")
-        }
-
-        override fun scanningOssError(snykError: SnykError) {
-            TODO("Not yet implemented")
-        }
-
-        override fun scanningIacError(snykError: SnykError) {
-            TODO("Not yet implemented")
-        }
-
         override fun scanningSnykCodeError(snykError: SnykError) {
-            TODO("Not yet implemented")
-        }
-
-        override fun scanningContainerFinished(containerResult: ContainerResult) {
-            TODO("Not yet implemented")
-        }
-
-        override fun scanningContainerError(snykError: SnykError) {
             TODO("Not yet implemented")
         }
     }
@@ -93,16 +74,16 @@ class AnalyticsScanListener(val project: Project) {
             LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
-        override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) {
+        override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
             val duration = System.currentTimeMillis() - start
             val product = "Snyk Code"
             val scanDoneEvent = getScanDoneEvent(
                 duration,
                 product,
-                snykCodeResults.totalCriticalCount,
-                snykCodeResults.totalErrorsCount,
-                snykCodeResults.totalWarnsCount,
-                snykCodeResults.totalInfosCount,
+                snykCodeResults?.totalCriticalCount ?: 0,
+                snykCodeResults?.totalErrorsCount ?: 0,
+                snykCodeResults?.totalWarnsCount ?: 0,
+                snykCodeResults?.totalInfosCount ?: 0,
             )
             LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
@@ -156,8 +137,8 @@ class AnalyticsScanListener(val project: Project) {
 
         // FIXME feature flag for LS
         project.messageBus.connect().subscribe(
-            SnykScanListenerLS.SNYK_SCAN_TOPIC,
-            snykScanListenerLS,
+            SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
+            snykCodeScanListenerLS,
         )
     }
 }
