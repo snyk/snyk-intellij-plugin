@@ -89,7 +89,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
         var qualityIssuesHMLPostfix = ""
         if (pluginSettings().snykCodeQualityIssuesScanEnable) {
             val qualityResults = snykCodeResults
-                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
+                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
                 .toMap()
             qualityIssuesCount = qualityResults.size
             qualityIssuesHMLPostfix = buildHMLpostfix(qualityResults)
