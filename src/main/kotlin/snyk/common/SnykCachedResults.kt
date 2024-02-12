@@ -3,9 +3,10 @@ package snyk.common
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
 import snyk.iac.IacResult
@@ -13,6 +14,8 @@ import snyk.oss.OssResult
 
 @Service
 class SnykCachedResults(val project: Project) {
+
+    var currentSnykCodeResults: Map<SnykCodeFile, List<ScanIssue>>? = null
 
     var currentOssResults: OssResult? = null
         get() = if (field?.isExpired() == false) field else null
@@ -38,6 +41,7 @@ class SnykCachedResults(val project: Project) {
         currentOssError = null
         currentContainerError = null
         currentIacError = null
+        currentSnykCodeResults = null
         currentSnykCodeError = null
     }
 
@@ -50,13 +54,16 @@ class SnykCachedResults(val project: Project) {
                 currentSnykCodeError = null
                 currentIacError = null
                 currentContainerError = null
+                currentSnykCodeResults = null
             }
 
             override fun scanningOssFinished(ossResult: OssResult) {
                 currentOssResults = ossResult
             }
 
-            override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {}
+            override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+                currentSnykCodeResults = snykCodeResults
+            }
 
             override fun scanningIacFinished(iacResult: IacResult) {
                 currentIacResult = iacResult

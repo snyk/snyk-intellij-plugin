@@ -8,7 +8,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
@@ -16,6 +19,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
+import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
@@ -56,6 +60,7 @@ import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
 import snyk.whoami.WhoamiService
 import java.io.File
+import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Path
 import java.security.KeyStore
@@ -83,6 +88,7 @@ fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.s
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
 
 fun getSnykCachedResults(project: Project): SnykCachedResults? = project.serviceIfNotDisposed()
+
 fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? = project.serviceIfNotDisposed()
 
 fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
@@ -301,10 +307,7 @@ fun navigateToSource(
     selectionEndOffset: Int? = null
 ) {
     if (!virtualFile.isValid) return
-    val psiFile = RunUtils.computeInReadActionInSmartMode(project) {
-        PsiManager.getInstance(project).findFile(virtualFile)
-    } ?: return
-    val textLength = psiFile.textLength
+    val textLength = virtualFile.contentsToByteArray().size
     if (selectionStartOffset in (0 until textLength)) {
         // jump to Source
         PsiNavigationSupport.getInstance().createNavigatable(
@@ -402,9 +405,14 @@ fun getArch(): String {
     return archMap[value] ?: value
 }
 
-fun VirtualFile.toPsiFile(project: Project): PsiFile? {
-    return PsiManager.getInstance(project).findFile(this)
+fun String.toVirtualFile(): VirtualFile =
+    StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
+
+fun VirtualFile.getPsiFile(project: Project): PsiFile? {
+    return runReadAction { PsiManager.getInstance(project).findFile(this) }
 }
+
+fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.getInstance().getDocument(this) }
 
 fun Project.getContentRootPaths(): SortedSet<Path> {
     return getContentRootVirtualFiles()

@@ -1,5 +1,6 @@
 package snyk.common.lsp
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -19,12 +20,12 @@ import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
-import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
+import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -37,7 +38,7 @@ private const val INITIALIZATION_TIMEOUT = 20L
 @Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
-    val executorService: ExecutorService = Executors.newCachedThreadPool(),
+    private val executorService: ExecutorService = Executors.newCachedThreadPool(),
 ) {
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
@@ -46,7 +47,7 @@ class LanguageServerWrapper(
      * The language client is used to receive messages from LS
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    lateinit var languageClient: LanguageClient
+    lateinit var languageClient: SnykLanguageClient
 
     /**
      * The language server allows access to the actual LS implementation
@@ -168,12 +169,25 @@ class LanguageServerWrapper(
         }
     }
 
+    fun sendScanCommand() {
+        try {
+            val param = ExecuteCommandParams()
+            param.command = "snyk.workspace.scan"
+            languageServer.workspaceService.executeCommand(param)
+        } catch (ignored: Exception) {
+            // do nothing to not break UX for analytics
+        }
+    }
+
     fun getInitializationOptions(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
-            activateSnykOpenSource = "false",
-            activateSnykCode = "false",
-            activateSnykIac = "false",
+            // TODO feature flag!
+            activateSnykOpenSource = ps.ossScanEnable.toString(),
+            activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
+            activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
+            activateSnykIac = ps.iacScanEnabled.toString(),
+            organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),
             endpoint = getEndpointUrl(),
             cliPath = getCliFile().absolutePath,
@@ -185,6 +199,8 @@ class LanguageServerWrapper(
                 medium = ps.mediumSeverityEnabled,
                 low = ps.lowSeverityEnabled
             ),
+            trustedFolders = service<WorkspaceTrustService>().settings.getTrustedPaths(),
+            scanningMode = "auto"
         )
     }
 

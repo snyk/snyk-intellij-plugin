@@ -97,8 +97,11 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
+
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
                     scheduleSnykCodeScan()
+                    // TODO feature flag!
+                    LanguageServerWrapper.getInstance().sendScanCommand()
                 }
                 if (settings.ossScanEnable) {
                     scheduleOssScan()

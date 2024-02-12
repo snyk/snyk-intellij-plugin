@@ -173,13 +173,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     }
                 }
 
-                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
+                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults) {
                     ApplicationManager.getApplication().invokeLater {
                         displaySnykCodeResults(snykCodeResults)
                         refreshAnnotationsForOpenFiles(project)
-                    }
-                    if (snykCodeResults == null) {
-                        return
                     }
                 }
 
@@ -940,7 +937,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         return result.replaceFirst(",", ":")
     }
 
-    private fun userObjectsForExpandedNodes(rootNode: DefaultMutableTreeNode) =
+    internal fun userObjectsForExpandedNodes(rootNode: DefaultMutableTreeNode) =
         if (rootNode.childCount == 0) null
         else TreeUtil.collectExpandedUserObjects(vulnerabilitiesTree, TreePath(rootNode.path))
 
@@ -1007,7 +1004,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
      * Re-expand previously expanded children (if `null` then expand All children)
      * Keep selection in the Tree (if any)
      */
-    private fun smartReloadRootNode(
+    internal fun smartReloadRootNode(
         nodeToReload: DefaultMutableTreeNode,
         userObjectsForExpandedChildren: List<Any>?,
         selectedNodeUserObject: Any?
@@ -1116,7 +1113,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val NO_CONTAINER_IMAGES_FOUND = " - No container images found"
         const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
-        private const val NODE_INITIAL_STATE = -1
+        internal const val NODE_INITIAL_STATE = -1
         private const val NODE_NOT_SUPPORTED_STATE = -2
 
         private val CONTAINER_DOCS_TEXT_WITH_LINK =
