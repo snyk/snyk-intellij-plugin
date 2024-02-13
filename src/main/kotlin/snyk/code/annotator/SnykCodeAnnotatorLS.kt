@@ -1,42 +1,72 @@
 package snyk.code.annotator
 
+import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.eclipse.lsp4j.CodeAction
+import org.eclipse.lsp4j.CodeActionContext
+import org.eclipse.lsp4j.CodeActionParams
+import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.Range
+import org.eclipse.lsp4j.TextDocumentIdentifier
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.ShowDetailsIntentionActionBase
+import snyk.common.intentionactions.SnykIntentionActionBase
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
+import java.util.concurrent.TimeUnit
+import javax.swing.Icon
 
 class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykCodeAnnotatorLS>()
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
-    override fun collectInformation(file: PsiFile): PsiFile = file
+    override fun collectInformation(file: PsiFile): PsiFile {
+        LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()
+        return file
+    }
+
     override fun doAnnotate(psiFile: PsiFile?) {
         AnnotatorCommon.prepareAnnotate(psiFile)
     }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         if (!isSnykCodeLSEnabled()) return
-        // FIXME: this is not the LS implementation needed
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
-            .forEach {
-                val highlightSeverity = it.getSeverityAsEnum().getHighlightSeverity()
-                val textRange = textRange(psiFile, it.range)
+            .forEach { issue ->
+                val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
+                val textRange = textRange(psiFile, issue.range)
                 if (!textRange.isEmpty) {
-                    val annotationMessage = annotationMessage(it)
+                    val annotationMessage = annotationMessage(issue)
                     holder.newAnnotation(highlightSeverity, "Snyk: $annotationMessage")
                         .range(textRange)
-                        .withFix(ShowDetailsIntentionAction(annotationMessage, it, it.range))
+                        .withFix(ShowDetailsIntentionAction(annotationMessage, issue))
                         .create()
+
+                    val params = CodeActionParams(
+                        TextDocumentIdentifier(issue.virtualFile!!.url), issue.range, CodeActionContext(
+                            emptyList()
+                        )
+                    )
+                    val languageServer = LanguageServerWrapper.getInstance().languageServer
+                    val codeActions = languageServer.textDocumentService.codeAction(params).get()
+                    codeActions.distinct().forEach { action ->
+                        holder.newAnnotation(highlightSeverity, action.right.title)
+                            .range(textRange)
+                            .withFix(CodeActionIntention(action.right))
+                            .create()
+                    }
                 }
             }
     }
@@ -90,14 +120,42 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
     inner class ShowDetailsIntentionAction(
         override val annotationMessage: String,
-        private val issue: ScanIssue,
-        private val codeTextRange: Range
+        private val issue: ScanIssue
     ) : ShowDetailsIntentionActionBase() {
-
         override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
             toolWindowPanel.selectNodeAndDisplayDescription(issue)
         }
 
         override fun getSeverity(): Severity = issue.getSeverityAsEnum()
+    }
+
+    inner class CodeActionIntention(private val codeAction: CodeAction) : SnykIntentionActionBase() {
+        override fun getText(): String = codeAction.title
+
+        override fun invoke(p0: Project, p1: Editor?, psiFile: PsiFile?) {
+            val languageServer = LanguageServerWrapper.getInstance().languageServer
+            var resolvedCodeAction = codeAction
+            if (codeAction.command == null) {
+                resolvedCodeAction =
+                    languageServer.textDocumentService.resolveCodeAction(codeAction).get(30, TimeUnit.SECONDS)
+                val edit = resolvedCodeAction.edit ?: return
+                edit.changes?.forEach { (key, edit) ->
+                    edit.forEach {
+                        val document = psiFile?.viewProvider?.document ?: return
+                        val start = 0
+                        val end = document.textLength
+                        document.replaceString(start, end, it.newText)
+                    }
+                }
+            } else {
+                val codeActionCommand = resolvedCodeAction.command ?: return
+                val executeCommandParams = ExecuteCommandParams(codeActionCommand.command, codeActionCommand.arguments)
+                languageServer.workspaceService.executeCommand(executeCommandParams).get(30, TimeUnit.SECONDS)
+            }
+        }
+
+        override fun getIcon(p0: Int): Icon = SnykIcons.SNYK_CODE
+
+        override fun getPriority() = PriorityAction.Priority.NORMAL
     }
 }

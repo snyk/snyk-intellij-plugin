@@ -148,7 +148,7 @@ class LanguageServerWrapper(
         }
     }
 
-    private fun ensureLanguageServerInitialized() {
+    fun ensureLanguageServerInitialized() {
         while (isInitializing) {
             Thread.sleep(DEFAULT_SLEEP_TIME)
         }
