@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.diagnostic.LogLevel
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.getOpenedProjects
@@ -22,7 +23,8 @@ import org.eclipse.lsp4j.services.LanguageClient
 import java.util.concurrent.CompletableFuture
 
 class SnykLanguageClient : LanguageClient {
-    val logger = Logger.getInstance("Snyk Language Server")
+    // TODO FIX Log Level
+    val logger = Logger.getInstance("Snyk Language Server").also { it.setLevel(LogLevel.DEBUG) }
 
     override fun telemetryEvent(`object`: Any?) {
         // do nothing
@@ -34,28 +36,30 @@ class SnykLanguageClient : LanguageClient {
 
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
-        // populate SnykResultCache
-        logger.info("snyk.scan notification received")
-        getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
-            when (snykScan.status) {
-                "inProgress" -> {}
-                "success" -> {
-                    logger.info("Scan completed")
-                    when (snykScan.product) {
-                        "oss" -> {
-                            // TODO implement
-                        }
+        try {
+            getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
+                when (snykScan.status) {
+                    "inProgress" -> {}
+                    "success" -> {
+                        logger.info("Scan completed")
+                        when (snykScan.product) {
+                            "oss" -> {
+                                // TODO implement
+                            }
 
-                        "code" -> {
-                            scanPublisher.scanningSnykCodeFinished(getSnykCodeResult(project, snykScan))
-                        }
+                            "code" -> {
+                                scanPublisher.scanningSnykCodeFinished(getSnykCodeResult(project, snykScan))
+                            }
 
-                        "iac" -> {
-                            // TODO implement
+                            "iac" -> {
+                                // TODO implement
+                            }
                         }
                     }
                 }
             }
+        } catch (e: Exception) {
+            logger.error("Error processing snyk scan", e)
         }
     }
 

@@ -131,29 +131,33 @@ data class Marker(
 }
 
 data class MarkerPosition(
-    val position: Position,
-    @SerializedName("file") val file: String
-)
-
-data class Position(
     @SerializedName("cols") val cols: Point,
-    @SerializedName("rows") val rows: Point
+    @SerializedName("rows") val rows: Point,
+    @SerializedName("file") val file: String
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Position
+        other as MarkerPosition
 
-        if (!cols.contentEquals(other.cols)) return false
-        if (!rows.contentEquals(other.rows)) return false
+        if (cols != null) {
+            if (other.cols == null) return false
+            if (!cols.contentEquals(other.cols)) return false
+        } else if (other.cols != null) return false
+        if (rows != null) {
+            if (other.rows == null) return false
+            if (!rows.contentEquals(other.rows)) return false
+        } else if (other.rows != null) return false
+        if (file != other.file) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = cols.contentHashCode()
-        result = 31 * result + rows.contentHashCode()
+        var result = cols?.contentHashCode() ?: 0
+        result = 31 * result + (rows?.contentHashCode() ?: 0)
+        result = 31 * result + file.hashCode()
         return result
     }
 }
