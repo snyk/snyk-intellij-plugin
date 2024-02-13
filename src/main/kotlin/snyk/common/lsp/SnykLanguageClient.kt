@@ -39,27 +39,33 @@ class SnykLanguageClient : LanguageClient {
         try {
             getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
                 when (snykScan.status) {
-                    "inProgress" -> {}
-                    "success" -> {
-                        logger.info("Scan completed")
-                        when (snykScan.product) {
-                            "oss" -> {
-                                // TODO implement
-                            }
-
-                            "code" -> {
-                                scanPublisher.scanningSnykCodeFinished(getSnykCodeResult(project, snykScan))
-                            }
-
-                            "iac" -> {
-                                // TODO implement
-                            }
-                        }
-                    }
+                    "inProgress" -> scanPublisher.scanningStarted()
+                    "success" -> processSuccessfulScan(snykScan, scanPublisher, project)
                 }
             }
         } catch (e: Exception) {
             logger.error("Error processing snyk scan", e)
+        }
+    }
+
+    private fun processSuccessfulScan(
+        snykScan: SnykScanParams,
+        scanPublisher: SnykCodeScanListenerLS,
+        project: Project
+    ) {
+        logger.info("Scan completed")
+        when (snykScan.product) {
+            "oss" -> {
+                // TODO implement
+            }
+
+            "code" -> {
+                scanPublisher.scanningSnykCodeFinished(getSnykCodeResult(project, snykScan))
+            }
+
+            "iac" -> {
+                // TODO implement
+            }
         }
     }
 
