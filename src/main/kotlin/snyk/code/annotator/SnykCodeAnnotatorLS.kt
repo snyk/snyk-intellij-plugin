@@ -55,7 +55,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
             issue.additionalData.message.let {
                 if (it.length < 70) it else "${it.take(70)}..."
             }
-        }
+        }.split(":")[0]
 
     /** Public for Tests only */
     @Suppress("DuplicatedCode")
@@ -88,14 +88,14 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         }
     }
 
-    class ShowDetailsIntentionAction(
+    inner class ShowDetailsIntentionAction(
         override val annotationMessage: String,
         private val issue: ScanIssue,
         private val codeTextRange: Range
     ) : ShowDetailsIntentionActionBase() {
 
         override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
-            toolWindowPanel.selectNodeAndDisplayDescription(issue, codeTextRange)
+            toolWindowPanel.selectNodeAndDisplayDescription(issue)
         }
 
         override fun getSeverity(): Severity = issue.getSeverityAsEnum()

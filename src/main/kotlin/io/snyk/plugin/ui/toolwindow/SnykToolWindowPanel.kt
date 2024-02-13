@@ -78,7 +78,6 @@ import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.StatePanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
-import org.eclipse.lsp4j.Range
 import org.jetbrains.annotations.TestOnly
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.WelcomeIsViewed
@@ -1117,10 +1116,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 }
         }
 
-    fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, textRange: Range) =
+    fun selectNodeAndDisplayDescription(scanIssue: ScanIssue) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
             treeNode is SuggestionTreeNodeFromLS &&
-                (treeNode.userObject as ScanIssue).let { it == scanIssue && it.textRange == textRange }
+                (treeNode.userObject as ScanIssue).id == scanIssue.id
         }
 
     @TestOnly
