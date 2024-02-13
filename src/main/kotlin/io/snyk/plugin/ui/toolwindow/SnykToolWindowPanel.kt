@@ -61,6 +61,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.ErrorHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
@@ -77,12 +78,14 @@ import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.StatePanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
+import org.eclipse.lsp4j.Range
 import org.jetbrains.annotations.TestOnly
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.WelcomeIsViewed
 import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
@@ -1112,6 +1115,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 (treeNode.userObject as Pair<SuggestionForFile, Int>).let { (suggestion, index) ->
                     suggestion == suggestionForFile && suggestion.ranges[index] == textRange
                 }
+        }
+
+    fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, textRange: Range) =
+        selectAndDisplayNodeWithIssueDescription { treeNode ->
+            treeNode is SuggestionTreeNodeFromLS &&
+                (treeNode.userObject as ScanIssue).let { it == scanIssue && it.textRange == textRange }
         }
 
     @TestOnly

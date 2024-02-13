@@ -1,23 +1,21 @@
 package snyk.code.annotator
 
-import ai.deepcode.javaclient.core.MyTextRange
-import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
-import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.eclipse.lsp4j.Range
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.ShowDetailsIntentionActionBase
+import snyk.common.lsp.ScanIssue
 
 class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
-    val logger = logger<SnykCodeAnnotator>()
+    val logger = logger<SnykCodeAnnotatorLS>()
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile = file
@@ -28,57 +26,60 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         if (!isSnykCodeLSEnabled()) return
         // FIXME: this is not the LS implementation needed
-        val suggestions = getIssuesForFile(psiFile)
+        getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
-
-        suggestions.forEach { suggestionForFile ->
-            val highlightSeverity = suggestionForFile.getSeverityAsEnum().getHighlightSeverity()
-            suggestionForFile.ranges.forEach {
-                val textRange = textRange(psiFile, it)
+            .forEach {
+                val highlightSeverity = it.getSeverityAsEnum().getHighlightSeverity()
+                val textRange = textRange(psiFile, it.range)
                 if (!textRange.isEmpty) {
-                    val annotationMessage = annotationMessage(suggestionForFile)
+                    val annotationMessage = annotationMessage(it)
                     holder.newAnnotation(highlightSeverity, "Snyk: $annotationMessage")
                         .range(textRange)
-                        .withFix(ShowDetailsIntentionAction(annotationMessage, suggestionForFile, it))
+                        .withFix(ShowDetailsIntentionAction(annotationMessage, it, it.range))
                         .create()
                 }
             }
-        }
     }
 
-    private fun getIssuesForFile(psiFile: PsiFile): List<SuggestionForFile> =
-        AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile))
+    private fun getIssuesForFile(psiFile: PsiFile): List<ScanIssue> =
+        getSnykCachedResults(psiFile.project)?.currentSnykCodeResultsLS
+            ?.filter { it.key.virtualFile == psiFile.virtualFile }
+            ?.map { it.value }
+            ?.flatten()
+            ?.toList()
+            ?: emptyList()
 
     /** Public for Tests only */
-    fun annotationMessage(suggestion: SuggestionForFile): String =
-        suggestion.title.ifBlank {
-            suggestion.message.let {
+    fun annotationMessage(issue: ScanIssue): String =
+        issue.title.ifBlank {
+            issue.additionalData.message.let {
                 if (it.length < 70) it else "${it.take(70)}..."
             }
         }
 
     /** Public for Tests only */
-    fun textRange(psiFile: PsiFile, snykCodeRange: MyTextRange): TextRange {
+    @Suppress("DuplicatedCode")
+    fun textRange(psiFile: PsiFile, range: Range): TextRange {
         try {
             val document =
                 psiFile.viewProvider.document ?: throw IllegalArgumentException("No document found for $psiFile")
-            val startRow = snykCodeRange.startRow - 1
-            val endRow = snykCodeRange.endRow - 1
-            val startCol = snykCodeRange.startCol
-            val endCol = snykCodeRange.endCol
+            val startRow = range.start.line
+            val endRow = range.end.line
+            val startCol = range.start.character
+            val endCol = range.end.character
 
             if (startRow < 0 || startRow > document.lineCount - 1)
-                throw IllegalArgumentException("Invalid range $snykCodeRange")
+                throw IllegalArgumentException("Invalid range $range")
             if (endRow < 0 || endRow > document.lineCount - 1 || endRow < startRow)
-                throw IllegalArgumentException("Invalid range $snykCodeRange")
+                throw IllegalArgumentException("Invalid range $range")
 
             val lineOffSet = document.getLineStartOffset(startRow) + startCol
             val lineOffSetEnd = document.getLineStartOffset(endRow) + endCol
 
             if (lineOffSet < 0 || lineOffSet > document.textLength - 1)
-                throw IllegalArgumentException("Invalid range $snykCodeRange")
+                throw IllegalArgumentException("Invalid range $range")
             if (lineOffSetEnd < 0 || lineOffSetEnd < lineOffSet || lineOffSetEnd > document.textLength - 1)
-                throw IllegalArgumentException("Invalid range $snykCodeRange")
+                throw IllegalArgumentException("Invalid range $range")
 
             return TextRange.create(lineOffSet, lineOffSetEnd)
         } catch (e: IllegalArgumentException) {
@@ -87,16 +88,16 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         }
     }
 
-    inner class ShowDetailsIntentionAction(
+    class ShowDetailsIntentionAction(
         override val annotationMessage: String,
-        private val suggestion: SuggestionForFile,
-        private val codeTextRange: MyTextRange
+        private val issue: ScanIssue,
+        private val codeTextRange: Range
     ) : ShowDetailsIntentionActionBase() {
 
         override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
-            toolWindowPanel.selectNodeAndDisplayDescription(suggestion, codeTextRange)
+            toolWindowPanel.selectNodeAndDisplayDescription(issue, codeTextRange)
         }
 
-        override fun getSeverity(): Severity = suggestion.getSeverityAsEnum()
+        override fun getSeverity(): Severity = issue.getSeverityAsEnum()
     }
 }
