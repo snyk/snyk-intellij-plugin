@@ -175,7 +175,8 @@ data class IssueData(
     @SerializedName("cols") val cols: Point,
     @SerializedName("rows") val rows: Point,
     @SerializedName("isSecurityType") val isSecurityType: Boolean,
-    @SerializedName("priorityScore") val priorityScore: Int
+    @SerializedName("priorityScore") val priorityScore: Int,
+    @SerializedName("hasAIFix") val hasAIFix: Boolean
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -192,10 +193,17 @@ data class IssueData(
         if (cwe != other.cwe) return false
         if (text != other.text) return false
         if (markers != other.markers) return false
-        if (!cols.contentEquals(other.cols)) return false
-        if (!rows.contentEquals(other.rows)) return false
+        if (cols != null) {
+            if (other.cols == null) return false
+            if (!cols.contentEquals(other.cols)) return false
+        } else if (other.cols != null) return false
+        if (rows != null) {
+            if (other.rows == null) return false
+            if (!rows.contentEquals(other.rows)) return false
+        } else if (other.rows != null) return false
         if (isSecurityType != other.isSecurityType) return false
         if (priorityScore != other.priorityScore) return false
+        if (hasAIFix != other.hasAIFix) return false
 
         return true
     }
@@ -207,13 +215,18 @@ data class IssueData(
         result = 31 * result + ruleId.hashCode()
         result = 31 * result + repoDatasetSize
         result = 31 * result + exampleCommitFixes.hashCode()
-        result = 31 * result + cwe.hashCode()
+        result = 31 * result + (cwe?.hashCode() ?: 0)
         result = 31 * result + text.hashCode()
         result = 31 * result + (markers?.hashCode() ?: 0)
-        result = 31 * result + cols.contentHashCode()
-        result = 31 * result + rows.contentHashCode()
+        result = 31 * result + (cols?.contentHashCode() ?: 0)
+        result = 31 * result + (rows?.contentHashCode() ?: 0)
         result = 31 * result + isSecurityType.hashCode()
         result = 31 * result + priorityScore
+        result = 31 * result + hasAIFix.hashCode()
         return result
     }
 }
+
+data class HasAuthenticatedParam (@SerializedName("token") val token: String?)
+
+data class SnykTrustedFoldersParams(@SerializedName("trustedFolders") val trustedFolders: List<String>)

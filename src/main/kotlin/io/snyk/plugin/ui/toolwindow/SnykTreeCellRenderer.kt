@@ -111,7 +111,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
                 val range = issue.range
-                text = "line ${range.start.line + 1}: ${
+                text = "${if (issue.additionalData.hasAIFix) "⚡️" else "🫣"} line ${range.start.line + 1}: ${
                     if (issue.additionalData.isSecurityType) {
                         issue.title.split(":")[0]
                     } else {
