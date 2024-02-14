@@ -3,13 +3,19 @@ package snyk.code.annotator
 import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
 import io.snyk.plugin.Severity
+import io.snyk.plugin.getDocument
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -19,6 +25,7 @@ import org.eclipse.lsp4j.CodeActionParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentIdentifier
+import org.eclipse.lsp4j.TextEdit
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.ShowDetailsIntentionActionBase
 import snyk.common.intentionactions.SnykIntentionActionBase
@@ -26,6 +33,8 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
 import javax.swing.Icon
+
+private const val TIMEOUT = 120L
 
 class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykCodeAnnotatorLS>()
@@ -132,29 +141,74 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     inner class CodeActionIntention(private val codeAction: CodeAction) : SnykIntentionActionBase() {
+        private var changes: Map<String, List<TextEdit>>? = null
+
         override fun getText(): String = codeAction.title
 
-        override fun invoke(p0: Project, p1: Editor?, psiFile: PsiFile?) {
-            val languageServer = LanguageServerWrapper.getInstance().languageServer
-            var resolvedCodeAction = codeAction
-            if (codeAction.command == null && codeAction.edit == null) {
-                // TODO: check if this needs to be a background task
-                resolvedCodeAction =
-                    languageServer.textDocumentService.resolveCodeAction(codeAction).get(30, TimeUnit.SECONDS)
-                val edit = resolvedCodeAction.edit ?: return
-                edit.changes?.forEach { (_, edit) ->
-                    edit.forEach {
-                        val document = psiFile?.viewProvider?.document ?: return
-                        val start = 0
-                        val end = document.textLength
-                        document.replaceString(start, end, it.newText)
+        override fun invoke(project: Project, editor: Editor?, psiFile: PsiFile?) {
+            val task = object : Backgroundable(project, "Applying Snyk Code Action") {
+                override fun run(p0: ProgressIndicator) {
+                    val languageServer = LanguageServerWrapper.getInstance().languageServer
+                    var resolvedCodeAction = codeAction
+                    if (codeAction.command == null && codeAction.edit == null) {
+                        resolvedCodeAction =
+                            languageServer.textDocumentService.resolveCodeAction(codeAction).get(TIMEOUT, TimeUnit.SECONDS)
+
+                        val edit = resolvedCodeAction.edit
+                        if (edit.changes == null) return
+                        changes = edit.changes
+                    } else {
+                        val codeActionCommand = resolvedCodeAction.command
+                        val executeCommandParams =
+                            ExecuteCommandParams(codeActionCommand.command, codeActionCommand.arguments)
+                        languageServer.workspaceService.executeCommand(executeCommandParams).get(TIMEOUT, TimeUnit.SECONDS)
                     }
                 }
-            } else {
-                val codeActionCommand = resolvedCodeAction.command ?: return
-                val executeCommandParams = ExecuteCommandParams(codeActionCommand.command, codeActionCommand.arguments)
-                languageServer.workspaceService.executeCommand(executeCommandParams).get(30, TimeUnit.SECONDS)
+
+                override fun onSuccess() {
+                    // see https://intellij-support.jetbrains.com/hc/en-us/community/posts/360005049419-Run-WriteAction-in-Background-process-Asynchronously
+                    // save the write action to call it later onSuccess
+                    // as we are updating documents, we need a WriteCommandAction
+                    WriteCommandAction.runWriteCommandAction(project) {
+                        if (changes == null) return@runWriteCommandAction
+                        for (change in changes!!) {
+                            val fileURI = change.key
+                            val virtualFile = VirtualFileManager.getInstance().findFileByUrl(fileURI) ?: continue
+                            val document = virtualFile.getDocument() ?: continue
+                            for (e in change.value) {
+                                // normalize range
+                                var startLine = e.range.start.line
+                                var startCharacter = e.range.start.character
+                                var endLine = e.range.end.line
+                                var endCharacter = e.range.end.character
+
+                                if (startLine < 0) startLine = 0
+                                if (endLine > document.lineCount) {
+                                    endLine = document.lineCount - 1
+                                    endCharacter =
+                                        document.getLineEndOffset(endLine) - document.getLineStartOffset(endLine)
+                                }
+
+                                val startLineOffset = document.getLineStartOffset(startLine)
+                                val endLineOffset = document.getLineStartOffset(endLine)
+
+                                if (startLineOffset + startCharacter > document.getLineEndOffset(startLine)) {
+                                    startCharacter = document.getLineEndOffset(startLine)
+                                }
+                                if (endLineOffset + endCharacter > document.getLineEndOffset(endLine)) {
+                                    endCharacter = document.getLineEndOffset(endLine)
+                                }
+
+                                val start = document.getLineStartOffset(startLine) + startCharacter
+                                val end = document.getLineStartOffset(endLine) + endCharacter
+
+                                document.replaceString(start, end, e.newText)
+                            }
+                        }
+                    }
+                }
             }
+            ProgressManager.getInstance().run(task)
         }
 
         override fun getIcon(p0: Int): Icon = SnykIcons.SNYK_CODE
