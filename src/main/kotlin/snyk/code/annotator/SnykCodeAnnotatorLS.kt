@@ -213,6 +213,12 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
         override fun getIcon(p0: Int): Icon = SnykIcons.SNYK_CODE
 
-        override fun getPriority() = PriorityAction.Priority.NORMAL
+        override fun getPriority(): PriorityAction.Priority {
+            return when {
+                codeAction.title.contains("fix", ignoreCase = true) -> PriorityAction.Priority.TOP
+                codeAction.isPreferred -> PriorityAction.Priority.HIGH
+                else -> PriorityAction.Priority.NORMAL
+            }
+        }
     }
 }
