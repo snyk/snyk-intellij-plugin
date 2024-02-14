@@ -58,26 +58,35 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                 val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
                 val textRange = textRange(psiFile, issue.range)
                 if (!textRange.isEmpty) {
-                    val params = CodeActionParams(
-                        TextDocumentIdentifier(issue.virtualFile!!.url), issue.range, CodeActionContext(
-                            emptyList()
-                        )
-                    )
-                    val languageServer = LanguageServerWrapper.getInstance().languageServer
-                    val codeActions = languageServer.textDocumentService.codeAction(params).get()
-                    codeActions
-                        .filter { a -> a.right.diagnostics?.get(0)?.code?.left == issue.additionalData.ruleId }
-                        .sortedBy { it.right.title }.forEach { action ->
-                            holder.newAnnotation(highlightSeverity, action.right.title)
-                                .range(textRange)
-                                .withFix(CodeActionIntention(action.right))
-                                .create()
-                        }
-                    val annotationMessage = annotationMessage(issue)
-                    holder.newAnnotation(highlightSeverity, "$annotationMessage (Snyk)")
+                    val annotationMessage = "${annotationMessage(issue)} (Snyk)"
+                    holder.newAnnotation(highlightSeverity, annotationMessage)
                         .range(textRange)
                         .withFix(ShowDetailsIntentionAction(annotationMessage, issue))
                         .create()
+
+                    val params = CodeActionParams(
+                        TextDocumentIdentifier(psiFile.virtualFile.url),
+                        issue.range,
+                        CodeActionContext(emptyList())
+                    )
+                    val languageServer = LanguageServerWrapper.getInstance().languageServer
+                    val codeActions = languageServer.textDocumentService
+                        .codeAction(params).get(2, TimeUnit.SECONDS)
+
+                    codeActions
+                        .filter { a ->
+                            val diagnosticCode = a.right.diagnostics?.get(0)?.code?.left
+                            val ruleId = issue.additionalData.ruleId
+                            diagnosticCode == ruleId
+                        }
+                        .sortedBy { it.right.title }.forEach { action ->
+                            val codeAction = action.right
+                            val title = codeAction.title
+                            holder.newAnnotation(highlightSeverity, title)
+                                .range(textRange)
+                                .withFix(CodeActionIntention(issue, codeAction))
+                                .create()
+                        }
                 }
             }
     }
@@ -109,18 +118,22 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
             val startCol = range.start.character
             val endCol = range.end.character
 
-            if (startRow < 0 || startRow > document.lineCount - 1)
+            if (startRow < 0 || startRow > document.lineCount - 1) {
                 throw IllegalArgumentException("Invalid range $range")
-            if (endRow < 0 || endRow > document.lineCount - 1 || endRow < startRow)
+            }
+            if (endRow < 0 || endRow > document.lineCount - 1 || endRow < startRow) {
                 throw IllegalArgumentException("Invalid range $range")
+            }
 
             val lineOffSet = document.getLineStartOffset(startRow) + startCol
             val lineOffSetEnd = document.getLineStartOffset(endRow) + endCol
 
-            if (lineOffSet < 0 || lineOffSet > document.textLength - 1)
+            if (lineOffSet < 0 || lineOffSet > document.textLength - 1) {
                 throw IllegalArgumentException("Invalid range $range")
-            if (lineOffSetEnd < 0 || lineOffSetEnd < lineOffSet || lineOffSetEnd > document.textLength - 1)
+            }
+            if (lineOffSetEnd < 0 || lineOffSetEnd < lineOffSet || lineOffSetEnd > document.textLength - 1) {
                 throw IllegalArgumentException("Invalid range $range")
+            }
 
             return TextRange.create(lineOffSet, lineOffSetEnd)
         } catch (e: IllegalArgumentException) {
@@ -140,7 +153,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         override fun getSeverity(): Severity = issue.getSeverityAsEnum()
     }
 
-    inner class CodeActionIntention(private val codeAction: CodeAction) : SnykIntentionActionBase() {
+    inner class CodeActionIntention(private val issue: ScanIssue, private val codeAction: CodeAction) : SnykIntentionActionBase() {
         private var changes: Map<String, List<TextEdit>>? = null
 
         override fun getText(): String = codeAction.title
@@ -152,7 +165,8 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                     var resolvedCodeAction = codeAction
                     if (codeAction.command == null && codeAction.edit == null) {
                         resolvedCodeAction =
-                            languageServer.textDocumentService.resolveCodeAction(codeAction).get(TIMEOUT, TimeUnit.SECONDS)
+                            languageServer.textDocumentService
+                                .resolveCodeAction(codeAction).get(TIMEOUT, TimeUnit.SECONDS)
 
                         val edit = resolvedCodeAction.edit
                         if (edit.changes == null) return
@@ -161,7 +175,8 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                         val codeActionCommand = resolvedCodeAction.command
                         val executeCommandParams =
                             ExecuteCommandParams(codeActionCommand.command, codeActionCommand.arguments)
-                        languageServer.workspaceService.executeCommand(executeCommandParams).get(TIMEOUT, TimeUnit.SECONDS)
+                        languageServer.workspaceService
+                            .executeCommand(executeCommandParams).get(TIMEOUT, TimeUnit.SECONDS)
                     }
                 }
 
@@ -216,8 +231,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         override fun getPriority(): PriorityAction.Priority {
             return when {
                 codeAction.title.contains("fix", ignoreCase = true) -> PriorityAction.Priority.TOP
-                codeAction.isPreferred -> PriorityAction.Priority.HIGH
-                else -> PriorityAction.Priority.NORMAL
+                else -> issue.getSeverityAsEnum().getQuickFixPriority()
             }
         }
     }

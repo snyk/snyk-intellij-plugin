@@ -48,6 +48,7 @@
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
+    <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider"/>
   </extensions>
 
   <actions>
