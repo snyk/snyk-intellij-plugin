@@ -44,16 +44,11 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         if (!isSnykCodeLSEnabled()) return
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
+            .sortedBy { it.title }
             .forEach { issue ->
                 val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
                 val textRange = textRange(psiFile, issue.range)
                 if (!textRange.isEmpty) {
-                    val annotationMessage = annotationMessage(issue)
-                    holder.newAnnotation(highlightSeverity, "Snyk: $annotationMessage")
-                        .range(textRange)
-                        .withFix(ShowDetailsIntentionAction(annotationMessage, issue))
-                        .create()
-
                     val params = CodeActionParams(
                         TextDocumentIdentifier(issue.virtualFile!!.url), issue.range, CodeActionContext(
                             emptyList()
@@ -61,23 +56,30 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                     )
                     val languageServer = LanguageServerWrapper.getInstance().languageServer
                     val codeActions = languageServer.textDocumentService.codeAction(params).get()
-                    codeActions.distinct().forEach { action ->
-                        holder.newAnnotation(highlightSeverity, action.right.title)
-                            .range(textRange)
-                            .withFix(CodeActionIntention(action.right))
-                            .create()
-                    }
+                    codeActions
+                        .filter { a -> a.right.diagnostics?.get(0)?.code?.left == issue.additionalData.ruleId }
+                        .sortedBy { it.right.title }.forEach { action ->
+                            holder.newAnnotation(highlightSeverity, action.right.title)
+                                .range(textRange)
+                                .withFix(CodeActionIntention(action.right))
+                                .create()
+                        }
+                    val annotationMessage = annotationMessage(issue)
+                    holder.newAnnotation(highlightSeverity, "$annotationMessage (Snyk)")
+                        .range(textRange)
+                        .withFix(ShowDetailsIntentionAction(annotationMessage, issue))
+                        .create()
                 }
             }
     }
 
-    private fun getIssuesForFile(psiFile: PsiFile): List<ScanIssue> =
+    private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
         getSnykCachedResults(psiFile.project)?.currentSnykCodeResultsLS
             ?.filter { it.key.virtualFile == psiFile.virtualFile }
             ?.map { it.value }
             ?.flatten()
-            ?.toList()
-            ?: emptyList()
+            ?.toSet()
+            ?: emptySet()
 
     /** Public for Tests only */
     fun annotationMessage(issue: ScanIssue): String =
@@ -136,10 +138,11 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
             val languageServer = LanguageServerWrapper.getInstance().languageServer
             var resolvedCodeAction = codeAction
             if (codeAction.command == null && codeAction.edit == null) {
+                // TODO: check if this needs to be a background task
                 resolvedCodeAction =
                     languageServer.textDocumentService.resolveCodeAction(codeAction).get(30, TimeUnit.SECONDS)
                 val edit = resolvedCodeAction.edit ?: return
-                edit.changes?.forEach { (key, edit) ->
+                edit.changes?.forEach { (_, edit) ->
                     edit.forEach {
                         val document = psiFile?.viewProvider?.document ?: return
                         val start = 0
