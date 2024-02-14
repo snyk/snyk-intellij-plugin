@@ -135,7 +135,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         override fun invoke(p0: Project, p1: Editor?, psiFile: PsiFile?) {
             val languageServer = LanguageServerWrapper.getInstance().languageServer
             var resolvedCodeAction = codeAction
-            if (codeAction.command == null) {
+            if (codeAction.command == null && codeAction.edit == null) {
                 resolvedCodeAction =
                     languageServer.textDocumentService.resolveCodeAction(codeAction).get(30, TimeUnit.SECONDS)
                 val edit = resolvedCodeAction.edit ?: return
