@@ -46,11 +46,15 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
             val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.url))
             val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
             val codeLenses = LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)
-                .get(2, TimeUnit.SECONDS)
+                .get(10, TimeUnit.SECONDS)
+
+            if (codeLenses == null) {
+                return@compute CodeVisionState.READY_EMPTY
+            }
             codeLenses.forEach { codeLens ->
                 val range = TextRange(
                     document.getLineStartOffset(codeLens.range.start.line) + codeLens.range.start.character,
-                    document.getLineEndOffset(codeLens.range.end.line) +codeLens.range.end.character
+                    document.getLineEndOffset(codeLens.range.end.line) + codeLens.range.end.character
                 )
 
                 val entry = ClickableTextCodeVisionEntry(
@@ -81,5 +85,3 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
         }
     }
 }
-
-
