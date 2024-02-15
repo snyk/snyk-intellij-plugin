@@ -2,6 +2,7 @@ package io.snyk.plugin.analytics
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.isSnykCodeLSEnabled
@@ -48,11 +49,22 @@ class AnalyticsScanListener(val project: Project) {
         }
 
         override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
-            // TODO("Not yet implemented")
+            val duration = System.currentTimeMillis() - start
+            val product = "Snyk Code"
+            val issues = snykCodeResults.values.flatten()
+            val scanDoneEvent = getScanDoneEvent(
+                duration,
+                product,
+                issues.count { it.getSeverityAsEnum() == Severity.CRITICAL },
+                issues.count { it.getSeverityAsEnum() == Severity.HIGH },
+                issues.count { it.getSeverityAsEnum() == Severity.MEDIUM },
+                issues.count { it.getSeverityAsEnum() == Severity.LOW },
+            )
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
         override fun scanningSnykCodeError(snykError: SnykError) {
-            // TODO("Not yet implemented")
+            // do nothing
         }
     }
 
