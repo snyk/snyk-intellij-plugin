@@ -36,6 +36,8 @@ import javax.swing.Icon
 
 private const val TIMEOUT = 120L
 
+private const val CODEACTION_TIMEOUT = 15L
+
 class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykCodeAnnotatorLS>()
 
@@ -71,7 +73,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                     )
                     val languageServer = LanguageServerWrapper.getInstance().languageServer
                     val codeActions = languageServer.textDocumentService
-                        .codeAction(params).get(2, TimeUnit.SECONDS)
+                        .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
 
                     codeActions
                         .filter { a ->
@@ -153,7 +155,8 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         override fun getSeverity(): Severity = issue.getSeverityAsEnum()
     }
 
-    inner class CodeActionIntention(private val issue: ScanIssue, private val codeAction: CodeAction) : SnykIntentionActionBase() {
+    inner class CodeActionIntention(private val issue: ScanIssue, private val codeAction: CodeAction) :
+        SnykIntentionActionBase() {
         private var changes: Map<String, List<TextEdit>>? = null
 
         override fun getText(): String = codeAction.title
