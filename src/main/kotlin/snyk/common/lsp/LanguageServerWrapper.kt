@@ -7,6 +7,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -130,7 +131,8 @@ class LanguageServerWrapper(
 
         val params = InitializeParams()
         params.processId = ProcessHandle.current().pid().toInt()
-        params.clientInfo = ClientInfo("${pluginInfo.integrationName}/lsp4j")
+        val clientInfo = getUserAgentString()
+        params.clientInfo = ClientInfo(clientInfo, "lsp4j")
         params.initializationOptions = getInitializationOptions()
         params.workspaceFolders = workspaceFolders
 
@@ -200,7 +202,9 @@ class LanguageServerWrapper(
             ),
             enableTrustedFoldersFeature = "false",
             trustedFolders = service<WorkspaceTrustService>().settings.getTrustedPaths(),
-            scanningMode = "auto"
+            scanningMode = "auto",
+            integrationName = pluginInfo.integrationName,
+            integrationVersion = pluginInfo.integrationVersion,
         )
     }
 
