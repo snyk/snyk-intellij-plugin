@@ -1,8 +1,4 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
-    <externalAnnotator language="HTML" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
-    <externalAnnotator language="HTML" implementationClass="snyk.code.annotator.SnykCodeAnnotatorLS"/>
-    <externalAnnotator language="PHP" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
-    <externalAnnotator language="PHP" implementationClass="snyk.code.annotator.SnykCodeAnnotatorLS"/>
   </extensions>
 </idea-plugin>
