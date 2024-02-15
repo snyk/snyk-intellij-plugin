@@ -22,6 +22,8 @@ import org.eclipse.lsp4j.TextDocumentIdentifier
 import java.awt.event.MouseEvent
 import java.util.concurrent.TimeUnit
 
+private const val CODELENS_FETCH_TIMEOUT = 15L
+
 @Suppress("UnstableApiUsage")
 class LSCodeVisionProvider : CodeVisionProvider<Unit> {
     override val defaultAnchor: CodeVisionAnchorKind = CodeVisionAnchorKind.Default
@@ -46,7 +48,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
             val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.url))
             val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
             val codeLenses = LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)
-                .get(10, TimeUnit.SECONDS)
+                .get(CODELENS_FETCH_TIMEOUT, TimeUnit.SECONDS)
 
             if (codeLenses == null) {
                 return@compute CodeVisionState.READY_EMPTY
