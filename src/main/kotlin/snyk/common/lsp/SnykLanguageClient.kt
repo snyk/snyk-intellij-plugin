@@ -1,7 +1,8 @@
 package snyk.common.lsp
 
 import com.intellij.ide.impl.ProjectUtil
-import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.LogLevel
 import com.intellij.openapi.diagnostic.Logger
@@ -11,9 +12,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.getOpenedProjects
-import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.io.toNioPathOrNull
-import icons.SnykIcons
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
@@ -38,6 +37,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import snyk.trust.WorkspaceTrustService
 import java.util.Collections
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 
 class SnykLanguageClient : LanguageClient {
@@ -214,19 +214,20 @@ class SnykLanguageClient : LanguageClient {
 
     override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> {
         val project = ProjectUtil.getActiveProject()
-        val first = requestParams.actions.first()
-        val second = requestParams.actions.stream().skip(1).findFirst().orElse(null)
-        var choice = first
-        invokeAndWaitIfNeeded {
-            val result = MessageDialogBuilder
-                .yesNo("Snyk", requestParams.message)
-                .icon(SnykIcons.LOGO)
-                .yesText(first.title)
-                .noText(second?.title?: "Cancel")
-                .ask(project)
-            choice = if (result) first else second ?: MessageActionItem("Cancel")
-        }
-        return CompletableFuture.completedFuture(choice)
+        val actions = requestParams.actions
+            .map {
+                object : AnAction(it.title) {
+                    override fun actionPerformed(p0: AnActionEvent) {
+                        val future = CompletableFuture.completedFuture(MessageActionItem(it.title))
+                        showMessageRequestFutures.put(future)
+                    }
+                }
+            }.toSet().toTypedArray()
+
+        val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project!!, *actions)
+        val future = showMessageRequestFutures.take()
+        notification.hideBalloon()
+        return future
     }
 
     override fun logMessage(message: MessageParams?) {
@@ -239,5 +240,10 @@ class SnykLanguageClient : LanguageClient {
                 null -> logger.info(it.message)
             }
         }
+    }
+
+    companion object {
+        // we only allow one message request at a time
+        val showMessageRequestFutures = ArrayBlockingQueue<CompletableFuture<MessageActionItem>>(1)
     }
 }
