@@ -42,7 +42,7 @@ class AnalyticsScanListener(val project: Project) {
         )
     }
 
-    val snykCodeScanListenerLS = object : SnykCodeScanListenerLS {
+    private val snykCodeScanListenerLS = object : SnykCodeScanListenerLS {
         var start = 0L
         override fun scanningStarted() {
             start = System.currentTimeMillis()
