@@ -59,6 +59,10 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
             .forEach { issue ->
                 val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
                 val textRange = textRange(psiFile, issue.range)
+                if (textRange == null) {
+                    logger.warn("Invalid range for issue: $issue")
+                    return@forEach
+                }
                 if (!textRange.isEmpty) {
                     val annotationMessage = "${annotationMessage(issue)} (Snyk)"
                     holder.newAnnotation(highlightSeverity, annotationMessage)
@@ -111,7 +115,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
     /** Public for Tests only */
     @Suppress("DuplicatedCode")
-    fun textRange(psiFile: PsiFile, range: Range): TextRange {
+    fun textRange(psiFile: PsiFile, range: Range): TextRange? {
         try {
             val document =
                 psiFile.viewProvider.document ?: throw IllegalArgumentException("No document found for $psiFile")
@@ -121,20 +125,20 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
             val endCol = range.end.character
 
             if (startRow < 0 || startRow > document.lineCount - 1) {
-                throw IllegalArgumentException("Invalid range $range")
+                return null
             }
             if (endRow < 0 || endRow > document.lineCount - 1 || endRow < startRow) {
-                throw IllegalArgumentException("Invalid range $range")
+                return null
             }
 
             val lineOffSet = document.getLineStartOffset(startRow) + startCol
             val lineOffSetEnd = document.getLineStartOffset(endRow) + endCol
 
             if (lineOffSet < 0 || lineOffSet > document.textLength - 1) {
-                throw IllegalArgumentException("Invalid range $range")
+                return null
             }
             if (lineOffSetEnd < 0 || lineOffSetEnd < lineOffSet || lineOffSetEnd > document.textLength - 1) {
-                throw IllegalArgumentException("Invalid range $range")
+                return null
             }
 
             return TextRange.create(lineOffSet, lineOffSetEnd)
