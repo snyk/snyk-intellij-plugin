@@ -68,6 +68,16 @@ class SnykLanguageClient : LanguageClient {
         return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse())
     }
 
+    override fun refreshCodeLenses(): CompletableFuture<Void> {
+        DaemonCodeAnalyzer.getInstance(ProjectUtil.getActiveProject())
+        return CompletableFuture.completedFuture(null)
+    }
+
+    override fun refreshInlineValues(): CompletableFuture<Void> {
+        DaemonCodeAnalyzer.getInstance(ProjectUtil.getActiveProject())
+        return CompletableFuture.completedFuture(null)
+    }
+
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
         try {

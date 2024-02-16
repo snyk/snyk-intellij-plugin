@@ -79,7 +79,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                     val codeActions = try {
                         languageServer.textDocumentService
                             .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
-                    } catch (e: TimeoutException) {
+                    } catch (ignored: TimeoutException) {
                         logger.warn("Timeout fetching code actions for issue: $issue")
                         emptyList()
                     }
