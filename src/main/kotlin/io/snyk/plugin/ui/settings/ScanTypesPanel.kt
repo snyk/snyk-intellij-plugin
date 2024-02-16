@@ -13,6 +13,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykApiService
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
@@ -247,6 +248,8 @@ class ScanTypesPanel(
         codeSecurityCheckbox?.isSelected == true || codeQualityCheckbox?.isSelected == true
 
     private fun getUploadingFilesMessage(): String {
+        // FIXME: implement count of files
+        if (isSnykCodeLSEnabled()) return "Snyk Code Language Server is enabled. Count of files is not implemented yet."
         val allSupportedFilesInProject =
             SnykCodeUtils.instance.getAllSupportedFilesInProject(project, true, null)
         val allSupportedFilesCount = allSupportedFilesInProject.size

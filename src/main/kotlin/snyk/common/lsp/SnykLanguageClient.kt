@@ -69,12 +69,14 @@ class SnykLanguageClient : LanguageClient {
     }
 
     override fun refreshCodeLenses(): CompletableFuture<Void> {
-        DaemonCodeAnalyzer.getInstance(ProjectUtil.getActiveProject())
+        val activeProject = ProjectUtil.getActiveProject()?: return CompletableFuture.completedFuture(null)
+        DaemonCodeAnalyzer.getInstance(activeProject)
         return CompletableFuture.completedFuture(null)
     }
 
     override fun refreshInlineValues(): CompletableFuture<Void> {
-        DaemonCodeAnalyzer.getInstance(ProjectUtil.getActiveProject())
+        val activeProject = ProjectUtil.getActiveProject()?: return CompletableFuture.completedFuture(null)
+        DaemonCodeAnalyzer.getInstance(activeProject)
         return CompletableFuture.completedFuture(null)
     }
 
