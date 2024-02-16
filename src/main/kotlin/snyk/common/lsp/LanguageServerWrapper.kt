@@ -13,12 +13,19 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
+import org.eclipse.lsp4j.CodeActionCapabilities
+import org.eclipse.lsp4j.CodeLensCapabilities
+import org.eclipse.lsp4j.DiagnosticCapabilities
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializedParams
 import org.eclipse.lsp4j.ServerCapabilities
+import org.eclipse.lsp4j.TextDocumentClientCapabilities
+import org.eclipse.lsp4j.WorkspaceClientCapabilities
+import org.eclipse.lsp4j.WorkspaceEditCapabilities
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
@@ -136,13 +143,35 @@ class LanguageServerWrapper(
         params.clientInfo = ClientInfo(clientInfo, "lsp4j")
         params.initializationOptions = getSettings()
         params.workspaceFolders = workspaceFolders
-//        params.capabilities = getCapabilities()
+        params.capabilities = getCapabilities()
 
         this.serverCapabilities =
             languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS).capabilities
 
         languageServer.initialized(InitializedParams())
     }
+
+    private fun getCapabilities(): ClientCapabilities =
+        ClientCapabilities().let { clientCapabilities ->
+            clientCapabilities.workspace = WorkspaceClientCapabilities().let { workspaceClientCapabilities ->
+                workspaceClientCapabilities.workspaceFolders = true
+                workspaceClientCapabilities.workspaceEdit =
+                    WorkspaceEditCapabilities().let { workspaceEditCapabilities ->
+                        workspaceEditCapabilities.documentChanges = true
+                        workspaceEditCapabilities
+                    }
+                workspaceClientCapabilities.applyEdit = true
+                workspaceClientCapabilities
+            }
+            clientCapabilities.textDocument = TextDocumentClientCapabilities().let {
+                it.codeLens = CodeLensCapabilities(false)
+                it.codeAction = CodeActionCapabilities(false)
+                it.diagnostic = DiagnosticCapabilities(false)
+                it
+            }
+
+            return clientCapabilities
+        }
 
     fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
         try {
