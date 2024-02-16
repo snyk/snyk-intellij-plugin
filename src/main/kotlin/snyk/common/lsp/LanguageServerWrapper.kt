@@ -17,11 +17,13 @@ import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
 import org.eclipse.lsp4j.CodeActionCapabilities
 import org.eclipse.lsp4j.CodeLensCapabilities
+import org.eclipse.lsp4j.CodeLensWorkspaceCapabilities
 import org.eclipse.lsp4j.DiagnosticCapabilities
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializedParams
+import org.eclipse.lsp4j.InlineValueWorkspaceCapabilities
 import org.eclipse.lsp4j.TextDocumentClientCapabilities
 import org.eclipse.lsp4j.WorkspaceClientCapabilities
 import org.eclipse.lsp4j.WorkspaceEditCapabilities
@@ -156,16 +158,18 @@ class LanguageServerWrapper(
                         workspaceEditCapabilities.documentChanges = true
                         workspaceEditCapabilities
                     }
+                workspaceClientCapabilities.codeLens = CodeLensWorkspaceCapabilities(true)
+                workspaceClientCapabilities.inlineValue = InlineValueWorkspaceCapabilities(true)
                 workspaceClientCapabilities.applyEdit = true
                 workspaceClientCapabilities
             }
             clientCapabilities.textDocument = TextDocumentClientCapabilities().let {
-                it.codeLens = CodeLensCapabilities(false)
-                it.codeAction = CodeActionCapabilities(false)
-                it.diagnostic = DiagnosticCapabilities(false)
+                it.codeLens = CodeLensCapabilities(true)
+                it.codeAction = CodeActionCapabilities(true)
+                it.diagnostic = DiagnosticCapabilities(true)
+
                 it
             }
-
             return clientCapabilities
         }
 

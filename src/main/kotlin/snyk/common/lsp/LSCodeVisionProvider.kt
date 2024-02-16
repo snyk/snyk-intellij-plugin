@@ -24,7 +24,7 @@ import java.awt.event.MouseEvent
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-private const val CODELENS_FETCH_TIMEOUT = 15L
+private const val CODELENS_FETCH_TIMEOUT = 2L
 
 @Suppress("UnstableApiUsage")
 class LSCodeVisionProvider : CodeVisionProvider<Unit> {
