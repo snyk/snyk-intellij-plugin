@@ -1,9 +1,14 @@
 package io.snyk.plugin.snykcode
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.openapi.diagnostic.logger
+import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.readText
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.getPsiFile
 import io.snyk.plugin.getSnykCachedResults
@@ -15,11 +20,11 @@ import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
+import org.eclipse.lsp4j.DidSaveTextDocumentParams
+import org.eclipse.lsp4j.TextDocumentIdentifier
+import snyk.common.lsp.LanguageServerWrapper
 
 class SnykCodeBulkFileListener : SnykBulkFileListener() {
-
-    private val logger = logger<SnykCodeBulkFileListener>()
-
     override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) {
         val filesAffected = toSnykCodeFileSet(
             project,
@@ -71,6 +76,25 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         }
         /* update .dcignore caches if needed */
         SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(filesAffected)
+    }
+
+    override fun forwardEvents(events: MutableList<out VFileEvent>) {
+        if (!isSnykCodeLSEnabled()) return
+        val languageServer = LanguageServerWrapper.getInstance().languageServer
+        for (event in events) {
+            if (event.file == null || !event.isFromSave) continue
+            val file = event.file!!
+            val activeProject = ProjectUtil.getActiveProject()
+            ProgressManager.getInstance().run(object : Backgroundable(
+                activeProject,
+                "Forwarding save event to Language Server"
+            ) {
+                override fun run(indicator: ProgressIndicator) {
+                    val param = DidSaveTextDocumentParams(TextDocumentIdentifier(file.url), file.readText())
+                    languageServer.textDocumentService.didSave(param)
+                }
+            })
+        }
     }
 
     private fun processAfterForLS(filesAffected: Set<SnykCodeFile>, project: Project) {
