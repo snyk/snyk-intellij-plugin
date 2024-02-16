@@ -54,7 +54,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
                 LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)
                     .get(CODELENS_FETCH_TIMEOUT, TimeUnit.SECONDS)
             } catch (ignored: TimeoutException) {
-                logger.warn("Timeout fetching code lenses for : $file")
+                logger.info("Timeout fetching code lenses for : $file")
                 emptyList()
             }
 

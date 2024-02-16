@@ -36,7 +36,7 @@ import javax.swing.Icon
 
 private const val TIMEOUT = 120L
 
-private const val CODEACTION_TIMEOUT = 15L
+private const val CODEACTION_TIMEOUT = 2L
 
 class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykCodeAnnotatorLS>()
@@ -80,7 +80,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                         languageServer.textDocumentService
                             .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
                     } catch (ignored: TimeoutException) {
-                        logger.warn("Timeout fetching code actions for issue: $issue")
+                        logger.info("Timeout fetching code actions for issue: $issue")
                         emptyList()
                     }
 
