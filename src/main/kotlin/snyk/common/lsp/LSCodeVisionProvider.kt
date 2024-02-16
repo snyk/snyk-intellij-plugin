@@ -7,6 +7,7 @@ import com.intellij.codeInsight.codeVision.CodeVisionRelativeOrdering
 import com.intellij.codeInsight.codeVision.CodeVisionState
 import com.intellij.codeInsight.codeVision.ui.model.ClickableTextCodeVisionEntry
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -21,11 +22,13 @@ import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import java.awt.event.MouseEvent
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 private const val CODELENS_FETCH_TIMEOUT = 15L
 
 @Suppress("UnstableApiUsage")
 class LSCodeVisionProvider : CodeVisionProvider<Unit> {
+    private val logger = logger<LSCodeVisionProvider>()
     override val defaultAnchor: CodeVisionAnchorKind = CodeVisionAnchorKind.Default
     override val id = "snyk.common.lsp.LSCodeVisionProvider"
     override val name = "Snyk Language Server Code Vision Provider"
@@ -47,8 +50,13 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
                 ?: return@compute CodeVisionState.READY_EMPTY
             val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.url))
             val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
-            val codeLenses = LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)
-                .get(CODELENS_FETCH_TIMEOUT, TimeUnit.SECONDS)
+            val codeLenses = try {
+                LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)
+                    .get(CODELENS_FETCH_TIMEOUT, TimeUnit.SECONDS)
+            } catch (ignored: TimeoutException) {
+                logger.warn("Timeout fetching code lenses for : $file")
+                emptyList()
+            }
 
             if (codeLenses == null) {
                 return@compute CodeVisionState.READY_EMPTY

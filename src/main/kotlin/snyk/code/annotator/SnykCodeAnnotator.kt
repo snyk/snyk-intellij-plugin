@@ -8,6 +8,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.getSeverityAsEnum
@@ -25,6 +26,7 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
+        if (isSnykCodeLSEnabled()) return
         val suggestions = getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
 

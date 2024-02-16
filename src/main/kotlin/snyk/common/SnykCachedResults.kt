@@ -1,14 +1,18 @@
 package snyk.common
 
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.snykcode.SnykCodeResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.ScanState
+import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
 import snyk.iac.IacResult
@@ -17,7 +21,8 @@ import snyk.oss.OssResult
 @Service
 class SnykCachedResults(val project: Project) {
 
-    var currentSnykCodeResultsLS: Map<SnykCodeFile, List<ScanIssue>>? = null
+    val currentSnykCodeResultsLS: MutableMap<SnykCodeFile, List<ScanIssue>> = mutableMapOf()
+
     var currentSnykCodeResults: SnykCodeResults? = null
 
     var currentOssResults: OssResult? = null
@@ -36,7 +41,6 @@ class SnykCachedResults(val project: Project) {
     var currentIacError: SnykError? = null
 
     var currentSnykCodeError: SnykError? = null
-    var currentSnykCodeErrorLS: SnykError? = null
 
     fun cleanCaches() {
         currentOssResults = null
@@ -45,7 +49,7 @@ class SnykCachedResults(val project: Project) {
         currentOssError = null
         currentContainerError = null
         currentIacError = null
-        currentSnykCodeResultsLS = null
+//        currentSnykCodeResultsLS = null
         currentSnykCodeResults = null
         currentSnykCodeError = null
     }
@@ -119,16 +123,25 @@ class SnykCachedResults(val project: Project) {
         project.messageBus.connect().subscribe(
             SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
             object : SnykCodeScanListenerLS {
-                override fun scanningStarted() {
-                    currentSnykCodeResultsLS = null
+                val logger = logger<SnykCachedResults>()
+                override fun scanningStarted(snykScan: SnykScanParams) {
+                    if (snykScan.product != ScanState.SNYK_CODE) return
+                    logger.info("scanningStarted for project ${project.name}, emptying cache.")
                 }
 
                 override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
-                    currentSnykCodeResultsLS = snykCodeResults
+                    currentSnykCodeResultsLS.putAll(snykCodeResults)
+                    logger.info("scanning finished for project ${project.name}, assigning cache.")
                 }
 
-                override fun scanningSnykCodeError(snykError: SnykError) {
-                    currentSnykCodeErrorLS = snykError
+                override fun scanningSnykCodeError(snykScan: SnykScanParams) {
+                    if (snykScan.product != ScanState.SNYK_CODE) return
+
+                    SnykBalloonNotificationHelper
+                        .showError(
+                            "scanning error for project ${project.name}, emptying cache.Data: $snykScan",
+                            project
+                        )
                 }
             }
         )

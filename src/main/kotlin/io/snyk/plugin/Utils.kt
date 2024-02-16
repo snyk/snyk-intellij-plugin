@@ -52,6 +52,7 @@ import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
+import snyk.common.lsp.ScanState
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.errorHandler.SentryErrorReporter
@@ -177,7 +178,9 @@ fun isOssRunning(project: Project): Boolean {
 }
 
 fun isSnykCodeRunning(project: Project): Boolean =
-    AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
+    AnalysisData.instance.isUpdateAnalysisInProgress(project)
+        || RunUtils.instance.isFullRescanRequested(project)
+        || ScanState.scanInProgress[ScanState.SNYK_CODE] == true
 
 fun isIacRunning(project: Project): Boolean {
     val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator

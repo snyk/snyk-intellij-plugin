@@ -1,6 +1,5 @@
 package snyk.common.lsp
 
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -18,6 +17,8 @@ import org.eclipse.lsp4j.ClientInfo
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
+import org.eclipse.lsp4j.InitializedParams
+import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
@@ -27,7 +28,6 @@ import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
-import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -42,6 +42,7 @@ class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
 ) {
+    private var serverCapabilities: ServerCapabilities? = null
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
 
@@ -86,7 +87,7 @@ class LanguageServerWrapper(
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
+            val cmd = listOf(lsPath, "language-server", "-l", logLevel, "-f", "/tmp/snyk-ls.log")
 
             val processBuilder = ProcessBuilder(cmd)
             pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
@@ -135,8 +136,12 @@ class LanguageServerWrapper(
         params.clientInfo = ClientInfo(clientInfo, "lsp4j")
         params.initializationOptions = getInitializationOptions()
         params.workspaceFolders = workspaceFolders
+//        params.capabilities = getCapabilities()
 
-        languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
+        this.serverCapabilities =
+            languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS).capabilities
+
+        languageServer.initialized(InitializedParams())
     }
 
     fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
@@ -201,7 +206,6 @@ class LanguageServerWrapper(
                 low = ps.lowSeverityEnabled
             ),
             enableTrustedFoldersFeature = "false",
-            trustedFolders = service<WorkspaceTrustService>().settings.getTrustedPaths(),
             scanningMode = "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,

@@ -11,11 +11,9 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
 import io.snyk.plugin.Severity
-import io.snyk.plugin.getDocument
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -29,9 +27,11 @@ import org.eclipse.lsp4j.TextEdit
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.ShowDetailsIntentionActionBase
 import snyk.common.intentionactions.SnykIntentionActionBase
+import snyk.common.lsp.DocumentChanger
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import javax.swing.Icon
 
 private const val TIMEOUT = 120L
@@ -76,8 +76,13 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                         CodeActionContext(emptyList())
                     )
                     val languageServer = LanguageServerWrapper.getInstance().languageServer
-                    val codeActions = languageServer.textDocumentService
-                        .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
+                    val codeActions = try {
+                        languageServer.textDocumentService
+                            .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
+                    } catch (e: TimeoutException) {
+                        logger.warn("Timeout fetching code actions for issue: $issue")
+                        emptyList()
+                    }
 
                     codeActions
                         .filter { a ->
@@ -194,38 +199,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                     WriteCommandAction.runWriteCommandAction(project) {
                         if (changes == null) return@runWriteCommandAction
                         for (change in changes!!) {
-                            val fileURI = change.key
-                            val virtualFile = VirtualFileManager.getInstance().findFileByUrl(fileURI) ?: continue
-                            val document = virtualFile.getDocument() ?: continue
-                            for (e in change.value) {
-                                // normalize range
-                                var startLine = e.range.start.line
-                                var startCharacter = e.range.start.character
-                                var endLine = e.range.end.line
-                                var endCharacter = e.range.end.character
-
-                                if (startLine < 0) startLine = 0
-                                if (endLine > document.lineCount) {
-                                    endLine = document.lineCount - 1
-                                    endCharacter =
-                                        document.getLineEndOffset(endLine) - document.getLineStartOffset(endLine)
-                                }
-
-                                val startLineOffset = document.getLineStartOffset(startLine)
-                                val endLineOffset = document.getLineStartOffset(endLine)
-
-                                if (startLineOffset + startCharacter > document.getLineEndOffset(startLine)) {
-                                    startCharacter = document.getLineEndOffset(startLine)
-                                }
-                                if (endLineOffset + endCharacter > document.getLineEndOffset(endLine)) {
-                                    endCharacter = document.getLineEndOffset(endLine)
-                                }
-
-                                val start = document.getLineStartOffset(startLine) + startCharacter
-                                val end = document.getLineStartOffset(endLine) + endCharacter
-
-                                document.replaceString(start, end, e.newText)
-                            }
+                           DocumentChanger.applyChange(change)
                         }
                     }
                 }
