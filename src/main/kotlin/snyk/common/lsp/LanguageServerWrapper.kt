@@ -134,7 +134,7 @@ class LanguageServerWrapper(
         params.processId = ProcessHandle.current().pid().toInt()
         val clientInfo = getUserAgentString()
         params.clientInfo = ClientInfo(clientInfo, "lsp4j")
-        params.initializationOptions = getInitializationOptions()
+        params.initializationOptions = getSettings()
         params.workspaceFolders = workspaceFolders
 //        params.capabilities = getCapabilities()
 
@@ -187,7 +187,7 @@ class LanguageServerWrapper(
         }
     }
 
-    fun getInitializationOptions(): LanguageServerSettings {
+    fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
             activateSnykOpenSource = false.toString(),
@@ -206,7 +206,7 @@ class LanguageServerWrapper(
                 low = ps.lowSeverityEnabled
             ),
             enableTrustedFoldersFeature = "false",
-            scanningMode = "auto",
+            scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
         )

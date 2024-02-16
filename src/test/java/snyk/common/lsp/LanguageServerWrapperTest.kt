@@ -83,7 +83,7 @@ class LanguageServerWrapperTest {
         settings.ignoreUnknownCA = true
         settings.cliPath = "testCliPath"
 
-        val actual = cut.getInitializationOptions()
+        val actual = cut.getSettings()
 
         assertEquals("false", actual.activateSnykCode)
         assertEquals("false", actual.activateSnykIac)
