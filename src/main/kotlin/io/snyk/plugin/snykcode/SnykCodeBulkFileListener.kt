@@ -87,7 +87,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
             val activeProject = ProjectUtil.getActiveProject()
             ProgressManager.getInstance().run(object : Backgroundable(
                 activeProject,
-                "Forwarding save event to Language Server"
+                "Snyk: forwarding save event to Language Server"
             ) {
                 override fun run(indicator: ProgressIndicator) {
                     val param = DidSaveTextDocumentParams(TextDocumentIdentifier(file.url), file.readText())
