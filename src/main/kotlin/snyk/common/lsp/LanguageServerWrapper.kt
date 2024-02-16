@@ -22,7 +22,6 @@ import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializedParams
-import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.TextDocumentClientCapabilities
 import org.eclipse.lsp4j.WorkspaceClientCapabilities
 import org.eclipse.lsp4j.WorkspaceEditCapabilities
@@ -49,7 +48,6 @@ class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
 ) {
-    private var serverCapabilities: ServerCapabilities? = null
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
 
@@ -145,9 +143,7 @@ class LanguageServerWrapper(
         params.workspaceFolders = workspaceFolders
         params.capabilities = getCapabilities()
 
-        this.serverCapabilities =
-            languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS).capabilities
-
+        languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
         languageServer.initialized(InitializedParams())
     }
 
