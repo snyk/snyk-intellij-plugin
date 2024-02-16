@@ -58,14 +58,14 @@ class SnykLanguageClient : LanguageClient {
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
-        val project = ProjectUtil.getActiveProject()
+        val project = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
         WriteCommandAction.runWriteCommandAction(project) {
             params?.edit?.changes?.forEach {
                 DocumentChanger.applyChange(it)
             }
         }
         DaemonCodeAnalyzer.getInstance(project).restart()
-        return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse())
+        return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(true))
     }
 
     override fun refreshCodeLenses(): CompletableFuture<Void> {
@@ -252,7 +252,7 @@ class SnykLanguageClient : LanguageClient {
     }
 
     override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> {
-        val project = ProjectUtil.getActiveProject()
+        val project = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(MessageActionItem(""))
         val actions = requestParams.actions
             .map {
                 object : AnAction(it.title) {
@@ -263,7 +263,7 @@ class SnykLanguageClient : LanguageClient {
                 }
             }.toSet().toTypedArray()
 
-        val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project!!, *actions)
+        val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project, *actions)
         val future = showMessageRequestFutures.take()
         notification.hideBalloon()
         return future
