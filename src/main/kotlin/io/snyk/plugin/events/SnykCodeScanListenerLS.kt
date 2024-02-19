@@ -2,8 +2,8 @@ package io.snyk.plugin.events
 
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import snyk.common.SnykError
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 
 interface SnykCodeScanListenerLS {
     companion object {
@@ -11,9 +11,9 @@ interface SnykCodeScanListenerLS {
             Topic.create("Snyk scan LS", SnykCodeScanListenerLS::class.java)
     }
 
-    fun scanningStarted()
+    fun scanningStarted(snykScan: SnykScanParams) {}
 
     fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>)
 
-    fun scanningSnykCodeError(snykError: SnykError)
+    fun scanningSnykCodeError(snykScan: SnykScanParams)
 }

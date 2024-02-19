@@ -158,17 +158,21 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             updateDescriptionPanelBySelectedTreeNode()
         }
 
-        if (isSnykCodeLSEnabled()) {
+        val scanListenerLS = if (isSnykCodeLSEnabled()) {
+            val scanListener = SnykToolWindowSnykCodeScanListenerLS(
+                project,
+                this,
+                vulnerabilitiesTree,
+                rootSecurityIssuesTreeNode,
+                rootQualityIssuesTreeNode
+            )
             project.messageBus.connect(this).subscribe(
                 SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
-                SnykToolWindowSnykCodeScanListenerLS(
-                    project,
-                    this,
-                    vulnerabilitiesTree,
-                    rootSecurityIssuesTreeNode,
-                    rootQualityIssuesTreeNode
-                )
+                scanListener
             )
+            scanListener
+        } else {
+            null
         }
 
         project.messageBus.connect(this)
@@ -304,18 +308,29 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
                 object : SnykResultsFilteringListener {
                     override fun filtersChanged() {
-                        val snykCodeResults: SnykCodeResults? =
-                            if (AnalysisData.instance.isProjectNOTAnalysed(project)) {
-                                null
-                            } else {
-                                val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
-                                SnykCodeResults(
-                                    AnalysisData.instance.getAnalysis(allProjectFiles)
-                                        .mapKeys { PDU.toSnykCodeFile(it.key) }
-                                )
+                        if (!isSnykCodeLSEnabled()) {
+                            val snykCodeResults: SnykCodeResults? =
+                                if (AnalysisData.instance.isProjectNOTAnalysed(project)) {
+                                    null
+                                } else {
+                                    val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
+                                    SnykCodeResults(
+                                        AnalysisData.instance.getAnalysis(allProjectFiles)
+                                            .mapKeys { PDU.toSnykCodeFile(it.key) }
+                                    )
+                                }
+                            ApplicationManager.getApplication().invokeLater {
+                                displaySnykCodeResults(snykCodeResults)
                             }
+                        } else {
+                            ApplicationManager.getApplication().invokeLater {
+                                val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
+                                val codeResultsLS = snykCachedResults.currentSnykCodeResultsLS ?: return@invokeLater
+
+                                scanListenerLS?.displaySnykCodeResults(codeResultsLS)
+                            }
+                        }
                         ApplicationManager.getApplication().invokeLater {
-                            displaySnykCodeResults(snykCodeResults)
                             val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
                             snykCachedResults.currentOssResults?.let { displayOssResults(it) }
                             snykCachedResults.currentIacResult?.let { displayIacResults(it) }

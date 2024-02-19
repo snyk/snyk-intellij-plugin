@@ -1,22 +1,32 @@
 package snyk.common.lsp
 
-import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
+import org.eclipse.lsp4j.CodeActionCapabilities
+import org.eclipse.lsp4j.CodeLensCapabilities
+import org.eclipse.lsp4j.CodeLensWorkspaceCapabilities
+import org.eclipse.lsp4j.DiagnosticCapabilities
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
+import org.eclipse.lsp4j.InitializedParams
+import org.eclipse.lsp4j.InlineValueWorkspaceCapabilities
+import org.eclipse.lsp4j.TextDocumentClientCapabilities
+import org.eclipse.lsp4j.WorkspaceClientCapabilities
+import org.eclipse.lsp4j.WorkspaceEditCapabilities
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
@@ -26,7 +36,6 @@ import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
-import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -85,7 +94,7 @@ class LanguageServerWrapper(
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
+            val cmd = listOf(lsPath, "language-server", "-l", logLevel, "-f", "/tmp/snyk-ls.log")
 
             val processBuilder = ProcessBuilder(cmd)
             pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
@@ -130,12 +139,39 @@ class LanguageServerWrapper(
 
         val params = InitializeParams()
         params.processId = ProcessHandle.current().pid().toInt()
-        params.clientInfo = ClientInfo("${pluginInfo.integrationName}/lsp4j")
-        params.initializationOptions = getInitializationOptions()
+        val clientInfo = getUserAgentString()
+        params.clientInfo = ClientInfo(clientInfo, "lsp4j")
+        params.initializationOptions = getSettings()
         params.workspaceFolders = workspaceFolders
+        params.capabilities = getCapabilities()
 
         languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
+        languageServer.initialized(InitializedParams())
     }
+
+    private fun getCapabilities(): ClientCapabilities =
+        ClientCapabilities().let { clientCapabilities ->
+            clientCapabilities.workspace = WorkspaceClientCapabilities().let { workspaceClientCapabilities ->
+                workspaceClientCapabilities.workspaceFolders = true
+                workspaceClientCapabilities.workspaceEdit =
+                    WorkspaceEditCapabilities().let { workspaceEditCapabilities ->
+                        workspaceEditCapabilities.documentChanges = true
+                        workspaceEditCapabilities
+                    }
+                workspaceClientCapabilities.codeLens = CodeLensWorkspaceCapabilities(true)
+                workspaceClientCapabilities.inlineValue = InlineValueWorkspaceCapabilities(true)
+                workspaceClientCapabilities.applyEdit = true
+                workspaceClientCapabilities
+            }
+            clientCapabilities.textDocument = TextDocumentClientCapabilities().let {
+                it.codeLens = CodeLensCapabilities(true)
+                it.codeAction = CodeActionCapabilities(true)
+                it.diagnostic = DiagnosticCapabilities(true)
+
+                it
+            }
+            return clientCapabilities
+        }
 
     fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
         try {
@@ -180,7 +216,7 @@ class LanguageServerWrapper(
         }
     }
 
-    fun getInitializationOptions(): LanguageServerSettings {
+    fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
             activateSnykOpenSource = false.toString(),
@@ -199,8 +235,9 @@ class LanguageServerWrapper(
                 low = ps.lowSeverityEnabled
             ),
             enableTrustedFoldersFeature = "false",
-            trustedFolders = service<WorkspaceTrustService>().settings.getTrustedPaths(),
-            scanningMode = "auto"
+            scanningMode = if (!ps.scanOnSave) "manual" else "auto",
+            integrationName = pluginInfo.integrationName,
+            integrationVersion = pluginInfo.integrationVersion,
         )
     }
 

@@ -20,7 +20,9 @@ import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.snykcode.newCodeRestApi
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
+import org.eclipse.lsp4j.DidChangeConfigurationParams
 import snyk.amplitude.api.ExperimentUser
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.toSnykCodeApiUrl
 import javax.swing.JComponent
 
@@ -46,7 +48,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         snykSettingsDialog.isSeverityEnablementChanged() ||
         snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
         snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
-        snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL
+        snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
+        snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave
 
     private fun isCoreParamsModified() = isTokenModified() ||
         isCustomEndpointModified() ||
@@ -85,13 +88,18 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
         settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
         settingsStateService.cliBaseDownloadURL = snykSettingsDialog.getCliBaseDownloadURL().trim()
+        settingsStateService.scanOnSave = snykSettingsDialog.isScanOnSaveEnabled()
 
         snykSettingsDialog.saveScanTypeChanges()
         snykSettingsDialog.saveSeveritiesEnablementChanges()
 
         if (isProjectSettingsAvailable(project)) {
-            getSnykProjectSettingsService(project)?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
+            val snykProjectSettingsService = getSnykProjectSettingsService(project)
+            snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
+
+        val params = DidChangeConfigurationParams(LanguageServerWrapper.getInstance().getSettings())
+        LanguageServerWrapper.getInstance().languageServer.workspaceService.didChangeConfiguration(params)
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()

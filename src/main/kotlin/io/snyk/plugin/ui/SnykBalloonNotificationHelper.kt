@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
@@ -8,7 +9,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -60,9 +60,7 @@ object SnykBalloonNotificationHelper {
         if (project != null) {
             notification.notify(project)
         } else {
-            ProjectManager.getInstance().openProjects.forEach { prj ->
-                notification.notify(prj)
-            }
+            ProjectUtil.getActiveProject()?.let { notification.notify(it) }
         }
         return notification
     }

@@ -68,8 +68,11 @@ abstract class SnykBulkFileListener : BulkFileListener {
         for (project in ProjectUtil.getOpenProjects()) {
             if (project.isDisposed) continue
             after(project, getAfterVirtualFiles(events))
+            forwardEvents(events)
         }
     }
+
+    open fun forwardEvents(events: MutableList<out VFileEvent>) {}
 
     abstract fun after(project: Project, virtualFilesAffected: Set<VirtualFile>)
 

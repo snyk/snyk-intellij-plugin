@@ -52,12 +52,14 @@ import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
+import snyk.common.lsp.ScanState
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
+import snyk.pluginInfo
 import snyk.whoami.WhoamiService
 import java.io.File
 import java.io.FileNotFoundException
@@ -176,7 +178,9 @@ fun isOssRunning(project: Project): Boolean {
 }
 
 fun isSnykCodeRunning(project: Project): Boolean =
-    AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
+    AnalysisData.instance.isUpdateAnalysisInProgress(project)
+        || RunUtils.instance.isFullRescanRequested(project)
+        || ScanState.scanInProgress[ScanState.SNYK_CODE] == true
 
 fun isIacRunning(project: Project): Boolean {
     val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator
@@ -422,3 +426,17 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
 
 fun Project.getContentRootVirtualFiles() = ProjectRootManager.getInstance(this).contentRoots
     .filter { it.exists() && it.isDirectory }.toSet()
+
+fun getUserAgentString(): String {
+//      $APPLICATION/$APPLICATION_VERSION ($GOOS;$GOARCH[;$BINARY_NAME]) [$SNYK_INTEGRATION_NAME/$SNYK_INTEGRATION_VERSION [($SNYK_INTEGRATION_ENVIRONMENT/$SNYK_INTEGRATION_ENVIRONMENT_VERSION)]]
+    val integrationName = pluginInfo.integrationName
+    val integrationVersion = pluginInfo.integrationVersion
+    val integrationEnvironment = pluginInfo.integrationEnvironment
+    val integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion
+    val os = SystemUtils.OS_NAME
+    val arch = SystemUtils.OS_ARCH
+
+    return "$integrationEnvironment/$integrationEnvironmentVersion " +
+        "($os;$arch) $integrationName/$integrationVersion " +
+        "($integrationEnvironment/$integrationEnvironmentVersion)"
+}

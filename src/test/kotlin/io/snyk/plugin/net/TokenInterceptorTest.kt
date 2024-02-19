@@ -10,6 +10,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getSnykCliAuthenticationService
+import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykCliAuthenticationService
@@ -17,7 +18,7 @@ import junit.framework.TestCase.assertEquals
 import okhttp3.HttpUrl
 import okhttp3.Interceptor.Chain
 import okhttp3.Request
-import org.apache.commons.lang.SystemUtils
+import org.apache.commons.lang3.SystemUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -81,7 +82,7 @@ class TokenInterceptorTest {
 
     @Test
     fun `user agent header is added`() {
-        val expectedHeader = tokenInterceptor.getUserAgentString()
+        val expectedHeader = getUserAgentString()
         every { pluginSettings().token } returns "abcd"
 
         tokenInterceptor.intercept(chain)
@@ -91,7 +92,7 @@ class TokenInterceptorTest {
 
     @Test
     fun `user agent string is correct`() {
-        tokenInterceptor.getUserAgentString()
+        getUserAgentString()
 
         verify { pluginInfo.integrationName }
         verify { pluginInfo.integrationVersion }
@@ -102,7 +103,7 @@ class TokenInterceptorTest {
             """IntelliJ IDEA/2020.3.2 (${SystemUtils.OS_NAME};${SystemUtils.OS_ARCH}) Snyk Intellij Plugin/2.4.61 (IntelliJ IDEA/2020.3.2)"""
 
         assertEquals(
-            expectedUserAgent, tokenInterceptor.getUserAgentString()
+            expectedUserAgent, getUserAgentString()
         )
     }
 }

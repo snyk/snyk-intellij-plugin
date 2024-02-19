@@ -111,13 +111,13 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
                 val range = issue.range
-                text = "${if (issue.additionalData.hasAIFix) "⚡️" else "🫣"} line ${range.start.line + 1}: ${
+                text = "${if (issue.additionalData.hasAIFix) "⚡️" else ""} ${
                     if (issue.additionalData.isSecurityType) {
                         issue.title.split(":")[0]
                     } else {
                         issue.additionalData.message.split('.')[0]
                     }
-                }"
+                } [${range.start.line + 1},${range.start.character}]"
                 val parentFileNode = value.parent as SnykCodeFileTreeNodeFromLS
                 val entry =
                     (parentFileNode.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>).first

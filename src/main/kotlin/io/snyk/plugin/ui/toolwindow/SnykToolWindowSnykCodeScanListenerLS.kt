@@ -18,8 +18,9 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
 import snyk.common.ProductType
-import snyk.common.SnykError
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.ScanState
+import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -30,8 +31,10 @@ class SnykToolWindowSnykCodeScanListenerLS(
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykCodeScanListenerLS {
-    override fun scanningStarted() {
+
+    override fun scanningStarted(snykScan: SnykScanParams) {
         ApplicationManager.getApplication().invokeLater {
+            if (snykScan.product != ScanState.SNYK_CODE) return@invokeLater
             rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
             rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning...)"
         }
@@ -44,9 +47,9 @@ class SnykToolWindowSnykCodeScanListenerLS(
         }
     }
 
-    override fun scanningSnykCodeError(snykError: SnykError) = Unit
+    override fun scanningSnykCodeError(snykScan: SnykScanParams) = Unit
 
-    private fun displaySnykCodeResults(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+    fun displaySnykCodeResults(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
         if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
         if (pluginSettings().token.isNullOrEmpty()) {
             snykToolWindowPanel.displayAuthPanel()

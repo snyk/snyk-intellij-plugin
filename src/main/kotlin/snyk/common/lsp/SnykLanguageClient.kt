@@ -1,25 +1,27 @@
 package snyk.common.lsp
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.impl.ProjectUtil
-import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.LogLevel
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.getOpenedProjects
-import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.util.io.toNioPathOrNull
-import icons.SnykIcons
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import org.eclipse.lsp4j.ApplyWorkspaceEditParams
+import org.eclipse.lsp4j.ApplyWorkspaceEditResponse
 import org.eclipse.lsp4j.LogTraceParams
 import org.eclipse.lsp4j.MessageActionItem
 import org.eclipse.lsp4j.MessageParams
@@ -38,12 +40,14 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import snyk.trust.WorkspaceTrustService
 import java.util.Collections
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 
 class SnykLanguageClient : LanguageClient {
     // TODO FIX Log Level
     val logger = Logger.getInstance("Snyk Language Server").also { it.setLevel(LogLevel.DEBUG) }
-    val progresses = Collections.synchronizedMap(HashMap<String, ProgressIndicator>())
+    val progresses: MutableMap<String, ProgressIndicator> =
+        Collections.synchronizedMap(HashMap<String, ProgressIndicator>())
 
     override fun telemetryEvent(`object`: Any?) {
         // do nothing
@@ -53,13 +57,48 @@ class SnykLanguageClient : LanguageClient {
         // do nothing for now
     }
 
+    override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
+        val project = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
+        WriteCommandAction.runWriteCommandAction(project) {
+            params?.edit?.changes?.forEach {
+                DocumentChanger.applyChange(it)
+            }
+        }
+        DaemonCodeAnalyzer.getInstance(project).restart()
+        return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(true))
+    }
+
+    override fun refreshCodeLenses(): CompletableFuture<Void> {
+        val activeProject = ProjectUtil.getActiveProject()?: return CompletableFuture.completedFuture(null)
+        DaemonCodeAnalyzer.getInstance(activeProject)
+        return CompletableFuture.completedFuture(null)
+    }
+
+    override fun refreshInlineValues(): CompletableFuture<Void> {
+        val activeProject = ProjectUtil.getActiveProject()?: return CompletableFuture.completedFuture(null)
+        DaemonCodeAnalyzer.getInstance(activeProject)
+        return CompletableFuture.completedFuture(null)
+    }
+
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
         try {
             getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
                 when (snykScan.status) {
-                    "inProgress" -> scanPublisher.scanningStarted()
-                    "success" -> processSuccessfulScan(snykScan, scanPublisher, project)
+                    "inProgress" -> {
+                        ScanState.scanInProgress[snykScan.product] = true
+                        scanPublisher.scanningStarted(snykScan)
+                    }
+
+                    "success" -> {
+                        ScanState.scanInProgress[snykScan.product] = false
+                        processSuccessfulScan(snykScan, scanPublisher, project)
+                    }
+
+                    "error" -> {
+                        ScanState.scanInProgress[snykScan.product] = false
+                        scanPublisher.scanningSnykCodeError(snykScan)
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -113,24 +152,18 @@ class SnykLanguageClient : LanguageClient {
     }
 
     override fun createProgress(params: WorkDoneProgressCreateParams?): CompletableFuture<Void> {
-        params?.token?.left.let { left -> left?.let { token -> createProgressInternal(token) } }
         return CompletableFuture.completedFuture(null)
     }
 
-    private fun createProgressInternal(token: String) {
+    private fun createProgressInternal(token: String, begin: WorkDoneProgressBegin) {
         ProgressManager.getInstance()
-            .run(object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk Background Job: ", true) {
+            .run(object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
                 override fun run(indicator: ProgressIndicator) {
-                    indicator.isIndeterminate = false
                     progresses[token] = indicator
-                    try {
-                        while (true) {
-                            indicator.checkCanceled()
-                            Thread.sleep(100)
-                        }
-                    } catch (ignore: ProcessCanceledException) {
-                        // ignore
+                    while (!indicator.isCanceled) {
+                        Thread.sleep(100)
                     }
+                    progresses.remove(token)
                 }
             })
     }
@@ -153,39 +186,45 @@ class SnykLanguageClient : LanguageClient {
 
     override fun notifyProgress(params: ProgressParams?) {
         val token = params?.token?.left ?: return
-
-        while (progresses[token] == null) {
-            Thread.sleep(1000)
-        }
-
-        val indicator = progresses[token]!!
         val workDoneProgressNotification = params.value.left ?: return
         when (workDoneProgressNotification.kind) {
             begin -> {
                 val begin: WorkDoneProgressBegin = workDoneProgressNotification as WorkDoneProgressBegin
-                indicator.text = begin.message
+                createProgressInternal(token, begin)
+                val indicator = progresses[token] ?: return
+                indicator.text = begin.title
+                indicator.text2 = begin.message
                 if (begin.percentage == null) {
                     indicator.isIndeterminate = true
                 } else {
-                    indicator.fraction = 0.0
+                    indicator.isIndeterminate = false
+                    indicator.fraction = begin.percentage / 1.0
                 }
             }
 
             report -> {
+                while (progresses[token] == null) {
+                    Thread.sleep(1000)
+                }
+                val indicator = progresses[token] ?: return
                 val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
                 indicator.text = report.message
-                indicator.fraction = report.percentage / 1.0
-                if (report.percentage == 100) {
-                    progresses.remove(token)
-                    indicator.cancel()
+                if (report.percentage != null) {
+                    indicator.isIndeterminate = false
+                    indicator.fraction = report.percentage / 1.0
+                    if (report.percentage == 100) {
+                        indicator.cancel()
+                    }
                 }
             }
 
             end -> {
-                progresses.remove(token)
+                while (progresses[token] == null) {
+                    Thread.sleep(1000)
+                }
+                val indicator = progresses[token] ?: return
                 val workDoneProgressEnd = workDoneProgressNotification as WorkDoneProgressEnd
                 indicator.text = workDoneProgressEnd.message
-                indicator.fraction = 100.0
                 indicator.cancel()
             }
 
@@ -213,20 +252,21 @@ class SnykLanguageClient : LanguageClient {
     }
 
     override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> {
-        val project = ProjectUtil.getActiveProject()
-        val first = requestParams.actions.first()
-        val second = requestParams.actions.stream().skip(1).findFirst().orElse(null)
-        var choice = first
-        invokeAndWaitIfNeeded {
-            val result = MessageDialogBuilder
-                .yesNo("Snyk", requestParams.message)
-                .icon(SnykIcons.LOGO)
-                .yesText(first.title)
-                .noText(second?.title?: "Cancel")
-                .ask(project)
-            choice = if (result) first else second ?: MessageActionItem("Cancel")
-        }
-        return CompletableFuture.completedFuture(choice)
+        val project = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(MessageActionItem(""))
+        val actions = requestParams.actions
+            .map {
+                object : AnAction(it.title) {
+                    override fun actionPerformed(p0: AnActionEvent) {
+                        val future = CompletableFuture.completedFuture(MessageActionItem(it.title))
+                        showMessageRequestFutures.put(future)
+                    }
+                }
+            }.toSet().toTypedArray()
+
+        val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project, *actions)
+        val future = showMessageRequestFutures.take()
+        notification.hideBalloon()
+        return future
     }
 
     override fun logMessage(message: MessageParams?) {
@@ -239,5 +279,10 @@ class SnykLanguageClient : LanguageClient {
                 null -> logger.info(it.message)
             }
         }
+    }
+
+    companion object {
+        // we only allow one message request at a time
+        val showMessageRequestFutures = ArrayBlockingQueue<CompletableFuture<MessageActionItem>>(1)
     }
 }
