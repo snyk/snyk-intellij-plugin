@@ -1,10 +1,8 @@
 package snyk.common.lsp
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.LogLevel
 import com.intellij.openapi.diagnostic.Logger
@@ -20,8 +18,6 @@ import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import org.eclipse.lsp4j.ApplyWorkspaceEditParams
-import org.eclipse.lsp4j.ApplyWorkspaceEditResponse
 import org.eclipse.lsp4j.LogTraceParams
 import org.eclipse.lsp4j.MessageActionItem
 import org.eclipse.lsp4j.MessageParams
