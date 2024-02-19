@@ -2,8 +2,6 @@
 # https://github.com/detekt/detekt/blob/master/detekt-core/src/main/resources/default-detekt-config.yml
 
 formatting:
-  Indentation:
-    continuationIndentSize: 8
   MaxLineLength:
     active: false
   ParameterListWrapping:
@@ -21,9 +19,21 @@ complexity:
 
 style:
   ReturnCount:
-    active: true
-    max: 5
-    excludedFunctions: 'equals'
-    excludeLabeled: false
-    excludeReturnFromLambda: true
-    excludeGuardClauses: true
+    active: false # we don't want to limit the number of return statements, as guard checks are often used
+
+  MagicNumber:
+    active: false
+
+  ForbiddenComment:
+    active: false
+
+  MaxLineLength:
+    active: false
+
+  UseCheckOrError:
+    active: false
+
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
