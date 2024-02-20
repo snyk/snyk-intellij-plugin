@@ -38,10 +38,11 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
     override fun precomputeOnUiThread(editor: Editor) {}
 
     override fun isAvailableFor(project: Project): Boolean {
-        return LanguageServerWrapper.getInstance().isInitialized
+        return true
     }
 
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
+        if (editor.project?.let { isAvailableFor(it) } == false) return CodeVisionState.READY_EMPTY
         LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()
         return ReadAction.compute<CodeVisionState, RuntimeException> {
             val project = editor.project ?: return@compute CodeVisionState.READY_EMPTY
