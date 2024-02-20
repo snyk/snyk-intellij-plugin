@@ -3,6 +3,7 @@ package snyk.common
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.snykcode.SnykCodeResults
@@ -146,4 +147,29 @@ class SnykCachedResults(val project: Project) {
             }
         )
     }
+}
+
+internal class SnykCodeFileIssueComparator(
+    private val snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>
+) : Comparator<SnykCodeFile> {
+    override fun compare(o1: SnykCodeFile, o2: SnykCodeFile): Int {
+        val o1Criticals = getCount(o1, Severity.CRITICAL)
+        val o2Criticals = getCount(o2, Severity.CRITICAL)
+        val o1Errors = getCount(o1, Severity.HIGH)
+        val o2Errors = getCount(o2, Severity.HIGH)
+        val o1Warningss = getCount(o1, Severity.MEDIUM)
+        val o2Warningss = getCount(o2, Severity.MEDIUM)
+        val o1Infos = getCount(o1, Severity.LOW)
+        val o2Infos = getCount(o2, Severity.LOW)
+
+        return when {
+            o1Criticals != o2Criticals -> o2Criticals - o1Criticals
+            o1Errors != o2Errors -> o2Errors - o1Errors
+            o1Warningss != o2Warningss -> o2Warningss - o1Warningss
+            else -> o2Infos - o1Infos
+        }
+    }
+
+    private fun getCount(file: SnykCodeFile, severity: Severity) =
+        snykCodeResults[file]?.filter { it.getSeverityAsEnum() == severity }?.size ?: 0
 }

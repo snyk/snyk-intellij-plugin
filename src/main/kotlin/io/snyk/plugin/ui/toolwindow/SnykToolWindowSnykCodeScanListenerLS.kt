@@ -18,9 +18,11 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
 import snyk.common.ProductType
+import snyk.common.SnykCodeFileIssueComparator
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
 import snyk.common.lsp.SnykScanParams
+import java.util.SortedMap
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -76,7 +78,11 @@ class SnykToolWindowSnykCodeScanListenerLS(
                     entry.key to entry.value
                         .filter { pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum()) }
                 }.toMap()
-                displayResultsForCodeRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
+
+                displayResultsForCodeRoot(
+                    rootSecurityIssuesTreeNode,
+                    securityResultsToDisplay.toSortedMap(SnykCodeFileIssueComparator(securityResultsToDisplay))
+                )
             }
         }
         snykToolWindowPanel.updateTreeRootNodesPresentation(
@@ -108,7 +114,10 @@ class SnykToolWindowSnykCodeScanListenerLS(
                     entry.key to entry.value
                         .filter { pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum()) }
                 }.toMap()
-                displayResultsForCodeRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
+                displayResultsForCodeRoot(
+                    rootQualityIssuesTreeNode,
+                    qualityResultsToDisplay.toSortedMap(SnykCodeFileIssueComparator(qualityResultsToDisplay))
+                )
             }
         }
         snykToolWindowPanel.updateTreeRootNodesPresentation(
@@ -124,7 +133,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
 
     private fun displayResultsForCodeRoot(
         rootNode: DefaultMutableTreeNode,
-        issues: Map<SnykCodeFile, List<ScanIssue>>
+        issues: SortedMap<SnykCodeFile, List<ScanIssue>>
     ) {
         fun navigateToSource(virtualFile: VirtualFile, textRange: TextRange): () -> Unit = {
             io.snyk.plugin.navigateToSource(project, virtualFile, textRange.startOffset, textRange.endOffset)
