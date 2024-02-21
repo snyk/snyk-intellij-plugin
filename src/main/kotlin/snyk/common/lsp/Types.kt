@@ -160,7 +160,15 @@ data class MarkerPosition(
         result = 31 * result + file.hashCode()
         return result
     }
+
 }
+
+data class DataFlow(
+    @SerializedName("position") val position: Int,
+    @SerializedName("filePath") val filePath: String,
+    @SerializedName("flowRange") val flowRange: Range,
+    @SerializedName("content") val content: String
+)
 
 data class IssueData(
     @SerializedName("message") val message: String,
@@ -176,7 +184,8 @@ data class IssueData(
     @SerializedName("rows") val rows: Point,
     @SerializedName("isSecurityType") val isSecurityType: Boolean,
     @SerializedName("priorityScore") val priorityScore: Int,
-    @SerializedName("hasAIFix") val hasAIFix: Boolean
+    @SerializedName("hasAIFix") val hasAIFix: Boolean,
+    @SerializedName("dataFlow") val dataFlow: List<DataFlow>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -204,6 +213,7 @@ data class IssueData(
         if (isSecurityType != other.isSecurityType) return false
         if (priorityScore != other.priorityScore) return false
         if (hasAIFix != other.hasAIFix) return false
+        if (dataFlow != other.dataFlow) return false
 
         return true
     }
@@ -223,10 +233,11 @@ data class IssueData(
         result = 31 * result + isSecurityType.hashCode()
         result = 31 * result + priorityScore
         result = 31 * result + hasAIFix.hashCode()
+        result = 31 * result + dataFlow.hashCode()
         return result
     }
 }
 
-data class HasAuthenticatedParam (@SerializedName("token") val token: String?)
+data class HasAuthenticatedParam(@SerializedName("token") val token: String?)
 
 data class SnykTrustedFoldersParams(@SerializedName("trustedFolders") val trustedFolders: List<String>)

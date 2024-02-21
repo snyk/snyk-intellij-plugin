@@ -27,6 +27,7 @@ import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.FALSE_POSITIVE_REPORTED_TEXT
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
+import snyk.common.lsp.DataFlow
 import snyk.common.lsp.MarkerPosition
 import snyk.common.lsp.ScanIssue
 import java.awt.Color
@@ -85,8 +86,8 @@ class SuggestionDescriptionPanelFromLS(
         return panel
     }
 
-    private fun codeLine(range: MarkerPosition, file: SnykCodeFile?): JTextArea {
-        val component = JTextArea(getLineOfCode(range, file))
+    private fun codeLine(content: String): JTextArea {
+        val component = JTextArea(content)
         component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
         component.isEditable = false
         return component
@@ -129,44 +130,39 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     private fun dataFlowPanel(): JPanel? {
-        val markers = issue.additionalData.markers?.let { marker ->
-            marker.map { it.pos }
-                .filter { it.isNotEmpty() }
-                .flatten()
-                .distinctBy { it.file + it.rows?.firstOrNull() }
-        } ?: emptyList()
+        val dataFlow = issue.additionalData.dataFlow
 
         val panel = JPanel()
-        panel.layout = GridLayoutManager(1 + markers.size, 1, Insets(0, 0, 0, 0), -1, 5)
+        panel.layout = GridLayoutManager(1 + dataFlow.size, 1, Insets(0, 0, 0, 0), -1, 5)
 
         panel.add(
-            defaultFontLabel("Data Flow - ${markers.size} step${if (markers.size > 1) "s" else ""}", true),
+            defaultFontLabel("Data Flow - ${dataFlow.size} step${if (dataFlow.size > 1) "s" else ""}", true),
             baseGridConstraintsAnchorWest(0)
         )
 
         panel.add(
-            stepsPanel(markers),
+            stepsPanel(dataFlow),
             baseGridConstraintsAnchorWest(1)
         )
 
         return panel
     }
 
-    private fun stepsPanel(markers: List<MarkerPosition>): JPanel {
+    private fun stepsPanel(dataflow: List<DataFlow>): JPanel {
         val panel = JPanel()
-        panel.layout = GridLayoutManager(markers.size, 1, Insets(0, 0, 0, 0), 0, 0)
+        panel.layout = GridLayoutManager(dataflow.size, 1, Insets(0, 0, 0, 0), 0, 0)
         panel.background = UIUtil.getTextFieldBackground()
 
-        val maxFilenameLength = markers.asSequence()
-            .filter { it.file.isNotEmpty() }
-            .map { it.file.substringAfterLast('/', "").length }
+        val maxFilenameLength = dataflow.asSequence()
+            .filter { it.filePath.isNotEmpty() }
+            .map { it.filePath.substringAfterLast('/', "").length }
             .maxOrNull() ?: 0
 
         val allStepPanels = mutableListOf<JPanel>()
-        markers.forEachIndexed { index, markerRange ->
+        dataflow.forEachIndexed { index, flow ->
             val stepPanel = stepPanel(
                 index = index,
-                markerRange = markerRange,
+                flow = flow,
                 maxFilenameLength = max(snykCodeFile.virtualFile.name.length, maxFilenameLength),
                 allStepPanels = allStepPanels
             )
@@ -187,7 +183,7 @@ class SuggestionDescriptionPanelFromLS(
 
     private fun stepPanel(
         index: Int,
-        markerRange: MarkerPosition,
+        flow: DataFlow,
         maxFilenameLength: Int,
         allStepPanels: MutableList<JPanel>
     ): JPanel {
@@ -199,7 +195,7 @@ class SuggestionDescriptionPanelFromLS(
 
         val fileName = snykCodeFile.virtualFile.name
 
-        val lineNumber = markerRange.rows?.get(0)?.plus(1)
+        val lineNumber = flow.flowRange.start.line + 1
         val positionLinkText = "$fileName:$lineNumber".padEnd(maxFilenameLength + 5, ' ')
 
         val positionLabel = linkLabel(
@@ -213,10 +209,10 @@ class SuggestionDescriptionPanelFromLS(
             if (!file.isValid) return@linkLabel
 
             val document = file.getDocument()
-            val lineStartOffset = document?.getLineStartOffset(markerRange.rows?.firstOrNull() ?: 0) ?: 0
-            val startOffset = lineStartOffset + (markerRange.cols?.firstOrNull() ?: 0)
-            val lineEndOffset = document?.getLineStartOffset(markerRange.rows?.lastOrNull() ?: 0) ?: 0
-            val endOffset = lineEndOffset + (markerRange.cols?.lastOrNull() ?: 0) - 1
+            val lineStartOffset = document?.getLineStartOffset(flow.flowRange.start.line) ?: 0
+            val startOffset = lineStartOffset + (flow.flowRange.start.character)
+            val lineEndOffset = document?.getLineStartOffset(flow.flowRange.end.line) ?: 0
+            val endOffset = lineEndOffset + flow.flowRange.end.character - 1
 
             navigateToSource(project, snykCodeFile.virtualFile, startOffset, endOffset)
 
@@ -227,7 +223,7 @@ class SuggestionDescriptionPanelFromLS(
         }
         stepPanel.add(positionLabel, baseGridConstraintsAnchorWest(0, indent = 1))
 
-        val codeLine = codeLine(markerRange, snykCodeFile)
+        val codeLine = codeLine(flow.content)
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,
