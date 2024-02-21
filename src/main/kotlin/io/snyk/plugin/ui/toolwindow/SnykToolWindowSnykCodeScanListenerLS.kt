@@ -68,7 +68,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
             val securityResults = snykCodeResults
                 .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
                 .toMap()
-            securityIssuesCount = securityResults.size
+            securityIssuesCount = securityResults.values.flatten().distinct().size
             securityIssuesHMLPostfix = buildHMLpostfix(securityResults)
 
             if (pluginSettings().treeFiltering.codeSecurityResults) {
@@ -104,7 +104,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
             val qualityResults = snykCodeResults
                 .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
                 .toMap()
-            qualityIssuesCount = qualityResults.size
+            qualityIssuesCount = qualityResults.values.flatten().distinct().size
             qualityIssuesHMLPostfix = buildHMLpostfix(qualityResults)
 
             if (pluginSettings().treeFiltering.codeQualityResults) {
@@ -160,10 +160,9 @@ class SnykToolWindowSnykCodeScanListenerLS(
     }
 
     private fun buildHMLpostfix(securityResults: Map<SnykCodeFile, List<ScanIssue>>): String {
-        val critical = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.CRITICAL }
         val high = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.HIGH }
         val medium = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
         val low = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }
-        return " ($critical/$high/$medium/$low)"
+        return ": $high high, $medium medium, $low low"
     }
 }
