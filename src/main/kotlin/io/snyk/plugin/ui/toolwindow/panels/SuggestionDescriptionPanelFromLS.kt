@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
@@ -19,6 +18,7 @@ import io.snyk.plugin.net.FalsePositiveContext
 import io.snyk.plugin.net.FalsePositivePayload
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
@@ -28,7 +28,6 @@ import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.FALSE_POSITIVE_REPORTED_TEXT
 import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
 import snyk.common.lsp.DataFlow
-import snyk.common.lsp.MarkerPosition
 import snyk.common.lsp.ScanIssue
 import java.awt.Color
 import java.awt.Dimension
@@ -119,16 +118,6 @@ class SuggestionDescriptionPanelFromLS(
         }
     }
 
-    private fun getLineOfCode(range: MarkerPosition, file: SnykCodeFile?): String {
-        val document = file?.virtualFile?.getDocument() ?: return ""
-        range.rows?.let {
-            val lineStartOffset = document.getLineStartOffset(it[0])
-            return document.getText(TextRange(lineStartOffset, document.getLineEndOffset(it[0])))
-        }
-
-        return ""
-    }
-
     private fun dataFlowPanel(): JPanel? {
         val dataFlow = issue.additionalData.dataFlow
 
@@ -159,18 +148,18 @@ class SuggestionDescriptionPanelFromLS(
             .maxOrNull() ?: 0
 
         val allStepPanels = mutableListOf<JPanel>()
-        dataflow.forEachIndexed { index, flow ->
+        dataflow.forEach { flow ->
             val stepPanel = stepPanel(
-                index = index,
+                index = flow.position,
                 flow = flow,
-                maxFilenameLength = max(snykCodeFile.virtualFile.name.length, maxFilenameLength),
+                maxFilenameLength = max(flow.filePath.toVirtualFile().name.length, maxFilenameLength),
                 allStepPanels = allStepPanels
             )
 
             panel.add(
                 stepPanel,
                 baseGridConstraintsAnchorWest(
-                    row = index,
+                    row = flow.position,
                     fill = GridConstraints.FILL_BOTH,
                     indent = 0
                 )
@@ -193,7 +182,8 @@ class SuggestionDescriptionPanelFromLS(
 
         val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
 
-        val fileName = snykCodeFile.virtualFile.name
+        val virtualFile = flow.filePath.toVirtualFile()
+        val fileName = virtualFile.name
 
         val lineNumber = flow.flowRange.start.line + 1
         val positionLinkText = "$fileName:$lineNumber".padEnd(maxFilenameLength + 5, ' ')
@@ -205,16 +195,15 @@ class SuggestionDescriptionPanelFromLS(
             toolTipText = "Click to show in the Editor",
             customFont = JTextArea().font
         ) {
-            val file = snykCodeFile.virtualFile
-            if (!file.isValid) return@linkLabel
+            if (!virtualFile.isValid) return@linkLabel
 
-            val document = file.getDocument()
-            val lineStartOffset = document?.getLineStartOffset(flow.flowRange.start.line) ?: 0
-            val startOffset = lineStartOffset + (flow.flowRange.start.character)
-            val lineEndOffset = document?.getLineStartOffset(flow.flowRange.end.line) ?: 0
-            val endOffset = lineEndOffset + flow.flowRange.end.character - 1
+            val document = virtualFile.getDocument()
+            val startLineStartOffset = document?.getLineStartOffset(flow.flowRange.start.line) ?: 0
+            val startOffset = startLineStartOffset + (flow.flowRange.start.character)
+            val endLineStartOffset = document?.getLineStartOffset(flow.flowRange.end.line) ?: 0
+            val endOffset = endLineStartOffset + flow.flowRange.end.character - 1
 
-            navigateToSource(project, snykCodeFile.virtualFile, startOffset, endOffset)
+            navigateToSource(project, virtualFile, startOffset, endOffset)
 
             allStepPanels.forEach {
                 it.background = UIUtil.getTextFieldBackground()

@@ -18,11 +18,9 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
 import snyk.common.ProductType
-import snyk.common.SnykCodeFileIssueComparator
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
 import snyk.common.lsp.SnykScanParams
-import java.util.SortedMap
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -81,7 +79,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
 
                 displayResultsForCodeRoot(
                     rootSecurityIssuesTreeNode,
-                    securityResultsToDisplay.toSortedMap(SnykCodeFileIssueComparator(securityResultsToDisplay))
+                    securityResultsToDisplay
                 )
             }
         }
@@ -116,7 +114,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
                 }.toMap()
                 displayResultsForCodeRoot(
                     rootQualityIssuesTreeNode,
-                    qualityResultsToDisplay.toSortedMap(SnykCodeFileIssueComparator(qualityResultsToDisplay))
+                    qualityResultsToDisplay
                 )
             }
         }
@@ -133,7 +131,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
 
     private fun displayResultsForCodeRoot(
         rootNode: DefaultMutableTreeNode,
-        issues: SortedMap<SnykCodeFile, List<ScanIssue>>
+        issues: Map<SnykCodeFile, List<ScanIssue>>
     ) {
         fun navigateToSource(virtualFile: VirtualFile, textRange: TextRange): () -> Unit = {
             io.snyk.plugin.navigateToSource(project, virtualFile, textRange.startOffset, textRange.endOffset)
@@ -149,7 +147,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
                 val fileTreeNode =
                     SnykCodeFileTreeNodeFromLS(entry, productType)
                 rootNode.add(fileTreeNode)
-                entry.value.sortedByDescending { it.getSeverityAsEnum() }
+                entry.value.sortedByDescending { it.additionalData.priorityScore }
                     .forEach { issue ->
                         fileTreeNode.add(
                             SuggestionTreeNodeFromLS(

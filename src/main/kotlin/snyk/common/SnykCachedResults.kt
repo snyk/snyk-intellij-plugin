@@ -153,6 +153,7 @@ internal class SnykCodeFileIssueComparator(
     private val snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>
 ) : Comparator<SnykCodeFile> {
     override fun compare(o1: SnykCodeFile, o2: SnykCodeFile): Int {
+        val files = o1.virtualFile.path.compareTo(o2.virtualFile.path)
         val o1Criticals = getCount(o1, Severity.CRITICAL)
         val o2Criticals = getCount(o2, Severity.CRITICAL)
         val o1Errors = getCount(o1, Severity.HIGH)
@@ -166,7 +167,8 @@ internal class SnykCodeFileIssueComparator(
             o1Criticals != o2Criticals -> o2Criticals - o1Criticals
             o1Errors != o2Errors -> o2Errors - o1Errors
             o1Warningss != o2Warningss -> o2Warningss - o1Warningss
-            else -> o2Infos - o1Infos
+            o1Infos != o2Infos -> o2Infos - o1Infos
+            else -> files
         }
     }
 

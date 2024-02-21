@@ -19,6 +19,7 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse
@@ -149,8 +150,8 @@ class SnykLanguageClient : LanguageClient {
     private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
         val map = snykScan.issues
-            .groupBy { it.virtualFile }
-            .map { (file, issues) -> SnykCodeFile(project, file!!) to issues.sorted() }
+            .groupBy { it.filePath }
+            .map { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
             .filter { it.second.isNotEmpty() }
             .toMap()
         return map.toSortedMap(SnykCodeFileIssueComparator(map))
