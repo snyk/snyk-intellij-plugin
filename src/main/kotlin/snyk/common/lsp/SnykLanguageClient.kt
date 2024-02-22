@@ -203,9 +203,7 @@ class SnykLanguageClient : LanguageClient {
                 val indicator = progresses[token] ?: return
                 indicator.text = begin.title
                 indicator.text2 = begin.message
-                if (begin.percentage == null) {
-                    indicator.isIndeterminate = true
-                } else {
+                if (begin.percentage != null) {
                     indicator.isIndeterminate = false
                     indicator.fraction = begin.percentage / 1.0
                 }
