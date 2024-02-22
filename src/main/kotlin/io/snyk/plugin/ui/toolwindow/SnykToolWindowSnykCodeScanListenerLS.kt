@@ -19,7 +19,6 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
 import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
-import snyk.common.lsp.ScanState
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
@@ -34,7 +33,6 @@ class SnykToolWindowSnykCodeScanListenerLS(
 
     override fun scanningStarted(snykScan: SnykScanParams) {
         ApplicationManager.getApplication().invokeLater {
-            if (snykScan.product != ScanState.SNYK_CODE) return@invokeLater
             rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
             rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning...)"
         }

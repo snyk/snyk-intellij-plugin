@@ -12,7 +12,6 @@ import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.lsp.ScanIssue
-import snyk.common.lsp.ScanState
 import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
@@ -126,18 +125,16 @@ class SnykCachedResults(val project: Project) {
             object : SnykCodeScanListenerLS {
                 val logger = logger<SnykCachedResults>()
                 override fun scanningStarted(snykScan: SnykScanParams) {
-                    if (snykScan.product != ScanState.SNYK_CODE) return
                     logger.info("scanningStarted for project ${project.name}, emptying cache.")
                 }
 
                 override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+                    currentSnykCodeResultsLS.clear()
                     currentSnykCodeResultsLS.putAll(snykCodeResults)
                     logger.info("scanning finished for project ${project.name}, assigning cache.")
                 }
 
                 override fun scanningSnykCodeError(snykScan: SnykScanParams) {
-                    if (snykScan.product != ScanState.SNYK_CODE) return
-
                     SnykBalloonNotificationHelper
                         .showError(
                             "scanning error for project ${project.name}, emptying cache.Data: $snykScan",

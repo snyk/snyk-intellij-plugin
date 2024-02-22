@@ -160,7 +160,6 @@ data class MarkerPosition(
         result = 31 * result + file.hashCode()
         return result
     }
-
 }
 
 data class DataFlow(
