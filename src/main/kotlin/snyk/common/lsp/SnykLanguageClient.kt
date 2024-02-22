@@ -76,13 +76,13 @@ class SnykLanguageClient : LanguageClient {
 
     override fun refreshCodeLenses(): CompletableFuture<Void> {
         val activeProject = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(null)
-        DaemonCodeAnalyzer.getInstance(activeProject)
+        DaemonCodeAnalyzer.getInstance(activeProject).restart()
         return CompletableFuture.completedFuture(null)
     }
 
     override fun refreshInlineValues(): CompletableFuture<Void> {
         val activeProject = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(null)
-        DaemonCodeAnalyzer.getInstance(activeProject)
+        DaemonCodeAnalyzer.getInstance(activeProject).restart()
         return CompletableFuture.completedFuture(null)
     }
 
@@ -92,6 +92,7 @@ class SnykLanguageClient : LanguageClient {
             getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
                 when (snykScan.status) {
                     "inProgress" -> {
+                        if (ScanState.scanInProgress[snykScan.product] == true) return
                         ScanState.scanInProgress[snykScan.product] = true
                         scanPublisher.scanningStarted(snykScan)
                     }
