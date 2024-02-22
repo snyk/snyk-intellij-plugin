@@ -19,6 +19,7 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse
@@ -38,6 +39,7 @@ import org.eclipse.lsp4j.WorkDoneProgressKind.report
 import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
+import snyk.common.SnykCodeFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.Collections
 import java.util.concurrent.ArrayBlockingQueue
@@ -147,12 +149,12 @@ class SnykLanguageClient : LanguageClient {
 
     private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
-        return snykScan.issues
-            .groupBy { it.virtualFile }
-            .map { (file, issues) -> SnykCodeFile(project, file!!) to issues.sorted() }
+        val map = snykScan.issues
+            .groupBy { it.filePath }
+            .map { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
             .filter { it.second.isNotEmpty() }
             .toMap()
-            .toSortedMap { o1, o2 -> o1.virtualFile.path.compareTo(o2.virtualFile.path) }
+        return map.toSortedMap(SnykCodeFileIssueComparator(map))
     }
 
     override fun createProgress(params: WorkDoneProgressCreateParams?): CompletableFuture<Void> {

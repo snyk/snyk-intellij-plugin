@@ -325,7 +325,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         } else {
                             ApplicationManager.getApplication().invokeLater {
                                 val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
-                                val codeResultsLS = snykCachedResults.currentSnykCodeResultsLS ?: return@invokeLater
+                                val codeResultsLS = snykCachedResults.currentSnykCodeResultsLS
 
                                 scanListenerLS?.displaySnykCodeResults(codeResultsLS)
                             }
