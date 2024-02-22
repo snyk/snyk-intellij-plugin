@@ -201,12 +201,10 @@ class SnykLanguageClient : LanguageClient {
                 val begin: WorkDoneProgressBegin = workDoneProgressNotification as WorkDoneProgressBegin
                 createProgressInternal(token, begin)
                 val indicator = progresses[token] ?: return
+                indicator.isIndeterminate = false
                 indicator.text = begin.title
                 indicator.text2 = begin.message
-                if (begin.percentage != null) {
-                    indicator.isIndeterminate = false
-                    indicator.fraction = begin.percentage / 1.0
-                }
+                indicator.fraction = begin.percentage / 100.0
             }
 
             report -> {
@@ -216,12 +214,10 @@ class SnykLanguageClient : LanguageClient {
                 val indicator = progresses[token] ?: return
                 val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
                 indicator.text = report.message
-                if (report.percentage != null) {
-                    indicator.isIndeterminate = false
-                    indicator.fraction = report.percentage / 1.0
-                    if (report.percentage == 100) {
-                        indicator.cancel()
-                    }
+                indicator.isIndeterminate = false
+                indicator.fraction = report.percentage / 100.0
+                if (report.percentage == 100) {
+                    indicator.cancel()
                 }
             }
 
