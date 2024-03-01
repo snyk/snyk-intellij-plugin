@@ -12,7 +12,7 @@ plugins {
     id("org.jetbrains.changelog") version "2.1.2"
     id("org.jetbrains.intellij") version "1.16.1"
     id("org.jetbrains.kotlin.jvm") version "1.9.0"
-    id("io.gitlab.arturbosch.detekt") version ("1.23.1")
+    id("io.gitlab.arturbosch.detekt") version ("1.23.4")
     id("pl.allegro.tech.build.axion-release") version "1.13.6"
 }
 
@@ -29,8 +29,8 @@ repositories {
 }
 
 dependencies {
-    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.11.0"))
-    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.21.1")
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
+    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.22.0")
 
     implementation("org.commonmark:commonmark:0.21.0")
     implementation("com.google.code.gson:gson:2.10.1")
@@ -63,7 +63,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.5")
     testImplementation("org.awaitility:awaitility:4.2.0")
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.1")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.4")
 }
 
 // configuration for gradle-intellij-plugin plugin.
