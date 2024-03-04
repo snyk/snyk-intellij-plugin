@@ -178,7 +178,6 @@ class SnykTaskQueueService(val project: Project) {
                 settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
                 settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
                 settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
-                settings.reportFalsePositivesEnabled = sastCliConfigSettings?.reportFalsePositivesEnabled
                 when (settings.sastOnServerEnabled) {
                     true -> {
                         getSnykCode(project)?.scan()
