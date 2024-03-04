@@ -8,7 +8,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
@@ -16,6 +19,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
+import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
@@ -48,14 +52,17 @@ import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
+import snyk.common.lsp.ScanState
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
+import snyk.pluginInfo
 import snyk.whoami.WhoamiService
 import java.io.File
+import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Path
 import java.security.KeyStore
@@ -83,6 +90,7 @@ fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.s
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
 
 fun getSnykCachedResults(project: Project): SnykCachedResults? = project.serviceIfNotDisposed()
+
 fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? = project.serviceIfNotDisposed()
 
 fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
@@ -170,7 +178,9 @@ fun isOssRunning(project: Project): Boolean {
 }
 
 fun isSnykCodeRunning(project: Project): Boolean =
-    AnalysisData.instance.isUpdateAnalysisInProgress(project) || RunUtils.instance.isFullRescanRequested(project)
+    AnalysisData.instance.isUpdateAnalysisInProgress(project)
+        || RunUtils.instance.isFullRescanRequested(project)
+        || ScanState.scanInProgress[ScanState.SNYK_CODE] == true
 
 fun isIacRunning(project: Project): Boolean {
     val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator
@@ -237,7 +247,7 @@ fun isContainerEnabled(): Boolean = true
 
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
-fun isNewRefactoredTreeEnabled(): Boolean = Registry.`is`("snyk.preview.new.refactored.tree.enabled", false)
+fun isSnykCodeLSEnabled(): Boolean = Registry.`is`("snyk.preview.snyk.code.ls.enabled", true)
 
 fun isReportFalsePositivesEnabled(): Boolean = Registry.`is`("snyk.code.report.false.positives.enabled", false) &&
     pluginSettings().reportFalsePositivesEnabled == true
@@ -301,10 +311,7 @@ fun navigateToSource(
     selectionEndOffset: Int? = null
 ) {
     if (!virtualFile.isValid) return
-    val psiFile = RunUtils.computeInReadActionInSmartMode(project) {
-        PsiManager.getInstance(project).findFile(virtualFile)
-    } ?: return
-    val textLength = psiFile.textLength
+    val textLength = virtualFile.contentsToByteArray().size
     if (selectionStartOffset in (0 until textLength)) {
         // jump to Source
         PsiNavigationSupport.getInstance().createNavigatable(
@@ -402,9 +409,14 @@ fun getArch(): String {
     return archMap[value] ?: value
 }
 
-fun VirtualFile.toPsiFile(project: Project): PsiFile? {
-    return PsiManager.getInstance(project).findFile(this)
+fun String.toVirtualFile(): VirtualFile =
+    StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
+
+fun VirtualFile.getPsiFile(project: Project): PsiFile? {
+    return runReadAction { PsiManager.getInstance(project).findFile(this) }
 }
+
+fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.getInstance().getDocument(this) }
 
 fun Project.getContentRootPaths(): SortedSet<Path> {
     return getContentRootVirtualFiles()
@@ -414,3 +426,17 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
 
 fun Project.getContentRootVirtualFiles() = ProjectRootManager.getInstance(this).contentRoots
     .filter { it.exists() && it.isDirectory }.toSet()
+
+fun getUserAgentString(): String {
+//      $APPLICATION/$APPLICATION_VERSION ($GOOS;$GOARCH[;$BINARY_NAME]) [$SNYK_INTEGRATION_NAME/$SNYK_INTEGRATION_VERSION [($SNYK_INTEGRATION_ENVIRONMENT/$SNYK_INTEGRATION_ENVIRONMENT_VERSION)]]
+    val integrationName = pluginInfo.integrationName
+    val integrationVersion = pluginInfo.integrationVersion
+    val integrationEnvironment = pluginInfo.integrationEnvironment
+    val integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion
+    val os = SystemUtils.OS_NAME
+    val arch = SystemUtils.OS_ARCH
+
+    return "$integrationEnvironment/$integrationEnvironmentVersion " +
+        "($os;$arch) $integrationName/$integrationVersion " +
+        "($integrationEnvironment/$integrationEnvironmentVersion)"
+}

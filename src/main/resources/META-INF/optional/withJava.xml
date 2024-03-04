@@ -1,6 +1,5 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
-    <externalAnnotator language="JAVA" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="JAVA" implementationClass="snyk.oss.annotator.OSSMavenAnnotator"/>
     <externalAnnotator language="Groovy" implementationClass="snyk.oss.annotator.OSSGradleAnnotator"/>
   </extensions>

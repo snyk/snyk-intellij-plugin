@@ -24,6 +24,7 @@ import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
@@ -98,7 +99,11 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
-                    scheduleSnykCodeScan()
+                    if (!isSnykCodeLSEnabled()) {
+                        scheduleSnykCodeScan()
+                    } else {
+                        LanguageServerWrapper.getInstance().sendScanCommand()
+                    }
                 }
                 if (settings.ossScanEnable) {
                     scheduleOssScan()

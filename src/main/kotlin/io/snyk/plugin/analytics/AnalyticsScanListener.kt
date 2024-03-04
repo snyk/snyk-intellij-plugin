@@ -2,10 +2,16 @@ package io.snyk.plugin.analytics
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.Severity
+import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
@@ -14,7 +20,12 @@ import snyk.oss.OssResult
 @Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
     fun getScanDoneEvent(
-        duration: Long, product: String, critical: Int, high: Int, medium: Int, low: Int
+        duration: Long,
+        product: String,
+        critical: Int,
+        high: Int,
+        medium: Int,
+        low: Int
     ): ScanDoneEvent {
         return ScanDoneEvent(
             ScanDoneEvent.Data(
@@ -30,6 +41,32 @@ class AnalyticsScanListener(val project: Project) {
                 )
             )
         )
+    }
+
+    private val snykCodeScanListenerLS = object : SnykCodeScanListenerLS {
+        var start = 0L
+        override fun scanningStarted(snykScan: SnykScanParams) {
+            start = System.currentTimeMillis()
+        }
+
+        override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+            val duration = System.currentTimeMillis() - start
+            val product = "Snyk Code"
+            val issues = snykCodeResults.values.flatten()
+            val scanDoneEvent = getScanDoneEvent(
+                duration,
+                product,
+                issues.count { it.getSeverityAsEnum() == Severity.CRITICAL },
+                issues.count { it.getSeverityAsEnum() == Severity.HIGH },
+                issues.count { it.getSeverityAsEnum() == Severity.MEDIUM },
+                issues.count { it.getSeverityAsEnum() == Severity.LOW },
+            )
+            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
+        }
+
+        override fun scanningSnykCodeError(snykScan: SnykScanParams) {
+            // do nothing
+        }
     }
 
     val snykScanListener = object : SnykScanListener {
@@ -54,18 +91,14 @@ class AnalyticsScanListener(val project: Project) {
         override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
             val duration = System.currentTimeMillis() - start
             val product = "Snyk Code"
-            val scanDoneEvent = if (snykCodeResults != null) {
-                getScanDoneEvent(
-                    duration,
-                    product,
-                    snykCodeResults.totalCriticalCount,
-                    snykCodeResults.totalErrorsCount,
-                    snykCodeResults.totalWarnsCount,
-                    snykCodeResults.totalInfosCount,
-                )
-            } else {
-                getScanDoneEvent(duration, product, 0, 0, 0, 0)
-            }
+            val scanDoneEvent = getScanDoneEvent(
+                duration,
+                product,
+                snykCodeResults?.totalCriticalCount ?: 0,
+                snykCodeResults?.totalErrorsCount ?: 0,
+                snykCodeResults?.totalWarnsCount ?: 0,
+                snykCodeResults?.totalInfosCount ?: 0,
+            )
             LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
@@ -110,8 +143,16 @@ class AnalyticsScanListener(val project: Project) {
         }
     }
 
-    fun initScanListener() = project.messageBus.connect().subscribe(
-        SnykScanListener.SNYK_SCAN_TOPIC,
-        snykScanListener,
-    )
+    fun initScanListener() {
+        project.messageBus.connect().subscribe(
+            SnykScanListener.SNYK_SCAN_TOPIC,
+            snykScanListener,
+        )
+
+        if (isSnykCodeLSEnabled())
+            project.messageBus.connect().subscribe(
+                SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
+                snykCodeScanListenerLS,
+            )
+    }
 }

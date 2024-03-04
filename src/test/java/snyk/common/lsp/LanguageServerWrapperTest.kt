@@ -1,8 +1,12 @@
 package snyk.common.lsp
 
+import com.intellij.openapi.application.Application
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectRootManager
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -19,7 +23,6 @@ import org.junit.Before
 import org.junit.Test
 import snyk.pluginInfo
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
 
 class LanguageServerWrapperTest {
 
@@ -32,6 +35,15 @@ class LanguageServerWrapperTest {
     fun setUp() {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkStatic(ApplicationManager::class)
+        mockkStatic(ApplicationManager::class)
+        val applicationMock = mockk<Application>()
+        every { ApplicationManager.getApplication() } returns applicationMock
+
+        val projectManagerMock = mockk<ProjectManager>()
+        every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
+        every { projectManagerMock.openProjects } returns arrayOf(projectMock)
+
         every { pluginSettings() } returns settings
         mockkStatic("snyk.PluginInformationKt")
         every { pluginInfo } returns mockk(relaxed = true)
@@ -40,7 +52,7 @@ class LanguageServerWrapperTest {
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
-        cut = LanguageServerWrapper("dummy", Executors.newCachedThreadPool())
+        cut = LanguageServerWrapper("dummy")
         cut.languageServer = lsMock
     }
 
@@ -55,10 +67,12 @@ class LanguageServerWrapperTest {
         every { projectMock.getService(ProjectRootManager::class.java) } returns rootManagerMock
         every { rootManagerMock.contentRoots } returns emptyArray()
         every { lsMock.initialize(any<InitializeParams>()) } returns CompletableFuture.completedFuture(null)
+        justRun { lsMock.initialized(any()) }
 
         cut.sendInitializeMessage()
 
         verify { lsMock.initialize(any<InitializeParams>()) }
+        verify { lsMock.initialized(any()) }
     }
 
     @Test
@@ -84,7 +98,7 @@ class LanguageServerWrapperTest {
         settings.ignoreUnknownCA = true
         settings.cliPath = "testCliPath"
 
-        val actual = cut.getInitializationOptions()
+        val actual = cut.getSettings()
 
         assertEquals("false", actual.activateSnykCode)
         assertEquals("false", actual.activateSnykIac)

@@ -1,5 +1,4 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
-    <externalAnnotator language="JavaScript" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
   </extensions>
 </idea-plugin>

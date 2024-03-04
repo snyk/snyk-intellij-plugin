@@ -6,20 +6,31 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getUserAgentString
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
+import org.eclipse.lsp4j.CodeActionCapabilities
+import org.eclipse.lsp4j.CodeLensCapabilities
+import org.eclipse.lsp4j.CodeLensWorkspaceCapabilities
+import org.eclipse.lsp4j.DiagnosticCapabilities
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
+import org.eclipse.lsp4j.InitializedParams
+import org.eclipse.lsp4j.InlineValueWorkspaceCapabilities
+import org.eclipse.lsp4j.TextDocumentClientCapabilities
+import org.eclipse.lsp4j.WorkspaceClientCapabilities
+import org.eclipse.lsp4j.WorkspaceEditCapabilities
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
-import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
@@ -37,7 +48,7 @@ private const val INITIALIZATION_TIMEOUT = 20L
 @Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
-    val executorService: ExecutorService = Executors.newCachedThreadPool(),
+    private val executorService: ExecutorService = Executors.newCachedThreadPool(),
 ) {
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
@@ -46,7 +57,7 @@ class LanguageServerWrapper(
      * The language client is used to receive messages from LS
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    lateinit var languageClient: LanguageClient
+    lateinit var languageClient: SnykLanguageClient
 
     /**
      * The language server allows access to the actual LS implementation
@@ -83,7 +94,7 @@ class LanguageServerWrapper(
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
+            val cmd = listOf(lsPath, "language-server", "-l", logLevel, "-f", "/tmp/snyk-ls.log")
 
             val processBuilder = ProcessBuilder(cmd)
             pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
@@ -128,12 +139,39 @@ class LanguageServerWrapper(
 
         val params = InitializeParams()
         params.processId = ProcessHandle.current().pid().toInt()
-        params.clientInfo = ClientInfo("${pluginInfo.integrationName}/lsp4j")
-        params.initializationOptions = getInitializationOptions()
+        val clientInfo = getUserAgentString()
+        params.clientInfo = ClientInfo(clientInfo, "lsp4j")
+        params.initializationOptions = getSettings()
         params.workspaceFolders = workspaceFolders
+        params.capabilities = getCapabilities()
 
         languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
+        languageServer.initialized(InitializedParams())
     }
+
+    private fun getCapabilities(): ClientCapabilities =
+        ClientCapabilities().let { clientCapabilities ->
+            clientCapabilities.workspace = WorkspaceClientCapabilities().let { workspaceClientCapabilities ->
+                workspaceClientCapabilities.workspaceFolders = true
+                workspaceClientCapabilities.workspaceEdit =
+                    WorkspaceEditCapabilities().let { workspaceEditCapabilities ->
+                        workspaceEditCapabilities.documentChanges = true
+                        workspaceEditCapabilities
+                    }
+                workspaceClientCapabilities.codeLens = CodeLensWorkspaceCapabilities(true)
+                workspaceClientCapabilities.inlineValue = InlineValueWorkspaceCapabilities(true)
+                workspaceClientCapabilities.applyEdit = true
+                workspaceClientCapabilities
+            }
+            clientCapabilities.textDocument = TextDocumentClientCapabilities().let {
+                it.codeLens = CodeLensCapabilities(true)
+                it.codeAction = CodeActionCapabilities(true)
+                it.diagnostic = DiagnosticCapabilities(true)
+
+                it
+            }
+            return clientCapabilities
+        }
 
     fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
         try {
@@ -146,7 +184,7 @@ class LanguageServerWrapper(
         }
     }
 
-    private fun ensureLanguageServerInitialized() {
+    fun ensureLanguageServerInitialized() {
         while (isInitializing) {
             Thread.sleep(DEFAULT_SLEEP_TIME)
         }
@@ -168,23 +206,38 @@ class LanguageServerWrapper(
         }
     }
 
-    fun getInitializationOptions(): LanguageServerSettings {
+    fun sendScanCommand() {
+        try {
+            val param = ExecuteCommandParams()
+            param.command = "snyk.workspace.scan"
+            languageServer.workspaceService.executeCommand(param)
+        } catch (ignored: Exception) {
+            // do nothing to not break UX for analytics
+        }
+    }
+
+    fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
-            activateSnykOpenSource = "false",
-            activateSnykCode = "false",
-            activateSnykIac = "false",
+            activateSnykOpenSource = false.toString(),
+            activateSnykCodeSecurity = (isSnykCodeLSEnabled() && ps.snykCodeSecurityIssuesScanEnable).toString(),
+            activateSnykCodeQuality = (isSnykCodeLSEnabled() && ps.snykCodeQualityIssuesScanEnable).toString(),
+            activateSnykIac = false.toString(),
+            organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),
             endpoint = getEndpointUrl(),
             cliPath = getCliFile().absolutePath,
             token = ps.token,
-            enableTrustedFoldersFeature = "false",
             filterSeverity = SeverityFilter(
                 critical = ps.criticalSeverityEnabled,
                 high = ps.highSeverityEnabled,
                 medium = ps.mediumSeverityEnabled,
                 low = ps.lowSeverityEnabled
             ),
+            enableTrustedFoldersFeature = "false",
+            scanningMode = if (!ps.scanOnSave) "manual" else "auto",
+            integrationName = pluginInfo.integrationName,
+            integrationVersion = pluginInfo.integrationVersion,
         )
     }
 

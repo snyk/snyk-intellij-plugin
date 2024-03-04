@@ -3,11 +3,11 @@ package io.snyk.plugin.net
 import com.google.gson.Gson
 import com.intellij.openapi.project.ProjectManager
 import io.snyk.plugin.getSnykCliAuthenticationService
+import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.apache.commons.lang3.SystemUtils
 import snyk.common.needsSnykToken
 import snyk.pluginInfo
 import java.time.OffsetDateTime
@@ -47,20 +47,6 @@ class TokenInterceptor(private var projectManager: ProjectManager? = null) : Int
             .addHeader("User-Agent", getUserAgentString())
             .addHeader("x-snyk-ide", "${pluginInfo.integrationName}-${pluginInfo.integrationVersion}")
         return chain.proceed(request.build())
-    }
-
-    fun getUserAgentString(): String {
-//      $APPLICATION/$APPLICATION_VERSION ($GOOS;$GOARCH[;$BINARY_NAME]) [$SNYK_INTEGRATION_NAME/$SNYK_INTEGRATION_VERSION [($SNYK_INTEGRATION_ENVIRONMENT/$SNYK_INTEGRATION_ENVIRONMENT_VERSION)]]
-        val integrationName = pluginInfo.integrationName
-        val integrationVersion = pluginInfo.integrationVersion
-        val integrationEnvironment = pluginInfo.integrationEnvironment
-        val integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion
-        val os = SystemUtils.OS_NAME
-        val arch = SystemUtils.OS_ARCH
-
-        return "$integrationEnvironment/$integrationEnvironmentVersion " +
-            "($os;$arch) $integrationName/$integrationVersion " +
-            "($integrationEnvironment/$integrationEnvironmentVersion)"
     }
 }
 

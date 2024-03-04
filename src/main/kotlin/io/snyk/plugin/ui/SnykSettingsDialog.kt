@@ -26,6 +26,7 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isProjectSettingsAvailable
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
@@ -68,6 +69,7 @@ class SnykSettingsDialog(
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
     private val usageAnalyticsCheckBox: JCheckBox = JCheckBox()
     private val crashReportingCheckBox = JCheckBox()
+    private val scanOnSaveCheckbox = JCheckBox()
     private val additionalParametersTextField: JTextField = ExpandableTextField()
 
     private val scanTypesPanelOuter = ScanTypesPanel(project, rootPanel)
@@ -129,6 +131,7 @@ class SnykSettingsDialog(
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
+            scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
         }
     }
 
@@ -349,7 +352,7 @@ class SnykSettingsDialog(
         /** Project settings ------------------ */
 
         if (isProjectSettingsAvailable(project)) {
-            val projectSettingsPanel = JPanel(UIGridLayoutManager(2, 3, Insets(0, 0, 0, 0), -1, -1))
+            val projectSettingsPanel = JPanel(UIGridLayoutManager(3, 3, Insets(0, 0, 0, 0), -1, -1))
             projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
 
             rootPanel.add(
@@ -402,7 +405,7 @@ class SnykSettingsDialog(
 
         /** User experience ------------------ */
 
-        val userExperiencePanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
+        val userExperiencePanel = JPanel(UIGridLayoutManager(6, 4, Insets(0, 0, 0, 0), -1, -1))
         userExperiencePanel.border = IdeBorderFactory.createTitledBorder("User experience")
 
         rootPanel.add(
@@ -416,11 +419,23 @@ class SnykSettingsDialog(
             )
         )
 
+        if (isSnykCodeLSEnabled()) {
+            scanOnSaveCheckbox.text = "Scan automatically on start-up and save"
+            userExperiencePanel.add(
+                scanOnSaveCheckbox,
+                baseGridConstraints(
+                    row = 0,
+                    anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                    indent = 0
+                )
+            )
+        }
+
         usageAnalyticsCheckBox.text = "Send usage statistics to Snyk"
         userExperiencePanel.add(
             usageAnalyticsCheckBox,
             baseGridConstraints(
-                row = 0,
+                row = 1,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 indent = 0
             )
@@ -430,7 +445,7 @@ class SnykSettingsDialog(
         userExperiencePanel.add(
             crashReportingCheckBox,
             baseGridConstraints(
-                row = 1,
+                row = 2,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 indent = 0
             )
@@ -522,6 +537,8 @@ class SnykSettingsDialog(
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
 
     fun isUsageAnalyticsEnabled(): Boolean = usageAnalyticsCheckBox.isSelected
+
+    fun isScanOnSaveEnabled(): Boolean = scanOnSaveCheckbox.isSelected
 
     fun isCrashReportingEnabled(): Boolean = crashReportingCheckBox.isSelected
 
