@@ -5,36 +5,25 @@ import ai.deepcode.javaclient.core.SuggestionForFile
 import ai.deepcode.javaclient.responses.ExampleCommitFix
 import com.intellij.icons.AllIcons
 import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiFile
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
-import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.getSnykApiService
-import io.snyk.plugin.isReportFalsePositivesEnabled
 import io.snyk.plugin.navigateToSource
-import io.snyk.plugin.net.FalsePositiveContext
-import io.snyk.plugin.net.FalsePositivePayload
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.getSeverityAsEnum
 import io.snyk.plugin.ui.DescriptionHeaderPanel
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
-import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog
-import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.FALSE_POSITIVE_REPORTED_TEXT
-import io.snyk.plugin.ui.toolwindow.ReportFalsePositiveDialog.Companion.REPORT_FALSE_POSITIVE_TEXT
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
-import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -388,65 +377,5 @@ class SuggestionDescriptionPanel(
 
     private fun getOverviewText(): String {
         return suggestion.message
-    }
-
-    override fun getBottomRightButtons(): List<JButton> = mutableListOf<JButton>()
-        .apply {
-            if (isReportFalsePositivesEnabled()) add(reportFalsePositiveButton)
-        }
-        .toList()
-
-    private val reportFalsePositiveButton: JButton
-        get() = JButton(REPORT_FALSE_POSITIVE_TEXT).apply {
-            addActionListener {
-                val dialog = ReportFalsePositiveDialog(
-                    project,
-                    titlePanel(insets = JBUI.insetsBottom(10), indent = 0),
-                    getRelatedPsiFiles()
-                )
-                if (dialog.showAndGet()) {
-                    val payload = FalsePositivePayload(
-                        topic = "False Positive",
-                        message = suggestion.message,
-                        context = FalsePositiveContext(
-                            issueId = suggestion.id,
-                            userPublicId = getSnykApiService().userId ?: "",
-                            startLine = suggestionRange?.startRow ?: 1,
-                            endLine = suggestionRange?.endRow ?: 1,
-                            primaryFilePath = snykCodeFile.virtualFile.path,
-                            vulnName = suggestion.rule,
-                            fileContents = dialog.result
-                        )
-                    )
-                    if (getSnykApiService().reportFalsePositive(payload)) {
-                        this.isEnabled = false
-                        this.text = FALSE_POSITIVE_REPORTED_TEXT
-                        SnykBalloonNotificationHelper.showInfo(
-                            "False Positive reported. Thank you!",
-                            project
-                        )
-                        // todo(?): disable re-report per session/project/application/token/org
-                    } else {
-                        SnykBalloonNotificationHelper.showError(
-                            "Unable to send report, please contact support@snyk.io for assistance",
-                            project
-                        )
-                    }
-                }
-            }
-        }
-
-    private fun getRelatedPsiFiles(): Set<PsiFile> {
-        val markersWithUniqFiles = suggestionRange?.let { range ->
-            range.markers.values.flatten().distinctBy { it.file }
-        }
-        val filesFromMarkers: Set<SnykCodeFile> = markersWithUniqFiles
-            ?.mapNotNull { PDU.instance.getFileByDeepcodedPath(it.file, project) }
-            ?.map { PDU.toSnykCodeFile(it) }
-            ?.toSet()
-            ?: emptySet()
-        return (setOf(snykCodeFile) + filesFromMarkers)
-            .mapNotNull { PDU.toPsiFile(it) }
-            .toSet()
     }
 }

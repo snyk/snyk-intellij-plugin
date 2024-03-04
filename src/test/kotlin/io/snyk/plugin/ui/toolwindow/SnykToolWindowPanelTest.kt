@@ -125,7 +125,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-            false
         )
         justRun { taskQueueService.scan() }
 
@@ -145,7 +144,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-            false
         )
         val application = ApplicationManager.getApplication()
         application.replaceService(
@@ -173,7 +171,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(true, "http://foo.bar/api", false),
-            false
         )
         val application = ApplicationManager.getApplication()
         application.replaceService(

@@ -3,7 +3,6 @@ package io.snyk.plugin.services
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.net.CliConfigSettings
-import io.snyk.plugin.net.FalsePositivePayload
 import io.snyk.plugin.net.RetrofitClientFactory
 import io.snyk.plugin.net.SnykApiClient
 import io.snyk.plugin.pluginSettings
@@ -19,9 +18,6 @@ class SnykApiService {
 
     val userId: String?
         get() = getSnykApiClient()?.getUserId()
-
-    fun reportFalsePositive(payload: FalsePositivePayload): Boolean =
-        getSnykApiClient()?.reportFalsePositive(payload) ?: false
 
     private fun getSnykApiClient(): SnykApiClient? {
         if (pluginSettings().token.isNullOrBlank()) {

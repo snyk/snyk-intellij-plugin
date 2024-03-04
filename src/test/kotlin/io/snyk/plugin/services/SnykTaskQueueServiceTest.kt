@@ -79,12 +79,10 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-            false
         )
         every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
             true,
             LocalCodeEngine(false, "", false),
-            false
         )
     }
 
@@ -180,12 +178,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         verify { snykApiServiceMock.getSastSettings() }
-    }
-
-    fun `test reportFalsePositivesEnabled should be unknown in initial settings state`() {
-        val settings = pluginSettings()
-
-        assertNull(settings.reportFalsePositivesEnabled)
     }
 
     fun `test LCE should be unknown in initial settings state`() {

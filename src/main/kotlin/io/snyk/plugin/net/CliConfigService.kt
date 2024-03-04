@@ -23,9 +23,6 @@ data class CliConfigSettings(
 
     @SerializedName("localCodeEngine")
     val localCodeEngine: LocalCodeEngine,
-
-    @SerializedName("reportFalsePositivesEnabled")
-    val reportFalsePositivesEnabled: Boolean
 )
 
 data class CliConfigSettingsError(
