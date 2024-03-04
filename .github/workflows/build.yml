@@ -63,9 +63,9 @@ jobs:
         uses: snyk/actions/setup@0.4.0
 
       - name: Snyk Monitor SCA
-        run: snyk monitor --all-projects --exclude=integTest --org=${{ vars.PLATFORM_HAMMERHEAD_ORG_ID }}
+        run: snyk monitor --all-projects --exclude=integTest --org=9cff56cd-57d1-49b8-9238-69ebfde7142f
         env:
-          SNYK_TOKEN: ${{ secrets.HAMMERHEAD_SNYK_INTELLIJ_PLUGIN_TOKEN }}
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
   pluginVerifier:
     name: Plugin Verifier
