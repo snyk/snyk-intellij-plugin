@@ -56,73 +56,69 @@ class SnykToolWindowSnykCodeScanListenerLS(
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         // display Security issues
-        val userObjectsForExpandedSecurityNodes =
-            snykToolWindowPanel.userObjectsForExpandedNodes(rootSecurityIssuesTreeNode)
-        rootSecurityIssuesTreeNode.removeAllChildren()
-
-        var securityIssuesCount: Int? = null
-        var securityIssuesHMLPostfix = ""
-        if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
-            val securityResults = snykCodeResults
-                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
-                .toMap()
-            securityIssuesCount = securityResults.values.flatten().distinct().size
-            securityIssuesHMLPostfix = buildSeveritiesPostfixForFileNode(securityResults)
-
-            if (pluginSettings().treeFiltering.codeSecurityResults) {
-                val securityResultsToDisplay = securityResults.map { entry ->
-                    entry.key to entry.value
-                        .filter { pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum()) }
-                }.toMap()
-
-                displayResultsForCodeRoot(
-                    rootSecurityIssuesTreeNode,
-                    securityResultsToDisplay
-                )
-            }
-        }
-        snykToolWindowPanel.updateTreeRootNodesPresentation(
-            securityIssuesCount = securityIssuesCount,
-            addHMLPostfix = securityIssuesHMLPostfix
-        )
-        snykToolWindowPanel.smartReloadRootNode(
-            rootSecurityIssuesTreeNode,
-            userObjectsForExpandedSecurityNodes,
-            selectedNodeUserObject
-        )
+        displayIssues(snykCodeResults, selectedNodeUserObject, rootSecurityIssuesTreeNode, true)
 
         // display Quality (non Security) issues
-        val userObjectsForExpandedQualityNodes =
-            snykToolWindowPanel.userObjectsForExpandedNodes(rootQualityIssuesTreeNode)
-        rootQualityIssuesTreeNode.removeAllChildren()
+        displayIssues(snykCodeResults, selectedNodeUserObject, rootQualityIssuesTreeNode, false)
+    }
 
-        var qualityIssuesCount: Int? = null
-        var qualityIssuesHMLPostfix = ""
-        if (pluginSettings().snykCodeQualityIssuesScanEnable) {
-            val qualityResults = snykCodeResults
-                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
+    private fun displayIssues(
+        snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>,
+        selectedNodeUserObject: Any?,
+        rootNode: DefaultMutableTreeNode,
+        isSecurity: Boolean
+    ) {
+        val userObjectsForExpandedNodes =
+            snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
+
+        rootNode.removeAllChildren()
+
+        var issuesCount: Int? = null
+        var rootNodePostFix = ""
+        val settings = pluginSettings()
+        val enabledInSettings = when {
+            isSecurity -> settings.snykCodeSecurityIssuesScanEnable
+            else -> settings.snykCodeQualityIssuesScanEnable
+        }
+
+        if (enabledInSettings) {
+            val filteredResults = snykCodeResults
+                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType == isSecurity } }
                 .toMap()
-            qualityIssuesCount = qualityResults.values.flatten().distinct().size
-            qualityIssuesHMLPostfix = buildSeveritiesPostfixForFileNode(qualityResults)
 
-            if (pluginSettings().treeFiltering.codeQualityResults) {
-                val qualityResultsToDisplay = qualityResults.map { entry ->
-                    entry.key to entry.value
-                        .filter { pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum()) }
+            issuesCount = filteredResults.values.flatten().distinct().size
+            rootNodePostFix = buildSeveritiesPostfixForFileNode(filteredResults)
+
+            val treeFiltering = when {
+                isSecurity -> settings.treeFiltering.codeSecurityResults
+                else -> settings.treeFiltering.codeQualityResults
+            }
+
+            if (treeFiltering) {
+                val resultsToDisplay = filteredResults.map { entry ->
+                    entry.key to entry.value.filter {
+                        settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
+                    }
                 }.toMap()
-                displayResultsForCodeRoot(
-                    rootQualityIssuesTreeNode,
-                    qualityResultsToDisplay
-                )
+                displayResultsForCodeRoot(rootNode, resultsToDisplay)
             }
         }
-        snykToolWindowPanel.updateTreeRootNodesPresentation(
-            qualityIssuesCount = qualityIssuesCount,
-            addHMLPostfix = qualityIssuesHMLPostfix
-        )
+
+        if (isSecurity) {
+            snykToolWindowPanel.updateTreeRootNodesPresentation(
+                securityIssuesCount = issuesCount,
+                addHMLPostfix = rootNodePostFix
+            )
+        } else {
+            snykToolWindowPanel.updateTreeRootNodesPresentation(
+                qualityIssuesCount = issuesCount,
+                addHMLPostfix = rootNodePostFix
+            )
+        }
+
         snykToolWindowPanel.smartReloadRootNode(
-            rootQualityIssuesTreeNode,
-            userObjectsForExpandedQualityNodes,
+            rootNode,
+            userObjectsForExpandedNodes,
             selectedNodeUserObject
         )
     }
