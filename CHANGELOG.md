@@ -1,5 +1,18 @@
 # Snyk Changelog
 
+## [2.7.6]
+### Fixed
+- some code refactorings and code smells
+
+## [2.7.5]
+### Fixed
+- bump deps
+- remove remnants of false-positives
+
+### Added
+feat: integrate experimental option to get Snyk Code results from Language Server (pre-alpha) [IDE-134] by @bastiandoetsch in #474
+
+
 ## [2.7.4]
 ### Fixed
 - move all clean-up tasks on project close to a background task and limit execution to 5s
