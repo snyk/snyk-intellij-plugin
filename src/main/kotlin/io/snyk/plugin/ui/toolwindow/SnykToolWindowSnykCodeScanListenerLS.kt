@@ -67,7 +67,6 @@ class SnykToolWindowSnykCodeScanListenerLS(
         selectedNodeUserObject: Any?,
         isSecurity: Boolean
     ) {
-
         val rootNode = if (isSecurity) this.rootSecurityIssuesTreeNode else this.rootQualityIssuesTreeNode
 
         val userObjectsForExpandedNodes =
