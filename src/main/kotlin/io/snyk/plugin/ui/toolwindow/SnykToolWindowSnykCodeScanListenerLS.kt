@@ -56,18 +56,20 @@ class SnykToolWindowSnykCodeScanListenerLS(
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         // display Security issues
-        displayIssues(snykCodeResults, selectedNodeUserObject, rootSecurityIssuesTreeNode, true)
+        displayIssues(snykCodeResults, selectedNodeUserObject, true)
 
         // display Quality (non Security) issues
-        displayIssues(snykCodeResults, selectedNodeUserObject, rootQualityIssuesTreeNode, false)
+        displayIssues(snykCodeResults, selectedNodeUserObject, false)
     }
 
     private fun displayIssues(
         snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>,
         selectedNodeUserObject: Any?,
-        rootNode: DefaultMutableTreeNode,
         isSecurity: Boolean
     ) {
+
+        val rootNode = if (isSecurity) this.rootSecurityIssuesTreeNode else this.rootQualityIssuesTreeNode
+
         val userObjectsForExpandedNodes =
             snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
 
