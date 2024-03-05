@@ -71,7 +71,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         val filesAffected = toSnykCodeFileSet(project, virtualFilesAffected)
 
         if (isSnykCodeLSEnabled()) {
-            processAfterForLS(filesAffected, project)
+            updateCacheAndUI(filesAffected, project)
             return
         }
         /* update .dcignore caches if needed */
@@ -98,7 +98,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         }
     }
 
-    private fun processAfterForLS(filesAffected: Set<SnykCodeFile>, project: Project) {
+    private fun updateCacheAndUI(filesAffected: Set<SnykCodeFile>, project: Project) {
         val cache = getSnykCachedResults(project)?.currentSnykCodeResultsLS ?: return
         filesAffected.forEach {
             cache.remove(it)

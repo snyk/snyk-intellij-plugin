@@ -49,7 +49,7 @@ class SnykCachedResults(val project: Project) {
         currentOssError = null
         currentContainerError = null
         currentIacError = null
-//        currentSnykCodeResultsLS = null
+        currentSnykCodeResultsLS.clear()
         currentSnykCodeResults = null
         currentSnykCodeError = null
     }
@@ -125,7 +125,7 @@ class SnykCachedResults(val project: Project) {
             object : SnykCodeScanListenerLS {
                 val logger = logger<SnykCachedResults>()
                 override fun scanningStarted(snykScan: SnykScanParams) {
-                    logger.info("scanningStarted for project ${project.name}, emptying cache.")
+                    logger.info("scanningStarted for project ${project.name}")
                 }
 
                 override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
