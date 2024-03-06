@@ -19,6 +19,7 @@ import org.eclipse.lsp4j.CodeActionCapabilities
 import org.eclipse.lsp4j.CodeLensCapabilities
 import org.eclipse.lsp4j.CodeLensWorkspaceCapabilities
 import org.eclipse.lsp4j.DiagnosticCapabilities
+import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
@@ -239,6 +240,12 @@ class LanguageServerWrapper(
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
         )
+    }
+
+    fun updateSettings() {
+        ensureLanguageServerInitialized()
+        val params = DidChangeConfigurationParams(getSettings())
+        languageServer.workspaceService.didChangeConfiguration(params)
     }
 
     companion object {

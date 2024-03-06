@@ -20,7 +20,6 @@ import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.snykcode.newCodeRestApi
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
-import org.eclipse.lsp4j.DidChangeConfigurationParams
 import snyk.amplitude.api.ExperimentUser
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.toSnykCodeApiUrl
@@ -98,8 +97,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        val params = DidChangeConfigurationParams(LanguageServerWrapper.getInstance().getSettings())
-        LanguageServerWrapper.getInstance().languageServer.workspaceService.didChangeConfiguration(params)
+        LanguageServerWrapper.getInstance().updateSettings()
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()
