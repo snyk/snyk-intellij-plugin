@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.7.7]
+### Fixed
+- (LS Preview) do not hang on missing answers to message requests, timeout after 5s
+
 ## [2.7.6]
 ### Fixed
 - some code refactorings and code smells
