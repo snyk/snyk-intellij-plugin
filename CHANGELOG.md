@@ -2,7 +2,8 @@
 
 ## [2.7.7]
 ### Fixed
-- Snyk Code scans when having multiple projects open (LS Preview) [IDE-160]
+- (LS Preview) Snyk Code scans when having multiple projects open
+- (LS Preview) do not hang on missing answers to message requests, timeout after 5s
 
 ## [2.7.6]
 ### Fixed

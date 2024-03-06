@@ -46,6 +46,7 @@ import snyk.trust.WorkspaceTrustService
 import java.util.Collections
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 class SnykLanguageClient : LanguageClient {
     // TODO FIX Log Level
@@ -275,20 +276,20 @@ class SnykLanguageClient : LanguageClient {
 
     override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> {
         val project = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(MessageActionItem(""))
+        showMessageRequestFutures.clear()
         val actions = requestParams.actions
             .map {
                 object : AnAction(it.title) {
                     override fun actionPerformed(p0: AnActionEvent) {
-                        val future = CompletableFuture.completedFuture(MessageActionItem(it.title))
-                        showMessageRequestFutures.put(future)
+                        showMessageRequestFutures.put(MessageActionItem(it.title))
                     }
                 }
             }.toSet().toTypedArray()
 
         val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project, *actions)
-        val future = showMessageRequestFutures.take()
+        val messageActionItem = showMessageRequestFutures.poll(5, TimeUnit.SECONDS)
         notification.hideBalloon()
-        return future
+        return CompletableFuture.completedFuture(messageActionItem ?: MessageActionItem(""))
     }
 
     override fun logMessage(message: MessageParams?) {
@@ -305,6 +306,6 @@ class SnykLanguageClient : LanguageClient {
 
     companion object {
         // we only allow one message request at a time
-        val showMessageRequestFutures = ArrayBlockingQueue<CompletableFuture<MessageActionItem>>(1)
+        val showMessageRequestFutures = ArrayBlockingQueue<MessageActionItem>(1)
     }
 }
