@@ -14,17 +14,15 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.pluginSettings
-import org.hamcrest.collection.IsCollectionWithSize
 import org.junit.Assert
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertThat
 import snyk.common.SnykCachedResults
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
 import snyk.oss.OssResult
 import snyk.oss.OssVulnerabilitiesForFile
 import java.nio.file.Paths
 
-@Suppress("DuplicatedCode", "FunctionName")
+@Suppress("DuplicatedCode")
 class OSSGoModAnnotatorTest : BasePlatformTestCase() {
     private val cut by lazy { OSSGoModAnnotator() }
     private val annotationHolderMock = mockk<AnnotationHolder>(relaxed = true)
@@ -81,7 +79,7 @@ class OSSGoModAnnotatorTest : BasePlatformTestCase() {
         val issues = cut.getIssuesForFile(psiFile)
 
         assertNotEquals(null, issues)
-        assertThat(issues!!.vulnerabilities, IsCollectionWithSize.hasSize(11))
+        assertEquals(11, issues!!.vulnerabilities.size)
     }
 
     fun `test apply should trigger newAnnotation call`() {

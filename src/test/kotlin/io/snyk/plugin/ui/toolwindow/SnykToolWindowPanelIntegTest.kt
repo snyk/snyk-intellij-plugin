@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.SuggestionForFile
@@ -889,7 +891,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
 
         val expectedIssuesCount = containerResult.issuesCount
-        val actualIssueNodesCount = rootContainerNode.children().asSequence().sumBy {
+        val actualIssueNodesCount = rootContainerNode.children().asSequence().sumOf {
             (it as TreeNode).childCount
         }
         assertEquals(expectedIssuesCount, actualIssueNodesCount)

@@ -6,7 +6,6 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import org.junit.Before
 import snyk.common.SnykCachedResults
 import java.nio.file.Paths
 
@@ -22,7 +21,6 @@ abstract class IacBaseAnnotatorCase : BasePlatformTestCase() {
 
     override fun isWriteActionRequired(): Boolean = true
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()

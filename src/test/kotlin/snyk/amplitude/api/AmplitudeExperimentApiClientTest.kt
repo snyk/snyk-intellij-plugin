@@ -10,12 +10,10 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.buffer
 import okio.source
-import org.hamcrest.collection.IsMapWithSize.aMapWithSize
-import org.hamcrest.collection.IsMapWithSize.anEmptyMap
-import org.hamcrest.core.IsEqual.equalTo
-import org.hamcrest.core.IsNull.notNullValue
 import org.junit.After
-import org.junit.Assert.assertThat
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -64,21 +62,21 @@ class AmplitudeExperimentApiClientTest {
         val response = amplitudeVariantService.sdkVardata(ExperimentUser("random-user-id")).execute()
 
         // asserts
-        assertThat(response.code(), equalTo(200))
+        assertEquals(200, response.code())
 
         val variants = response.body()
-        assertThat(variants, notNullValue())
-        assertThat(variants, aMapWithSize(2))
+        assertNotNull(variants)
+        assertEquals(2, variants?.size)
 
         val expectedFirstVariant = Variant(value = "on", payload = mapOf("message" to "random message"))
         val actualFirstVariant = variants?.entries?.first()
-        assertThat(actualFirstVariant?.key, equalTo("first-experiment"))
-        assertThat(actualFirstVariant?.value, equalTo(expectedFirstVariant))
+        assertEquals("first-experiment", actualFirstVariant?.key)
+        assertEquals(expectedFirstVariant, actualFirstVariant?.value)
 
         val expectedLastVariant = Variant(value = "off")
         val actualLastVariant = variants?.entries?.last()
-        assertThat(actualLastVariant?.key, equalTo("second-experiment"))
-        assertThat(actualLastVariant?.value, equalTo(expectedLastVariant))
+        assertEquals("second-experiment", actualLastVariant?.key)
+        assertEquals(expectedLastVariant, actualLastVariant?.value)
     }
 
     @Test
@@ -90,7 +88,7 @@ class AmplitudeExperimentApiClientTest {
 
         val response = amplitudeVariantService.sdkVardata(ExperimentUser("")).execute()
 
-        assertThat(response.code(), equalTo(200))
+        assertEquals(200, response.code())
     }
 
     @Test
@@ -101,8 +99,8 @@ class AmplitudeExperimentApiClientTest {
 
         val actualVariants = clientUnderTest.allVariants(ExperimentUser("random-user-id"))
 
-        assertThat(actualVariants, notNullValue())
-        assertThat(actualVariants, aMapWithSize(2))
+        assertNotNull(actualVariants)
+        assertEquals(2, actualVariants.size)
     }
 
     @Test
@@ -111,7 +109,7 @@ class AmplitudeExperimentApiClientTest {
 
         val variants = clientUnderTest.allVariants(ExperimentUser(""))
 
-        assertThat(variants, anEmptyMap())
+        assertTrue(variants.isEmpty())
     }
 }
 
