@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.7.7]
+### Fixed
+- Snyk Code scans when having multiple projects open (LS Preview) [IDE-160]
+
 ## [2.7.6]
 ### Fixed
 - some code refactorings and code smells
