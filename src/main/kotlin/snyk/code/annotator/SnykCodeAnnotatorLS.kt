@@ -16,6 +16,7 @@ import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
+import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
@@ -53,6 +54,9 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         if (!isSnykCodeLSEnabled()) return
+        if (!LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()) return
+        if (isSnykCodeRunning(psiFile.project)) return
+
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
             .sortedBy { it.title }
