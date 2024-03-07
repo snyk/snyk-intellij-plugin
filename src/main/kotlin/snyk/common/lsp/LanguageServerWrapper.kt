@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -37,6 +38,7 @@ import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
+import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -75,7 +77,8 @@ class LanguageServerWrapper(
      */
     lateinit var process: Process
 
-    var isInitializing: Boolean = false
+    private var isInitializing: Boolean = false
+
     val isInitialized: Boolean
         get() = ::languageClient.isInitialized &&
             ::languageServer.isInitialized &&
@@ -214,7 +217,12 @@ class LanguageServerWrapper(
             logger.warn("No active project found, not sending scan command.")
             return
         }
-        project.getContentRootVirtualFiles().mapNotNull { it.path }.toSet().forEach(::sendFolderScanCommand)
+        project.getContentRootVirtualFiles().filterNotNull().toSet().forEach {
+            val trustService = service<WorkspaceTrustService>()
+            if (trustService.isPathTrusted(it.toNioPath())) {
+                sendFolderScanCommand(it.path)
+            }
+        }
     }
 
     private fun sendFolderScanCommand(folder: String) {
