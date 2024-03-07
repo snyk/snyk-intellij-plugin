@@ -49,9 +49,11 @@ import snyk.advisor.AdvisorService
 import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
 import snyk.amplitude.AmplitudeExperimentService
+import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
+import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanState
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
@@ -177,10 +179,18 @@ fun isOssRunning(project: Project): Boolean {
     return indicator != null && indicator.isRunning && !indicator.isCanceled
 }
 
-fun isSnykCodeRunning(project: Project): Boolean =
-    AnalysisData.instance.isUpdateAnalysisInProgress(project)
-        || RunUtils.instance.isFullRescanRequested(project)
-        || ScanState.scanInProgress[ScanState.SNYK_CODE] == true
+fun isSnykCodeRunning(project: Project): Boolean {
+    val lsRunning = project.getContentRootVirtualFiles().any { vf ->
+        val key = ScanInProgressKey(vf, ProductType.CODE_SECURITY)
+        ScanState.scanInProgress[key] == true
+    }
+
+    return (
+        AnalysisData.instance.isUpdateAnalysisInProgress(project) ||
+            RunUtils.instance.isFullRescanRequested(project) ||
+            lsRunning
+        )
+}
 
 fun isIacRunning(project: Project): Boolean {
     val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator

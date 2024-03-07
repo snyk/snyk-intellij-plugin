@@ -1,5 +1,6 @@
 package snyk.common.lsp
 
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -207,9 +208,20 @@ class LanguageServerWrapper(
     }
 
     fun sendScanCommand() {
+        ensureLanguageServerInitialized()
+        val project = ProjectUtil.getActiveProject()
+        if (project == null) {
+            logger.warn("No active project found, not sending scan command.")
+            return
+        }
+        project.getContentRootVirtualFiles().mapNotNull { it.path }.toSet().forEach(::sendFolderScanCommand)
+    }
+
+    private fun sendFolderScanCommand(folder: String) {
         try {
             val param = ExecuteCommandParams()
-            param.command = "snyk.workspace.scan"
+            param.command = "snyk.workspaceFolder.scan"
+            param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
         } catch (ignored: Exception) {
             // do nothing to not break UX for analytics

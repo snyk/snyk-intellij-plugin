@@ -40,6 +40,7 @@ import org.eclipse.lsp4j.WorkDoneProgressKind.report
 import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
+import snyk.common.ProductType
 import snyk.common.SnykCodeFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.Collections
@@ -83,36 +84,52 @@ class SnykLanguageClient : LanguageClient {
     }
 
     override fun refreshInlineValues(): CompletableFuture<Void> {
-        val activeProject = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(null)
+        val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
+        if (!isSnykCodeLSEnabled()) return completedFuture
+        val activeProject = ProjectUtil.getActiveProject() ?: return completedFuture
+
         DaemonCodeAnalyzer.getInstance(activeProject).restart()
-        return CompletableFuture.completedFuture(null)
+        return completedFuture
     }
 
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
-        if (snykScan.product != ScanState.SNYK_CODE || !isSnykCodeLSEnabled()) return
+        if (!isSnykCodeLSEnabled()) return
         try {
             getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
-                when (snykScan.status) {
-                    "inProgress" -> {
-                        if (ScanState.scanInProgress[snykScan.product] == true) return
-                        ScanState.scanInProgress[snykScan.product] = true
-                        scanPublisher.scanningStarted(snykScan)
-                    }
-
-                    "success" -> {
-                        ScanState.scanInProgress[snykScan.product] = false
-                        processSuccessfulScan(snykScan, scanPublisher, project)
-                    }
-
-                    "error" -> {
-                        ScanState.scanInProgress[snykScan.product] = false
-                        scanPublisher.scanningSnykCodeError(snykScan)
-                    }
-                }
+                processSnykScan(snykScan, scanPublisher, project)
             }
         } catch (e: Exception) {
             logger.error("Error processing snyk scan", e)
+        }
+    }
+
+    private fun processSnykScan(
+        snykScan: SnykScanParams,
+        scanPublisher: SnykCodeScanListenerLS,
+        project: Project
+    ) {
+        val product = when (snykScan.product) {
+            "code" -> ProductType.CODE_SECURITY
+            else -> return
+        }
+        val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
+        when (snykScan.status) {
+            "inProgress" -> {
+                if (ScanState.scanInProgress[key] == true) return
+                ScanState.scanInProgress[key] = true
+                scanPublisher.scanningStarted(snykScan)
+            }
+
+            "success" -> {
+                ScanState.scanInProgress[key] = false
+                processSuccessfulScan(snykScan, scanPublisher, project)
+            }
+
+            "error" -> {
+                ScanState.scanInProgress[key] = false
+                scanPublisher.scanningSnykCodeError(snykScan)
+            }
         }
     }
 
@@ -151,11 +168,13 @@ class SnykLanguageClient : LanguageClient {
             }.toSet()
     }
 
+    @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
     private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
+        if (snykScan.issues.isNullOrEmpty()) return emptyMap()
         val map = snykScan.issues
             .groupBy { it.filePath }
-            .map { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
+            .mapNotNull { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
             .filter { it.second.isNotEmpty() }
             .toMap()
         return map.toSortedMap(SnykCodeFileIssueComparator(map))
