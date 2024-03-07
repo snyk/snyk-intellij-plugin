@@ -2,6 +2,7 @@
 
 ## [2.7.8]
 ### Fixed
+- (LS Preview) UI freezes and initialization errors caused by CodeVision and Code annotations
 - (LS Preview) check trust for content root before triggering Snyk Code scans
 
 ## [2.7.7]
