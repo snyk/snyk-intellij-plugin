@@ -3,6 +3,7 @@
 ## [2.7.7]
 ### Fixed
 - (LS Preview) do not hang on missing answers to message requests, timeout after 5s
+- Provide language-specific annotators for Snyk Code issues
 
 ## [2.7.6]
 ### Fixed
