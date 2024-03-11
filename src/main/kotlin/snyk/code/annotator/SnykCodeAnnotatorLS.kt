@@ -44,7 +44,6 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile {
-        LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()
         return file
     }
 
