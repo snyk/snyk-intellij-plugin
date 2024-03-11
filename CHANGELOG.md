@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.7.8]
+### Fixed
+- (LS Preview) check trust for content root before triggering Snyk Code scans
+
 ## [2.7.7]
 ### Fixed
 - (LS Preview) Snyk Code scans when having multiple projects open
