@@ -11,7 +11,6 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -90,7 +89,7 @@ class LanguageServerWrapper(
     internal fun initialize() {
         if (lsPath.toNioPathOrNull()?.exists() == false) {
             val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
-            SnykBalloonNotificationHelper.showError(message, null)
+            logger.warn(message)
             return
         }
         try {
@@ -179,7 +178,7 @@ class LanguageServerWrapper(
 
     fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
         try {
-            ensureLanguageServerInitialized()
+            if (!ensureLanguageServerInitialized()) return
             val params = DidChangeWorkspaceFoldersParams()
             params.event = WorkspaceFoldersChangeEvent(added.toList(), removed.toList())
             languageServer.workspaceService.didChangeWorkspaceFolders(params)
@@ -188,17 +187,18 @@ class LanguageServerWrapper(
         }
     }
 
-    fun ensureLanguageServerInitialized() {
+    fun ensureLanguageServerInitialized(): Boolean {
         while (isInitializing) {
             Thread.sleep(DEFAULT_SLEEP_TIME)
         }
         if (!isInitialized) {
             initialize()
         }
+        return isInitialized
     }
 
     fun sendReportAnalyticsCommand(scanDoneEvent: ScanDoneEvent) {
-        ensureLanguageServerInitialized()
+        if (!ensureLanguageServerInitialized()) return
         try {
             val eventString = gson.toJson(scanDoneEvent)
             val param = ExecuteCommandParams()
@@ -211,7 +211,7 @@ class LanguageServerWrapper(
     }
 
     fun sendScanCommand() {
-        ensureLanguageServerInitialized()
+        if (!ensureLanguageServerInitialized()) return
         val project = ProjectUtil.getActiveProject()
         if (project == null) {
             logger.warn("No active project found, not sending scan command.")

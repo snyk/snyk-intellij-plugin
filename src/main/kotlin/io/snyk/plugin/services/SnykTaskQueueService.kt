@@ -78,7 +78,6 @@ class SnykTaskQueueService(val project: Project) {
     fun connectProjectToLanguageServer(project: Project) {
         synchronized(LanguageServerWrapper) {
             val wrapper = LanguageServerWrapper.getInstance()
-            wrapper.ensureLanguageServerInitialized()
             val added = wrapper.getWorkspaceFolders(project)
             wrapper.updateWorkspaceFolders(added, emptySet())
         }
