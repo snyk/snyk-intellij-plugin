@@ -38,11 +38,13 @@ object AnnotatorCommon {
                 }
             )
         project.messageBus.connect()
-            .subscribe(SnykSettingsListener.SNYK_SETTINGS_TOPIC, object : SnykSettingsListener {
-                override fun settingsChanged() {
-                    refreshAnnotationsForOpenFiles(project)
+            .subscribe(
+                SnykSettingsListener.SNYK_SETTINGS_TOPIC,
+                object : SnykSettingsListener {
+                    override fun settingsChanged() {
+                        refreshAnnotationsForOpenFiles(project)
+                    }
                 }
-            }
             )
     }
 }
