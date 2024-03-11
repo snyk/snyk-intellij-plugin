@@ -58,6 +58,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
+            .distinctBy { it.id }
             .sortedBy { it.title }
             .forEach { issue ->
                 val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
