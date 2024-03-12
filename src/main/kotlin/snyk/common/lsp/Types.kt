@@ -10,6 +10,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.toVirtualFile
 import org.eclipse.lsp4j.Range
+import java.util.Date
 
 // Define the SnykScanParams data class
 data class SnykScanParams(
@@ -26,7 +27,9 @@ data class ScanIssue(
     val severity: String,
     val filePath: String,
     val range: Range,
-    val additionalData: IssueData
+    val additionalData: IssueData,
+    var isIgnored: Boolean?,
+    var ignoreDetails: IgnoreDetails?,
 ) : Comparable<ScanIssue> {
     var textRange: TextRange? = null
         get() {
@@ -185,7 +188,9 @@ data class IssueData(
     @SerializedName("priorityScore") val priorityScore: Int,
     @SerializedName("hasAIFix") val hasAIFix: Boolean,
     @SerializedName("dataFlow") val dataFlow: List<DataFlow>,
-) {
+    @SerializedName("isIgnored") val isIgnored: Boolean?,
+    @SerializedName("ignoreDetails") val ignoreDetails: IgnoreDetails?,
+    ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -240,3 +245,11 @@ data class IssueData(
 data class HasAuthenticatedParam(@SerializedName("token") val token: String?)
 
 data class SnykTrustedFoldersParams(@SerializedName("trustedFolders") val trustedFolders: List<String>)
+
+data class IgnoreDetails(
+    @SerializedName("category") val category: String,
+    @SerializedName("reason") val reason: String,
+    @SerializedName("expiration") val expiration: String,
+    @SerializedName("ignoredOn") val ignoredOn: Date,
+    @SerializedName("ignoredBy") val ignoredBy: String,
+)

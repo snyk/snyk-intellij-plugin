@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.8.0]
+### Added
+- Consistent ignores for Snyk Code behind a feature flag.
+
 ## [2.7.8]
 ### Fixed
 - (LS Preview) check trust for content root before triggering Snyk Code scans
