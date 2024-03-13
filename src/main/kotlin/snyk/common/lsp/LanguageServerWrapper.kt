@@ -58,7 +58,6 @@ class LanguageServerWrapper(
     /**
      * The language client is used to receive messages from LS
      */
-    @Suppress("MemberVisibilityCanBePrivate")
     lateinit var languageClient: SnykLanguageClient
 
     /**

@@ -175,6 +175,12 @@ class SnykLanguageClient : LanguageClient {
         val map = snykScan.issues
             .groupBy { it.filePath }
             .mapNotNull { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
+            .map {
+                // initialize all calculated values before they are needed, so we don't have to do it in the UI thread
+                it.first.relativePath
+                it.second.forEach { i -> i.textRange }
+                it
+            }
             .filter { it.second.isNotEmpty() }
             .toMap()
         return map.toSortedMap(SnykCodeFileIssueComparator(map))
