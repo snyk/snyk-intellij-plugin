@@ -2,9 +2,5 @@
   <extensions defaultExtensionNs="com.intellij">
     <externalAnnotator language="JAVA" implementationClass="snyk.oss.annotator.OSSMavenAnnotator"/>
     <externalAnnotator language="Groovy" implementationClass="snyk.oss.annotator.OSSGradleAnnotator"/>
-    <externalAnnotator language="JAVA" implementationClass="snyk.code.annotator.SnykCodeAnnotatorLS"/>
-    <externalAnnotator language="JAVA" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
-    <externalAnnotator language="Groovy" implementationClass="snyk.code.annotator.SnykCodeAnnotatorLS"/>
-    <externalAnnotator language="Groovy" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
   </extensions>
 </idea-plugin>

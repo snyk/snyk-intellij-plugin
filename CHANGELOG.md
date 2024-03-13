@@ -3,6 +3,8 @@
 ## [2.7.9]
 ### Fixed
 - fix: shortened plugin name to just Snyk Security
+- (LS Preview) Fix long-running UI operation to run outside of UI thread
+- Remove duplicated annotations in Snyk Code
 
 ## [2.7.8]
 ### Fixed

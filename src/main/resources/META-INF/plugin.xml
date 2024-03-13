@@ -43,7 +43,7 @@
 
     <registryKey key="snyk.preview.snyk.code.ls.enabled"
                  defaultValue="false"
-                 description="Preview: Use Language Server as Source for Snyk Code findings."
+                 description="Preview: Use language server as source for Snyk Code findings."
                  restartRequired="true"/>
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
