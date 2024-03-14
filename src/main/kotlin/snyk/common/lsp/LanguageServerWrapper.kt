@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getUserAgentString
@@ -133,8 +134,36 @@ class LanguageServerWrapper(
         return workspaceFolders.toList()
     }
 
-    fun getWorkspaceFolders(project: Project) =
-        project.getContentRootVirtualFiles().mapNotNull { WorkspaceFolder(it.url, it.name) }.toSet()
+    fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
+        val normalizedRoots = getTrustedContentRoots(project)
+        return normalizedRoots.map { WorkspaceFolder(it.url, it.name) }.toSet()
+    }
+
+    private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
+        // the sort is to ensure that parent folders come first
+        // e.g. /a/b should come before /a/b/c
+        val contentRoots = project.getContentRootVirtualFiles().filterNotNull().sortedBy { it.path }
+        val trustService = service<WorkspaceTrustService>()
+        val normalizedRoots = mutableSetOf<VirtualFile>()
+
+        for (root in contentRoots) {
+            val pathTrusted = trustService.isPathTrusted(root.toNioPath())
+            if (!pathTrusted) {
+                logger.debug("Path not trusted: ${root.path}")
+                continue
+            }
+
+            var add = true
+            for (normalizedRoot in normalizedRoots) {
+                if (!root.path.startsWith(normalizedRoot.path)) continue
+                add = false
+                break
+            }
+            if (add) normalizedRoots.add(root)
+        }
+        logger.debug("Normalized content roots: $normalizedRoots")
+        return normalizedRoots
+    }
 
     fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()
@@ -216,11 +245,8 @@ class LanguageServerWrapper(
             logger.warn("No active project found, not sending scan command.")
             return
         }
-        project.getContentRootVirtualFiles().filterNotNull().toSet().forEach {
-            val trustService = service<WorkspaceTrustService>()
-            if (trustService.isPathTrusted(it.toNioPath())) {
-                sendFolderScanCommand(it.path)
-            }
+        getTrustedContentRoots(project).forEach {
+            sendFolderScanCommand(it.path)
         }
     }
 

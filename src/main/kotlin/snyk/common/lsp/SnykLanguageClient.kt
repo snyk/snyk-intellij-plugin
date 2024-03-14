@@ -40,12 +40,14 @@ import org.eclipse.lsp4j.WorkDoneProgressKind.report
 import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
+import org.jetbrains.kotlin.idea.util.application.executeOnPooledThread
 import snyk.common.ProductType
 import snyk.common.SnykCodeFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.Collections
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 class SnykLanguageClient : LanguageClient {
@@ -234,9 +236,7 @@ class SnykLanguageClient : LanguageClient {
             }
 
             report -> {
-                while (progresses[token] == null) {
-                    Thread.sleep(1000)
-                }
+                executeOnPooledThread { while (progresses[token] == null) { Thread.sleep(1000) } }.get(5, TimeUnit.SECONDS)
                 val indicator = progresses[token] ?: return
                 val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
                 indicator.text = report.message
@@ -248,9 +248,7 @@ class SnykLanguageClient : LanguageClient {
             }
 
             end -> {
-                while (progresses[token] == null) {
-                    Thread.sleep(1000)
-                }
+                executeOnPooledThread { while (progresses[token] == null) { Thread.sleep(1000) } }.get(5, TimeUnit.SECONDS)
                 val indicator = progresses[token] ?: return
                 val workDoneProgressEnd = workDoneProgressNotification as WorkDoneProgressEnd
                 indicator.text = workDoneProgressEnd.message
