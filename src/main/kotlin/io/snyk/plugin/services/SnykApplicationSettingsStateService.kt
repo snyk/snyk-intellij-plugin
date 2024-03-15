@@ -61,6 +61,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var highSeverityEnabled = true
     var criticalSeverityEnabled = true
 
+    var openIssuesEnabled = true
+    var ignoredIssuesEnabled = false
+
     var treeFiltering = TreeFiltering()
 
     var lastCheckDate: Date? = null

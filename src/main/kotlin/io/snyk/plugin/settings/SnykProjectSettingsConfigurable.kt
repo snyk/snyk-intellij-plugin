@@ -55,6 +55,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isCustomEndpointModified() ||
         isOrganizationModified() ||
         isAdditionalParametersModified()
+//    TODO: check if ignore settings changes in order to trigger a scan?
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
