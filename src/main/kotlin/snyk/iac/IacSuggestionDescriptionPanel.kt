@@ -29,7 +29,7 @@ class IacSuggestionDescriptionPanel(
     val issue: IacIssue,
     val psiFile: PsiFile?,
     val project: Project
-) : IssueDescriptionPanelBase(title = issue.title, severity = issue.getSeverity()) {
+) : IssueDescriptionPanelBase(title = issue.title, severity = issue.getSeverity(), details = null) {
 
     private val labelProvider = LabelProvider()
 

@@ -27,10 +27,11 @@ import javax.swing.JTextArea
 
 class BaseImageRemediationDetailPanel(
     private val project: Project,
-    private val imageIssues: ContainerIssuesForImage
+    private val imageIssues: ContainerIssuesForImage,
 ) : IssueDescriptionPanelBase(
     title = imageIssues.imageName,
-    severity = imageIssues.getSeverities().maxOrNull() ?: Severity.UNKNOWN
+    severity = imageIssues.getSeverities().maxOrNull() ?: Severity.UNKNOWN,
+    details = null
 ) {
 
     private val targetImages: List<KubernetesWorkloadImage> = getKubernetesImageCache(project)

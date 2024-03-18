@@ -33,7 +33,11 @@ import kotlin.math.max
 class SuggestionDescriptionPanelFromLS(
     snykCodeFile: SnykCodeFile,
     private val issue: ScanIssue
-) : IssueDescriptionPanelBase(title = getIssueTitle(issue), severity = issue.getSeverityAsEnum()) {
+) : IssueDescriptionPanelBase(
+    title = getIssueTitle(issue),
+    severity = issue.getSeverityAsEnum(),
+    details = issue.additionalData.details
+) {
     val project = snykCodeFile.project
 
     init {
