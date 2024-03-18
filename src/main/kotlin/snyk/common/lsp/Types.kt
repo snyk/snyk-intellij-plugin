@@ -201,8 +201,7 @@ data class IssueData(
     @SerializedName("priorityScore") val priorityScore: Int,
     @SerializedName("hasAIFix") val hasAIFix: Boolean,
     @SerializedName("dataFlow") val dataFlow: List<DataFlow>,
-    @SerializedName("isIgnored") val isIgnored: Boolean?,
-    @SerializedName("ignoreDetails") val ignoreDetails: IgnoreDetails?,
+    @SerializedName("details") val details: String,
     ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -231,6 +230,7 @@ data class IssueData(
         if (priorityScore != other.priorityScore) return false
         if (hasAIFix != other.hasAIFix) return false
         if (dataFlow != other.dataFlow) return false
+        if (details != other.details) return false
 
         return true
     }
@@ -251,6 +251,7 @@ data class IssueData(
         result = 31 * result + priorityScore
         result = 31 * result + hasAIFix.hashCode()
         result = 31 * result + dataFlow.hashCode()
+        result = 31 * result + details.hashCode()
         return result
     }
 }

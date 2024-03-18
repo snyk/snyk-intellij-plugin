@@ -2,15 +2,20 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SideBorder
+import com.intellij.ui.jcef.JBCefApp
+import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.Borders
 import icons.SnykIcons
 import io.snyk.plugin.Severity
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.DescriptionHeaderPanel
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.addSpacer
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import java.awt.BorderLayout
 import java.awt.Font
@@ -23,18 +28,47 @@ private val EMPTY_PANEL = JBUI.Panels.simplePanel()
 
 abstract class IssueDescriptionPanelBase(
     private val title: String,
-    private val severity: Severity
+    private val severity: Severity,
+    private val details: String?
 ) : JPanel(BorderLayout()), IssueDescriptionPanel {
-
+    private val unexpectedErrorMessage = "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused.";
+    
     /**
      * **MUST** be invoked in derived class to actually create the UI elements.
      * Can't be part of constructor due to `state` usage in underling abstract/open methods/props:
      */
     protected fun createUI() {
-        this.add(
-            wrapWithScrollPane(descriptionBodyPanel()),
-            BorderLayout.CENTER
-        )
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            if (!JBCefApp.isSupported()) {
+                val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
+                this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
+                SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
+                return
+            }
+
+            val cefClient = JBCefApp.getInstance().createClient()
+            val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
+
+            val panel = JPanel()
+            panel.add(jbCefBrowser.component, BorderLayout())
+            this.add(
+                wrapWithScrollPane(panel),
+                BorderLayout.CENTER
+            )
+
+            if (this.details == null) {
+                SnykBalloonNotificationHelper.showError("Something went wrong.", null)
+                return
+            }
+
+            jbCefBrowser.loadHTML(this.details, jbCefBrowser.cefBrowser.url)
+
+        } else {
+            this.add(
+                wrapWithScrollPane(descriptionBodyPanel()),
+                BorderLayout.CENTER
+            )
+        }
         if (isBottomPanelNeeded) {
             this.add(
                 bottomPanel(),

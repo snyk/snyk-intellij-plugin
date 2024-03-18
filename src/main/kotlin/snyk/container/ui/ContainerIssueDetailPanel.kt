@@ -18,7 +18,11 @@ import javax.swing.JPanel
 
 class ContainerIssueDetailPanel(
     private val groupedVulns: Collection<ContainerIssue>
-) : IssueDescriptionPanelBase(title = groupedVulns.first().title, severity = groupedVulns.first().getSeverity()) {
+) : IssueDescriptionPanelBase(
+    title = groupedVulns.first().title,
+    severity = groupedVulns.first().getSeverity(),
+    details = null
+) {
 
     private val issue = groupedVulns.first()
 

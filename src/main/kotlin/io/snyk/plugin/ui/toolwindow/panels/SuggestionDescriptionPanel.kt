@@ -37,7 +37,11 @@ class SuggestionDescriptionPanel(
     private val snykCodeFile: SnykCodeFile,
     private val suggestion: SuggestionForFile,
     private val suggestionIndex: Int
-) : IssueDescriptionPanelBase(title = suggestion.title, severity = suggestion.getSeverityAsEnum()) {
+) : IssueDescriptionPanelBase(
+    title = suggestion.title,
+    severity = suggestion.getSeverityAsEnum(),
+    details = null
+) {
     val project = snykCodeFile.project
 
     private val suggestionRange: MyTextRange? = suggestion.ranges?.getOrNull(suggestionIndex)

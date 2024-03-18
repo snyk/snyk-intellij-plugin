@@ -110,4 +110,12 @@ object SnykBalloonNotificationHelper {
         )
         showBalloonForComponent(balloon, component, showAbove)
     }
+    fun showErrorBalloonForComponent(message: String, component: Component, showAbove: Boolean = false) {
+        val balloon = createBalloon(
+            message,
+            AllIcons.General.BalloonError,
+            MessageType.ERROR.popupBackground
+        )
+        showBalloonForComponent(balloon, component, showAbove)
+    }
 }
