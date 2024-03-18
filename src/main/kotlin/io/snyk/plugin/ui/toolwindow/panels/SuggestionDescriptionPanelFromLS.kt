@@ -4,6 +4,8 @@ import com.intellij.icons.AllIcons
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
+import com.intellij.ui.jcef.JBCefApp
+import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
@@ -16,8 +18,10 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
+import jcef.JsDialogHandler
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ScanIssue
+import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -29,6 +33,7 @@ import javax.swing.JTextArea
 import javax.swing.ScrollPaneConstants
 import javax.swing.event.HyperlinkEvent
 import kotlin.math.max
+
 
 class SuggestionDescriptionPanelFromLS(
     snykCodeFile: SnykCodeFile,
@@ -62,13 +67,28 @@ class SuggestionDescriptionPanelFromLS(
     private fun overviewPanel(): JComponent {
         val panel = JPanel()
         panel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
-        val label = JLabel("<html>" + getOverviewText() + "</html>").apply {
-            this.isOpaque = false
-            this.background = UIUtil.getPanelBackground()
-            this.font = io.snyk.plugin.ui.getFont(-1, 14, panel.font)
-            this.preferredSize = Dimension() // this is the key part for shrink/grow.
+        // TODO: check feature flag and if JCEF supported
+        if (!JBCefApp.isSupported()) {
+            // TODO: error state
+            val label = JLabel("<html> Error </html>").apply {
+                this.isOpaque = false
+                this.background = UIUtil.getPanelBackground()
+                this.font = io.snyk.plugin.ui.getFont(-1, 14, panel.font)
+                this.preferredSize = Dimension() // this is the key part for shrink/grow.
+            }
+            panel.add(label, panelGridConstraints(1, indent = 1))
         }
-        panel.add(label, panelGridConstraints(1, indent = 1))
+
+        val jbCefBrowser = JBCefBrowser()
+        jbCefBrowser.jbCefClient
+            .addJSDialogHandler(
+                JsDialogHandler(),
+                jbCefBrowser.cefBrowser
+            )
+
+       panel.add(jbCefBrowser.component, panelGridConstraints(1, indent = 1))
+
+        jbCefBrowser.loadHTML("<html> Hello World <html>", jbCefBrowser.getCefBrowser().getURL())
 
         return panel
     }
