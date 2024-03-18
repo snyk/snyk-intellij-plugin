@@ -176,9 +176,9 @@ class SnykLanguageClient : LanguageClient {
         var includeIgnoredIssues = pluginSettings().ignoredIssuesEnabled
         var includeOpenedIssues = pluginSettings().openIssuesEnabled
 
-//        TODO: check feature flag before filtering based on ignores
         val map = snykScan.issues
-//            TODO: filter issues based on ignores
+//        TODO: check feature flag before filtering based on ignores
+            .filter { it.isVisible(includeOpenedIssues, includeIgnoredIssues) }
             .groupBy { it.filePath }
             .mapNotNull { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
             .filter { it.second.isNotEmpty() }

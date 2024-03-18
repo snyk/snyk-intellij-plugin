@@ -20,6 +20,7 @@ data class SnykScanParams(
     val issues: List<ScanIssue> // Issues contain the scan results in the common issues model
 )
 
+
 // Define the ScanIssue data class
 data class ScanIssue(
     val id: String, // Unique key identifying an issue in the whole result set. Not the same as the Snyk issue ID.
@@ -87,6 +88,19 @@ data class ScanIssue(
             "low" -> Severity.LOW
             else -> Severity.UNKNOWN
         }
+    }
+
+    fun isVisible(includeOpenedIssues: Boolean, includeIgnoredIssues: Boolean): Boolean {
+        if (includeIgnoredIssues && includeOpenedIssues){
+           return true
+        }
+        if (includeIgnoredIssues) {
+            return this.isIgnored == true
+        }
+        if (includeOpenedIssues){
+            return this.isIgnored != true
+        }
+        return false
     }
 
     override fun compareTo(other: ScanIssue): Int {
