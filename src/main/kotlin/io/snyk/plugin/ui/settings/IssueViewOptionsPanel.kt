@@ -1,12 +1,16 @@
 package io.snyk.plugin.ui.settings
 
+import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBUI
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 
-class IssueViewOptionsPanel {
+class IssueViewOptionsPanel(
+    private val project: Project,
+) {
     private val settings
         get() = pluginSettings()
 
@@ -22,8 +26,11 @@ class IssueViewOptionsPanel {
                     setter = { settings.openIssuesEnabled = it }
                 ).component.apply {
                     this.addItemListener {
-                        isOptionNotSelected(this, currentOpenIssuesEnabled)
-                        currentOpenIssuesEnabled = this.isSelected
+                        if (canOptionChange(this, currentOpenIssuesEnabled)) {
+                            currentOpenIssuesEnabled = this.isSelected
+                            settings.openIssuesEnabled = currentOpenIssuesEnabled
+                            getSnykTaskQueueService(project)?.scan()
+                        }
                     }
                     name = "Open issues"
                 }
@@ -37,8 +44,11 @@ class IssueViewOptionsPanel {
                     setter = { settings.ignoredIssuesEnabled = it }
                 ).component.apply {
                     this.addItemListener {
-                        isOptionNotSelected(this, currentIgnoredIssuesEnabled)
-                        currentIgnoredIssuesEnabled = this.isSelected
+                        if (canOptionChange(this, currentIgnoredIssuesEnabled)) {
+                            currentIgnoredIssuesEnabled = this.isSelected
+                            settings.ignoredIssuesEnabled =currentIgnoredIssuesEnabled
+                            getSnykTaskQueueService(project)?.scan()
+                        }
                     }
                     name = "Ignored issues"
                 }
@@ -49,7 +59,7 @@ class IssueViewOptionsPanel {
         border = JBUI.Borders.empty(2)
     }
 
-    private fun isOptionNotSelected(component: JBCheckBox, wasEnabled: Boolean): Boolean {
+    private fun canOptionChange(component: JBCheckBox, wasEnabled: Boolean): Boolean {
         val onlyOneEnabled = arrayOf(
             currentOpenIssuesEnabled,
             currentIgnoredIssuesEnabled,
@@ -61,7 +71,8 @@ class IssueViewOptionsPanel {
                 "At least one option should be selected",
                 component
             )
+            return false
         }
-        return onlyOneEnabled
+        return true
     }
 }

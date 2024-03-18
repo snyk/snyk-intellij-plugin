@@ -77,7 +77,7 @@ class SnykSettingsDialog(
     private val codeAlertPanel = scanTypesPanelOuter.codeAlertPanel
     private val scanTypesPanel = scanTypesPanelOuter.panel
 
-    private val issueViewOptionsPanel = IssueViewOptionsPanel().panel
+    private val issueViewOptionsPanel = IssueViewOptionsPanel(project).panel
 
     private val severityEnablementPanel = SeveritiesEnablementPanel().panel
 
