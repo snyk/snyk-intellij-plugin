@@ -22,13 +22,17 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import snyk.pluginInfo
+import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
 
+    private val applicationMock: Application = mockk()
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
     private val settings = SnykApplicationSettingsStateService()
+    private val trustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
+
     private lateinit var cut: LanguageServerWrapper
 
     @Before
@@ -37,8 +41,8 @@ class LanguageServerWrapperTest {
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic(ApplicationManager::class)
         mockkStatic(ApplicationManager::class)
-        val applicationMock = mockk<Application>()
         every { ApplicationManager.getApplication() } returns applicationMock
+        every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
 
         val projectManagerMock = mockk<ProjectManager>()
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
