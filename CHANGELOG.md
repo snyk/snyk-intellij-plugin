@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.7.10]
+### Fixed
+- (LS Preview) Fix content root handling for Snyk Code scans
+
 ## [2.7.9]
 ### Fixed
 - fix: shortened plugin name to just Snyk Security
