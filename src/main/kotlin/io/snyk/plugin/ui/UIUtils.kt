@@ -383,7 +383,7 @@ fun getJBCefBrowserIfSupported () : Pair<JBCefBrowser?, String> {
         return null to ""
     }
     val cefClient = JBCefApp.getInstance().createClient()
-    val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
+    val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(false).build()
 
     return jbCefBrowser to jbCefBrowser.cefBrowser.url
 }

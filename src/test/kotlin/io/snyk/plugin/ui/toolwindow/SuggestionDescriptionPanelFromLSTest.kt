@@ -16,8 +16,6 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.getJBCefBrowserIfSupported
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import org.cef.browser.CefBrowserFactory
-import org.cef.browser.CefRequestContext
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import org.junit.Before
