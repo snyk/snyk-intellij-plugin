@@ -1,17 +1,19 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefBrowserBase
+import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
-import icons.SnykIcons
-import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.snykcode.core.SnykCodeFile
@@ -22,8 +24,8 @@ import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
 import jcef.JsDialogHandler
 import snyk.common.lsp.DataFlow
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
-import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -90,6 +92,30 @@ class SuggestionDescriptionPanelFromLS(
             )
 
         panel.add(jbCefBrowser.component, panelGridConstraints(1, indent = 1))
+
+        val sendScanQuery = JBCefJSQuery.create(jbCefBrowser as JBCefBrowserBase)
+        val handler:Function<JBCefJSQuery.Response> = {
+            LanguageServerWrapper.getInstance().sendScanCommand()
+            return null
+        }
+        sendScanQuery.addHandler(handler)
+        browser.getCefBrowser().executeJavaScript( // 4
+            "window.openLink = function(link) {" +
+                openLinkQuery.inject("link") + // 5
+                "};",
+            browser.getCefBrowser().getURL(), 0
+        );
+
+        browser.getCefBrowser().executeJavaScript( // 6
+            """
+    document.addEventListener('click', function (e) {
+      const link = e.target.closest('a').href;
+      if (link) {
+        window.openLink(link);
+      }
+    });""",
+            browser.getCefBrowser().getURL(), 0
+        );
 
         var severityIcon = "/Users/teodorasandu/Documents/repos/ide/snyk-intellij-plugin/src/main/resources/icons/severity_critical_16.svg"
         jbCefBrowser.loadHTML("<!--\n" +
@@ -200,6 +226,7 @@ class SuggestionDescriptionPanelFromLS(
 //            "    </div>\n" +
             "  </section>\n" +
             "  <section class=\"delimiter-top summary\">\n" +
+            "    <button> Send scan </button>\n" +
             "    <h2 style='background-color: blue'>Detailed paths</h2>\n" +
 //            "    <div class=\"detailed-paths\">${detailedPaths}</div>\n" +
             "  </section>\n" +
