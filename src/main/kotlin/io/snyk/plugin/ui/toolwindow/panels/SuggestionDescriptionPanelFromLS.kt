@@ -8,6 +8,8 @@ import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
+import com.intellij.ui.jcef.JBCefBrowserBuilder
+import com.intellij.ui.jcef.JBCefClient
 import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -21,9 +23,11 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
-import jcef.JsDialogHandler
 import org.cef.browser.CefBrowser
+import org.cef.browser.CefFrame
+import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.DataFlow
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.awt.Color
 import java.awt.Dimension
@@ -52,6 +56,13 @@ class SuggestionDescriptionPanelFromLS(
         issueNaming = if (issue.additionalData.isSecurityType) "Vulnerability" else "Quality Issue",
         cwes = issue.additionalData.cwe ?: emptyList()
     )
+
+    fun sendScan(command: String): JBCefJSQuery.Response {
+        if (command == "sendScan") {
+            LanguageServerWrapper.getInstance().sendScanCommand()
+        }
+        return JBCefJSQuery.Response("success")
+    }
 
     override fun createMainBodyPanel(): Pair<JPanel, Int> {
         val lastRowToAddSpacer = 5
@@ -83,51 +94,39 @@ class SuggestionDescriptionPanelFromLS(
             panel.add(label, panelGridConstraints(1, indent = 1))
         }
 
-        val jbCefBrowser = JBCefBrowser()
-        jbCefBrowser.jbCefClient
-            .addJSDialogHandler(
-                JsDialogHandler(),
-                jbCefBrowser.cefBrowser
-            )
+        val cefClient = JBCefApp.getInstance().createClient()
+        val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
 
         panel.add(jbCefBrowser.component, panelGridConstraints(1, indent = 1))
 
-        val devTools: CefBrowser = jbCefBrowser.cefBrowser.getDevTools()
-        val devToolsBrowser = JBCefBrowser.createBuilder()
-            .setCefBrowser(devTools)
-            .setClient(jbCefBrowser.getJBCefClient())
-            .build()
+        val sendScanQuery = JBCefJSQuery.create(jbCefBrowser)
 
-        devToolsBrowser.openDevtools()
+        val loadHandler = object : CefLoadHandlerAdapter() {
+            override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
+                if (frame.isMain) {
+                    cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
+                    sendScanQuery.addHandler { sendScan(it) }
 
-        val sendScanQuery = JBCefJSQuery.create(jbCefBrowser as JBCefBrowserBase)
-        sendScanQuery.addHandler { link: String? ->  // 2
-            BrowserUtil.browse("https://www.google.com");
-//            LanguageServerWrapper.getInstance().sendScanCommand()
-            null // 3
-        }
+                    browser.executeJavaScript(
+                        "window.sendScanQuery = function(link) {" +
+                            sendScanQuery.inject("link") +
+                            "};",
+                        browser.url, 0
+                    );
 
-        jbCefBrowser.cefBrowser.executeJavaScript(
-            "alert('Hello World!')",
-            jbCefBrowser.cefBrowser.getURL(), 0
-        );
-
-        jbCefBrowser.cefBrowser.executeJavaScript( // 4
-            "window.sendScanQuery = function(link) {" +
-                sendScanQuery.inject("link") + // 5
-                "};",
-            jbCefBrowser.cefBrowser.getURL(), 2
-        );
-
-        jbCefBrowser.cefBrowser.executeJavaScript( // 6
-            """
-                console.log(document.getElementById('sendScan'))
+                    browser.executeJavaScript(
+                        """
+                console.log(window.sendScanQuery)
                 document.getElementById('sendScan').addEventListener('click', function (e) {
                   e.preventDefault()
                   window.sendScanQuery("");
                 });""",
-            jbCefBrowser.cefBrowser.getURL(), 1
-        );
+                        browser.url, 0
+                    );
+                }
+            }
+        }
+        cefClient.addLoadHandler(loadHandler, jbCefBrowser.cefBrowser)
 
         var severityIcon = "/Users/teodorasandu/Documents/repos/ide/snyk-intellij-plugin/src/main/resources/icons/severity_critical_16.svg"
         jbCefBrowser.loadHTML("<!--\n" +
@@ -252,7 +251,7 @@ class SuggestionDescriptionPanelFromLS(
             "  }\n" +
             "</script>\n" +
             "</body>\n" +
-            "</html>\n", jbCefBrowser.cefBrowser.getURL())
+            "</html>\n", jbCefBrowser.cefBrowser.url)
 
         return panel
     }
