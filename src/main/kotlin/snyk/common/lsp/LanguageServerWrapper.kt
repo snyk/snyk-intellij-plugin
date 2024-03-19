@@ -21,6 +21,7 @@ import org.eclipse.lsp4j.CodeActionCapabilities
 import org.eclipse.lsp4j.CodeLensCapabilities
 import org.eclipse.lsp4j.CodeLensWorkspaceCapabilities
 import org.eclipse.lsp4j.DiagnosticCapabilities
+import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
@@ -241,13 +242,8 @@ class LanguageServerWrapper(
         }
     }
 
-    fun sendScanCommand() {
+    fun sendScanCommand(project: Project) {
         if (!ensureLanguageServerInitialized()) return
-        val project = ProjectUtil.getActiveProject()
-        if (project == null) {
-            logger.warn("No active project found, not sending scan command.")
-            return
-        }
         getTrustedContentRoots(project).forEach {
             sendFolderScanCommand(it.path)
         }
@@ -318,6 +314,17 @@ class LanguageServerWrapper(
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
         )
+    }
+
+    fun updateConfiguration() {
+        ensureLanguageServerInitialized()
+        val params = DidChangeConfigurationParams(getInstance().getSettings())
+        languageServer.workspaceService.didChangeConfiguration(params)
+    }
+
+    fun addContentRoots(project: Project) {
+        val added = getWorkspaceFolders(project)
+        updateWorkspaceFolders(added, emptySet())
     }
 
     companion object {

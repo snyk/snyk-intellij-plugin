@@ -21,7 +21,6 @@ import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.snykcode.newCodeRestApi
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
-import org.eclipse.lsp4j.DidChangeConfigurationParams
 import snyk.amplitude.api.ExperimentUser
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.toSnykCodeApiUrl
@@ -99,10 +98,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        val wrapper = LanguageServerWrapper.getInstance()
-        val params = DidChangeConfigurationParams(wrapper.getSettings())
-        wrapper.languageServer.workspaceService.didChangeConfiguration(params)
-
+        LanguageServerWrapper.getInstance().updateConfiguration()
         if (isSnykCodeLSEnabled()) {
             runBackgroundableTask("Updating Snyk Code settings", project, true) {
                 settingsStateService.isGlobalIgnoresFeatureEnabled =
