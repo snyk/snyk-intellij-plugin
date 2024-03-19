@@ -1,8 +1,7 @@
 package snyk.container
 
-import org.hamcrest.core.IsEqual.equalTo
-import org.hamcrest.core.IsNull.notNullValue
-import org.junit.Assert.assertThat
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertNotNull
 import org.junit.Test
 
 class BaseImageRemediationExtractorTest {
@@ -42,21 +41,18 @@ postgres:14.1  50               0 critical, 0 high, 0 medium, 50 low
     ) {
         val currentImage = BaseImageRemediationExtractor.extractImageInfo(input)
 
-        assertThat(currentImage, notNullValue())
-        assertThat(
-            currentImage,
-            equalTo(
-                BaseImageInfo(
-                    name = expectedImage,
-                    vulnerabilities = BaseImageVulnerabilities(
-                        critical = expectedCritical,
-                        high = expectedHigh,
-                        medium = expectedMedium,
-                        low = expectedLow
-                    )
+        assertNotNull(currentImage)
+        assertEquals(
+            BaseImageInfo(
+                name = expectedImage,
+                vulnerabilities = BaseImageVulnerabilities(
+                    critical = expectedCritical,
+                    high = expectedHigh,
+                    medium = expectedMedium,
+                    low = expectedLow
                 )
-            )
+            ),
+            currentImage
         )
     }
-
 }

@@ -23,6 +23,7 @@ import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import snyk.common.getEndpointUrl
 import snyk.common.isOauth
+import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.StringSelection
@@ -47,7 +48,7 @@ class SnykCliAuthenticationService(val project: Project) {
         downloadCliIfNeeded()
         if (getCliFile().exists()) executeAuthCommand()
         if (isAuthenticated) executeGetConfigApiCommand()
-
+        LanguageServerWrapper.getInstance().updateSettings()
         return token
     }
 

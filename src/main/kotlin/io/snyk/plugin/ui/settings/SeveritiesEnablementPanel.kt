@@ -1,11 +1,12 @@
 package io.snyk.plugin.ui.settings
 
 import com.intellij.ui.components.JBCheckBox
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import java.awt.event.ItemEvent
 
 class SeveritiesEnablementPanel {
     private val settings
@@ -18,68 +19,53 @@ class SeveritiesEnablementPanel {
 
     val panel = panel {
         row {
-            cell {
-                checkBox(
-                    text = Severity.CRITICAL.toPresentableString(),
-                    getter = { settings.criticalSeverityEnabled },
-                    setter = { settings.criticalSeverityEnabled = it }
-                ).component.apply {
-                    this.addItemListener {
-                        isLastSeverityDisabling(this, currentCriticalSeverityEnabled)
-                        currentCriticalSeverityEnabled = this.isSelected
-                    }
-                    name = Severity.CRITICAL.toPresentableString()
+            checkBox(Severity.CRITICAL.toPresentableString()).applyToComponent {
+                name = text
+                isSelected = settings.criticalSeverityEnabled
+                this.addItemListener {
+                    correctLastSeverityDisabled(it)
+                    settings.criticalSeverityEnabled = this.isSelected
                 }
             }
         }
         row {
-            cell {
-                checkBox(
-                    text = Severity.HIGH.toPresentableString(),
-                    getter = { settings.highSeverityEnabled },
-                    setter = { settings.highSeverityEnabled = it }
-                ).component.apply {
-                    this.addItemListener {
-                        isLastSeverityDisabling(this, currentHighSeverityEnabled)
-                        currentHighSeverityEnabled = this.isSelected
-                    }
-                    name = Severity.HIGH.toPresentableString()
+            checkBox(Severity.HIGH.toPresentableString()).applyToComponent {
+                name = text
+                isSelected = settings.highSeverityEnabled
+                this.addItemListener {
+                    correctLastSeverityDisabled(it)
+                    settings.highSeverityEnabled = this.isSelected
                 }
             }
         }
         row {
-            cell {
-                checkBox(
-                    text = Severity.MEDIUM.toPresentableString(),
-                    getter = { settings.mediumSeverityEnabled },
-                    setter = { settings.mediumSeverityEnabled = it }
-                ).component.apply {
-                    this.addItemListener {
-                        isLastSeverityDisabling(this, currentMediumSeverityEnabled)
-                        currentMediumSeverityEnabled = this.isSelected
-                    }
-                    name = Severity.MEDIUM.toPresentableString()
+            checkBox(Severity.MEDIUM.toPresentableString()).applyToComponent {
+                name = text
+                isSelected = settings.mediumSeverityEnabled
+                this.addItemListener {
+                    correctLastSeverityDisabled(it)
+                    settings.mediumSeverityEnabled = this.isSelected
                 }
             }
         }
         row {
-            cell {
-                checkBox(
-                    text = Severity.LOW.toPresentableString(),
-                    getter = { settings.lowSeverityEnabled },
-                    setter = { settings.lowSeverityEnabled = it }
-                ).component.apply {
-                    this.addItemListener {
-                        isLastSeverityDisabling(this, currentLowSeverityEnabled)
-                        currentLowSeverityEnabled = this.isSelected
-                    }
-                    name = Severity.LOW.toPresentableString()
+            checkBox(Severity.LOW.toPresentableString()).applyToComponent {
+                name = text
+                isSelected = settings.lowSeverityEnabled
+                this.addItemListener {
+                    correctLastSeverityDisabled(it)
+                    settings.lowSeverityEnabled = this.isSelected
                 }
             }
         }
     }.apply {
         name = "severityEnablementPanel"
         border = JBUI.Borders.empty(2)
+    }
+
+    private fun JBCheckBox.correctLastSeverityDisabled(it: ItemEvent) {
+        val deselected = it.stateChange == ItemEvent.DESELECTED
+        isLastSeverityDisabling(this, deselected)
     }
 
     private fun isLastSeverityDisabling(component: JBCheckBox, wasEnabled: Boolean): Boolean {

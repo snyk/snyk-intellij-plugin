@@ -8,11 +8,7 @@ import com.intellij.psi.PsiFile
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.hamcrest.collection.IsCollectionWithSize.hasSize
-import org.hamcrest.core.IsEqual.equalTo
-import org.junit.Assert.assertThat
-import org.junit.Before
-import org.junit.Test
+import junit.framework.TestCase
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -24,32 +20,28 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
     lateinit var file: VirtualFile
     private lateinit var psiFile: PsiFile
 
-    @Before
     override fun setUp() {
         super.setUp()
         file = myFixture.copyFileToProject(terraformManifestFile)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
     }
 
-    @Test
     fun `test doAnnotation should not return any annotations if no iac issue exists`() {
         every { snykCachedResults.currentIacResult } returns null
 
         val annotations = IacHclAnnotator().getIssues(psiFile)
 
-        assertThat(annotations, hasSize(0))
+        assertEquals(0, annotations.size)
     }
 
-    @Test
     fun `test getIssues should return one annotation if only one iac issue exists`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine1()
 
         val annotations = IacHclAnnotator().getIssues(psiFile)
 
-        assertThat(annotations, hasSize(1))
+        TestCase.assertEquals(1, annotations.size)
     }
 
-    @Test
     fun `test apply should trigger newAnnotation call`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine1()
 
@@ -58,7 +50,6 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
         verify { annotationHolderMock.newAnnotation(any(), any()) }
     }
 
-    @Test
     fun `test textRange without leading whitespace for HCLIdentifier`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine1()
 
@@ -68,10 +59,9 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
-        assertThat(actualRange, equalTo(expectedRange))
+        assertEquals(expectedRange, actualRange)
     }
 
-    @Test
     fun `test textRange with leading whitespace for HCLIdentifier`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine8()
 
@@ -81,10 +71,9 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
-        assertThat(actualRange, equalTo(expectedRange))
+        assertEquals(expectedRange, actualRange)
     }
 
-    @Test
     fun `test textRange for leading whitespace for HCLProperty`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
@@ -94,7 +83,7 @@ class IacHclAnnotatorTest : IacBaseAnnotatorCase() {
             snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
-        assertThat(actualRange, equalTo(expectedRange))
+        assertEquals(expectedRange, actualRange)
     }
 
     private fun createIacResultWithIssueOnLine1(): IacResult {

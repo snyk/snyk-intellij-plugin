@@ -8,11 +8,6 @@ import com.intellij.psi.PsiFile
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.hamcrest.collection.IsCollectionWithSize.hasSize
-import org.hamcrest.core.IsEqual.equalTo
-import org.junit.Assert.assertThat
-import org.junit.Before
-import org.junit.Test
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
@@ -24,32 +19,28 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
     lateinit var file: VirtualFile
     private lateinit var psiFile: PsiFile
 
-    @Before
     override fun setUp() {
         super.setUp()
         file = myFixture.copyFileToProject(kubernetesManifestFile)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
     }
 
-    @Test
     fun `test getIssues should not return any annotations if no iac issue exists`() {
         every { snykCachedResults.currentIacResult } returns null
 
         val issues = IacYamlAnnotator().getIssues(psiFile)
 
-        assertThat(issues, hasSize(0))
+        assertEquals(0, issues.size)
     }
 
-    @Test
     fun `test getIssues should return one annotations if only one iac issue exists`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
         val issues = IacYamlAnnotator().getIssues(psiFile)
 
-        assertThat(issues, hasSize(1))
+        assertEquals(1, issues.size)
     }
 
-    @Test
     fun `test apply should trigger newAnnotation call`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
@@ -58,7 +49,6 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
         verify { annotationHolderMock.newAnnotation(any(), any()) }
     }
 
-    @Test
     fun `test textRange with leading space`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine18()
 
@@ -68,10 +58,9 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
             snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
-        assertThat(actualRange, equalTo(expectedRange))
+        assertEquals(expectedRange, actualRange)
     }
 
-    @Test
     fun `test textRange with dash at the begin`() {
         every { snykCachedResults.currentIacResult } returns createIacResultWithIssueOnLine20()
 
@@ -81,7 +70,7 @@ class IacYamlAnnotatorTest : IacBaseAnnotatorCase() {
             snykCachedResults.currentIacResult?.allCliIssues!!.first().infrastructureAsCodeIssues.first()
         )
 
-        assertThat(actualRange, equalTo(expectedRange))
+        assertEquals(expectedRange, actualRange)
     }
 
     private fun createIacResultWithIssueOnLine18(): IacResult {
