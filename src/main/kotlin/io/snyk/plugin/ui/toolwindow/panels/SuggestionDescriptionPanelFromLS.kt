@@ -94,27 +94,24 @@ class SuggestionDescriptionPanelFromLS(
         panel.add(jbCefBrowser.component, panelGridConstraints(1, indent = 1))
 
         val sendScanQuery = JBCefJSQuery.create(jbCefBrowser as JBCefBrowserBase)
-        val handler:Function<JBCefJSQuery.Response> = {
+        sendScanQuery.addHandler { link: String? ->  // 2
             LanguageServerWrapper.getInstance().sendScanCommand()
-            return null
+            null // 3
         }
-        sendScanQuery.addHandler(handler)
-        browser.getCefBrowser().executeJavaScript( // 4
-            "window.openLink = function(link) {" +
-                openLinkQuery.inject("link") + // 5
+
+        jbCefBrowser.getCefBrowser().executeJavaScript( // 4
+            "sendScanQuery = function(link) {" +
+                sendScanQuery.inject("link") + // 5
                 "};",
-            browser.getCefBrowser().getURL(), 0
+            jbCefBrowser.getCefBrowser().getURL(), 0
         );
 
-        browser.getCefBrowser().executeJavaScript( // 6
+        jbCefBrowser.getCefBrowser().executeJavaScript( // 6
             """
-    document.addEventListener('click', function (e) {
-      const link = e.target.closest('a').href;
-      if (link) {
-        window.openLink(link);
-      }
-    });""",
-            browser.getCefBrowser().getURL(), 0
+                document.querySelectorAll('button').addEventListener('click', function (e) {
+                  sendScanQuery("");
+                });""",
+            jbCefBrowser.getCefBrowser().getURL(), 0
         );
 
         var severityIcon = "/Users/teodorasandu/Documents/repos/ide/snyk-intellij-plugin/src/main/resources/icons/severity_critical_16.svg"
