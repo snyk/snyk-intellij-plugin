@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow
 
 import ai.deepcode.javaclient.core.MyTextRange
 import ai.deepcode.javaclient.core.SuggestionForFile
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -445,7 +444,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         }
 
-        DaemonCodeAnalyzer.getInstance(project).restart()
+        refreshAnnotationsForOpenFiles(project)
 
         ApplicationManager.getApplication().invokeLater {
             doCleanUi(true)

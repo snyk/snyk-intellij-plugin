@@ -1,8 +1,14 @@
 package snyk.trust
 
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.ProjectLocator
+import com.intellij.openapi.vfs.VirtualFile
+import io.snyk.plugin.isSnykCodeLSEnabled
+import org.jetbrains.io.LocalFileFinder
+import snyk.common.lsp.LanguageServerWrapper
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -21,6 +27,18 @@ class WorkspaceTrustService {
             return
         }
         settings.addTrustedPath(path.toString())
+
+        val virtualFile = LocalFileFinder.findFile(path.toFile().absolutePath) ?: return
+        addToLanguageServer(virtualFile)
+    }
+
+    private fun addToLanguageServer(virtualFile: VirtualFile) {
+        if (!isSnykCodeLSEnabled()) return
+        val wrapper = LanguageServerWrapper.getInstance()
+        ProjectLocator.getInstance().guessProjectForFile(virtualFile)?.let {
+            wrapper.addContentRoots(it)
+            wrapper.sendScanCommand(it)
+        }
     }
 
     fun isPathTrusted(path: Path): Boolean {

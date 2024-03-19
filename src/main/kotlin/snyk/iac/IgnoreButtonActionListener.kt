@@ -1,12 +1,12 @@
 package snyk.iac
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.relativePathToContentRoot
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.NotNull
@@ -52,11 +52,7 @@ class IgnoreButtonActionListener(
                     text = IGNORED_ISSUE_BUTTON_TEXT
                 }
                 ApplicationManager.getApplication().invokeLater {
-                    if (psiFile != null) {
-                        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
-                    } else {
-                        DaemonCodeAnalyzer.getInstance(project).restart()
-                    }
+                    refreshAnnotationsForOpenFiles(project)
                 }
             } catch (e: IgnoreException) {
                 SnykBalloonNotificationHelper.showError(

@@ -7,6 +7,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.readText
 import io.snyk.plugin.SnykBulkFileListener
@@ -14,6 +15,7 @@ import io.snyk.plugin.getPsiFile
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.isSnykCodeLSEnabled
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.RunUtils
@@ -105,10 +107,9 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         val cache = getSnykCachedResults(project)?.currentSnykCodeResultsLS ?: return
         filesAffected.forEach {
             cache.remove(it)
-            it.virtualFile.getPsiFile(project)?.let { psiFile ->
-                DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
-            }
         }
+        VirtualFileManager.getInstance().asyncRefresh()
+        DaemonCodeAnalyzer.getInstance(project).restart()
     }
 
     private fun toSnykCodeFileSet(project: Project, virtualFiles: Set<VirtualFile>) =
