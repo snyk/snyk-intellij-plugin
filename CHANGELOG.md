@@ -10,10 +10,6 @@
 - (LS Preview) Fix long-running UI operation to run outside of UI thread
 - Remove duplicated annotations in Snyk Code
 
-## [2.8.0]
-### Added
-- Consistent ignores for Snyk Code behind a feature flag.
-
 ## [2.7.8]
 ### Fixed
 - (LS Preview) UI freezes and initialization errors caused by CodeVision and Code annotations
