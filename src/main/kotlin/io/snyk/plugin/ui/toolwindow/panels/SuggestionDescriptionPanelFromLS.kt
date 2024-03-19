@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
-import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
@@ -23,8 +22,8 @@ import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
 import jcef.JsDialogHandler
+import org.cef.browser.CefBrowser
 import snyk.common.lsp.DataFlow
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.awt.Color
 import java.awt.Dimension
@@ -93,25 +92,41 @@ class SuggestionDescriptionPanelFromLS(
 
         panel.add(jbCefBrowser.component, panelGridConstraints(1, indent = 1))
 
+        val devTools: CefBrowser = jbCefBrowser.cefBrowser.getDevTools()
+        val devToolsBrowser = JBCefBrowser.createBuilder()
+            .setCefBrowser(devTools)
+            .setClient(jbCefBrowser.getJBCefClient())
+            .build()
+
+        devToolsBrowser.openDevtools()
+
         val sendScanQuery = JBCefJSQuery.create(jbCefBrowser as JBCefBrowserBase)
         sendScanQuery.addHandler { link: String? ->  // 2
-            LanguageServerWrapper.getInstance().sendScanCommand()
+            BrowserUtil.browse("https://www.google.com");
+//            LanguageServerWrapper.getInstance().sendScanCommand()
             null // 3
         }
 
-        jbCefBrowser.getCefBrowser().executeJavaScript( // 4
-            "sendScanQuery = function(link) {" +
-                sendScanQuery.inject("link") + // 5
-                "};",
-            jbCefBrowser.getCefBrowser().getURL(), 0
+        jbCefBrowser.cefBrowser.executeJavaScript(
+            "alert('Hello World!')",
+            jbCefBrowser.cefBrowser.getURL(), 0
         );
 
-        jbCefBrowser.getCefBrowser().executeJavaScript( // 6
+        jbCefBrowser.cefBrowser.executeJavaScript( // 4
+            "window.sendScanQuery = function(link) {" +
+                sendScanQuery.inject("link") + // 5
+                "};",
+            jbCefBrowser.cefBrowser.getURL(), 2
+        );
+
+        jbCefBrowser.cefBrowser.executeJavaScript( // 6
             """
-                document.querySelectorAll('button').addEventListener('click', function (e) {
-                  sendScanQuery("");
+                console.log(document.getElementById('sendScan'))
+                document.getElementById('sendScan').addEventListener('click', function (e) {
+                  e.preventDefault()
+                  window.sendScanQuery("");
                 });""",
-            jbCefBrowser.getCefBrowser().getURL(), 0
+            jbCefBrowser.cefBrowser.getURL(), 1
         );
 
         var severityIcon = "/Users/teodorasandu/Documents/repos/ide/snyk-intellij-plugin/src/main/resources/icons/severity_critical_16.svg"
@@ -223,7 +238,7 @@ class SuggestionDescriptionPanelFromLS(
 //            "    </div>\n" +
             "  </section>\n" +
             "  <section class=\"delimiter-top summary\">\n" +
-            "    <button> Send scan </button>\n" +
+            "    <button id='sendScan'> Send scan </button>\n" +
             "    <h2 style='background-color: blue'>Detailed paths</h2>\n" +
 //            "    <div class=\"detailed-paths\">${detailedPaths}</div>\n" +
             "  </section>\n" +
@@ -237,7 +252,7 @@ class SuggestionDescriptionPanelFromLS(
             "  }\n" +
             "</script>\n" +
             "</body>\n" +
-            "</html>\n", jbCefBrowser.getCefBrowser().getURL())
+            "</html>\n", jbCefBrowser.cefBrowser.getURL())
 
         return panel
     }
