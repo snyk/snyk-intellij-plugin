@@ -107,4 +107,19 @@ class LanguageServerWrapperTest {
         assertEquals("${settings.ignoreUnknownCA}", actual.insecure)
         assertEquals(getCliFile().absolutePath, actual.cliPath)
     }
+
+    @Test
+    fun `sendFeatureFlagCommand should return true if feature flag is enabled`() {
+        // Arrange
+        val featureFlag = "testFeatureFlag"
+        val commandResponse = CompletableFuture.completedFuture("{\"ok\": true}" as Any)
+        every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns commandResponse
+
+        // Act
+        val result = cut.sendFeatureFlagCommand(featureFlag)
+
+        // Assert
+        verify { lsMock.workspaceService.executeCommand(match { it.arguments.contains(featureFlag) }) }
+        assertEquals(true, result)
+    }
 }

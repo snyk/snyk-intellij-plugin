@@ -34,6 +34,7 @@ import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
+import org.json.JSONObject
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
@@ -222,6 +223,32 @@ class LanguageServerWrapper(
             if (trustService.isPathTrusted(it.toNioPath())) {
                 sendFolderScanCommand(it.path)
             }
+        }
+    }
+
+    fun sendFeatureFlagCommand(featureFlag: String): Boolean {
+        ensureLanguageServerInitialized()
+        try {
+            val param = ExecuteCommandParams()
+            param.command = "snyk.getFeatureFlagStatus"
+            param.arguments = listOf(featureFlag)
+            val result = languageServer.workspaceService.executeCommand(param).get()
+
+            val resultJson = JSONObject(result.toString())
+            val ok = resultJson.getBoolean("ok")
+            val userMessage = resultJson.optString("userMessage")
+
+            if (ok) {
+                logger.info("Feature flag $featureFlag is enabled.")
+                return true
+            } else {
+                logger.warn("Feature flag $featureFlag is disabled. Message: $userMessage")
+                return false
+            }
+
+        } catch (e: Exception) {
+            logger.error("Error while checking feature flag: ${e.message}", e)
+            return false
         }
     }
 

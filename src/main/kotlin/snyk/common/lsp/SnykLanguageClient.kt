@@ -173,12 +173,18 @@ class SnykLanguageClient : LanguageClient {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
-        var includeIgnoredIssues = pluginSettings().ignoredIssuesEnabled
-        var includeOpenedIssues = pluginSettings().openIssuesEnabled
+        val includeIgnoredIssues = pluginSettings().ignoredIssuesEnabled
+        val includeOpenedIssues = pluginSettings().openIssuesEnabled
 
-        val map = snykScan.issues
-//        TODO: check feature flag before filtering based on ignores
-            .filter { it.isVisible(includeOpenedIssues, includeIgnoredIssues) }
+        val isFeatureFlagEnabled = LanguageServerWrapper.getInstance().sendFeatureFlagCommand("snykCodeConsistentIgnores")
+
+        val processedIssues = if (isFeatureFlagEnabled) {
+            snykScan.issues.filter { it.isVisible(includeOpenedIssues, includeIgnoredIssues) }
+        } else {
+            snykScan.issues
+        }
+
+        val map = processedIssues
             .groupBy { it.filePath }
             .mapNotNull { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
             .filter { it.second.isNotEmpty() }
