@@ -10,6 +10,8 @@ import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
+import icons.SnykIcons
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.snykcode.core.SnykCodeFile
@@ -65,6 +67,7 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     private fun overviewPanel(): JComponent {
+        // TODO: feature flag
         val panel = JPanel()
         panel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
         // TODO: check feature flag and if JCEF supported
@@ -86,9 +89,131 @@ class SuggestionDescriptionPanelFromLS(
                 jbCefBrowser.cefBrowser
             )
 
-       panel.add(jbCefBrowser.component, panelGridConstraints(1, indent = 1))
+        panel.add(jbCefBrowser.component, panelGridConstraints(1, indent = 1))
 
-        jbCefBrowser.loadHTML("<html> Hello World <html>", jbCefBrowser.getCefBrowser().getURL())
+        var severityIcon = "/Users/teodorasandu/Documents/repos/ide/snyk-intellij-plugin/src/main/resources/icons/severity_critical_16.svg"
+        jbCefBrowser.loadHTML("<!--\n" +
+            "  ~ © 2024 Snyk Limited\n" +
+            "  ~\n" +
+            "  ~ Licensed under the Apache License, Version 2.0 (the \"License\");\n" +
+            "  ~ you may not use this file except in compliance with the License.\n" +
+            "  ~ You may obtain a copy of the License at\n" +
+            "  ~\n" +
+            "  ~     http://www.apache.org/licenses/LICENSE-2.0\n" +
+            "  ~\n" +
+            "  ~ Unless required by applicable law or agreed to in writing, software\n" +
+            "  ~ distributed under the License is distributed on an \"AS IS\" BASIS,\n" +
+            "  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
+            "  ~ See the License for the specific language governing permissions and\n" +
+            "  ~ limitations under the License.\n" +
+            "  -->\n" +
+            "\n" +
+            "<!DOCTYPE html>\n" +
+            "<html lang=\"en\">\n" +
+            "<head>\n" +
+            "  <meta charset=\"UTF-8\">\n" +
+            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+            "  <style>\n" +
+            "    .suggestion {\n" +
+            "      position: relative;\n" +
+            "      display: flex;\n" +
+            "      flex-direction: column;\n" +
+            "      width: 100%;\n" +
+            "      height: 100%;\n" +
+            "    }\n" +
+            "\n" +
+            "    .suggestion .suggestion-text {\n" +
+            "      padding: 0.4rem 0;\n" +
+            "      margin-bottom: 0.8rem;\n" +
+            "      font-size: 1.8rem;\n" +
+            "      font-weight: 500;\n" +
+            "      line-height: 2.4rem;\n" +
+            "    }\n" +
+            "\n" +
+            "    .severity {\n" +
+            "      display: flex;\n" +
+            "      flex-direction: column;\n" +
+            "      flex-grow: 0;\n" +
+            "      float: left;\n" +
+            "      margin: 0 1rem 0 0;\n" +
+            "      text-align: center;\n" +
+            "    }\n" +
+            "\n" +
+            "    .severity .icon {\n" +
+            "      width: 32px;\n" +
+            "      height: 32px;\n" +
+            "    }\n" +
+            "\n" +
+            "    .icon {\n" +
+            "      vertical-align: middle;\n" +
+            "      width: 16px;\n" +
+            "      height: 16px;\n" +
+            "    }\n" +
+            "\n" +
+            "    .identifiers {\n" +
+            "      font-size: 1.3rem;\n" +
+            "      line-height: 2rem;\n" +
+            "    }\n" +
+            "\n" +
+            "    .vscode-dark .light-only {\n" +
+            "      display: none;\n" +
+            "    }\n" +
+            "\n" +
+            "    .vscode-light .dark-only {\n" +
+            "      display: none;\n" +
+            "    }\n" +
+            "\n" +
+            "    .learn {\n" +
+            "      opacity: 0;\n" +
+            "      height: 0;\n" +
+            "      margin-top: 0;\n" +
+            "      font-size: 1.3rem;\n" +
+            "    }\n" +
+            "\n" +
+            "    .learn.show {\n" +
+            "      margin-top: 6px;\n" +
+            "      opacity: 1;\n" +
+            "      height: auto;\n" +
+            "      transition-duration: 500ms;\n" +
+            "      transition-property: height, opacity, margin-top;\n" +
+            "    }\n" +
+            "\n" +
+            "    .learn--link {\n" +
+            "      margin-left: 3px;\n" +
+            "    }\n" +
+            "\n" +
+            "    .learn__code .learn--link {\n" +
+            "    }\n" +
+            "\n" +
+            "  </style>\n" +
+            "</head>\n" +
+            "<body>\n" +
+            "<div class=\"suggestion\">\n" +
+            "  <section class=\"suggestion--header\">\n" +
+            "    <div class=\"severity\">\n" +
+            "      <img id=\"severity-icon\" src=\"${severityIcon}\" class=\"icon\"/>\n" +
+            "    </div>\n" +
+            "    <div class=\"suggestion-text\">Issue title</div>\n" +
+//            "    <div class=\"learn\" id=\"learn\">\n" +
+//            "      <img class=\"icon\" src=\"${learnIcon}\" alt=\"learnIcon\" />\n" +
+//            "      ${learnLink}\n" +
+//            "    </div>\n" +
+            "  </section>\n" +
+            "  <section class=\"delimiter-top summary\">\n" +
+            "    <h2 style='background-color: blue'>Detailed paths</h2>\n" +
+//            "    <div class=\"detailed-paths\">${detailedPaths}</div>\n" +
+            "  </section>\n" +
+            "  <section class=\"delimiter-top\">\n" +
+            "    <div id=\"overview\" class=\"vulnerability-overview\">${getOverviewText()}</div>\n" +
+            "  </section>\n" +
+            "</div>\n" +
+            "<script>\n" +
+            "  if (document.getElementById(\"learn--link\")) {\n" +
+            "    document.getElementById(\"learn\").className = \"learn show\"\n" +
+            "  }\n" +
+            "</script>\n" +
+            "</body>\n" +
+            "</html>\n", jbCefBrowser.getCefBrowser().getURL())
 
         return panel
     }
