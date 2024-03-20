@@ -2,13 +2,18 @@
 
 package io.snyk.plugin
 
+import com.intellij.codeInsight.codeVision.CodeVisionHost
+import com.intellij.codeInsight.codeVision.CodeVisionInitializer
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.codeInsight.hints.VcsCodeVisionProvider
+import com.intellij.codeInsight.hints.codeVision.CodeVisionFusCollector
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -29,6 +34,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
+import com.jetbrains.rd.util.reactive.Signal
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.services.SnykAnalyticsService
@@ -46,6 +52,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.apache.commons.lang3.SystemUtils
+import org.jetbrains.kotlin.idea.codeinsight.utils.findExistingEditor
 import snyk.advisor.AdvisorService
 import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
@@ -306,8 +313,9 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
 
     val openFiles = FileEditorManager.getInstance(project).openFiles
 
-    if (ApplicationManager.getApplication().isDispatchThread) {
+    ApplicationManager.getApplication().invokeLater {
         FileContentUtil.reparseFiles(project, openFiles.asList(), true)
+        project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
     }
 
     openFiles.forEach {

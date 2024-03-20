@@ -27,18 +27,6 @@ class WorkspaceTrustService {
             return
         }
         settings.addTrustedPath(path.toString())
-
-        val virtualFile = LocalFileFinder.findFile(path.toFile().absolutePath) ?: return
-        addToLanguageServer(virtualFile)
-    }
-
-    private fun addToLanguageServer(virtualFile: VirtualFile) {
-        if (!isSnykCodeLSEnabled()) return
-        val wrapper = LanguageServerWrapper.getInstance()
-        ProjectLocator.getInstance().guessProjectForFile(virtualFile)?.let {
-            wrapper.addContentRoots(it)
-            wrapper.sendScanCommand(it)
-        }
     }
 
     fun isPathTrusted(path: Path): Boolean {
