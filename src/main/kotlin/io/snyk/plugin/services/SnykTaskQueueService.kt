@@ -1,6 +1,8 @@
 package io.snyk.plugin.services
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -153,7 +155,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("Container scan completed")
-                refreshAnnotationsForOpenFiles(project)
+                invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })
     }
@@ -228,7 +230,7 @@ class SnykTaskQueueService(val project: Project) {
                         ossResult.getFirstError()?.let { scanPublisher?.scanningOssError(it) }
                     }
                 }
-                refreshAnnotationsForOpenFiles(project)
+                invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })
     }
@@ -271,7 +273,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("IaC scan completed")
-                refreshAnnotationsForOpenFiles(project)
+                invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })
     }

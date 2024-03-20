@@ -444,10 +444,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             }
         }
 
-        refreshAnnotationsForOpenFiles(project)
 
         ApplicationManager.getApplication().invokeLater {
             doCleanUi(true)
+            refreshAnnotationsForOpenFiles(project)
         }
     }
 
