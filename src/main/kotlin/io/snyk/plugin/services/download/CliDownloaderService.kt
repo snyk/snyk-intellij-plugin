@@ -83,7 +83,7 @@ class SnykCliDownloaderService {
 
             val languageServerWrapper = LanguageServerWrapper.getInstance()
             try {
-                if (languageServerWrapper.ensureLanguageServerInitialized()) {
+                if (languageServerWrapper.isInitialized) {
                     try {
                         languageServerWrapper.shutdown().get(2, TimeUnit.SECONDS)
                     } catch (e: RuntimeException) {
