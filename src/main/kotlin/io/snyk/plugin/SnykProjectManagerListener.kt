@@ -26,7 +26,7 @@ class SnykProjectManagerListener : ProjectManagerListener {
                     AnalysisData.instance.removeProjectFromCaches(project)
                     SnykCodeIgnoreInfoHolder.instance.removeProject(project)
                     val ls = LanguageServerWrapper.getInstance()
-                    if (ls.isInitialized) {
+                    if (ls.ensureLanguageServerInitialized()) {
                         ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFolders(project))
                     }
                 }.get(TIMEOUT, TimeUnit.SECONDS)

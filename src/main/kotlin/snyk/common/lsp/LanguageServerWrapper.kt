@@ -3,6 +3,7 @@ package snyk.common.lsp
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
@@ -40,10 +41,12 @@ import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
+import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.io.path.exists
 
 private const val DEFAULT_SLEEP_TIME = 100L
@@ -77,28 +80,28 @@ class LanguageServerWrapper(
      */
     lateinit var process: Process
 
-    private var isInitializing: Boolean = false
+    private var isInitializing: ReentrantLock = ReentrantLock()
 
-    val isInitialized: Boolean
+    internal val isInitialized: Boolean
         get() = ::languageClient.isInitialized &&
             ::languageServer.isInitialized &&
             ::process.isInitialized &&
             process.info().startInstant().isPresent &&
-            process.isAlive
+            process.isAlive &&
+            !isInitializing.isLocked
 
     @OptIn(DelicateCoroutinesApi::class)
-    internal fun initialize() {
+    private fun initialize() {
         if (lsPath.toNioPathOrNull()?.exists() == false) {
             val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
             logger.warn(message)
             return
         }
         try {
-            isInitializing = true
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel, "-f", "/tmp/snyk-ls.log")
+            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
             pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
@@ -112,12 +115,10 @@ class LanguageServerWrapper(
             }
 
             launcher.startListening()
-
             sendInitializeMessage()
         } catch (e: Exception) {
             logger.warn(e)
-        } finally {
-            isInitializing = false
+            process.destroy()
         }
     }
 
@@ -141,6 +142,8 @@ class LanguageServerWrapper(
     }
 
     private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
+        if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return mutableSetOf()
+
         // the sort is to ensure that parent folders come first
         // e.g. /a/b should come before /a/b/c
         val contentRoots = project.getContentRootVirtualFiles().filterNotNull().sortedBy { it.path }
@@ -217,11 +220,13 @@ class LanguageServerWrapper(
     }
 
     fun ensureLanguageServerInitialized(): Boolean {
-        while (isInitializing) {
-            Thread.sleep(DEFAULT_SLEEP_TIME)
-        }
-        if (!isInitialized) {
-            initialize()
+        try {
+            if (!isInitialized) {
+                isInitializing.lock()
+                initialize()
+            }
+        } finally {
+            if (isInitializing.isHeldByCurrentThread) isInitializing.unlock()
         }
         return isInitialized
     }
@@ -289,6 +294,7 @@ class LanguageServerWrapper(
     }
 
     fun addContentRoots(project: Project) {
+        if (!isInitialized) return
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
     }

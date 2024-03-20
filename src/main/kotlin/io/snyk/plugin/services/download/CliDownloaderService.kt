@@ -13,6 +13,7 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.tail
+import org.jetbrains.kotlin.daemon.common.ensureServerHostnameIsSetUp
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 import java.time.LocalDate
@@ -82,7 +83,7 @@ class SnykCliDownloaderService {
 
             val languageServerWrapper = LanguageServerWrapper.getInstance()
             try {
-                if (languageServerWrapper.isInitialized) {
+                if (languageServerWrapper.ensureLanguageServerInitialized()) {
                     try {
                         languageServerWrapper.shutdown().get(2, TimeUnit.SECONDS)
                     } catch (e: RuntimeException) {
@@ -101,7 +102,7 @@ class SnykCliDownloaderService {
             } catch (e: ChecksumVerificationException) {
                 errorHandler.handleChecksumVerificationException(e, indicator, project)
             } finally {
-                if (succeeded) languageServerWrapper.initialize() else stopCliDownload()
+                if (succeeded) languageServerWrapper.ensureLanguageServerInitialized() else stopCliDownload()
             }
         } finally {
             cliDownloadPublisher.cliDownloadFinished(succeeded)
