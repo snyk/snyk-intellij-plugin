@@ -64,6 +64,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         setUpContainerTest()
         val path = createNewFileInProjectRoot().toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
+        VirtualFileManager.getInstance().syncRefresh()
         val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
         require(virtualFile != null)
 
