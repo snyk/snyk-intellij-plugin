@@ -223,13 +223,13 @@ class LanguageServerWrapper(
     }
 
     fun ensureLanguageServerInitialized(): Boolean {
-        try {
-            if (!isInitialized) {
+        if (!isInitialized) {
+            try {
                 isInitializing.lock()
                 initialize()
+            } finally {
+                isInitializing.unlock()
             }
-        } finally {
-            if (isInitializing.isHeldByCurrentThread) isInitializing.unlock()
         }
         return isInitialized
     }

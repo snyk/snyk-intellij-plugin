@@ -3,10 +3,7 @@
 package io.snyk.plugin
 
 import com.intellij.codeInsight.codeVision.CodeVisionHost
-import com.intellij.codeInsight.codeVision.CodeVisionInitializer
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.codeInsight.hints.VcsCodeVisionProvider
-import com.intellij.codeInsight.hints.codeVision.CodeVisionFusCollector
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -34,7 +31,6 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
-import com.jetbrains.rd.util.reactive.Signal
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.services.SnykAnalyticsService
@@ -52,7 +48,6 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.apache.commons.lang3.SystemUtils
-import org.jetbrains.kotlin.idea.codeinsight.utils.findExistingEditor
 import snyk.advisor.AdvisorService
 import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
@@ -309,7 +304,7 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
     if (project.isDisposed) return
-    VirtualFileManager.getInstance().asyncRefresh();
+    VirtualFileManager.getInstance().asyncRefresh()
 
     val openFiles = FileEditorManager.getInstance(project).openFiles
 
