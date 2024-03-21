@@ -126,6 +126,9 @@ class LanguageServerWrapperTest {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(mapOf("ok" to true))
 
+        every { cut.ensureLanguageServerInitialized() } returns true
+
+
         // Act
         val result = cut.getFeatureFlagStatus(featureFlag)
 
