@@ -28,6 +28,7 @@ import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.IssueViewOptionsPanel
@@ -277,42 +278,43 @@ class SnykSettingsDialog(
 
         /** Products and Severities selection ------------------ */
 
-//        TODO: feature flag
-        val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, Insets(0, 0, 0, 0), 30, -1))
-        issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
 
-        val issueViewLabel = JLabel("Show the following issues:")
-        issueViewPanel.add(
-            issueViewLabel,
-            baseGridConstraintsAnchorWest(
-                row = 0,
-                indent = 0
+            val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, Insets(0, 0, 0, 0), 30, -1))
+            issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
+
+            val issueViewLabel = JLabel("Show the following issues:")
+            issueViewPanel.add(
+                issueViewLabel,
+                baseGridConstraintsAnchorWest(
+                    row = 0,
+                    indent = 0
+                )
             )
-        )
 
-        rootPanel.add(
-            issueViewPanel,
-            baseGridConstraints(
-                row = 1,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
+            rootPanel.add(
+                issueViewPanel,
+                baseGridConstraints(
+                    row = 1,
+                    anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                    fill = UIGridConstraints.FILL_HORIZONTAL,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    indent = 0
+                )
             )
-        )
 
-        issueViewPanel.add(
-            this.issueViewOptionsPanel,
-            baseGridConstraints(
-                row = 1,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
+            issueViewPanel.add(
+                this.issueViewOptionsPanel,
+                baseGridConstraints(
+                    row = 1,
+                    anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                    fill = UIGridConstraints.FILL_NONE,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    indent = 0
+                )
             )
-        )
-
+        }
         val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(6, 4, Insets(0, 0, 0, 0), 30, -1))
 
         rootPanel.add(

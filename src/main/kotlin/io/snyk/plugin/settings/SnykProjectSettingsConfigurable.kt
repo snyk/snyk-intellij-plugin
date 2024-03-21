@@ -55,7 +55,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isCustomEndpointModified() ||
         isOrganizationModified() ||
         isAdditionalParametersModified()
-//    TODO: check if ignore settings changes in order to trigger a scan?
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
@@ -102,6 +101,10 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         val wrapper = LanguageServerWrapper.getInstance()
         val params = DidChangeConfigurationParams(wrapper.getSettings())
         wrapper.languageServer.workspaceService.didChangeConfiguration(params)
+
+        runBackgroundableTask("Updating Snyk Code settings", project, true) {
+            settingsStateService.isGlobalIgnoresFeatureEnabled = wrapper.sendFeatureFlagCommand("snykCodeConsistentIgnores")
+        }
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()
