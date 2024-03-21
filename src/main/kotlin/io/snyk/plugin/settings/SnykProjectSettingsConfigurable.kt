@@ -98,11 +98,10 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        LanguageServerWrapper.getInstance().updateConfiguration()
         if (isSnykCodeLSEnabled()) {
             runBackgroundableTask("Updating Snyk Code settings", project, true) {
                 settingsStateService.isGlobalIgnoresFeatureEnabled =
-                    wrapper.getFeatureFlagStatus("snykCodeConsistentIgnores")
+                    LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
             }
         }
 

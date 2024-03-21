@@ -1,9 +1,7 @@
 package snyk.common.lsp
 
-import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
@@ -325,6 +323,9 @@ class LanguageServerWrapper(
         ensureLanguageServerInitialized()
         val params = DidChangeConfigurationParams(getInstance().getSettings())
         languageServer.workspaceService.didChangeConfiguration(params)
+        if (pluginSettings().scanOnSave) {
+            ProjectManager.getInstance().openProjects.forEach { sendScanCommand(it) }
+        }
     }
 
     fun addContentRoots(project: Project) {

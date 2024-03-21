@@ -12,6 +12,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
@@ -20,6 +21,7 @@ import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykCode
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
@@ -79,6 +81,20 @@ class SnykTaskQueueService(val project: Project) {
 
     fun connectProjectToLanguageServer(project: Project) {
         synchronized(LanguageServerWrapper) {
+
+            // subscribe to the settings changed topic
+            getSnykToolWindowPanel(project)?.let {
+                project.messageBus.connect(it)
+                    .subscribe(
+                        SnykSettingsListener.SNYK_SETTINGS_TOPIC,
+                        object : SnykSettingsListener {
+                            override fun settingsChanged() {
+                                val wrapper = LanguageServerWrapper.getInstance()
+                                wrapper.updateConfiguration()
+                            }
+                        }
+                    )
+            }
             LanguageServerWrapper.getInstance().addContentRoots(project)
         }
     }
