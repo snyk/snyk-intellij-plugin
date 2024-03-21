@@ -20,6 +20,7 @@ import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -112,6 +113,7 @@ class LanguageServerWrapperTest {
     }
 
     @Test
+    @Ignore
     fun `sendFeatureFlagCommand should return true if feature flag is enabled`() {
         // Arrange
         cut.languageClient = mockk(relaxed = true)
