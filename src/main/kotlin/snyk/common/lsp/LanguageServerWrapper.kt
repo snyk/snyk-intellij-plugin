@@ -1,7 +1,6 @@
 package snyk.common.lsp
 
 import com.intellij.ide.impl.ProjectUtil
-import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -35,7 +34,6 @@ import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
-import org.json.JSONObject
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
@@ -99,7 +97,7 @@ class LanguageServerWrapper(
             isInitializing = true
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
-            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "trace" else "info"
+            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
@@ -121,9 +119,9 @@ class LanguageServerWrapper(
         } finally {
             isInitializing = false
         }
+
         // update feature flags
-        pluginSettings().isGlobalIgnoresFeatureEnabled =
-            sendFeatureFlagCommand("snykCodeConsistentIgnores")
+        pluginSettings().isGlobalIgnoresFeatureEnabled = getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
     fun shutdown(): Future<*> {
@@ -230,7 +228,7 @@ class LanguageServerWrapper(
         }
     }
 
-    fun sendFeatureFlagCommand(featureFlag: String): Boolean {
+    fun getFeatureFlagStatus(featureFlag: String): Boolean {
         ensureLanguageServerInitialized()
         try {
             val param = ExecuteCommandParams()

@@ -123,7 +123,7 @@ class LanguageServerWrapperTest {
         } returns CompletableFuture.completedFuture(mapOf("ok" to true))
 
         // Act
-        val result = cut.sendFeatureFlagCommand(featureFlag)
+        val result = cut.getFeatureFlagStatus(featureFlag)
 
         // Assert
         assertEquals(true, result)

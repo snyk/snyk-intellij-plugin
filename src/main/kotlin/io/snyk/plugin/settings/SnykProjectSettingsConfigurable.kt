@@ -103,7 +103,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         wrapper.languageServer.workspaceService.didChangeConfiguration(params)
 
         runBackgroundableTask("Updating Snyk Code settings", project, true) {
-            settingsStateService.isGlobalIgnoresFeatureEnabled = wrapper.sendFeatureFlagCommand("snykCodeConsistentIgnores")
+            settingsStateService.isGlobalIgnoresFeatureEnabled = wrapper.getFeatureFlagStatus("snykCodeConsistentIgnores")
         }
 
         if (rescanNeeded) {
