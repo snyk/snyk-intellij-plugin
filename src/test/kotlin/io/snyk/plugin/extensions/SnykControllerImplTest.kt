@@ -5,6 +5,7 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -18,6 +19,7 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.awaitility.Awaitility.await
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.oss.OssResult
 import snyk.oss.OssService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
@@ -46,6 +48,12 @@ class SnykControllerImplTest : LightPlatformTestCase() {
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+
+        val languageServerWrapper = mockk<LanguageServerWrapper>(relaxed = true)
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance() } returns languageServerWrapper
+        every { languageServerWrapper.getFeatureFlagStatus(any()) } returns true
+
     }
 
     override fun tearDown() {
