@@ -40,7 +40,6 @@ class LanguageServerWrapperTest {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic(ApplicationManager::class)
-        mockkStatic(ApplicationManager::class)
         every { ApplicationManager.getApplication() } returns applicationMock
         every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
 
@@ -121,14 +120,9 @@ class LanguageServerWrapperTest {
         val featureFlag = "testFeatureFlag"
         every { processMock.info().startInstant().isPresent } returns true
         every { processMock.isAlive } returns true
-
-        every { cut.ensureLanguageServerInitialized() } returns true
-
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(mapOf("ok" to true))
-
-
 
         // Act
         val result = cut.getFeatureFlagStatus(featureFlag)
