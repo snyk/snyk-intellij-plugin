@@ -1,5 +1,9 @@
 # Snyk Changelog
 
+## [2.8.1]
+### Added
+- Render ignores settings behind a feature flag.
+
 ## [2.8.0]
 ### Added
 - Consistent ignores for Snyk Code behind a feature flag.
