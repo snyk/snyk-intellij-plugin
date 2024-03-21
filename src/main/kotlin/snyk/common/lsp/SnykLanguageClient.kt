@@ -174,8 +174,9 @@ class SnykLanguageClient : LanguageClient {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
-        val includeIgnoredIssues = pluginSettings().ignoredIssuesEnabled
-        val includeOpenedIssues = pluginSettings().openIssuesEnabled
+        val pluginSettings = pluginSettings()
+        val includeIgnoredIssues = pluginSettings.ignoredIssuesEnabled
+        val includeOpenedIssues = pluginSettings.openIssuesEnabled
 
         // get enablement status from settings
         val isFeatureFlagEnabled = isFeatureFlagEnabled()
