@@ -174,7 +174,18 @@ class SnykLanguageClient : LanguageClient {
     private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
-        val map = snykScan.issues
+
+        val pluginSettings = pluginSettings()
+        val includeIgnoredIssues = pluginSettings.ignoredIssuesEnabled
+        val includeOpenedIssues = pluginSettings.openIssuesEnabled
+
+        val processedIssues = if (pluginSettings.isGlobalIgnoresFeatureEnabled) { //
+            snykScan.issues.filter { it.isVisible(includeOpenedIssues, includeIgnoredIssues) }
+        } else {
+            snykScan.issues
+        }
+
+        val map = processedIssues
             .groupBy { it.filePath }
             .mapNotNull { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
             .map {

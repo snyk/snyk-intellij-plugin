@@ -1,5 +1,10 @@
 # Snyk Security Changelog
 
+## [2.7.11]
+### Added
+- Consistent ignores for Snyk Code behind a feature flag.
+- Render ignores settings behind a feature flag.
+
 ## [2.7.10]
 ### Fixed
 - (LS Preview) Fix content root handling for Snyk Code scans
@@ -9,10 +14,6 @@
 - fix: shortened plugin name to just Snyk Security
 - (LS Preview) Fix long-running UI operation to run outside of UI thread
 - Remove duplicated annotations in Snyk Code
-
-## [2.8.0]
-### Added
-- Consistent ignores for Snyk Code behind a feature flag.
 
 ## [2.7.8]
 ### Fixed

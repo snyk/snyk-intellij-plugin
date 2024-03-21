@@ -89,6 +89,19 @@ data class ScanIssue(
         }
     }
 
+    fun isVisible(includeOpenedIssues: Boolean, includeIgnoredIssues: Boolean): Boolean {
+        if (includeIgnoredIssues && includeOpenedIssues){
+           return true
+        }
+        if (includeIgnoredIssues) {
+            return this.isIgnored == true
+        }
+        if (includeOpenedIssues){
+            return this.isIgnored != true
+        }
+        return false
+    }
+
     override fun compareTo(other: ScanIssue): Int {
         this.filePath.compareTo(other.filePath).let { if (it != 0) it else 0 }
         this.range.start.line.compareTo(other.range.start.line).let { if (it != 0) it else 0 }

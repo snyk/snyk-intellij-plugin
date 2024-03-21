@@ -97,7 +97,7 @@ class LanguageServerWrapper(
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel, "-f", "/tmp/snyk-ls.log")
+            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
             pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
@@ -118,6 +118,9 @@ class LanguageServerWrapper(
         } finally {
             isInitializing = false
         }
+
+        // update feature flags
+        pluginSettings().isGlobalIgnoresFeatureEnabled = getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
     fun shutdown(): Future<*> {
@@ -247,6 +250,37 @@ class LanguageServerWrapper(
         }
         getTrustedContentRoots(project).forEach {
             sendFolderScanCommand(it.path)
+        }
+    }
+
+    fun getFeatureFlagStatus(featureFlag: String): Boolean {
+        ensureLanguageServerInitialized()
+        if (!isSnykCodeLSEnabled()) {
+            return false
+        }
+
+        try {
+            val param = ExecuteCommandParams()
+            param.command = "snyk.getFeatureFlagStatus"
+            param.arguments = listOf(featureFlag)
+            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
+
+            val resultMap = result as? Map<*, *>
+            val ok = resultMap?.get("ok") as? Boolean ?: false
+            val userMessage = resultMap?.get("userMessage") as? String ?: "No message provided"
+
+
+            if (ok) {
+                logger.info("Feature flag $featureFlag is enabled.")
+                return true
+            } else {
+                logger.warn("Feature flag $featureFlag is disabled. Message: $userMessage")
+                return false
+            }
+
+        } catch (e: Exception) {
+            logger.error("Error while checking feature flag: ${e.message}", e)
+            return false
         }
     }
 
