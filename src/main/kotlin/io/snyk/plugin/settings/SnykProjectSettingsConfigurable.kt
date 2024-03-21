@@ -21,7 +21,6 @@ import io.snyk.plugin.snykcode.newCodeRestApi
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
 import snyk.amplitude.api.ExperimentUser
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.toSnykCodeApiUrl
 import javax.swing.JComponent
 
@@ -96,8 +95,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             val snykProjectSettingsService = getSnykProjectSettingsService(project)
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
-
-        LanguageServerWrapper.getInstance().updateConfiguration()
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()
