@@ -84,7 +84,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         val languageServerWrapper = LanguageServerWrapper.getInstance()
 
         if (!isSnykCodeLSEnabled()) return
-        if (!languageServerWrapper.ensureLanguageServerInitialized()) return
+        if (!languageServerWrapper.isInitialized) return
 
         val languageServer = languageServerWrapper.languageServer
         for (event in events) {
