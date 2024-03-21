@@ -9,7 +9,6 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getUserAgentString
-import io.snyk.plugin.isFeatureFlagEnabled
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -231,6 +230,10 @@ class LanguageServerWrapper(
 
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
         ensureLanguageServerInitialized()
+        if (!isSnykCodeLSEnabled()) {
+            return false
+        }
+
         try {
             val param = ExecuteCommandParams()
             param.command = "snyk.getFeatureFlagStatus"

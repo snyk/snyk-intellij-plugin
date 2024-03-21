@@ -178,10 +178,7 @@ class SnykLanguageClient : LanguageClient {
         val includeIgnoredIssues = pluginSettings.ignoredIssuesEnabled
         val includeOpenedIssues = pluginSettings.openIssuesEnabled
 
-        // get enablement status from settings
-        val isFeatureFlagEnabled = isFeatureFlagEnabled()
-
-        val processedIssues = if (isFeatureFlagEnabled) {
+        val processedIssues = if (isFeatureFlagEnabled()) {
             snykScan.issues.filter { it.isVisible(includeOpenedIssues, includeIgnoredIssues) }
         } else {
             snykScan.issues
