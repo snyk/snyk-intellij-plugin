@@ -122,11 +122,12 @@ class LanguageServerWrapperTest {
         every { processMock.info().startInstant().isPresent } returns true
         every { processMock.isAlive } returns true
 
+        every { cut.ensureLanguageServerInitialized() } returns true
+
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(mapOf("ok" to true))
 
-        every { cut.ensureLanguageServerInitialized() } returns true
 
 
         // Act
