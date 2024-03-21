@@ -2,6 +2,7 @@
 
 package io.snyk.plugin
 
+import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
@@ -9,6 +10,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -21,6 +23,7 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiFile
@@ -301,8 +304,15 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
     if (project.isDisposed) return
+    VirtualFileManager.getInstance().asyncRefresh()
+
     val openFiles = FileEditorManager.getInstance(project).openFiles
-    FileContentUtil.reparseFiles(project, openFiles.asList(), true)
+
+    ApplicationManager.getApplication().invokeLater {
+        FileContentUtil.reparseFiles(project, openFiles.asList(), true)
+        project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+    }
+
     openFiles.forEach {
         val psiFile = findPsiFileIgnoringExceptions(it, project)
         if (psiFile != null) {
@@ -416,8 +426,13 @@ fun getArch(): String {
     return archMap[value] ?: value
 }
 
-fun String.toVirtualFile(): VirtualFile =
-    StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
+fun String.toVirtualFile(): VirtualFile {
+    return if (!this.startsWith("file://")) {
+        StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
+    } else {
+        VirtualFileManager.getInstance().refreshAndFindFileByUrl(this) ?: throw FileNotFoundException(this)
+    }
+}
 
 fun VirtualFile.getPsiFile(project: Project): PsiFile? {
     return runReadAction { PsiManager.getInstance(project).findFile(this) }

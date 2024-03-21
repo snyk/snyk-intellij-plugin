@@ -1,6 +1,5 @@
 package snyk.iac
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -10,6 +9,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 
 class IacBulkFileListener : SnykBulkFileListener() {
 
@@ -55,8 +55,8 @@ class IacBulkFileListener : SnykBulkFileListener() {
             currentIacResult.iacScanNeeded = true
             ApplicationManager.getApplication().invokeLater {
                 getSnykToolWindowPanel(project)?.displayIacResults(currentIacResult)
+                refreshAnnotationsForOpenFiles(project)
             }
-            DaemonCodeAnalyzer.getInstance(project).restart()
         }
     }
 

@@ -1,5 +1,12 @@
 # Snyk Security Changelog
 
+## [2.7.11]
+### Fixed
+- (LS Preview) fix progress handling for Snyk Code scans
+- (LS Preview) fix multi-project scanning for Snyk Code
+- (LS Preview) fix auto-scan newly opened project, and ask for trust if needed
+- (LS Preview) fix CodeVision for opened files
+
 ## [2.7.10]
 ### Fixed
 - (LS Preview) Fix content root handling for Snyk Code scans
