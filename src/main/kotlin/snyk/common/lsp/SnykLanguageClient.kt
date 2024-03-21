@@ -17,7 +17,6 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.isFeatureFlagEnabled
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
@@ -178,7 +177,7 @@ class SnykLanguageClient : LanguageClient {
         val includeIgnoredIssues = pluginSettings.ignoredIssuesEnabled
         val includeOpenedIssues = pluginSettings.openIssuesEnabled
 
-        val processedIssues = if (isFeatureFlagEnabled()) {
+        val processedIssues = if (pluginSettings.isGlobalIgnoresFeatureEnabled) { //
             snykScan.issues.filter { it.isVisible(includeOpenedIssues, includeIgnoredIssues) }
         } else {
             snykScan.issues
