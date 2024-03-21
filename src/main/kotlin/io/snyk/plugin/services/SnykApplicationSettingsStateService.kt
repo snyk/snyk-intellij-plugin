@@ -27,6 +27,7 @@ import java.util.UUID
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
+    var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://static.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
     var manageBinariesAutomatically: Boolean = true

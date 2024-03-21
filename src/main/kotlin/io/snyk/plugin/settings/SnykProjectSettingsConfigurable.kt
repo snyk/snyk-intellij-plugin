@@ -99,8 +99,9 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        val params = DidChangeConfigurationParams(LanguageServerWrapper.getInstance().getSettings())
-        LanguageServerWrapper.getInstance().languageServer.workspaceService.didChangeConfiguration(params)
+        val wrapper = LanguageServerWrapper.getInstance()
+        val params = DidChangeConfigurationParams(wrapper.getSettings())
+        wrapper.languageServer.workspaceService.didChangeConfiguration(params)
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()

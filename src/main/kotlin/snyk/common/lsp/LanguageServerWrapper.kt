@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -98,8 +99,8 @@ class LanguageServerWrapper(
             isInitializing = true
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
-            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel, "-f", "/tmp/snyk-ls.log")
+            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "trace" else "info"
+            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
             pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
@@ -120,6 +121,9 @@ class LanguageServerWrapper(
         } finally {
             isInitializing = false
         }
+        // update feature flags
+        pluginSettings().isGlobalIgnoresFeatureEnabled =
+            sendFeatureFlagCommand("snykCodeConsistentIgnores")
     }
 
     fun shutdown(): Future<*> {
@@ -232,11 +236,12 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = "snyk.getFeatureFlagStatus"
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get()
+            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
 
-            val resultJson = JSONObject(result.toString())
-            val ok = resultJson.getBoolean("ok")
-            val userMessage = resultJson.optString("userMessage")
+            val resultMap = result as? Map<*, *>
+            val ok = resultMap?.get("ok") as? Boolean ?: false
+            val userMessage = resultMap?.get("userMessage") as? String ?: "No message provided"
+
 
             if (ok) {
                 logger.info("Feature flag $featureFlag is enabled.")

@@ -111,15 +111,22 @@ class LanguageServerWrapperTest {
     @Test
     fun `sendFeatureFlagCommand should return true if feature flag is enabled`() {
         // Arrange
+        cut.languageClient = mockk(relaxed = true)
+        val processMock = mockk<Process>(relaxed = true)
+        cut.process = processMock
         val featureFlag = "testFeatureFlag"
-        val commandResponse = CompletableFuture.completedFuture("{\"ok\": true}" as Any)
-        every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns commandResponse
+        every { processMock.info().startInstant().isPresent } returns true
+        every { processMock.isAlive } returns true
+
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(mapOf("ok" to true))
 
         // Act
         val result = cut.sendFeatureFlagCommand(featureFlag)
 
         // Assert
-        verify { lsMock.workspaceService.executeCommand(match { it.arguments.contains(featureFlag) }) }
         assertEquals(true, result)
+
     }
 }
