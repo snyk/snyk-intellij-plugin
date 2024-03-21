@@ -25,6 +25,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.isFeatureFlagEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
@@ -278,8 +279,7 @@ class SnykSettingsDialog(
 
         /** Products and Severities selection ------------------ */
 
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
-
+        if (isFeatureFlagEnabled()) {
             val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, Insets(0, 0, 0, 0), 30, -1))
             issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
 

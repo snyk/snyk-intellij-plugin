@@ -11,6 +11,7 @@ import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isFeatureFlagEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.net.RetrofitClientFactory
