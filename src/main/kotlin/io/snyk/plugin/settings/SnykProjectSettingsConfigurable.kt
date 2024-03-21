@@ -13,6 +13,7 @@ import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isFeatureFlagEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.net.RetrofitClientFactory
 import io.snyk.plugin.pluginSettings
@@ -103,8 +104,11 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         val params = DidChangeConfigurationParams(wrapper.getSettings())
         wrapper.languageServer.workspaceService.didChangeConfiguration(params)
 
-        runBackgroundableTask("Updating Snyk Code settings", project, true) {
-            settingsStateService.isGlobalIgnoresFeatureEnabled = wrapper.getFeatureFlagStatus("snykCodeConsistentIgnores")
+        if (isSnykCodeLSEnabled()) {
+            runBackgroundableTask("Updating Snyk Code settings", project, true) {
+                settingsStateService.isGlobalIgnoresFeatureEnabled =
+                    wrapper.getFeatureFlagStatus("snykCodeConsistentIgnores")
+            }
         }
 
         if (rescanNeeded) {
