@@ -1,4 +1,14 @@
-# Snyk Changelog
+# Snyk Security Changelog
+
+## [2.7.10]
+### Fixed
+- (LS Preview) Fix content root handling for Snyk Code scans
+
+## [2.7.9]
+### Fixed
+- fix: shortened plugin name to just Snyk Security
+- (LS Preview) Fix long-running UI operation to run outside of UI thread
+- Remove duplicated annotations in Snyk Code
 
 ## [2.8.1]
 ### Added
@@ -10,6 +20,7 @@
 
 ## [2.7.8]
 ### Fixed
+- (LS Preview) UI freezes and initialization errors caused by CodeVision and Code annotations
 - (LS Preview) check trust for content root before triggering Snyk Code scans
 
 ## [2.7.7]

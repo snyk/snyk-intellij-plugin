@@ -79,9 +79,12 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
     }
 
     override fun forwardEvents(events: MutableList<out VFileEvent>) {
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+
         if (!isSnykCodeLSEnabled()) return
-        LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()
-        val languageServer = LanguageServerWrapper.getInstance().languageServer
+        if (!languageServerWrapper.ensureLanguageServerInitialized()) return
+
+        val languageServer = languageServerWrapper.languageServer
         for (event in events) {
             if (event.file == null || !event.isFromSave) continue
             val file = event.file!!
