@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.7.12]
+### Added
+- Mark ignored findings as ignored behind a feature flag.
+
 ## [2.7.11]
 ### Added
 - Consistent ignores for Snyk Code behind a feature flag.

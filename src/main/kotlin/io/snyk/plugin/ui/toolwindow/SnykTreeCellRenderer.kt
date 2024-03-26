@@ -111,7 +111,14 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
                 val range = issue.range
-                text = "${if (issue.additionalData.hasAIFix) "⚡️" else ""} ${
+                var showIgnoredLabel = false
+                var showAIFix = false
+                if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.isIgnored == true) {
+                    showIgnoredLabel = true
+                } else if (issue.additionalData.hasAIFix) {
+                    showAIFix = true
+                }
+                text = "${if (showIgnoredLabel) " [ Ignored ]" else ""}${if (showAIFix) " ⚡️" else ""} ${
                     if (issue.additionalData.isSecurityType) {
                         issue.title.split(":")[0]
                     } else {
