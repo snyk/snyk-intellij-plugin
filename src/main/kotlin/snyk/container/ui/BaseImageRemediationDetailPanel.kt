@@ -30,8 +30,7 @@ class BaseImageRemediationDetailPanel(
     private val imageIssues: ContainerIssuesForImage,
 ) : IssueDescriptionPanelBase(
     title = imageIssues.imageName,
-    severity = imageIssues.getSeverities().maxOrNull() ?: Severity.UNKNOWN,
-    details = null
+    severity = imageIssues.getSeverities().maxOrNull() ?: Severity.UNKNOWN
 ) {
 
     private val targetImages: List<KubernetesWorkloadImage> = getKubernetesImageCache(project)
