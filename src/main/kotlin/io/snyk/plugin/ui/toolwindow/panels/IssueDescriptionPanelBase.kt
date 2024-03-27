@@ -32,13 +32,13 @@ abstract class IssueDescriptionPanelBase(
     private val details: String?
 ) : JPanel(BorderLayout()), IssueDescriptionPanel {
     private val unexpectedErrorMessage = "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused.";
-    
+
     /**
      * **MUST** be invoked in derived class to actually create the UI elements.
      * Can't be part of constructor due to `state` usage in underling abstract/open methods/props:
      */
     protected fun createUI() {
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && details != null) {
             if (!JBCefApp.isSupported()) {
                 val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
@@ -55,11 +55,6 @@ abstract class IssueDescriptionPanelBase(
                 wrapWithScrollPane(panel),
                 BorderLayout.CENTER
             )
-
-            if (this.details == null) {
-                SnykBalloonNotificationHelper.showError("Something went wrong.", null)
-                return
-            }
 
             jbCefBrowser.loadHTML(this.details, jbCefBrowser.cefBrowser.url)
 
