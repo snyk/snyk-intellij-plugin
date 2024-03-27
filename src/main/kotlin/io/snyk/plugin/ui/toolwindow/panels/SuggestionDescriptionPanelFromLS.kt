@@ -4,20 +4,27 @@ import com.intellij.icons.AllIcons
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
+import com.intellij.ui.jcef.JBCefApp
+import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import io.snyk.plugin.ui.wrapWithScrollPane
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ScanIssue
+import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -35,13 +42,34 @@ class SuggestionDescriptionPanelFromLS(
     private val issue: ScanIssue
 ) : IssueDescriptionPanelBase(
     title = getIssueTitle(issue),
-    severity = issue.getSeverityAsEnum(),
-    details = issue.additionalData.details
+    severity = issue.getSeverityAsEnum()
 ) {
     val project = snykCodeFile.project
+    private val unexpectedErrorMessage = "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused.";
 
     init {
-        createUI()
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
+            if (!JBCefApp.isSupported()) {
+                val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
+                this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
+                SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
+            } else {
+                val cefClient = JBCefApp.getInstance().createClient()
+                val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
+
+                val panel = JPanel()
+                panel.add(jbCefBrowser.component, BorderLayout())
+                this.add(
+                    wrapWithScrollPane(panel),
+                    BorderLayout.CENTER
+                )
+
+                jbCefBrowser.loadHTML(issue.additionalData.details, jbCefBrowser.cefBrowser.url)
+            }
+        } else {
+
+            createUI()
+        }
     }
 
     override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(

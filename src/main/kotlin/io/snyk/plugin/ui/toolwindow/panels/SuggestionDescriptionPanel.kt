@@ -39,8 +39,7 @@ class SuggestionDescriptionPanel(
     private val suggestionIndex: Int
 ) : IssueDescriptionPanelBase(
     title = suggestion.title,
-    severity = suggestion.getSeverityAsEnum(),
-    details = null
+    severity = suggestion.getSeverityAsEnum()
 ) {
     val project = snykCodeFile.project
 
