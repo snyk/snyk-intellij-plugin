@@ -201,7 +201,7 @@ data class IssueData(
     @SerializedName("priorityScore") val priorityScore: Int,
     @SerializedName("hasAIFix") val hasAIFix: Boolean,
     @SerializedName("dataFlow") val dataFlow: List<DataFlow>,
-    @SerializedName("details") val details: String,
+    @SerializedName("details") val details: String?,
     ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
