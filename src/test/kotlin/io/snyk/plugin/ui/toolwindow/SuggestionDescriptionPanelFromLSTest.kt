@@ -1,54 +1,30 @@
 @file:Suppress("FunctionName")
 package io.snyk.plugin.ui.toolwindow
 
-import com.google.gson.Gson
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzerSettings
-import com.intellij.openapi.application.Application
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.command.undo.UndoManager
-import com.intellij.openapi.progress.impl.CoreProgressManager
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.newvfs.RefreshQueue
-import com.intellij.openapi.vfs.pointers.VirtualFilePointerManager
 import com.intellij.psi.PsiFile
-import com.intellij.psi.codeStyle.CodeStyleSchemes
-import com.intellij.psi.impl.DocumentCommitProcessor
-import com.intellij.psi.stubs.StubIndex
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.ui.components.ActionLink
-import com.intellij.util.indexing.FileBasedIndex
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertNotNull
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import snyk.UIComponentFinder.getJBCEFBrowser
-import snyk.UIComponentFinder.getJButtonByText
 import snyk.UIComponentFinder.getJLabelByText
 import snyk.code.annotator.SnykCodeAnnotator
 import snyk.common.lsp.CommitChangeLine
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ExampleCommitFix
 import snyk.common.lsp.ScanIssue
-import snyk.oss.Vulnerability
-import java.io.FileReader
 import java.nio.file.Paths
 
 class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
