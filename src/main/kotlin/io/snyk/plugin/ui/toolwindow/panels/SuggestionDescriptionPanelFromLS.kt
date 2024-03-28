@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Iconable
 import com.intellij.ui.HyperlinkLabel
@@ -24,6 +25,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
+import io.snyk.plugin.ui.toolwindow.LabelProvider
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.cef.browser.CefBrowser
@@ -37,6 +39,7 @@ import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.Insets
+import java.net.URL
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -77,6 +80,12 @@ class SuggestionDescriptionPanelFromLS(
 
         return JBCefJSQuery.Response("success")
     }
+
+    fun openCWELink(cweLink: String): JBCefJSQuery.Response {
+        BrowserUtil.open(URL(cweLink).toExternalForm())
+        return JBCefJSQuery.Response("success")
+    }
+
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
             if (!JBCefApp.isSupported()) {
@@ -88,12 +97,14 @@ class SuggestionDescriptionPanelFromLS(
                 val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
 
                 val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
+                val openCWELinkQuery = JBCefJSQuery.create(jbCefBrowser)
 
                 val loadHandler = object : CefLoadHandlerAdapter() {
                     override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                         if (frame.isMain) {
                             cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
                             openFileQuery.addHandler { openFile(it) }
+                            openCWELinkQuery.addHandler { openCWELink(it) }
 
                             browser.executeJavaScript(
                                 "window.openFileQuery = function(value) {" +
@@ -103,6 +114,12 @@ class SuggestionDescriptionPanelFromLS(
                             );
 
                             browser.executeJavaScript(
+                                "window.openCWELinkQuery = function(cweLink) {" +
+                                    openCWELinkQuery.inject("cweLink") +
+                                    "};",
+                                browser.url, 0
+                            );
+                            browser.executeJavaScript(
                                 """
                 const dataFlowFilePaths = document.getElementsByClassName('data-flow-filepath')
                 for (let i = 0; i < dataFlowFilePaths.length; i++) {
@@ -111,7 +128,11 @@ class SuggestionDescriptionPanelFromLS(
                       e.preventDefault()
                       window.openFileQuery(dataFlowFilePath.getAttribute("file-path")+":"+dataFlowFilePath.getAttribute("start-line")+":"+dataFlowFilePath.getAttribute("end-line")+":"+dataFlowFilePath.getAttribute("start-character")+":"+dataFlowFilePath.getAttribute("end-character"));
                     });
-                }""",
+                }
+                document.getElementById('meta').addEventListener('click', function (e) {
+                  e.preventDefault()
+                  window.openCWELinkQuery("https://cwe.mitre.org/data/definitions/547.html");
+                });""",
                                 browser.url, 0
                             );
                         }
