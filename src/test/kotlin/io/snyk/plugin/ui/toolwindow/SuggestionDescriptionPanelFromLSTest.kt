@@ -2,18 +2,22 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.ui.getJBCefBrowserIfSupported
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import org.cef.browser.CefBrowserFactory
+import org.cef.browser.CefRequestContext
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import org.junit.Before
@@ -26,6 +30,7 @@ import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ExampleCommitFix
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
+import javax.swing.JPanel
 
 class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     private lateinit var cut: SuggestionDescriptionPanelFromLS
@@ -96,10 +101,11 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     fun `test createUI should show nothing if feature flag is enabled but JCEF is not`() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
+        mockkStatic("io.snyk.plugin.ui.UIUtilsKt")
+        every { getJBCefBrowserIfSupported() } returns (null to "")
+
         every { issue.additionalData.details } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
-
-        Registry.get("ide.browser.jcef.enabled").setValue("false")
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -112,15 +118,16 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     fun `test createUI should build panel with HTML from details if feature flag is enabled`() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
+        val mockJBCefBrowser = mockk<JBCefBrowser>()
+        every { mockJBCefBrowser.component } returns JPanel()
+        every { mockJBCefBrowser.loadHTML(eq("<html>HTML message</html>"), eq("http://foo/bar")) } returns
+        mockkStatic("io.snyk.plugin.ui.UIUtilsKt")
+        every { getJBCefBrowserIfSupported() } returns (mockJBCefBrowser to "http://foo/bar")
+
         every { issue.additionalData.details } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
 
-        Registry.get("ide.browser.jcef.enabled").setValue("true")
-
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
-
-        val actualBrowser = getJBCEFBrowser(cut)
-        assertNotNull(actualBrowser)
     }
 }
