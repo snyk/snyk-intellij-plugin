@@ -1,5 +1,6 @@
 package snyk
 
+import com.intellij.ui.jcef.JBCefBrowser
 import java.awt.Container
 import javax.swing.JButton
 import javax.swing.JLabel
@@ -46,6 +47,22 @@ object UIComponentFinder {
                 found = component
             } else if (component is Container) {
                 found = getJPanelByName(component, name)
+            }
+            if (found != null) {
+                break
+            }
+        }
+        return found
+    }
+
+    fun getJBCEFBrowser(parent: Container): JBCefBrowser.MyPanel? {
+        val components = parent.components
+        var found: JBCefBrowser.MyPanel? = null
+        for (component in components) {
+            if (component is JBCefBrowser.MyPanel) {
+                found = component
+            } else if (component is Container) {
+                    found = getJBCEFBrowser(component)
             }
             if (found != null) {
                 break

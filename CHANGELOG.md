@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.7.13]
+### Added
+- Render Snyk Code vulnerabilities using HTML served by the Language Server behind a feature flag.
+
 ## [2.7.12]
 ### Added
 - Mark ignored findings as ignored behind a feature flag.
