@@ -1,16 +1,20 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.Iconable
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowserBuilder
+import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
+import io.snyk.plugin.getPsiFile
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
@@ -22,6 +26,10 @@ import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
+import org.cef.browser.CefBrowser
+import org.cef.browser.CefFrame
+import org.cef.handler.CefLoadHandlerAdapter
+import org.jetbrains.kotlin.nj2k.replace
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ScanIssue
 import java.awt.BorderLayout
@@ -47,6 +55,28 @@ class SuggestionDescriptionPanelFromLS(
     val project = snykCodeFile.project
     private val unexpectedErrorMessage = "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused.";
 
+
+    fun openFile(value: String): JBCefJSQuery.Response {
+        var values = value.replace("\n", "").split(":")
+        var filePath = values[0]
+        var startLine = values[1].toInt()
+        var endLine = values[2].toInt()
+        var startCharacter = values[3].toInt()
+        var endCharacter = values[4].toInt()
+
+        ApplicationManager.getApplication().invokeLater {
+            val virtualFile = filePath.toVirtualFile()
+            val document = virtualFile.getDocument()
+            val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
+            val startOffset = startLineStartOffset + (startCharacter)
+            val endLineStartOffset = document?.getLineStartOffset(endLine) ?: 0
+            val endOffset = endLineStartOffset + endCharacter - 1
+
+            navigateToSource(project, virtualFile, startOffset, endOffset)
+        }
+
+        return JBCefJSQuery.Response("success")
+    }
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
             if (!JBCefApp.isSupported()) {
@@ -56,6 +86,38 @@ class SuggestionDescriptionPanelFromLS(
             } else {
                 val cefClient = JBCefApp.getInstance().createClient()
                 val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
+
+                val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
+
+                val loadHandler = object : CefLoadHandlerAdapter() {
+                    override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
+                        if (frame.isMain) {
+                            cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
+                            openFileQuery.addHandler { openFile(it) }
+
+                            browser.executeJavaScript(
+                                "window.openFileQuery = function(value) {" +
+                                    openFileQuery.inject("value") +
+                                    "};",
+                                browser.url, 0
+                            );
+
+                            browser.executeJavaScript(
+                                """
+                const dataFlowFilePaths = document.getElementsByClassName('data-flow-filepath')
+                for (let i = 0; i < dataFlowFilePaths.length; i++) {
+                    const dataFlowFilePath = dataFlowFilePaths[i]
+                    dataFlowFilePath.addEventListener('click', function (e) {
+                      e.preventDefault()
+                      window.openFileQuery(dataFlowFilePath.getAttribute("file-path")+":"+dataFlowFilePath.getAttribute("start-line")+":"+dataFlowFilePath.getAttribute("end-line")+":"+dataFlowFilePath.getAttribute("start-character")+":"+dataFlowFilePath.getAttribute("end-character"));
+                    });
+                }""",
+                                browser.url, 0
+                            );
+                        }
+                    }
+                }
+                cefClient.addLoadHandler(loadHandler, jbCefBrowser.cefBrowser)
 
                 val panel = JPanel()
                 panel.add(jbCefBrowser.component, BorderLayout())
@@ -67,7 +129,6 @@ class SuggestionDescriptionPanelFromLS(
                 jbCefBrowser.loadHTML(issue.additionalData.details, jbCefBrowser.cefBrowser.url)
             }
         } else {
-
             createUI()
         }
     }
