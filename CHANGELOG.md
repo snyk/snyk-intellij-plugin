@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.7.13]
+### Added
+- (LS Preview) added timeout to commands executed via code lenses
+
 ## [2.7.12]
 ### Added
 - Mark ignored findings as ignored behind a feature flag.
