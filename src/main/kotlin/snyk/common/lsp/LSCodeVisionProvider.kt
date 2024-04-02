@@ -87,13 +87,21 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
     }
 
     private class LSCommandExecutionHandler(private val codeLens: CodeLens) : (MouseEvent?, Editor) -> Unit {
+        private val logger = logger<LSCommandExecutionHandler>()
         override fun invoke(event: MouseEvent?, editor: Editor) {
             event ?: return
 
             val task = object : Backgroundable(editor.project, "Executing ${codeLens.command.title}", false) {
                 override fun run(indicator: ProgressIndicator) {
                     val params = ExecuteCommandParams(codeLens.command.command, codeLens.command.arguments)
-                    LanguageServerWrapper.getInstance().languageServer.workspaceService.executeCommand(params)
+                    try {
+                        LanguageServerWrapper.getInstance().languageServer.workspaceService
+                            .executeCommand(params).get(2, TimeUnit.MINUTES)
+                    } catch (e: TimeoutException) {
+                        logger.error("Timeout executing: ${codeLens.command.title}", e)
+                    } finally {
+                        indicator.stop()
+                    }
                 }
             }
 
