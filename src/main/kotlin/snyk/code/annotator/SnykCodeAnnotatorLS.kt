@@ -185,7 +185,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                                 .resolveCodeAction(codeAction).get(TIMEOUT, TimeUnit.SECONDS)
 
                         val edit = resolvedCodeAction.edit
-                        if (edit.changes == null) return
+                        if (edit == null || edit.changes == null) return
                         changes = edit.changes
                     } else {
                         val codeActionCommand = resolvedCodeAction.command
