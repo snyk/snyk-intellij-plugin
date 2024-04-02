@@ -1,7 +1,7 @@
 package io.snyk.plugin.services
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -11,6 +11,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
@@ -19,6 +20,7 @@ import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykCode
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
@@ -28,6 +30,7 @@ import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykBalloonNotifications
@@ -77,9 +80,21 @@ class SnykTaskQueueService(val project: Project) {
 
     fun connectProjectToLanguageServer(project: Project) {
         synchronized(LanguageServerWrapper) {
-            val wrapper = LanguageServerWrapper.getInstance()
-            val added = wrapper.getWorkspaceFolders(project)
-            wrapper.updateWorkspaceFolders(added, emptySet())
+
+            // subscribe to the settings changed topic
+            getSnykToolWindowPanel(project)?.let {
+                project.messageBus.connect(it)
+                    .subscribe(
+                        SnykSettingsListener.SNYK_SETTINGS_TOPIC,
+                        object : SnykSettingsListener {
+                            override fun settingsChanged() {
+                                val wrapper = LanguageServerWrapper.getInstance()
+                                wrapper.updateConfiguration()
+                            }
+                        }
+                    )
+            }
+            LanguageServerWrapper.getInstance().addContentRoots(project)
         }
     }
 
@@ -99,7 +114,7 @@ class SnykTaskQueueService(val project: Project) {
                     if (!isSnykCodeLSEnabled()) {
                         scheduleSnykCodeScan()
                     } else {
-                        LanguageServerWrapper.getInstance().sendScanCommand()
+                        LanguageServerWrapper.getInstance().sendScanCommand(project)
                     }
                 }
                 if (settings.ossScanEnable) {
@@ -155,7 +170,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("Container scan completed")
-                DaemonCodeAnalyzer.getInstance(project).restart()
+                invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })
     }
@@ -230,7 +245,7 @@ class SnykTaskQueueService(val project: Project) {
                         ossResult.getFirstError()?.let { scanPublisher?.scanningOssError(it) }
                     }
                 }
-                DaemonCodeAnalyzer.getInstance(project).restart()
+                invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })
     }
@@ -273,7 +288,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("IaC scan completed")
-                DaemonCodeAnalyzer.getInstance(project).restart()
+                invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })
     }

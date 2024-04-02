@@ -11,14 +11,11 @@ import io.sentry.Sentry
 import io.sentry.protocol.SentryId
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import junit.framework.TestCase
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import snyk.PluginInformation
-import snyk.common.isAnalyticsPermitted
 import snyk.pluginInfo
-import java.net.URI
 
 class SentryErrorReporterTest {
     @Before
