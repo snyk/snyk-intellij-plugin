@@ -13,7 +13,6 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.tail
-import org.jetbrains.kotlin.daemon.common.ensureServerHostnameIsSetUp
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 import java.time.LocalDate

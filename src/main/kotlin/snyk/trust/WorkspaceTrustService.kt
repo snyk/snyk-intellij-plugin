@@ -1,14 +1,8 @@
 package snyk.trust
 
-import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.project.ProjectLocator
-import com.intellij.openapi.vfs.VirtualFile
-import io.snyk.plugin.isSnykCodeLSEnabled
-import org.jetbrains.io.LocalFileFinder
-import snyk.common.lsp.LanguageServerWrapper
 import java.nio.file.Path
 import java.nio.file.Paths
 

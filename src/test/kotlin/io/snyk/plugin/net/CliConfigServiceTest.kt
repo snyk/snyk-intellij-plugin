@@ -1,9 +1,6 @@
 package io.snyk.plugin.net
 
-import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okio.buffer
-import okio.source
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo
 import org.hamcrest.core.IsNull.nullValue
@@ -13,7 +10,6 @@ import org.junit.Test
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import snyk.net.HttpClient
-import java.nio.charset.StandardCharsets
 
 class CliConfigServiceTest {
     @JvmField
