@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.io.path.exists
 
-private const val DEFAULT_SLEEP_TIME = 100L
 private const val INITIALIZATION_TIMEOUT = 20L
 
 @Suppress("TooGenericExceptionCaught")
@@ -120,7 +119,8 @@ class LanguageServerWrapper(
         }
 
         // update feature flags
-        pluginSettings().isGlobalIgnoresFeatureEnabled = getFeatureFlagStatus("snykCodeConsistentIgnores")
+        pluginSettings().isGlobalIgnoresFeatureEnabled =
+            getFeatureFlagStatusInternal("snykCodeConsistentIgnores")
     }
 
     fun shutdown(): Future<*> {
@@ -254,6 +254,10 @@ class LanguageServerWrapper(
 
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
         ensureLanguageServerInitialized()
+        return getFeatureFlagStatusInternal(featureFlag)
+    }
+
+    private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
         if (!isSnykCodeLSEnabled()) {
             return false
         }
@@ -268,17 +272,16 @@ class LanguageServerWrapper(
             val ok = resultMap?.get("ok") as? Boolean ?: false
             val userMessage = resultMap?.get("userMessage") as? String ?: "No message provided"
 
-
             if (ok) {
                 logger.info("Feature flag $featureFlag is enabled.")
                 return true
             } else {
-                logger.warn("Feature flag $featureFlag is disabled. Message: $userMessage")
+                logger.info("Feature flag $featureFlag is disabled. Message: $userMessage")
                 return false
             }
 
         } catch (e: Exception) {
-            logger.error("Error while checking feature flag: ${e.message}", e)
+            logger.warn("Error while checking feature flag: ${e.message}", e)
             return false
         }
     }
