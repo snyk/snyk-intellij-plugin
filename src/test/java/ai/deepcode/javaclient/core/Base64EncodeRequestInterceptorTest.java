@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.assertEquals;
@@ -18,7 +19,8 @@ public class Base64EncodeRequestInterceptorTest {
 
     byte[] encodedBytes = interceptor.encodeToBase64(jsonStr.getBytes());
 
-    assertEquals("eyJzcmMvYXBwLnRzIn06eyJjb25zb2xlLmxvZyhcImhlbGxvXCJ9Igo=", new String(encodedBytes));
+    assertEquals("eyJzcmMvYXBwLnRzIn06eyJjb25zb2xlLmxvZyhcImhlbGxvXCJ9Igo=",
+      new String(encodedBytes, StandardCharsets.UTF_8));
   }
 
   @Test
