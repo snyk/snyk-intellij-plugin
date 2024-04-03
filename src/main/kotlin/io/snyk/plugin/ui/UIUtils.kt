@@ -6,6 +6,9 @@ import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.ColorUtil
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.ActionLink
+import com.intellij.ui.jcef.JBCefApp
+import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.uiDesigner.core.Spacer
@@ -372,4 +375,15 @@ fun expandTreeNodeRecursively(tree: JTree, node: DefaultMutableTreeNode) {
     node.children().asSequence().forEach {
         expandTreeNodeRecursively(tree, it as DefaultMutableTreeNode)
     }
+}
+
+//JComponent, String
+fun getJBCefBrowserIfSupported () : Pair<JBCefBrowser?, String> {
+    if (!JBCefApp.isSupported()) {
+        return null to ""
+    }
+    val cefClient = JBCefApp.getInstance().createClient()
+    val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
+
+    return jbCefBrowser to jbCefBrowser.cefBrowser.url
 }

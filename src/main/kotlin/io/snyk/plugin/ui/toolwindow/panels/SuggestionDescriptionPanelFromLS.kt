@@ -10,14 +10,20 @@ import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
+import io.snyk.plugin.ui.getJBCefBrowserIfSupported
 import io.snyk.plugin.ui.panelGridConstraints
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import io.snyk.plugin.ui.wrapWithScrollPane
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ScanIssue
+import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -33,11 +39,33 @@ import kotlin.math.max
 class SuggestionDescriptionPanelFromLS(
     snykCodeFile: SnykCodeFile,
     private val issue: ScanIssue
-) : IssueDescriptionPanelBase(title = getIssueTitle(issue), severity = issue.getSeverityAsEnum()) {
+) : IssueDescriptionPanelBase(
+    title = getIssueTitle(issue),
+    severity = issue.getSeverityAsEnum()
+) {
     val project = snykCodeFile.project
+    private val unexpectedErrorMessage = "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused.";
 
     init {
-        createUI()
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
+            val (jbCefBrowser, jbCefBrowserUrl)  = getJBCefBrowserIfSupported()
+            if (jbCefBrowser == null) {
+                val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
+                this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
+                SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
+            } else {
+                val panel = JPanel()
+                panel.add(jbCefBrowser.component, BorderLayout())
+                this.add(
+                    wrapWithScrollPane(panel),
+                    BorderLayout.CENTER
+                )
+
+                jbCefBrowser.loadHTML(issue.additionalData.details, jbCefBrowserUrl)
+            }
+        } else {
+            createUI()
+        }
     }
 
     override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(

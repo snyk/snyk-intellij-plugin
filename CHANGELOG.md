@@ -1,5 +1,10 @@
 # Snyk Security Changelog
 
+## [2.7.14]
+
+### Added
+- Render Snyk Code vulnerabilities using HTML served by the Language Server behind a feature flag.
+
 ## [2.7.13]
 ### Added
 - (LS Preview) added timeout to commands executed via code lenses
