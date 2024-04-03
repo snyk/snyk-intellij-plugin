@@ -149,12 +149,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     init {
         vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
         layout = BorderLayout()
-        TreeUIHelper.getInstance().installTreeSpeedSearch(
-            vulnerabilitiesTree,
-            TreeSpeedSearch.NODE_PRESENTATION_FUNCTION as Convertor,
-            true)
-        createTreeAndDescriptionPanel()
 
+        // convertor interface seems to be still used in TreeSpeedSearch, although it's marked obsolete
+        val convertor = Convertor<TreePath, String> {
+            TreeSpeedSearch.NODE_PRESENTATION_FUNCTION.apply(it)
+        }
+        TreeUIHelper.getInstance().installTreeSpeedSearch(vulnerabilitiesTree, convertor, true)
+
+        createTreeAndDescriptionPanel()
         chooseMainPanelToDisplay()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener {

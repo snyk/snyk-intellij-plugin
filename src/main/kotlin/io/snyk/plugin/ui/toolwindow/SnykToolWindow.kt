@@ -101,7 +101,10 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
     private fun updateActionsPresentation() =
         ApplicationManager.getApplication().invokeLater { actionToolbar.updateActionsImmediately() }
 
-    override fun dispose() = Unit
+    var isDisposed = false
+    override fun dispose() {
+        isDisposed = true
+    }
 
     inner class ExpandNodeChildAction(
         val tree: JTree
