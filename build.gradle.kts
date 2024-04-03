@@ -9,11 +9,11 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
-    id("org.jetbrains.changelog") version "2.1.2"
-    id("org.jetbrains.intellij") version "1.17.2"
-    id("org.jetbrains.kotlin.jvm") version "1.9.0"
-    id("io.gitlab.arturbosch.detekt") version ("1.23.4")
-    id("pl.allegro.tech.build.axion-release") version "1.13.6"
+    id("org.jetbrains.changelog") version "2.2.0"
+    id("org.jetbrains.intellij") version "1.17.3"
+    id("org.jetbrains.kotlin.jvm") version "1.9.23"
+    id("io.gitlab.arturbosch.detekt") version ("1.23.6")
+    id("pl.allegro.tech.build.axion-release") version "1.17.0"
 }
 
 version = scmVersion.version
@@ -64,7 +64,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.5")
     testImplementation("org.awaitility:awaitility:4.2.0")
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.4")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
 }
 
 // configuration for gradle-intellij-plugin plugin.
