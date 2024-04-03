@@ -9,11 +9,11 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
-    id("org.jetbrains.changelog") version "2.1.2"
-    id("org.jetbrains.intellij") version "1.17.2"
-    id("org.jetbrains.kotlin.jvm") version "1.9.0"
-    id("io.gitlab.arturbosch.detekt") version ("1.23.4")
-    id("pl.allegro.tech.build.axion-release") version "1.13.6"
+    id("org.jetbrains.changelog") version "2.2.0"
+    id("org.jetbrains.intellij") version "1.17.3"
+    id("org.jetbrains.kotlin.jvm") version "1.9.23"
+    id("io.gitlab.arturbosch.detekt") version ("1.23.6")
+    id("pl.allegro.tech.build.axion-release") version "1.17.0"
 }
 
 version = scmVersion.version
@@ -30,6 +30,7 @@ repositories {
 
 dependencies {
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
+    implementation(platform("com.squareup.retrofit2:retrofit-bom:2.11.0"))
     implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.22.0")
 
     implementation("org.commonmark:commonmark:0.21.0")
@@ -37,7 +38,7 @@ dependencies {
     implementation("com.segment.analytics.java:analytics:3.4.0")
     implementation("io.sentry:sentry:6.27.0")
     implementation("javax.xml.bind:jaxb-api:2.3.1") // necessary because since JDK 9 not included
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:retrofit")
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.12.7.1")
@@ -63,7 +64,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.5")
     testImplementation("org.awaitility:awaitility:4.2.0")
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.4")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
 }
 
 // configuration for gradle-intellij-plugin plugin.
