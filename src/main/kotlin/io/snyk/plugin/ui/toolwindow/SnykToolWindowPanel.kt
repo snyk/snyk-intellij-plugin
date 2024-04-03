@@ -15,7 +15,9 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
+import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.analytics.getSelectedProducts
@@ -110,7 +112,7 @@ import javax.swing.tree.TreePath
 /**
  * Main panel for Snyk tool window.
  */
-@Service
+@Service(Service.Level.PROJECT)
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
     private val logger = Logger.getInstance(this::class.java)
@@ -147,8 +149,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     init {
         vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
         layout = BorderLayout()
-        TreeSpeedSearch(vulnerabilitiesTree, TreeSpeedSearch.NODE_DESCRIPTOR_TOSTRING, true)
-
+        TreeUIHelper.getInstance().installTreeSpeedSearch(
+            vulnerabilitiesTree,
+            TreeSpeedSearch.NODE_PRESENTATION_FUNCTION as Convertor,
+            true)
         createTreeAndDescriptionPanel()
 
         chooseMainPanelToDisplay()
@@ -428,7 +432,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
-    override fun dispose() {}
+    var isDisposed: Boolean = false
+    override fun dispose() {
+        isDisposed = true
+    }
 
     fun cleanUiAndCaches() {
         getSnykCachedResults(project)?.cleanCaches()
@@ -516,7 +523,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
     fun displayAuthPanel() {
-        if (Disposer.isDisposed(this)) return
+        if (isDisposed) return
         doCleanUi(false)
         descriptionPanel.removeAll()
         val authPanel = SnykAuthPanel(project)
@@ -1102,6 +1109,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun selectNodeAndDisplayDescription(vulnerability: Vulnerability) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
             treeNode is VulnerabilityTreeNode &&
@@ -1122,6 +1130,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 (treeNode.userObject as ContainerIssuesForImage) == issuesForImage
         }
 
+    @Suppress("UNCHECKED_CAST")
     fun selectNodeAndDisplayDescription(suggestionForFile: SuggestionForFile, textRange: MyTextRange) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
             treeNode is SuggestionTreeNode &&
