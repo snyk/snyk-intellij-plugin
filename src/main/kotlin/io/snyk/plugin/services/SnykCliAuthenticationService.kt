@@ -48,7 +48,7 @@ class SnykCliAuthenticationService(val project: Project) {
         downloadCliIfNeeded()
         if (getCliFile().exists()) executeAuthCommand()
         if (isAuthenticated) executeGetConfigApiCommand()
-        LanguageServerWrapper.getInstance().updateSettings()
+        LanguageServerWrapper.getInstance().updateConfiguration()
         return token
     }
 
