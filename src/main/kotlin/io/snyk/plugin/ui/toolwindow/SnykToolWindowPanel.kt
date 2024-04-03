@@ -140,7 +140,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
      *  */
     private var smartReloadMode = false
 
-    private var navigateToSourceEnabled = true
+    var navigateToSourceEnabled = true
 
     private val treeNodeStub = object : RootTreeNodeBase("", project) {
         override fun getSnykError(): SnykError? = null
