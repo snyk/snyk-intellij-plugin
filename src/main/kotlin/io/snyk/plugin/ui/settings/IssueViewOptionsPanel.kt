@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.settings
 
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBCheckBox
-import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
@@ -14,45 +13,34 @@ class IssueViewOptionsPanel(
     private val settings
         get() = pluginSettings()
 
-    private var currentOpenIssuesEnabled = settings.openIssuesEnabled
-    private var currentIgnoredIssuesEnabled = settings.ignoredIssuesEnabled
-
-    val panel = panel {
+    val panel = com.intellij.ui.dsl.builder.panel {
         row {
-            cell {
-                checkBox(
-                    text = "Open issues",
-                    getter = { settings.openIssuesEnabled },
-                    setter = { settings.openIssuesEnabled = it }
-                ).component.apply {
-                    this.addItemListener {
-                        if (canOptionChange(this, currentOpenIssuesEnabled)) {
-                            currentOpenIssuesEnabled = this.isSelected
-                            settings.openIssuesEnabled = currentOpenIssuesEnabled
-                            getSnykTaskQueueService(project)?.scan()
-                        }
+            checkBox(
+                text = "Open issues",
+            ).component.apply {
+                isSelected = settings.openIssuesEnabled
+                this.addItemListener {
+                    if (canOptionChange(this, settings.openIssuesEnabled)) {
+                        settings.openIssuesEnabled = this.isSelected
+                        getSnykTaskQueueService(project)?.scan()
                     }
-                    name = "Open issues"
                 }
+                name = "Open issues"
             }
         }
         row {
-            cell {
                 checkBox(
                     text = "Ignored issues",
-                    getter = { settings.ignoredIssuesEnabled },
-                    setter = { settings.ignoredIssuesEnabled = it }
                 ).component.apply {
+                    isSelected = settings.ignoredIssuesEnabled
                     this.addItemListener {
-                        if (canOptionChange(this, currentIgnoredIssuesEnabled)) {
-                            currentIgnoredIssuesEnabled = this.isSelected
-                            settings.ignoredIssuesEnabled =currentIgnoredIssuesEnabled
+                        if (canOptionChange(this, settings.ignoredIssuesEnabled)) {
+                            settings.ignoredIssuesEnabled = this.isSelected
                             getSnykTaskQueueService(project)?.scan()
                         }
                     }
                     name = "Ignored issues"
                 }
-            }
         }
     }.apply {
         name = "issueViewPanel"
@@ -61,8 +49,8 @@ class IssueViewOptionsPanel(
 
     private fun canOptionChange(component: JBCheckBox, wasEnabled: Boolean): Boolean {
         val onlyOneEnabled = arrayOf(
-            currentOpenIssuesEnabled,
-            currentIgnoredIssuesEnabled,
+            settings.openIssuesEnabled,
+            settings.ignoredIssuesEnabled,
         ).count { it } == 1
 
         if (onlyOneEnabled && wasEnabled) {
