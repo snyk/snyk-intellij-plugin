@@ -30,6 +30,7 @@ repositories {
 
 dependencies {
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
+    implementation(platform("com.squareup.retrofit2:retrofit-bom:2.11.0"))
     implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.22.0")
 
     implementation("org.commonmark:commonmark:0.21.0")
@@ -37,7 +38,7 @@ dependencies {
     implementation("com.segment.analytics.java:analytics:3.4.0")
     implementation("io.sentry:sentry:6.27.0")
     implementation("javax.xml.bind:jaxb-api:2.3.1") // necessary because since JDK 9 not included
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:retrofit")
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.12.7.1")
