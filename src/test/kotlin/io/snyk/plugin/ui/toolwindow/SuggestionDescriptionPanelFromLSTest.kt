@@ -14,6 +14,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.getJBCefBrowserIfSupported
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import org.eclipse.lsp4j.Position
@@ -127,5 +128,18 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
+    }
+
+
+    @Test
+    fun `test openFile should navigate to source`() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = false
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { fileName.toVirtualFile() } returns psiFile.virtualFile
+
+        cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
+        val res = cut.openFile("$fileName:1:2:3:4")
+        assertNotNull(res)
     }
 }

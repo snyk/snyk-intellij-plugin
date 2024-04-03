@@ -53,28 +53,6 @@ class SuggestionDescriptionPanelFromLS(
     val project = snykCodeFile.project
     private val unexpectedErrorMessage = "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused.";
 
-
-    fun openFile(value: String): JBCefJSQuery.Response {
-        var values = value.replace("\n", "").split(":")
-        var filePath = values[0]
-        var startLine = values[1].toInt()
-        var endLine = values[2].toInt()
-        var startCharacter = values[3].toInt()
-        var endCharacter = values[4].toInt()
-
-        ApplicationManager.getApplication().invokeLater {
-            val virtualFile = filePath.toVirtualFile()
-            val document = virtualFile.getDocument()
-            val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
-            val startOffset = startLineStartOffset + (startCharacter)
-            val endLineStartOffset = document?.getLineStartOffset(endLine) ?: 0
-            val endOffset = endLineStartOffset + endCharacter - 1
-
-            navigateToSource(project, virtualFile, startOffset, endOffset)
-        }
-
-        return JBCefJSQuery.Response("success")
-    }
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
             val (jbCefBrowser, jbCefBrowserUrl)  = getJBCefBrowserIfSupported()
@@ -128,6 +106,28 @@ class SuggestionDescriptionPanelFromLS(
         } else {
             createUI()
         }
+    }
+
+    fun openFile(value: String): JBCefJSQuery.Response {
+        var values = value.replace("\n", "").split(":")
+        var filePath = values[0]
+        var startLine = values[1].toInt()
+        var endLine = values[2].toInt()
+        var startCharacter = values[3].toInt()
+        var endCharacter = values[4].toInt()
+
+        ApplicationManager.getApplication().invokeLater {
+            val virtualFile = filePath.toVirtualFile()
+            val document = virtualFile.getDocument()
+            val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
+            val startOffset = startLineStartOffset + (startCharacter)
+            val endLineStartOffset = document?.getLineStartOffset(endLine) ?: 0
+            val endOffset = endLineStartOffset + endCharacter - 1
+
+            navigateToSource(project, virtualFile, startOffset, endOffset)
+        }
+
+        return JBCefJSQuery.Response("success")
     }
 
     override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
