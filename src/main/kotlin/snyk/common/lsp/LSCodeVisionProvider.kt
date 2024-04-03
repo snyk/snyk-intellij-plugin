@@ -17,6 +17,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import icons.SnykIcons
 import io.snyk.plugin.isSnykCodeLSEnabled
+import io.snyk.plugin.isSnykCodeRunning
 import org.eclipse.lsp4j.CodeLens
 import org.eclipse.lsp4j.CodeLensParams
 import org.eclipse.lsp4j.ExecuteCommandParams
@@ -43,8 +44,11 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
     }
 
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
+        if (editor.project == null) return CodeVisionState.READY_EMPTY
         if (!isSnykCodeLSEnabled()) return CodeVisionState.READY_EMPTY
-        LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()
+        if (!LanguageServerWrapper.getInstance().isInitialized) return CodeVisionState.READY_EMPTY
+        if (isSnykCodeRunning(editor.project!!)) return CodeVisionState.READY_EMPTY
+
         return ReadAction.compute<CodeVisionState, RuntimeException> {
             val project = editor.project ?: return@compute CodeVisionState.READY_EMPTY
             val document = editor.document
@@ -83,13 +87,21 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
     }
 
     private class LSCommandExecutionHandler(private val codeLens: CodeLens) : (MouseEvent?, Editor) -> Unit {
+        private val logger = logger<LSCommandExecutionHandler>()
         override fun invoke(event: MouseEvent?, editor: Editor) {
             event ?: return
 
             val task = object : Backgroundable(editor.project, "Executing ${codeLens.command.title}", false) {
                 override fun run(indicator: ProgressIndicator) {
                     val params = ExecuteCommandParams(codeLens.command.command, codeLens.command.arguments)
-                    LanguageServerWrapper.getInstance().languageServer.workspaceService.executeCommand(params)
+                    try {
+                        LanguageServerWrapper.getInstance().languageServer.workspaceService
+                            .executeCommand(params).get(2, TimeUnit.MINUTES)
+                    } catch (e: TimeoutException) {
+                        logger.error("Timeout executing: ${codeLens.command.title}", e)
+                    } finally {
+                        indicator.stop()
+                    }
                 }
             }
 

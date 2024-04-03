@@ -1,6 +1,5 @@
 package snyk.container
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -11,6 +10,7 @@ import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.isContainerEnabled
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 
 class ContainerBulkFileListener : SnykBulkFileListener() {
 
@@ -74,8 +74,8 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
         snykCachedResults.currentContainerResult = newContainerCache
         ApplicationManager.getApplication().invokeLater {
             getSnykToolWindowPanel(project)?.displayContainerResults(newContainerCache)
+            refreshAnnotationsForOpenFiles(project)
         }
-        DaemonCodeAnalyzer.getInstance(project).restart()
     }
 
     private fun makeObsolete(containerIssuesForImage: ContainerIssuesForImage): ContainerIssuesForImage =

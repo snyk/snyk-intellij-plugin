@@ -16,6 +16,7 @@ import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
+import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
@@ -43,7 +44,6 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile {
-        LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()
         return file
     }
 
@@ -53,8 +53,12 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         if (!isSnykCodeLSEnabled()) return
+        if (!LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()) return
+        if (isSnykCodeRunning(psiFile.project)) return
+
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
+            .distinctBy { it.id }
             .sortedBy { it.title }
             .forEach { issue ->
                 val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
@@ -181,7 +185,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                                 .resolveCodeAction(codeAction).get(TIMEOUT, TimeUnit.SECONDS)
 
                         val edit = resolvedCodeAction.edit
-                        if (edit.changes == null) return
+                        if (edit == null || edit.changes == null) return
                         changes = edit.changes
                     } else {
                         val codeActionCommand = resolvedCodeAction.command

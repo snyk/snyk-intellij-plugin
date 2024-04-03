@@ -1,15 +1,16 @@
 package snyk.common.lsp
 
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -37,13 +38,15 @@ import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
+import snyk.trust.WorkspaceTrustService
+import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.io.path.exists
 
-private const val DEFAULT_SLEEP_TIME = 100L
 private const val INITIALIZATION_TIMEOUT = 20L
 
 @Suppress("TooGenericExceptionCaught")
@@ -57,7 +60,6 @@ class LanguageServerWrapper(
     /**
      * The language client is used to receive messages from LS
      */
-    @Suppress("MemberVisibilityCanBePrivate")
     lateinit var languageClient: SnykLanguageClient
 
     /**
@@ -75,27 +77,28 @@ class LanguageServerWrapper(
      */
     lateinit var process: Process
 
-    var isInitializing: Boolean = false
-    val isInitialized: Boolean
+    private var isInitializing: ReentrantLock = ReentrantLock()
+
+    internal val isInitialized: Boolean
         get() = ::languageClient.isInitialized &&
             ::languageServer.isInitialized &&
             ::process.isInitialized &&
             process.info().startInstant().isPresent &&
-            process.isAlive
+            process.isAlive &&
+            !isInitializing.isLocked
 
     @OptIn(DelicateCoroutinesApi::class)
-    internal fun initialize() {
+    private fun initialize() {
         if (lsPath.toNioPathOrNull()?.exists() == false) {
             val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
-            SnykBalloonNotificationHelper.showError(message, null)
+            logger.warn(message)
             return
         }
         try {
-            isInitializing = true
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel, "-f", "/tmp/snyk-ls.log")
+            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
             pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
@@ -109,13 +112,15 @@ class LanguageServerWrapper(
             }
 
             launcher.startListening()
-
             sendInitializeMessage()
         } catch (e: Exception) {
             logger.warn(e)
-        } finally {
-            isInitializing = false
+            process.destroy()
         }
+
+        // update feature flags
+        pluginSettings().isGlobalIgnoresFeatureEnabled =
+            getFeatureFlagStatusInternal("snykCodeConsistentIgnores")
     }
 
     fun shutdown(): Future<*> {
@@ -132,8 +137,38 @@ class LanguageServerWrapper(
         return workspaceFolders.toList()
     }
 
-    fun getWorkspaceFolders(project: Project) =
-        project.getContentRootVirtualFiles().mapNotNull { WorkspaceFolder(it.url, it.name) }.toSet()
+    fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
+        val normalizedRoots = getTrustedContentRoots(project)
+        return normalizedRoots.map { WorkspaceFolder(it.url, it.name) }.toSet()
+    }
+
+    private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
+        if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return mutableSetOf()
+
+        // the sort is to ensure that parent folders come first
+        // e.g. /a/b should come before /a/b/c
+        val contentRoots = project.getContentRootVirtualFiles().filterNotNull().sortedBy { it.path }
+        val trustService = service<WorkspaceTrustService>()
+        val normalizedRoots = mutableSetOf<VirtualFile>()
+
+        for (root in contentRoots) {
+            val pathTrusted = trustService.isPathTrusted(root.toNioPath())
+            if (!pathTrusted) {
+                logger.debug("Path not trusted: ${root.path}")
+                continue
+            }
+
+            var add = true
+            for (normalizedRoot in normalizedRoots) {
+                if (!root.path.startsWith(normalizedRoot.path)) continue
+                add = false
+                break
+            }
+            if (add) normalizedRoots.add(root)
+        }
+        logger.debug("Normalized content roots: $normalizedRoots")
+        return normalizedRoots
+    }
 
     fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()
@@ -176,7 +211,7 @@ class LanguageServerWrapper(
 
     fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
         try {
-            ensureLanguageServerInitialized()
+            if (!ensureLanguageServerInitialized()) return
             val params = DidChangeWorkspaceFoldersParams()
             params.event = WorkspaceFoldersChangeEvent(added.toList(), removed.toList())
             languageServer.workspaceService.didChangeWorkspaceFolders(params)
@@ -185,17 +220,20 @@ class LanguageServerWrapper(
         }
     }
 
-    fun ensureLanguageServerInitialized() {
-        while (isInitializing) {
-            Thread.sleep(DEFAULT_SLEEP_TIME)
-        }
+    fun ensureLanguageServerInitialized(): Boolean {
         if (!isInitialized) {
-            initialize()
+            try {
+                isInitializing.lock()
+                initialize()
+            } finally {
+                isInitializing.unlock()
+            }
         }
+        return isInitialized
     }
 
     fun sendReportAnalyticsCommand(scanDoneEvent: ScanDoneEvent) {
-        ensureLanguageServerInitialized()
+        if (!ensureLanguageServerInitialized()) return
         try {
             val eventString = gson.toJson(scanDoneEvent)
             val param = ExecuteCommandParams()
@@ -207,10 +245,52 @@ class LanguageServerWrapper(
         }
     }
 
-    fun sendScanCommand() {
+    fun sendScanCommand(project: Project) {
+        if (!ensureLanguageServerInitialized()) return
+        getTrustedContentRoots(project).forEach {
+            sendFolderScanCommand(it.path)
+        }
+    }
+
+    fun getFeatureFlagStatus(featureFlag: String): Boolean {
+        ensureLanguageServerInitialized()
+        return getFeatureFlagStatusInternal(featureFlag)
+    }
+
+    private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
+        if (!isSnykCodeLSEnabled()) {
+            return false
+        }
+
         try {
             val param = ExecuteCommandParams()
-            param.command = "snyk.workspace.scan"
+            param.command = "snyk.getFeatureFlagStatus"
+            param.arguments = listOf(featureFlag)
+            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
+
+            val resultMap = result as? Map<*, *>
+            val ok = resultMap?.get("ok") as? Boolean ?: false
+            val userMessage = resultMap?.get("userMessage") as? String ?: "No message provided"
+
+            if (ok) {
+                logger.info("Feature flag $featureFlag is enabled.")
+                return true
+            } else {
+                logger.info("Feature flag $featureFlag is disabled. Message: $userMessage")
+                return false
+            }
+
+        } catch (e: Exception) {
+            logger.warn("Error while checking feature flag: ${e.message}", e)
+            return false
+        }
+    }
+
+    private fun sendFolderScanCommand(folder: String) {
+        try {
+            val param = ExecuteCommandParams()
+            param.command = "snyk.workspaceFolder.scan"
+            param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
         } catch (ignored: Exception) {
             // do nothing to not break UX for analytics
@@ -242,10 +322,19 @@ class LanguageServerWrapper(
         )
     }
 
-    fun updateSettings() {
+    fun updateConfiguration() {
         ensureLanguageServerInitialized()
-        val params = DidChangeConfigurationParams(getSettings())
+        val params = DidChangeConfigurationParams(getInstance().getSettings())
         languageServer.workspaceService.didChangeConfiguration(params)
+        if (pluginSettings().scanOnSave) {
+            ProjectManager.getInstance().openProjects.forEach { sendScanCommand(it) }
+        }
+    }
+
+    fun addContentRoots(project: Project) {
+        if (!isInitialized) return
+        val added = getWorkspaceFolders(project)
+        updateWorkspaceFolders(added, emptySet())
     }
 
     companion object {

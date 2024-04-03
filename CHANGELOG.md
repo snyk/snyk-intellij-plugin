@@ -1,8 +1,44 @@
-# Snyk Changelog
+# Snyk Security Changelog
+
+## [2.7.13]
+### Added
+- (LS Preview) added timeout to commands executed via code lenses
+
+## [2.7.12]
+### Added
+- Mark ignored findings as ignored behind a feature flag.
+
+### Fixed
+- (LS Preview) fix progress handling for Snyk Code scans
+- (LS Preview) fix multi-project scanning for Snyk Code
+- (LS Preview) fix auto-scan newly opened project, and ask for trust if needed
+- (LS Preview) fix CodeVision for opened files
+
+## [2.7.11]
+### Added
+- Consistent ignores for Snyk Code behind a feature flag.
+- Render ignores settings behind a feature flag.
+
+## [2.7.10]
+### Fixed
+- (LS Preview) Fix content root handling for Snyk Code scans
+
+## [2.7.9]
+### Fixed
+- fix: shortened plugin name to just Snyk Security
+- (LS Preview) Fix long-running UI operation to run outside of UI thread
+- Remove duplicated annotations in Snyk Code
+
+## [2.7.8]
+### Fixed
+- (LS Preview) UI freezes and initialization errors caused by CodeVision and Code annotations
+- (LS Preview) check trust for content root before triggering Snyk Code scans
 
 ## [2.7.7]
 ### Fixed
+- (LS Preview) Snyk Code scans when having multiple projects open
 - (LS Preview) do not hang on missing answers to message requests, timeout after 5s
+- Provide language-specific annotators for Snyk Code issues
 
 ## [2.7.6]
 ### Fixed

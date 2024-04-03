@@ -27,6 +27,7 @@ import java.util.UUID
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
+    var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://static.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
     var manageBinariesAutomatically: Boolean = true
@@ -60,6 +61,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var mediumSeverityEnabled = true
     var highSeverityEnabled = true
     var criticalSeverityEnabled = true
+
+    var openIssuesEnabled = true
+    var ignoredIssuesEnabled = false
 
     var treeFiltering = TreeFiltering()
 

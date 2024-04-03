@@ -20,15 +20,20 @@ import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import snyk.pluginInfo
+import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
 
+    private val applicationMock: Application = mockk()
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
     private val settings = SnykApplicationSettingsStateService()
+    private val trustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
+
     private lateinit var cut: LanguageServerWrapper
 
     @Before
@@ -36,9 +41,8 @@ class LanguageServerWrapperTest {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic(ApplicationManager::class)
-        mockkStatic(ApplicationManager::class)
-        val applicationMock = mockk<Application>()
         every { ApplicationManager.getApplication() } returns applicationMock
+        every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
 
         val projectManagerMock = mockk<ProjectManager>()
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
@@ -106,5 +110,27 @@ class LanguageServerWrapperTest {
         assertEquals(settings.token, actual.token)
         assertEquals("${settings.ignoreUnknownCA}", actual.insecure)
         assertEquals(getCliFile().absolutePath, actual.cliPath)
+    }
+
+    @Test
+    @Ignore
+    fun `sendFeatureFlagCommand should return true if feature flag is enabled`() {
+        // Arrange
+        cut.languageClient = mockk(relaxed = true)
+        val processMock = mockk<Process>(relaxed = true)
+        cut.process = processMock
+        val featureFlag = "testFeatureFlag"
+        every { processMock.info().startInstant().isPresent } returns true
+        every { processMock.isAlive } returns true
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(mapOf("ok" to true))
+
+        // Act
+        val result = cut.getFeatureFlagStatus(featureFlag)
+
+        // Assert
+        assertEquals(true, result)
+
     }
 }

@@ -12,6 +12,7 @@ import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isProjectSettingsAvailable
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.net.RetrofitClientFactory
 import io.snyk.plugin.pluginSettings
@@ -97,7 +98,12 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        LanguageServerWrapper.getInstance().updateSettings()
+        if (isSnykCodeLSEnabled()) {
+            runBackgroundableTask("Updating Snyk Code settings", project, true) {
+                settingsStateService.isGlobalIgnoresFeatureEnabled =
+                    LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
+            }
+        }
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()
