@@ -1,7 +1,8 @@
 package snyk.container.ui
 
-import com.intellij.ui.components.labels.LinkLabel
+import com.intellij.ui.components.ActionLink
 import com.intellij.uiDesigner.core.GridLayoutManager
+import com.intellij.util.ui.JBUI
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.boldLabel
@@ -13,7 +14,6 @@ import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.container.ContainerIssue
-import java.awt.Insets
 import javax.swing.JPanel
 
 class ContainerIssueDetailPanel(
@@ -32,7 +32,7 @@ class ContainerIssueDetailPanel(
     override fun createMainBodyPanel(): Pair<JPanel, Int> {
         val lastRowToAddSpacer = 4
         val panel = JPanel(
-            GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(10, 10, 20, 20), -1, 10)
+            GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(10, 10, 20, 20), -1, 10)
         )
 
         panel.add(
@@ -64,7 +64,7 @@ class ContainerIssueDetailPanel(
 
     private fun mainPanel(): JPanel {
         val panel = JPanel(
-            GridLayoutManager(2, 2, Insets(0, 0, 0, 0), 30, -1)
+            GridLayoutManager(2, 2, JBUI.emptyInsets(), 30, -1)
         )
 
         val introducedThrough = groupedVulns
@@ -94,7 +94,7 @@ class ContainerIssueDetailPanel(
 
     private fun getDetailedPathsPanel(): JPanel {
         val detailsPanel = JPanel()
-        detailsPanel.layout = GridLayoutManager(2, 2, Insets(20, 0, 0, 0), -1, -1)
+        detailsPanel.layout = GridLayoutManager(2, 2, JBUI.insetsTop(20), -1, -1)
 
         detailsPanel.add(
             boldLabel("Detailed paths").apply {
@@ -117,13 +117,13 @@ class ContainerIssueDetailPanel(
 
     private fun getInnerDetailedPathsPanel(itemsToShow: Int? = null): JPanel {
         val detailsPanel = JPanel()
-        detailsPanel.layout = GridLayoutManager(groupedVulns.size + 2, 2, Insets(0, 0, 0, 0), -1, -1)
+        detailsPanel.layout = GridLayoutManager(groupedVulns.size + 2, 2, JBUI.emptyInsets(), -1, -1)
 
         groupedVulns
             .take(itemsToShow ?: groupedVulns.size)
             .forEachIndexed { index, vuln ->
                 val detailPanel = JPanel()
-                detailPanel.layout = GridLayoutManager(2, 2, Insets(0, 0, 0, 0), 30, 5)
+                detailPanel.layout = GridLayoutManager(2, 2, JBUI.emptyInsets(), 30, 5)
 
                 insertTitleAndResizableTextIntoPanelColumns(
                     panel = detailPanel,
@@ -148,7 +148,7 @@ class ContainerIssueDetailPanel(
             }
 
         if (itemsToShow != null && itemsToShow < groupedVulns.size) {
-            val showMoreLabel = LinkLabel.create("...and ${groupedVulns.size - itemsToShow} more") {
+            val showMoreLabel = ActionLink("...and ${groupedVulns.size - itemsToShow} more") {
                 detailsPanel.removeAll()
                 detailsPanel.add(
                     getInnerDetailedPathsPanel(),
@@ -167,7 +167,7 @@ class ContainerIssueDetailPanel(
     }
 
     private fun overviewPanel(): JPanel {
-        val panel = JPanel(GridLayoutManager(2, 2, Insets(10, 5, 0, 0), -1, 0))
+        val panel = JPanel(GridLayoutManager(2, 2, JBUI.insets(10, 5, 0, 0), -1, 0))
 
         val descriptionMarkdown = issue.description.replaceFirst("## NVD Description", "## Description")
         val document = Parser.builder().build().parse(descriptionMarkdown)

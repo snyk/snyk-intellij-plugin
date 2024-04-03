@@ -15,12 +15,14 @@ import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBPasswordField
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.FontUtil
 import com.intellij.util.ui.GridBag
-import com.intellij.util.ui.UI
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykCliAuthenticationService
@@ -84,7 +86,7 @@ class SnykSettingsDialog(
 
     private val manageBinariesAutomatically: JCheckBox = JCheckBox()
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
-    private val cliBaseDownloadUrlTextField = JTextField()
+    private val cliBaseDownloadUrlTextField = JBTextField()
 
     private val logger = Logger.getInstance(this::class.java)
 
@@ -522,33 +524,44 @@ class SnykSettingsDialog(
 
         cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://static.snyk.io. " +
             "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://static.snyk.io/fips"
-        executableSettingsPanel.add(
-            UI.PanelFactory
-                .panel(cliBaseDownloadUrlTextField)
-                .withLabel("Base URL to download the CLI: ").createPanel(),
-            gb.nextLine()
-        )
+        val cliBaseDownloadPanel = panel {
+            row {
+                label("Base URL to download the CLI: ")
+                cell(cliBaseDownloadUrlTextField).align(AlignX.FILL)
+            }
+        }
+        executableSettingsPanel.add(cliBaseDownloadPanel, gb.nextLine())
 
         cliPathTextBoxWithFileBrowser.toolTipText = "The default path is ${getCliFile().canonicalPath}."
         val descriptor = FileChooserDescriptor(true, false, false, false, false, false)
         cliPathTextBoxWithFileBrowser.addBrowseFolderListener(
-            "", "Please choose the Snyk CLI you want to use:", null,
+            "",
+            "Please choose the Snyk CLI you want to use:",
+            null,
             descriptor,
             TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
         )
 
         executableSettingsPanel.add(
-            UI.PanelFactory
-                .panel(cliPathTextBoxWithFileBrowser)
-                .withLabel("Path to Snyk CLI: ").createPanel(),
+            panel {
+                row {
+                    label("Path to Snyk CLI: ")
+                    cell(cliPathTextBoxWithFileBrowser).align(AlignX.FILL)
+                }
+            },
             gb.nextLine()
         )
 
-        manageBinariesAutomatically.text = "Automatically manage needed binaries"
         executableSettingsPanel.add(
-            manageBinariesAutomatically,
+            panel {
+                row {
+                    label("Automatically manage needed binaries: ")
+                    cell(manageBinariesAutomatically).align(AlignX.FILL)
+                }
+            },
             gb.nextLine()
         )
+
         val descriptionLabelManageBinaries =
             JLabel(
                 "<html>These options allow you to customize the handling, where and how plugin " +
@@ -598,14 +611,16 @@ class SnykSettingsDialog(
     }
 
     private fun setupValidation(textField: JTextField, message: String, isValidText: (sourceStr: String?) -> Boolean) {
-        ComponentValidator(rootPanel).withValidator(Supplier<ValidationInfo?> {
-            val validationInfo: ValidationInfo = if (!isValidText(textField.text)) {
-                ValidationInfo(message, textField)
-            } else {
-                ValidationInfo("")
+        ComponentValidator(rootPanel).withValidator(
+            Supplier<ValidationInfo?> {
+                val validationInfo: ValidationInfo = if (!isValidText(textField.text)) {
+                    ValidationInfo(message, textField)
+                } else {
+                    ValidationInfo("")
+                }
+                validationInfo
             }
-            validationInfo
-        }).installOn(textField)
+        ).installOn(textField)
 
         textField.document.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(event: DocumentEvent) {

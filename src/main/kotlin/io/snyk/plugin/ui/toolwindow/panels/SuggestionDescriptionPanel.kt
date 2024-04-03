@@ -97,6 +97,7 @@ class SuggestionDescriptionPanel(
         }
     }
 
+    @Suppress("DuplicatedCode") // ok, as we'll delete this class soon
     private fun linkLabel(
         beforeLinkText: String = "",
         linkText: String,
@@ -106,7 +107,7 @@ class SuggestionDescriptionPanel(
         onClick: (HyperlinkEvent) -> Unit
     ): HyperlinkLabel {
         return HyperlinkLabel().apply {
-            this.setHyperlinkText(beforeLinkText, linkText, afterLinkText)
+            this.setTextWithHyperlink("$beforeLinkText<hyperlink>$linkText</hyperlink>$afterLinkText")
             this.toolTipText = toolTipText
             this.font = io.snyk.plugin.ui.getFont(-1, 14, customFont ?: font)
             addHyperlinkListener {

@@ -1,6 +1,5 @@
 package io.snyk.plugin.net
 
-import com.intellij.util.Base64
 import com.intellij.util.net.HttpConfigurable
 import io.mockk.every
 import io.mockk.mockk
@@ -11,6 +10,7 @@ import okhttp3.Response
 import okhttp3.Route
 import org.junit.Test
 import java.net.PasswordAuthentication
+import java.util.Base64
 
 class RetrofitAuthenticatorTest {
 
@@ -37,7 +37,7 @@ class RetrofitAuthenticatorTest {
         val authHeader = request.headers[PROXY_AUTHORIZATION_HEADER_NAME]
         assertNotNull(authHeader)
         assertEquals("Basic dXNlcm5hbWU6cHc=", authHeader)
-        assertEquals("dXNlcm5hbWU6cHc=", Base64.encode("username:pw".toByteArray()))
+        assertEquals("dXNlcm5hbWU6cHc=", String(Base64.getEncoder().encode("username:pw".toByteArray())))
     }
 
     @Test
@@ -56,7 +56,7 @@ class RetrofitAuthenticatorTest {
 
         val request = cut.authenticate(route, response)
 
-        val authHeader = request!!.headers[PROXY_AUTHORIZATION_HEADER_NAME]
+        val authHeader = request.headers[PROXY_AUTHORIZATION_HEADER_NAME]
         assertNull(authHeader)
     }
 }
