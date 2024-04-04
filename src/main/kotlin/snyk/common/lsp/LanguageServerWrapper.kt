@@ -140,7 +140,7 @@ class LanguageServerWrapper(
 
     fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
         val normalizedRoots = getTrustedContentRoots(project)
-        return normalizedRoots.map {WorkspaceFolder(it.toLanguageServerURL(), it.name)                   }.toSet()
+        return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURL(), it.name) }.toSet()
     }
 
     private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
