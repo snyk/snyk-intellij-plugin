@@ -52,7 +52,7 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
 
                     browser.executeJavaScript(
                         """
-                    const dataFlowFilePaths = document.getElementsByClassName('data-flow-filepath')
+                    const dataFlowFilePaths = document.getElementsByClassName('data-flow-clickable-row')
                     for (let i = 0; i < dataFlowFilePaths.length; i++) {
                         const dataFlowFilePath = dataFlowFilePaths[i]
                         dataFlowFilePath.addEventListener('click', function (e) {
