@@ -47,6 +47,7 @@ import org.eclipse.lsp4j.WorkDoneProgressNotification
 import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
+import org.jetbrains.kotlin.idea.util.application.executeOnPooledThread
 import snyk.common.ProductType
 import snyk.common.SnykCodeFileIssueComparator
 import snyk.trust.WorkspaceTrustService
@@ -180,12 +181,19 @@ class SnykLanguageClient() : LanguageClient {
      * containing that content root, we need to notify all of them.
      */
     private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykCodeScanListenerLS>> {
-        return getOpenedProjects().filter {
-            it.getContentRootVirtualFiles().map { virtualFile -> virtualFile.path }.contains(snykScan.folderPath)
-        }.mapNotNull { p ->
-            getSyncPublisher(p, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)?.let { Pair(p, it) }
-        }.toSet()
+        return getProjectsForFolderPath(snykScan.folderPath)
+            .mapNotNull { p ->
+                getSyncPublisher(p, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
+                    Pair(p, scanListenerLS)
+                }
+            }.toSet()
     }
+
+    private fun getProjectsForFolderPath(folderPath: String) =
+        getOpenedProjects().filter {
+            it.getContentRootVirtualFiles()
+                .contains(folderPath.toVirtualFile())
+        }
 
     @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
     private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
@@ -367,7 +375,14 @@ class SnykLanguageClient() : LanguageClient {
         when (messageParams?.type) {
             MessageType.Error -> SnykBalloonNotificationHelper.showError(messageParams.message, project)
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
-            MessageType.Info -> SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
+            MessageType.Info -> {
+                val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
+                executeOnPooledThread {
+                    Thread.sleep(5000)
+                    notification.expire()
+                }
+            }
+
             MessageType.Log -> logger.info(messageParams.message)
             null -> {}
         }
@@ -386,7 +401,7 @@ class SnykLanguageClient() : LanguageClient {
 
         val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project, *actions)
         val messageActionItem = showMessageRequestFutures.poll(10, TimeUnit.SECONDS)
-        notification.hideBalloon()
+        notification.expire()
         return CompletableFuture.completedFuture(messageActionItem ?: MessageActionItem(""))
     }
 

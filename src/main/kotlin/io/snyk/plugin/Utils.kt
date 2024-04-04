@@ -430,9 +430,29 @@ fun String.toVirtualFile(): VirtualFile {
     return if (!this.startsWith("file://")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        VirtualFileManager.getInstance().refreshAndFindFileByUrl(this) ?: throw FileNotFoundException(this)
+        VirtualFileManager.getInstance().refreshAndFindFileByUrl(this.toVirtualFileURL()) ?: throw FileNotFoundException(this)
     }
 }
+
+// add a slash when on windows
+fun VirtualFile.toLanguageServerURL(): String {
+    if (this.urlContainsDriveLetter()) {
+        return this.url.replace("file://","file:///")
+    }
+    return this.url
+}
+
+// remove first "/" if on windows
+fun String.toVirtualFileURL(): String {
+    if (this.isWindowsURI() && this.startsWith("file:///") && this.length > 10 && this.substring(9,10) == ":") {
+        return this.replaceFirst("/","")
+    }
+    return this
+}
+
+fun String.isWindowsURI() = SystemUtils.IS_OS_WINDOWS && this.startsWith("file://")
+
+fun VirtualFile.urlContainsDriveLetter() = this.url.isWindowsURI() && this.url.length > 9 && this.url.substring(8,9) == ":"
 
 fun VirtualFile.getPsiFile(project: Project): PsiFile? {
     return runReadAction { PsiManager.getInstance(project).findFile(this) }

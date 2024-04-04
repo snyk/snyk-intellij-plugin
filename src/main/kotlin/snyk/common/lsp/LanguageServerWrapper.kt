@@ -11,6 +11,7 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.toLanguageServerURL
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -139,7 +140,7 @@ class LanguageServerWrapper(
 
     fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
         val normalizedRoots = getTrustedContentRoots(project)
-        return normalizedRoots.map { WorkspaceFolder(it.url, it.name) }.toSet()
+        return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURL(), it.name) }.toSet()
     }
 
     private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
