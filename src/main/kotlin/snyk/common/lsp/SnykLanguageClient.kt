@@ -19,6 +19,7 @@ import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.getOpenedProjects
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.util.WaitFor
 import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
@@ -47,6 +48,7 @@ import org.eclipse.lsp4j.WorkDoneProgressNotification
 import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
+import org.jetbrains.kotlin.idea.util.application.executeOnPooledThread
 import snyk.common.ProductType
 import snyk.common.SnykCodeFileIssueComparator
 import snyk.trust.WorkspaceTrustService
@@ -374,7 +376,13 @@ class SnykLanguageClient() : LanguageClient {
         when (messageParams?.type) {
             MessageType.Error -> SnykBalloonNotificationHelper.showError(messageParams.message, project)
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
-            MessageType.Info -> SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
+            MessageType.Info -> {
+                val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
+                Thread.startVirtualThread {
+                    Thread.sleep(5000)
+                    notification.expire()
+                }
+            }
             MessageType.Log -> logger.info(messageParams.message)
             null -> {}
         }
@@ -393,7 +401,7 @@ class SnykLanguageClient() : LanguageClient {
 
         val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project, *actions)
         val messageActionItem = showMessageRequestFutures.poll(10, TimeUnit.SECONDS)
-        notification.hideBalloon()
+        notification.expire()
         return CompletableFuture.completedFuture(messageActionItem ?: MessageActionItem(""))
     }
 
