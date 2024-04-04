@@ -36,7 +36,7 @@ class UtilsKtTest {
 
         assertEquals("file:///$path", virtualFile.toLanguageServerURL())
 
-        uri = "file://$path"
+        uri = "file:///$path"
         virtualFile = mockk<VirtualFile>()
         every { virtualFile.url } returns uri
 
