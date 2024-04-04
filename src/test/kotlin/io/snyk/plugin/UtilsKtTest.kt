@@ -9,6 +9,7 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.apache.commons.lang3.SystemProperties
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
@@ -19,6 +20,11 @@ class UtilsKtTest {
         unmockkAll()
         mockkStatic(SystemProperties::class)
         every { SystemProperties.getOsName() } returns "Windows"
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
