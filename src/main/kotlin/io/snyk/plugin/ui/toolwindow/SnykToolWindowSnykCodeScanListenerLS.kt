@@ -40,8 +40,10 @@ class SnykToolWindowSnykCodeScanListenerLS(
 
     override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
         ApplicationManager.getApplication().invokeLater {
+            this.snykToolWindowPanel.navigateToSourceEnabled = false
             displaySnykCodeResults(snykCodeResults)
             refreshAnnotationsForOpenFiles(project)
+            this.snykToolWindowPanel.navigateToSourceEnabled = true
         }
     }
 
