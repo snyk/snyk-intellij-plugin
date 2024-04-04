@@ -13,7 +13,12 @@ fun getJBCefBrowserComponentIfSupported (html: String, loadHandlerGenerator: (jb
     }
     val cefClient = JBCefApp.getInstance().createClient()
     cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
-    val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(false).build()
+    val jbCefBrowser = JBCefBrowserBuilder().
+        setClient(cefClient).
+        setEnableOpenDevToolsMenuItem(false).
+        setMouseWheelEventEnable(true).
+        build()
+    jbCefBrowser.setOpenLinksInExternalBrowser(true)
 
     val loadHandler = loadHandlerGenerator(jbCefBrowser)
     cefClient.addLoadHandler(loadHandler, jbCefBrowser.cefBrowser)

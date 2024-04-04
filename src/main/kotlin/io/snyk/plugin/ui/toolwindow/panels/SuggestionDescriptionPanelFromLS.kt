@@ -56,12 +56,18 @@ class SuggestionDescriptionPanelFromLS(
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
                 SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
             } else {
-                val panel = JPanel()
-                panel.add(jbCefBrowserComponent, BorderLayout())
+                val lastRowToAddSpacer = 5
+                val panel = JPanel(
+                    GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(0, 10, 20, 10), -1, 20)
+                ).apply {
+                    this.add(jbCefBrowserComponent, panelGridConstraints(1))
+                }
                 this.add(
-                    wrapWithScrollPane(panel),
+                    panel,
                     BorderLayout.CENTER
                 )
+                this.add(panel)
+                // TODO: bottom panel
             }
         } else {
             createUI()
