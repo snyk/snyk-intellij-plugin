@@ -17,6 +17,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
@@ -75,7 +76,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                         .create()
 
                     val params = CodeActionParams(
-                        TextDocumentIdentifier(psiFile.virtualFile.url),
+                        TextDocumentIdentifier(psiFile.virtualFile.toLanguageServerURL()),
                         issue.range,
                         CodeActionContext(emptyList())
                     )

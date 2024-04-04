@@ -20,6 +20,7 @@ import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
+import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import snyk.common.lsp.LanguageServerWrapper
@@ -94,7 +95,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
                 "Snyk: forwarding save event to Language Server"
             ) {
                 override fun run(indicator: ProgressIndicator) {
-                    val param = DidSaveTextDocumentParams(TextDocumentIdentifier(file.url), file.readText())
+                    val param = DidSaveTextDocumentParams(TextDocumentIdentifier(file.toLanguageServerURL()), file.readText())
                     languageServer.textDocumentService.didSave(param)
                 }
             })
