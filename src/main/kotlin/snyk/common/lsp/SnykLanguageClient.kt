@@ -47,6 +47,7 @@ import org.eclipse.lsp4j.WorkDoneProgressNotification
 import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
+import org.jetbrains.kotlin.idea.util.application.executeOnPooledThread
 import snyk.common.ProductType
 import snyk.common.SnykCodeFileIssueComparator
 import snyk.trust.WorkspaceTrustService
@@ -376,11 +377,12 @@ class SnykLanguageClient() : LanguageClient {
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
-                Thread.startVirtualThread {
+                executeOnPooledThread {
                     Thread.sleep(5000)
                     notification.expire()
                 }
             }
+
             MessageType.Log -> logger.info(messageParams.message)
             null -> {}
         }
