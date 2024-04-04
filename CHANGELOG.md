@@ -8,6 +8,7 @@
 
 ### Fixed
 - (LS Preview) don't navigate to source of selected code tree node after scan
+- (LS Preview) support Windows drive letters in file paths
 
 ## [2.7.12]
 ### Added
