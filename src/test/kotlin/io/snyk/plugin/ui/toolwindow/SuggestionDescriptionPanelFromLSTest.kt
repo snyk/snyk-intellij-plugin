@@ -7,13 +7,13 @@ import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.ui.jcef.getJBCefBrowserComponentIfSupported
+import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
@@ -98,8 +98,8 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     fun `test createUI should show nothing if feature flag is enabled but JCEF is not`() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
-        mockkStatic("io.snyk.plugin.ui.jcef.UtilsKt")
-        every { getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null
+        mockkObject(JCEFUtils)
+        every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
         every { issue.additionalData.details } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
@@ -116,8 +116,8 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
-        mockkStatic("io.snyk.plugin.ui.jcef.UtilsKt")
-        every { getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns mockJBCefBrowserComponent
+        mockkObject(JCEFUtils)
+        every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns mockJBCefBrowserComponent
 
         every { issue.additionalData.details } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)

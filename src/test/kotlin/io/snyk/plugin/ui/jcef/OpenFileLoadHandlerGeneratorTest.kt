@@ -4,12 +4,9 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import io.mockk.every
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.toVirtualFile
 import org.junit.Test
 import snyk.code.annotator.SnykCodeAnnotator
 import java.nio.file.Paths
@@ -41,9 +38,6 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase(){
 
     @Test
     fun `test openFile should navigate to source`() {
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { fileName.toVirtualFile() } returns psiFile.virtualFile
-
         val res = generator.openFile("$fileName:1:2:3:4")
         assertNotNull(res)
     }

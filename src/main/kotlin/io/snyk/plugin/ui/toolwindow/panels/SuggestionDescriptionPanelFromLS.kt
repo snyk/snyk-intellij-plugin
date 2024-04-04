@@ -18,7 +18,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
-import io.snyk.plugin.ui.jcef.getJBCefBrowserComponentIfSupported
+import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -50,7 +50,7 @@ class SuggestionDescriptionPanelFromLS(
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
             val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykCodeFile)
-            val jbCefBrowserComponent  = getJBCefBrowserComponentIfSupported(issue.additionalData.details, { openFileLoadHandlerGenerator.generate(it) })
+            val jbCefBrowserComponent  = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.additionalData.details, { openFileLoadHandlerGenerator.generate(it) })
             if (jbCefBrowserComponent == null) {
                 val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
@@ -60,14 +60,16 @@ class SuggestionDescriptionPanelFromLS(
                 val panel = JPanel(
                     GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(0, 10, 20, 10), -1, 20)
                 ).apply {
-                    this.add(jbCefBrowserComponent, panelGridConstraints(1))
+                    this.add(
+                        jbCefBrowserComponent,
+                        panelGridConstraints(1)
+                    )
                 }
                 this.add(
-                    panel,
+                    wrapWithScrollPane(panel),
                     BorderLayout.CENTER
                 )
                 this.add(panel)
-                // TODO: bottom panel
             }
         } else {
             createUI()

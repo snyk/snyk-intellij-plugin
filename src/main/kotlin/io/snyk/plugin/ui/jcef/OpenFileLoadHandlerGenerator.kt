@@ -6,24 +6,22 @@ import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.toVirtualFile
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 
 class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
     private val project = snykCodeFile.project
+    private val virtualFile = snykCodeFile.virtualFile
 
     fun openFile(value: String): JBCefJSQuery.Response {
         var values = value.replace("\n", "").split(":")
-        var filePath = values[0]
         var startLine = values[1].toInt()
         var endLine = values[2].toInt()
         var startCharacter = values[3].toInt()
         var endCharacter = values[4].toInt()
 
         ApplicationManager.getApplication().invokeLater {
-            val virtualFile = filePath.toVirtualFile()
             val document = virtualFile.getDocument()
             val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
             val startOffset = startLineStartOffset + (startCharacter)
