@@ -1,13 +1,9 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBTabbedPane
-import com.intellij.ui.jcef.JBCefApp
-import com.intellij.ui.jcef.JBCefBrowserBuilder
-import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
@@ -21,13 +17,11 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
-import io.snyk.plugin.ui.getJBCefBrowserIfSupported
+import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
+import io.snyk.plugin.ui.jcef.getJBCefBrowserComponentIfSupported
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
-import org.cef.browser.CefBrowser
-import org.cef.browser.CefFrame
-import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ScanIssue
 import java.awt.BorderLayout
@@ -55,79 +49,23 @@ class SuggestionDescriptionPanelFromLS(
 
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
-            val (jbCefBrowser, jbCefBrowserUrl)  = getJBCefBrowserIfSupported()
-            if (jbCefBrowser == null) {
+            val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykCodeFile)
+            val jbCefBrowserComponent  = getJBCefBrowserComponentIfSupported(issue.additionalData.details, { openFileLoadHandlerGenerator.generate(it) })
+            if (jbCefBrowserComponent == null) {
                 val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
                 SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
             } else {
-                var cefClient = jbCefBrowser.jbCefClient
-                val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
-
-                val loadHandler = object : CefLoadHandlerAdapter() {
-                    override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
-                        if (frame.isMain) {
-                            cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
-                            openFileQuery.addHandler { openFile(it) }
-
-                            browser.executeJavaScript(
-                                "window.openFileQuery = function(value) {" +
-                                    openFileQuery.inject("value") +
-                                    "};",
-                                browser.url, 0
-                            );
-
-                            browser.executeJavaScript(
-                                """
-                const dataFlowFilePaths = document.getElementsByClassName('data-flow-filepath')
-                for (let i = 0; i < dataFlowFilePaths.length; i++) {
-                    const dataFlowFilePath = dataFlowFilePaths[i]
-                    dataFlowFilePath.addEventListener('click', function (e) {
-                      e.preventDefault()
-                      window.openFileQuery(dataFlowFilePath.getAttribute("file-path")+":"+dataFlowFilePath.getAttribute("start-line")+":"+dataFlowFilePath.getAttribute("end-line")+":"+dataFlowFilePath.getAttribute("start-character")+":"+dataFlowFilePath.getAttribute("end-character"));
-                    });
-                }""",
-                                browser.url, 0
-                            );
-                        }
-                    }
-                }
-                cefClient.addLoadHandler(loadHandler, jbCefBrowser.cefBrowser)
-
                 val panel = JPanel()
-                panel.add(jbCefBrowser.component, BorderLayout())
+                panel.add(jbCefBrowserComponent, BorderLayout())
                 this.add(
                     wrapWithScrollPane(panel),
                     BorderLayout.CENTER
                 )
-
-                jbCefBrowser.loadHTML(issue.additionalData.details, jbCefBrowserUrl)
             }
         } else {
             createUI()
         }
-    }
-
-    fun openFile(value: String): JBCefJSQuery.Response {
-        var values = value.replace("\n", "").split(":")
-        var filePath = values[0]
-        var startLine = values[1].toInt()
-        var endLine = values[2].toInt()
-        var startCharacter = values[3].toInt()
-        var endCharacter = values[4].toInt()
-
-        ApplicationManager.getApplication().invokeLater {
-            val virtualFile = filePath.toVirtualFile()
-            val document = virtualFile.getDocument()
-            val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
-            val startOffset = startLineStartOffset + (startCharacter)
-            val endLineStartOffset = document?.getLineStartOffset(endLine) ?: 0
-            val endOffset = endLineStartOffset + endCharacter - 1
-
-            navigateToSource(project, virtualFile, startOffset, endOffset)
-        }
-
-        return JBCefJSQuery.Response("success")
     }
 
     override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(

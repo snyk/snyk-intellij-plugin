@@ -5,6 +5,7 @@
 ### Added
 - Render Snyk Code vulnerabilities using HTML served by the Language Server behind a feature flag.
 - (LS Preview) added timeout to commands executed via code lenses
+- Add interaction for navigating to the source file from the HTML Data Flow panel.
 
 ### Fixed
 - (LS Preview) don't navigate to source of selected code tree node after scan

@@ -5,7 +5,6 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -14,8 +13,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.toVirtualFile
-import io.snyk.plugin.ui.getJBCefBrowserIfSupported
+import io.snyk.plugin.ui.jcef.getJBCefBrowserComponentIfSupported
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
@@ -29,7 +27,7 @@ import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ExampleCommitFix
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
-import javax.swing.JPanel
+import javax.swing.JLabel
 
 class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     private lateinit var cut: SuggestionDescriptionPanelFromLS
@@ -100,8 +98,8 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     fun `test createUI should show nothing if feature flag is enabled but JCEF is not`() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
-        mockkStatic("io.snyk.plugin.ui.UIUtilsKt")
-        every { getJBCefBrowserIfSupported() } returns (null to "")
+        mockkStatic("io.snyk.plugin.ui.jcef.UtilsKt")
+        every { getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
         every { issue.additionalData.details } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
@@ -117,29 +115,17 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     fun `test createUI should build panel with HTML from details if feature flag is enabled`() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
-        val mockJBCefBrowser = mockk<JBCefBrowser>()
-        every { mockJBCefBrowser.component } returns JPanel()
-        every { mockJBCefBrowser.loadHTML(eq("<html>HTML message</html>"), eq("http://foo/bar")) } returns
-        mockkStatic("io.snyk.plugin.ui.UIUtilsKt")
-        every { getJBCefBrowserIfSupported() } returns (mockJBCefBrowser to "http://foo/bar")
+        val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
+        mockkStatic("io.snyk.plugin.ui.jcef.UtilsKt")
+        every { getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns mockJBCefBrowserComponent
 
         every { issue.additionalData.details } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
-    }
 
-
-    @Test
-    fun `test openFile should navigate to source`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = false
-
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { fileName.toVirtualFile() } returns psiFile.virtualFile
-
-        cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
-        val res = cut.openFile("$fileName:1:2:3:4")
-        assertNotNull(res)
+        val actualBrowser = getJLabelByText(cut, "<html>HTML message</html>")
+        assertNotNull(actualBrowser)
     }
 }
