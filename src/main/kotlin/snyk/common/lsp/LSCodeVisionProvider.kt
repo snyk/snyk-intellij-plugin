@@ -18,6 +18,7 @@ import com.intellij.psi.PsiDocumentManager
 import icons.SnykIcons
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.CodeLens
 import org.eclipse.lsp4j.CodeLensParams
 import org.eclipse.lsp4j.ExecuteCommandParams
@@ -54,7 +55,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
             val document = editor.document
             val file = PsiDocumentManager.getInstance(project).getPsiFile(document)
                 ?: return@compute CodeVisionState.READY_EMPTY
-            val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.url))
+            val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.toLanguageServerURL()))
             val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
             val codeLenses = try {
                 LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)

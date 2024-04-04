@@ -180,12 +180,19 @@ class SnykLanguageClient() : LanguageClient {
      * containing that content root, we need to notify all of them.
      */
     private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykCodeScanListenerLS>> {
-        return getOpenedProjects().filter {
-            it.getContentRootVirtualFiles().map { virtualFile -> virtualFile.path }.contains(snykScan.folderPath)
-        }.mapNotNull { p ->
-            getSyncPublisher(p, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)?.let { Pair(p, it) }
-        }.toSet()
+        return getProjectsForFolderPath(snykScan.folderPath)
+            .mapNotNull { p ->
+                getSyncPublisher(p, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
+                    Pair(p, scanListenerLS)
+                }
+            }.toSet()
     }
+
+    private fun getProjectsForFolderPath(folderPath: String) =
+        getOpenedProjects().filter {
+            it.getContentRootVirtualFiles()
+                .contains(folderPath.toVirtualFile())
+        }
 
     @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
     private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
