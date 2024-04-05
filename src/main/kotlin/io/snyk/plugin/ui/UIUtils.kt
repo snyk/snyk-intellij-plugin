@@ -376,14 +376,3 @@ fun expandTreeNodeRecursively(tree: JTree, node: DefaultMutableTreeNode) {
         expandTreeNodeRecursively(tree, it as DefaultMutableTreeNode)
     }
 }
-
-//JComponent, String
-fun getJBCefBrowserIfSupported () : Pair<JBCefBrowser?, String> {
-    if (!JBCefApp.isSupported()) {
-        return null to ""
-    }
-    val cefClient = JBCefApp.getInstance().createClient()
-    val jbCefBrowser = JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true).build()
-
-    return jbCefBrowser to jbCefBrowser.cefBrowser.url
-}

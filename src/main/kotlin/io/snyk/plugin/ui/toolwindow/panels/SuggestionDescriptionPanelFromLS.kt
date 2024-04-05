@@ -17,7 +17,8 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
-import io.snyk.plugin.ui.getJBCefBrowserIfSupported
+import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
+import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -48,20 +49,27 @@ class SuggestionDescriptionPanelFromLS(
 
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
-            val (jbCefBrowser, jbCefBrowserUrl)  = getJBCefBrowserIfSupported()
-            if (jbCefBrowser == null) {
+            val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykCodeFile)
+            val jbCefBrowserComponent  = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.additionalData.details, { openFileLoadHandlerGenerator.generate(it) })
+            if (jbCefBrowserComponent == null) {
                 val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
                 SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
             } else {
-                val panel = JPanel()
-                panel.add(jbCefBrowser.component, BorderLayout())
+                val lastRowToAddSpacer = 5
+                val panel = JPanel(
+                    GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(0, 10, 20, 10), -1, 20)
+                ).apply {
+                    this.add(
+                        jbCefBrowserComponent,
+                        panelGridConstraints(1)
+                    )
+                }
                 this.add(
                     wrapWithScrollPane(panel),
                     BorderLayout.CENTER
                 )
-
-                jbCefBrowser.loadHTML(issue.additionalData.details, jbCefBrowserUrl)
+                this.add(panel)
             }
         } else {
             createUI()
