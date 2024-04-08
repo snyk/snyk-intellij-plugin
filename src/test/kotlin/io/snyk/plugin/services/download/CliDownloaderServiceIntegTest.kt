@@ -18,8 +18,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import junit.framework.TestCase
-import junit.framework.TestCase.*
 import org.apache.http.HttpStatus
 import org.junit.Assert.assertNotEquals
 import snyk.common.lsp.LanguageServerWrapper
