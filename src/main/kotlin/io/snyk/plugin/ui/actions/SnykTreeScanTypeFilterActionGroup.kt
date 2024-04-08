@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.actions
 
 import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
@@ -18,6 +19,10 @@ import snyk.common.ProductType
  * Build Snyk tree Scan Types filter actions.
  */
 class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
+
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.BGT
+    }
 
     private val settings
         get() = pluginSettings()
@@ -46,6 +51,10 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
             if (scanTypeAvailable) "" else " (disabled in Settings)"
         }
         return object : ToggleAction(text) {
+
+            override fun getActionUpdateThread(): ActionUpdateThread {
+                return ActionUpdateThread.BGT
+            }
 
             override fun isSelected(e: AnActionEvent): Boolean = resultsTreeFiltering
 
