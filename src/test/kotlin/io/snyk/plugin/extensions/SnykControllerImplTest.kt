@@ -40,11 +40,7 @@ class SnykControllerImplTest : LightPlatformTestCase() {
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic("snyk.trust.TrustedProjectsKt")
         downloaderServiceMock = spyk(SnykCliDownloaderService())
-        every { downloaderServiceMock.requestLatestReleasesInformation() } returns LatestReleaseInfo(
-            "http://testUrl",
-            "testReleaseInfo",
-            "testTag"
-        )
+        every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true

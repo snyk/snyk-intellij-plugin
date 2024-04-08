@@ -50,21 +50,12 @@ class CliDownloaderTest {
     }
 
     @Test
-    fun `should download cli information from base url`() {
+    fun `should download protocol version from base url`() {
         assertEquals(
-            "${CliDownloader.BASE_URL}/cli/latest/${Platform.current().snykWrapperFileName}",
-            CliDownloader.LATEST_RELEASE_DOWNLOAD_URL
+            "${CliDownloader.BASE_URL}/cli/latest/ls-protocol-version-${pluginSettings().requiredLsProtocolVersion}",
+            CliDownloader.LATEST_RELEASES_URL
         )
     }
-
-    @Test
-    fun `should download sha256 from base url`() {
-        assertEquals(
-            "${CliDownloader.BASE_URL}/cli/latest/${Platform.current().snykWrapperFileName}.sha256",
-            CliDownloader.SHA256_DOWNLOAD_URL
-        )
-    }
-
     @Test
     fun `should not delete file if checksum verification fails`() {
         val testFile = Files.createTempFile("test", "test").toFile()

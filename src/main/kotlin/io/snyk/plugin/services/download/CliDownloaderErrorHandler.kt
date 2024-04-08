@@ -25,17 +25,18 @@ class CliDownloaderErrorHandler {
             })
     }
 
-    fun handleIOException(exception: IOException, indicator: ProgressIndicator, project: Project) {
-        retryDownload(project, indicator, getNetworkErrorNotificationMessage(exception))
+    fun handleIOException(exception: IOException, cliVersion: String, indicator: ProgressIndicator, project: Project) {
+        retryDownload(project, cliVersion, indicator, getNetworkErrorNotificationMessage(exception))
     }
 
-    private fun retryDownload(project: Project, indicator: ProgressIndicator, message: String) {
+    private fun retryDownload(project: Project, cliVersion: String, indicator: ProgressIndicator, message: String) {
+        if (cliVersion.isEmpty()) return
         runBackgroundableTask("Retry Snyk CLI Download", project, false) {
-            val cliDownloaderService = project.getService(SnykCliDownloaderService::class.java)
+            val cliDownloaderService = getSnykCliDownloaderService()
             try {
                 // not using the service here to not causing an endless recursion (the service triggers a retry)
                 val downloader = cliDownloaderService.downloader
-                downloader.downloadFile(getCliFile(), downloader.expectedSha(), indicator)
+                downloader.downloadFile(getCliFile(), cliVersion, indicator)
             } catch (throwable: Throwable) { // we must catch throwable as IntelliJ could throw AssertionError
                 // IntelliJ throws an exception if we log an error, and in this case it is just the retry that failed
                 logger<CliDownloaderErrorHandler>().warn("Retry of downloading the Snyk CLI failed.", throwable)
@@ -62,10 +63,11 @@ class CliDownloaderErrorHandler {
 
     fun handleChecksumVerificationException(
         e: ChecksumVerificationException,
+        cliVersion: String,
         indicator: ProgressIndicator,
         project: Project
     ) {
-        retryDownload(project, indicator, getChecksumFailedNotificationMessage(e))
+        retryDownload(project, cliVersion, indicator, getChecksumFailedNotificationMessage(e))
     }
 
     fun getChecksumFailedNotificationMessage(exception: ChecksumVerificationException) =

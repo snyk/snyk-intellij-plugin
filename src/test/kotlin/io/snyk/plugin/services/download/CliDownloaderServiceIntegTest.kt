@@ -19,6 +19,7 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.apache.http.HttpStatus
+import org.junit.Assert.assertNotEquals
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.net.SocketTimeoutException
@@ -67,10 +68,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val latestReleaseInfo = project.service<SnykCliDownloaderService>().requestLatestReleasesInformation()
 
         assertNotNull(latestReleaseInfo)
-
-        assertTrue(latestReleaseInfo!!.name.isNotEmpty())
-        assertTrue(latestReleaseInfo.url.isNotEmpty())
-        assertTrue(latestReleaseInfo.tagName.isNotEmpty())
+        assertNotEquals("", latestReleaseInfo)
     }
 
     /**
@@ -97,14 +95,14 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         mockCliDownload()
 
         every { downloader.calculateSha256(any()) } returns "wrong-sha"
-        justRun { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
+        justRun { errorHandler.handleChecksumVerificationException(any(), any(), any(), any()) }
         // this is needed, but I don't know why the config is not picked up from setUp()
         every { pluginSettings() } returns SnykApplicationSettingsStateService()
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify(exactly = 1) { downloader.verifyChecksum(any(), any()) }
-        verify(exactly = 1) { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
+        verify(exactly = 1) { errorHandler.handleChecksumVerificationException(any(), any(), any(), any()) }
     }
 
     private fun ensureCliFileExistent() {
@@ -117,15 +115,16 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val indicator = EmptyProgressIndicator()
         val exceptionMessage = "Read Timed Out"
         val ioException = SocketTimeoutException(exceptionMessage)
+        val version = "testVersion"
 
         every { downloader.downloadFile(any(), any(), any()) } throws ioException
-        justRun { errorHandler.handleIOException(ioException, indicator, project) }
+        justRun { errorHandler.handleIOException(ioException, version, indicator, project) }
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify {
             downloader.downloadFile(any(), any(), any())
-            errorHandler.handleIOException(ioException, indicator, project)
+            errorHandler.handleIOException(ioException, version, indicator, project)
         }
     }
 
@@ -179,9 +178,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val settings = pluginSettings()
         settings.lastCheckDate = null
         ensureCliFileExistent()
-        every { cutSpy.requestLatestReleasesInformation() } returns LatestReleaseInfo(
-            "http://testUrl", "testReleaseInfo", "testTag"
-        )
+        every { cutSpy.requestLatestReleasesInformation() } returns "testTag"
         justRun { cutSpy.downloadLatestRelease(any(), any()) }
 
         cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)

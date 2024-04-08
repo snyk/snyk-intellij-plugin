@@ -7,7 +7,6 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.HttpRequests
-import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
@@ -44,20 +43,14 @@ class SnykCliDownloaderService {
         currentProgressIndicator = null
     }
 
-    fun requestLatestReleasesInformation(): LatestReleaseInfo? {
+    fun requestLatestReleasesInformation(): String? {
         if (!pluginSettings().manageBinariesAutomatically) return null
-        try {
-            val result = createRequest(CliDownloader.LATEST_RELEASES_URL).readString()
-            val response = "v" + result.removeSuffix("\n")
-            latestReleaseInfo = LatestReleaseInfo(
-                tagName = response,
-                url = "https://static.snyk.io/cli/latest/${Platform.current().snykWrapperFileName}",
-                name = response
-            )
+        return try {
+            createRequest(CliDownloader.LATEST_RELEASES_URL).readString()
         } catch (ignore: Exception) {
+            logger<SnykCliDownloaderService>().warn(ignore)
+            null
         }
-
-        return latestReleaseInfo
     }
 
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
@@ -66,16 +59,16 @@ class SnykCliDownloaderService {
         indicator.isIndeterminate = true
         var succeeded = false
         val cliFile = getCliFile()
+        val latestRelease: String
         try {
-            val latestRelease = requestLatestReleasesInformation()
+            latestRelease = requestLatestReleasesInformation() ?: ""
 
-            if (latestRelease == null) {
+            if (latestRelease.isEmpty()) {
                 val failedMsg = "Failed to fetch the latest Snyk CLI release info. " +
                     "Please retry in a few minutes or contact support if the issue persists."
                 errorHandler.showErrorWithRetryAndContactAction(failedMsg, project)
                 return
             }
-            val cliVersion = latestRelease.tagName
 
             indicator.text = "Downloading latest Snyk CLI release..."
             indicator.checkCanceled()
@@ -90,16 +83,16 @@ class SnykCliDownloaderService {
                             .warn("Language server shutdown for download took too long, couldn't shutdown", e)
                     }
                 }
-                downloader.downloadFile(cliFile, downloader.expectedSha(), indicator)
-                pluginSettings().cliVersion = cliVersionNumbers(cliVersion)
+                downloader.downloadFile(cliFile, latestRelease, indicator)
+                pluginSettings().cliVersion = cliVersionNumbers(latestRelease)
                 pluginSettings().lastCheckDate = Date()
                 succeeded = true
             } catch (e: HttpRequests.HttpStatusException) {
                 errorHandler.handleHttpStatusException(e, project)
             } catch (e: IOException) {
-                errorHandler.handleIOException(e, indicator, project)
+                errorHandler.handleIOException(e, latestRelease, indicator, project)
             } catch (e: ChecksumVerificationException) {
-                errorHandler.handleChecksumVerificationException(e, indicator, project)
+                errorHandler.handleChecksumVerificationException(e, latestRelease, indicator, project)
             } finally {
                 if (succeeded) languageServerWrapper.ensureLanguageServerInitialized() else stopCliDownload()
             }
@@ -117,12 +110,11 @@ class SnykCliDownloaderService {
 
             val settings = pluginSettings()
 
-            if (latestReleaseInfo?.tagName != null &&
-                latestReleaseInfo.tagName.isNotEmpty() &&
-                isNewVersionAvailable(settings.cliVersion, cliVersionNumbers(latestReleaseInfo.tagName))
+            if (
+                !latestReleaseInfo.isNullOrEmpty() &&
+                isNewVersionAvailable(settings.cliVersion, cliVersionNumbers(latestReleaseInfo))
             ) {
                 downloadLatestRelease(indicator, project)
-
                 settings.lastCheckDate = Date()
             }
         }

@@ -18,11 +18,7 @@ class CliDownloader {
         val BASE_URL: String
             get() = pluginSettings().cliBaseDownloadURL
         val LATEST_RELEASES_URL: String
-            get() = "$BASE_URL/cli/latest/version"
-        val LATEST_RELEASE_DOWNLOAD_URL: String
-            get() = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}"
-        val SHA256_DOWNLOAD_URL: String
-            get() = "$BASE_URL/cli/latest/${Platform.current().snykWrapperFileName}.sha256"
+            get() = "$BASE_URL/cli/latest/ls-protocol-version-"+ pluginSettings().requiredLsProtocolVersion
     }
 
     fun calculateSha256(bytes: ByteArray): String {
@@ -39,7 +35,7 @@ class CliDownloader {
         }
     }
 
-    fun downloadFile(cliFile: File, expectedSha: String, indicator: ProgressIndicator): File {
+    fun downloadFile(cliFile: File, cliVersion: String, indicator: ProgressIndicator): File {
         indicator.checkCanceled()
         val downloadFile = try {
             File.createTempFile(cliFile.name, ".download", cliFile.parentFile)
@@ -54,7 +50,10 @@ class CliDownloader {
             downloadFile.deleteOnExit()
 
             indicator.checkCanceled()
-            createRequest(LATEST_RELEASE_DOWNLOAD_URL).saveToFile(downloadFile, indicator)
+            val downloadURL = getDownloadURL(cliVersion)
+            createRequest(downloadURL).saveToFile(downloadFile, indicator)
+
+            val expectedSha = expectedSha(cliVersion)
 
             indicator.checkCanceled()
             verifyChecksum(expectedSha, downloadFile.readBytes())
@@ -83,8 +82,11 @@ class CliDownloader {
         }
     }
 
-    fun expectedSha(): String {
-        val request = createRequest(SHA256_DOWNLOAD_URL)
+    fun expectedSha(cliVersion: String): String {
+        val downloadURL = "${getDownloadURL(cliVersion)}.sha256"
+        val request = createRequest(downloadURL)
         return request.readString().split(" ")[0]
     }
+
+    private fun getDownloadURL(cliVersion: String) = "$BASE_URL/cli/v$cliVersion/${Platform.current().snykWrapperFileName}"
 }
