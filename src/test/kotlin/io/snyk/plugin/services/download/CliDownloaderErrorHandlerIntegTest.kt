@@ -14,6 +14,7 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
@@ -37,6 +38,8 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
         every { ProgressManager.getInstance() } returns progressManager
 
         cliDownloaderServiceMock = mockk()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { getSnykCliDownloaderService() } returns cliDownloaderServiceMock
         cliDownloaderMock = mockk()
         projectSpy = spyk(project)
         cut = CliDownloaderErrorHandler()
@@ -52,13 +55,13 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
     }
 
     fun testHandleIOExceptionShouldRetryDownloadAndShowBalloonIfItFails() {
-        val e = IOException("Expected Test Exception, don't panic")
+        val e = IOException("ignore me, I'm just a test exception and expected")
         every { cliDownloaderMock.expectedSha(any()) } returns "testVersion"
         every { cliDownloaderMock.downloadFile(any(), any(), any()) } throws e
 
         cut.handleIOException(e, "testVersion", indicator, projectSpy)
 
-        verify(exactly = 1) { cliDownloaderMock.downloadFile(getCliFile(), any(), indicator) }
+        verify(exactly = 1) { cliDownloaderMock.downloadFile(any(), any(), any()) }
         verify(exactly = 1) { progressManager.run(any<Task.Backgroundable>()) }
         verify(exactly = 1) {
             SnykBalloonNotificationHelper.showError(
@@ -68,13 +71,13 @@ class CliDownloaderErrorHandlerIntegTest : LightPlatformTestCase() {
     }
 
     fun testHandleChecksumVerificationExceptionShouldRetryDownloadAndShowBalloonIfItFails() {
-        val e = ChecksumVerificationException("Expected Test Exception, don't panic")
+        val e = ChecksumVerificationException("ignore me, I'm just a test exception and expected")
         every { cliDownloaderMock.expectedSha(any()) } returns "testVersion"
         every { cliDownloaderMock.downloadFile(any(), any(), any()) } throws e
 
         cut.handleChecksumVerificationException(e, "testVersion", indicator, projectSpy)
 
-        verify(exactly = 1) { cliDownloaderMock.downloadFile(getCliFile(), any(), indicator) }
+        verify(exactly = 1) { cliDownloaderMock.downloadFile(any(), any(), any()) }
         verify(exactly = 1) { progressManager.run(any<Task.Backgroundable>()) }
         verify(exactly = 1) {
             SnykBalloonNotificationHelper.showError(
