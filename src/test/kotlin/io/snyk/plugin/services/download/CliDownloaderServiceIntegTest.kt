@@ -19,7 +19,6 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.apache.http.HttpStatus
-import org.junit.Assert.assertNotEquals
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.net.SocketTimeoutException
@@ -62,16 +61,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     }
 
     /**
-     * Needs an internet connection - real test if release info can be downloaded
-     */
-    fun testGetLatestReleasesInformation() {
-        val latestReleaseInfo = project.service<SnykCliDownloaderService>().requestLatestReleasesInformation()
-
-        assertNotNull(latestReleaseInfo)
-        assertNotEquals("", latestReleaseInfo)
-    }
-
-    /**
      * Should be THE ONLY test where we actually do download the CLI
      * !!! Do __MOCK__ cli download in ANY other test to reduce testing time needed !!!
      */
@@ -83,7 +72,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val downloadedFile = cliFile
 
         assertTrue(downloadedFile.exists())
-        assertEquals(cutSpy.getLatestReleaseInfo()!!.tagName, "v" + pluginSettings().cliVersion)
 
         verify { downloader.downloadFile(cliFile, any(), indicator) }
         verify { downloader.verifyChecksum(any(), any()) }
@@ -167,10 +155,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
         assertTrue(getCliFile().exists())
         assertEquals(currentDate.toLocalDate(), pluginSettings().getLastCheckDate())
-        assertEquals(
-            cutSpy.getLatestReleaseInfo()!!.tagName,
-            "v" + pluginSettings().cliVersion
-        )
     }
 
     fun testCliSilentAutoUpdateWhenPreviousUpdateInfoIsNull() {

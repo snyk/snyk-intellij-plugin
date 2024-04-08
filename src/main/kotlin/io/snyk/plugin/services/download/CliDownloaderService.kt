@@ -153,8 +153,6 @@ class SnykCliDownloaderService {
         return checkIsNewVersionAvailable(currentCliVersion!!.split('.'), newCliVersion!!.split('.'))
     }
 
-    fun getLatestReleaseInfo(): LatestReleaseInfo? = this.latestReleaseInfo
-
     /**
      * Clear version number: v1.143.1 => 1.143.1
 
