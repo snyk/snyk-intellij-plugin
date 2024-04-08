@@ -19,7 +19,6 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.apache.http.HttpStatus
-import org.junit.Assert.assertNotEquals
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.net.SocketTimeoutException
