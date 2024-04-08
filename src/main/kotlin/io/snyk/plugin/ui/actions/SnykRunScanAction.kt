@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.actions
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
@@ -39,5 +40,9 @@ class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
                     !settings.pluginFirstRun &&
                     !settings.token.isNullOrEmpty()
         }
+    }
+
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.BGT
     }
 }

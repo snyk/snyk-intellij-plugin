@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.actions
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
@@ -18,5 +19,9 @@ class SnykCleanScanAction : AnAction(AllIcons.Actions.GC), DumbAware {
     override fun update(actionEvent: AnActionEvent) {
         val project = actionEvent.project
         actionEvent.presentation.isEnabled = project != null && !project.isDisposed
+    }
+
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.BGT
     }
 }

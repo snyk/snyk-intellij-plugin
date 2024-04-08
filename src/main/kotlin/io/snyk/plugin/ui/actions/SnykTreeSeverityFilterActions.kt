@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.actions
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import icons.SnykIcons
@@ -14,6 +15,10 @@ import io.snyk.plugin.ui.getDisabledIcon
 abstract class SnykTreeSeverityFilterActionBase(
     private val severity: Severity
 ) : ToggleAction() {
+
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.BGT
+    }
 
     override fun update(e: AnActionEvent) {
         super.update(e)
