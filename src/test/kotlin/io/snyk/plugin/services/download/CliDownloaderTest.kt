@@ -62,6 +62,7 @@ class CliDownloaderTest {
             CliDownloader.LATEST_RELEASES_URL
         )
     }
+
     @Test
     fun `should not delete file if checksum verification fails`() {
         val testFile = Files.createTempFile("test", "test").toFile()

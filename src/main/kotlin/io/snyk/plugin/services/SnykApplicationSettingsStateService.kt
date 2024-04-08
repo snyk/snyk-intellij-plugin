@@ -27,9 +27,9 @@ import java.util.UUID
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
-    var currentLSProtocolVersion: Int? = 0
-    val requiredLsProtocolVersion = 10
+    val requiredLsProtocolVersion = 11
 
+    var currentLSProtocolVersion: Int? = 0
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://static.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
