@@ -7,6 +7,7 @@ import com.intellij.ui.components.JBTabbedPane
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBInsets
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
@@ -17,8 +18,8 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
-import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.JCEFUtils
+import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -28,7 +29,6 @@ import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
-import java.awt.Insets
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -45,12 +45,15 @@ class SuggestionDescriptionPanelFromLS(
     severity = issue.getSeverityAsEnum()
 ) {
     val project = snykCodeFile.project
-    private val unexpectedErrorMessage = "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused.";
+    private val unexpectedErrorMessage =
+        "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
             val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykCodeFile)
-            val jbCefBrowserComponent  = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.additionalData.details, { openFileLoadHandlerGenerator.generate(it) })
+            val jbCefBrowserComponent = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.additionalData.details) {
+                openFileLoadHandlerGenerator.generate(it)
+            }
             if (jbCefBrowserComponent == null) {
                 val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
@@ -58,7 +61,7 @@ class SuggestionDescriptionPanelFromLS(
             } else {
                 val lastRowToAddSpacer = 5
                 val panel = JPanel(
-                    GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(0, 10, 20, 10), -1, 20)
+                    GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20)
                 ).apply {
                     this.add(
                         jbCefBrowserComponent,
@@ -84,11 +87,11 @@ class SuggestionDescriptionPanelFromLS(
     override fun createMainBodyPanel(): Pair<JPanel, Int> {
         val lastRowToAddSpacer = 5
         val panel = JPanel(
-            GridLayoutManager(lastRowToAddSpacer + 1, 1, Insets(0, 10, 20, 10), -1, 20)
+            GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20)
         ).apply {
             this.add(overviewPanel(), panelGridConstraints(2))
 
-            dataFlowPanel()?.let { this.add(it, panelGridConstraints(3)) }
+            dataFlowPanel().let { this.add(it, panelGridConstraints(3)) }
 
             this.add(fixExamplesPanel(), panelGridConstraints(4))
         }
@@ -97,7 +100,7 @@ class SuggestionDescriptionPanelFromLS(
 
     private fun overviewPanel(): JComponent {
         val panel = JPanel()
-        panel.layout = GridLayoutManager(2, 1, Insets(0, 0, 0, 0), -1, -1)
+        panel.layout = GridLayoutManager(2, 1, JBUI.emptyInsets(), -1, -1)
         val label = JLabel("<html>" + getOverviewText() + "</html>").apply {
             this.isOpaque = false
             this.background = UIUtil.getPanelBackground()
@@ -142,11 +145,11 @@ class SuggestionDescriptionPanelFromLS(
         }
     }
 
-    private fun dataFlowPanel(): JPanel? {
+    private fun dataFlowPanel(): JPanel {
         val dataFlow = issue.additionalData.dataFlow
 
         val panel = JPanel()
-        panel.layout = GridLayoutManager(1 + dataFlow.size, 1, Insets(0, 0, 0, 0), -1, 5)
+        panel.layout = GridLayoutManager(1 + dataFlow.size, 1, JBUI.emptyInsets(), -1, 5)
 
         panel.add(
             defaultFontLabel("Data Flow - ${dataFlow.size} step${if (dataFlow.size > 1) "s" else ""}", true),
@@ -163,7 +166,7 @@ class SuggestionDescriptionPanelFromLS(
 
     private fun stepsPanel(dataflow: List<DataFlow>): JPanel {
         val panel = JPanel()
-        panel.layout = GridLayoutManager(dataflow.size, 1, Insets(0, 0, 0, 0), 0, 0)
+        panel.layout = GridLayoutManager(dataflow.size, 1, JBUI.emptyInsets(), 0, 0)
         panel.background = UIUtil.getTextFieldBackground()
 
         val maxFilenameLength = dataflow.asSequence()
@@ -201,7 +204,7 @@ class SuggestionDescriptionPanelFromLS(
         allStepPanels: MutableList<JPanel>
     ): JPanel {
         val stepPanel = JPanel()
-        stepPanel.layout = GridLayoutManager(1, 3, Insets(0, 0, 4, 0), 0, 0)
+        stepPanel.layout = GridLayoutManager(1, 3, JBUI.insetsBottom(4), 0, 0)
         stepPanel.background = UIUtil.getTextFieldBackground()
 
         val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
@@ -256,7 +259,7 @@ class SuggestionDescriptionPanelFromLS(
         val examplesCount = fixes.size.coerceAtMost(3)
 
         val panel = JPanel()
-        panel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0), -1, 5)
+        panel.layout = GridLayoutManager(3, 1, JBUI.emptyInsets(), -1, 5)
 
         panel.add(
             defaultFontLabel("External example fixes", true),
@@ -282,7 +285,7 @@ class SuggestionDescriptionPanelFromLS(
         tabbedPane.font = io.snyk.plugin.ui.getFont(-1, 14, tabbedPane.font)
 
         val tabbedPanel = JPanel()
-        tabbedPanel.layout = GridLayoutManager(1, 1, Insets(10, 0, 0, 0), -1, -1)
+        tabbedPanel.layout = GridLayoutManager(1, 1, JBUI.insetsTop(10), -1, -1)
         tabbedPanel.add(tabbedPane, panelGridConstraints(0))
 
         panel.add(tabbedPanel, panelGridConstraints(2, indent = 1))
@@ -329,7 +332,7 @@ class SuggestionDescriptionPanelFromLS(
         )
 
         val panel = JPanel()
-        panel.layout = GridLayoutManager(rowCount, 1, Insets(0, 0, 0, 0), -1, 0)
+        panel.layout = GridLayoutManager(rowCount, 1, JBUI.emptyInsets(), -1, 0)
         panel.background = baseColor
 
         exampleCommitFix.lines.forEachIndexed { index, exampleLine ->
