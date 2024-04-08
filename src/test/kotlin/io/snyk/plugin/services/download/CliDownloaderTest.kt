@@ -4,7 +4,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.mockCliDownload
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -46,7 +45,14 @@ class CliDownloaderTest {
 
     @Test
     fun `should download version information from base url`() {
-        assertEquals("${CliDownloader.BASE_URL}/cli/latest/version", CliDownloader.LATEST_RELEASES_URL)
+        val expected =
+            "${CliDownloader.BASE_URL}/cli/latest/ls-protocol-version-" +
+                SnykApplicationSettingsStateService().requiredLsProtocolVersion
+
+        assertEquals(
+            expected,
+            CliDownloader.LATEST_RELEASES_URL
+        )
     }
 
     @Test

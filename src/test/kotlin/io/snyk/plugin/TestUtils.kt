@@ -11,8 +11,8 @@ import io.mockk.mockkObject
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.services.download.HttpRequestHelper
+import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import snyk.common.lsp.LanguageServerWrapper
-import java.io.File
 import java.nio.file.Path
 
 fun setupDummyCliFile() {
@@ -50,8 +50,10 @@ fun resetSettings(project: Project?) {
 fun mockCliDownload(): RequestBuilder {
     val requestBuilderMockk = mockk<RequestBuilder>(relaxed = true)
     mockkObject(HttpRequestHelper)
-    every { HttpRequestHelper.createRequest(any()) } returns requestBuilderMockk
-    justRun { requestBuilderMockk.saveToFile(any<File>(), any()) }
+    every { createRequest(any()) } returns requestBuilderMockk
+    // release version
+    every { requestBuilderMockk.readString() } returns "1.2.3"
+    // download
     justRun { requestBuilderMockk.saveToFile(any<Path>(), any()) }
     return requestBuilderMockk
 }

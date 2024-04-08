@@ -83,6 +83,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         mockCliDownload()
 
         every { downloader.calculateSha256(any()) } returns "wrong-sha"
+
         justRun { errorHandler.handleChecksumVerificationException(any(), any(), any(), any()) }
         // this is needed, but I don't know why the config is not picked up from setUp()
         every { pluginSettings() } returns SnykApplicationSettingsStateService()
@@ -100,19 +101,20 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     }
 
     fun testDownloadLatestCliReleaseShouldHandleSocketTimeout() {
+        mockCliDownload()
         val indicator = EmptyProgressIndicator()
         val exceptionMessage = "Read Timed Out"
         val ioException = SocketTimeoutException(exceptionMessage)
-        val version = "testVersion"
-
+        // mocked version response is 1.2.3
+        val cliVersion = "1.2.3"
         every { downloader.downloadFile(any(), any(), any()) } throws ioException
-        justRun { errorHandler.handleIOException(ioException, version, indicator, project) }
+        justRun { errorHandler.handleIOException(ioException, cliVersion, indicator, project) }
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify {
             downloader.downloadFile(any(), any(), any())
-            errorHandler.handleIOException(ioException, version, indicator, project)
+            errorHandler.handleIOException(ioException, cliVersion, indicator, project)
         }
     }
 
@@ -144,10 +146,11 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     fun testCliSilentAutoUpdate() {
         val currentDate = LocalDateTime.now()
 
-        pluginSettings().cliVersion = "1.342.2"
+        pluginSettings().cliVersion = "1.2.2"
         pluginSettings().setLastCheckDate(currentDate.minusDays(5))
 
         ensureCliFileExistent()
+        mockCliDownload()
 
         every { downloader.downloadFile(any(), any(), any()) } returns cliFile
 

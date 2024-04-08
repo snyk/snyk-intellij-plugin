@@ -1,6 +1,5 @@
 package io.snyk.plugin.services.download
 
-import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
@@ -31,8 +30,6 @@ class SnykCliDownloaderService {
 
     private val cliDownloadPublisher
         get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
-
-    private var latestReleaseInfo: LatestReleaseInfo? = null
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
@@ -160,11 +157,6 @@ class SnykCliDownloaderService {
      *
      * @return String
      */
-    private fun cliVersionNumbers(sourceVersion: String): String = sourceVersion.substring(1, sourceVersion.length)
+    private fun cliVersionNumbers(sourceVersion: String): String =
+        sourceVersion.replaceFirst("v", "")
 }
-
-class LatestReleaseInfo(
-    val url: String,
-    val name: String,
-    @SerializedName("tag_name") val tagName: String
-)
