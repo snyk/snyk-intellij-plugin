@@ -345,12 +345,16 @@ class LanguageServerWrapper(
     }
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {
-        if ((initializeResult?.serverInfo?.version ?: "") == pluginSettings().requiredLsProtocolVersion.toString()) {
+        val protocolVersion = initializeResult?.serverInfo?.version
+        pluginSettings().currentLSProtocolVersion = protocolVersion?.toIntOrNull()
+
+        if ((protocolVersion ?: "") == pluginSettings().requiredLsProtocolVersion.toString()) {
             return
         }
+
         getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
         if (!isCliInstalled()) {
-            val message = "Snyk Language Server version ${initializeResult?.serverInfo?.version} " +
+            val message = "Snyk Language Server version $protocolVersion " +
                 "does not match the required version ${pluginSettings().requiredLsProtocolVersion}. " +
                 "Please update the Snyk CLI."
             SnykBalloonNotificationHelper.showError(message, project)

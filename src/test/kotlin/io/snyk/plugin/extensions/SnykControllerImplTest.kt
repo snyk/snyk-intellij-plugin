@@ -16,7 +16,6 @@ import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.awaitility.Awaitility.await
 import snyk.common.lsp.LanguageServerWrapper

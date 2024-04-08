@@ -99,8 +99,14 @@ class SnykCliDownloaderService {
         }
     }
 
+
+    // no cli -> download (currentVersion = 0 -> != 10
+    // cli -> current version == requiredVersion -> 4 days passed -> download
+    // cli -> current version == requiredVersion -> 4 days NOT passed -> no download
+    // cli -> current version != requiredVersion -> 4 days passed -> download
+    // cli -> current version != requiredVersion -> 4 days NOT passed -> download
     fun cliSilentAutoUpdate(indicator: ProgressIndicator, project: Project) {
-        if (isFourDaysPassedSinceLastCheck()) {
+        if (isFourDaysPassedSinceLastCheck() || !matchesRequiredLsProtocolVersion()) {
             val latestReleaseInfo = requestLatestReleasesInformation()
 
             indicator.checkCanceled()
@@ -115,6 +121,10 @@ class SnykCliDownloaderService {
                 settings.lastCheckDate = Date()
             }
         }
+    }
+
+    private fun matchesRequiredLsProtocolVersion(): Boolean {
+        return pluginSettings().currentLSProtocolVersion == pluginSettings().requiredLsProtocolVersion
     }
 
     fun isFourDaysPassedSinceLastCheck(): Boolean {

@@ -27,7 +27,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.CliDownloader
-import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import org.awaitility.Awaitility.await
