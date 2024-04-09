@@ -99,7 +99,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
     }
 
     private fun updateActionsPresentation() =
-        ApplicationManager.getApplication().invokeLater { actionToolbar.updateActionsImmediately() }
+        ApplicationManager.getApplication().invokeLater { actionToolbar.updateActionsAsync() }
 
     var isDisposed = false
     override fun dispose() {
