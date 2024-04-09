@@ -4,6 +4,7 @@
 ## [2.7.14]
 ### Added
 - force download of compatible CLI on mismatched LS protocol versions
+- bumped LS protocol version to ensure built-in LS in CLI has necessary commands for global ignores
 
 ## [2.7.13]
 ### Added

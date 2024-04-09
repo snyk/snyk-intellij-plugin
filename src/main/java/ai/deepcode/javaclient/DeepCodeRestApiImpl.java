@@ -9,6 +9,7 @@ import ai.deepcode.javaclient.requests.GetAnalysisRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
 import ai.deepcode.javaclient.responses.GetFiltersResponse;
+import com.intellij.openapi.diagnostic.Logger;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 public class DeepCodeRestApiImpl implements DeepCodeRestApi {
 
   public static final String API_URL = "https://deeproxy.snyk.io/";
+  public static final @NotNull Logger LOGGER = Logger.getInstance(DeepCodeRestApiImpl.class);
 
   private static Retrofit retrofit = buildRetrofit(API_URL, false, false);
 
@@ -79,9 +81,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
         SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
         builder.sslSocketFactory(sslSocketFactory, x509TrustManager);
       } catch (NoSuchAlgorithmException | KeyManagementException e) {
-        // TODO(pavel): extract Retrofit and OkHttpClient into configuration object to simplify API
-        // client building.
-        e.printStackTrace();
+        LOGGER.warn("Failed to disable SSL verification. Check your JDK", e);
       }
     }
 
