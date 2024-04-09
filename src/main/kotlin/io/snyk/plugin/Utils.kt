@@ -309,7 +309,6 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
     val openFiles = FileEditorManager.getInstance(project).openFiles
 
     ApplicationManager.getApplication().invokeLater {
-        FileContentUtil.reparseFiles(project, openFiles.asList(), true)
         project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
     }
 
