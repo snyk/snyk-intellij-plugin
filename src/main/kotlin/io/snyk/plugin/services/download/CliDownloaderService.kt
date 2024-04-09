@@ -100,11 +100,21 @@ class SnykCliDownloaderService {
     }
 
 
-    // no cli -> download (currentVersion = 0 -> != 10
-    // cli -> current version == requiredVersion -> 4 days passed -> download
-    // cli -> current version == requiredVersion -> 4 days NOT passed -> no download
-    // cli -> current version != requiredVersion -> 4 days passed -> download
-    // cli -> current version != requiredVersion -> 4 days NOT passed -> download
+    /**
+     * Check if the CLI version is outdated and download the latest release if needed.
+     *
+     * Scenarios:
+     * 1. No CLI installed -> download
+     * 2. CLI installed and current LS protocol version matches required version
+     *   - check if 4 days passed since last check
+     *   - if yes -> download
+     *   - if no -> do nothing
+     * 3. CLI installed and current LS protocol version does not match required version -> download
+     * 4. CLI installed, more than 4 days have passed and new version available -> download
+     *
+     * @param indicator - progress indicator
+     * @param project - current project
+     */
     fun cliSilentAutoUpdate(indicator: ProgressIndicator, project: Project) {
         if (isFourDaysPassedSinceLastCheck() || !matchesRequiredLsProtocolVersion()) {
             val latestReleaseInfo = requestLatestReleasesInformation()
