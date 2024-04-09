@@ -4,6 +4,7 @@
 ## [2.7.14]
 ### Added
 - force download of compatible CLI on mismatched LS protocol versions
+- build against 2024.1 platform
 
 ## [2.7.13]
 ### Added
