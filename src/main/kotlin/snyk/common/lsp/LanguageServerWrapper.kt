@@ -8,10 +8,13 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getUserAgentString
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -25,6 +28,7 @@ import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
+import org.eclipse.lsp4j.InitializeResult
 import org.eclipse.lsp4j.InitializedParams
 import org.eclipse.lsp4j.InlineValueWorkspaceCapabilities
 import org.eclipse.lsp4j.TextDocumentClientCapabilities
@@ -55,6 +59,7 @@ class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
 ) {
+    private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
 
@@ -182,7 +187,7 @@ class LanguageServerWrapper(
         params.workspaceFolders = workspaceFolders
         params.capabilities = getCapabilities()
 
-        languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
+        initializeResult = languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
         languageServer.initialized(InitializedParams())
     }
 
@@ -334,8 +339,26 @@ class LanguageServerWrapper(
 
     fun addContentRoots(project: Project) {
         if (!isInitialized) return
+        ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
+    }
+
+    private fun ensureLanguageServerProtocolVersion(project: Project) {
+        val protocolVersion = initializeResult?.serverInfo?.version
+        pluginSettings().currentLSProtocolVersion = protocolVersion?.toIntOrNull()
+
+        if ((protocolVersion ?: "") == pluginSettings().requiredLsProtocolVersion.toString()) {
+            return
+        }
+
+        getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
+        if (!isCliInstalled()) {
+            val message = "Snyk Language Server version $protocolVersion " +
+                "does not match the required version ${pluginSettings().requiredLsProtocolVersion}. " +
+                "Please update the Snyk CLI."
+            SnykBalloonNotificationHelper.showError(message, project)
+        }
     }
 
     companion object {

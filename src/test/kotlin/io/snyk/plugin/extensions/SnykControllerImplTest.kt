@@ -16,7 +16,6 @@ import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.awaitility.Awaitility.await
 import snyk.common.lsp.LanguageServerWrapper
@@ -25,7 +24,6 @@ import snyk.oss.OssService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 
-@Suppress("FunctionName")
 class SnykControllerImplTest : LightPlatformTestCase() {
 
     private lateinit var ossServiceMock: OssService
@@ -40,11 +38,7 @@ class SnykControllerImplTest : LightPlatformTestCase() {
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic("snyk.trust.TrustedProjectsKt")
         downloaderServiceMock = spyk(SnykCliDownloaderService())
-        every { downloaderServiceMock.requestLatestReleasesInformation() } returns LatestReleaseInfo(
-            "http://testUrl",
-            "testReleaseInfo",
-            "testTag"
-        )
+        every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true

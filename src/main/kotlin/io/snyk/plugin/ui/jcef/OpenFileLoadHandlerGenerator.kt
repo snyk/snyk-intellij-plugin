@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
@@ -15,11 +16,11 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
     private val virtualFile = snykCodeFile.virtualFile
 
     fun openFile(value: String): JBCefJSQuery.Response {
-        var values = value.replace("\n", "").split(":")
-        var startLine = values[1].toInt()
-        var endLine = values[2].toInt()
-        var startCharacter = values[3].toInt()
-        var endCharacter = values[4].toInt()
+        val values = value.replace("\n", "").split(":")
+        val startLine = values[1].toInt()
+        val endLine = values[2].toInt()
+        val startCharacter = values[3].toInt()
+        val endCharacter = values[4].toInt()
 
         ApplicationManager.getApplication().invokeLater {
             val document = virtualFile.getDocument()
@@ -34,7 +35,7 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
         return JBCefJSQuery.Response("success")
     }
 
-    fun generate(jbCefBrowser: JBCefBrowser): CefLoadHandlerAdapter {
+    fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
         openFileQuery.addHandler { openFile(it) }
 

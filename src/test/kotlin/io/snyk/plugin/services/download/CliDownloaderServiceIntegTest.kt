@@ -19,6 +19,7 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.apache.http.HttpStatus
+import org.junit.Assert.assertNotEquals
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.net.SocketTimeoutException
@@ -39,16 +40,23 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         mockkStatic("io.snyk.plugin.UtilsKt")
+
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
-        every { pluginSettings() } returns SnykApplicationSettingsStateService()
+
+        val settings = SnykApplicationSettingsStateService()
+        every { pluginSettings() } returns settings
+        settings.currentLSProtocolVersion = settings.requiredLsProtocolVersion
+
         cliFile = getCliFile()
+
         cut = project.service()
         cutSpy = spyk(cut)
         errorHandler = mockk()
         downloader = spyk()
         cutSpy.downloader = downloader
         cutSpy.errorHandler = errorHandler
+
         indicator = EmptyProgressIndicator()
         removeDummyCliFile()
     }
@@ -58,19 +66,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         resetSettings(project)
         removeDummyCliFile()
         super.tearDown()
-    }
-
-    /**
-     * Needs an internet connection - real test if release info can be downloaded
-     */
-    fun testGetLatestReleasesInformation() {
-        val latestReleaseInfo = project.service<SnykCliDownloaderService>().requestLatestReleasesInformation()
-
-        assertNotNull(latestReleaseInfo)
-
-        assertTrue(latestReleaseInfo!!.name.isNotEmpty())
-        assertTrue(latestReleaseInfo.url.isNotEmpty())
-        assertTrue(latestReleaseInfo.tagName.isNotEmpty())
     }
 
     /**
@@ -85,7 +80,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val downloadedFile = cliFile
 
         assertTrue(downloadedFile.exists())
-        assertEquals(cutSpy.getLatestReleaseInfo()!!.tagName, "v" + pluginSettings().cliVersion)
 
         verify { downloader.downloadFile(cliFile, any(), indicator) }
         verify { downloader.verifyChecksum(any(), any()) }
@@ -97,14 +91,15 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         mockCliDownload()
 
         every { downloader.calculateSha256(any()) } returns "wrong-sha"
-        justRun { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
+
+        justRun { errorHandler.handleChecksumVerificationException(any(), any(), any(), any()) }
         // this is needed, but I don't know why the config is not picked up from setUp()
         every { pluginSettings() } returns SnykApplicationSettingsStateService()
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify(exactly = 1) { downloader.verifyChecksum(any(), any()) }
-        verify(exactly = 1) { errorHandler.handleChecksumVerificationException(any(), any(), any()) }
+        verify(exactly = 1) { errorHandler.handleChecksumVerificationException(any(), any(), any(), any()) }
     }
 
     private fun ensureCliFileExistent() {
@@ -114,18 +109,20 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
     }
 
     fun testDownloadLatestCliReleaseShouldHandleSocketTimeout() {
+        mockCliDownload()
         val indicator = EmptyProgressIndicator()
         val exceptionMessage = "Read Timed Out"
         val ioException = SocketTimeoutException(exceptionMessage)
-
+        // mocked version response is 1.2.3
+        val cliVersion = "1.2.3"
         every { downloader.downloadFile(any(), any(), any()) } throws ioException
-        justRun { errorHandler.handleIOException(ioException, indicator, project) }
+        justRun { errorHandler.handleIOException(ioException, cliVersion, indicator, project) }
 
         cutSpy.downloadLatestRelease(indicator, project)
 
         verify {
             downloader.downloadFile(any(), any(), any())
-            errorHandler.handleIOException(ioException, indicator, project)
+            errorHandler.handleIOException(ioException, cliVersion, indicator, project)
         }
     }
 
@@ -154,13 +151,69 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         }
     }
 
-    fun testCliSilentAutoUpdate() {
+    fun testCliSilentAutoUpdate_protocolVersionNotEqual_moreThan4Days() {
         val currentDate = LocalDateTime.now()
 
-        pluginSettings().cliVersion = "1.342.2"
+        pluginSettings().currentLSProtocolVersion = pluginSettings().requiredLsProtocolVersion - 1
+        pluginSettings().cliVersion = "1.2.2"
         pluginSettings().setLastCheckDate(currentDate.minusDays(5))
 
         ensureCliFileExistent()
+        mockCliDownload()
+
+        every { downloader.downloadFile(any(), any(), any()) } returns cliFile
+
+        cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
+
+        assertTrue(getCliFile().exists())
+        // this checks if the update date is now changed
+        assertEquals(currentDate.toLocalDate(), pluginSettings().getLastCheckDate())
+    }
+
+    fun testCliSilentAutoUpdate_protocolVersionNotEqual_lessThan4Days() {
+        val currentDate = LocalDateTime.now()
+
+        pluginSettings().currentLSProtocolVersion = pluginSettings().requiredLsProtocolVersion - 1
+        pluginSettings().cliVersion = "1.2.2"
+        pluginSettings().setLastCheckDate(currentDate.minusDays(1))
+
+        ensureCliFileExistent()
+        mockCliDownload()
+
+        every { downloader.downloadFile(any(), any(), any()) } returns cliFile
+
+        cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
+
+        assertTrue(getCliFile().exists())
+        // this checks if the update date is now changed
+        assertEquals(currentDate.toLocalDate(), pluginSettings().getLastCheckDate())
+    }
+
+    fun testCliSilentAutoUpdate_protocolVersionEqual_lessThan4Days() {
+        val currentDate = LocalDateTime.now()
+
+        pluginSettings().cliVersion = "1.2.2"
+        pluginSettings().setLastCheckDate(currentDate.minusDays(1))
+
+        ensureCliFileExistent()
+        mockCliDownload()
+
+        every { downloader.downloadFile(any(), any(), any()) } returns cliFile
+
+        cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)
+
+        assertTrue(getCliFile().exists())
+        assertNotEquals(currentDate.toLocalDate(), pluginSettings().getLastCheckDate())
+    }
+
+    fun testCliSilentAutoUpdate_protocolVersionEqual_moreThan4Days() {
+        val currentDate = LocalDateTime.now()
+
+        pluginSettings().cliVersion = "1.2.2"
+        pluginSettings().setLastCheckDate(currentDate.minusDays(5))
+
+        ensureCliFileExistent()
+        mockCliDownload()
 
         every { downloader.downloadFile(any(), any(), any()) } returns cliFile
 
@@ -168,10 +221,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
         assertTrue(getCliFile().exists())
         assertEquals(currentDate.toLocalDate(), pluginSettings().getLastCheckDate())
-        assertEquals(
-            cutSpy.getLatestReleaseInfo()!!.tagName,
-            "v" + pluginSettings().cliVersion
-        )
     }
 
     fun testCliSilentAutoUpdateWhenPreviousUpdateInfoIsNull() {
@@ -179,9 +228,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val settings = pluginSettings()
         settings.lastCheckDate = null
         ensureCliFileExistent()
-        every { cutSpy.requestLatestReleasesInformation() } returns LatestReleaseInfo(
-            "http://testUrl", "testReleaseInfo", "testTag"
-        )
+        every { cutSpy.requestLatestReleasesInformation() } returns "testTag"
         justRun { cutSpy.downloadLatestRelease(any(), any()) }
 
         cutSpy.cliSilentAutoUpdate(EmptyProgressIndicator(), project)

@@ -27,7 +27,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.CliDownloader
-import io.snyk.plugin.services.download.LatestReleaseInfo
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import org.awaitility.Awaitility.await
@@ -60,11 +59,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         mockkStatic("snyk.trust.TrustedProjectsKt")
 
         downloaderServiceMock = spyk(SnykCliDownloaderService())
-        every { downloaderServiceMock.requestLatestReleasesInformation() } returns LatestReleaseInfo(
-            "http://testUrl",
-            "testReleaseInfo",
-            "testTag"
-        )
+        every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
 
         every { getSnykCliDownloaderService() } returns downloaderServiceMock
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false

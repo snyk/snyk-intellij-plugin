@@ -1,6 +1,10 @@
 # Snyk Security Changelog
 
 
+## [2.7.14]
+### Added
+- force download of compatible CLI on mismatched LS protocol versions
+
 ## [2.7.13]
 ### Added
 - Render Snyk Code vulnerabilities using HTML served by the Language Server behind a feature flag.

@@ -4,7 +4,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.mockCliDownload
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -46,25 +45,23 @@ class CliDownloaderTest {
 
     @Test
     fun `should download version information from base url`() {
-        assertEquals("${CliDownloader.BASE_URL}/cli/latest/version", CliDownloader.LATEST_RELEASES_URL)
-    }
+        val expected =
+            "${CliDownloader.BASE_URL}/cli/latest/ls-protocol-version-" +
+                SnykApplicationSettingsStateService().requiredLsProtocolVersion
 
-    @Test
-    fun `should download cli information from base url`() {
         assertEquals(
-            "${CliDownloader.BASE_URL}/cli/latest/${Platform.current().snykWrapperFileName}",
-            CliDownloader.LATEST_RELEASE_DOWNLOAD_URL
+            expected,
+            CliDownloader.LATEST_RELEASES_URL
         )
     }
 
     @Test
-    fun `should download sha256 from base url`() {
+    fun `should download protocol version from base url`() {
         assertEquals(
-            "${CliDownloader.BASE_URL}/cli/latest/${Platform.current().snykWrapperFileName}.sha256",
-            CliDownloader.SHA256_DOWNLOAD_URL
+            "${CliDownloader.BASE_URL}/cli/latest/ls-protocol-version-${pluginSettings().requiredLsProtocolVersion}",
+            CliDownloader.LATEST_RELEASES_URL
         )
     }
-
     @Test
     fun `should not delete file if checksum verification fails`() {
         val testFile = Files.createTempFile("test", "test").toFile()
