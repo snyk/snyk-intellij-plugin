@@ -239,7 +239,7 @@ class SuggestionDescriptionPanelFromLS(
         }
         stepPanel.add(positionLabel, baseGridConstraintsAnchorWest(0, indent = 1))
 
-        val codeLine = codeLine(flow.content)
+        val codeLine = codeLine(flow.content.trimStart())
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,
