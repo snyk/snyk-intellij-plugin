@@ -19,7 +19,7 @@ class KubernetesImageCache(val project: Project) {
         images.clear()
     }
 
-    fun scanProjectForKubernetesFiles() {
+    fun cacheKubernetesFileFromProject() {
         val callable = Callable {
             ProjectRootManager.getInstance(project).fileIndex.iterateContent { virtualFile ->
                 extractFromFileAndAddToCache(virtualFile)

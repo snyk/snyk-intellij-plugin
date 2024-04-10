@@ -449,7 +449,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         if (isContainerEnabled()) {
             getKubernetesImageCache(project)?.let {
                 it.clear()
-                it.scanProjectForKubernetesFiles()
+                it.cacheKubernetesFileFromProject()
             }
         }
 

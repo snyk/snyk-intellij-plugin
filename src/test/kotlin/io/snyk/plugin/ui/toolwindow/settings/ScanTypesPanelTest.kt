@@ -110,11 +110,11 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
     @Test
     fun `KubernetesImageCache rescan after container enablement`() {
         val cacheMock = setUpContainerScanTypePanelTests()
-        justRun { cacheMock.scanProjectForKubernetesFiles() }
+        justRun { cacheMock.cacheKubernetesFileFromProject() }
 
         getContainerCheckBox(initialValue = false, switchSelection = true)
 
-        verify(exactly = 1) { cacheMock.scanProjectForKubernetesFiles() }
+        verify(exactly = 1) { cacheMock.cacheKubernetesFileFromProject() }
     }
 
     @Test
