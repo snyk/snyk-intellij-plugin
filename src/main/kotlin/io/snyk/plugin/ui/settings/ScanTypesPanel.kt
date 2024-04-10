@@ -106,7 +106,7 @@ class ScanTypesPanel(
                     correctLastProductDisabled(it)
                     settings.containerScanEnabled = this.isSelected
                     val imagesCache = getKubernetesImageCache(project)
-                    if (this.isSelected) imagesCache?.scanProjectForKubernetesFiles() else imagesCache?.clear()
+                    if (this.isSelected) imagesCache?.cacheKubernetesFileFromProject() else imagesCache?.clear()
                 }
             }
         }

@@ -112,7 +112,11 @@ class SnykPostStartupActivity : ProjectActivity {
         getAmplitudeExperimentService().fetch(experimentUser)
 
         if (isContainerEnabled()) {
-            getKubernetesImageCache(project)?.scanProjectForKubernetesFiles()
+            getKubernetesImageCache(project)?.cacheKubernetesFileFromProject()
+        }
+
+        if (settings.scanOnSave && isSnykCodeLSEnabled()) {
+            getSnykTaskQueueService(project)?.scan()
         }
 
         ExtensionPointsUtil.controllerManager.extensionList.forEach {

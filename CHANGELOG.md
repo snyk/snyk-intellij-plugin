@@ -5,6 +5,7 @@
 ### Added
 - force download of compatible CLI on mismatched LS protocol versions
 - bumped LS protocol version to ensure built-in LS in CLI has necessary commands for global ignores
+- (LS Preview) trigger scan on startup if auto-scan is enabled in Settings
 
 ## [2.7.13]
 ### Added
