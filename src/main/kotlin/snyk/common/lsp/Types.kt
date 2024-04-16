@@ -4,6 +4,7 @@ package snyk.common.lsp
 
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
@@ -31,6 +32,7 @@ data class ScanIssue(
     var isIgnored: Boolean?,
     var ignoreDetails: IgnoreDetails?,
 ) : Comparable<ScanIssue> {
+    lateinit var project: Project
     var textRange: TextRange? = null
         get() {
             return if (startOffset == null || endOffset == null) {

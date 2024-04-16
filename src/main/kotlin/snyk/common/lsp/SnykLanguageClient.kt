@@ -6,7 +6,6 @@ import com.github.benmanes.caffeine.cache.RemovalListener
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.LogLevel
@@ -14,6 +13,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.getOpenedProjects
@@ -56,7 +56,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
-class SnykLanguageClient() : LanguageClient {
+class SnykLanguageClient : LanguageClient {
     private val progressLock: ReentrantLock = ReentrantLock()
 
     // TODO FIX Log Level
@@ -114,7 +114,7 @@ class SnykLanguageClient() : LanguageClient {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (!isSnykCodeLSEnabled()) return completedFuture
         ProjectUtil.getOpenProjects().forEach { project ->
-            ReadAction.run<RuntimeException> {
+            DumbService.getInstance(project).runReadActionInSmartMode {
                 refreshAnnotationsForOpenFiles(project)
             }
         }
@@ -159,7 +159,11 @@ class SnykLanguageClient() : LanguageClient {
         }
     }
 
-    private fun processSuccessfulScan(snykScan: SnykScanParams, scanPublisher: SnykCodeScanListenerLS, project: Project) {
+    private fun processSuccessfulScan(
+        snykScan: SnykScanParams,
+        scanPublisher: SnykCodeScanListenerLS,
+        project: Project
+    ) {
         logger.info("Scan completed")
         when (snykScan.product) {
             "oss" -> {
@@ -211,6 +215,11 @@ class SnykLanguageClient() : LanguageClient {
         }
 
         val map = processedIssues
+            .asSequence()
+            .map {
+                it.project = project
+                it
+            }
             .groupBy { it.filePath }
             .mapNotNull { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
             .map {
@@ -220,6 +229,7 @@ class SnykLanguageClient() : LanguageClient {
                 it
             }
             .filter { it.second.isNotEmpty() }
+            .toList()
             .toMap()
         return map.toSortedMap(SnykCodeFileIssueComparator(map))
     }
@@ -249,20 +259,21 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     private fun createProgressInternal(token: String, begin: WorkDoneProgressBegin) {
-        ProgressManager.getInstance().run(object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
-            override fun run(indicator: ProgressIndicator) {
-                logger.debug("###### Creating progress indicator for: $token, title: ${begin.title}, message: ${begin.message}")
-                indicator.isIndeterminate = false
-                indicator.text = begin.title
-                indicator.text2 = begin.message
-                indicator.fraction = 0.1
-                progresses.put(token, indicator)
-                while (!indicator.isCanceled) {
-                    Thread.sleep(1000)
+        ProgressManager.getInstance()
+            .run(object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
+                override fun run(indicator: ProgressIndicator) {
+                    logger.debug("Creating progress indicator for: $token, title: ${begin.title}, message: ${begin.message}")
+                    indicator.isIndeterminate = false
+                    indicator.text = begin.title
+                    indicator.text2 = begin.message
+                    indicator.fraction = 0.1
+                    progresses.put(token, indicator)
+                    while (!indicator.isCanceled) {
+                        Thread.sleep(1000)
+                    }
+                    logger.debug("###### Progress indicator canceled for token: $token")
                 }
-                logger.debug("###### Progress indicator canceled for token: $token")
-            }
-        })
+            })
     }
 
     override fun notifyProgress(params: ProgressParams) {
@@ -298,9 +309,11 @@ class SnykLanguageClient() : LanguageClient {
                 begin -> {
                     val begin: WorkDoneProgressBegin = workDoneProgressNotification as WorkDoneProgressBegin
                     createProgressInternal(token, begin)
-                    // wait until the progress indicator is created in the background thread
-                    while (progresses.getIfPresent(token) == null) {
+                    // wait until the progress indicator is created in the background thread -> maximum 20s
+                    var tries = 0
+                    while (progresses.getIfPresent(token) == null || tries == 50) {
                         Thread.sleep(100)
+                        tries++
                     }
 
                     // process previously reported progress and end messages for token
@@ -342,10 +355,10 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     private fun progressReport(token: String, workDoneProgressNotification: WorkDoneProgressNotification) {
-        logger.debug("###### Received progress report notification for token: $token")
+        logger.debug("received progress report notification for token: $token")
         val indicator = progresses.getIfPresent(token)!!
         val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
-        logger.debug("###### Token: $token, progress: ${report.percentage}%, message: ${report.message}")
+        logger.debug("Token: $token, progress: ${report.percentage}%, message: ${report.message}")
 
         indicator.text = report.message
         indicator.isIndeterminate = false
@@ -354,7 +367,7 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     private fun progressEnd(token: String, workDoneProgressNotification: WorkDoneProgressNotification) {
-        logger.debug("###### Received progress end notification for token: $token")
+        logger.debug("received progress end notification for token: $token")
         val indicator = progresses.getIfPresent(token)!!
         val workDoneProgressEnd = workDoneProgressNotification as WorkDoneProgressEnd
         indicator.text = workDoneProgressEnd.message

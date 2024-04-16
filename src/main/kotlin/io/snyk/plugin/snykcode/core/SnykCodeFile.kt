@@ -1,6 +1,7 @@
 package io.snyk.plugin.snykcode.core
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.vfs.VirtualFile
@@ -12,7 +13,7 @@ data class SnykCodeFile(val project: Project, val virtualFile: VirtualFile) {
     var icon: Icon? = null
     val relativePath = RelativePathHelper().getRelativePath(virtualFile, project)
     init {
-        ApplicationManager.getApplication().runReadAction {
+        DumbService.getInstance(project).runReadActionInSmartMode {
             virtualFile.getPsiFile(project)?.getIcon(Iconable.ICON_FLAG_READ_STATUS)
         }
     }

@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.getDocument

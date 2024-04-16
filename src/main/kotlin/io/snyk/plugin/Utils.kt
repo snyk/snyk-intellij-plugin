@@ -8,7 +8,6 @@ import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -17,6 +16,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
@@ -29,7 +29,6 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
-import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.net.ClientException
@@ -390,7 +389,7 @@ fun String.prefixIfNot(prefix: String): String {
 
 fun VirtualFile.contentRoot(project: Project): VirtualFile? {
     var file: VirtualFile? = null
-    ReadAction.run<RuntimeException> {
+    DumbService.getInstance(project).runReadActionInSmartMode {
         file = ProjectRootManager.getInstance(project).fileIndex.getContentRootForFile(this)
     }
     return file
@@ -436,15 +435,15 @@ fun String.toVirtualFile(): VirtualFile {
 // add a slash when on windows
 fun VirtualFile.toLanguageServerURL(): String {
     if (this.urlContainsDriveLetter()) {
-        return this.url.replace("file://","file:///")
+        return this.url.replace("file://", "file:///")
     }
     return this.url
 }
 
 // remove first "/" if on windows
 fun String.toVirtualFileURL(): String {
-    if (this.isWindowsURI() && this.startsWith("file:///") && this.length > 10 && this.substring(9,10) == ":") {
-        return this.replaceFirst("/","")
+    if (this.isWindowsURI() && this.startsWith("file:///") && this.length > 10 && this.substring(9, 10) == ":") {
+        return this.replaceFirst("/", "")
     }
     return this
 }

@@ -1,7 +1,7 @@
 package snyk.common
 
 import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
-import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 
@@ -10,7 +10,7 @@ class RelativePathHelper {
 
     fun getRelativePath(virtualFile: VirtualFile, project: Project): String? {
         if (relPathCached == null) {
-            ApplicationManager.getApplication().runReadAction {
+            DumbService.getInstance(project).runReadActionInSmartMode {
                 relPathCached = GotoFileCellRenderer.getRelativePath(virtualFile, project)
             }
         }
