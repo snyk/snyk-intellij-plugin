@@ -2,6 +2,8 @@ package io.snyk.plugin.ui.settings
 
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.dsl.builder.actionListener
+import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
@@ -17,7 +19,7 @@ class IssueViewOptionsPanel(
         row {
             checkBox(
                 text = "Open issues",
-            ).component.apply {
+            ).applyToComponent {
                 isSelected = settings.openIssuesEnabled
                 this.addItemListener {
                     if (canOptionChange(this, settings.openIssuesEnabled)) {
@@ -27,20 +29,32 @@ class IssueViewOptionsPanel(
                 }
                 name = "Open issues"
             }
+            .actionListener{ event, it ->
+                val hasBeenSelected = it.isSelected
+                if (canOptionChange(it, !hasBeenSelected)) {
+                    // we need to change the settings in here in order for the validation to work pre-apply
+                    settings.openIssuesEnabled = hasBeenSelected
+                    getSnykTaskQueueService(project)?.scan()
+                }
+            }
+            // bindSelected is needed to trigger apply() on the settings dialog that this panel is rendered in
+            // that way we trigger the re-rendering of the Tree Nodes
+            .bindSelected(settings::openIssuesEnabled)
         }
         row {
                 checkBox(
                     text = "Ignored issues",
-                ).component.apply {
-                    isSelected = settings.ignoredIssuesEnabled
-                    this.addItemListener {
-                        if (canOptionChange(this, settings.ignoredIssuesEnabled)) {
-                            settings.ignoredIssuesEnabled = this.isSelected
-                            getSnykTaskQueueService(project)?.scan()
-                        }
-                    }
+                ).applyToComponent {
                     name = "Ignored issues"
                 }
+                .actionListener{ event, it ->
+                    val hasBeenSelected = it.isSelected
+                    if (canOptionChange(it, !hasBeenSelected)) {
+                        settings.ignoredIssuesEnabled = hasBeenSelected
+                        getSnykTaskQueueService(project)?.scan()
+                    }
+                }
+                .bindSelected(settings::ignoredIssuesEnabled)
         }
     }.apply {
         name = "issueViewPanel"
