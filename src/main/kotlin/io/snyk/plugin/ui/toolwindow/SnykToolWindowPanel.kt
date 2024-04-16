@@ -521,7 +521,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 .build()
         )
 
-        getSnykTaskQueueService(project)?.scan()
+        getSnykTaskQueueService(project)?.scan(false)
     }
 
     fun displayAuthPanel() {
