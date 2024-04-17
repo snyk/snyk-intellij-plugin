@@ -35,6 +35,11 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
         return JBCefJSQuery.Response("success")
     }
 
+    fun isDarcula(): Boolean {
+        val scheme = EditorColorsManager.getInstance().globalScheme
+        return scheme.name.contains("Darcula")
+    }
+
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
         openFileQuery.addHandler { openFile(it) }
@@ -64,7 +69,7 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                     })();
                 """
                     browser.executeJavaScript(script, browser.url, 0)
-
+                    val isDarculaTheme = isDarcula()
                     val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
                     val themeScript = """
                         (function(){
@@ -73,7 +78,7 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                         }
                         window.themeApplied = true;
                         const style = getComputedStyle(document.documentElement);
-                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-${if (isDarkTheme) "dark" else "light"}'));
+
                         document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--background-color', style.getPropertyValue('--background-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--link-color', style.getPropertyValue('--link-color-${if (isDarkTheme) "dark" else "light"}'));
@@ -82,6 +87,7 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                         document.documentElement.style.setProperty('--selected-text-color', style.getPropertyValue('--selected-text-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--error-text-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--data-flow-file-color', style.getPropertyValue('--data-flow-file-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--data-flow-body-color', style.getPropertyValue('--data-flow-body-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--tabs-bottom-color', style.getPropertyValue('--tabs-bottom-color-${if (isDarkTheme) "dark" else "light"}'));
@@ -90,6 +96,12 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                         document.documentElement.style.setProperty('--tab-item-icon-color', style.getPropertyValue('--tab-item-icon-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--scrollbar-thumb-color', style.getPropertyValue('--scrollbar-thumb-color-${if (isDarkTheme) "dark" else "light"}'));
                         document.documentElement.style.setProperty('--scrollbar-color', style.getPropertyValue('--scrollbar-color-${if (isDarkTheme) "dark" else "light"}'));
+
+                        if (${isDarculaTheme}) {
+                            document.documentElement.style.setProperty('--data-flow-body-color', style.getPropertyValue('--data-flow-body-color-darcula'));
+                            document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-darcula'));
+                            document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-darcula'));
+                        }
                         })();
                         """
                     browser.executeJavaScript(themeScript, browser.url, 0)
