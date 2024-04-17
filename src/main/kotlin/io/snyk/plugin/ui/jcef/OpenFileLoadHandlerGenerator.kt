@@ -1,7 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.getDocument
@@ -61,6 +61,51 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                     }""",
                         browser.url, 0
                     );
+
+                    val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
+                    val themeScript = if (isDarkTheme) {
+                        """
+                        const style = getComputedStyle(document.documentElement);
+                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-dark'));
+                        document.documentElement.style.setProperty('--background-color', style.getPropertyValue('--background-color-dark'));
+                        document.documentElement.style.setProperty('--link-color', style.getPropertyValue('--link-color-dark'));
+                        document.documentElement.style.setProperty('--info-text-color', style.getPropertyValue('--info-text-color-dark'));
+                        document.documentElement.style.setProperty('--disabled-text-color', style.getPropertyValue('--disabled-text-color-dark'));
+                        document.documentElement.style.setProperty('--selected-text-color', style.getPropertyValue('--selected-text-color-dark'));
+                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--error-text-color-dark'));
+                        document.documentElement.style.setProperty('--data-flow-file-color', style.getPropertyValue('--data-flow-file-color-dark'));
+                        document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-dark'));
+                        document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-dark'));
+                        document.documentElement.style.setProperty('--tabs-bottom-color', style.getPropertyValue('--tabs-bottom-color-dark'));
+                        document.documentElement.style.setProperty('--tab-item-color', style.getPropertyValue('--tab-item-color-dark'));
+                        document.documentElement.style.setProperty('--tab-item-hover-color', style.getPropertyValue('--tab-item-hover-color-dark'));
+                        document.documentElement.style.setProperty('--tab-item-icon-color', style.getPropertyValue('--tab-item-icon-color-dark'));
+                        document.documentElement.style.setProperty('--scrollbar-thumb-color', style.getPropertyValue('--scrollbar-thumb-color-dark'));
+                        document.documentElement.style.setProperty('--scrollbar-color', style.getPropertyValue('--scrollbar-color-dark'));
+                          """
+                    } else {
+                        """
+                        const style = getComputedStyle(document.documentElement);
+                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-light'));
+                        document.documentElement.style.setProperty('--background-color', style.getPropertyValue('--background-color-light'));
+                        document.documentElement.style.setProperty('--link-color', style.getPropertyValue('--link-color-light'));
+                        document.documentElement.style.setProperty('--info-text-color', style.getPropertyValue('--info-text-color-light'));
+                        document.documentElement.style.setProperty('--disabled-text-color', style.getPropertyValue('--disabled-text-color-light'));
+                        document.documentElement.style.setProperty('--selected-text-color', style.getPropertyValue('--selected-text-color-light'));
+                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--error-text-color-light'));
+                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--data-flow-file-color-light'));
+                        document.documentElement.style.setProperty('--data-flow-file-color', style.getPropertyValue('--data-flow-file-color-light'));
+                        document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-light'));
+                        document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-light'));
+                        document.documentElement.style.setProperty('--tabs-bottom-color', style.getPropertyValue('--tabs-bottom-color-light'));
+                        document.documentElement.style.setProperty('--tab-item-color', style.getPropertyValue('--tab-item-color-light'));
+                        document.documentElement.style.setProperty('--tab-item-hover-color', style.getPropertyValue('--tab-item-hover-color-light'));
+                        document.documentElement.style.setProperty('--tab-item-icon-color', style.getPropertyValue('--tab-item-icon-color-light'));
+                        document.documentElement.style.setProperty('--scrollbar-thumb-color', style.getPropertyValue('--scrollbar-thumb-color-light'));
+                        document.documentElement.style.setProperty('--scrollbar-color', style.getPropertyValue('--scrollbar-color-light'));
+                        """
+                    }
+                    browser.executeJavaScript(themeScript, browser.url, 0)
                 }
             }
         }
