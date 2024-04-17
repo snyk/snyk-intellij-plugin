@@ -5,6 +5,7 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getSnykAnalyticsService
@@ -46,6 +47,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isCrashReportingModified() ||
         snykSettingsDialog.isScanTypeChanged() ||
         snykSettingsDialog.isSeverityEnablementChanged() ||
+        snykSettingsDialog.isIssueOptionChanged() ||
         snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
         snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
         snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
@@ -92,6 +94,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
         snykSettingsDialog.saveScanTypeChanges()
         snykSettingsDialog.saveSeveritiesEnablementChanges()
+        snykSettingsDialog.saveIssueOptionChanges()
 
         if (isProjectSettingsAvailable(project)) {
             val snykProjectSettingsService = getSnykProjectSettingsService(project)

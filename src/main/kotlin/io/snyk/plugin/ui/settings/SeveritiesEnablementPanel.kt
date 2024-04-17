@@ -8,7 +8,6 @@ import com.intellij.util.ui.JBUI
 import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import java.awt.event.ItemEvent
 
 class SeveritiesEnablementPanel {
     private val settings
@@ -25,10 +24,11 @@ class SeveritiesEnablementPanel {
                 name = text
             }
             .actionListener{ event, it ->
-                val hasBeenSelected = it.isSelected
-                // we need to change the settings in here in order for the validation to work pre-apply
-                settings.criticalSeverityEnabled = hasBeenSelected
-                isLastSeverityDisabling(it, !hasBeenSelected)
+                val isSelected = it.isSelected
+                if (canBeChanged(it, isSelected)) {
+                    // we need to change the settings in here in order for the validation to work pre-apply
+                    currentCriticalSeverityEnabled = isSelected
+                }
             }
             // bindSelected is needed to trigger apply() on the settings dialog that this panel is rendered in
             // that way we trigger the re-rendering of the Tree Nodes
@@ -39,9 +39,10 @@ class SeveritiesEnablementPanel {
                 name = text
             }
             .actionListener{ event, it ->
-                val hasBeenSelected = it.isSelected
-                settings.highSeverityEnabled = hasBeenSelected
-                isLastSeverityDisabling(it, !hasBeenSelected)
+                val isSelected = it.isSelected
+                if(canBeChanged(it, isSelected)) {
+                    currentHighSeverityEnabled = isSelected
+                }
             }
             .bindSelected(settings::highSeverityEnabled)
         }
@@ -50,9 +51,10 @@ class SeveritiesEnablementPanel {
                 name = text
             }
             .actionListener{ event, it ->
-                val hasBeenSelected = it.isSelected
-                settings.mediumSeverityEnabled = hasBeenSelected
-                isLastSeverityDisabling(it, !hasBeenSelected)
+                val isSelected = it.isSelected
+                if (canBeChanged(it, isSelected)) {
+                    currentMediumSeverityEnabled = isSelected
+                }
             }
             .bindSelected(settings::mediumSeverityEnabled)
         }
@@ -61,9 +63,10 @@ class SeveritiesEnablementPanel {
                 name = text
             }
             .actionListener{ event, it ->
-                val hasBeenSelected = it.isSelected
-                settings.lowSeverityEnabled = hasBeenSelected
-                isLastSeverityDisabling(it, !hasBeenSelected)
+                val isSelected = it.isSelected
+                if (canBeChanged(it, isSelected)) {
+                    currentLowSeverityEnabled = isSelected
+                }
             }
             .bindSelected(settings::lowSeverityEnabled)
         }
@@ -72,7 +75,7 @@ class SeveritiesEnablementPanel {
         border = JBUI.Borders.empty(2)
     }
 
-    private fun isLastSeverityDisabling(component: JBCheckBox, wasEnabled: Boolean): Boolean {
+    private fun canBeChanged(component: JBCheckBox, isSelected: Boolean): Boolean {
         val onlyOneEnabled = arrayOf(
             currentCriticalSeverityEnabled,
             currentHighSeverityEnabled,
@@ -80,13 +83,14 @@ class SeveritiesEnablementPanel {
             currentLowSeverityEnabled
         ).count { it } == 1
 
-        if (onlyOneEnabled && wasEnabled) {
-            component.isSelected = true
+        if (onlyOneEnabled && !isSelected) {
             SnykBalloonNotificationHelper.showWarnBalloonForComponent(
                 "At least one Severity type should be selected",
                 component
             )
+            component.isSelected = true
+            return false
         }
-        return onlyOneEnabled
+        return true
     }
 }

@@ -15,25 +15,19 @@ class IssueViewOptionsPanel(
     private val settings
         get() = pluginSettings()
 
+    private var currentOpenIssuesEnabled = settings.openIssuesEnabled
+    private var currentIgnoredIssuesEnabled = settings.ignoredIssuesEnabled
+
     val panel = com.intellij.ui.dsl.builder.panel {
         row {
             checkBox(
                 text = "Open issues",
             ).applyToComponent {
-                isSelected = settings.openIssuesEnabled
-                this.addItemListener {
-                    if (canOptionChange(this, settings.openIssuesEnabled)) {
-                        settings.openIssuesEnabled = this.isSelected
-                        getSnykTaskQueueService(project)?.scan()
-                    }
-                }
-                name = "Open issues"
+                name = text
             }
             .actionListener{ event, it ->
-                val hasBeenSelected = it.isSelected
-                if (canOptionChange(it, !hasBeenSelected)) {
-                    // we need to change the settings in here in order for the validation to work pre-apply
-                    settings.openIssuesEnabled = hasBeenSelected
+                if (canBeChanged(it, it.isSelected)) {
+                    currentOpenIssuesEnabled = it.isSelected
                     getSnykTaskQueueService(project)?.scan()
                 }
             }
@@ -45,12 +39,11 @@ class IssueViewOptionsPanel(
                 checkBox(
                     text = "Ignored issues",
                 ).applyToComponent {
-                    name = "Ignored issues"
+                    name = text
                 }
                 .actionListener{ event, it ->
-                    val hasBeenSelected = it.isSelected
-                    if (canOptionChange(it, !hasBeenSelected)) {
-                        settings.ignoredIssuesEnabled = hasBeenSelected
+                    if (canBeChanged(it, it.isSelected)) {
+                        currentIgnoredIssuesEnabled = it.isSelected
                         getSnykTaskQueueService(project)?.scan()
                     }
                 }
@@ -61,18 +54,18 @@ class IssueViewOptionsPanel(
         border = JBUI.Borders.empty(2)
     }
 
-    private fun canOptionChange(component: JBCheckBox, wasEnabled: Boolean): Boolean {
+    private fun canBeChanged(component: JBCheckBox, isSelected: Boolean): Boolean {
         val onlyOneEnabled = arrayOf(
-            settings.openIssuesEnabled,
-            settings.ignoredIssuesEnabled,
+            currentOpenIssuesEnabled,
+            currentIgnoredIssuesEnabled,
         ).count { it } == 1
 
-        if (onlyOneEnabled && wasEnabled) {
-            component.isSelected = true
+        if (onlyOneEnabled && !isSelected) {
             SnykBalloonNotificationHelper.showWarnBalloonForComponent(
                 "At least one option should be selected",
                 component
             )
+            component.isSelected = true
             return false
         }
         return true

@@ -1,5 +1,8 @@
 # Snyk Security Changelog
 
+## [2.7.15]
+### Fixed
+- Re-enable scan results when re-enabling different scan types
 
 ## [2.7.14]
 ### Added

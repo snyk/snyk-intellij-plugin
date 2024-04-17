@@ -603,6 +603,10 @@ class SnykSettingsDialog(
 
     fun saveSeveritiesEnablementChanges() = severityEnablementPanel.apply()
 
+    fun isIssueOptionChanged() = issueViewOptionsPanel.isModified()
+
+    fun saveIssueOptionChanges() = issueViewOptionsPanel.apply()
+
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 
     private fun initializeValidation() {
