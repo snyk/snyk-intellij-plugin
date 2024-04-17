@@ -42,69 +42,56 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
         return object : CefLoadHandlerAdapter() {
             override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                 if (frame.isMain) {
-                    browser.executeJavaScript(
-                        "window.openFileQuery = function(value) {" +
-                            openFileQuery.inject("value") +
-                            "};",
-                        browser.url, 0
-                    );
-
-                    browser.executeJavaScript(
-                        """
-                    const dataFlowFilePaths = document.getElementsByClassName('data-flow-clickable-row')
-                    for (let i = 0; i < dataFlowFilePaths.length; i++) {
-                        const dataFlowFilePath = dataFlowFilePaths[i]
-                        dataFlowFilePath.addEventListener('click', function (e) {
-                          e.preventDefault()
-                          window.openFileQuery(dataFlowFilePath.getAttribute("file-path")+":"+dataFlowFilePath.getAttribute("start-line")+":"+dataFlowFilePath.getAttribute("end-line")+":"+dataFlowFilePath.getAttribute("start-character")+":"+dataFlowFilePath.getAttribute("end-character"));
+                    val script = """
+                    (function() {
+                        if (window.openFileQuery) {
+                            return;
+                        }
+                        window.openFileQuery = function(value) { ${openFileQuery.inject("value")} };
+                        // Attach a single event listener to the document
+                        document.addEventListener('click', function(e) {
+                            // Find the nearest ancestor
+                            var target = e.target.closest('.data-flow-clickable-row');
+                            if (target) {
+                                e.preventDefault();
+                                window.openFileQuery(target.getAttribute("file-path") + ":" +
+                                                     target.getAttribute("start-line") + ":" +
+                                                     target.getAttribute("end-line") + ":" +
+                                                     target.getAttribute("start-character") + ":" +
+                                                     target.getAttribute("end-character"));
+                            }
                         });
-                    }""",
-                        browser.url, 0
-                    );
+                    })();
+                """
+                    browser.executeJavaScript(script, browser.url, 0)
 
                     val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
-                    val themeScript = if (isDarkTheme) {
-                        """
+                    val themeScript = """
+                        (function(){
+                        if (window.themeApplied) {
+                            return;
+                        }
+                        window.themeApplied = true;
                         const style = getComputedStyle(document.documentElement);
-                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-dark'));
-                        document.documentElement.style.setProperty('--background-color', style.getPropertyValue('--background-color-dark'));
-                        document.documentElement.style.setProperty('--link-color', style.getPropertyValue('--link-color-dark'));
-                        document.documentElement.style.setProperty('--info-text-color', style.getPropertyValue('--info-text-color-dark'));
-                        document.documentElement.style.setProperty('--disabled-text-color', style.getPropertyValue('--disabled-text-color-dark'));
-                        document.documentElement.style.setProperty('--selected-text-color', style.getPropertyValue('--selected-text-color-dark'));
-                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--error-text-color-dark'));
-                        document.documentElement.style.setProperty('--data-flow-file-color', style.getPropertyValue('--data-flow-file-color-dark'));
-                        document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-dark'));
-                        document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-dark'));
-                        document.documentElement.style.setProperty('--tabs-bottom-color', style.getPropertyValue('--tabs-bottom-color-dark'));
-                        document.documentElement.style.setProperty('--tab-item-color', style.getPropertyValue('--tab-item-color-dark'));
-                        document.documentElement.style.setProperty('--tab-item-hover-color', style.getPropertyValue('--tab-item-hover-color-dark'));
-                        document.documentElement.style.setProperty('--tab-item-icon-color', style.getPropertyValue('--tab-item-icon-color-dark'));
-                        document.documentElement.style.setProperty('--scrollbar-thumb-color', style.getPropertyValue('--scrollbar-thumb-color-dark'));
-                        document.documentElement.style.setProperty('--scrollbar-color', style.getPropertyValue('--scrollbar-color-dark'));
-                          """
-                    } else {
+                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--background-color', style.getPropertyValue('--background-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--link-color', style.getPropertyValue('--link-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--info-text-color', style.getPropertyValue('--info-text-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--disabled-text-color', style.getPropertyValue('--disabled-text-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--selected-text-color', style.getPropertyValue('--selected-text-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--error-text-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--data-flow-file-color', style.getPropertyValue('--data-flow-file-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--tabs-bottom-color', style.getPropertyValue('--tabs-bottom-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--tab-item-color', style.getPropertyValue('--tab-item-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--tab-item-hover-color', style.getPropertyValue('--tab-item-hover-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--tab-item-icon-color', style.getPropertyValue('--tab-item-icon-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--scrollbar-thumb-color', style.getPropertyValue('--scrollbar-thumb-color-${if (isDarkTheme) "dark" else "light"}'));
+                        document.documentElement.style.setProperty('--scrollbar-color', style.getPropertyValue('--scrollbar-color-${if (isDarkTheme) "dark" else "light"}'));
+                        })();
                         """
-                        const style = getComputedStyle(document.documentElement);
-                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-light'));
-                        document.documentElement.style.setProperty('--background-color', style.getPropertyValue('--background-color-light'));
-                        document.documentElement.style.setProperty('--link-color', style.getPropertyValue('--link-color-light'));
-                        document.documentElement.style.setProperty('--info-text-color', style.getPropertyValue('--info-text-color-light'));
-                        document.documentElement.style.setProperty('--disabled-text-color', style.getPropertyValue('--disabled-text-color-light'));
-                        document.documentElement.style.setProperty('--selected-text-color', style.getPropertyValue('--selected-text-color-light'));
-                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--error-text-color-light'));
-                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--data-flow-file-color-light'));
-                        document.documentElement.style.setProperty('--data-flow-file-color', style.getPropertyValue('--data-flow-file-color-light'));
-                        document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-light'));
-                        document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-light'));
-                        document.documentElement.style.setProperty('--tabs-bottom-color', style.getPropertyValue('--tabs-bottom-color-light'));
-                        document.documentElement.style.setProperty('--tab-item-color', style.getPropertyValue('--tab-item-color-light'));
-                        document.documentElement.style.setProperty('--tab-item-hover-color', style.getPropertyValue('--tab-item-hover-color-light'));
-                        document.documentElement.style.setProperty('--tab-item-icon-color', style.getPropertyValue('--tab-item-icon-color-light'));
-                        document.documentElement.style.setProperty('--scrollbar-thumb-color', style.getPropertyValue('--scrollbar-thumb-color-light'));
-                        document.documentElement.style.setProperty('--scrollbar-color', style.getPropertyValue('--scrollbar-color-light'));
-                        """
-                    }
                     browser.executeJavaScript(themeScript, browser.url, 0)
                 }
             }
