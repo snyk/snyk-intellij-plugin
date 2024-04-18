@@ -12,6 +12,8 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isSnykCodeLSEnabled
+import io.snyk.plugin.isSnykIaCLSEnabled
+import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -306,10 +308,10 @@ class LanguageServerWrapper(
     fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
-            activateSnykOpenSource = false.toString(),
+            activateSnykOpenSource = isSnykOSSLSEnabled().toString(),
             activateSnykCodeSecurity = (isSnykCodeLSEnabled() && ps.snykCodeSecurityIssuesScanEnable).toString(),
             activateSnykCodeQuality = (isSnykCodeLSEnabled() && ps.snykCodeQualityIssuesScanEnable).toString(),
-            activateSnykIac = false.toString(),
+            activateSnykIac = isSnykIaCLSEnabled().toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),
             endpoint = getEndpointUrl(),

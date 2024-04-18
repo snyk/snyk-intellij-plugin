@@ -177,7 +177,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         } returns (iacGoofJson)
         getIacService(project)?.setConsoleCommandRunner(mockRunner)
 
-        project.service<SnykTaskQueueService>().scan()
+        project.service<SnykTaskQueueService>().scan(false)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
@@ -598,7 +598,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         every { getIacService(project)?.scan() } returns iacResultWithError
 
         // actual test run
-        project.service<SnykTaskQueueService>().scan()
+        project.service<SnykTaskQueueService>().scan(false)
 
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
@@ -704,7 +704,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         setUpContainerTest(containerResultWithError)
 
         // actual test run
-        project.service<SnykTaskQueueService>().scan()
+        project.service<SnykTaskQueueService>().scan(false)
 
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
@@ -731,7 +731,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         setUpContainerTest(fakeContainerResult)
 
         // actual test run
-        project.service<SnykTaskQueueService>().scan()
+        project.service<SnykTaskQueueService>().scan(false)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         // Assertions
@@ -765,7 +765,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         mockkObject(SnykBalloonNotificationHelper)
 
         // actual test run
-        project.service<SnykTaskQueueService>().scan()
+        project.service<SnykTaskQueueService>().scan(false)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         // Assertions
@@ -797,7 +797,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         setUpContainerTest(fakeContainerResult)
 
         // actual test run
-        project.service<SnykTaskQueueService>().scan()
+        project.service<SnykTaskQueueService>().scan(false)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         // Assertions
@@ -879,7 +879,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         setUpContainerTest(containerResult)
 
         // actual test run
-        project.service<SnykTaskQueueService>().scan()
+        project.service<SnykTaskQueueService>().scan(false)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         return containerResult

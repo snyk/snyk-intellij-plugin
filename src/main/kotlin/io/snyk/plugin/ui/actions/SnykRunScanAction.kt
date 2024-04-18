@@ -19,7 +19,7 @@ import snyk.analytics.AnalysisIsTriggered
 class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
-        getSnykTaskQueueService(actionEvent.project!!)?.scan()
+        getSnykTaskQueueService(actionEvent.project!!)?.scan(false)
 
         getSnykAnalyticsService().logAnalysisIsTriggered(
             AnalysisIsTriggered.builder()
