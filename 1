@@ -1,0 +1,16 @@
+refactor: optimise JS initialisation and event handling in JBCefBrowser
+
+- Use event delegation for the `.data-flow-clickable-row` elements. This change reduces the
+  number of event listeners attached to the DOM by binding a single listener on
+  the document rather than individual listeners on each element.
+- Prevent redefinition of the `openFileQuery` function initialising just once per page load.
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Wed Apr 17 16:29:56 2024 +0100
+#
+# On branch feat/IDE-250-dark-and-light-themes
+# Changes to be committed:
+#	modified:   src/main/kotlin/io/snyk/plugin/ui/jcef/OpenFileLoadHandlerGenerator.kt
+#

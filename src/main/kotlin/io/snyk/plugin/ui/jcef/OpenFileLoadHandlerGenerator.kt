@@ -15,6 +15,10 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
     private val project = snykCodeFile.project
     private val virtualFile = snykCodeFile.virtualFile
 
+    companion object {
+        val darculaRegex = Regex(".*d(ar|ra)cula.*", RegexOption.IGNORE_CASE)
+    }
+
     fun openFile(value: String): JBCefJSQuery.Response {
         val values = value.replace("\n", "").split(":")
         val startLine = values[1].toInt()
@@ -37,7 +41,7 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
 
     fun isDarcula(): Boolean {
         val scheme = EditorColorsManager.getInstance().globalScheme
-        return scheme.name.contains("Darcula")
+        return darculaRegex.containsMatchIn(scheme.name)
     }
 
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
@@ -69,8 +73,8 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                     })();
                 """
                     browser.executeJavaScript(script, browser.url, 0)
+                    val colorTheme = if (EditorColorsManager.getInstance().isDarkEditor) "dark" else "light"
                     val isDarculaTheme = isDarcula()
-                    val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
                     val themeScript = """
                         (function(){
                         if (window.themeApplied) {
@@ -78,24 +82,26 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                         }
                         window.themeApplied = true;
                         const style = getComputedStyle(document.documentElement);
-
-                        document.documentElement.style.setProperty('--text-color', style.getPropertyValue('--text-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--background-color', style.getPropertyValue('--background-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--link-color', style.getPropertyValue('--link-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--info-text-color', style.getPropertyValue('--info-text-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--disabled-text-color', style.getPropertyValue('--disabled-text-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--selected-text-color', style.getPropertyValue('--selected-text-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--error-text-color', style.getPropertyValue('--error-text-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--data-flow-file-color', style.getPropertyValue('--data-flow-file-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--data-flow-body-color', style.getPropertyValue('--data-flow-body-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--tabs-bottom-color', style.getPropertyValue('--tabs-bottom-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--tab-item-color', style.getPropertyValue('--tab-item-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--tab-item-hover-color', style.getPropertyValue('--tab-item-hover-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--tab-item-icon-color', style.getPropertyValue('--tab-item-icon-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--scrollbar-thumb-color', style.getPropertyValue('--scrollbar-thumb-color-${if (isDarkTheme) "dark" else "light"}'));
-                        document.documentElement.style.setProperty('--scrollbar-color', style.getPropertyValue('--scrollbar-color-${if (isDarkTheme) "dark" else "light"}'));
+                        const properties = [
+                          '--text-color',
+                          '--background-color',
+                          '--link-color',
+                          '--info-text-color',
+                          '--disabled-text-color',
+                          '--selected-text-color',
+                          '--error-text-color',
+                          '--data-flow-file-color',
+                          '--data-flow-body-color',
+                          '--example-line-added-color',
+                          '--example-line-removed-color',
+                          '--tabs-bottom-color',
+                          '--tab-item-color',
+                          '--tab-item-hover-color',
+                          '--tab-item-icon-color',
+                          '--scrollbar-thumb-color',
+                          '--scrollbar-color',
+                        ]
+                        properties.forEach(p => document.documentElement.style.setProperty(p, style.getPropertyValue(p + "-" + "${colorTheme}")))
 
                         if (${isDarculaTheme}) {
                             document.documentElement.style.setProperty('--data-flow-body-color', style.getPropertyValue('--data-flow-body-color-darcula'));
