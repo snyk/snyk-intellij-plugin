@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.7.15]
+### Fixed
+- Re-enable scan results when re-enabling different scan types
+- (LS Preview) do not trigger scan on startup for Snyk Code multiple times
 
 ## [2.7.15]
 ### Added

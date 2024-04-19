@@ -126,7 +126,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
             true,
             LocalCodeEngine(false, "", false),
         )
-        justRun { taskQueueService.scan() }
+        justRun { taskQueueService.scan(false) }
 
         cut = SnykToolWindowPanel(project)
 
@@ -135,7 +135,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         assertNotNull(descriptionPanel)
         assertEquals(findOnePixelSplitter(vulnerabilityTree), descriptionPanel!!.parent)
 
-        verify(exactly = 1) { taskQueueService.scan() }
+        verify(exactly = 1) { taskQueueService.scan(false) }
         verify(exactly = 1) { analyticsService.logAnalysisIsTriggered(any()) }
     }
 

@@ -262,6 +262,11 @@ fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
 fun isSnykCodeLSEnabled(): Boolean = Registry.`is`("snyk.preview.snyk.code.ls.enabled", true)
 
+fun isSnykOSSLSEnabled(): Boolean = false
+
+fun isSnykIaCLSEnabled(): Boolean = false
+
+
 fun getWaitForResultsTimeout(): Long =
     Registry.intValue(
         "snyk.timeout.results.waiting",

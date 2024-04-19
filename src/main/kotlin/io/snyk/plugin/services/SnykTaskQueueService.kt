@@ -28,6 +28,8 @@ import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.isSnykIaCLSEnabled
+import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -98,7 +100,7 @@ class SnykTaskQueueService(val project: Project) {
         }
     }
 
-    fun scan() {
+    fun scan(isStartup: Boolean) {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return
@@ -114,14 +116,22 @@ class SnykTaskQueueService(val project: Project) {
                     if (!isSnykCodeLSEnabled()) {
                         scheduleSnykCodeScan()
                     } else {
-                        LanguageServerWrapper.getInstance().sendScanCommand(project)
+                        // the LS deals with triggering scans at startup
+                        // TODO: Refactor when more than Snyk Code is available in LS for IntelliJ
+                        if (!isStartup) {
+                            LanguageServerWrapper.getInstance().sendScanCommand(project)
+                        }
                     }
                 }
                 if (settings.ossScanEnable) {
-                    scheduleOssScan()
+                    if (!isSnykOSSLSEnabled()) {
+                        scheduleOssScan()
+                    }
                 }
                 if (isIacEnabled() && settings.iacScanEnabled) {
-                    scheduleIacScan()
+                    if (!isSnykIaCLSEnabled()) {
+                        scheduleIacScan()
+                    }
                 }
                 if (isContainerEnabled() && settings.containerScanEnabled) {
                     scheduleContainerScan()
