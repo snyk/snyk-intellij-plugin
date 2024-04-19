@@ -1,13 +1,13 @@
 # Snyk Security Changelog
 
+## [2.7.16]
+### Added
+- Implemented dynamic theme style changes for the Code Issue Panel via the Language Server. It adjusts CSS properties based on the current IDE theme settings to enhance visual consistency across different themes. See related PR: [snyk-ls#491](https://github.com/snyk/snyk-ls/pull/491).
+
 ## [2.7.15]
 ### Fixed
 - Re-enable scan results when re-enabling different scan types
 - (LS Preview) do not trigger scan on startup for Snyk Code multiple times
-
-## [2.7.15]
-### Added
-- Implemented dynamic theme style changes for the Code Issue Panel via the Language Server. It adjusts CSS properties based on the current IDE theme settings to enhance visual consistency across different themes. See related PR: [snyk-ls#491](https://github.com/snyk/snyk-ls/pull/491).
 
 ## [2.7.14]
 ### Added
