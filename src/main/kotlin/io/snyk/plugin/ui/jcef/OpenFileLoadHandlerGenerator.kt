@@ -1,7 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.getDocument
@@ -14,6 +14,10 @@ import org.cef.handler.CefLoadHandlerAdapter
 class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
     private val project = snykCodeFile.project
     private val virtualFile = snykCodeFile.virtualFile
+
+    companion object {
+        val darculaRegex = Regex(".*d(ar|ra)cula.*", RegexOption.IGNORE_CASE)
+    }
 
     fun openFile(value: String): JBCefJSQuery.Response {
         val values = value.replace("\n", "").split(":")
@@ -35,6 +39,11 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
         return JBCefJSQuery.Response("success")
     }
 
+    fun isDarcula(): Boolean {
+        val scheme = EditorColorsManager.getInstance().globalScheme
+        return darculaRegex.containsMatchIn(scheme.name)
+    }
+
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
         openFileQuery.addHandler { openFile(it) }
@@ -42,25 +51,66 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
         return object : CefLoadHandlerAdapter() {
             override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                 if (frame.isMain) {
-                    browser.executeJavaScript(
-                        "window.openFileQuery = function(value) {" +
-                            openFileQuery.inject("value") +
-                            "};",
-                        browser.url, 0
-                    );
-
-                    browser.executeJavaScript(
-                        """
-                    const dataFlowFilePaths = document.getElementsByClassName('data-flow-clickable-row')
-                    for (let i = 0; i < dataFlowFilePaths.length; i++) {
-                        const dataFlowFilePath = dataFlowFilePaths[i]
-                        dataFlowFilePath.addEventListener('click', function (e) {
-                          e.preventDefault()
-                          window.openFileQuery(dataFlowFilePath.getAttribute("file-path")+":"+dataFlowFilePath.getAttribute("start-line")+":"+dataFlowFilePath.getAttribute("end-line")+":"+dataFlowFilePath.getAttribute("start-character")+":"+dataFlowFilePath.getAttribute("end-character"));
+                    val script = """
+                    (function() {
+                        if (window.openFileQuery) {
+                            return;
+                        }
+                        window.openFileQuery = function(value) { ${openFileQuery.inject("value")} };
+                        // Attach a single event listener to the document
+                        document.addEventListener('click', function(e) {
+                            // Find the nearest ancestor
+                            var target = e.target.closest('.data-flow-clickable-row');
+                            if (target) {
+                                e.preventDefault();
+                                window.openFileQuery(target.getAttribute("file-path") + ":" +
+                                                     target.getAttribute("start-line") + ":" +
+                                                     target.getAttribute("end-line") + ":" +
+                                                     target.getAttribute("start-character") + ":" +
+                                                     target.getAttribute("end-character"));
+                            }
                         });
-                    }""",
-                        browser.url, 0
-                    );
+                    })();
+                """
+                    browser.executeJavaScript(script, browser.url, 0)
+                    val colorTheme = if (EditorColorsManager.getInstance().isDarkEditor) "dark" else "light"
+                    val isDarculaTheme = isDarcula()
+                    val themeScript = """
+                        (function(){
+                        if (window.themeApplied) {
+                            return;
+                        }
+                        window.themeApplied = true;
+                        const style = getComputedStyle(document.documentElement);
+                        const properties = [
+                          '--text-color',
+                          '--background-color',
+                          '--link-color',
+                          '--info-text-color',
+                          '--disabled-text-color',
+                          '--selected-text-color',
+                          '--error-text-color',
+                          '--data-flow-file-color',
+                          '--data-flow-body-color',
+                          '--example-line-added-color',
+                          '--example-line-removed-color',
+                          '--tabs-bottom-color',
+                          '--tab-item-color',
+                          '--tab-item-hover-color',
+                          '--tab-item-icon-color',
+                          '--scrollbar-thumb-color',
+                          '--scrollbar-color',
+                        ]
+                        properties.forEach(p => document.documentElement.style.setProperty(p, style.getPropertyValue(p + "-" + "${colorTheme}")))
+
+                        if (${isDarculaTheme}) {
+                            document.documentElement.style.setProperty('--data-flow-body-color', style.getPropertyValue('--data-flow-body-color-darcula'));
+                            document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-darcula'));
+                            document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-darcula'));
+                        }
+                        })();
+                        """
+                    browser.executeJavaScript(themeScript, browser.url, 0)
                 }
             }
         }
