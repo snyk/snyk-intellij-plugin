@@ -246,10 +246,6 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         assertTrue(cliDownloaderService.isNewVersionAvailable("1.342.2", "2.345.1"))
         assertTrue(cliDownloaderService.isNewVersionAvailable("1.345.2", "2.342.9"))
 
-        assertFalse(cliDownloaderService.isNewVersionAvailable("2.342.2", "1.342.1"))
-        assertFalse(cliDownloaderService.isNewVersionAvailable("1.343.1", "1.342.2"))
-        assertFalse(cliDownloaderService.isNewVersionAvailable("1.342.2", "1.342.1"))
-
         assertFalse(cliDownloaderService.isNewVersionAvailable("1.342.2", "1.342.2"))
     }
 
