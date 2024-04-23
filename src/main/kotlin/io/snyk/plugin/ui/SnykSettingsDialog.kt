@@ -88,7 +88,7 @@ class SnykSettingsDialog(
 
     private val manageBinariesAutomatically: JCheckBox = JCheckBox()
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
-    private val channels = listOf("stable", "candidate", "preview").toArray(emptyArray())
+    private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
     private val cliBaseDownloadUrlTextField = JBTextField()
 
