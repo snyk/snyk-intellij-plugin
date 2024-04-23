@@ -12,17 +12,23 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 
     val codeSubdomain = "deeproxy"
     val snykCodeApiUrl = when {
-        uri.isLocalCodeEngine() ->
+        isLocalCodeEngine() ->
             return pluginSettings().localCodeEngineUrl!!
 
         uri.isDeeproxy() ->
             endpoint
 
         uri.isDev() ->
-            endpoint.replace("https://dev.", "https://$codeSubdomain.dev.")
+            endpoint
+                .replace("api.", "")
+                .replace("https://dev.", "https://$codeSubdomain.dev.")
+                .suffixIfNot("/")
 
         uri.isSnykTenant() ->
-            endpoint.replace("https://", "https://$codeSubdomain.")
+            endpoint
+                .replace("https://api.", "https://")
+                .replace("https://", "https://$codeSubdomain.")
+                .suffixIfNot("/")
 
         else -> "https://$codeSubdomain.snyk.io/"
     }
@@ -32,23 +38,23 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
+    val catchAllURL = "https://app.snyk.io"
 
     val baseUrl = when {
-        uri.isLocalCodeEngine() -> return uri.toString()
+        isLocalCodeEngine() -> return endpointUrl?.replace("https://api.", "https://app.") ?: catchAllURL
 
         uri.host == "snyk.io" ->
             "https://app.snyk.io/"
 
         uri.isDev() ->
             endpoint
-                .replace("https://dev.app.", "https://app.dev.")
+                .replace("https://dev.api.", "https://app.dev.")
                 .replace("https://dev.", "https://app.dev.")
 
         uri.isSnykTenant() ->
-            endpoint
+            endpoint.replace("https://api.", "https://app.")
 
-        else ->
-            "https://app.snyk.io/"
+        else -> catchAllURL
     }
 
     return baseUrl.removeSuffix("api").suffixIfNot("/") + "manage/snyk-code"
@@ -56,7 +62,7 @@ fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
 
 fun needsSnykToken(endpoint: String): Boolean {
     val uri = URI(endpoint)
-    return uri.isSnykApi() || uri.isSnykTenant() || uri.isDeeproxy() || uri.isLocalCodeEngine()
+    return uri.isSnykApi() || uri.isSnykTenant() || uri.isDeeproxy() || isLocalCodeEngine()
 }
 
 fun getEndpointUrl(): String {
@@ -67,36 +73,38 @@ fun getEndpointUrl(): String {
         ""
     }
     val customEndpointUrl = resolveCustomEndpoint(endpointUrl)
-    return if (customEndpointUrl.endsWith('/')) customEndpointUrl else "$customEndpointUrl/"
+    // we need to set v1 here, to make the sast-enabled calls work in LS
+    return customEndpointUrl.removeTrailingSlashesIfPresent().suffixIfNot("/v1")
 }
 
 fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
-    return uri.isSnykTenant() || uri.isLocalCodeEngine()
+    return uri.isSnykTenant() || isLocalCodeEngine()
 }
 
 /**
  * Resolves the custom endpoint.
  *
- * If the [endpointUrl] is null or empty, then [https://app.snyk.io/api](https://app.snyk.io/api) will be used.
+ * If the [endpointUrl] is null or empty, then [https://api.snyk.io](https://api.snyk.io) will be used.
  */
 internal fun resolveCustomEndpoint(endpointUrl: String?): String {
     return if (endpointUrl.isNullOrEmpty()) {
-        "https://app.snyk.io/api"
+        "https://api.snyk.io"
     } else {
-        endpointUrl.removeTrailingSlashesIfPresent()
+        endpointUrl
+            .removeTrailingSlashesIfPresent()
+            .removeSuffix("/api")
+            .replace("https://app.", "https://api.")
     }
 }
 
 fun URI.isSnykTenant() =
-    isSnykDomain() &&
-        path.lowercase().endsWith("/api") &&
-        (
-            host.lowercase().startsWith("app.") ||
-                host.lowercase() == "snyk.io" ||
-                isDev()
-            )
+    isSnykDomain()
+        && ((host.lowercase().startsWith("app.") && path.lowercase().endsWith("/api"))
+        || (host.lowercase() == "snyk.io" && path.lowercase().endsWith("/api"))
+        || (host.lowercase().startsWith("api.") && !path.lowercase().endsWith("/api"))
+        || isDev())
 
 fun URI.isSnykApi() = isSnykDomain() && (host.lowercase().startsWith("api.") || path.lowercase().endsWith("/api"))
 
@@ -136,7 +144,7 @@ fun isAnalyticsPermitted(): Boolean {
         ?.isAnalyticsPermitted() ?: true
 }
 
-fun URI.isLocalCodeEngine() = pluginSettings().localCodeEngineEnabled == true
+fun isLocalCodeEngine() = pluginSettings().localCodeEngineEnabled == true
 
 internal fun String.removeTrailingSlashesIfPresent(): String {
     val candidate = this.replace(Regex("/+$"), "")

@@ -33,17 +33,17 @@ class CustomEndpointsTest {
         val endpointForNull = resolveCustomEndpoint(null)
         val endpointForEmpty = resolveCustomEndpoint("")
 
-        assertEquals("https://app.snyk.io/api", endpointForNull)
-        assertEquals("https://app.snyk.io/api", endpointForEmpty)
+        assertEquals("https://api.snyk.io", endpointForNull)
+        assertEquals("https://api.snyk.io", endpointForEmpty)
     }
 
     @Test
     fun `resolveCustomEndpoint removes all trailing slashes if present`() {
-        val endpointWithSingleTrailingSlash = resolveCustomEndpoint("https://on-prem.internal/api")
-        val endpointWithMultipleTrailingSlashes = resolveCustomEndpoint("https://on-prem.internal/api///")
+        val endpointWithSingleTrailingSlash = resolveCustomEndpoint("https://app.on-prem.internal/api")
+        val endpointWithMultipleTrailingSlashes = resolveCustomEndpoint("https://app.on-prem.internal/api///")
 
-        assertEquals("https://on-prem.internal/api", endpointWithSingleTrailingSlash)
-        assertEquals("https://on-prem.internal/api", endpointWithMultipleTrailingSlashes)
+        assertEquals("https://api.on-prem.internal", endpointWithSingleTrailingSlash)
+        assertEquals("https://api.on-prem.internal", endpointWithMultipleTrailingSlashes)
     }
 
     @Test
@@ -55,7 +55,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `isSnykCodeAvailable returns true for SaaS deployments`() {
-        val snykCodeAvailableForProduction = isSnykCodeAvailable("https://snyk.io/api")
+        val snykCodeAvailableForProduction = isSnykCodeAvailable("https://api.snyk.io")
         val snykCodeAvailableForDevelopment = isSnykCodeAvailable("https://dev.snyk.io/api")
 
         assertEquals(true, snykCodeAvailableForProduction)
@@ -64,15 +64,15 @@ class CustomEndpointsTest {
 
     @Test
     fun `isSnykCodeAvailable returns true if local engine is enabled`() {
-        every { pluginSettings().localCodeEngineUrl } returns "https://foo.bar/api"
+        every { pluginSettings().localCodeEngineUrl } returns "https://api.foo.bar"
         every { pluginSettings().localCodeEngineEnabled } returns true
 
-        assertEquals(isSnykCodeAvailable("https://foo.bar/api"), true)
+        assertEquals(isSnykCodeAvailable("https://api.foo.bar"), true)
     }
 
     @Test
     fun `isSnykCodeAvailable returns true for Single Tenant deployments`() {
-        val snykCodeAvailable = isSnykCodeAvailable("https://app.random-uuid.snyk.io/api")
+        val snykCodeAvailable = isSnykCodeAvailable("https://api.random-uuid.snyk.io")
 
         assertEquals(true, snykCodeAvailable)
     }
@@ -87,7 +87,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeApiUrl returns correct deeproxy url for SaaS deployments`() {
-        val apiUrlForProduction = toSnykCodeApiUrl("https://snyk.io/api")
+        val apiUrlForProduction = toSnykCodeApiUrl("https://api.snyk.io")
         val apiUrlForDevelopment = toSnykCodeApiUrl("https://dev.snyk.io/api")
 
         assertEquals("https://deeproxy.snyk.io/", apiUrlForProduction)
@@ -96,17 +96,17 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeApiUrl returns local engine URL if local engine is enabled`() {
-        every { pluginSettings().localCodeEngineUrl } returns "https://foo.bar/api"
+        every { pluginSettings().localCodeEngineUrl } returns "https://api.foo.bar"
         every { pluginSettings().localCodeEngineEnabled } returns true
-        val apiUrlForProduction = toSnykCodeApiUrl("https://snyk.io/api")
+        val apiUrlForProduction = toSnykCodeApiUrl("https://api.snyk.io")
 
-        assertEquals("https://foo.bar/api", apiUrlForProduction)
+        assertEquals("https://api.foo.bar", apiUrlForProduction)
     }
 
     @Test
     fun `toSnykCodeApiUrl returns correct deeproxy url for SaaS deployments using api url`() {
-        val apiUrlForProduction = toSnykCodeApiUrl("https://app.eu.snyk.io/api")
-        val apiUrlForDevelopment = toSnykCodeApiUrl("https://dev.app.eu.snyk.io/api")
+        val apiUrlForProduction = toSnykCodeApiUrl("https://api.eu.snyk.io")
+        val apiUrlForDevelopment = toSnykCodeApiUrl("https://dev.api.eu.snyk.io")
 
         assertEquals("https://deeproxy.eu.snyk.io/", apiUrlForProduction)
         assertEquals("https://deeproxy.dev.eu.snyk.io/", apiUrlForDevelopment)
@@ -114,30 +114,30 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeApiUrl returns correct deeproxy url for Single Tenant deployments`() {
-        val apiUrl = toSnykCodeApiUrl("https://app.random-uuid.snyk.io/api")
+        val apiUrl = toSnykCodeApiUrl("https://api.random-uuid.snyk.io")
 
         assertEquals("https://deeproxy.random-uuid.snyk.io/", apiUrl)
     }
 
     @Test
     fun `toSnykCodeSettingsUrl returns correct settings url for SaaS deployments`() {
-        assertEquals("https://app.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://snyk.io/api"))
-        assertEquals("https://app.dev.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://dev.snyk.io/api"))
-        assertEquals("https://app.dev.eu.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://dev.app.eu.snyk.io"))
+        assertEquals("https://app.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://api.snyk.io"))
+        assertEquals("https://app.dev.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://dev.snyk.io"))
+        assertEquals("https://app.dev.eu.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://dev.api.eu.snyk.io"))
         assertEquals("https://app.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://something.eu.snyk.io"))
     }
 
     @Test
-    fun `toSnykCodeSettingsUrl returns URL unedited for local engine`() {
-        every { pluginSettings().localCodeEngineUrl } returns "https://foo.bar/api"
+    fun `toSnykCodeSettingsUrl returns APP-URL for local engine`() {
+        every { pluginSettings().localCodeEngineUrl } returns "https://api.foo.bar"
         every { pluginSettings().localCodeEngineEnabled } returns true
 
-        assertEquals(toSnykCodeSettingsUrl("https://foo.bar/api"), "https://foo.bar/api")
+        assertEquals("https://app.foo.bar", toSnykCodeSettingsUrl("https://api.foo.bar"))
     }
 
     @Test
     fun `toSnykCodeSettingsUrl returns correct settings url for Single Tenant deployments`() {
-        val settingsUrl = toSnykCodeSettingsUrl("https://app.random-uuid.snyk.io/api")
+        val settingsUrl = toSnykCodeSettingsUrl("https://api.random-uuid.snyk.io")
 
         assertEquals("https://app.random-uuid.snyk.io/manage/snyk-code", settingsUrl)
     }
