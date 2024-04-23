@@ -575,7 +575,9 @@ class SnykSettingsDialog(
                     "If <i>Automatically manage needed binaries</i> is unchecked, " +
                     "please make sure to select a valid path to an <br>" +
                     "existing Snyk CLI.<br/><br/>" +
-                    "The <i>stable</i> release channel releases every 2 months, the <i>preview</i> channel continuously.</html>"
+                    "The <i>stable</i> release channel releases every 2 months, the <i>rc</i> channel releases for all release candidates, <br/>" +
+                    "the <i>preview</i> channel continuously. A version can also be specified directly by entering its number, e.g. <i>v1.1290.1</i>" +
+                    "</html>"
             )
         descriptionLabelManageBinaries.font = FontUtil.minusOne(descriptionLabelManageBinaries.font)
         executableSettingsPanel.add(
