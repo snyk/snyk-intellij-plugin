@@ -21,7 +21,8 @@ class CliDownloaderTest {
     fun setUp() {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { pluginSettings() } returns SnykApplicationSettingsStateService()
+        val settingsStateService = SnykApplicationSettingsStateService()
+        every { pluginSettings() } returns settingsStateService
     }
 
     @After
@@ -46,7 +47,7 @@ class CliDownloaderTest {
     @Test
     fun `should download version information from base url`() {
         val expected =
-            "${CliDownloader.BASE_URL}/cli/latest/ls-protocol-version-" +
+            "${CliDownloader.BASE_URL}/cli/stable/ls-protocol-version-" +
                 SnykApplicationSettingsStateService().requiredLsProtocolVersion
 
         assertEquals(
@@ -58,7 +59,17 @@ class CliDownloaderTest {
     @Test
     fun `should download protocol version from base url`() {
         assertEquals(
-            "${CliDownloader.BASE_URL}/cli/latest/ls-protocol-version-${pluginSettings().requiredLsProtocolVersion}",
+            "${CliDownloader.BASE_URL}/cli/stable/ls-protocol-version-${pluginSettings().requiredLsProtocolVersion}",
+            CliDownloader.LATEST_RELEASES_URL
+        )
+    }
+
+    @Test
+    fun `should download protocol version from release channel url`() {
+        val channel = "testChannel"
+        pluginSettings().cliReleaseChannel = channel
+        assertEquals(
+            "${CliDownloader.BASE_URL}/cli/$channel/ls-protocol-version-${pluginSettings().requiredLsProtocolVersion}",
             CliDownloader.LATEST_RELEASES_URL
         )
     }

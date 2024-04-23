@@ -5,7 +5,6 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getSnykAnalyticsService
@@ -51,7 +50,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
         snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
         snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
-        snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave
+        snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
+        snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel
 
     private fun isCoreParamsModified() = isTokenModified() ||
         isCustomEndpointModified() ||
@@ -90,6 +90,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
         settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
         settingsStateService.cliBaseDownloadURL = snykSettingsDialog.getCliBaseDownloadURL().trim()
+        settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+
         settingsStateService.scanOnSave = snykSettingsDialog.isScanOnSaveEnabled()
 
         snykSettingsDialog.saveScanTypeChanges()

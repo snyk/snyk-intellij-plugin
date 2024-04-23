@@ -7,6 +7,8 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ui.configuration.JdkComboBox.JdkComboBoxItem
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
@@ -14,6 +16,7 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.components.DropDownLink
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
@@ -22,7 +25,9 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.FontUtil
+import com.intellij.util.containers.toArray
 import com.intellij.util.ui.GridBag
+import com.intellij.util.ui.JBUI
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykCliAuthenticationService
@@ -36,6 +41,7 @@ import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.IssueViewOptionsPanel
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
+import org.jetbrains.kotlin.tools.projectWizard.core.entity.settings.DropDownSettingType
 import snyk.SnykBundle
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -45,6 +51,7 @@ import java.util.UUID
 import java.util.function.Supplier
 import javax.swing.JButton
 import javax.swing.JCheckBox
+import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -86,6 +93,8 @@ class SnykSettingsDialog(
 
     private val manageBinariesAutomatically: JCheckBox = JCheckBox()
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
+    private val channels = listOf("stable", "preview").toArray(emptyArray())
+    private val cliReleaseChannelDropDown = ComboBox(channels)
     private val cliBaseDownloadUrlTextField = JBTextField()
 
     private val logger = Logger.getInstance(this::class.java)
@@ -138,6 +147,8 @@ class SnykSettingsDialog(
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
+
+            cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
         }
     }
 
@@ -153,11 +164,11 @@ class SnykSettingsDialog(
     }
 
     private fun initializeUiComponents() {
-        rootPanel.layout = UIGridLayoutManager(10, 1, Insets(0, 0, 0, 0), -1, -1)
+        rootPanel.layout = UIGridLayoutManager(10, 1, JBUI.emptyInsets(), -1, -1)
 
         /** General settings ------------------ */
 
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 4, JBUI.emptyInsets(), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -281,7 +292,7 @@ class SnykSettingsDialog(
         /** Products and Severities selection ------------------ */
 
         if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
-            val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, Insets(0, 0, 0, 0), 30, -1))
+            val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, JBUI.emptyInsets(), 30, -1))
             issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
 
             val issueViewLabel = JLabel("Show the following issues:")
@@ -316,7 +327,7 @@ class SnykSettingsDialog(
                 )
             )
         }
-        val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(6, 4, Insets(0, 0, 0, 0), 30, -1))
+        val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(6, 4, JBUI.emptyInsets(), 30, -1))
 
         rootPanel.add(
             productAndSeveritiesPanel,
@@ -329,7 +340,7 @@ class SnykSettingsDialog(
             )
         )
 
-        val productSelectionPanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
+        val productSelectionPanel = JPanel(UIGridLayoutManager(5, 4, JBUI.emptyInsets(), -1, -1))
         productSelectionPanel.border = IdeBorderFactory.createTitledBorder("Product selection")
 
         productAndSeveritiesPanel.add(
@@ -355,7 +366,7 @@ class SnykSettingsDialog(
             )
         )
 
-        val severitiesPanel = JPanel(UIGridLayoutManager(5, 4, Insets(0, 0, 0, 0), -1, -1))
+        val severitiesPanel = JPanel(UIGridLayoutManager(5, 4, JBUI.emptyInsets(), -1, -1))
         severitiesPanel.border = IdeBorderFactory.createTitledBorder("Severity selection")
 
         productAndSeveritiesPanel.add(
@@ -394,7 +405,7 @@ class SnykSettingsDialog(
         /** Project settings ------------------ */
 
         if (isProjectSettingsAvailable(project)) {
-            val projectSettingsPanel = JPanel(UIGridLayoutManager(3, 3, Insets(0, 0, 0, 0), -1, -1))
+            val projectSettingsPanel = JPanel(UIGridLayoutManager(3, 3, JBUI.emptyInsets(), -1, -1))
             projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
 
             rootPanel.add(
@@ -443,11 +454,11 @@ class SnykSettingsDialog(
             )
         }
 
-        createExecutableSettingsPanel(4)
+        createExecutableSettingsPanel()
 
         /** User experience ------------------ */
 
-        val userExperiencePanel = JPanel(UIGridLayoutManager(6, 4, Insets(0, 0, 0, 0), -1, -1))
+        val userExperiencePanel = JPanel(UIGridLayoutManager(6, 4, JBUI.emptyInsets(), -1, -1))
         userExperiencePanel.border = IdeBorderFactory.createTitledBorder("User experience")
 
         rootPanel.add(
@@ -504,7 +515,7 @@ class SnykSettingsDialog(
         )
     }
 
-    private fun createExecutableSettingsPanel(row: Int) {
+    private fun createExecutableSettingsPanel() {
         val executableSettingsPanel = JPanel(GridBagLayout())
         executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable settings")
         val gb = GridBag().setDefaultWeightX(1.0)
@@ -514,7 +525,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             executableSettingsPanel,
             baseGridConstraints(
-                row = row,
+                row = 4,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
@@ -568,11 +579,22 @@ class SnykSettingsDialog(
                     "dependencies are downloaded.<br>" +
                     "If <i>Automatically manage needed binaries</i> is unchecked, " +
                     "please make sure to select a valid path to an <br>" +
-                    "existing Snyk CLI.</html>"
+                    "existing Snyk CLI.<br/><br/>" +
+                    "The <i>stable</i> release channel releases every 2 months, the <i>preview</i> channel continuously.</html>"
             )
         descriptionLabelManageBinaries.font = FontUtil.minusOne(descriptionLabelManageBinaries.font)
         executableSettingsPanel.add(
             descriptionLabelManageBinaries,
+            gb.nextLine()
+        )
+
+        executableSettingsPanel.add(
+            panel {
+                row {
+                    label("CLI Release Channel:")
+                    cell(cliReleaseChannelDropDown)
+                }
+            },
             gb.nextLine()
         )
     }
@@ -652,4 +674,5 @@ class SnykSettingsDialog(
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
     fun getCliBaseDownloadURL(): String = cliBaseDownloadUrlTextField.text
+    fun getCliReleaseChannel() : String = cliReleaseChannelDropDown.selectedItem as String
 }
