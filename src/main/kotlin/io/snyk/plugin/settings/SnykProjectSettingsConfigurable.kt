@@ -63,7 +63,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isOrganizationModified() ||
         isAdditionalParametersModified()
 
-    @OptIn(DelicateCoroutinesApi::class)
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
 
