@@ -1,5 +1,8 @@
 package io.snyk.plugin.settings
 
+import com.intellij.notification.Notification
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
@@ -9,6 +12,7 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykProjectSettingsService
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isProjectSettingsAvailable
@@ -21,6 +25,7 @@ import io.snyk.plugin.snykcode.core.SnykCodeParams
 import io.snyk.plugin.snykcode.newCodeRestApi
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
+import kotlinx.coroutines.DelicateCoroutinesApi
 import snyk.amplitude.api.ExperimentUser
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.toSnykCodeApiUrl
@@ -58,6 +63,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         isOrganizationModified() ||
         isAdditionalParametersModified()
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
 
@@ -90,7 +96,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
         settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
         settingsStateService.cliBaseDownloadURL = snykSettingsDialog.getCliBaseDownloadURL().trim()
-        settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
 
         settingsStateService.scanOnSave = snykSettingsDialog.isScanOnSaveEnabled()
 
@@ -108,6 +113,29 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
                 settingsStateService.isGlobalIgnoresFeatureEnabled =
                     LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
             }
+        }
+
+        if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
+            settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+            var notification: Notification? = null
+            val downloadAction = object : AnAction("Download") {
+                override fun actionPerformed(e: AnActionEvent) {
+                    getSnykTaskQueueService(project)?.downloadLatestRelease(true)
+                        ?: SnykBalloonNotificationHelper.showWarn("Could not download Snyk CLI", project)
+                    notification?.expire()
+                }
+            }
+            val noAction = object : AnAction("Cancel") {
+                override fun actionPerformed(e: AnActionEvent) {
+                    notification?.expire()
+                }
+            }
+            notification = SnykBalloonNotificationHelper.showInfo(
+                "You changed the release channel. Would you like to download a new Snyk CLI now?",
+                project,
+                downloadAction,
+                noAction
+            )
         }
 
         if (rescanNeeded) {

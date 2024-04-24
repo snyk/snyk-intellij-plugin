@@ -12,6 +12,7 @@ import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.IdeBorderFactory
@@ -39,6 +40,7 @@ import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.settings.IssueViewOptionsPanel
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -63,6 +65,9 @@ class SnykSettingsDialog(
 ) {
 
     private val rootPanel = object : JPanel(), Disposable {
+        init {
+            Disposer.register(SnykPluginDisposable.getInstance(project), this)
+        }
         override fun dispose() = Unit
     }
 
@@ -528,6 +533,15 @@ class SnykSettingsDialog(
             )
         )
 
+        val introLabel =
+            JLabel("<html>These options allow you to customize the handling, where and how plugin dependencies are downloaded.<br/><br/></html>")
+
+        introLabel.font = FontUtil.minusOne(introLabel.font)
+        executableSettingsPanel.add(
+            introLabel,
+            gb.nextLine()
+        )
+
         cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://static.snyk.io. " +
             "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://static.snyk.io/fips"
         val cliBaseDownloadPanel = panel {
@@ -558,39 +572,43 @@ class SnykSettingsDialog(
             gb.nextLine()
         )
 
+        val descriptionLabelManageBinaries =
+            JLabel(
+                "<html>" +
+                    "If <i>Automatically manage needed binaries</i> is checked, the plugin will try to download the CLI every 4 days to the given path,<br/>" +
+                    "or to the default path. If unchecked, please make sure to select a valid path to an existing Snyk CLI.<br/><br/></html>"
+            )
+        descriptionLabelManageBinaries.font = FontUtil.minusOne(descriptionLabelManageBinaries.font)
+
         executableSettingsPanel.add(
             panel {
                 row {
                     label("Automatically manage needed binaries: ")
                     cell(manageBinariesAutomatically).align(AlignX.FILL)
                 }
+                row { cell(descriptionLabelManageBinaries) }
             },
             gb.nextLine()
         )
 
-        val descriptionLabelManageBinaries =
+        val descriptionLabelReleaseChannel =
             JLabel(
-                "<html>These options allow you to customize the handling, where and how plugin " +
-                    "dependencies are downloaded.<br>" +
-                    "If <i>Automatically manage needed binaries</i> is unchecked, " +
-                    "please make sure to select a valid path to an <br>" +
-                    "existing Snyk CLI.<br/><br/>" +
-                    "The <i>stable</i> release channel releases every 2 months, the <i>rc</i> channel releases for all release candidates, <br/>" +
-                    "the <i>preview</i> channel continuously. A version can also be specified directly by entering its number, e.g. <i>v1.1290.1</i>" +
+                "<html>" +
+                    "<li>Stable release channel releases every 2 months</li>" +
+                    "<li>RC channel releases for all release candidates</li>" +
+                    "<li>Preview channel releases continuously.</li>" +
+                    "<li>A version can also be specified directly by entering its number, e.g. v1.1290.1</li>" +
                     "</html>"
             )
-        descriptionLabelManageBinaries.font = FontUtil.minusOne(descriptionLabelManageBinaries.font)
-        executableSettingsPanel.add(
-            descriptionLabelManageBinaries,
-            gb.nextLine()
-        )
+        descriptionLabelReleaseChannel.font = FontUtil.minusOne(descriptionLabelReleaseChannel.font)
 
         executableSettingsPanel.add(
             panel {
                 row {
-                    label("CLI Release Channel:")
+                    label("CLI release channel:")
                     cell(cliReleaseChannelDropDown)
                 }
+                row { cell(descriptionLabelReleaseChannel) }
             },
             gb.nextLine()
         )
@@ -671,5 +689,5 @@ class SnykSettingsDialog(
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
     fun getCliBaseDownloadURL(): String = cliBaseDownloadUrlTextField.text
-    fun getCliReleaseChannel() : String = cliReleaseChannelDropDown.selectedItem as String
+    fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
 }

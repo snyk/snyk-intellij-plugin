@@ -303,7 +303,7 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    fun downloadLatestRelease() {
+    fun downloadLatestRelease(force: Boolean = false) {
         // abort even before submitting a task
         val cliDownloader = getSnykCliDownloaderService()
         if (!pluginSettings().manageBinariesAutomatically) {
@@ -327,7 +327,7 @@ class SnykTaskQueueService(val project: Project) {
                 if (!isCliInstalled()) {
                     cliDownloader.downloadLatestRelease(indicator, project)
                 } else {
-                    cliDownloader.cliSilentAutoUpdate(indicator, project)
+                    cliDownloader.cliSilentAutoUpdate(indicator, project, force)
                 }
                 cliDownloadPublisher.checkCliExistsFinished()
             }
