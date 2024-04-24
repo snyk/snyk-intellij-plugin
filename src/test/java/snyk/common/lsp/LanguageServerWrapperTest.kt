@@ -112,25 +112,21 @@ class LanguageServerWrapperTest {
         assertEquals(getCliFile().absolutePath, actual.cliPath)
     }
 
+    @Ignore // somehow it doesn't work in the pipeline
     @Test
-    @Ignore
     fun `sendFeatureFlagCommand should return true if feature flag is enabled`() {
         // Arrange
         cut.languageClient = mockk(relaxed = true)
-        val processMock = mockk<Process>(relaxed = true)
-        cut.process = processMock
         val featureFlag = "testFeatureFlag"
-        every { processMock.info().startInstant().isPresent } returns true
-        every { processMock.isAlive } returns true
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(mapOf("ok" to true))
+        justRun { applicationMock.invokeLater(any()) }
 
         // Act
         val result = cut.getFeatureFlagStatus(featureFlag)
 
         // Assert
         assertEquals(true, result)
-
     }
 }

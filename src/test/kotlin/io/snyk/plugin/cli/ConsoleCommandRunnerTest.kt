@@ -64,7 +64,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://customerTestEndpoint/"
+            val expectedEndpoint = "https://customerTestEndpoint/v1"
             pluginSettings().customEndpointUrl = expectedEndpoint
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
@@ -94,7 +94,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://app.xxx.snykgov.io/"
+            val expectedEndpoint = "https://api.xxx.snykgov.io/v1"
             generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
             assertTrue(URI(expectedEndpoint).isOauth())
 
@@ -116,7 +116,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://snyk.io/"
+            val expectedEndpoint = "https://snyk.io/v1"
             generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = "{}"
             assertFalse(URI(expectedEndpoint).isOauth())
 
@@ -138,12 +138,12 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://customerTestEndpoint"
+            val expectedEndpoint = "https://customerTestEndpoint/v1"
             pluginSettings().customEndpointUrl = expectedEndpoint
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
-            assertEquals("$expectedEndpoint/", generalCommandLine.environment["SNYK_API"])
+            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
         } finally {
             pluginSettings().customEndpointUrl = oldEndpoint
         }
