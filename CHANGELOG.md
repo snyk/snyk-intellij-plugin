@@ -1,6 +1,9 @@
 # Snyk Security Changelog
 
 ## [2.7.17]
+### Fixed
+- Fixed problem in re-enablement of scan types when only one scan type was selected
+
 ### Added
 - Use https://api.XXX.snyk.io/v1 and https://api.XXX.snykgov.io/v1 as endpoint URLs
 - Allow selection of CLI release channels (stable/preview)
