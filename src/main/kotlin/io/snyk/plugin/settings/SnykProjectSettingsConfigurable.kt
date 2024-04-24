@@ -115,26 +115,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         }
 
         if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
-            settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
-            var notification: Notification? = null
-            val downloadAction = object : AnAction("Download") {
-                override fun actionPerformed(e: AnActionEvent) {
-                    getSnykTaskQueueService(project)?.downloadLatestRelease(true)
-                        ?: SnykBalloonNotificationHelper.showWarn("Could not download Snyk CLI", project)
-                    notification?.expire()
-                }
-            }
-            val noAction = object : AnAction("Cancel") {
-                override fun actionPerformed(e: AnActionEvent) {
-                    notification?.expire()
-                }
-            }
-            notification = SnykBalloonNotificationHelper.showInfo(
-                "You changed the release channel. Would you like to download a new Snyk CLI now?",
-                project,
-                downloadAction,
-                noAction
-            )
+            handleReleaseChannelChanged()
         }
 
         if (rescanNeeded) {
@@ -155,6 +136,29 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
                 getAmplitudeExperimentService().fetch(ExperimentUser(userId))
             }
         }
+    }
+
+    private fun handleReleaseChannelChanged() {
+        settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+        var notification: Notification? = null
+        val downloadAction = object : AnAction("Download") {
+            override fun actionPerformed(e: AnActionEvent) {
+                getSnykTaskQueueService(project)?.downloadLatestRelease(true)
+                    ?: SnykBalloonNotificationHelper.showWarn("Could not download Snyk CLI", project)
+                notification?.expire()
+            }
+        }
+        val noAction = object : AnAction("Cancel") {
+            override fun actionPerformed(e: AnActionEvent) {
+                notification?.expire()
+            }
+        }
+        notification = SnykBalloonNotificationHelper.showInfo(
+            "You changed the release channel. Would you like to download a new Snyk CLI now?",
+            project,
+            downloadAction,
+            noAction
+        )
     }
 
     private fun isTokenModified(): Boolean =
