@@ -80,7 +80,7 @@ class ScanTypesPanel(
             }
             .actionListener{ event, it ->
                 val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
+                if (canBeChanged(it, isSelected)) {
                     // we need to change the settings in here in order for the validation to work pre-apply
                     currentOSSScanEnabled = isSelected
                 }
@@ -96,7 +96,7 @@ class ScanTypesPanel(
             }
             .actionListener{ event, it ->
                 val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
+                if (canBeChanged(it, isSelected)) {
                     currentAdvisorEnabled = isSelected
                 }
             }
@@ -109,7 +109,7 @@ class ScanTypesPanel(
             }
             .actionListener{ event, it ->
                 val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
+                if (canBeChanged(it, isSelected)) {
                     currentIaCScanEnabled = isSelected
                 }
             }
@@ -122,7 +122,7 @@ class ScanTypesPanel(
             }
             .actionListener{ event, it ->
                 val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
+                if (canBeChanged(it, isSelected)) {
                     currentContainerScanEnabled = isSelected
                     val imagesCache = getKubernetesImageCache(project)
                     if (isSelected) imagesCache?.cacheKubernetesFileFromProject() else imagesCache?.clear()
@@ -135,11 +135,10 @@ class ScanTypesPanel(
                 name = text
                 codeSecurityCheckbox = this
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_SECURITY.description)
-                isSelected = settings.snykCodeSecurityIssuesScanEnable
             }
             .actionListener{ event, it ->
                 val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
+                if (canBeChanged(it, isSelected)) {
                     currentSnykCodeSecurityScanEnabled = isSelected
                     snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
                 }
@@ -152,7 +151,7 @@ class ScanTypesPanel(
             }
             .actionListener{ event, it ->
                 val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
+                if (canBeChanged(it, isSelected)) {
                     currentSnykCodeQualityScanEnabled = isSelected
                     snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
                 }
