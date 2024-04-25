@@ -10,7 +10,6 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
-import io.snyk.plugin.tail
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 import java.time.LocalDate
@@ -81,7 +80,7 @@ class SnykCliDownloaderService {
                     }
                 }
                 downloader.downloadFile(cliFile, latestRelease, indicator)
-                pluginSettings().cliVersion = cliVersionNumbers(latestRelease)
+                pluginSettings().cliVersion = latestRelease
                 pluginSettings().lastCheckDate = Date()
                 succeeded = true
             } catch (e: HttpRequests.HttpStatusException) {
@@ -111,12 +110,14 @@ class SnykCliDownloaderService {
      *   - if no -> do nothing
      * 3. CLI installed and current LS protocol version does not match required version -> download
      * 4. CLI installed, more than 4 days have passed and new version available -> download
+     * 5. force param is set - always download
      *
      * @param indicator - progress indicator
      * @param project - current project
+     * @param force - force the download
      */
-    fun cliSilentAutoUpdate(indicator: ProgressIndicator, project: Project) {
-        if (isFourDaysPassedSinceLastCheck() || !matchesRequiredLsProtocolVersion()) {
+    fun cliSilentAutoUpdate(indicator: ProgressIndicator, project: Project, force: Boolean = false) {
+        if (force || isFourDaysPassedSinceLastCheck() || !matchesRequiredLsProtocolVersion()) {
             val latestReleaseInfo = requestLatestReleasesInformation()
 
             indicator.checkCanceled()
@@ -125,7 +126,7 @@ class SnykCliDownloaderService {
 
             if (
                 !latestReleaseInfo.isNullOrEmpty() &&
-                isNewVersionAvailable(settings.cliVersion, cliVersionNumbers(latestReleaseInfo))
+                isNewVersionAvailable(settings.cliVersion, latestReleaseInfo)
             ) {
                 downloadLatestRelease(indicator, project)
                 settings.lastCheckDate = Date()
@@ -150,33 +151,6 @@ class SnykCliDownloaderService {
 
         if (cliVersionsNullOrEmpty) return true
 
-        tailrec fun checkIsNewVersionAvailable(
-            currentCliVersionNumbers: List<String>,
-            newCliVersionNumbers: List<String>
-        ): Boolean {
-            return if (currentCliVersionNumbers.isNotEmpty() && newCliVersionNumbers.isNotEmpty()) {
-                val newVersionNumber = newCliVersionNumbers[0].toInt()
-                val currentVersionNumber = currentCliVersionNumbers[0].toInt()
-
-                when (val compareResult = newVersionNumber.compareTo(currentVersionNumber)) {
-                    0 -> checkIsNewVersionAvailable(currentCliVersionNumbers.tail, newCliVersionNumbers.tail)
-                    else -> compareResult > 0
-                }
-            } else {
-                false
-            }
-        }
-
-        return checkIsNewVersionAvailable(currentCliVersion!!.split('.'), newCliVersion!!.split('.'))
+        return currentCliVersion != newCliVersion
     }
-
-    /**
-     * Clear version number: v1.143.1 => 1.143.1
-
-     * @param sourceVersion - source cli version string
-     *
-     * @return String
-     */
-    private fun cliVersionNumbers(sourceVersion: String): String =
-        sourceVersion.replaceFirst("v", "")
 }

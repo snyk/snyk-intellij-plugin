@@ -13,7 +13,6 @@ import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
