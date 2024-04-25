@@ -78,7 +78,7 @@ class ScanTypesPanel(
                 cliScanComments?.let { comment(it) }
                 label("").component.convertIntoHelpHintLabel(ProductType.OSS.description)
             }
-                .actionListener { event, it ->
+                .actionListener { _, it ->
                     val isSelected = it.isSelected
                     if (canBeChanged(it)) {
                         // we need to change the settings in here in order for the validation to work pre-apply
@@ -94,7 +94,7 @@ class ScanTypesPanel(
                 name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.ADVISOR.description)
             }
-                .actionListener { event, it ->
+                .actionListener { _, it ->
                     val isSelected = it.isSelected
                     if (canBeChanged(it)) {
                         currentAdvisorEnabled = isSelected
@@ -107,7 +107,7 @@ class ScanTypesPanel(
                 name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
             }
-                .actionListener { event, it ->
+                .actionListener { _, it ->
                     val isSelected = it.isSelected
                     if (canBeChanged(it)) {
                         currentIaCScanEnabled = isSelected
@@ -120,7 +120,7 @@ class ScanTypesPanel(
                 name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
             }
-                .actionListener { event, it ->
+                .actionListener { _, it ->
                     val isSelected = it.isSelected
                     if (canBeChanged(it)) {
                         currentContainerScanEnabled = isSelected
@@ -137,7 +137,7 @@ class ScanTypesPanel(
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_SECURITY.description)
                 isSelected = settings.snykCodeSecurityIssuesScanEnable
             }
-                .actionListener { event, it ->
+                .actionListener { _, it ->
                     val isSelected = it.isSelected
                     if (canBeChanged(it)) {
                         currentSnykCodeSecurityScanEnabled = isSelected
@@ -150,7 +150,7 @@ class ScanTypesPanel(
                 codeQualityCheckbox = this
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
             }
-                .actionListener { event, it ->
+                .actionListener { _, it ->
                     val isSelected = it.isSelected
                     if (canBeChanged(it)) {
                         currentSnykCodeQualityScanEnabled = isSelected

@@ -25,7 +25,7 @@ class IssueViewOptionsPanel(
             ).applyToComponent {
                 name = text
             }
-            .actionListener{ event, it ->
+            .actionListener{ _, it ->
                 if (canBeChanged(it, it.isSelected)) {
                     currentOpenIssuesEnabled = it.isSelected
                     getSnykTaskQueueService(project)?.scan(false)
@@ -41,7 +41,7 @@ class IssueViewOptionsPanel(
                 ).applyToComponent {
                     name = text
                 }
-                .actionListener{ event, it ->
+                .actionListener{ _, it ->
                     if (canBeChanged(it, it.isSelected)) {
                         currentIgnoredIssuesEnabled = it.isSelected
                         getSnykTaskQueueService(project)?.scan(false)
