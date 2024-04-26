@@ -43,32 +43,6 @@ class AnalyticsScanListener(val project: Project) {
         )
     }
 
-    private val snykCodeScanListenerLS = object : SnykCodeScanListenerLS {
-        var start = 0L
-        override fun scanningStarted(snykScan: SnykScanParams) {
-            start = System.currentTimeMillis()
-        }
-
-        override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
-            val duration = System.currentTimeMillis() - start
-            val product = "Snyk Code"
-            val issues = snykCodeResults.values.flatten()
-            val scanDoneEvent = getScanDoneEvent(
-                duration,
-                product,
-                issues.count { it.getSeverityAsEnum() == Severity.CRITICAL },
-                issues.count { it.getSeverityAsEnum() == Severity.HIGH },
-                issues.count { it.getSeverityAsEnum() == Severity.MEDIUM },
-                issues.count { it.getSeverityAsEnum() == Severity.LOW },
-            )
-            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
-        }
-
-        override fun scanningSnykCodeError(snykScan: SnykScanParams) {
-            // do nothing
-        }
-    }
-
     val snykScanListener = object : SnykScanListener {
         var start: Long = 0
 
@@ -148,11 +122,5 @@ class AnalyticsScanListener(val project: Project) {
             SnykScanListener.SNYK_SCAN_TOPIC,
             snykScanListener,
         )
-
-        if (isSnykCodeLSEnabled())
-            project.messageBus.connect().subscribe(
-                SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
-                snykCodeScanListenerLS,
-            )
     }
 }

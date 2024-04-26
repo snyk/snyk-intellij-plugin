@@ -29,7 +29,6 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
-import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.net.ClientException
