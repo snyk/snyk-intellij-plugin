@@ -1,5 +1,6 @@
 package snyk.common.lsp
 
+import com.google.common.util.concurrent.CycleDetectingLockFactory
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -85,7 +86,9 @@ class LanguageServerWrapper(
      */
     lateinit var process: Process
 
-    private var isInitializing: ReentrantLock = ReentrantLock()
+    private var isInitializing: ReentrantLock =
+        CycleDetectingLockFactory.newInstance(CycleDetectingLockFactory.Policies.THROW)
+            .newReentrantLock("initializeLock")
 
     internal val isInitialized: Boolean
         get() = ::languageClient.isInitialized &&
@@ -133,6 +136,7 @@ class LanguageServerWrapper(
 
     fun shutdown(): Future<*> {
         return executorService.submit {
+            logger.info("Shutting down Language Server...")
             process.destroyForcibly()
         }
     }
@@ -231,6 +235,7 @@ class LanguageServerWrapper(
     fun ensureLanguageServerInitialized(): Boolean {
         if (!isInitialized) {
             try {
+                assert(isInitializing.holdCount == 0)
                 isInitializing.lock()
                 initialize()
             } finally {
@@ -340,7 +345,7 @@ class LanguageServerWrapper(
     }
 
     fun addContentRoots(project: Project) {
-        if (!isInitialized) return
+        assert(isInitialized)
         ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())

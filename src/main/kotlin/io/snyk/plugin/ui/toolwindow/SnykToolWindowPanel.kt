@@ -542,15 +542,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun enableCodeScanAccordingToServerSetting() {
         pluginSettings().apply {
-            val sastSettings = try {
-                getSnykApiService().getSastSettings()
-            } catch (ignored: ClientException) {
-                null
+            try {
+                // update settings if we get a valid/correct response, else log the error and do nothing
+                val sastSettings = getSnykApiService().getSastSettings()
+                sastOnServerEnabled = sastSettings?.sastEnabled
+                val codeScanAllowed = sastOnServerEnabled == true
+                snykCodeSecurityIssuesScanEnable = snykCodeSecurityIssuesScanEnable && codeScanAllowed
+                snykCodeQualityIssuesScanEnable = snykCodeQualityIssuesScanEnable && codeScanAllowed
+            } catch (clientException: ClientException) {
+                logger.error(clientException)
             }
-            sastOnServerEnabled = sastSettings?.sastEnabled
-            val codeScanAllowed = sastOnServerEnabled == true
-            snykCodeSecurityIssuesScanEnable = this.snykCodeSecurityIssuesScanEnable && codeScanAllowed
-            snykCodeQualityIssuesScanEnable = this.snykCodeQualityIssuesScanEnable && codeScanAllowed
         }
     }
 
