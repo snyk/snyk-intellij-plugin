@@ -2,16 +2,10 @@ package io.snyk.plugin.analytics
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.Severity
-import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.snykcode.SnykCodeResults
-import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.common.lsp.ScanIssue
-import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
