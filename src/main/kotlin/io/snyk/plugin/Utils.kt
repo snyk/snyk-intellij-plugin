@@ -29,7 +29,6 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
-import com.intellij.util.FileContentUtil
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.net.ClientException
@@ -159,9 +158,6 @@ fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {
     if (messageBus.isDisposed) return null
     return messageBus.syncPublisher(topic)
 }
-
-val <T> List<T>.tail: List<T>
-    get() = drop(1)
 
 val <T> List<T>.head: T
     get() = first()

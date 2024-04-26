@@ -2,16 +2,10 @@ package io.snyk.plugin.analytics
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.Severity
-import io.snyk.plugin.events.SnykCodeScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.snykcode.SnykCodeResults
-import io.snyk.plugin.snykcode.core.SnykCodeFile
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.common.lsp.ScanIssue
-import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
@@ -41,32 +35,6 @@ class AnalyticsScanListener(val project: Project) {
                 )
             )
         )
-    }
-
-    private val snykCodeScanListenerLS = object : SnykCodeScanListenerLS {
-        var start = 0L
-        override fun scanningStarted(snykScan: SnykScanParams) {
-            start = System.currentTimeMillis()
-        }
-
-        override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
-            val duration = System.currentTimeMillis() - start
-            val product = "Snyk Code"
-            val issues = snykCodeResults.values.flatten()
-            val scanDoneEvent = getScanDoneEvent(
-                duration,
-                product,
-                issues.count { it.getSeverityAsEnum() == Severity.CRITICAL },
-                issues.count { it.getSeverityAsEnum() == Severity.HIGH },
-                issues.count { it.getSeverityAsEnum() == Severity.MEDIUM },
-                issues.count { it.getSeverityAsEnum() == Severity.LOW },
-            )
-            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
-        }
-
-        override fun scanningSnykCodeError(snykScan: SnykScanParams) {
-            // do nothing
-        }
     }
 
     val snykScanListener = object : SnykScanListener {
@@ -148,11 +116,5 @@ class AnalyticsScanListener(val project: Project) {
             SnykScanListener.SNYK_SCAN_TOPIC,
             snykScanListener,
         )
-
-        if (isSnykCodeLSEnabled())
-            project.messageBus.connect().subscribe(
-                SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
-                snykCodeScanListenerLS,
-            )
     }
 }
