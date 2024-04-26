@@ -41,7 +41,7 @@ import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
-@Service
+@Service(Service.Level.PROJECT)
 class SnykTaskQueueService(val project: Project) {
     private val logger = logger<SnykTaskQueueService>()
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
@@ -81,23 +81,29 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun connectProjectToLanguageServer(project: Project) {
-        synchronized(LanguageServerWrapper) {
-
             // subscribe to the settings changed topic
-            getSnykToolWindowPanel(project)?.let {
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        getSnykToolWindowPanel(project)?.let {
                 project.messageBus.connect(it)
                     .subscribe(
                         SnykSettingsListener.SNYK_SETTINGS_TOPIC,
                         object : SnykSettingsListener {
                             override fun settingsChanged() {
-                                val wrapper = LanguageServerWrapper.getInstance()
-                                wrapper.updateConfiguration()
+                                languageServerWrapper.updateConfiguration()
                             }
                         }
                     )
             }
-            LanguageServerWrapper.getInstance().addContentRoots(project)
-        }
+            // Try to connect project for up to 30s
+            for (tries in 1..300) {
+                if (!languageServerWrapper.isInitialized) {
+                    Thread.sleep(100)
+                    continue
+                }
+
+                languageServerWrapper.addContentRoots(project)
+                break
+            }
     }
 
     fun scan(isStartup: Boolean) {
