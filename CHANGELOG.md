@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.7.18]
+### Added
+- Improved theming in the Code Issue Panel by applying IntelliJ theme colors dynamically to JCEF components. This ensures consistency of UI elements with the rest of the IDE.
+
 ## [2.7.17]
 ### Fixed
 - Fixed problem in re-enablement of scan types when only one scan type was selected
