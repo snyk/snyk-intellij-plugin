@@ -23,7 +23,7 @@ class SeveritiesEnablementPanel {
             checkBox(Severity.CRITICAL.toPresentableString()).applyToComponent {
                 name = text
             }
-            .actionListener{ event, it ->
+            .actionListener{ _, it ->
                 val isSelected = it.isSelected
                 if (canBeChanged(it, isSelected)) {
                     // we need to change the settings in here in order for the validation to work pre-apply
@@ -38,7 +38,7 @@ class SeveritiesEnablementPanel {
             checkBox(Severity.HIGH.toPresentableString()).applyToComponent {
                 name = text
             }
-            .actionListener{ event, it ->
+            .actionListener{ _, it ->
                 val isSelected = it.isSelected
                 if(canBeChanged(it, isSelected)) {
                     currentHighSeverityEnabled = isSelected
@@ -50,7 +50,7 @@ class SeveritiesEnablementPanel {
             checkBox(Severity.MEDIUM.toPresentableString()).applyToComponent {
                 name = text
             }
-            .actionListener{ event, it ->
+            .actionListener{ _, it ->
                 val isSelected = it.isSelected
                 if (canBeChanged(it, isSelected)) {
                     currentMediumSeverityEnabled = isSelected
@@ -62,7 +62,7 @@ class SeveritiesEnablementPanel {
             checkBox(Severity.LOW.toPresentableString()).applyToComponent {
                 name = text
             }
-            .actionListener{ event, it ->
+            .actionListener{ _, it ->
                 val isSelected = it.isSelected
                 if (canBeChanged(it, isSelected)) {
                     currentLowSeverityEnabled = isSelected

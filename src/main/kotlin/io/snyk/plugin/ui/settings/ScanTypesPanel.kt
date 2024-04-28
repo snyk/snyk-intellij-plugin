@@ -78,57 +78,57 @@ class ScanTypesPanel(
                 cliScanComments?.let { comment(it) }
                 label("").component.convertIntoHelpHintLabel(ProductType.OSS.description)
             }
-            .actionListener{ event, it ->
-                val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
-                    // we need to change the settings in here in order for the validation to work pre-apply
-                    currentOSSScanEnabled = isSelected
+                .actionListener { _, it ->
+                    val isSelected = it.isSelected
+                    if (canBeChanged(it)) {
+                        // we need to change the settings in here in order for the validation to work pre-apply
+                        currentOSSScanEnabled = isSelected
+                    }
                 }
-            }
-            // bindSelected is needed to trigger isModified() and then apply() on the settings dialog that this panel is rendered in
-            // that way we trigger the re-rendering of the Tree Nodes
-            .bindSelected(settings::ossScanEnable)
+                // bindSelected is needed to trigger isModified() and then apply() on the settings dialog that this panel is rendered in
+                // that way we trigger the re-rendering of the Tree Nodes
+                .bindSelected(settings::ossScanEnable)
         }
         row {
             checkBox(ProductType.ADVISOR.productSelectionName).applyToComponent {
                 name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.ADVISOR.description)
             }
-            .actionListener{ event, it ->
-                val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
-                    currentAdvisorEnabled = isSelected
+                .actionListener { _, it ->
+                    val isSelected = it.isSelected
+                    if (canBeChanged(it)) {
+                        currentAdvisorEnabled = isSelected
+                    }
                 }
-            }
-            .bindSelected(settings::advisorEnable)
+                .bindSelected(settings::advisorEnable)
         }
         row {
             checkBox(ProductType.IAC.productSelectionName).applyToComponent {
                 name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.IAC.description)
             }
-            .actionListener{ event, it ->
-                val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
-                    currentIaCScanEnabled = isSelected
+                .actionListener { _, it ->
+                    val isSelected = it.isSelected
+                    if (canBeChanged(it)) {
+                        currentIaCScanEnabled = isSelected
+                    }
                 }
-            }
-            .bindSelected(settings::iacScanEnabled)
+                .bindSelected(settings::iacScanEnabled)
         }
         row {
             checkBox(ProductType.CONTAINER.productSelectionName).applyToComponent {
                 name = text
                 label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
             }
-            .actionListener{ event, it ->
-                val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
-                    currentContainerScanEnabled = isSelected
-                    val imagesCache = getKubernetesImageCache(project)
-                    if (isSelected) imagesCache?.cacheKubernetesFileFromProject() else imagesCache?.clear()
+                .actionListener { _, it ->
+                    val isSelected = it.isSelected
+                    if (canBeChanged(it)) {
+                        currentContainerScanEnabled = isSelected
+                        val imagesCache = getKubernetesImageCache(project)
+                        if (isSelected) imagesCache?.cacheKubernetesFileFromProject() else imagesCache?.clear()
+                    }
                 }
-            }
-            .bindSelected(settings::containerScanEnabled)
+                .bindSelected(settings::containerScanEnabled)
         }
         row {
             checkBox(ProductType.CODE_SECURITY.productSelectionName).applyToComponent {
@@ -137,27 +137,27 @@ class ScanTypesPanel(
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_SECURITY.description)
                 isSelected = settings.snykCodeSecurityIssuesScanEnable
             }
-            .actionListener{ event, it ->
-                val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
-                    currentSnykCodeSecurityScanEnabled = isSelected
-                    snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
+                .actionListener { _, it ->
+                    val isSelected = it.isSelected
+                    if (canBeChanged(it)) {
+                        currentSnykCodeSecurityScanEnabled = isSelected
+                        snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
+                    }
                 }
-            }
-            .bindSelected(settings::snykCodeSecurityIssuesScanEnable)
+                .bindSelected(settings::snykCodeSecurityIssuesScanEnable)
             checkBox(ProductType.CODE_QUALITY.productSelectionName).applyToComponent {
                 name = text
                 codeQualityCheckbox = this
                 label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
             }
-            .actionListener{ event, it ->
-                val isSelected = it.isSelected
-                if (canBeChanged(it, !isSelected)) {
-                    currentSnykCodeQualityScanEnabled = isSelected
-                    snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
+                .actionListener { _, it ->
+                    val isSelected = it.isSelected
+                    if (canBeChanged(it)) {
+                        currentSnykCodeQualityScanEnabled = isSelected
+                        snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
+                    }
                 }
-            }
-            .bindSelected(settings::snykCodeQualityIssuesScanEnable)
+                .bindSelected(settings::snykCodeQualityIssuesScanEnable)
         }
         row {
             snykCodeComment = label("")
@@ -342,7 +342,7 @@ class ScanTypesPanel(
         }
     }
 
-    private fun canBeChanged(component: JBCheckBox, isSelected: Boolean): Boolean {
+    private fun canBeChanged(component: JBCheckBox): Boolean {
         val onlyOneEnabled = arrayOf(
             currentOSSScanEnabled,
             currentSnykCodeSecurityScanEnabled,
@@ -352,12 +352,12 @@ class ScanTypesPanel(
             currentAdvisorEnabled,
         ).count { it } == 1
 
-        if (onlyOneEnabled && !isSelected) {
+        if (onlyOneEnabled && !component.isSelected) {
             SnykBalloonNotificationHelper.showWarnBalloonForComponent(
                 "At least one Scan type should be enabled",
                 component
             )
-            component.isSelected = false
+            component.isSelected = true
             return false
         }
         return true

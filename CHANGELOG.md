@@ -1,5 +1,13 @@
 # Snyk Security Changelog
 
+## [2.7.17]
+### Fixed
+- Fixed problem in re-enablement of scan types when only one scan type was selected
+
+### Added
+- Use https://api.XXX.snyk.io/v1 and https://api.XXX.snykgov.io/v1 as endpoint URLs
+- Allow selection of CLI release channels (stable/preview)
+
 ## [2.7.16]
 ### Added
 - Implemented dynamic theme style changes for the Code Issue Panel via the Language Server. It adjusts CSS properties based on the current IDE theme settings to enhance visual consistency across different themes. See related PR: [snyk-ls#491](https://github.com/snyk/snyk-ls/pull/491).
