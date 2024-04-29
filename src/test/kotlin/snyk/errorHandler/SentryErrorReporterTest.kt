@@ -67,7 +67,7 @@ class SentryErrorReporterTest {
         val settings = mockPluginInformation()
         setUnitTesting(false)
         settings.crashReportingEnabled = true
-        settings.customEndpointUrl = "https://app.snyk.io"
+        settings.customEndpointUrl = "https://api.snyk.io"
 
         SentryErrorReporter.captureException(RuntimeException("test"))
 
