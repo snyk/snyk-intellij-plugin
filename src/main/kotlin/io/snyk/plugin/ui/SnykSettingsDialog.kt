@@ -15,6 +15,7 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
+import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
@@ -592,14 +593,9 @@ class SnykSettingsDialog(
         )
 
         val descriptionLabelReleaseChannel =
-            JLabel(
-                "<html>" +
-                    "<li>Stable release channel releases every 2 months</li>" +
-                    "<li>RC channel releases for all release candidates</li>" +
-                    "<li>Preview channel releases continuously.</li>" +
-                    "<li>A version can also be specified directly by entering its number, e.g. v1.1290.1</li>" +
-                    "</html>"
-            )
+            HyperlinkLabel(
+                "Find out about our release channels",
+            ).apply { setHyperlinkTarget("https://docs.snyk.io/snyk-cli/releases-and-channels-for-the-snyk-cli") }
         descriptionLabelReleaseChannel.font = FontUtil.minusOne(descriptionLabelReleaseChannel.font)
 
         executableSettingsPanel.add(
