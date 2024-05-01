@@ -1,23 +1,23 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.snykcode.core.SnykCodeFile
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
+import java.awt.Color
 
 class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
     private val project = snykCodeFile.project
     private val virtualFile = snykCodeFile.virtualFile
-
-    companion object {
-        val darculaRegex = Regex(".*d(ar|ra)cula.*", RegexOption.IGNORE_CASE)
-    }
 
     fun openFile(value: String): JBCefJSQuery.Response {
         val values = value.replace("\n", "").split(":")
@@ -39,9 +39,13 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
         return JBCefJSQuery.Response("success")
     }
 
-    fun isDarcula(): Boolean {
-        val scheme = EditorColorsManager.getInstance().globalScheme
-        return darculaRegex.containsMatchIn(scheme.name)
+    fun toCssHex(color: Color): String {
+        return "#%02x%02x%02x".format(color.red, color.green, color.blue)
+    }
+
+    fun shift(colorComponent: Int, d: Double): Int {
+        val n = (colorComponent * d).toInt()
+        return n.coerceIn(0, 255)
     }
 
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
@@ -64,17 +68,36 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                             if (target) {
                                 e.preventDefault();
                                 window.openFileQuery(target.getAttribute("file-path") + ":" +
-                                                     target.getAttribute("start-line") + ":" +
-                                                     target.getAttribute("end-line") + ":" +
-                                                     target.getAttribute("start-character") + ":" +
-                                                     target.getAttribute("end-character"));
+                                     target.getAttribute("start-line") + ":" +
+                                     target.getAttribute("end-line") + ":" +
+                                     target.getAttribute("start-character") + ":" +
+                                     target.getAttribute("end-character"));
                             }
                         });
                     })();
                 """
                     browser.executeJavaScript(script, browser.url, 0)
-                    val colorTheme = if (EditorColorsManager.getInstance().isDarkEditor) "dark" else "light"
-                    val isDarculaTheme = isDarcula()
+
+                    val baseColor = UIUtil.getTextFieldBackground()
+                    val addedColor = Color(
+                        shift(baseColor.red, 0.75),
+                        baseColor.green,
+                        shift(baseColor.blue, 0.75)
+                    )
+                    val removedColor = Color(
+                        shift(baseColor.red, 1.25),
+                        shift(baseColor.green, 0.85),
+                        shift(baseColor.blue, 0.85)
+                    )
+
+                    val textColor = toCssHex(JBColor.namedColor("Label.foreground", JBColor.BLACK))
+                    val linkColor = toCssHex(JBColor.namedColor("Link.activeForeground", JBColor.BLUE))
+                    val dataFlowColor = toCssHex(baseColor)
+
+                    val globalScheme = EditorColorsManager.getInstance().globalScheme
+                    val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) // The closest color to target_rgb = (198, 198, 200)
+                    val tabItemHoverColor = globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
+
                     val themeScript = """
                         (function(){
                         if (window.themeApplied) {
@@ -82,32 +105,20 @@ class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
                         }
                         window.themeApplied = true;
                         const style = getComputedStyle(document.documentElement);
-                        const properties = [
-                          '--text-color',
-                          '--background-color',
-                          '--link-color',
-                          '--info-text-color',
-                          '--disabled-text-color',
-                          '--selected-text-color',
-                          '--error-text-color',
-                          '--data-flow-file-color',
-                          '--data-flow-body-color',
-                          '--example-line-added-color',
-                          '--example-line-removed-color',
-                          '--tabs-bottom-color',
-                          '--tab-item-color',
-                          '--tab-item-hover-color',
-                          '--tab-item-icon-color',
-                          '--scrollbar-thumb-color',
-                          '--scrollbar-color',
-                        ]
-                        properties.forEach(p => document.documentElement.style.setProperty(p, style.getPropertyValue(p + "-" + "${colorTheme}")))
-
-                        if (${isDarculaTheme}) {
-                            document.documentElement.style.setProperty('--data-flow-body-color', style.getPropertyValue('--data-flow-body-color-darcula'));
-                            document.documentElement.style.setProperty('--example-line-added-color', style.getPropertyValue('--example-line-added-color-darcula'));
-                            document.documentElement.style.setProperty('--example-line-removed-color', style.getPropertyValue('--example-line-removed-color-darcula'));
-                        }
+                            const properties = {
+                                '--text-color': "$textColor",
+                                '--link-color': "$linkColor",
+                                '--data-flow-body-color': "$dataFlowColor",
+                                '--example-line-added-color': "${toCssHex(addedColor)}",
+                                '--example-line-removed-color': "${toCssHex(removedColor)}",
+                                '--tab-item-github-icon-color': "$textColor",
+                                '--tab-item-hover-color': "${tabItemHoverColor?.let { toCssHex(it) }}",
+                                '--scrollbar-thumb-color': "${tearLineColor?.let { toCssHex(it) }}",
+                                '--tabs-bottom-color': "${tearLineColor?.let { toCssHex(it) }}",
+                            };
+                            for (let [property, value] of Object.entries(properties)) {
+                                document.documentElement.style.setProperty(property, value);
+                            }
                         })();
                         """
                     browser.executeJavaScript(themeScript, browser.url, 0)
