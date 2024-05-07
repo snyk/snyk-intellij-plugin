@@ -208,9 +208,9 @@ class CustomEndpointsTest {
     @Test
     fun `isAnalyticsPermitted false for URIs not allowed`() {
         val uris = listOf(
-            "https://app.fedramp.snykgov.io",
-            "https://app.eu.snyk.io/api",
-            "https://app.au.snyk.io/api"
+            "https://api.fedramp.snykgov.io",
+            "https://api.eu.snyk.io",
+            "https://api.au.snyk.io"
         )
         uris.forEach { uri ->
             assertFalse(URI(uri).isAnalyticsPermitted())
@@ -221,10 +221,10 @@ class CustomEndpointsTest {
     fun `isAnalyticsPermitted true for the right URIs`() {
         val uris = listOf(
             "https://snyk.io/api",
-            "https://app.snyk.io",
-            "https://app.us.snyk.io",
-            "https://app.snyk.io/api",
-            "https://app.snyk.io/v1"
+            "https://api.snyk.io",
+            "https://api.us.snyk.io",
+            "https://api.snyk.io",
+            "https://api.snyk.io/v1"
         )
 
         uris.forEach { uri ->

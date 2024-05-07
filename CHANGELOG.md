@@ -4,10 +4,13 @@
 ### Added
 - Improved theming in the Code Issue Panel by applying IntelliJ theme colors dynamically to JCEF components. This ensures consistency of UI elements with the rest of the IDE.
 
+### Fixed
+- Don't add /v1 to all API calls through the Language Server
+- Default to using the correct API for the custom endpoint.
+
 ## [2.7.17]
 ### Fixed
 - Fixed problem in re-enablement of scan types when only one scan type was selected
-- Don't add /v1 to all API calls through the Language Server
 
 ### Added
 - Use https://api.XXX.snyk.io/v1 and https://api.XXX.snykgov.io/v1 as endpoint URLs

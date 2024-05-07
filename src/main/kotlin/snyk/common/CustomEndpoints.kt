@@ -100,8 +100,7 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
 
 fun URI.isSnykTenant() =
     isSnykDomain()
-        && ((host.lowercase().startsWith("app.") && path.lowercase().endsWith("/api"))
-        || (host.lowercase() == "snyk.io" && path.lowercase().endsWith("/api"))
+        && ((host.lowercase() == "snyk.io" && path.lowercase().endsWith("/api"))
         || (host.lowercase().startsWith("api.") && !path.lowercase().endsWith("/api"))
         || isDev())
 
@@ -134,7 +133,7 @@ fun URI.isOauth() = isSnykGov()
 fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
 
 fun URI.isAnalyticsPermitted() = host != null &&
-    (host.lowercase() == "app.snyk.io" || host.lowercase() == "app.us.snyk.io" || host.lowercase() == "snyk.io")
+    (host.lowercase() == "api.snyk.io" || host.lowercase() == "api.us.snyk.io" || host.lowercase() == "snyk.io")
 
 fun isAnalyticsPermitted(): Boolean {
     val settings = pluginSettings()
