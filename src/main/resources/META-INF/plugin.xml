@@ -57,6 +57,7 @@
 
     <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykCodeAnnotatorLS"/>
     <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
+    <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykOSSAnnotatorLS"/>
   </extensions>
 
   <actions>

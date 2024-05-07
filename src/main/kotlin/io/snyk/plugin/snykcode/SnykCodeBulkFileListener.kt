@@ -21,6 +21,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toSnykFileSet
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import snyk.common.lsp.LanguageServerWrapper
@@ -110,7 +111,4 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         VirtualFileManager.getInstance().asyncRefresh()
         DaemonCodeAnalyzer.getInstance(project).restart()
     }
-
-    private fun toSnykFileSet(project: Project, virtualFiles: Set<VirtualFile>) =
-        virtualFiles.map { SnykFile(project, it) }.toSet()
 }

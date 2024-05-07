@@ -7,6 +7,7 @@ import com.intellij.ui.SimpleTextAttributes
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.SnykFile
@@ -25,7 +26,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNodeFromLS
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.ScanIssue
@@ -110,40 +111,28 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             is SuggestionTreeNodeFromLS -> {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
-                val range = issue.range
-                var showIgnoredLabel = false
-                var showAIFix = false
-                if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.isIgnored == true) {
-                    showIgnoredLabel = true
-                } else if (issue.additionalData.hasAIFix) {
-                    showAIFix = true
-                }
-                text = "${if (showIgnoredLabel) " [ Ignored ]" else ""}${if (showAIFix) " ⚡️" else ""} ${
-                    if (issue.additionalData.isSecurityType) {
-                        issue.title.split(":")[0]
-                    } else {
-                        issue.additionalData.message.split('.')[0]
-                    }
-                } [${range.start.line + 1},${range.start.character}]"
-                val parentFileNode = value.parent as SnykFileTreeNodeFromLS
-                val entry =
-                    (parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>).first
-                val cachedIssues = getSnykCachedResults(entry.key.project)?.currentSnykCodeResultsLS
+
+                val parentFileNode = value.parent as FileTreeNodeFromLS
+                val (entry, productType) =
+                    parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
+
+                text = "${if (issue.isIgnored()) " [ Ignored ]" else ""}${if (issue.hasAIFix()) " ⚡️" else ""} ${issue.longTitle()}"
+                val cachedIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
                 if (cachedIssues?.values?.flatten()?.contains(issue) == false) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }
 
-            is SnykFileTreeNodeFromLS -> {
+            is FileTreeNodeFromLS -> {
                 val (entry, productType) =
                     value.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
                 val file = entry.key
 
-                val pair = updateTextTooltipAndIcon(file, productType, value)
+                val pair = updateTextTooltipAndIcon(file, productType, value, entry.value.first())
                 nodeIcon = pair.first
                 text = pair.second
-                val cachedIssues = getSnykCachedResults(file.project)?.currentSnykCodeResultsLS
+                val cachedIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
                     ?.filter { it.key.virtualFile == file.virtualFile } ?: emptyMap()
                 if (cachedIssues.isEmpty()) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
@@ -153,7 +142,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
             is SnykCodeFileTreeNode -> {
                 val (file, productType) = value.userObject as Pair<SnykFile, ProductType>
-                val (icon, nodeText) = updateTextTooltipAndIcon(file, productType, value)
+                val (icon, nodeText) = updateTextTooltipAndIcon(file, productType, value, null)
                 nodeIcon = icon
                 text = nodeText
                 if (!AnalysisData.instance.isFileInCache(file)) {
@@ -331,7 +320,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
     private fun updateTextTooltipAndIcon(
         file: SnykFile,
         productType: ProductType,
-        value: DefaultMutableTreeNode
+        value: DefaultMutableTreeNode,
+        firstIssue: ScanIssue?
     ): Pair<Icon?, String?> {
         val relativePath = file.relativePath
         toolTipText =
@@ -348,7 +338,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
         }
 
-        val nodeIcon = file.icon
+
+        val nodeIcon = firstIssue?.icon() ?: file.icon
         return Pair(nodeIcon, text)
     }
 

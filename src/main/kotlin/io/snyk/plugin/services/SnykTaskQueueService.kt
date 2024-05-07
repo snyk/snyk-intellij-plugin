@@ -9,6 +9,7 @@ import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.cancelOss
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
@@ -26,6 +27,7 @@ import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
+import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykIaCLSEnabled
@@ -132,6 +134,12 @@ class SnykTaskQueueService(val project: Project) {
                 if (settings.ossScanEnable) {
                     if (!isSnykOSSLSEnabled()) {
                         scheduleOssScan()
+                    } else {
+                        // the LS deals with triggering scans at startup
+                        // TODO: Refactor when more than Snyk Code is available in LS for IntelliJ
+                        if (!isSnykCodeLSEnabled() && !isStartup) {
+                            LanguageServerWrapper.getInstance().sendScanCommand(project)
+                        }
                     }
                 }
                 if (isIacEnabled() && settings.iacScanEnabled) {
@@ -341,8 +349,8 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun stopScan() {
-        val wasOssRunning = ossScanProgressIndicator?.isRunning == true
-        ossScanProgressIndicator?.cancel()
+        val wasOssRunning = isOssRunning(project)
+        cancelOss(project)
 
         val wasSnykCodeRunning = isSnykCodeRunning(project)
         RunUtils.instance.cancelRunningIndicators(project)

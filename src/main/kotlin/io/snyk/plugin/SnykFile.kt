@@ -4,7 +4,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.vfs.VirtualFile
-import io.snyk.plugin.getPsiFile
 import snyk.common.RelativePathHelper
 import javax.swing.Icon
 
@@ -17,3 +16,6 @@ data class SnykFile(val project: Project, val virtualFile: VirtualFile) {
         }
     }
 }
+
+fun toSnykFileSet(project: Project, virtualFiles: Set<VirtualFile>) =
+    virtualFiles.map { SnykFile(project, it) }.toSet()

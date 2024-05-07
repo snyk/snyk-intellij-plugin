@@ -5,14 +5,8 @@ import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.isSnykCodeLSEnabled
-import io.snyk.plugin.isSnykCodeRunning
-import io.snyk.plugin.toLanguageServerURL
-import org.eclipse.lsp4j.CodeActionContext
-import org.eclipse.lsp4j.CodeActionParams
-import org.eclipse.lsp4j.Range
-import org.eclipse.lsp4j.TextDocumentIdentifier
+import io.snyk.plugin.*
+import org.eclipse.lsp4j.*
 import snyk.common.AnnotatorCommon
 import snyk.common.ProductType
 import snyk.common.lsp.LanguageServerWrapper
@@ -22,8 +16,8 @@ import java.util.concurrent.TimeoutException
 
 private const val CODEACTION_TIMEOUT = 2L
 
-class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
-    val logger = logger<SnykCodeAnnotatorLS>()
+class SnykOSSAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
+    val logger = logger<SnykOSSAnnotatorLS>()
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile {
@@ -35,9 +29,9 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
-        if (!isSnykCodeLSEnabled()) return
+        if (!isSnykOSSLSEnabled()) return
         if (!LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()) return
-        if (isSnykCodeRunning(psiFile.project)) return
+        if (isOssRunning(psiFile.project)) return
 
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
@@ -82,7 +76,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                             val title = codeAction.title
                             holder.newAnnotation(highlightSeverity, title)
                                 .range(textRange)
-                                .withFix(CodeActionIntention(issue, codeAction, ProductType.CODE_SECURITY))
+                                .withFix(CodeActionIntention(issue, codeAction, ProductType.OSS))
                                 .create()
                         }
                 }
@@ -90,7 +84,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
-        getSnykCachedResults(psiFile.project)?.currentSnykCodeResultsLS
+        getSnykCachedResults(psiFile.project)?.currentOSSResultsLS
             ?.filter { it.key.virtualFile == psiFile.virtualFile }
             ?.map { it.value }
             ?.flatten()

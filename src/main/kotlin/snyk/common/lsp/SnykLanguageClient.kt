@@ -23,6 +23,7 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isSnykCodeLSEnabled
+import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.SnykFile
@@ -124,7 +125,12 @@ class SnykLanguageClient() : LanguageClient {
 
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
-        if (!isSnykCodeLSEnabled()) return
+        if (snykScan.product == "code" && !isSnykCodeLSEnabled()) {
+            return
+        }
+        if (snykScan.product == "oss" && !isSnykOSSLSEnabled()) {
+            return
+        }
         try {
             getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher, project)
@@ -137,6 +143,7 @@ class SnykLanguageClient() : LanguageClient {
     private fun processSnykScan(snykScan: SnykScanParams, scanPublisher: SnykScanListenerLS, project: Project) {
         val product = when (snykScan.product) {
             "code" -> ProductType.CODE_SECURITY
+            "oss" -> ProductType.OSS
             else -> return
         }
         val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
@@ -154,7 +161,7 @@ class SnykLanguageClient() : LanguageClient {
 
             "error" -> {
                 ScanState.scanInProgress[key] = false
-                scanPublisher.scanningSnykCodeError(snykScan)
+                scanPublisher.scanningError(snykScan)
             }
         }
     }
@@ -163,11 +170,11 @@ class SnykLanguageClient() : LanguageClient {
         logger.info("Scan completed")
         when (snykScan.product) {
             "oss" -> {
-                // TODO implement
+                scanPublisher.scanningOssFinished(getSnykResult(project, snykScan))
             }
 
             "code" -> {
-                scanPublisher.scanningSnykCodeFinished(getSnykCodeResult(project, snykScan))
+                scanPublisher.scanningSnykCodeFinished(getSnykResult(project, snykScan))
             }
 
             "iac" -> {
@@ -196,8 +203,8 @@ class SnykLanguageClient() : LanguageClient {
         }
 
     @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
-    private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykFile, List<ScanIssue>> {
-        check(snykScan.product == "code") { "Expected Snyk Code scan result" }
+    private fun getSnykResult(project: Project, snykScan: SnykScanParams): Map<SnykFile, List<ScanIssue>> {
+        check(snykScan.product == "code" || snykScan.product == "oss" ) { "Expected Snyk Code or Snyk OSS scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
         val pluginSettings = pluginSettings()

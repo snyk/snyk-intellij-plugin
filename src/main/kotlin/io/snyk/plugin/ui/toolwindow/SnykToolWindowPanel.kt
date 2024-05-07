@@ -45,17 +45,19 @@ import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
+import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykToolWindow
-import io.snyk.plugin.SnykResults
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.SnykResults
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.getSeverityAsEnum
+import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
@@ -163,13 +165,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             updateDescriptionPanelBySelectedTreeNode()
         }
 
-        val scanListenerLS = if (isSnykCodeLSEnabled()) {
+        val scanListenerLS = if (isSnykCodeLSEnabled() || isSnykOSSLSEnabled()) {
             val scanListener = SnykToolWindowSnykScanListenerLS(
                 project,
                 this,
                 vulnerabilitiesTree,
                 rootSecurityIssuesTreeNode,
-                rootQualityIssuesTreeNode
+                rootQualityIssuesTreeNode,
+                rootOssTreeNode
             )
             project.messageBus.connect(this).subscribe(
                 SnykScanListenerLS.SNYK_SCAN_TOPIC,
@@ -329,15 +332,23 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             }
                         } else {
                             ApplicationManager.getApplication().invokeLater {
-                                val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
-                                val codeResultsLS = snykCachedResults.currentSnykCodeResultsLS
-
+                                val codeResultsLS = getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return@invokeLater
                                 scanListenerLS?.displaySnykCodeResults(codeResultsLS)
+                            }
+                        }
+                        if (!isSnykOSSLSEnabled()) {
+                            ApplicationManager.getApplication().invokeLater {
+                                val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
+                                snykCachedResults.currentOssResults?.let { displayOssResults(it) }
+                            }
+                        } else {
+                            ApplicationManager.getApplication().invokeLater {
+                                val ossResultsLS = getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return@invokeLater
+                                scanListenerLS?.displayOssResults(ossResultsLS)
                             }
                         }
                         ApplicationManager.getApplication().invokeLater {
                             val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
-                            snykCachedResults.currentOssResults?.let { displayOssResults(it) }
                             snykCachedResults.currentIacResult?.let { displayIacResults(it) }
                             snykCachedResults.currentContainerResult?.let { displayContainerResults(it) }
                         }
