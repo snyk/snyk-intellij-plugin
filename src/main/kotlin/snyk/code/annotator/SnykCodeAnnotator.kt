@@ -10,8 +10,8 @@ import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.snykcode.getSeverityAsEnum
+import io.snyk.plugin.SnykFile
+import io.snyk.plugin.getSeverityAsEnum
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.ShowDetailsIntentionActionBase
@@ -46,7 +46,7 @@ class SnykCodeAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     private fun getIssuesForFile(psiFile: PsiFile): List<SuggestionForFile> =
-        AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile))
+        AnalysisData.instance.getAnalysis(SnykFile(psiFile.project, psiFile.virtualFile))
 
     /** Public for Tests only */
     fun annotationMessage(suggestion: SuggestionForFile): String =

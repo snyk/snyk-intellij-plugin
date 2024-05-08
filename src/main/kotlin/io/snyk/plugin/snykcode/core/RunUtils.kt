@@ -10,7 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.SnykResults
 import java.util.function.Consumer
 
 class RunUtils private constructor() : RunUtilsBase(
@@ -57,10 +57,10 @@ class RunUtils private constructor() : RunUtilsBase(
     override fun updateAnalysisResultsUIPresentation(projectAsAny: Any, files: Collection<Any>) {
         val project = PDU.toProject(projectAsAny)
         if (project.isDisposed) return
-        val scanResults: SnykCodeResults? = when {
+        val scanResults: SnykResults? = when {
             ProgressManager.getInstance().progressIndicator?.isCanceled == true -> null
-            files.isEmpty() -> SnykCodeResults()
-            else -> SnykCodeResults(
+            files.isEmpty() -> SnykResults()
+            else -> SnykResults(
                 AnalysisData.instance.getAnalysis(files).mapKeys { PDU.toSnykCodeFile(it.key) }
             )
         }

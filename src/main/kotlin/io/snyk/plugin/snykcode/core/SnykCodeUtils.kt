@@ -5,6 +5,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vcs.changes.ChangeListManager
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.snykcode.newCodeRestApi
 
 class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
@@ -23,11 +24,11 @@ class SnykCodeUtils private constructor() : DeepCodeUtilsBase(
         scLogger.logInfo("allProjectFiles requested")
         val project = PDU.toProject(projectO)
         val progressIndicator = ProgressManager.getInstance().progressIndicator ?: null
-        val files = mutableSetOf<SnykCodeFile>()
+        val files = mutableSetOf<SnykFile>()
 
         val cancelled = !ProjectRootManager.getInstance(project).fileIndex.iterateContent {
             if (!it.isDirectory) {
-                files.add(SnykCodeFile(project, it))
+                files.add(SnykFile(project, it))
             }
             return@iterateContent progressIndicator?.isCanceled != true
         }

@@ -2,6 +2,7 @@ package io.snyk.plugin.snykcode.core
 
 import ai.deepcode.javaclient.core.DeepCodeIgnoreInfoHolderBase
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.File
@@ -12,7 +13,7 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
     SCLogger.instance
 ) {
 
-    fun cleanIgnoreFileCachesIfAffected(filesToCheck: Collection<SnykCodeFile>) {
+    fun cleanIgnoreFileCachesIfAffected(filesToCheck: Collection<SnykFile>) {
         val ignoreFilesChanged = getIgnoreFiles(filesToCheck)
         for (ignoreFile in ignoreFilesChanged) {
             remove_ignoreFileContent(ignoreFile)
@@ -20,7 +21,7 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
         }
     }
 
-    fun updateIgnoreFileCachesIfAffected(filesToCheck: Collection<SnykCodeFile>) {
+    fun updateIgnoreFileCachesIfAffected(filesToCheck: Collection<SnykFile>) {
         val ignoreFilesChanged = getIgnoreFiles(filesToCheck)
         for (ignoreFile in ignoreFilesChanged) {
             getSnykTaskQueueService(ignoreFile.project)
@@ -53,7 +54,7 @@ class SnykCodeIgnoreInfoHolder private constructor() : DeepCodeIgnoreInfoHolderB
         }
     }
 
-    private fun getIgnoreFiles(filesToCheck: Collection<SnykCodeFile>) =
+    private fun getIgnoreFiles(filesToCheck: Collection<SnykFile>) =
         filesToCheck
             .filter { it.virtualFile.name == ".dcignore" || it.virtualFile.name == ".gitignore" }
             .filter { it.virtualFile.isValid }

@@ -14,8 +14,8 @@ import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.snykcode.core.PDU
-import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.snykcode.getSeverityAsEnum
+import io.snyk.plugin.SnykFile
+import io.snyk.plugin.getSeverityAsEnum
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
@@ -34,14 +34,14 @@ import kotlin.math.max
 import kotlin.math.min
 
 class SuggestionDescriptionPanel(
-    private val snykCodeFile: SnykCodeFile,
+    private val snykFile: SnykFile,
     private val suggestion: SuggestionForFile,
     private val suggestionIndex: Int
 ) : IssueDescriptionPanelBase(
     title = suggestion.title,
     severity = suggestion.getSeverityAsEnum()
 ) {
-    val project = snykCodeFile.project
+    val project = snykFile.project
 
     private val suggestionRange: MyTextRange? = suggestion.ranges?.getOrNull(suggestionIndex)
 
@@ -82,7 +82,7 @@ class SuggestionDescriptionPanel(
         return panel
     }
 
-    private fun codeLine(range: MyTextRange, file: SnykCodeFile?): JTextArea {
+    private fun codeLine(range: MyTextRange, file: SnykFile?): JTextArea {
         val component = JTextArea(getLineOfCode(range, file))
         component.font = io.snyk.plugin.ui.getFont(-1, 14, component.font)
         component.isEditable = false
@@ -116,7 +116,7 @@ class SuggestionDescriptionPanel(
         }
     }
 
-    private fun getLineOfCode(range: MyTextRange, file: SnykCodeFile?): String {
+    private fun getLineOfCode(range: MyTextRange, file: SnykFile?): String {
         if (file == null) return "<File Not Found>"
         val document = PDU.toPsiFile(file)?.let { PsiDocumentManager.getInstance(file.project).getDocument(it) }
             ?: return "<No Document Found>"
@@ -180,7 +180,7 @@ class SuggestionDescriptionPanel(
             val stepPanel = stepPanel(
                 index = index,
                 markerRange = markerRange,
-                maxFilenameLength = max(snykCodeFile.virtualFile.name.length, maxFilenameLength),
+                maxFilenameLength = max(snykFile.virtualFile.name.length, maxFilenameLength),
                 allStepPanels = allStepPanels
             )
 
@@ -210,7 +210,7 @@ class SuggestionDescriptionPanel(
 
         val paddedStepNumber = (index + 1).toString().padStart(2, ' ')
 
-        val fileName = snykCodeFile.virtualFile.name
+        val fileName = snykFile.virtualFile.name
 
         val positionLinkText = "$fileName:${markerRange.startRow}".padEnd(maxFilenameLength + 5, ' ')
 
@@ -221,9 +221,9 @@ class SuggestionDescriptionPanel(
             toolTipText = "Click to show in the Editor",
             customFont = JTextArea().font
         ) {
-            if (!snykCodeFile.virtualFile.isValid) return@linkLabel
+            if (!snykFile.virtualFile.isValid) return@linkLabel
 
-            navigateToSource(project, snykCodeFile.virtualFile, markerRange.start, markerRange.end)
+            navigateToSource(project, snykFile.virtualFile, markerRange.start, markerRange.end)
 
             allStepPanels.forEach {
                 it.background = UIUtil.getTextFieldBackground()
@@ -232,7 +232,7 @@ class SuggestionDescriptionPanel(
         }
         stepPanel.add(positionLabel, baseGridConstraintsAnchorWest(0, indent = 1))
 
-        val codeLine = codeLine(markerRange, snykCodeFile)
+        val codeLine = codeLine(markerRange, snykFile)
         codeLine.isOpaque = false
         stepPanel.add(
             codeLine,

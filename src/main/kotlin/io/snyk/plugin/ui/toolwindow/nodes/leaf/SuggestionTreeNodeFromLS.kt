@@ -1,10 +1,10 @@
 package io.snyk.plugin.ui.toolwindow.nodes.leaf
 
 import io.snyk.plugin.getSnykAnalyticsService
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNodeFromLS
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import snyk.analytics.IssueInTreeIsClicked.Ide
@@ -47,12 +47,12 @@ class SuggestionTreeNodeFromLS(
                     .build()
             )
         }
-        val snykCodeFileTreeNode = this.parent as? SnykCodeFileTreeNodeFromLS
+        val snykCodeFileTreeNode = this.parent as? SnykFileTreeNodeFromLS
             ?: throw IllegalArgumentException(this.toString())
 
         @Suppress("UNCHECKED_CAST")
         val entry =
-            (snykCodeFileTreeNode.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>).first
+            (snykCodeFileTreeNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>).first
         val snykCodeFile = entry.key
         return SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
     }

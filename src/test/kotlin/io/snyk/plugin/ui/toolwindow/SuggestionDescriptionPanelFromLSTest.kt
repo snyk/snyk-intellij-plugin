@@ -12,7 +12,7 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import org.eclipse.lsp4j.Position
@@ -32,7 +32,7 @@ import javax.swing.JLabel
 class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     private lateinit var cut: SuggestionDescriptionPanelFromLS
     private val fileName = "app.js"
-    private lateinit var snykCodeFile: SnykCodeFile
+    private lateinit var snykFile: SnykFile
     private lateinit var issue: ScanIssue
 
     private lateinit var file: VirtualFile
@@ -52,7 +52,7 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
 
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-        snykCodeFile = SnykCodeFile(psiFile.project, psiFile.virtualFile)
+        snykFile = SnykFile(psiFile.project, psiFile.virtualFile)
 
         issue = mockk<ScanIssue>()
         every { issue.additionalData.message } returns "Test message"
@@ -71,7 +71,7 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
     fun `test createUI should build panel with issue message as overview label if the feature flag is not enabled`() {
         every { issue.additionalData.details } returns "<html>HTML message</html>"
         every { issue.additionalData.details } returns null
-        cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNotNull(actual)
@@ -85,7 +85,7 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
         every { issue.additionalData.details } returns null
-        cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNotNull(actual)
@@ -102,7 +102,7 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
         every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
         every { issue.additionalData.details } returns "<html>HTML message</html>"
-        cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -120,7 +120,7 @@ class SuggestionDescriptionPanelFromLSTest : BasePlatformTestCase() {
         every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns mockJBCefBrowserComponent
 
         every { issue.additionalData.details } returns "<html>HTML message</html>"
-        cut = SuggestionDescriptionPanelFromLS(snykCodeFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)

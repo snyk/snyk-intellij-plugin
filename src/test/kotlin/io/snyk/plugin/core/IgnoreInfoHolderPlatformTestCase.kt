@@ -11,7 +11,7 @@ import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.getSnykCode
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import org.awaitility.Awaitility.await
@@ -114,7 +114,7 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         )
     }
 
-    private fun setUpTest(): SnykCodeFile {
+    private fun setUpTest(): SnykFile {
         val filePathToCheck = project.basePath + "/node_modules/1.js"
         File(filePathToCheck).parentFile.mkdirs() &&
             File(filePathToCheck).createNewFile() ||
@@ -125,8 +125,8 @@ class IgnoreInfoHolderPlatformTestCase : HeavyPlatformTestCase() {
         return fileToCheck
     }
 
-    private fun findFile(project: Project, path: String): SnykCodeFile {
+    private fun findFile(project: Project, path: String): SnykFile {
         val file = StandardFileSystems.local().refreshAndFindFileByPath(path) ?: throw FileNotFoundException(path)
-        return SnykCodeFile(project, file)
+        return SnykFile(project, file)
     }
 }

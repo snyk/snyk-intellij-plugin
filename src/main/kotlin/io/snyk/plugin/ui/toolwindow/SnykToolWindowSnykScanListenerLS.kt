@@ -6,30 +6,30 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
-import io.snyk.plugin.events.SnykCodeScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNodeFromLS
 import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
-class SnykToolWindowSnykCodeScanListenerLS(
+class SnykToolWindowSnykScanListenerLS(
     val project: Project,
     private val snykToolWindowPanel: SnykToolWindowPanel,
     private val vulnerabilitiesTree: JTree,
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
-) : SnykCodeScanListenerLS {
+) : SnykScanListenerLS {
 
     override fun scanningStarted(snykScan: SnykScanParams) {
         ApplicationManager.getApplication().invokeLater {
@@ -38,10 +38,10 @@ class SnykToolWindowSnykCodeScanListenerLS(
         }
     }
 
-    override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+    override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
         ApplicationManager.getApplication().invokeLater {
             this.snykToolWindowPanel.navigateToSourceEnabled = false
-            displaySnykCodeResults(snykCodeResults)
+            displaySnykCodeResults(snykResults)
             refreshAnnotationsForOpenFiles(project)
             this.snykToolWindowPanel.navigateToSourceEnabled = true
         }
@@ -49,7 +49,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
 
     override fun scanningSnykCodeError(snykScan: SnykScanParams) = Unit
 
-    fun displaySnykCodeResults(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+    fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
         if (pluginSettings().token.isNullOrEmpty()) {
             snykToolWindowPanel.displayAuthPanel()
@@ -58,14 +58,14 @@ class SnykToolWindowSnykCodeScanListenerLS(
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         // display Security issues
-        displayIssues(snykCodeResults, selectedNodeUserObject, true)
+        displayIssues(snykResults, selectedNodeUserObject, true)
 
         // display Quality (non Security) issues
-        displayIssues(snykCodeResults, selectedNodeUserObject, false)
+        displayIssues(snykResults, selectedNodeUserObject, false)
     }
 
     private fun displayIssues(
-        snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>,
+        snykCodeResults: Map<SnykFile, List<ScanIssue>>,
         selectedNodeUserObject: Any?,
         isSecurity: Boolean
     ) {
@@ -128,7 +128,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
 
     private fun displayResultsForCodeRoot(
         rootNode: DefaultMutableTreeNode,
-        issues: Map<SnykCodeFile, List<ScanIssue>>
+        issues: Map<SnykFile, List<ScanIssue>>
     ) {
         fun navigateToSource(virtualFile: VirtualFile, textRange: TextRange): () -> Unit = {
             io.snyk.plugin.navigateToSource(project, virtualFile, textRange.startOffset, textRange.endOffset)
@@ -142,7 +142,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
                     else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
                 }
                 val fileTreeNode =
-                    SnykCodeFileTreeNodeFromLS(entry, productType)
+                    SnykFileTreeNodeFromLS(entry, productType)
                 rootNode.add(fileTreeNode)
                 entry.value.sortedByDescending { it.additionalData.priorityScore }
                     .forEach { issue ->
@@ -156,7 +156,7 @@ class SnykToolWindowSnykCodeScanListenerLS(
             }
     }
 
-    private fun buildSeveritiesPostfixForFileNode(securityResults: Map<SnykCodeFile, List<ScanIssue>>): String {
+    private fun buildSeveritiesPostfixForFileNode(securityResults: Map<SnykFile, List<ScanIssue>>): String {
         val high = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.HIGH }
         val medium = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
         val low = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }

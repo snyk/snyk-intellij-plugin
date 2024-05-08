@@ -5,7 +5,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.snyk.plugin.snykcode.core.PDU
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import java.io.File
 
 @Suppress("FunctionName")
@@ -17,14 +17,14 @@ class PDUTest : LightPlatformTestCase() {
         try {
             val virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByPath(testFilePath)
                 ?: throw IllegalStateException("Didn't find virtualfile for $testFilePath")
-            val snykCodeFile = SnykCodeFile(project, virtualFile)
+            val snykFile = SnykFile(project, virtualFile)
 
             val expected = testFilePath.removePrefix("/")
-            val actual = PDU.instance.getDeepCodedFilePath(snykCodeFile).removePrefix("/")
+            val actual = PDU.instance.getDeepCodedFilePath(snykFile).removePrefix("/")
             assertEquals(expected, actual)
 
             assertEquals(
-                snykCodeFile, PDU.instance.getFileByDeepcodedPath(testFilePath, project)
+                snykFile, PDU.instance.getFileByDeepcodedPath(testFilePath, project)
             )
         } finally {
             testFile.delete()

@@ -3,7 +3,7 @@ package io.snyk.plugin.analytics
 import ai.deepcode.javaclient.core.SuggestionForFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.snykcode.getSeverityAsEnum
+import io.snyk.plugin.getSeverityAsEnum
 import snyk.ItlyOverrideHelper
 import snyk.advisor.AdvisorPackageManager
 import snyk.analytics.AnalysisIsReady.AnalysisType

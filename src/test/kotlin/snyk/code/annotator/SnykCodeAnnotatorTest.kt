@@ -17,7 +17,7 @@ import io.mockk.verify
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import org.junit.Before
 import org.junit.Test
 import java.nio.file.Paths
@@ -106,7 +106,7 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test apply should trigger newAnnotation call`() {
         mockkObject(AnalysisData)
-        every { AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile)) } returns
+        every { AnalysisData.instance.getAnalysis(SnykFile(psiFile.project, psiFile.virtualFile)) } returns
             createSnykCodeResultWithIssues()
 
         cut.apply(psiFile, Unit, annotationHolderMock)
@@ -117,7 +117,7 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
     @Test
     fun `test apply for disabled Severity should not trigger newAnnotation call`() {
         mockkObject(AnalysisData)
-        every { AnalysisData.instance.getAnalysis(SnykCodeFile(psiFile.project, psiFile.virtualFile)) } returns
+        every { AnalysisData.instance.getAnalysis(SnykFile(psiFile.project, psiFile.virtualFile)) } returns
             createSnykCodeResultWithIssues()
         pluginSettings().highSeverityEnabled = false
 

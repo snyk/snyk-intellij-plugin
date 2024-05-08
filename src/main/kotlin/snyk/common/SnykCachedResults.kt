@@ -4,11 +4,11 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.Severity
-import io.snyk.plugin.events.SnykCodeScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.SnykResults
 import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.lsp.ScanIssue
@@ -21,9 +21,9 @@ import snyk.oss.OssResult
 @Service
 class SnykCachedResults(val project: Project) {
 
-    val currentSnykCodeResultsLS: MutableMap<SnykCodeFile, List<ScanIssue>> = mutableMapOf()
+    val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
 
-    var currentSnykCodeResults: SnykCodeResults? = null
+    var currentSnykCodeResults: SnykResults? = null
 
     var currentOssResults: OssResult? = null
         get() = if (field?.isExpired() == false) field else null
@@ -71,8 +71,8 @@ class SnykCachedResults(val project: Project) {
                     currentOssResults = ossResult
                 }
 
-                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
-                    currentSnykCodeResults = snykCodeResults
+                override fun scanningSnykCodeFinished(snykResults: SnykResults?) {
+                    currentSnykCodeResults = snykResults
                 }
 
                 override fun scanningIacFinished(iacResult: IacResult) {
@@ -121,16 +121,16 @@ class SnykCachedResults(val project: Project) {
         )
 
         project.messageBus.connect().subscribe(
-            SnykCodeScanListenerLS.SNYK_SCAN_TOPIC,
-            object : SnykCodeScanListenerLS {
+            SnykScanListenerLS.SNYK_SCAN_TOPIC,
+            object : SnykScanListenerLS {
                 val logger = logger<SnykCachedResults>()
                 override fun scanningStarted(snykScan: SnykScanParams) {
                     logger.info("scanningStarted for project ${project.name}")
                 }
 
-                override fun scanningSnykCodeFinished(snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>) {
+                override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
                     currentSnykCodeResultsLS.clear()
-                    currentSnykCodeResultsLS.putAll(snykCodeResults)
+                    currentSnykCodeResultsLS.putAll(snykResults)
                     logger.info("scanning finished for project ${project.name}, assigning cache.")
                 }
 
@@ -146,10 +146,10 @@ class SnykCachedResults(val project: Project) {
     }
 }
 
-internal class SnykCodeFileIssueComparator(
-    private val snykCodeResults: Map<SnykCodeFile, List<ScanIssue>>
-) : Comparator<SnykCodeFile> {
-    override fun compare(o1: SnykCodeFile, o2: SnykCodeFile): Int {
+internal class SnykFileIssueComparator(
+    private val snykResults: Map<SnykFile, List<ScanIssue>>
+) : Comparator<SnykFile> {
+    override fun compare(o1: SnykFile, o2: SnykFile): Int {
         val files = o1.virtualFile.path.compareTo(o2.virtualFile.path)
         val o1Criticals = getCount(o1, Severity.CRITICAL)
         val o2Criticals = getCount(o2, Severity.CRITICAL)
@@ -169,6 +169,6 @@ internal class SnykCodeFileIssueComparator(
         }
     }
 
-    private fun getCount(file: SnykCodeFile, severity: Severity) =
-        snykCodeResults[file]?.filter { it.getSeverityAsEnum() == severity }?.size ?: 0
+    private fun getCount(file: SnykFile, severity: Severity) =
+        snykResults[file]?.filter { it.getSeverityAsEnum() == severity }?.size ?: 0
 }

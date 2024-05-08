@@ -9,8 +9,8 @@ import icons.SnykIcons
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.SnykCodeFile
-import io.snyk.plugin.snykcode.getSeverityAsEnum
+import io.snyk.plugin.SnykFile
+import io.snyk.plugin.getSeverityAsEnum
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
@@ -25,7 +25,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNodeFromLS
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.ScanIssue
@@ -100,7 +100,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     if (suggestion.title.isNullOrEmpty()) suggestion.message else suggestion.title
                 }"
                 val parentFileNode = value.parent as SnykCodeFileTreeNode
-                val file = (parentFileNode.userObject as Pair<SnykCodeFile, ProductType>).first
+                val file = (parentFileNode.userObject as Pair<SnykFile, ProductType>).first
                 if (!AnalysisData.instance.isFileInCache(file)) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
@@ -125,9 +125,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                         issue.additionalData.message.split('.')[0]
                     }
                 } [${range.start.line + 1},${range.start.character}]"
-                val parentFileNode = value.parent as SnykCodeFileTreeNodeFromLS
+                val parentFileNode = value.parent as SnykFileTreeNodeFromLS
                 val entry =
-                    (parentFileNode.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>).first
+                    (parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>).first
                 val cachedIssues = getSnykCachedResults(entry.key.project)?.currentSnykCodeResultsLS
                 if (cachedIssues?.values?.flatten()?.contains(issue) == false) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
@@ -135,9 +135,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 }
             }
 
-            is SnykCodeFileTreeNodeFromLS -> {
+            is SnykFileTreeNodeFromLS -> {
                 val (entry, productType) =
-                    value.userObject as Pair<Map.Entry<SnykCodeFile, List<ScanIssue>>, ProductType>
+                    value.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
                 val file = entry.key
 
                 val pair = updateTextTooltipAndIcon(file, productType, value)
@@ -152,7 +152,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
 
             is SnykCodeFileTreeNode -> {
-                val (file, productType) = value.userObject as Pair<SnykCodeFile, ProductType>
+                val (file, productType) = value.userObject as Pair<SnykFile, ProductType>
                 val (icon, nodeText) = updateTextTooltipAndIcon(file, productType, value)
                 nodeIcon = icon
                 text = nodeText
@@ -329,7 +329,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
     }
 
     private fun updateTextTooltipAndIcon(
-        file: SnykCodeFile,
+        file: SnykFile,
         productType: ProductType,
         value: DefaultMutableTreeNode
     ): Pair<Icon?, String?> {
