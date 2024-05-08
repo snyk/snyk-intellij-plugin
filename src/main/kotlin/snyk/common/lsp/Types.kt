@@ -389,7 +389,7 @@ data class IssueData(
 
     // OSS
     @SerializedName("license") val license: String?,
-    @SerializedName("identifiers") val identifiers: OssIdentifiers?,
+    @SerializedName("identifiers") val identifiers: OssIdentifiers,
     @SerializedName("description") val description: String,
     @SerializedName("language") val language: String,
     @SerializedName("packageManager") val packageManager: String,
@@ -406,7 +406,7 @@ data class IssueData(
     @SerializedName("isUpgradable") val isUpgradable: Boolean?,
     @SerializedName("projectName") val projectName: String,
     @SerializedName("displayTargetFile") val displayTargetFile: String?,
-    @SerializedName("matchingIssues") val matchingIssues: List<IssueData>?,
+    @SerializedName("matchingIssues") val matchingIssues: List<IssueData>,
     @SerializedName("lesson") val lesson: String?,
 
     // Code and OSS
@@ -569,3 +569,4 @@ data class OssIdentifiers(
         return result
     }
 }
+
