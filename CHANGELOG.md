@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.7.19]
+### Added
+- Refactors some files so they can be used by more than just Snyk Code
+
 ## [2.7.18]
 ### Added
 - Improved theming in the Code Issue Panel by applying IntelliJ theme colors dynamically to JCEF components. This ensures consistency of UI elements with the rest of the IDE.
