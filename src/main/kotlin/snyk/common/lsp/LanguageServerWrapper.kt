@@ -313,7 +313,7 @@ class LanguageServerWrapper(
     fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
         return LanguageServerSettings(
-            activateSnykOpenSource = isSnykOSSLSEnabled().toString(),
+            activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
             activateSnykCodeSecurity = (isSnykCodeLSEnabled() && ps.snykCodeSecurityIssuesScanEnable).toString(),
             activateSnykCodeQuality = (isSnykCodeLSEnabled() && ps.snykCodeQualityIssuesScanEnable).toString(),
             activateSnykIac = isSnykIaCLSEnabled().toString(),
