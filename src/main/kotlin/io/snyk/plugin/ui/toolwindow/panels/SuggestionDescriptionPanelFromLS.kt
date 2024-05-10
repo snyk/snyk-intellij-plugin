@@ -90,7 +90,7 @@ class SuggestionDescriptionPanelFromLS(
         return when(issue.additionalData.getProductType()) {
             ProductType.OSS -> null
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeOverviewPanel(issue.additionalData)
-            else -> throw IllegalStateException("additionalData of this type has not been configured")
+            else -> throw IllegalStateException("product of this type has not been configured")
         }
     }
 
@@ -98,7 +98,7 @@ class SuggestionDescriptionPanelFromLS(
         return when(issue.additionalData.getProductType()) {
             ProductType.OSS -> null
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeDataflowPanel(project, issue.additionalData)
-            else -> throw IllegalStateException("additionalData of this type has not been configured")
+            else -> throw IllegalStateException("product of this type has not been configured")
         }
     }
 
@@ -106,7 +106,7 @@ class SuggestionDescriptionPanelFromLS(
         return when(issue.additionalData.getProductType()) {
             ProductType.OSS -> null
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeExampleFixesPanel(issue.additionalData)
-            else -> throw IllegalStateException("additionalData of this type has not been configured")
+            else -> throw IllegalStateException("product of this type has not been configured")
         }
     }
 }

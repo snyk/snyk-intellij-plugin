@@ -20,6 +20,7 @@ import kotlin.math.max
 
 class SnykCodeDataflowPanel(private val project: Project, codeIssueData: IssueData): JPanel() {
     init {
+        name = "dataFlowPanel"
         val dataFlow = codeIssueData.dataFlow
 
         this.layout = GridLayoutManager(1 + dataFlow.size, 1, JBUI.emptyInsets(), -1, 5)

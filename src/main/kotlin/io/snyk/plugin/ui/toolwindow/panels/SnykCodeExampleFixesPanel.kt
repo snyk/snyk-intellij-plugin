@@ -19,6 +19,7 @@ import javax.swing.ScrollPaneConstants
 
 class SnykCodeExampleFixesPanel(codeIssueData: IssueData): JPanel() {
     init {
+        name = "fixExamplesPanel"
         val fixes = codeIssueData.exampleCommitFixes
         val examplesCount = fixes.size.coerceAtMost(3)
 
