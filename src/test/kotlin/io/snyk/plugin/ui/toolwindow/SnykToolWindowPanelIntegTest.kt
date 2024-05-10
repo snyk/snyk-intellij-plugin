@@ -34,8 +34,8 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.setupDummyCliFile
-import io.snyk.plugin.snykcode.SnykCodeResults
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykResults
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
@@ -183,10 +183,10 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private fun prepareTreeWithFakeCodeResults() {
         val virtualFile = super.createTempVirtualFile("test.js", null, "test", Charset.defaultCharset())
-        val codeResults = SnykCodeResults(
+        val codeResults = SnykResults(
             mapOf(
                 Pair(
-                    SnykCodeFile(project, virtualFile),
+                    SnykFile(project, virtualFile),
                     listOf(fakeSuggestionForFile)
                 )
             )

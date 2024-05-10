@@ -1,4 +1,4 @@
-package io.snyk.plugin.snykcode.core
+package io.snyk.plugin
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
@@ -8,7 +8,7 @@ import io.snyk.plugin.getPsiFile
 import snyk.common.RelativePathHelper
 import javax.swing.Icon
 
-data class SnykCodeFile(val project: Project, val virtualFile: VirtualFile) {
+data class SnykFile(val project: Project, val virtualFile: VirtualFile) {
     var icon: Icon? = null
     val relativePath = RelativePathHelper().getRelativePath(virtualFile, project)
     init {

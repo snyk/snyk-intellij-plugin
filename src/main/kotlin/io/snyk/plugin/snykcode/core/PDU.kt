@@ -14,6 +14,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
@@ -61,7 +62,7 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
             SCLogger.instance.logWarn("VirtualFile not found for: $absolutePath or $path")
             return null
         }
-        return SnykCodeFile(prj, virtualFile)
+        return SnykFile(prj, virtualFile)
     }
 
     override fun getOpenProjects(): Array<Any> = ProjectManager.getInstance().openProjects.toList().toTypedArray()
@@ -198,8 +199,8 @@ class PDU private constructor() : PlatformDependentUtilsBase() {
 
         fun toVirtualFile(file: Any): VirtualFile = toSnykCodeFile(file).virtualFile
 
-        fun toSnykCodeFile(file: Any): SnykCodeFile {
-            require(file is SnykCodeFile) { "File $file must be of type SnykCodeFile but is ${file.javaClass.name}" }
+        fun toSnykCodeFile(file: Any): SnykFile {
+            require(file is SnykFile) { "File $file must be of type SnykCodeFile but is ${file.javaClass.name}" }
             return file
         }
 

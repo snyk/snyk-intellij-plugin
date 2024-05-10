@@ -1,15 +1,13 @@
-package io.snyk.plugin.snykcode
+package io.snyk.plugin
 
 import ai.deepcode.javaclient.core.SuggestionForFile
-import io.snyk.plugin.Severity
-import io.snyk.plugin.snykcode.core.SnykCodeFile
 
-class SnykCodeResults(
-    private val file2suggestions: Map<SnykCodeFile, List<SuggestionForFile>> = emptyMap()
+class SnykResults(
+    private val file2suggestions: Map<SnykFile, List<SuggestionForFile>> = emptyMap()
 ) {
-    private fun suggestions(file: SnykCodeFile): List<SuggestionForFile> = file2suggestions[file] ?: emptyList()
+    private fun suggestions(file: SnykFile): List<SuggestionForFile> = file2suggestions[file] ?: emptyList()
 
-    private val files: Set<SnykCodeFile> by lazy { file2suggestions.keys }
+    private val files: Set<SnykFile> by lazy { file2suggestions.keys }
 
     val totalCount: Int by lazy { files.sumOf { getCount(it, null) } }
 
@@ -21,8 +19,8 @@ class SnykCodeResults(
 
     val totalInfosCount: Int by lazy { files.sumOf { infosCount(it) } }
 
-    fun cloneFiltered(filter: (SuggestionForFile) -> Boolean): SnykCodeResults {
-        return SnykCodeResults(
+    fun cloneFiltered(filter: (SuggestionForFile) -> Boolean): SnykResults {
+        return SnykResults(
             file2suggestions
                 .mapValues { (_, suggestions) -> suggestions.filter(filter) }
                 .filterValues { it.isNotEmpty() }
@@ -31,11 +29,11 @@ class SnykCodeResults(
 
     // todo? also sort by line in file
     /** sort by Errors-Warnings-Infos */
-    fun getSortedSuggestions(file: SnykCodeFile): List<SuggestionForFile> =
+    fun getSortedSuggestions(file: SnykFile): List<SuggestionForFile> =
         suggestions(file).sortedByDescending { it.getSeverityAsEnum() }
 
     /** sort by Errors-Warnings-Infos */
-    fun getSortedFiles(): Collection<SnykCodeFile> = files
+    fun getSortedFiles(): Collection<SnykFile> = files
         .sortedWith(Comparator { file1, file2 ->
             val file1Criticals by lazy { criticalCount(file1) }
             val file2Criticals by lazy { criticalCount(file2) }
@@ -53,22 +51,22 @@ class SnykCodeResults(
             }
         })
 
-    private fun criticalCount(file: SnykCodeFile) = getCount(file, Severity.CRITICAL)
+    private fun criticalCount(file: SnykFile) = getCount(file, Severity.CRITICAL)
 
-    private fun errorsCount(file: SnykCodeFile) = getCount(file, Severity.HIGH)
+    private fun errorsCount(file: SnykFile) = getCount(file, Severity.HIGH)
 
-    private fun warnsCount(file: SnykCodeFile) = getCount(file, Severity.MEDIUM)
+    private fun warnsCount(file: SnykFile) = getCount(file, Severity.MEDIUM)
 
-    private fun infosCount(file: SnykCodeFile) = getCount(file, Severity.LOW)
+    private fun infosCount(file: SnykFile) = getCount(file, Severity.LOW)
 
     /** @params severity - if `NULL then accept all  */
-    private fun getCount(file: SnykCodeFile, severity: Severity?) =
+    private fun getCount(file: SnykFile, severity: Severity?) =
         suggestions(file)
             .filter { severity == null || it.getSeverityAsEnum() == severity }
             .sumOf { it.ranges.size }
 
     override fun equals(other: Any?): Boolean {
-        return other is SnykCodeResults &&
+        return other is SnykResults &&
             file2suggestions == other.file2suggestions
     }
 

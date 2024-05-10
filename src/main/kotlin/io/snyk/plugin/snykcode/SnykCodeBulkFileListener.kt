@@ -17,7 +17,7 @@ import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.snykcode.core.PDU
 import io.snyk.plugin.snykcode.core.RunUtils
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.toLanguageServerURL
@@ -27,7 +27,7 @@ import snyk.common.lsp.LanguageServerWrapper
 
 class SnykCodeBulkFileListener : SnykBulkFileListener() {
     override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) {
-        val filesAffected = toSnykCodeFileSet(
+        val filesAffected = toSnykFileSet(
             project,
             virtualFilesAffected
         )
@@ -69,7 +69,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
     }
 
     override fun after(project: Project, virtualFilesAffected: Set<VirtualFile>) {
-        val filesAffected = toSnykCodeFileSet(project, virtualFilesAffected)
+        val filesAffected = toSnykFileSet(project, virtualFilesAffected)
 
         if (isSnykCodeLSEnabled()) {
             updateCacheAndUI(filesAffected, project)
@@ -102,7 +102,7 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         }
     }
 
-    private fun updateCacheAndUI(filesAffected: Set<SnykCodeFile>, project: Project) {
+    private fun updateCacheAndUI(filesAffected: Set<SnykFile>, project: Project) {
         val cache = getSnykCachedResults(project)?.currentSnykCodeResultsLS ?: return
         filesAffected.forEach {
             cache.remove(it)
@@ -111,6 +111,6 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
         DaemonCodeAnalyzer.getInstance(project).restart()
     }
 
-    private fun toSnykCodeFileSet(project: Project, virtualFiles: Set<VirtualFile>) =
-        virtualFiles.map { SnykCodeFile(project, it) }.toSet()
+    private fun toSnykFileSet(project: Project, virtualFiles: Set<VirtualFile>) =
+        virtualFiles.map { SnykFile(project, it) }.toSet()
 }

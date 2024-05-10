@@ -9,7 +9,7 @@ import io.snyk.plugin.analytics.Iteratively
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.SnykResults
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.AuthenticateButtonIsClicked
@@ -57,7 +57,7 @@ class SnykAnalyticsService : Disposable {
                 )
             }
 
-            override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) {
+            override fun scanningSnykCodeFinished(snykResults: SnykResults?) {
                 logSnykCodeAnalysisIsReady(AnalysisIsReady.Result.SUCCESS)
             }
 

@@ -9,15 +9,15 @@ import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
 
-class OpenFileLoadHandlerGenerator(snykCodeFile: SnykCodeFile) {
-    private val project = snykCodeFile.project
-    private val virtualFile = snykCodeFile.virtualFile
+class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
+    private val project = snykFile.project
+    private val virtualFile = snykFile.virtualFile
 
     fun openFile(value: String): JBCefJSQuery.Response {
         val values = value.replace("\n", "").split(":")

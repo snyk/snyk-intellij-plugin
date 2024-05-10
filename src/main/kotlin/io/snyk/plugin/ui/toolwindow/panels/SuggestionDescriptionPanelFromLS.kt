@@ -12,7 +12,7 @@ import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -38,19 +38,19 @@ import javax.swing.event.HyperlinkEvent
 import kotlin.math.max
 
 class SuggestionDescriptionPanelFromLS(
-    snykCodeFile: SnykCodeFile,
+    snykFile: SnykFile,
     private val issue: ScanIssue
 ) : IssueDescriptionPanelBase(
     title = getIssueTitle(issue),
     severity = issue.getSeverityAsEnum()
 ) {
-    val project = snykCodeFile.project
+    val project = snykFile.project
     private val unexpectedErrorMessage =
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
     init {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
-            val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykCodeFile)
+            val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile)
             val jbCefBrowserComponent = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.additionalData.details) {
                 openFileLoadHandlerGenerator.generate(it)
             }

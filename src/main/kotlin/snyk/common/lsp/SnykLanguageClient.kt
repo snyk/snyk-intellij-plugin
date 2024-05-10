@@ -19,13 +19,13 @@ import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.getOpenedProjects
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFileManager
-import io.snyk.plugin.events.SnykCodeScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
@@ -49,7 +49,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.kotlin.idea.util.application.executeOnPooledThread
 import snyk.common.ProductType
-import snyk.common.SnykCodeFileIssueComparator
+import snyk.common.SnykFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
@@ -134,7 +134,7 @@ class SnykLanguageClient() : LanguageClient {
         }
     }
 
-    private fun processSnykScan(snykScan: SnykScanParams, scanPublisher: SnykCodeScanListenerLS, project: Project) {
+    private fun processSnykScan(snykScan: SnykScanParams, scanPublisher: SnykScanListenerLS, project: Project) {
         val product = when (snykScan.product) {
             "code" -> ProductType.CODE_SECURITY
             else -> return
@@ -159,7 +159,7 @@ class SnykLanguageClient() : LanguageClient {
         }
     }
 
-    private fun processSuccessfulScan(snykScan: SnykScanParams, scanPublisher: SnykCodeScanListenerLS, project: Project) {
+    private fun processSuccessfulScan(snykScan: SnykScanParams, scanPublisher: SnykScanListenerLS, project: Project) {
         logger.info("Scan completed")
         when (snykScan.product) {
             "oss" -> {
@@ -180,10 +180,10 @@ class SnykLanguageClient() : LanguageClient {
      * Get all the scan publishers for the given scan. As the folder path could apply to different projects
      * containing that content root, we need to notify all of them.
      */
-    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykCodeScanListenerLS>> {
+    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykScanListenerLS>> {
         return getProjectsForFolderPath(snykScan.folderPath)
             .mapNotNull { p ->
-                getSyncPublisher(p, SnykCodeScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
+                getSyncPublisher(p, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
                     Pair(p, scanListenerLS)
                 }
             }.toSet()
@@ -196,7 +196,7 @@ class SnykLanguageClient() : LanguageClient {
         }
 
     @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
-    private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykCodeFile, List<ScanIssue>> {
+    private fun getSnykCodeResult(project: Project, snykScan: SnykScanParams): Map<SnykFile, List<ScanIssue>> {
         check(snykScan.product == "code") { "Expected Snyk Code scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
@@ -212,7 +212,7 @@ class SnykLanguageClient() : LanguageClient {
 
         val map = processedIssues
             .groupBy { it.filePath }
-            .mapNotNull { (file, issues) -> SnykCodeFile(project, file.toVirtualFile()) to issues.sorted() }
+            .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
             .map {
                 // initialize all calculated values before they are needed, so we don't have to do it in the UI thread
                 it.first.relativePath
@@ -221,7 +221,7 @@ class SnykLanguageClient() : LanguageClient {
             }
             .filter { it.second.isNotEmpty() }
             .toMap()
-        return map.toSortedMap(SnykCodeFileIssueComparator(map))
+        return map.toSortedMap(SnykFileIssueComparator(map))
     }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")

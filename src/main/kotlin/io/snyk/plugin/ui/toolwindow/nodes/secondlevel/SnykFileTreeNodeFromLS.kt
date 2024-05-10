@@ -1,11 +1,11 @@
 package io.snyk.plugin.ui.toolwindow.nodes.secondlevel
 
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import javax.swing.tree.DefaultMutableTreeNode
 
-class SnykCodeFileTreeNodeFromLS(
-    file: Map.Entry<SnykCodeFile, List<ScanIssue>>,
+class SnykFileTreeNodeFromLS(
+    file: Map.Entry<SnykFile, List<ScanIssue>>,
     productType: ProductType
 ) : DefaultMutableTreeNode(Pair(file, productType))

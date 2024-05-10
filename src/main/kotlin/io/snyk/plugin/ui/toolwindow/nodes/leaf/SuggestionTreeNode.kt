@@ -4,7 +4,7 @@ import ai.deepcode.javaclient.core.SuggestionForFile
 import io.snyk.plugin.analytics.getIssueSeverityOrNull
 import io.snyk.plugin.analytics.getIssueType
 import io.snyk.plugin.getSnykAnalyticsService
-import io.snyk.plugin.snykcode.core.SnykCodeFile
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
@@ -32,7 +32,7 @@ class SuggestionTreeNode(
         )
         val snykCodeFileTreeNode = this.parent as? SnykCodeFileTreeNode
             ?: throw IllegalArgumentException(this.toString())
-        val snykCodeFile = (snykCodeFileTreeNode.userObject as Pair<SnykCodeFile, ProductType>).first
-        return SuggestionDescriptionPanel(snykCodeFile, suggestion, rangeIndex)
+        val snykFile = (snykCodeFileTreeNode.userObject as Pair<SnykFile, ProductType>).first
+        return SuggestionDescriptionPanel(snykFile, suggestion, rangeIndex)
     }
 }

@@ -16,7 +16,7 @@ import com.intellij.ui.PopupHandler
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.snykcode.SnykCodeResults
+import io.snyk.plugin.SnykResults
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import snyk.common.SnykError
 import snyk.container.ContainerResult
@@ -72,7 +72,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningOssFinished(ossResult: OssResult) = updateActionsPresentation()
 
-                override fun scanningSnykCodeFinished(snykCodeResults: SnykCodeResults?) = updateActionsPresentation()
+                override fun scanningSnykCodeFinished(snykResults: SnykResults?) = updateActionsPresentation()
 
                 override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
 
