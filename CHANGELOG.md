@@ -6,6 +6,10 @@
 
 ## [2.7.18]
 ### Added
+- De-duplicated code which will be used by all products loaded via the Language Server
+
+## [2.7.18]
+### Added
 - Improved theming in the Code Issue Panel by applying IntelliJ theme colors dynamically to JCEF components. This ensures consistency of UI elements with the rest of the IDE.
 
 ### Fixed

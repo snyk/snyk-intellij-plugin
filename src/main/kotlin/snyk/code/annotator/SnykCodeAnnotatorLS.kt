@@ -1,42 +1,24 @@
 package snyk.code.annotator
 
-import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task.Backgroundable
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import icons.SnykIcons
-import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.toLanguageServerURL
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
-import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
 import org.eclipse.lsp4j.CodeActionParams
-import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentIdentifier
-import org.eclipse.lsp4j.TextEdit
 import snyk.common.AnnotatorCommon
-import snyk.common.intentionactions.ShowDetailsIntentionActionBase
-import snyk.common.intentionactions.SnykIntentionActionBase
-import snyk.common.lsp.DocumentChanger
+import snyk.common.ProductType
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import javax.swing.Icon
-
-private const val TIMEOUT = 120L
 
 private const val CODEACTION_TIMEOUT = 2L
 
@@ -100,7 +82,7 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
                             val title = codeAction.title
                             holder.newAnnotation(highlightSeverity, title)
                                 .range(textRange)
-                                .withFix(CodeActionIntention(issue, codeAction))
+                                .withFix(CodeActionIntention(issue, codeAction, ProductType.CODE_SECURITY))
                                 .create()
                         }
                 }
@@ -155,70 +137,6 @@ class SnykCodeAnnotatorLS : ExternalAnnotator<PsiFile, Unit>() {
         } catch (e: IllegalArgumentException) {
             logger.warn(e)
             return TextRange.EMPTY_RANGE
-        }
-    }
-
-    inner class ShowDetailsIntentionAction(
-        override val annotationMessage: String,
-        private val issue: ScanIssue
-    ) : ShowDetailsIntentionActionBase() {
-        override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
-            toolWindowPanel.selectNodeAndDisplayDescription(issue)
-        }
-
-        override fun getSeverity(): Severity = issue.getSeverityAsEnum()
-    }
-
-    inner class CodeActionIntention(private val issue: ScanIssue, private val codeAction: CodeAction) :
-        SnykIntentionActionBase() {
-        private var changes: Map<String, List<TextEdit>>? = null
-
-        override fun getText(): String = codeAction.title
-
-        override fun invoke(project: Project, editor: Editor?, psiFile: PsiFile?) {
-            val task = object : Backgroundable(project, "Applying Snyk Code Action") {
-                override fun run(p0: ProgressIndicator) {
-                    val languageServer = LanguageServerWrapper.getInstance().languageServer
-                    var resolvedCodeAction = codeAction
-                    if (codeAction.command == null && codeAction.edit == null) {
-                        resolvedCodeAction =
-                            languageServer.textDocumentService
-                                .resolveCodeAction(codeAction).get(TIMEOUT, TimeUnit.SECONDS)
-
-                        val edit = resolvedCodeAction.edit
-                        if (edit == null || edit.changes == null) return
-                        changes = edit.changes
-                    } else {
-                        val codeActionCommand = resolvedCodeAction.command
-                        val executeCommandParams =
-                            ExecuteCommandParams(codeActionCommand.command, codeActionCommand.arguments)
-                        languageServer.workspaceService
-                            .executeCommand(executeCommandParams).get(TIMEOUT, TimeUnit.SECONDS)
-                    }
-                }
-
-                override fun onSuccess() {
-                    // see https://intellij-support.jetbrains.com/hc/en-us/community/posts/360005049419-Run-WriteAction-in-Background-process-Asynchronously
-                    // save the write action to call it later onSuccess
-                    // as we are updating documents, we need a WriteCommandAction
-                    WriteCommandAction.runWriteCommandAction(project) {
-                        if (changes == null) return@runWriteCommandAction
-                        for (change in changes!!) {
-                           DocumentChanger.applyChange(change)
-                        }
-                    }
-                }
-            }
-            ProgressManager.getInstance().run(task)
-        }
-
-        override fun getIcon(p0: Int): Icon = SnykIcons.SNYK_CODE
-
-        override fun getPriority(): PriorityAction.Priority {
-            return when {
-                codeAction.title.contains("fix", ignoreCase = true) -> PriorityAction.Priority.TOP
-                else -> issue.getSeverityAsEnum().getQuickFixPriority()
-            }
         }
     }
 }
