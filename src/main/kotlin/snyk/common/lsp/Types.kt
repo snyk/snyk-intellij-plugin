@@ -491,7 +491,7 @@ data class IssueData(
     override fun hashCode(): Int {
         if (this.getProductType() == ProductType.OSS) {
             var result = ruleId.hashCode()
-            result = 31 + description.hashCode()
+            result = 31 * result + description.hashCode()
             result = 31 * result + (license?.hashCode() ?: 0)
             result = 31 * result + (identifiers?.hashCode() ?: 0)
             result = 31 * result + language.hashCode()
