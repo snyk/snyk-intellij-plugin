@@ -1,8 +1,8 @@
 # Snyk Security Changelog
 
 ## [2.7.19]
-### Added
 - Refactors some files so they can be used by more than just Snyk Code
+- Registry flag for integrating Snyk OSS scans in JetBrains via the LS
 
 ## [2.7.18]
 ### Added

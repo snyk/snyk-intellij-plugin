@@ -258,7 +258,7 @@ fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
 fun isSnykCodeLSEnabled(): Boolean = Registry.`is`("snyk.preview.snyk.code.ls.enabled", true)
 
-fun isSnykOSSLSEnabled(): Boolean = false
+fun isSnykOSSLSEnabled(): Boolean = Registry.`is`("snyk.preview.snyk.oss.ls.enabled", false)
 
 fun isSnykIaCLSEnabled(): Boolean = false
 
