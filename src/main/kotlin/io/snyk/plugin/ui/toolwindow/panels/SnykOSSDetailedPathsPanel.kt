@@ -3,20 +3,16 @@ package io.snyk.plugin.ui.toolwindow.panels
 import com.intellij.ui.components.ActionLink
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.insertTitleAndResizableTextIntoPanelColumns
 import io.snyk.plugin.ui.panelGridConstraints
 import snyk.common.lsp.IssueData
-import java.awt.Dimension
-import javax.swing.JComponent
-import javax.swing.JLabel
 import javax.swing.JPanel
 
-class SnykOSSDetailedPathsPanel(private val ossIssueData: IssueData) : JComponent() {
+class SnykOSSDetailedPathsPanel(private val ossIssueData: IssueData) : JPanel() {
     init {
-        name = "detailedPathspanel"
+        name = "detailedPathsPanel"
         this.layout = GridLayoutManager(2, 2, JBUI.emptyInsets(), -1, -1)
 
         this.add(

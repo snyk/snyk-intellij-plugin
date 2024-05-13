@@ -2,17 +2,14 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import io.snyk.plugin.ui.panelGridConstraints
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
 import snyk.common.lsp.IssueData
-import java.awt.Dimension
-import javax.swing.JComponent
-import javax.swing.JLabel
+import javax.swing.JPanel
 
-class SnykOSSOverviewPanel(private val ossIssueData: IssueData) : JComponent() {
+class SnykOSSOverviewPanel(private val ossIssueData: IssueData) : JPanel() {
     init {
         name = "overviewPanel"
         this.layout = GridLayoutManager(2, 1, JBUI.insetsLeft(5), -1, 0)

@@ -29,6 +29,7 @@ import snyk.common.ProductType
 import snyk.common.lsp.CommitChangeLine
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ExampleCommitFix
+import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
 import javax.swing.JLabel
@@ -58,6 +59,14 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
         snykFile = SnykFile(psiFile.project, psiFile.virtualFile)
 
+        val matchingIssue = mockk<IssueData>()
+        every { matchingIssue.getProductType() } returns ProductType.OSS
+        every { matchingIssue.name } returns "Another test name"
+        every { matchingIssue.from } returns listOf("from")
+        every { matchingIssue.upgradePath } returns listOf("upgradePath")
+
+        val matchingIssues = listOf(matchingIssue)
+
         issue = mockk<ScanIssue>()
         every { issue.getSeverityAsEnum() } returns Severity.CRITICAL
         every { issue.title() } returns "title"
@@ -69,6 +78,11 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.id() } returns "id"
         every { issue.ruleId() } returns "ruleId"
         every { issue.additionalData.getProductType() } returns ProductType.OSS
+        every { issue.additionalData.name } returns "Test name"
+        every { issue.additionalData.matchingIssues } returns matchingIssues
+        every { issue.additionalData.fixedIn } returns listOf("fixedIn")
+        every { issue.additionalData.exploit } returns "exploit"
+        every { issue.additionalData.description } returns "description"
     }
 
     @Test
@@ -92,5 +106,14 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
         val fixExamplesPanel = getJPanelByName(cut, "fixExamplesPanel")
         assertNull(fixExamplesPanel)
+
+        val introducedThroughPanel = getJPanelByName(cut, "introducedThroughPanel")
+        assertNotNull(introducedThroughPanel)
+
+        val detailedPathsPanel = getJPanelByName(cut, "detailedPathsPanel")
+        assertNotNull(detailedPathsPanel)
+
+        val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
+        assertNotNull(ossOverviewPanel)
     }
 }

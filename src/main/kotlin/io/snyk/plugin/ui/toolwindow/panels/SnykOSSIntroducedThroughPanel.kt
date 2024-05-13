@@ -7,11 +7,10 @@ import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.boldLabel
 import snyk.common.lsp.IssueData
 import io.snyk.plugin.ui.toolwindow.LabelProvider
-import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 
-class SnykOSSIntroducedThroughPanel(private val ossIssueData: IssueData) : JComponent() {
+class SnykOSSIntroducedThroughPanel(private val ossIssueData: IssueData) : JPanel() {
     private val labelProvider: LabelProvider = LabelProvider()
 
     init {
