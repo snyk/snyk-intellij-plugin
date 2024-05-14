@@ -13,10 +13,14 @@ import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.OSS_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNodeFromLS
 import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -29,12 +33,14 @@ class SnykToolWindowSnykScanListenerLS(
     private val vulnerabilitiesTree: JTree,
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
+    private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListenerLS {
 
     override fun scanningStarted(snykScan: SnykScanParams) {
         ApplicationManager.getApplication().invokeLater {
             rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
             rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning...)"
+            rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning...)"
         }
     }
 
@@ -47,77 +53,110 @@ class SnykToolWindowSnykScanListenerLS(
         }
     }
 
-    override fun scanningSnykCodeError(snykScan: SnykScanParams) = Unit
+    override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        ApplicationManager.getApplication().invokeLater {
+            this.snykToolWindowPanel.navigateToSourceEnabled = false
+            displayOssResults(snykResults)
+            refreshAnnotationsForOpenFiles(project)
+            this.snykToolWindowPanel.navigateToSourceEnabled = true
+        }
+    }
+
+    override fun scanningError(snykScan: SnykScanParams) = Unit
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
+
+        val settings = pluginSettings()
+
+
+        // display Security issues
+        val securityIssues = snykResults
+            .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
+            .toMap()
+        displayIssues(
+            enabledInSettings = settings.snykCodeSecurityIssuesScanEnable,
+            filterTree =  settings.treeFiltering.codeSecurityResults,
+            snykResults = securityIssues,
+            rootNode = this.rootSecurityIssuesTreeNode,
+            securityIssuesCount = securityIssues.values.flatten().distinct().size,
+        )
+
+        // display Quality (non Security) issues
+        val qualityIssues = snykResults
+            .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
+            .toMap()
+
+        displayIssues(
+            enabledInSettings = settings.snykCodeQualityIssuesScanEnable,
+            filterTree =  settings.treeFiltering.codeQualityResults,
+            snykResults = qualityIssues,
+            rootNode = this.rootQualityIssuesTreeNode,
+            qualityIssuesCount = qualityIssues.values.flatten().distinct().size,
+        )
+    }
+
+
+    fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (getSnykCachedResults(project)?.currentOssError != null) return
+
+        val settings = pluginSettings()
+
+        displayIssues(
+            enabledInSettings = settings.ossScanEnable,
+            filterTree =  settings.treeFiltering.ossResults,
+            snykResults = snykResults,
+            rootNode = this.rootOssIssuesTreeNode,
+            ossResultsCount = snykResults.values.flatten().distinct().size,
+        )
+    }
+
+    private fun displayIssues(
+        enabledInSettings: Boolean,
+        filterTree: Boolean,
+        snykResults: Map<SnykFile, List<ScanIssue>>,
+        rootNode: DefaultMutableTreeNode,
+        ossResultsCount: Int? = null,
+        securityIssuesCount: Int? = null,
+        qualityIssuesCount: Int? = null,
+        iacResultsCount: Int? = null,
+        containerResultsCount: Int? = null,
+    ) {
         if (pluginSettings().token.isNullOrEmpty()) {
             snykToolWindowPanel.displayAuthPanel()
             return
         }
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-
-        // display Security issues
-        displayIssues(snykResults, selectedNodeUserObject, true)
-
-        // display Quality (non Security) issues
-        displayIssues(snykResults, selectedNodeUserObject, false)
-    }
-
-    private fun displayIssues(
-        snykCodeResults: Map<SnykFile, List<ScanIssue>>,
-        selectedNodeUserObject: Any?,
-        isSecurity: Boolean
-    ) {
-        val rootNode = if (isSecurity) this.rootSecurityIssuesTreeNode else this.rootQualityIssuesTreeNode
 
         val userObjectsForExpandedNodes =
             snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+        val settings = pluginSettings()
 
         rootNode.removeAllChildren()
 
-        var issuesCount: Int? = null
         var rootNodePostFix = ""
-        val settings = pluginSettings()
-        val enabledInSettings = when {
-            isSecurity -> settings.snykCodeSecurityIssuesScanEnable
-            else -> settings.snykCodeQualityIssuesScanEnable
-        }
 
         if (enabledInSettings) {
-            val filteredResults = snykCodeResults
-                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType == isSecurity } }
-                .toMap()
+            rootNodePostFix = buildSeveritiesPostfixForFileNode(snykResults)
 
-            issuesCount = filteredResults.values.flatten().distinct().size
-            rootNodePostFix = buildSeveritiesPostfixForFileNode(filteredResults)
-
-            val treeFiltering = when {
-                isSecurity -> settings.treeFiltering.codeSecurityResults
-                else -> settings.treeFiltering.codeQualityResults
-            }
-
-            if (treeFiltering) {
-                val resultsToDisplay = filteredResults.map { entry ->
+            if (filterTree) {
+                val resultsToDisplay = snykResults.map { entry ->
                     entry.key to entry.value.filter {
                         settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                     }
                 }.toMap()
-                displayResultsForCodeRoot(rootNode, resultsToDisplay)
+                displayResultsForRootTreeNode(rootNode, resultsToDisplay)
             }
         }
 
-        if (isSecurity) {
-            snykToolWindowPanel.updateTreeRootNodesPresentation(
-                securityIssuesCount = issuesCount,
-                addHMLPostfix = rootNodePostFix
-            )
-        } else {
-            snykToolWindowPanel.updateTreeRootNodesPresentation(
-                qualityIssuesCount = issuesCount,
-                addHMLPostfix = rootNodePostFix
-            )
-        }
+        snykToolWindowPanel.updateTreeRootNodesPresentation(
+            securityIssuesCount = securityIssuesCount,
+            qualityIssuesCount = qualityIssuesCount,
+            ossResultsCount = ossResultsCount,
+            iacResultsCount = iacResultsCount,
+            containerResultsCount = containerResultsCount,
+            addHMLPostfix = rootNodePostFix
+        )
 
         snykToolWindowPanel.smartReloadRootNode(
             rootNode,
@@ -126,7 +165,7 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
-    private fun displayResultsForCodeRoot(
+    private fun displayResultsForRootTreeNode(
         rootNode: DefaultMutableTreeNode,
         issues: Map<SnykFile, List<ScanIssue>>
     ) {
@@ -139,12 +178,16 @@ class SnykToolWindowSnykScanListenerLS(
                 val productType = when (rootNode) {
                     is RootQualityIssuesTreeNode -> ProductType.CODE_QUALITY
                     is RootSecurityIssuesTreeNode -> ProductType.CODE_SECURITY
+                    is RootOssTreeNode -> ProductType.OSS
+                    is RootContainerIssuesTreeNode -> ProductType.CONTAINER
+                    is RootIacIssuesTreeNode -> ProductType.IAC
                     else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
                 }
+
                 val fileTreeNode =
-                    SnykFileTreeNodeFromLS(entry, productType)
+                    FileTreeNodeFromLS(entry, productType)
                 rootNode.add(fileTreeNode)
-                entry.value.sortedByDescending { it.additionalData.priorityScore }
+                entry.value.sortedByDescending { it.priority()}
                     .forEach { issue ->
                         fileTreeNode.add(
                             SuggestionTreeNodeFromLS(
@@ -156,10 +199,10 @@ class SnykToolWindowSnykScanListenerLS(
             }
     }
 
-    private fun buildSeveritiesPostfixForFileNode(securityResults: Map<SnykFile, List<ScanIssue>>): String {
-        val high = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.HIGH }
-        val medium = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
-        val low = securityResults.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }
+    private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {
+        val high = results.values.flatten().count { it.getSeverityAsEnum() == Severity.HIGH }
+        val medium = results.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
+        val low = results.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }
         return ": $high high, $medium medium, $low low"
     }
 }

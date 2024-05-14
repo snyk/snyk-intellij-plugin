@@ -8,6 +8,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.AnnotatorCommon
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction
@@ -28,6 +29,8 @@ abstract class OSSBaseAnnotator : ExternalAnnotator<PsiFile, Unit>() {
     }
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
+        if (isSnykOSSLSEnabled()) return
+
         val issues = getIssuesForFile(psiFile) ?: return
 
         val filteredVulns = issues.vulnerabilities

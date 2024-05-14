@@ -15,5 +15,7 @@ interface SnykScanListenerLS {
 
     fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>)
 
-    fun scanningSnykCodeError(snykScan: SnykScanParams)
+    fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>)
+
+    fun scanningError(snykScan: SnykScanParams)
 }

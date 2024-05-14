@@ -12,6 +12,7 @@ import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
+import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import java.awt.BorderLayout
 import java.awt.Font
@@ -23,7 +24,7 @@ class SuggestionDescriptionPanelFromLS(
     snykFile: SnykFile,
     private val issue: ScanIssue
 ) : IssueDescriptionPanelBase(
-    title = getIssueTitle(issue),
+    title = issue.title(),
     severity = issue.getSeverityAsEnum()
 ) {
     val project = snykFile.project
@@ -31,9 +32,12 @@ class SuggestionDescriptionPanelFromLS(
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
     init {
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled && issue.additionalData.details != null) {
+        if (
+            pluginSettings().isGlobalIgnoresFeatureEnabled &&
+            issue.canLoadSuggestionPanelFromHTML()
+        ) {
             val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile)
-            val jbCefBrowserComponent = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.additionalData.details) {
+            val jbCefBrowserComponent = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.details()) {
                 openFileLoadHandlerGenerator.generate(it)
             }
             if (jbCefBrowserComponent == null) {
@@ -62,8 +66,12 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
-        issueNaming = if (issue.additionalData.isSecurityType) "Vulnerability" else "Quality Issue",
-        cwes = issue.additionalData.cwe ?: emptyList()
+        issueNaming = issue.issueNaming(),
+        cwes = issue.cwes(),
+        cvssScore = issue.cvssScore(),
+        cvssV3 = issue.cvssV3(),
+        cves = issue.cves(),
+        id = issue.id(),
     )
 
     override fun createMainBodyPanel(): Pair<JPanel, Int> {
@@ -79,24 +87,29 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     private fun overviewPanel(): JComponent? {
-        return SnykCodeOverviewPanel(issue.additionalData)
+        return when(issue.additionalData.getProductType()) {
+            ProductType.OSS -> null
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeOverviewPanel(issue.additionalData)
+            else -> throw IllegalStateException("product of this type has not been configured")
+        }
     }
 
     private fun dataFlowPanel(): JPanel? {
-        return SnykCodeDataflowPanel(project, issue.additionalData)
+        return when(issue.additionalData.getProductType()) {
+            ProductType.OSS -> null
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeDataflowPanel(project, issue.additionalData)
+            else -> throw IllegalStateException("product of this type has not been configured")
+        }
     }
 
     private fun fixExamplesPanel(): JPanel? {
-        return SnykCodeExampleFixesPanel(issue.additionalData)
+        return when(issue.additionalData.getProductType()) {
+            ProductType.OSS -> null
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeExampleFixesPanel(issue.additionalData)
+            else -> throw IllegalStateException("product of this type has not been configured")
+        }
     }
 }
-
-private fun getIssueTitle(issue: ScanIssue) =
-    if (issue.additionalData.isSecurityType) {
-        issue.title.split(":").firstOrNull() ?: "Unknown issue"
-    } else {
-        issue.additionalData.message.split(".").firstOrNull() ?: "Unknown issue"
-    }
 
 fun defaultFontLabel(labelText: String, bold: Boolean = false): JLabel {
     return JLabel().apply {

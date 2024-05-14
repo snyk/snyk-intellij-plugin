@@ -56,6 +56,7 @@ import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
 import snyk.common.lsp.ScanInProgressKey
+import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
@@ -94,6 +95,17 @@ fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.s
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
 
 fun getSnykCachedResults(project: Project): SnykCachedResults? = project.serviceIfNotDisposed()
+
+fun getSnykCachedResultsForProduct(project: Project, product: ProductType): MutableMap<SnykFile, List<ScanIssue>>? {
+    return when (product) {
+        ProductType.OSS -> getSnykCachedResults(project)?.currentOSSResultsLS
+        ProductType.IAC -> getSnykCachedResults(project)?.currentIacResultsLS
+        ProductType.CONTAINER -> getSnykCachedResults(project)?.currentContainerResultsLS
+        ProductType.CODE_SECURITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
+        ProductType.CODE_QUALITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
+        ProductType.ADVISOR -> mutableMapOf()
+    }
+}
 
 fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? = project.serviceIfNotDisposed()
 
@@ -174,8 +186,18 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
+    val lsRunning = project.getContentRootVirtualFiles().any { vf ->
+        val key = ScanInProgressKey(vf, ProductType.OSS)
+        ScanState.scanInProgress[key] == true
+    }
     val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
-    return indicator != null && indicator.isRunning && !indicator.isCanceled
+    return lsRunning ||
+        (indicator != null && indicator.isRunning && !indicator.isCanceled)
+}
+
+fun cancelOss(project: Project) {
+    val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
+    indicator?.cancel()
 }
 
 fun isSnykCodeRunning(project: Project): Boolean {

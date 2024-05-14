@@ -5,7 +5,7 @@ import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import javax.swing.tree.DefaultMutableTreeNode
 
-class SnykFileTreeNodeFromLS(
+class FileTreeNodeFromLS(
     file: Map.Entry<SnykFile, List<ScanIssue>>,
     productType: ProductType
 ) : DefaultMutableTreeNode(Pair(file, productType))

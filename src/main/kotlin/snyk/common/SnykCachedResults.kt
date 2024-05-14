@@ -25,11 +25,17 @@ class SnykCachedResults(val project: Project) {
 
     var currentSnykCodeResults: SnykResults? = null
 
+    val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
+
     var currentOssResults: OssResult? = null
         get() = if (field?.isExpired() == false) field else null
 
+    val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
+
     var currentContainerResult: ContainerResult? = null
         get() = if (field?.isExpired() == false) field else null
+
+    val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
 
     var currentIacResult: IacResult? = null
         get() = if (field?.isExpired() == false) field else null
@@ -43,6 +49,7 @@ class SnykCachedResults(val project: Project) {
     var currentSnykCodeError: SnykError? = null
 
     fun cleanCaches() {
+        currentOSSResultsLS.clear()
         currentOssResults = null
         currentContainerResult = null
         currentIacResult = null
@@ -134,7 +141,13 @@ class SnykCachedResults(val project: Project) {
                     logger.info("scanning finished for project ${project.name}, assigning cache.")
                 }
 
-                override fun scanningSnykCodeError(snykScan: SnykScanParams) {
+                override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+                    currentOSSResultsLS.clear()
+                    currentOSSResultsLS.putAll(snykResults)
+                    logger.info("scanning finished for project ${project.name}, assigning cache.")
+                }
+
+                override fun scanningError(snykScan: SnykScanParams) {
                     SnykBalloonNotificationHelper
                         .showError(
                             "scanning error for project ${project.name}, emptying cache.Data: $snykScan",

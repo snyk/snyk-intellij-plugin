@@ -1,5 +1,6 @@
 package snyk
 
+import com.intellij.ui.components.ActionLink
 import com.intellij.ui.jcef.JBCefBrowser
 import java.awt.Container
 import javax.swing.JButton
@@ -70,4 +71,20 @@ object UIComponentFinder {
         }
         return found
     }
+    fun getActionLinkByText(parent: Container, text: String): JButton? {
+        val components = parent.components
+        var found: JButton? = null
+        for (component in components) {
+            if (component is ActionLink && text == component.text) {
+                found = component
+            } else if (component is Container) {
+                found = getActionLinkByText(component, text)
+            }
+            if (found != null) {
+                break
+            }
+        }
+        return found
+    }
+
 }

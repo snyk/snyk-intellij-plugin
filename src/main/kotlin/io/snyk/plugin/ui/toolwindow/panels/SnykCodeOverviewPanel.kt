@@ -11,6 +11,7 @@ import javax.swing.JLabel
 
 class SnykCodeOverviewPanel(codeIssueData: IssueData) : JComponent() {
     init {
+        name = "overviewPanel"
         this.layout = GridLayoutManager(2, 1, JBUI.emptyInsets(), -1, -1)
         val label = JLabel("<html>" + codeIssueData.message + "</html>").apply {
             this.isOpaque = false

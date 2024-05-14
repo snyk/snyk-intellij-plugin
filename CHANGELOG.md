@@ -1,12 +1,14 @@
 # Snyk Security Changelog
 
-## [2.7.19]
-- Refactors some files so they can be used by more than just Snyk Code
-- Registry flag for integrating Snyk OSS scans in JetBrains via the LS
-
-## [2.7.18]
+## [2.7.20]
 ### Added
+- (LS OSS) Starts rendering the Tree Nodes for OSS via the LS
+
+## [2.7.19]
+### Added
+- Refactors some files so they can be used by more than just Snyk Code
 - De-duplicated code which will be used by all products loaded via the Language Server
+- Registry flag for integrating Snyk OSS scans in JetBrains via the LS
 
 ## [2.7.18]
 ### Added

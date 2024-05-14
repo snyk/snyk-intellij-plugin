@@ -8,9 +8,15 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toVirtualFile
 import org.eclipse.lsp4j.Range
+import snyk.analytics.IssueInTreeIsClicked.IssueType
+import snyk.common.ProductType
 import java.util.Date
+import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
+import javax.swing.Icon
+import java.util.Locale
 
 // Define the SnykScanParams data class
 data class SnykScanParams(
@@ -77,6 +83,185 @@ data class ScanIssue(
         document = virtualFile?.getDocument()
         startOffset = document?.getLineStartOffset(range.start.line)?.plus(range.start.character)
         endOffset = document?.getLineStartOffset(range.end.line)?.plus(range.end.character)
+    }
+
+    fun type(): IssueType {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> {
+                if (this.additionalData.license != null) {
+                    IssueType.LICENCE_ISSUE
+                } else {
+                    IssueType.OPEN_SOURCE_VULNERABILITY
+                }
+            }
+            ProductType.IAC -> IssueType.INFRASTRUCTURE_AS_CODE_ISSUE
+            ProductType.CONTAINER -> IssueType.CONTAINER_VULNERABILITY
+            ProductType.CODE_SECURITY -> IssueType.CODE_SECURITY_VULNERABILITY
+            ProductType.CODE_QUALITY -> IssueType.CODE_QUALITY_ISSUE
+            ProductType.ADVISOR -> IssueType.ADVISOR
+        }
+    }
+
+    fun title(): String {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> this.title
+            ProductType.CODE_QUALITY -> {
+                this.additionalData.message.split('.').firstOrNull() ?: "Unknown issue"
+            }
+            ProductType.CODE_SECURITY -> {
+                this.title.split(":").firstOrNull() ?: "Unknown issue"
+            }
+            else -> TODO()
+        }
+    }
+
+    fun longTitle(): String {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> {
+                "${this.additionalData.packageName}@${this.additionalData.version}: ${this.title()}"
+            }
+            ProductType.CODE_QUALITY, ProductType.CODE_SECURITY -> {
+                return "${this.title()} [${this.range.start.line + 1},${this.range.start.character}]"
+            }
+            else -> TODO()
+        }
+    }
+
+    fun priority(): Int {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> {
+                return when(this.getSeverityAsEnum()) {
+                    Severity.CRITICAL -> 4
+                    Severity.HIGH -> 3
+                    Severity.MEDIUM -> 2
+                    Severity.LOW -> 1
+                    Severity.UNKNOWN -> 0
+                }
+            }
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.priorityScore
+            else -> TODO()
+        }
+    }
+    fun issueNaming(): String {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> {
+                if (this.additionalData.license != null) {
+                    "License"
+                } else {
+                    "Vulnerability"
+                }
+            }
+            ProductType.CODE_SECURITY -> "Vulnerability"
+            ProductType.CODE_QUALITY -> "Quality Issue"
+            else -> TODO()
+        }
+    }
+
+
+    fun cwes(): List<String> {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> {
+                this.additionalData.identifiers?.CWE ?: emptyList()
+            }
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
+                this.additionalData.cwe ?: emptyList()
+            }
+            else -> TODO()
+        }
+    }
+
+    fun cves(): List<String> {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> {
+                    this.additionalData.identifiers?.CVE ?: emptyList()
+            }
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> emptyList()
+            else -> TODO()
+        }
+    }
+
+    fun cvssScore(): String? {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> this.additionalData.cvssScore
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
+            else -> TODO()
+        }
+    }
+
+    fun cvssV3(): String? {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> this.additionalData.CVSSv3
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
+            else -> TODO()
+        }
+    }
+
+    fun id(): String? {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> this.additionalData.ruleId
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
+            else -> TODO()
+        }
+    }
+
+    fun ruleId(): String? {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS, ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.ruleId
+            else -> TODO()
+        }
+    }
+
+    fun icon(): Icon? {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> getIcon(this.additionalData.packageManager.lowercase(Locale.getDefault()))
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
+            else -> TODO()
+        }
+    }
+
+    fun details(): String {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> this.additionalData.details ?: ""
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.details ?: ""
+            else -> TODO()
+        }
+    }
+
+    fun annotationMessage(): String {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> this.title
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.title.ifBlank {
+                this.additionalData.message.let {
+                    if (it.length < 70) it else "${it.take(70)}..."
+                }
+            }
+            else -> TODO()
+        }
+    }
+
+    fun canLoadSuggestionPanelFromHTML(): Boolean {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> false
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.details != null
+            else -> TODO()
+        }
+    }
+
+    fun hasAIFix(): Boolean {
+        return when (this.additionalData.getProductType()) {
+            ProductType.OSS -> false
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
+                if (this.isIgnored()) {
+                    return false
+                }
+                return this.additionalData.hasAIFix
+            }
+            else -> TODO()
+        }
+    }
+
+    fun isIgnored(): Boolean {
+        return pluginSettings().isGlobalIgnoresFeatureEnabled && this.isIgnored == true
     }
 
     fun getSeverityAsEnum(): Severity {
@@ -186,10 +371,10 @@ data class DataFlow(
 )
 
 data class IssueData(
+    // Code
     @SerializedName("message") val message: String,
     @SerializedName("leadURL") val leadURL: String?,
     @SerializedName("rule") val rule: String,
-    @SerializedName("ruleId") val ruleId: String,
     @SerializedName("repoDatasetSize") val repoDatasetSize: Int,
     @SerializedName("exampleCommitFixes") val exampleCommitFixes: List<ExampleCommitFix>,
     @SerializedName("cwe") val cwe: List<String>?,
@@ -201,13 +386,81 @@ data class IssueData(
     @SerializedName("priorityScore") val priorityScore: Int,
     @SerializedName("hasAIFix") val hasAIFix: Boolean,
     @SerializedName("dataFlow") val dataFlow: List<DataFlow>,
+
+    // OSS
+    @SerializedName("license") val license: String?,
+    @SerializedName("identifiers") val identifiers: OssIdentifiers?,
+    @SerializedName("description") val description: String,
+    @SerializedName("language") val language: String,
+    @SerializedName("packageManager") val packageManager: String,
+    @SerializedName("packageName") val packageName: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("version") val version: String,
+    @SerializedName("exploit") val exploit: String?,
+    @SerializedName("CVSSv3") val CVSSv3: String?,
+    @SerializedName("cvssScore") val cvssScore: String?,
+    @SerializedName("fixedIn") val fixedIn: List<String>?,
+    @SerializedName("from") val from: List<String>,
+    @SerializedName("upgradePath") val upgradePath: List<Any>,
+    @SerializedName("isPatchable") val isPatchable: Boolean,
+    @SerializedName("isUpgradable") val isUpgradable: Boolean?,
+    @SerializedName("projectName") val projectName: String,
+    @SerializedName("displayTargetFile") val displayTargetFile: String?,
+    @SerializedName("matchingIssues") val matchingIssues: List<IssueData>?,
+    @SerializedName("lesson") val lesson: String?,
+
+    // Code and OSS
+    @SerializedName("ruleId") val ruleId: String,
     @SerializedName("details") val details: String?,
-    ) {
+) {
+
+    fun getProductType(): ProductType {
+        // TODO: how else to differentiate?
+        if (this.packageManager != null) {
+            return ProductType.OSS
+        }
+        if (this.message != null) {
+            if (this.isSecurityType) {
+                return ProductType.CODE_SECURITY
+            } else {
+                return ProductType.CODE_QUALITY
+            }
+        }
+        throw IllegalStateException("Not defined type of IssueData")
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
         other as IssueData
+
+        if (this.getProductType() == ProductType.OSS) {
+            if (ruleId != other.ruleId) return false
+            if (license != other.license) return false
+            if (identifiers != other.identifiers) return false
+            if (description != other.description) return false
+            if (language != other.language) return false
+            if (packageManager != other.packageManager) return false
+            if (packageName != other.packageName) return false
+            if (name != other.name) return false
+            if (version != other.version) return false
+            if (exploit != other.exploit) return false
+            if (CVSSv3 != other.CVSSv3) return false
+            if (cvssScore != other.cvssScore) return false
+            if (fixedIn != other.fixedIn) return false
+            if (from != other.from) return false
+            if (upgradePath != other.upgradePath) return false
+            if (isPatchable != other.isPatchable) return false
+            if (isUpgradable != other.isUpgradable) return false
+            if (projectName != other.projectName) return false
+            if (displayTargetFile != other.displayTargetFile) return false
+            if (matchingIssues != other.matchingIssues) return false
+            if (lesson != other.lesson) return false
+            if (details != other.details) return false
+
+            return true
+        }
 
         if (message != other.message) return false
         if (leadURL != other.leadURL) return false
@@ -236,6 +489,31 @@ data class IssueData(
     }
 
     override fun hashCode(): Int {
+        if (this.getProductType() == ProductType.OSS) {
+            var result = ruleId.hashCode()
+            result = 31 * result + description.hashCode()
+            result = 31 * result + (license?.hashCode() ?: 0)
+            result = 31 * result + (identifiers?.hashCode() ?: 0)
+            result = 31 * result + language.hashCode()
+            result = 31 * result + packageManager.hashCode()
+            result = 31 * result + packageName.hashCode()
+            result = 31 * result + name.hashCode()
+            result = 31 * result + version.hashCode()
+            result = 31 * result + (exploit?.hashCode() ?: 0)
+            result = 31 * result + (CVSSv3?.hashCode() ?: 0)
+            result = 31 * result + (cvssScore?.hashCode() ?: 0)
+            result = 31 * result + (fixedIn?.hashCode() ?: 0)
+            result = 31 * result + from.hashCode()
+            result = 31 * result + upgradePath.hashCode()
+            result = 31 * result + isPatchable.hashCode()
+            result = 31 * result + (isUpgradable?.hashCode() ?: 0)
+            result = 31 * result + displayTargetFile.hashCode()
+            result = 31 * result + (details?.hashCode() ?: 0)
+            result = 31 * result +( matchingIssues?.hashCode() ?: 0)
+            result = 31 * result + (lesson?.hashCode() ?: 0)
+            return result
+        }
+
         var result = message.hashCode()
         result = 31 * result + (leadURL?.hashCode() ?: 0)
         result = 31 * result + rule.hashCode()
@@ -267,3 +545,27 @@ data class IgnoreDetails(
     @SerializedName("ignoredOn") val ignoredOn: Date,
     @SerializedName("ignoredBy") val ignoredBy: String,
 )
+
+data class OssIdentifiers(
+    @SerializedName("CWE") val CWE: List<String>?,
+    @SerializedName("CVE") val CVE: List<String>?,
+){
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as OssIdentifiers
+
+        if (CWE != other.CWE) return false
+        if (CVE != other.CVE) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = (CWE.hashCode() ?: 0)
+        result = 31 * result + (CVE?.hashCode() ?: 0)
+        return result
+    }
+}
