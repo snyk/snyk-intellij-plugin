@@ -389,7 +389,7 @@ data class IssueData(
 
     // OSS
     @SerializedName("license") val license: String?,
-    @SerializedName("identifiers") val identifiers: OssIdentifiers,
+    @SerializedName("identifiers") val identifiers: OssIdentifiers?,
     @SerializedName("description") val description: String,
     @SerializedName("language") val language: String,
     @SerializedName("packageManager") val packageManager: String,
