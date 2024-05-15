@@ -3,6 +3,7 @@
 ## [2.7.20]
 ### Added
 - (LS OSS) Starts rendering the Tree Nodes for OSS via the LS
+- (LS OSS) Renders the Suggestion Panel for OSS via the LS
 
 ## [2.7.19]
 ### Added

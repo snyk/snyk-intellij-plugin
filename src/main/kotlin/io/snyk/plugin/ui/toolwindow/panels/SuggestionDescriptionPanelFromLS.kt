@@ -6,6 +6,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
@@ -16,7 +17,6 @@ import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import java.awt.BorderLayout
 import java.awt.Font
-import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 
@@ -79,35 +79,37 @@ class SuggestionDescriptionPanelFromLS(
         val panel = JPanel(
             GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20)
         ).apply {
-            overviewPanel()?.let { this.add(it, panelGridConstraints(2)) }
-            dataFlowPanel()?.let { this.add(it, panelGridConstraints(3)) }
-            fixExamplesPanel()?.let { this.add(it, panelGridConstraints(4)) }
+            if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY || issue.additionalData.getProductType() == ProductType.CODE_QUALITY) {
+                this.add(
+                    SnykCodeOverviewPanel(issue.additionalData),
+                    panelGridConstraints(2)
+                )
+                this.add(
+                    SnykCodeDataflowPanel(project, issue.additionalData),
+                    panelGridConstraints(3)
+                )
+                this.add(
+                    SnykCodeExampleFixesPanel(issue.additionalData),
+                    panelGridConstraints(4)
+                )
+            } else if (issue.additionalData.getProductType() == ProductType.OSS) {
+                this.add(
+                    SnykOSSIntroducedThroughPanel(issue.additionalData),
+                    baseGridConstraintsAnchorWest(1, indent = 0)
+                )
+                this.add(
+                   SnykOSSDetailedPathsPanel(issue.additionalData),
+                    panelGridConstraints(2)
+                )
+                this.add(
+                    SnykOSSOverviewPanel(issue.additionalData),
+                    panelGridConstraints(3)
+                )
+            } else {
+                TODO()
+            }
         }
         return Pair(panel, lastRowToAddSpacer)
-    }
-
-    private fun overviewPanel(): JComponent? {
-        return when(issue.additionalData.getProductType()) {
-            ProductType.OSS -> null
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeOverviewPanel(issue.additionalData)
-            else -> throw IllegalStateException("product of this type has not been configured")
-        }
-    }
-
-    private fun dataFlowPanel(): JPanel? {
-        return when(issue.additionalData.getProductType()) {
-            ProductType.OSS -> null
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeDataflowPanel(project, issue.additionalData)
-            else -> throw IllegalStateException("product of this type has not been configured")
-        }
-    }
-
-    private fun fixExamplesPanel(): JPanel? {
-        return when(issue.additionalData.getProductType()) {
-            ProductType.OSS -> null
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> SnykCodeExampleFixesPanel(issue.additionalData)
-            else -> throw IllegalStateException("product of this type has not been configured")
-        }
     }
 }
 

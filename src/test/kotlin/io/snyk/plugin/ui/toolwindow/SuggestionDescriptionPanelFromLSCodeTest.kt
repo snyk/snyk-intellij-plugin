@@ -89,6 +89,15 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         val fixExamplesPanel = getJPanelByName(cut, "fixExamplesPanel")
         assertNotNull(fixExamplesPanel)
+
+        val introducedThroughPanel = getJPanelByName(cut, "introducedThroughPanel")
+        assertNull(introducedThroughPanel)
+
+        val detailedPathsPanel = getJPanelByName(cut, "detailedPathsPanel")
+        assertNull(detailedPathsPanel)
+
+        val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
+        assertNull(ossOverviewPanel)
     }
 
     @Test
