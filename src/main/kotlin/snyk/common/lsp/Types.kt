@@ -247,12 +247,12 @@ data class ScanIssue(
 
     fun annotationMessage(): String {
         return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> this.title
+            ProductType.OSS -> this.title + " in " + this.additionalData.packageName + " id: " + this.ruleId()
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY ->
                 this.title.ifBlank {
                     this.additionalData.message.let {
                         if (it.length < 70) it else "${it.take(70)}..."
-                    }
+                    } + " (Snyk)"
                 }
 
             else -> TODO()
