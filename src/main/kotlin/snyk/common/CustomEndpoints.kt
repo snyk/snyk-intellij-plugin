@@ -73,7 +73,8 @@ fun getEndpointUrl(): String {
         ""
     }
     val customEndpointUrl = resolveCustomEndpoint(endpointUrl)
-    return customEndpointUrl.removeTrailingSlashesIfPresent()
+    // we need to set v1 here, to make the sast-enabled calls work in LS
+    return customEndpointUrl.removeTrailingSlashesIfPresent().suffixIfNot("/v1")
 }
 
 fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
