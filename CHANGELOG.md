@@ -1,5 +1,10 @@
 # Snyk Security Changelog
 
+## [2.7.21]
+
+### Fixed
+- Append /v1 to the endpoint when necessary
+
 ## [2.7.20]
 ### Added
 - (LS OSS) Starts rendering the Tree Nodes for OSS via the LS
