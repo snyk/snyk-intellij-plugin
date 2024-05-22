@@ -21,12 +21,14 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
         uri.isDev() ->
             endpoint
                 .replace("api.", "")
+                .replace("/v1", "")
                 .replace("https://dev.", "https://$codeSubdomain.dev.")
                 .suffixIfNot("/")
 
         uri.isSnykTenant() ->
             endpoint
                 .replace("https://api.", "https://")
+                .replace("/v1", "")
                 .replace("https://", "https://$codeSubdomain.")
                 .suffixIfNot("/")
 
