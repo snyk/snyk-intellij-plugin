@@ -1,4 +1,4 @@
-package snyk.common.lsp
+package lsp
 
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
@@ -22,6 +22,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.CompletableFuture

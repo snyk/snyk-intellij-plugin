@@ -11,15 +11,9 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.readText
 import io.snyk.plugin.SnykBulkFileListener
-import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.isSnykCodeLSEnabled
-import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.PDU
-import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
-import io.snyk.plugin.snykcode.core.SnykCodeUtils
+import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.toSnykFileSet
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
@@ -27,47 +21,7 @@ import org.eclipse.lsp4j.TextDocumentIdentifier
 import snyk.common.lsp.LanguageServerWrapper
 
 class SnykCodeBulkFileListener : SnykBulkFileListener() {
-    override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) {
-        val filesAffected = toSnykFileSet(
-            project,
-            virtualFilesAffected
-        )
-        if (isSnykCodeLSEnabled()) {
-            return
-        }
-
-        // if SnykCode analysis is running then re-run it (with updated files)
-        val supportedFileChanged = filesAffected
-            .filter { it.virtualFile.isValid }
-            .any { SnykCodeUtils.instance.isSupportedFileFormat(it) }
-        val isSnykCodeRunning = AnalysisData.instance.isUpdateAnalysisInProgress(project)
-        if (supportedFileChanged && isSnykCodeRunning) {
-            RunUtils.instance.rescanInBackgroundCancellableDelayed(project, 0, false, false)
-        }
-        // remove changed files from SnykCode cache
-        val allCachedFiles = AnalysisData.instance.getAllCachedFiles(project)
-        val filesToRemoveFromCache = allCachedFiles
-            .filter { cachedFile ->
-                val snykCodeFile = PDU.toSnykCodeFile(cachedFile)
-                snykCodeFile in filesAffected ||
-                    // Directory containing cached file is deleted/moved
-                    filesAffected.any {
-                        it.virtualFile.isDirectory && snykCodeFile.virtualFile.path.startsWith(it.virtualFile.path)
-                    }
-            }
-        if (filesToRemoveFromCache.isNotEmpty()) {
-            getSnykTaskQueueService(project)?.scheduleRunnable("Snyk Code is updating caches...") {
-                if (filesToRemoveFromCache.size > 10) {
-                    // bulk files change event - better to drop cache and perform full rescan later
-                    AnalysisData.instance.removeProjectFromCaches(project)
-                } else {
-                    AnalysisData.instance.removeFilesFromCache(filesToRemoveFromCache)
-                }
-            }
-        }
-        // clean .dcignore caches if needed
-        SnykCodeIgnoreInfoHolder.instance.cleanIgnoreFileCachesIfAffected(filesAffected)
-    }
+    override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) = Unit
 
     override fun after(project: Project, virtualFilesAffected: Set<VirtualFile>) {
         val filesAffected = toSnykFileSet(project, virtualFilesAffected)
@@ -76,8 +30,6 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
             updateCacheAndUI(filesAffected, project)
             return
         }
-        /* update .dcignore caches if needed */
-        SnykCodeIgnoreInfoHolder.instance.updateIgnoreFileCachesIfAffected(filesAffected)
     }
 
     override fun forwardEvents(events: MutableList<out VFileEvent>) {

@@ -9,7 +9,6 @@ import io.snyk.plugin.analytics.Iteratively
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.SnykResults
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.AuthenticateButtonIsClicked
@@ -57,10 +56,6 @@ class SnykAnalyticsService : Disposable {
                 )
             }
 
-            override fun scanningSnykCodeFinished(snykResults: SnykResults?) {
-                logSnykCodeAnalysisIsReady(AnalysisIsReady.Result.SUCCESS)
-            }
-
             override fun scanningIacFinished(iacResult: IacResult) {
                 logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -99,10 +94,6 @@ class SnykAnalyticsService : Disposable {
                         .result(AnalysisIsReady.Result.ERROR)
                         .build()
                 )
-            }
-
-            override fun scanningSnykCodeError(snykError: SnykError) {
-                logSnykCodeAnalysisIsReady(AnalysisIsReady.Result.ERROR)
             }
 
             override fun scanningContainerError(snykError: SnykError) {
