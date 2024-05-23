@@ -271,7 +271,7 @@ class LanguageServerWrapper(
     }
 
     private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
-        if (!isSnykCodeLSEnabled()) {
+        if (!(isSnykCodeLSEnabled() || isSnykOSSLSEnabled() || isSnykIaCLSEnabled()) || pluginSettings().token.isNullOrBlank()) {
             return false
         }
 
