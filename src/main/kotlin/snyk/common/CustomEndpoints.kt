@@ -21,12 +21,14 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
         uri.isDev() ->
             endpoint
                 .replace("api.", "")
+                .replace("/v1", "")
                 .replace("https://dev.", "https://$codeSubdomain.dev.")
                 .suffixIfNot("/")
 
         uri.isSnykTenant() ->
             endpoint
                 .replace("https://api.", "https://")
+                .replace("/v1", "")
                 .replace("https://", "https://$codeSubdomain.")
                 .suffixIfNot("/")
 
@@ -73,7 +75,8 @@ fun getEndpointUrl(): String {
         ""
     }
     val customEndpointUrl = resolveCustomEndpoint(endpointUrl)
-    return customEndpointUrl.removeTrailingSlashesIfPresent()
+    // we need to set v1 here, to make the sast-enabled calls work in LS
+    return customEndpointUrl.removeTrailingSlashesIfPresent().suffixIfNot("/v1")
 }
 
 fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
