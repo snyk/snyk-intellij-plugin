@@ -59,6 +59,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     jButton.setText("Authenticating...")
                     val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                     pluginSettings().token = token
+                    SnykCodeParams.instance.sessionToken = token
 
                     // explicitly add the project to workspace trusted paths, because
                     // scan can be auto-triggered depending on "settings.pluginFirstRun" value

@@ -17,11 +17,15 @@ interface SnykScanListener {
 
     fun scanningOssFinished(ossResult: OssResult)
 
+    fun scanningSnykCodeFinished(snykResults: SnykResults?)
+
     fun scanningIacFinished(iacResult: IacResult)
 
     fun scanningOssError(snykError: SnykError)
 
     fun scanningIacError(snykError: SnykError)
+
+    fun scanningSnykCodeError(snykError: SnykError)
 
     fun scanningContainerFinished(containerResult: ContainerResult)
 

@@ -35,6 +35,7 @@ import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import org.jetbrains.annotations.TestOnly
@@ -221,12 +222,19 @@ class SnykTaskQueueService(val project: Project) {
 
                     false -> {
                         SnykBalloonNotifications.showSastForOrgEnablement(project)
+                        scanPublisher?.scanningSnykCodeError(
+                            SnykError(SnykBalloonNotifications.sastForOrgEnablementMessage, project.basePath ?: "")
+                        )
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false
                     }
 
                     null -> {
                         SnykBalloonNotifications.showNetworkErrorAlert(project)
+                        scanPublisher?.scanningSnykCodeError(
+                            SnykError(SnykBalloonNotifications.networkErrorAlertMessage, project.basePath ?: "")
+                        )
+                        // todo(artsiom): shell we do it `false` here?
                         settings.snykCodeSecurityIssuesScanEnable = false
                         settings.snykCodeQualityIssuesScanEnable = false
                     }
@@ -345,6 +353,7 @@ class SnykTaskQueueService(val project: Project) {
         cancelOss(project)
 
         val wasSnykCodeRunning = isSnykCodeRunning(project)
+        RunUtils.instance.cancelRunningIndicators(project)
 
         val wasIacRunning = iacScanProgressIndicator?.isRunning == true
         iacScanProgressIndicator?.cancel()
