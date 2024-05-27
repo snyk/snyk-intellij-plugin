@@ -46,7 +46,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         return Paths.get(resource.toURI()).toString()
     }
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()

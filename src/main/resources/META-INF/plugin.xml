@@ -55,7 +55,7 @@
 
     <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider"/>
 
-    <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykCodeAnnotatorLS"/>
+    <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykOSSAnnotatorLS"/>
   </extensions>

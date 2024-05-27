@@ -16,7 +16,6 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isProjectSettingsAvailable
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -95,11 +94,9 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        if (isSnykCodeLSEnabled()) {
-            runBackgroundableTask("Updating Snyk Code settings", project, true) {
-                settingsStateService.isGlobalIgnoresFeatureEnabled =
-                    LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
-            }
+        runBackgroundableTask("Updating Snyk Code settings", project, true) {
+            settingsStateService.isGlobalIgnoresFeatureEnabled =
+                LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
         }
 
         if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {

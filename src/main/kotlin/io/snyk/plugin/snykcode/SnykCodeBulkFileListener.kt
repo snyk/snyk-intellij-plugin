@@ -13,7 +13,6 @@ import com.intellij.openapi.vfs.readText
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.toSnykFileSet
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
@@ -25,17 +24,12 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
 
     override fun after(project: Project, virtualFilesAffected: Set<VirtualFile>) {
         val filesAffected = toSnykFileSet(project, virtualFilesAffected)
-
-        if (isSnykCodeLSEnabled()) {
-            updateCacheAndUI(filesAffected, project)
-            return
-        }
+        updateCacheAndUI(filesAffected, project)
     }
 
     override fun forwardEvents(events: MutableList<out VFileEvent>) {
         val languageServerWrapper = LanguageServerWrapper.getInstance()
 
-        if (!isSnykCodeLSEnabled()) return
         if (!languageServerWrapper.isInitialized) return
 
         val languageServer = languageServerWrapper.languageServer

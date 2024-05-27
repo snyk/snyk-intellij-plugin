@@ -509,7 +509,7 @@ data class IssueData(
             result = 31 * result + (isUpgradable?.hashCode() ?: 0)
             result = 31 * result + displayTargetFile.hashCode()
             result = 31 * result + (details?.hashCode() ?: 0)
-            result = 31 * result +( matchingIssues?.hashCode() ?: 0)
+            result = 31 * result +( matchingIssues.hashCode() ?: 0)
             result = 31 * result + (lesson?.hashCode() ?: 0)
             return result
         }
@@ -564,7 +564,7 @@ data class OssIdentifiers(
     }
 
     override fun hashCode(): Int {
-        var result = (CWE.hashCode() ?: 0)
+        var result = CWE.hashCode()
         result = 31 * result + (CVE?.hashCode() ?: 0)
         return result
     }

@@ -26,7 +26,6 @@ import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isOssRunning
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
@@ -126,7 +125,7 @@ class SnykTaskQueueService(val project: Project) {
                     } else {
                         // the LS deals with triggering scans at startup
                         // TODO: Refactor when more than Snyk Code is available in LS for IntelliJ
-                        if (!isSnykCodeLSEnabled() && !isStartup) {
+                        if (!isStartup) {
                             LanguageServerWrapper.getInstance().sendScanCommand(project)
                         }
                     }

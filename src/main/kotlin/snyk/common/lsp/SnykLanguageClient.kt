@@ -19,14 +19,13 @@ import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.getOpenedProjects
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFileManager
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.SnykFile
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
@@ -113,7 +112,6 @@ class SnykLanguageClient() : LanguageClient {
 
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
-        if (!isSnykCodeLSEnabled()) return completedFuture
         ProjectUtil.getOpenProjects().forEach { project ->
             ReadAction.run<RuntimeException> {
                 refreshAnnotationsForOpenFiles(project)
@@ -125,9 +123,6 @@ class SnykLanguageClient() : LanguageClient {
 
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
-        if (snykScan.product == "code" && !isSnykCodeLSEnabled()) {
-            return
-        }
         if (snykScan.product == "oss" && !isSnykOSSLSEnabled()) {
             return
         }

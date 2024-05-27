@@ -5,22 +5,20 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
-import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.dsl.builder.actionListener
 import com.intellij.ui.dsl.builder.bindSelected
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykApiService
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.snykcode.core.SnykCodeUtils
 import io.snyk.plugin.startSastEnablementCheckLoop
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.ProductType
@@ -259,25 +257,10 @@ class ScanTypesPanel(
     private fun doShowFilesToUpload() {
         setSnykCodeAvailability(true)
         showSnykCodeAlert("")
-        setSnykCodeComment("Checking number of files to be uploaded...") {
-            getUploadingFilesMessage()
-        }
     }
 
     private fun shouldSnykCodeCommentBeVisible() =
         codeSecurityCheckbox?.isSelected == true || codeQualityCheckbox?.isSelected == true
-
-    private fun getUploadingFilesMessage(): String {
-        // FIXME: implement count of files
-        if (isSnykCodeLSEnabled()) return ""
-        val allSupportedFilesInProject =
-            SnykCodeUtils.instance.getAllSupportedFilesInProject(project, true, null)
-        val allSupportedFilesCount = allSupportedFilesInProject.size
-        val allFilesCount = SnykCodeUtils.instance.allProjectFilesCount(project)
-        return "We will upload and analyze $allSupportedFilesCount files " +
-            "(${(100.0 * allSupportedFilesCount / allFilesCount).toInt()}%)" +
-            " out of $allFilesCount files"
-    }
 
     private fun setSnykCodeComment(progressMessage: String, messageProducer: () -> String?) {
         snykCodeComment?.isVisible = true

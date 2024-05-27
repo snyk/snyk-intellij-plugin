@@ -33,7 +33,6 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isProjectSettingsAvailable
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -69,6 +68,7 @@ class SnykSettingsDialog(
         init {
             Disposer.register(SnykPluginDisposable.getInstance(project), this)
         }
+
         override fun dispose() = Unit
     }
 
@@ -473,17 +473,15 @@ class SnykSettingsDialog(
             )
         )
 
-        if (isSnykCodeLSEnabled()) {
-            scanOnSaveCheckbox.text = "Scan automatically on start-up and save"
-            userExperiencePanel.add(
-                scanOnSaveCheckbox,
-                baseGridConstraints(
-                    row = 0,
-                    anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                    indent = 0
-                )
+        scanOnSaveCheckbox.text = "Scan automatically on start-up and save"
+        userExperiencePanel.add(
+            scanOnSaveCheckbox,
+            baseGridConstraints(
+                row = 0,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                indent = 0
             )
-        }
+        )
 
         usageAnalyticsCheckBox.text = "Send usage statistics to Snyk"
         userExperiencePanel.add(

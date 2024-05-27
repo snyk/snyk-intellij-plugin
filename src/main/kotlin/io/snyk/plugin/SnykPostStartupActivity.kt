@@ -109,7 +109,7 @@ class SnykPostStartupActivity : ProjectActivity {
             getKubernetesImageCache(project)?.cacheKubernetesFileFromProject()
         }
 
-        if (!settings.token.isNullOrBlank() && settings.scanOnSave && (isSnykCodeLSEnabled() || isSnykOSSLSEnabled() || isSnykIaCLSEnabled())) {
+        if (!settings.token.isNullOrBlank() && settings.scanOnSave) {
             getSnykTaskQueueService(project)?.scan(true)
         }
 
