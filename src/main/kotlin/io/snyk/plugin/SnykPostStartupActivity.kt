@@ -14,8 +14,6 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.extensions.SnykControllerImpl
 import io.snyk.plugin.extensions.SnykControllerManager
 import io.snyk.plugin.snykcode.SnykCodeBulkFileListener
-import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.PLUGIN_ID
 import snyk.amplitude.api.ExperimentUser
@@ -48,10 +46,6 @@ class SnykPostStartupActivity : ProjectActivity {
     @Suppress("TooGenericExceptionCaught")
     override suspend fun execute(project: Project) {
         PluginInstaller.addStateListener(UninstallListener())
-
-        // clean up left-overs in case project wasn't properly closed before
-        AnalysisData.instance.resetCachesAndTasks(project)
-        SnykCodeIgnoreInfoHolder.instance.removeProject(project)
 
         if (!settings.pluginInstalled) {
             settings.pluginInstalled = true

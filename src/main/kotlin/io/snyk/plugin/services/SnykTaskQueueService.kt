@@ -17,10 +17,8 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getOssService
-import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
-import io.snyk.plugin.getSnykCode
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
@@ -32,12 +30,9 @@ import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
-import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import io.snyk.plugin.ui.SnykBalloonNotifications
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
@@ -121,14 +116,8 @@ class SnykTaskQueueService(val project: Project) {
                 indicator.checkCanceled()
 
                 if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
-                    if (!isSnykCodeLSEnabled()) {
-                        scheduleSnykCodeScan()
-                    } else {
-                        // the LS deals with triggering scans at startup
-                        // TODO: Refactor when more than Snyk Code is available in LS for IntelliJ
-                        if (!isStartup) {
-                            LanguageServerWrapper.getInstance().sendScanCommand(project)
-                        }
+                    if (!isStartup) {
+                        LanguageServerWrapper.getInstance().sendScanCommand(project)
                     }
                 }
                 if (settings.ossScanEnable) {
@@ -197,50 +186,6 @@ class SnykTaskQueueService(val project: Project) {
                 invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })
-    }
-
-    private fun scheduleSnykCodeScan() {
-        object : Task.Backgroundable(project, "Checking if Snyk Code enabled for organisation...", true) {
-            override fun run(indicator: ProgressIndicator) {
-                if (settings.token.isNullOrBlank()) {
-                    return
-                }
-                val sastCliConfigSettings = try {
-                    getSnykApiService().getSastSettings()
-                } catch (ignored: ClientException) {
-                    null
-                }
-
-                settings.sastOnServerEnabled = sastCliConfigSettings?.sastEnabled
-                settings.localCodeEngineEnabled = sastCliConfigSettings?.localCodeEngine?.enabled
-                settings.localCodeEngineUrl = sastCliConfigSettings?.localCodeEngine?.url
-                when (settings.sastOnServerEnabled) {
-                    true -> {
-                        getSnykCode(project)?.scan()
-                        scanPublisher?.scanningStarted()
-                    }
-
-                    false -> {
-                        SnykBalloonNotifications.showSastForOrgEnablement(project)
-                        scanPublisher?.scanningSnykCodeError(
-                            SnykError(SnykBalloonNotifications.sastForOrgEnablementMessage, project.basePath ?: "")
-                        )
-                        settings.snykCodeSecurityIssuesScanEnable = false
-                        settings.snykCodeQualityIssuesScanEnable = false
-                    }
-
-                    null -> {
-                        SnykBalloonNotifications.showNetworkErrorAlert(project)
-                        scanPublisher?.scanningSnykCodeError(
-                            SnykError(SnykBalloonNotifications.networkErrorAlertMessage, project.basePath ?: "")
-                        )
-                        // todo(artsiom): shell we do it `false` here?
-                        settings.snykCodeSecurityIssuesScanEnable = false
-                        settings.snykCodeQualityIssuesScanEnable = false
-                    }
-                }
-            }
-        }.queue()
     }
 
     private fun scheduleOssScan() {
@@ -353,7 +298,6 @@ class SnykTaskQueueService(val project: Project) {
         cancelOss(project)
 
         val wasSnykCodeRunning = isSnykCodeRunning(project)
-        RunUtils.instance.cancelRunningIndicators(project)
 
         val wasIacRunning = iacScanProgressIndicator?.isRunning == true
         iacScanProgressIndicator?.cancel()

@@ -36,13 +36,10 @@ import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
-import io.snyk.plugin.services.SnykCodeService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
-import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.RunUtils
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -85,8 +82,6 @@ private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
 fun getOssService(project: Project): OssService? = project.serviceIfNotDisposed()
 
 fun getIacService(project: Project): IacScanService? = project.serviceIfNotDisposed()
-
-fun getSnykCode(project: Project): SnykCodeService? = project.serviceIfNotDisposed()
 
 fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.serviceIfNotDisposed()
 
@@ -206,11 +201,7 @@ fun isSnykCodeRunning(project: Project): Boolean {
         ScanState.scanInProgress[key] == true
     }
 
-    return (
-        AnalysisData.instance.isUpdateAnalysisInProgress(project) ||
-            RunUtils.instance.isFullRescanRequested(project) ||
-            lsRunning
-        )
+    return lsRunning
 }
 
 fun isIacRunning(project: Project): Boolean {
