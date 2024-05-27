@@ -92,7 +92,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
 
-                val parentFileNode = value.parent as FileTreeNode
+                val parentFileNode = value.parent as SnykCodeFileTreeNode
                 val (entry, productType) =
                     parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
 
