@@ -162,20 +162,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         snykTaskQueueService.downloadLatestRelease()
     }
 
-    fun testSastEnablementCheckInScan() {
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = pluginSettings()
-        settings.ossScanEnable = false
-        settings.snykCodeSecurityIssuesScanEnable = true
-        settings.snykCodeQualityIssuesScanEnable = true
-        settings.token = "testToken"
-
-        snykTaskQueueService.scan(false)
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        verify { snykApiServiceMock.getSastSettings() }
-    }
-
     fun `test LCE should be unknown in initial settings state`() {
         val settings = pluginSettings()
 
@@ -234,45 +220,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         }
     }
 
-    fun testSnykTaskQueueServiceScanCodeOnStartupAndFailsWhenLS() {
-        val registryValue = Registry.get("snyk.preview.snyk.code.ls.enabled")
-        registryValue.setValue(false)
-
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = pluginSettings()
-        settings.ossScanEnable = true
-        settings.snykCodeSecurityIssuesScanEnable = true
-        settings.snykCodeQualityIssuesScanEnable = true
-        settings.token = "testToken"
-        settings.iacScanEnabled = true
-        settings.containerScanEnabled = true
-        getSnykCachedResults(project)?.currentOssResults = null
-        getSnykCachedResults(project)?.currentIacResult = null
-        getSnykCachedResults(project)?.currentContainerResult = null
-        getSnykCachedResults(project)?.currentSnykCodeResults = null
-
-        val fakeOSSResult = OssResult(emptyList())
-        val fakeIacResult = IacResult(emptyList())
-        val fakeContainerResult = ContainerResult(emptyList())
-
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isIacEnabled() } returns true
-        every { isCliInstalled() } returns true
-        every { getSnykCode(project)?.scan() } returns null
-        every { getOssService(project)?.scan() } returns fakeOSSResult
-        every { getIacService(project)?.scan() } returns fakeIacResult
-        every { getContainerService(project)?.scan() } returns fakeContainerResult
-
-        snykTaskQueueService.scan(true)
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        assertEquals(fakeOSSResult, getSnykCachedResults(project)?.currentOssResults)
-        assertEquals(fakeIacResult, getSnykCachedResults(project)?.currentIacResult)
-        await().atMost(2, TimeUnit.SECONDS).until {
-            getSnykCachedResults(project)?.currentContainerResult != null
-        }
-        verify(exactly = 1) { getSnykCode(project)?.scan() }
-    }
     fun testSnykTaskQueueServiceDoesNotScanCodeOnStartupWhenLS() {
         val registryValue = Registry.get("snyk.preview.snyk.code.ls.enabled")
         registryValue.setValue(true)

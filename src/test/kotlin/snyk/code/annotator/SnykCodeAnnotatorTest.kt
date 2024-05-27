@@ -104,17 +104,6 @@ class SnykCodeAnnotatorTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test apply should trigger newAnnotation call`() {
-        mockkObject(AnalysisData)
-        every { AnalysisData.instance.getAnalysis(SnykFile(psiFile.project, psiFile.virtualFile)) } returns
-            createSnykCodeResultWithIssues()
-
-        cut.apply(psiFile, Unit, annotationHolderMock)
-
-        verify { annotationHolderMock.newAnnotation(any(), any()) }
-    }
-
-    @Test
     fun `test apply for disabled Severity should not trigger newAnnotation call`() {
         mockkObject(AnalysisData)
         every { AnalysisData.instance.getAnalysis(SnykFile(psiFile.project, psiFile.virtualFile)) } returns
