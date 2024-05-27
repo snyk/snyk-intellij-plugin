@@ -1,4 +1,4 @@
-@file:Suppress("unused")
+@file:Suppress("unused", "SENSELESS_COMPARISON")
 
 package snyk.common.lsp
 
@@ -420,10 +420,10 @@ data class IssueData(
             return ProductType.OSS
         }
         if (this.message != null) {
-            if (this.isSecurityType) {
-                return ProductType.CODE_SECURITY
+            return if (this.isSecurityType) {
+                ProductType.CODE_SECURITY
             } else {
-                return ProductType.CODE_QUALITY
+                ProductType.CODE_QUALITY
             }
         }
         throw IllegalStateException("Not defined type of IssueData")
@@ -509,7 +509,7 @@ data class IssueData(
             result = 31 * result + (isUpgradable?.hashCode() ?: 0)
             result = 31 * result + displayTargetFile.hashCode()
             result = 31 * result + (details?.hashCode() ?: 0)
-            result = 31 * result +( matchingIssues.hashCode() ?: 0)
+            result = 31 * result +( matchingIssues?.hashCode() ?: 0)
             result = 31 * result + (lesson?.hashCode() ?: 0)
             return result
         }
