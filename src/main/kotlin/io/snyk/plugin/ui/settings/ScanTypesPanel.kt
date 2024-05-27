@@ -269,7 +269,7 @@ class ScanTypesPanel(
 
     private fun getUploadingFilesMessage(): String {
         // FIXME: implement count of files
-        if (isSnykCodeLSEnabled()) return "Snyk Code Language Server is enabled. Count of files is not implemented yet."
+        if (isSnykCodeLSEnabled()) return ""
         val allSupportedFilesInProject =
             SnykCodeUtils.instance.getAllSupportedFilesInProject(project, true, null)
         val allSupportedFilesCount = allSupportedFilesInProject.size
