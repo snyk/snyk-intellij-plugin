@@ -15,6 +15,7 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import junit.framework.TestCase
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import org.junit.Before
@@ -160,5 +161,18 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         val actualBrowser = getJLabelByText(cut, "<html>HTML message</html>")
         assertNotNull(actualBrowser)
+    }
+
+    @Test
+    fun `test getStyledHTML should inject CSS into the HTML`() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+
+        every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
+        every { issue.canLoadSuggestionPanelFromHTML() } returns true
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+
+        val actual = cut.getStyledHTML()
+        assertFalse(actual.contains("\${ideStyle}"))
+        assertTrue(actual.contains(".ignore-warning"))
     }
 }

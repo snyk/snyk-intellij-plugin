@@ -1,0 +1,73 @@
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #595a5c;
+}
+
+body {
+  color: var(--text-color);
+}
+
+a,
+.link {
+  color: var(--link-color);
+}
+
+.delimiter {
+  border: 1px solid #505254;
+}
+
+
+.ignore-warning {
+  background: #FFF4ED;
+  color: #B6540B;
+  border: 1px solid #E27122;
+}
+
+
+.ignore-badge {
+  background: #FFF4ED;
+  color: #B6540B;
+  border: 1px solid #E27122;
+}
+
+
+.data-flow-body {
+  background-color: var(--data-flow-body-color);
+}
+
+
+.data-flow-clickable-row {
+  color: var(--link-color);
+}
+
+
+.data-flow-delimiter {
+  color: #BBBBBB;
+}
+
+.tabs-nav {
+  border-bottom: 1px solid var(--tabs-bottom-color);
+}
+
+.tab-item-icon path {
+  fill: var(--tab-item-github-icon-color);
+}
+
+.tab-item:hover {
+  background-color: var(--tab-item-hover-color);
+}
+
+.tab-item.is-selected {
+  border-bottom: 3px solid #3474f0;
+}
+
+.example-line.added {
+  background-color: var(--example-line-added-color);
+}
+
+.example-line.removed {
+  background-color: var(--example-line-removed-color);
+}

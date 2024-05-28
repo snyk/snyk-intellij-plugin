@@ -4,6 +4,8 @@
 build/
 out/
 /bin/
+src/main/resources/stylesheets/*.css
+src/main/resources/stylesheets/*.css.map
 
 #################################
 # Gradle files                  #
