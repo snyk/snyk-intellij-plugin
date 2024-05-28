@@ -41,7 +41,6 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
 
     override fun isWriteActionRequired(): Boolean = true
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()

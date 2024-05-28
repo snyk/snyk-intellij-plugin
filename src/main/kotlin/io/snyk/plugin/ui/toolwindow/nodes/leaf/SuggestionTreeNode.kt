@@ -1,38 +1,52 @@
 package io.snyk.plugin.ui.toolwindow.nodes.leaf
 
-import ai.deepcode.javaclient.core.SuggestionForFile
-import io.snyk.plugin.analytics.getIssueSeverityOrNull
-import io.snyk.plugin.analytics.getIssueType
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
-import snyk.analytics.IssueInTreeIsClicked
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import snyk.analytics.IssueInTreeIsClicked.Ide
+import snyk.analytics.IssueInTreeIsClicked.Severity
+import snyk.analytics.IssueInTreeIsClicked.builder
 import snyk.common.ProductType
+import snyk.common.lsp.ScanIssue
 import javax.swing.tree.DefaultMutableTreeNode
 
 class SuggestionTreeNode(
-    private val suggestion: SuggestionForFile,
-    private val rangeIndex: Int,
+    private val issue: ScanIssue,
     override val navigateToSource: () -> Unit
-) : DefaultMutableTreeNode(Pair(suggestion, rangeIndex)), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
+) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
     @Suppress("UNCHECKED_CAST")
     override fun getDescriptionPanel(logEventNeeded: Boolean): IssueDescriptionPanelBase {
-        if (logEventNeeded) getSnykAnalyticsService().logIssueInTreeIsClicked(
-            IssueInTreeIsClicked.builder()
-                .ide(IssueInTreeIsClicked.Ide.JETBRAINS)
-                .issueType(suggestion.getIssueType())
-                .issueId(suggestion.id)
-                .severity(suggestion.getIssueSeverityOrNull())
-                .build()
-        )
-        val snykCodeFileTreeNode = this.parent as? SnykCodeFileTreeNode
+        if (logEventNeeded) {
+            getSnykAnalyticsService().logIssueInTreeIsClicked(
+                builder()
+                    .ide(Ide.JETBRAINS)
+                    .issueType(issue.type())
+                    .issueId(issue.id)
+                    .severity(
+                        when (issue.severity.lowercase()) {
+                            "critical" -> Severity.CRITICAL
+                            "high" -> Severity.HIGH
+                            "medium" -> Severity.MEDIUM
+                            "low" -> Severity.LOW
+                            else -> Severity.LOW
+                        }
+                    )
+                    .build()
+            )
+        }
+        val snykFileTreeNode = this.parent as? SnykCodeFileTreeNode
             ?: throw IllegalArgumentException(this.toString())
-        val snykFile = (snykCodeFileTreeNode.userObject as Pair<SnykFile, ProductType>).first
-        return SuggestionDescriptionPanel(snykFile, suggestion, rangeIndex)
+
+        @Suppress("UNCHECKED_CAST")
+        val entry =
+            (snykFileTreeNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>).first
+        val snykFile = entry.key
+        return SuggestionDescriptionPanelFromLS(snykFile, issue)
     }
 }

@@ -8,16 +8,13 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-@Suppress("FunctionName")
 class AnnotatorCommonIntegTest : BasePlatformTestCase()  {
 
-    @Before
     override fun setUp() {
         super.setUp()
         resetSettings(project)
     }
 
-    @After
     override fun tearDown() {
         resetSettings(project)
         super.tearDown()

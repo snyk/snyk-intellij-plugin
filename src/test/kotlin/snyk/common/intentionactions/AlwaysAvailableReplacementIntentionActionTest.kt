@@ -16,7 +16,6 @@ import org.junit.Before
 import org.junit.Test
 import java.nio.file.Paths
 
-@Suppress("FunctionName")
 class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     private lateinit var file: VirtualFile
     private val replacementText = "b"
@@ -38,7 +37,6 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
 
     override fun isWriteActionRequired(): Boolean = true
 
-    @Before
     override fun setUp() {
         super.setUp()
         unmockkAll()

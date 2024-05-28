@@ -1,7 +1,5 @@
 package io.snyk.plugin.ui.toolwindow
 
-import ai.deepcode.javaclient.core.MyTextRange
-import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -23,9 +21,9 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
@@ -33,6 +31,7 @@ import io.snyk.plugin.getOssTextRangeFinderService
 import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.head
@@ -43,7 +42,6 @@ import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.navigateToSource
@@ -51,20 +49,12 @@ import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykToolWindow
-import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.snykcode.core.PDU
-import io.snyk.plugin.SnykFile
-import io.snyk.plugin.SnykResults
-import io.snyk.plugin.snykcode.core.SnykCodeIgnoreInfoHolder
-import io.snyk.plugin.getSeverityAsEnum
-import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.ErrorHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
@@ -74,7 +64,6 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootTreeNodeBase
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
@@ -165,7 +154,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             updateDescriptionPanelBySelectedTreeNode()
         }
 
-        val scanListenerLS = if (isSnykCodeLSEnabled() || isSnykOSSLSEnabled()) {
+        val scanListenerLS = run {
             val scanListener = SnykToolWindowSnykScanListenerLS(
                 project,
                 this,
@@ -179,8 +168,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 scanListener
             )
             scanListener
-        } else {
-            null
         }
 
         project.messageBus.connect(this)
@@ -200,13 +187,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                         ApplicationManager.getApplication().invokeLater {
                             displayOssResults(ossResult)
                             notifyAboutErrorsIfNeeded(ProductType.OSS, ossResult)
-                            refreshAnnotationsForOpenFiles(project)
-                        }
-                    }
-
-                    override fun scanningSnykCodeFinished(snykResults: SnykResults?) {
-                        ApplicationManager.getApplication().invokeLater {
-                            displaySnykCodeResults(snykResults)
                             refreshAnnotationsForOpenFiles(project)
                         }
                     }
@@ -299,15 +279,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             refreshAnnotationsForOpenFiles(project)
                         }
                     }
-
-                    override fun scanningSnykCodeError(snykError: SnykError) {
-                        ApplicationManager.getApplication().invokeLater {
-                            removeAllChildren(listOf(rootSecurityIssuesTreeNode, rootQualityIssuesTreeNode))
-                            updateTreeRootNodesPresentation()
-                            displayEmptyDescription()
-                            refreshAnnotationsForOpenFiles(project)
-                        }
-                    }
                 }
             )
 
@@ -316,25 +287,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
                 object : SnykResultsFilteringListener {
                     override fun filtersChanged() {
-                        if (!isSnykCodeLSEnabled()) {
-                            val snykResults: SnykResults? =
-                                if (AnalysisData.instance.isProjectNOTAnalysed(project)) {
-                                    null
-                                } else {
-                                    val allProjectFiles = AnalysisData.instance.getAllFilesWithSuggestions(project)
-                                    SnykResults(
-                                        AnalysisData.instance.getAnalysis(allProjectFiles)
-                                            .mapKeys { PDU.toSnykCodeFile(it.key) }
-                                    )
-                                }
-                            ApplicationManager.getApplication().invokeLater {
-                                displaySnykCodeResults(snykResults)
-                            }
-                        } else {
-                            ApplicationManager.getApplication().invokeLater {
-                                val codeResultsLS = getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return@invokeLater
-                                scanListenerLS?.displaySnykCodeResults(codeResultsLS)
-                            }
+                        ApplicationManager.getApplication().invokeLater {
+                            val codeResultsLS =
+                                getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return@invokeLater
+                            scanListenerLS.displaySnykCodeResults(codeResultsLS)
                         }
                         if (!isSnykOSSLSEnabled()) {
                             ApplicationManager.getApplication().invokeLater {
@@ -343,8 +299,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                             }
                         } else {
                             ApplicationManager.getApplication().invokeLater {
-                                val ossResultsLS = getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return@invokeLater
-                                scanListenerLS?.displayOssResults(ossResultsLS)
+                                val ossResultsLS =
+                                    getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return@invokeLater
+                                scanListenerLS.displayOssResults(ossResultsLS)
                             }
                         }
                         ApplicationManager.getApplication().invokeLater {
@@ -453,9 +410,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     fun cleanUiAndCaches() {
         getSnykCachedResults(project)?.cleanCaches()
         rootOssTreeNode.originalCliErrorMessage = null
-
-        AnalysisData.instance.resetCachesAndTasks(project)
-        SnykCodeIgnoreInfoHolder.instance.removeProject(project)
 
         if (isContainerEnabled()) {
             getKubernetesImageCache(project)?.let {
@@ -803,74 +757,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         return filePath
     }
 
-    private fun displaySnykCodeResults(snykResults: SnykResults?) {
-        if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
-        if (pluginSettings().token.isNullOrEmpty()) {
-            displayAuthPanel()
-            return
-        }
-        if (snykResults == null) {
-            updateTreeRootNodesPresentation(
-                securityIssuesCount = NODE_INITIAL_STATE,
-                qualityIssuesCount = NODE_INITIAL_STATE
-            )
-            return
-        }
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-
-        // display Security issues
-        val userObjectsForExpandedSecurityNodes = userObjectsForExpandedNodes(rootSecurityIssuesTreeNode)
-        rootSecurityIssuesTreeNode.removeAllChildren()
-
-        var securityIssuesCount: Int? = null
-        var securityIssuesHMLPostfix = ""
-        if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
-            val securityResults = snykResults.cloneFiltered {
-                it.categories.contains("Security")
-            }
-            securityIssuesCount = securityResults.totalCount
-            securityIssuesHMLPostfix = buildHMLpostfix(securityResults)
-
-            if (pluginSettings().treeFiltering.codeSecurityResults) {
-                val securityResultsToDisplay = securityResults.cloneFiltered {
-                    pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
-                }
-                displayResultsForCodeRoot(rootSecurityIssuesTreeNode, securityResultsToDisplay)
-            }
-        }
-        updateTreeRootNodesPresentation(
-            securityIssuesCount = securityIssuesCount,
-            addHMLPostfix = securityIssuesHMLPostfix
-        )
-        smartReloadRootNode(rootSecurityIssuesTreeNode, userObjectsForExpandedSecurityNodes, selectedNodeUserObject)
-
-        // display Quality (non Security) issues
-        val userObjectsForExpandedQualityNodes = userObjectsForExpandedNodes(rootQualityIssuesTreeNode)
-        rootQualityIssuesTreeNode.removeAllChildren()
-
-        var qualityIssuesCount: Int? = null
-        var qualityIssuesHMLPostfix = ""
-        if (pluginSettings().snykCodeQualityIssuesScanEnable) {
-            val qualityResults = snykResults.cloneFiltered {
-                !it.categories.contains("Security")
-            }
-            qualityIssuesCount = qualityResults.totalCount
-            qualityIssuesHMLPostfix = buildHMLpostfix(qualityResults)
-
-            if (pluginSettings().treeFiltering.codeQualityResults) {
-                val qualityResultsToDisplay = qualityResults.cloneFiltered {
-                    pluginSettings().hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
-                }
-                displayResultsForCodeRoot(rootQualityIssuesTreeNode, qualityResultsToDisplay)
-            }
-        }
-        updateTreeRootNodesPresentation(
-            qualityIssuesCount = qualityIssuesCount,
-            addHMLPostfix = qualityIssuesHMLPostfix
-        )
-        smartReloadRootNode(rootQualityIssuesTreeNode, userObjectsForExpandedQualityNodes, selectedNodeUserObject)
-    }
-
     fun displayIacResults(iacResult: IacResult) {
         val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootIacIssuesTreeNode)
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
@@ -985,14 +871,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         smartReloadRootNode(rootContainerIssuesTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
     }
 
-    private fun buildHMLpostfix(snykResults: SnykResults): String =
-        buildHMLpostfix(
-            criticalCount = snykResults.totalCriticalCount,
-            errorsCount = snykResults.totalErrorsCount,
-            warnsCount = snykResults.totalWarnsCount,
-            infosCount = snykResults.totalInfosCount
-        )
-
     private fun buildHMLpostfix(cliResult: CliResult<*>): String =
         buildHMLpostfix(
             cliResult.criticalSeveritiesCount(),
@@ -1016,38 +894,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         } else {
             TreeUtil.collectExpandedUserObjects(vulnerabilitiesTree, TreePath(rootNode.path))
         }
-
-    private fun displayResultsForCodeRoot(rootNode: DefaultMutableTreeNode, snykResults: SnykResults) {
-        fun navigateToSource(suggestion: SuggestionForFile, index: Int, snykFile: SnykFile): () -> Unit = {
-            val textRange = suggestion.ranges[index]
-                ?: throw IllegalArgumentException(suggestion.ranges.toString())
-            if (snykFile.virtualFile.isValid) {
-                navigateToSource(project, snykFile.virtualFile, textRange.start, textRange.end)
-            }
-        }
-        snykResults.getSortedFiles()
-            .forEach { file ->
-                val productType = when (rootNode) {
-                    is RootQualityIssuesTreeNode -> ProductType.CODE_QUALITY
-                    is RootSecurityIssuesTreeNode -> ProductType.CODE_SECURITY
-                    else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
-                }
-                val fileTreeNode = SnykCodeFileTreeNode(file, productType)
-                rootNode.add(fileTreeNode)
-                snykResults.getSortedSuggestions(file)
-                    .forEach { suggestion ->
-                        for (index in 0 until suggestion.ranges.size) {
-                            fileTreeNode.add(
-                                SuggestionTreeNode(
-                                    suggestion,
-                                    index,
-                                    navigateToSource(suggestion, index, file)
-                                )
-                            )
-                        }
-                    }
-            }
-    }
 
     private fun displaySelectVulnerabilityMessage() {
         val scrollPanelCandidate = descriptionPanel.components.firstOrNull()
@@ -1144,18 +990,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 (treeNode.userObject as ContainerIssuesForImage) == issuesForImage
         }
 
-    @Suppress("UNCHECKED_CAST")
-    fun selectNodeAndDisplayDescription(suggestionForFile: SuggestionForFile, textRange: MyTextRange) =
-        selectAndDisplayNodeWithIssueDescription { treeNode ->
-            treeNode is SuggestionTreeNode &&
-                (treeNode.userObject as Pair<SuggestionForFile, Int>).let { (suggestion, index) ->
-                    suggestion == suggestionForFile && suggestion.ranges[index] == textRange
-                }
-        }
-
     fun selectNodeAndDisplayDescription(scanIssue: ScanIssue) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->
-            treeNode is SuggestionTreeNodeFromLS &&
+            treeNode is SuggestionTreeNode &&
                 (treeNode.userObject as ScanIssue).id == scanIssue.id
         }
 

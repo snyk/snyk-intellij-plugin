@@ -3,7 +3,6 @@ package io.snyk.plugin.analytics
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.SnykResults
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.ScanDoneEvent
@@ -56,20 +55,6 @@ class AnalyticsScanListener(val project: Project) {
             LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
         }
 
-        override fun scanningSnykCodeFinished(snykResults: SnykResults?) {
-            val duration = System.currentTimeMillis() - start
-            val product = "Snyk Code"
-            val scanDoneEvent = getScanDoneEvent(
-                duration,
-                product,
-                snykResults?.totalCriticalCount ?: 0,
-                snykResults?.totalErrorsCount ?: 0,
-                snykResults?.totalWarnsCount ?: 0,
-                snykResults?.totalInfosCount ?: 0,
-            )
-            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
-        }
-
         override fun scanningIacFinished(iacResult: IacResult) {
             val scanDoneEvent = getScanDoneEvent(
                 System.currentTimeMillis() - start,
@@ -99,10 +84,6 @@ class AnalyticsScanListener(val project: Project) {
         }
 
         override fun scanningIacError(snykError: SnykError) {
-            // do nothing
-        }
-
-        override fun scanningSnykCodeError(snykError: SnykError) {
             // do nothing
         }
 

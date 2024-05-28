@@ -12,7 +12,6 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isCliInstalled
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
@@ -271,7 +270,7 @@ class LanguageServerWrapper(
     }
 
     private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
-        if (!(isSnykCodeLSEnabled() || isSnykOSSLSEnabled() || isSnykIaCLSEnabled()) || pluginSettings().token.isNullOrBlank()) {
+        if (pluginSettings().token.isNullOrBlank()) {
             return false
         }
 
@@ -314,8 +313,8 @@ class LanguageServerWrapper(
         val ps = pluginSettings()
         return LanguageServerSettings(
             activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
-            activateSnykCodeSecurity = (isSnykCodeLSEnabled() && ps.snykCodeSecurityIssuesScanEnable).toString(),
-            activateSnykCodeQuality = (isSnykCodeLSEnabled() && ps.snykCodeQualityIssuesScanEnable).toString(),
+            activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
+            activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
             activateSnykIac = isSnykIaCLSEnabled().toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),

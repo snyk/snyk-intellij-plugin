@@ -1,22 +1,18 @@
 package io.snyk.plugin.ui.toolwindow
 
-import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.icons.AllIcons
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.snykcode.core.AnalysisData
-import io.snyk.plugin.SnykFile
-import io.snyk.plugin.getSeverityAsEnum
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
@@ -26,7 +22,6 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNodeFromLS
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.ScanIssue
@@ -94,25 +89,10 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
             }
 
             is SuggestionTreeNode -> {
-                val (suggestion, index) = value.userObject as Pair<SuggestionForFile, Int>
-                nodeIcon = SnykIcons.getSeverityIcon(suggestion.getSeverityAsEnum())
-                val range = suggestion.ranges[index]
-                text = "line ${range.startRow}: ${
-                    if (suggestion.title.isNullOrEmpty()) suggestion.message else suggestion.title
-                }"
-                val parentFileNode = value.parent as SnykCodeFileTreeNode
-                val file = (parentFileNode.userObject as Pair<SnykFile, ProductType>).first
-                if (!AnalysisData.instance.isFileInCache(file)) {
-                    attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    nodeIcon = getDisabledIcon(nodeIcon)
-                }
-            }
-
-            is SuggestionTreeNodeFromLS -> {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
 
-                val parentFileNode = value.parent as FileTreeNodeFromLS
+                val parentFileNode = value.parent as SnykCodeFileTreeNode
                 val (entry, productType) =
                     parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
 
@@ -124,7 +104,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 }
             }
 
-            is FileTreeNodeFromLS -> {
+            is SnykCodeFileTreeNode -> {
                 val (entry, productType) =
                     value.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
                 val file = entry.key
@@ -136,18 +116,6 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     ?.filter { it.key.virtualFile == file.virtualFile } ?: emptyMap()
                 if (cachedIssues.isEmpty()) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    nodeIcon = getDisabledIcon(nodeIcon)
-                }
-            }
-
-            is SnykCodeFileTreeNode -> {
-                val (file, productType) = value.userObject as Pair<SnykFile, ProductType>
-                val (icon, nodeText) = updateTextTooltipAndIcon(file, productType, value, null)
-                nodeIcon = icon
-                text = nodeText
-                if (!AnalysisData.instance.isFileInCache(file)) {
-                    attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    text += OBSOLETE_SUFFIX
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
             }

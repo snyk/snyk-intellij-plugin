@@ -6,21 +6,21 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.OSS_ROOT_TEXT
-import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNodeFromLS
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -185,12 +185,12 @@ class SnykToolWindowSnykScanListenerLS(
                 }
 
                 val fileTreeNode =
-                    FileTreeNodeFromLS(entry, productType)
+                    SnykCodeFileTreeNode(entry, productType)
                 rootNode.add(fileTreeNode)
                 entry.value.sortedByDescending { it.priority()}
                     .forEach { issue ->
                         fileTreeNode.add(
-                            SuggestionTreeNodeFromLS(
+                            SuggestionTreeNode(
                                 issue,
                                 navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0))
                             )

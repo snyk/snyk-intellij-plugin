@@ -1,16 +1,12 @@
 package io.snyk.plugin.analytics
 
-import ai.deepcode.javaclient.core.SuggestionForFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.getSeverityAsEnum
 import snyk.ItlyOverrideHelper
 import snyk.advisor.AdvisorPackageManager
 import snyk.analytics.AnalysisIsReady.AnalysisType
 import snyk.analytics.HealthScoreIsClicked
 import snyk.analytics.IssueInTreeIsClicked
-import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_QUALITY_ISSUE
-import snyk.analytics.IssueInTreeIsClicked.IssueType.CODE_SECURITY_VULNERABILITY
 import snyk.analytics.IssueInTreeIsClicked.IssueType.LICENCE_ISSUE
 import snyk.analytics.IssueInTreeIsClicked.IssueType.OPEN_SOURCE_VULNERABILITY
 import snyk.container.ContainerIssue
@@ -53,14 +49,6 @@ private fun mapIssueSeverity(severity: Severity): IssueInTreeIsClicked.Severity?
 
 fun Vulnerability.getIssueType(): IssueInTreeIsClicked.IssueType {
     return if (license.isNullOrEmpty()) OPEN_SOURCE_VULNERABILITY else LICENCE_ISSUE
-}
-
-fun SuggestionForFile.getIssueSeverityOrNull(): IssueInTreeIsClicked.Severity? {
-    return mapIssueSeverity(getSeverityAsEnum())
-}
-
-fun SuggestionForFile.getIssueType(): IssueInTreeIsClicked.IssueType {
-    return if (categories.contains("Security")) CODE_SECURITY_VULNERABILITY else CODE_QUALITY_ISSUE
 }
 
 fun AdvisorPackageManager.getEcosystem(): HealthScoreIsClicked.Ecosystem {

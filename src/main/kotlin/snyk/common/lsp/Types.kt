@@ -1,4 +1,4 @@
-@file:Suppress("unused")
+@file:Suppress("unused", "SENSELESS_COMPARISON")
 
 package snyk.common.lsp
 
@@ -420,10 +420,10 @@ data class IssueData(
             return ProductType.OSS
         }
         if (this.message != null) {
-            if (this.isSecurityType) {
-                return ProductType.CODE_SECURITY
+            return if (this.isSecurityType) {
+                ProductType.CODE_SECURITY
             } else {
-                return ProductType.CODE_QUALITY
+                ProductType.CODE_QUALITY
             }
         }
         throw IllegalStateException("Not defined type of IssueData")
@@ -564,7 +564,7 @@ data class OssIdentifiers(
     }
 
     override fun hashCode(): Int {
-        var result = (CWE.hashCode() ?: 0)
+        var result = CWE.hashCode()
         result = 31 * result + (CVE?.hashCode() ?: 0)
         return result
     }

@@ -2,7 +2,6 @@
 
 package io.snyk.plugin.ui.toolwindow
 
-import ai.deepcode.javaclient.core.SuggestionForFile
 import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
 import com.intellij.mock.MockVirtualFile
 import com.intellij.openapi.actionSystem.ActionManager
@@ -34,17 +33,12 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.setupDummyCliFile
-import io.snyk.plugin.SnykResults
-import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
-import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
 import org.junit.Test
 import snyk.common.SnykError
@@ -70,7 +64,6 @@ import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.Vulnerability
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.nio.charset.Charset
 import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JLabel
@@ -181,48 +174,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
-    private fun prepareTreeWithFakeCodeResults() {
-        val virtualFile = super.createTempVirtualFile("test.js", null, "test", Charset.defaultCharset())
-        val codeResults = SnykResults(
-            mapOf(
-                Pair(
-                    SnykFile(project, virtualFile),
-                    listOf(fakeSuggestionForFile)
-                )
-            )
-        )
-        scanPublisher.scanningSnykCodeFinished(codeResults)
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-    }
-
-    private val fakeSuggestionForFile = SuggestionForFile(
-        /* id = */
-        "id",
-        /* rule = */
-        "rule",
-        /* message = */
-        "message",
-        /* title = */
-        "title",
-        /* text = */
-        "text",
-        /* severity = */
-        2,
-        /* repoDatasetSize = */
-        0,
-        /* exampleCommitDescriptions = */
-        emptyList(),
-        /* exampleCommitFixes = */
-        emptyList(),
-        /* ranges = */
-        listOf(mockk(relaxed = true)),
-        /* categories = */
-        emptyList(),
-        /* tags = */
-        emptyList(),
-        /* cwe = */
-        emptyList()
-    )
     private val fakeContainerIssue1 = ContainerIssue(
         id = "fakeId1",
         title = "fakeTitle1",
@@ -952,32 +903,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 VulnerabilityDescriptionPanel::class
             )
         assertNotNull("VulnerabilityDescriptionPanel should not be null", vulnerabilityDescriptionPanel)
-    }
-
-    fun `test Code node selected and Description shown on external request`() {
-        prepareTreeWithFakeCodeResults()
-
-        val rootCodeTreeNode = toolWindowPanel.getRootCodeQualityIssuesTreeNode()
-        val firstCodeFileNode = rootCodeTreeNode.firstChild as SnykCodeFileTreeNode
-        val firstCodeIssueNode = firstCodeFileNode.firstChild as SuggestionTreeNode
-        val (suggestion, index) = firstCodeIssueNode.userObject as Pair<SuggestionForFile, Int>
-
-        // actual test run
-        toolWindowPanel.selectNodeAndDisplayDescription(suggestion, suggestion.ranges[index])
-        waitWhileTreeBusy()
-
-        // Assertions
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
-        val actualSelectedPair = selectedNodeUserObject as Pair<SuggestionForFile, Int>
-        val expectedPair = Pair(fakeSuggestionForFile, 0)
-        assertEquals(expectedPair, actualSelectedPair)
-
-        val suggestionDescriptionPanel =
-            UIComponentFinder.getComponentByName(
-                toolWindowPanel.getDescriptionPanel(),
-                SuggestionDescriptionPanel::class
-            )
-        assertNotNull("SuggestionDescriptionPanel should not be null", suggestionDescriptionPanel)
     }
 
     fun `test Container node selected and Description shown on external request`() {

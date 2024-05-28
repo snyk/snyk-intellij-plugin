@@ -5,10 +5,7 @@ import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCachedResultsForProduct
-import io.snyk.plugin.isSnykCodeLSEnabled
-import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.CodeActionContext
 import org.eclipse.lsp4j.CodeActionParams
@@ -97,7 +94,6 @@ abstract class SnykAnnotator(private val product: ProductType): ExternalAnnotato
             ?: emptySet()
 
     /** Public for Tests only */
-    @Suppress("DuplicatedCode")
     fun textRange(psiFile: PsiFile, range: Range): TextRange? {
         try {
             val document =

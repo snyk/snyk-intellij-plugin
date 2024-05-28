@@ -4,11 +4,9 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.Severity
-import io.snyk.plugin.events.SnykScanListenerLS
-import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.SnykResults
-import io.snyk.plugin.snykcode.core.AnalysisData
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.lsp.ScanIssue
@@ -18,12 +16,10 @@ import snyk.container.ContainerService
 import snyk.iac.IacResult
 import snyk.oss.OssResult
 
-@Service
+@Service(Service.Level.PROJECT)
 class SnykCachedResults(val project: Project) {
 
     val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-
-    var currentSnykCodeResults: SnykResults? = null
 
     val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
 
@@ -57,7 +53,6 @@ class SnykCachedResults(val project: Project) {
         currentContainerError = null
         currentIacError = null
         currentSnykCodeResultsLS.clear()
-        currentSnykCodeResults = null
         currentSnykCodeError = null
     }
 
@@ -71,15 +66,10 @@ class SnykCachedResults(val project: Project) {
                     currentSnykCodeError = null
                     currentIacError = null
                     currentContainerError = null
-                    currentSnykCodeResults = null
                 }
 
                 override fun scanningOssFinished(ossResult: OssResult) {
                     currentOssResults = ossResult
-                }
-
-                override fun scanningSnykCodeFinished(snykResults: SnykResults?) {
-                    currentSnykCodeResults = snykResults
                 }
 
                 override fun scanningIacFinished(iacResult: IacResult) {
@@ -118,11 +108,6 @@ class SnykCachedResults(val project: Project) {
                             snykError.message.startsWith(SnykToolWindowPanel.AUTH_FAILED_TEXT) -> null
                             else -> snykError
                         }
-                }
-
-                override fun scanningSnykCodeError(snykError: SnykError) {
-                    AnalysisData.instance.resetCachesAndTasks(project)
-                    currentSnykCodeError = snykError
                 }
             }
         )

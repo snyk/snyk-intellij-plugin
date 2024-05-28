@@ -16,19 +16,12 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isProjectSettingsAvailable
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isUrlValid
-import io.snyk.plugin.net.RetrofitClientFactory
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.snykcode.codeRestApi
-import io.snyk.plugin.snykcode.core.SnykCodeParams
-import io.snyk.plugin.snykcode.newCodeRestApi
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
-import kotlinx.coroutines.DelicateCoroutinesApi
 import snyk.amplitude.api.ExperimentUser
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.common.toSnykCodeApiUrl
 import javax.swing.JComponent
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
@@ -75,17 +68,11 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         val productSelectionChanged = snykSettingsDialog.isScanTypeChanged()
         val severitySelectionChanged = snykSettingsDialog.isSeverityEnablementChanged()
 
-        if (settingsStateService.customEndpointUrl != customEndpoint) {
+        if (isCustomEndpointModified()) {
             settingsStateService.customEndpointUrl = customEndpoint
-            val snykCodeApi = toSnykCodeApiUrl(customEndpoint)
-            RetrofitClientFactory.getInstance().createRetrofit(snykCodeApi)
-            codeRestApi = newCodeRestApi(snykCodeApi)
         }
-        settingsStateService.customEndpointUrl = customEndpoint
 
         settingsStateService.token = snykSettingsDialog.getToken()
-        SnykCodeParams.instance.sessionToken = snykSettingsDialog.getToken()
-
         settingsStateService.organization = snykSettingsDialog.getOrganization()
         settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
@@ -107,11 +94,9 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        if (isSnykCodeLSEnabled()) {
-            runBackgroundableTask("Updating Snyk Code settings", project, true) {
-                settingsStateService.isGlobalIgnoresFeatureEnabled =
-                    LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
-            }
+        runBackgroundableTask("Updating Snyk Code settings", project, true) {
+            settingsStateService.isGlobalIgnoresFeatureEnabled =
+                LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
         }
 
         if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {

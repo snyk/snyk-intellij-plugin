@@ -16,7 +16,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import icons.SnykIcons
-import io.snyk.plugin.isSnykCodeLSEnabled
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.CodeLens
@@ -46,7 +45,6 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
 
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
         if (editor.project == null) return CodeVisionState.READY_EMPTY
-        if (!isSnykCodeLSEnabled()) return CodeVisionState.READY_EMPTY
         if (!LanguageServerWrapper.getInstance().isInitialized) return CodeVisionState.READY_EMPTY
         if (isSnykCodeRunning(editor.project!!)) return CodeVisionState.READY_EMPTY
 

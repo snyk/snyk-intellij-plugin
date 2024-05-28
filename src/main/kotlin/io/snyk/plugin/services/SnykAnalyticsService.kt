@@ -9,7 +9,6 @@ import io.snyk.plugin.analytics.Iteratively
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.SnykResults
 import snyk.analytics.AnalysisIsReady
 import snyk.analytics.AnalysisIsTriggered
 import snyk.analytics.AuthenticateButtonIsClicked
@@ -57,10 +56,6 @@ class SnykAnalyticsService : Disposable {
                 )
             }
 
-            override fun scanningSnykCodeFinished(snykResults: SnykResults?) {
-                logSnykCodeAnalysisIsReady(AnalysisIsReady.Result.SUCCESS)
-            }
-
             override fun scanningIacFinished(iacResult: IacResult) {
                 logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -101,10 +96,6 @@ class SnykAnalyticsService : Disposable {
                 )
             }
 
-            override fun scanningSnykCodeError(snykError: SnykError) {
-                logSnykCodeAnalysisIsReady(AnalysisIsReady.Result.ERROR)
-            }
-
             override fun scanningContainerError(snykError: SnykError) {
                 logAnalysisIsReady(
                     AnalysisIsReady.builder()
@@ -113,24 +104,6 @@ class SnykAnalyticsService : Disposable {
                         .result(AnalysisIsReady.Result.ERROR)
                         .build()
                 )
-            }
-
-            private fun logSnykCodeAnalysisIsReady(result: AnalysisIsReady.Result) {
-                fun doLogSnykCodeAnalysisIsReady(analysisType: AnalysisIsReady.AnalysisType) {
-                    logAnalysisIsReady(
-                        AnalysisIsReady.builder()
-                            .analysisType(analysisType)
-                            .ide(AnalysisIsReady.Ide.JETBRAINS)
-                            .result(result)
-                            .build()
-                    )
-                }
-                if (pluginSettings().snykCodeSecurityIssuesScanEnable) {
-                    doLogSnykCodeAnalysisIsReady(AnalysisIsReady.AnalysisType.SNYK_CODE_SECURITY)
-                }
-                if (pluginSettings().snykCodeQualityIssuesScanEnable) {
-                    doLogSnykCodeAnalysisIsReady(AnalysisIsReady.AnalysisType.SNYK_CODE_QUALITY)
-                }
             }
         }
     )
