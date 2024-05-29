@@ -133,11 +133,10 @@ class SnykCachedResults(val project: Project) {
                 }
 
                 override fun scanningError(snykScan: SnykScanParams) {
-                    SnykBalloonNotificationHelper
-                        .showError(
-                            "scanning error for project ${project.name}, emptying cache.Data: $snykScan",
-                            project
-                        )
+                    val message =
+                        "Scanning error in $project in folder ${snykScan.folderPath} for product ${snykScan.product}." +
+                            " Please check the idea logs for details."
+                    SnykBalloonNotificationHelper.showError(message, project)
                 }
             }
         )
