@@ -60,7 +60,7 @@ class SnykLanguageClient() : LanguageClient {
     private val progressLock: ReentrantLock = ReentrantLock()
 
     // TODO FIX Log Level
-    val logger = Logger.getInstance("Snyk Language Server").also { it.setLevel(LogLevel.DEBUG) }
+    val logger = Logger.getInstance("Snyk Language Server")
 
     private val progresses: Cache<String, ProgressIndicator> =
         Caffeine.newBuilder()
