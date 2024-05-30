@@ -121,10 +121,21 @@ class SuggestionDescriptionPanelFromLS(
             ideStyle = SnykStylesheets.SnykCodeSuggestion
 
         }
-        html = html.replace("\${ideStyle}", ideStyle)
+        html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
+
+        val nonce = getNonce()
+        html = html.replace("\${nonce}", nonce)
 
         return html
     }
+
+    private fun getNonce(): String {
+        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+        return (1..32)
+            .map { allowedChars.random() }
+            .joinToString("")
+    }
+
 }
 
 fun defaultFontLabel(labelText: String, bold: Boolean = false): JLabel {
