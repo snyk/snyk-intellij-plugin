@@ -137,7 +137,7 @@ class SnykToolWindowSnykScanListenerLS(
         var rootNodePostFix = ""
 
         if (enabledInSettings) {
-            rootNodePostFix = buildSeveritiesPostfixForFileNode(snykResults)
+            rootNodePostFix = buildIssueViewOptionsPostfixForFileNode(snykResults) + buildSeveritiesPostfixForFileNode(snykResults)
 
             if (filterTree) {
                 val resultsToDisplay = snykResults.map { entry ->
@@ -197,6 +197,14 @@ class SnykToolWindowSnykScanListenerLS(
                         )
                     }
             }
+    }
+
+    private fun buildIssueViewOptionsPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {
+        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            return ""
+        }
+        val ignored = results.values.flatten().count { it.isIgnored() }
+        return " ($ignored ignored)"
     }
 
     private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {
