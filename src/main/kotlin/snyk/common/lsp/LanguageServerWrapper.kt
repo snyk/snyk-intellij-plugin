@@ -107,7 +107,7 @@ class LanguageServerWrapper(
         try {
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
-            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "trace" else "info"
+            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
