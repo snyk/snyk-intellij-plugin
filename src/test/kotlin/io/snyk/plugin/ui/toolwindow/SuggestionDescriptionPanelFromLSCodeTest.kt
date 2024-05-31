@@ -15,7 +15,6 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import junit.framework.TestCase
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import org.junit.Before
