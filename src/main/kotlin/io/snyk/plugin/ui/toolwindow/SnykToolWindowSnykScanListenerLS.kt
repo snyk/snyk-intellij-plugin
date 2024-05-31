@@ -20,6 +20,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
@@ -35,7 +36,6 @@ class SnykToolWindowSnykScanListenerLS(
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListenerLS {
-
     override fun scanningStarted(snykScan: SnykScanParams) {
         ApplicationManager.getApplication().invokeLater {
             rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
@@ -69,33 +69,35 @@ class SnykToolWindowSnykScanListenerLS(
 
         val settings = pluginSettings()
 
-
         // display Security issues
-        val securityIssues = snykResults
-            .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
-            .toMap()
+        val securityIssues =
+            snykResults
+                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
+                .toMap()
+
         displayIssues(
             enabledInSettings = settings.snykCodeSecurityIssuesScanEnable,
-            filterTree =  settings.treeFiltering.codeSecurityResults,
+            filterTree = settings.treeFiltering.codeSecurityResults,
             snykResults = securityIssues,
             rootNode = this.rootSecurityIssuesTreeNode,
             securityIssuesCount = securityIssues.values.flatten().distinct().size,
+            fixableIssuesCount = securityIssues.values.flatten().distinct().count { it.hasAIFix() },
         )
 
         // display Quality (non Security) issues
-        val qualityIssues = snykResults
-            .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
-            .toMap()
+        val qualityIssues =
+            snykResults
+                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
+                .toMap()
 
         displayIssues(
             enabledInSettings = settings.snykCodeQualityIssuesScanEnable,
-            filterTree =  settings.treeFiltering.codeQualityResults,
+            filterTree = settings.treeFiltering.codeQualityResults,
             snykResults = qualityIssues,
             rootNode = this.rootQualityIssuesTreeNode,
             qualityIssuesCount = qualityIssues.values.flatten().distinct().size,
         )
     }
-
 
     fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (getSnykCachedResults(project)?.currentOssError != null) return
@@ -104,7 +106,7 @@ class SnykToolWindowSnykScanListenerLS(
 
         displayIssues(
             enabledInSettings = settings.ossScanEnable,
-            filterTree =  settings.treeFiltering.ossResults,
+            filterTree = settings.treeFiltering.ossResults,
             snykResults = snykResults,
             rootNode = this.rootOssIssuesTreeNode,
             ossResultsCount = snykResults.values.flatten().distinct().size,
@@ -121,6 +123,7 @@ class SnykToolWindowSnykScanListenerLS(
         qualityIssuesCount: Int? = null,
         iacResultsCount: Int? = null,
         containerResultsCount: Int? = null,
+        fixableIssuesCount: Int? = null,
     ) {
         if (pluginSettings().token.isNullOrEmpty()) {
             snykToolWindowPanel.displayAuthPanel()
@@ -137,14 +140,18 @@ class SnykToolWindowSnykScanListenerLS(
         var rootNodePostFix = ""
 
         if (enabledInSettings) {
-            rootNodePostFix = buildIssueViewOptionsPostfixForFileNode(snykResults) + buildSeveritiesPostfixForFileNode(snykResults)
+            rootNodePostFix = buildSeveritiesPostfixForFileNode(snykResults)
 
             if (filterTree) {
-                val resultsToDisplay = snykResults.map { entry ->
-                    entry.key to entry.value.filter {
-                        settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
-                    }
-                }.toMap()
+                addInfoTreeNodes(rootNode, snykResults.values.flatten().distinct(), fixableIssuesCount)
+
+                val resultsToDisplay =
+                    snykResults.map { entry ->
+                        entry.key to
+                            entry.value.filter {
+                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
+                            }
+                    }.toMap()
                 displayResultsForRootTreeNode(rootNode, resultsToDisplay)
             }
         }
@@ -155,56 +162,104 @@ class SnykToolWindowSnykScanListenerLS(
             ossResultsCount = ossResultsCount,
             iacResultsCount = iacResultsCount,
             containerResultsCount = containerResultsCount,
-            addHMLPostfix = rootNodePostFix
+            addHMLPostfix = rootNodePostFix,
         )
 
         snykToolWindowPanel.smartReloadRootNode(
             rootNode,
             userObjectsForExpandedNodes,
-            selectedNodeUserObject
+            selectedNodeUserObject,
         )
+    }
+
+    private fun addInfoTreeNodes(
+        rootNode: DefaultMutableTreeNode,
+        issues: List<ScanIssue>,
+        securityIssuesCount: Int? = null,
+        fixableIssuesCount: Int? = null,
+    ) {
+        // only add these info tree nodes to Snyk Code security vulnerabilities for now
+        if (securityIssuesCount == null) {
+            return
+        }
+
+        val settings = pluginSettings()
+        // only add these when we enable the consistent ignores flow for now
+        if (!settings.isGlobalIgnoresFeatureEnabled) {
+            return
+        }
+
+        var text = "✅ Congrats! No vulnerabilities found!"
+        val issuesCount = issues.size
+        val ignoredIssuesCount = issues.count { it.isIgnored() }
+        if (issuesCount != 0) {
+            if (issuesCount == 1) {
+                text = "$issuesCount vulnerability found by Snyk"
+            } else {
+                text = "✋ $issuesCount vulnerabilities found by Snyk"
+            }
+            text += ", $ignoredIssuesCount ignored"
+        }
+        rootNode.add(
+            InfoTreeNode(
+                text,
+                project,
+            ),
+        )
+
+        if (fixableIssuesCount != null) {
+            if (fixableIssuesCount > 0) {
+                rootNode.add(
+                    InfoTreeNode(
+                        "⚡\uFE0F $fixableIssuesCount vulnerabilities can be fixed by Snyk DeepCode AI",
+                        project,
+                    ),
+                )
+            } else {
+                rootNode.add(
+                    InfoTreeNode("There are no vulnerabilities fixable by Snyk DeepCode AI", project),
+                )
+            }
+        }
     }
 
     private fun displayResultsForRootTreeNode(
         rootNode: DefaultMutableTreeNode,
-        issues: Map<SnykFile, List<ScanIssue>>
+        issues: Map<SnykFile, List<ScanIssue>>,
     ) {
-        fun navigateToSource(virtualFile: VirtualFile, textRange: TextRange): () -> Unit = {
-            io.snyk.plugin.navigateToSource(project, virtualFile, textRange.startOffset, textRange.endOffset)
-        }
+        fun navigateToSource(
+            virtualFile: VirtualFile,
+            textRange: TextRange,
+        ): () -> Unit =
+            {
+                io.snyk.plugin.navigateToSource(project, virtualFile, textRange.startOffset, textRange.endOffset)
+            }
         issues
             .filter { it.value.isNotEmpty() }
             .forEach { entry ->
-                val productType = when (rootNode) {
-                    is RootQualityIssuesTreeNode -> ProductType.CODE_QUALITY
-                    is RootSecurityIssuesTreeNode -> ProductType.CODE_SECURITY
-                    is RootOssTreeNode -> ProductType.OSS
-                    is RootContainerIssuesTreeNode -> ProductType.CONTAINER
-                    is RootIacIssuesTreeNode -> ProductType.IAC
-                    else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
-                }
+                val productType =
+                    when (rootNode) {
+                        is RootQualityIssuesTreeNode -> ProductType.CODE_QUALITY
+                        is RootSecurityIssuesTreeNode -> ProductType.CODE_SECURITY
+                        is RootOssTreeNode -> ProductType.OSS
+                        is RootContainerIssuesTreeNode -> ProductType.CONTAINER
+                        is RootIacIssuesTreeNode -> ProductType.IAC
+                        else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
+                    }
 
                 val fileTreeNode =
                     SnykCodeFileTreeNode(entry, productType)
                 rootNode.add(fileTreeNode)
-                entry.value.sortedByDescending { it.priority()}
+                entry.value.sortedByDescending { it.priority() }
                     .forEach { issue ->
                         fileTreeNode.add(
                             SuggestionTreeNode(
                                 issue,
-                                navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0))
-                            )
+                                navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0)),
+                            ),
                         )
                     }
             }
-    }
-
-    private fun buildIssueViewOptionsPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {
-        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
-            return ""
-        }
-        val ignored = results.values.flatten().count { it.isIgnored() }
-        return " ($ignored ignored)"
     }
 
     private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {
