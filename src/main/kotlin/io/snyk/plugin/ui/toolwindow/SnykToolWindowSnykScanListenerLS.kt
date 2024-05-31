@@ -172,7 +172,8 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
-    private fun addInfoTreeNodes(
+    @Suppress("RedundantVisibilityModifierRule")
+    fun addInfoTreeNodes(
         rootNode: DefaultMutableTreeNode,
         issues: List<ScanIssue>,
         securityIssuesCount: Int? = null,
