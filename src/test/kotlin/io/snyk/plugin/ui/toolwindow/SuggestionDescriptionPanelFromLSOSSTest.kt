@@ -126,6 +126,8 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
         val actual = cut.getStyledHTML()
+
+        // we don't apply any custom style for oss
         assertFalse(actual.contains("\${ideStyle}"))
         assertFalse(actual.contains(".ignore-warning"))
     }
