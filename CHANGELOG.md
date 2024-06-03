@@ -1,5 +1,8 @@
 # Snyk Security Changelog
 
+## [2.8.1]
+- Buttons for ignore a Snyk Code issue are hidden for JetBrains IDEs that do not support it.
+
 ## [2.8.0]
 
 ### Added

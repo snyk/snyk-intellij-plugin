@@ -55,6 +55,16 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
         return object : CefLoadHandlerAdapter() {
             override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                 if (frame.isMain) {
+                    val hideIgnoreButtonsAtTheFooter = """
+                        (function() {
+                            const footer = document.querySelector('footer');
+                            if (footer) {
+                                footer.style.display = 'none';
+                            }
+                        })()
+                    """
+                    browser.executeJavaScript(hideIgnoreButtonsAtTheFooter, browser.url, 0)
+
                     val script = """
                     (function() {
                         if (window.openFileQuery) {
