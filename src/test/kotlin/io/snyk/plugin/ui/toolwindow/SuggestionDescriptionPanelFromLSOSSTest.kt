@@ -7,32 +7,22 @@ import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import org.eclipse.lsp4j.Position
-import org.eclipse.lsp4j.Range
 import org.junit.Before
 import org.junit.Test
 import snyk.UIComponentFinder.getActionLinkByText
-import snyk.UIComponentFinder.getJBCEFBrowser
-import snyk.UIComponentFinder.getJButtonByText
 import snyk.UIComponentFinder.getJLabelByText
 import snyk.UIComponentFinder.getJPanelByName
 import snyk.code.annotator.SnykCodeAnnotator
 import snyk.common.ProductType
-import snyk.common.lsp.CommitChangeLine
-import snyk.common.lsp.DataFlow
-import snyk.common.lsp.ExampleCommitFix
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
-import javax.swing.JLabel
 
 class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
     private lateinit var cut: SuggestionDescriptionPanelFromLS
@@ -114,5 +104,20 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
         val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
         assertNotNull(ossOverviewPanel)
+    }
+
+    @Test
+    fun `test getStyledHTML should inject CSS into the HTML`() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+
+        every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
+        every { issue.canLoadSuggestionPanelFromHTML() } returns true
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+
+        val actual = cut.getStyledHTML()
+
+        // we don't apply any custom style for oss
+        assertFalse(actual.contains("\${ideStyle}"))
+        assertFalse(actual.contains(".ignore-warning"))
     }
 }

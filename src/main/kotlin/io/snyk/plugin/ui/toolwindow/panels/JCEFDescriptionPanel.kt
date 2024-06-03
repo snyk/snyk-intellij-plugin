@@ -2,8 +2,8 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
@@ -15,6 +15,7 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
+import stylesheets.SnykStylesheets
 import java.awt.BorderLayout
 import java.awt.Font
 import javax.swing.JLabel
@@ -37,7 +38,8 @@ class SuggestionDescriptionPanelFromLS(
             issue.canLoadSuggestionPanelFromHTML()
         ) {
             val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile)
-            val jbCefBrowserComponent = JCEFUtils.getJBCefBrowserComponentIfSupported(issue.details()) {
+            val html = this.getStyledHTML()
+            val jbCefBrowserComponent = JCEFUtils.getJBCefBrowserComponentIfSupported(html) {
                 openFileLoadHandlerGenerator.generate(it)
             }
             if (jbCefBrowserComponent == null) {
@@ -111,6 +113,29 @@ class SuggestionDescriptionPanelFromLS(
         }
         return Pair(panel, lastRowToAddSpacer)
     }
+
+    fun getStyledHTML(): String {
+        var html = issue.details()
+        var ideStyle = ""
+        if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY || issue.additionalData.getProductType() == ProductType.CODE_QUALITY) {
+            ideStyle = SnykStylesheets.SnykCodeSuggestion
+
+        }
+        html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
+
+        val nonce = getNonce()
+        html = html.replace("\${nonce}", nonce)
+
+        return html
+    }
+
+    private fun getNonce(): String {
+        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+        return (1..32)
+            .map { allowedChars.random() }
+            .joinToString("")
+    }
+
 }
 
 fun defaultFontLabel(labelText: String, bold: Boolean = false): JLabel {

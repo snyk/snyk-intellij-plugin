@@ -161,4 +161,18 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         val actualBrowser = getJLabelByText(cut, "<html>HTML message</html>")
         assertNotNull(actualBrowser)
     }
+
+    @Test
+    fun `test getStyledHTML should inject CSS into the HTML`() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+
+        every { issue.details() } returns "<html><head>\${ideStyle}</head>HTML message</html>"
+        every { issue.canLoadSuggestionPanelFromHTML() } returns true
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+
+        val actual = cut.getStyledHTML()
+        assertFalse(actual.contains("\${ideStyle}"))
+        assertFalse(actual.contains("\${nonce}"))
+        assertTrue(actual.contains(".ignore-warning"))
+    }
 }

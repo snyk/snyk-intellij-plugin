@@ -1,9 +1,13 @@
 # Snyk Security Changelog
 
+## [2.8.1]
+### Added
+- Injects custom styling for the HTML panel used by Snyk Code for consistent ignores.
+
 ## [2.8.0]
 
 ### Added
-- Serve Snyk Code functionality via language server. This enables auto-scanning on startup / save, code actions for Snyk Learn and, if enabled, Snyk Auto-Fix. The number of uploaded files is not shown anymore. 
+- Serve Snyk Code functionality via language server. This enables auto-scanning on startup / save, code actions for Snyk Learn and, if enabled, Snyk Auto-Fix. The number of uploaded files is not shown anymore.
 
 ## [2.7.21]
 
