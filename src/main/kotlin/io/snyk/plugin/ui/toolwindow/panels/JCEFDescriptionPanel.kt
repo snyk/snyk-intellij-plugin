@@ -23,11 +23,11 @@ import javax.swing.JPanel
 
 class SuggestionDescriptionPanelFromLS(
     snykFile: SnykFile,
-    private val issue: ScanIssue
+    private val issue: ScanIssue,
 ) : IssueDescriptionPanelBase(
-    title = issue.title(),
-    severity = issue.getSeverityAsEnum()
-) {
+        title = issue.title(),
+        severity = issue.getSeverityAsEnum(),
+    ) {
     val project = snykFile.project
     private val unexpectedErrorMessage =
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
@@ -39,26 +39,28 @@ class SuggestionDescriptionPanelFromLS(
         ) {
             val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile)
             val html = this.getStyledHTML()
-            val jbCefBrowserComponent = JCEFUtils.getJBCefBrowserComponentIfSupported(html) {
-                openFileLoadHandlerGenerator.generate(it)
-            }
+            val jbCefBrowserComponent =
+                JCEFUtils.getJBCefBrowserComponentIfSupported(html) {
+                    openFileLoadHandlerGenerator.generate(it)
+                }
             if (jbCefBrowserComponent == null) {
                 val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
                 SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
             } else {
                 val lastRowToAddSpacer = 5
-                val panel = JPanel(
-                    GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20)
-                ).apply {
-                    this.add(
-                        jbCefBrowserComponent,
-                        panelGridConstraints(1)
-                    )
-                }
+                val panel =
+                    JPanel(
+                        GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
+                    ).apply {
+                        this.add(
+                            jbCefBrowserComponent,
+                            panelGridConstraints(1),
+                        )
+                    }
                 this.add(
                     wrapWithScrollPane(panel),
-                    BorderLayout.CENTER
+                    BorderLayout.CENTER,
                 )
                 this.add(panel)
             }
@@ -67,61 +69,65 @@ class SuggestionDescriptionPanelFromLS(
         }
     }
 
-    override fun secondRowTitlePanel(): DescriptionHeaderPanel = descriptionHeaderPanel(
-        issueNaming = issue.issueNaming(),
-        cwes = issue.cwes(),
-        cvssScore = issue.cvssScore(),
-        cvssV3 = issue.cvssV3(),
-        cves = issue.cves(),
-        id = issue.id(),
-    )
+    override fun secondRowTitlePanel(): DescriptionHeaderPanel =
+        descriptionHeaderPanel(
+            issueNaming = issue.issueNaming(),
+            cwes = issue.cwes(),
+            cvssScore = issue.cvssScore(),
+            cvssV3 = issue.cvssV3(),
+            cves = issue.cves(),
+            id = issue.id(),
+        )
 
     override fun createMainBodyPanel(): Pair<JPanel, Int> {
         val lastRowToAddSpacer = 5
-        val panel = JPanel(
-            GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20)
-        ).apply {
-            if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY || issue.additionalData.getProductType() == ProductType.CODE_QUALITY) {
-                this.add(
-                    SnykCodeOverviewPanel(issue.additionalData),
-                    panelGridConstraints(2)
-                )
-                this.add(
-                    SnykCodeDataflowPanel(project, issue.additionalData),
-                    panelGridConstraints(3)
-                )
-                this.add(
-                    SnykCodeExampleFixesPanel(issue.additionalData),
-                    panelGridConstraints(4)
-                )
-            } else if (issue.additionalData.getProductType() == ProductType.OSS) {
-                this.add(
-                    SnykOSSIntroducedThroughPanel(issue.additionalData),
-                    baseGridConstraintsAnchorWest(1, indent = 0)
-                )
-                this.add(
-                   SnykOSSDetailedPathsPanel(issue.additionalData),
-                    panelGridConstraints(2)
-                )
-                this.add(
-                    SnykOSSOverviewPanel(issue.additionalData),
-                    panelGridConstraints(3)
-                )
-            } else {
-                TODO()
+        val panel =
+            JPanel(
+                GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
+            ).apply {
+                if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY || issue.additionalData.getProductType() == ProductType.CODE_QUALITY) {
+                    this.add(
+                        SnykCodeOverviewPanel(issue.additionalData),
+                        panelGridConstraints(2),
+                    )
+                    this.add(
+                        SnykCodeDataflowPanel(project, issue.additionalData),
+                        panelGridConstraints(3),
+                    )
+                    this.add(
+                        SnykCodeExampleFixesPanel(issue.additionalData),
+                        panelGridConstraints(4),
+                    )
+                } else if (issue.additionalData.getProductType() == ProductType.OSS) {
+                    this.add(
+                        SnykOSSIntroducedThroughPanel(issue.additionalData),
+                        baseGridConstraintsAnchorWest(1, indent = 0),
+                    )
+                    this.add(
+                        SnykOSSDetailedPathsPanel(issue.additionalData),
+                        panelGridConstraints(2),
+                    )
+                    this.add(
+                        SnykOSSOverviewPanel(issue.additionalData),
+                        panelGridConstraints(3),
+                    )
+                } else {
+                    TODO()
+                }
             }
-        }
         return Pair(panel, lastRowToAddSpacer)
     }
 
     fun getStyledHTML(): String {
         var html = issue.details()
         var ideStyle = ""
-        if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY || issue.additionalData.getProductType() == ProductType.CODE_QUALITY) {
+        if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
+            issue.additionalData.getProductType() == ProductType.CODE_QUALITY
+        ) {
             ideStyle = SnykStylesheets.SnykCodeSuggestion
-
         }
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
+        html = html.replace("\${ideScript}", "")
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
@@ -135,10 +141,12 @@ class SuggestionDescriptionPanelFromLS(
             .map { allowedChars.random() }
             .joinToString("")
     }
-
 }
 
-fun defaultFontLabel(labelText: String, bold: Boolean = false): JLabel {
+fun defaultFontLabel(
+    labelText: String,
+    bold: Boolean = false,
+): JLabel {
     return JLabel().apply {
         val titleLabelFont: Font? = io.snyk.plugin.ui.getFont(if (bold) Font.BOLD else -1, 14, font)
         titleLabelFont?.let { font = it }

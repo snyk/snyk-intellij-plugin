@@ -1,4 +1,5 @@
 @file:Suppress("FunctionName")
+
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.WriteAction
@@ -10,14 +11,13 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
-import org.junit.Before
 import org.junit.Test
 import snyk.UIComponentFinder.getJBCEFBrowser
 import snyk.UIComponentFinder.getJLabelByText
@@ -67,10 +67,18 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every { issue.additionalData.getProductType() } returns ProductType.CODE_SECURITY
         every { issue.additionalData.message } returns "Test message"
         every { issue.additionalData.repoDatasetSize } returns 1
-        every { issue.additionalData.exampleCommitFixes } returns listOf(ExampleCommitFix("https://commit-url", listOf(
-            CommitChangeLine("1", 1, "lineChange")
-        )))
-        every { issue.additionalData.dataFlow } returns listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), ""))
+        every { issue.additionalData.exampleCommitFixes } returns
+            listOf(
+                ExampleCommitFix(
+                    "https://commit-url",
+                    listOf(
+                        CommitChangeLine("1", 1, "lineChange"),
+                    ),
+                ),
+            )
+        every {
+            issue.additionalData.dataFlow
+        } returns listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), ""))
     }
 
     @Test
@@ -149,7 +157,9 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
         mockkObject(JCEFUtils)
-        every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns mockJBCefBrowserComponent
+        every {
+            JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any())
+        } returns mockJBCefBrowserComponent
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
@@ -172,6 +182,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         val actual = cut.getStyledHTML()
         assertFalse(actual.contains("\${ideStyle}"))
+        assertFalse(actual.contains("\${ideScript}"))
         assertFalse(actual.contains("\${nonce}"))
         assertTrue(actual.contains(".ignore-warning"))
     }

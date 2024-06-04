@@ -1,4 +1,5 @@
 @file:Suppress("FunctionName")
+
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.WriteAction
@@ -9,11 +10,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import org.junit.Before
 import org.junit.Test
 import snyk.UIComponentFinder.getActionLinkByText
 import snyk.UIComponentFinder.getJLabelByText
@@ -118,6 +118,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
         // we don't apply any custom style for oss
         assertFalse(actual.contains("\${ideStyle}"))
+        assertFalse(actual.contains("\${ideScript}"))
         assertFalse(actual.contains(".ignore-warning"))
     }
 }
