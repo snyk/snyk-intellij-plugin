@@ -90,12 +90,13 @@ class LanguageServerWrapper(
             .newReentrantLock("initializeLock")
 
     internal val isInitialized: Boolean
-        get() = ::languageClient.isInitialized &&
-            ::languageServer.isInitialized &&
-            ::process.isInitialized &&
-            process.info().startInstant().isPresent &&
-            process.isAlive &&
-            !isInitializing.isLocked
+        get() =
+            ::languageClient.isInitialized &&
+                ::languageServer.isInitialized &&
+                ::process.isInitialized &&
+                process.info().startInstant().isPresent &&
+                process.isAlive &&
+                !isInitializing.isLocked
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
@@ -107,7 +108,7 @@ class LanguageServerWrapper(
         try {
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
-            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "trace" else "trace"
+            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "trace"
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
@@ -198,29 +199,34 @@ class LanguageServerWrapper(
 
     private fun getCapabilities(): ClientCapabilities =
         ClientCapabilities().let { clientCapabilities ->
-            clientCapabilities.workspace = WorkspaceClientCapabilities().let { workspaceClientCapabilities ->
-                workspaceClientCapabilities.workspaceFolders = true
-                workspaceClientCapabilities.workspaceEdit =
-                    WorkspaceEditCapabilities().let { workspaceEditCapabilities ->
-                        workspaceEditCapabilities.documentChanges = true
-                        workspaceEditCapabilities
-                    }
-                workspaceClientCapabilities.codeLens = CodeLensWorkspaceCapabilities(true)
-                workspaceClientCapabilities.inlineValue = InlineValueWorkspaceCapabilities(true)
-                workspaceClientCapabilities.applyEdit = true
-                workspaceClientCapabilities
-            }
-            clientCapabilities.textDocument = TextDocumentClientCapabilities().let {
-                it.codeLens = CodeLensCapabilities(true)
-                it.codeAction = CodeActionCapabilities(true)
-                it.diagnostic = DiagnosticCapabilities(true)
+            clientCapabilities.workspace =
+                WorkspaceClientCapabilities().let { workspaceClientCapabilities ->
+                    workspaceClientCapabilities.workspaceFolders = true
+                    workspaceClientCapabilities.workspaceEdit =
+                        WorkspaceEditCapabilities().let { workspaceEditCapabilities ->
+                            workspaceEditCapabilities.documentChanges = true
+                            workspaceEditCapabilities
+                        }
+                    workspaceClientCapabilities.codeLens = CodeLensWorkspaceCapabilities(true)
+                    workspaceClientCapabilities.inlineValue = InlineValueWorkspaceCapabilities(true)
+                    workspaceClientCapabilities.applyEdit = true
+                    workspaceClientCapabilities
+                }
+            clientCapabilities.textDocument =
+                TextDocumentClientCapabilities().let {
+                    it.codeLens = CodeLensCapabilities(true)
+                    it.codeAction = CodeActionCapabilities(true)
+                    it.diagnostic = DiagnosticCapabilities(true)
 
-                it
-            }
+                    it
+                }
             return clientCapabilities
         }
 
-    fun updateWorkspaceFolders(added: Set<WorkspaceFolder>, removed: Set<WorkspaceFolder>) {
+    fun updateWorkspaceFolders(
+        added: Set<WorkspaceFolder>,
+        removed: Set<WorkspaceFolder>,
+    ) {
         try {
             if (!ensureLanguageServerInitialized()) return
             val params = DidChangeWorkspaceFoldersParams()
@@ -291,7 +297,6 @@ class LanguageServerWrapper(
                 logger.info("Feature flag $featureFlag is disabled. Message: $userMessage")
                 return false
             }
-
         } catch (e: Exception) {
             logger.warn("Error while checking feature flag: ${e.message}", e)
             return false
@@ -321,12 +326,13 @@ class LanguageServerWrapper(
             endpoint = getEndpointUrl(),
             cliPath = getCliFile().absolutePath,
             token = ps.token,
-            filterSeverity = SeverityFilter(
-                critical = ps.criticalSeverityEnabled,
-                high = ps.highSeverityEnabled,
-                medium = ps.mediumSeverityEnabled,
-                low = ps.lowSeverityEnabled
-            ),
+            filterSeverity =
+                SeverityFilter(
+                    critical = ps.criticalSeverityEnabled,
+                    high = ps.highSeverityEnabled,
+                    medium = ps.mediumSeverityEnabled,
+                    low = ps.lowSeverityEnabled,
+                ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
@@ -360,15 +366,17 @@ class LanguageServerWrapper(
 
         getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
         if (!isCliInstalled()) {
-            val message = "Snyk Language Server version $protocolVersion " +
-                "does not match the required version ${pluginSettings().requiredLsProtocolVersion}. " +
-                "Please update the Snyk CLI."
+            val message =
+                "Snyk Language Server version $protocolVersion " +
+                    "does not match the required version ${pluginSettings().requiredLsProtocolVersion}. " +
+                    "Please update the Snyk CLI."
             SnykBalloonNotificationHelper.showError(message, project)
         }
     }
 
     companion object {
         private var INSTANCE: LanguageServerWrapper? = null
+
         fun getInstance() = INSTANCE ?: LanguageServerWrapper().also { INSTANCE = it }
     }
 }
