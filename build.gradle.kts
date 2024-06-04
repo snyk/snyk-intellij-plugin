@@ -62,7 +62,7 @@ dependencies {
         exclude(group = "org.hamcrest")
     }
     testImplementation("org.hamcrest:hamcrest:2.2")
-    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("io.mockk:mockk:1.13.11")
     testImplementation("org.awaitility:awaitility:4.2.0")
 
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
@@ -91,14 +91,14 @@ detekt {
 tasks {
     // plugin from https://github.com/EtienneMiret/sass-gradle-plugin
     compileSass {
-        sourceDir = project.file("${projectDir}/src/main/resources/stylesheets")
-        outputDir = project.file("${projectDir}/src/main/resources/stylesheets")
+        sourceDir = project.file("$projectDir/src/main/resources/stylesheets")
+        outputDir = project.file("$projectDir/src/main/resources/stylesheets")
     }
 
-    processResources{
+    processResources {
         dependsOn(compileSass)
     }
-    compileKotlin{
+    compileKotlin {
         dependsOn(processResources)
     }
 
@@ -131,12 +131,13 @@ tasks {
             val amplitudeExperimentApiKey = project.findProperty("amplitudeExperimentApiKey") ?: ""
             val segmentWriteKey = project.findProperty("segmentWriteKey") ?: ""
             val sentryDsnKey = project.findProperty("sentryDsn") ?: ""
-            val tokens = mapOf(
-                "amplitude.experiment.api-key" to amplitudeExperimentApiKey,
-                "environment" to environment,
-                "segment.analytics.write-key" to segmentWriteKey,
-                "sentry.dsn" to sentryDsnKey
-            )
+            val tokens =
+                mapOf(
+                    "amplitude.experiment.api-key" to amplitudeExperimentApiKey,
+                    "environment" to environment,
+                    "segment.analytics.write-key" to segmentWriteKey,
+                    "sentry.dsn" to sentryDsnKey,
+                )
             filter<ReplaceTokens>("tokens" to tokens)
         }
     }
@@ -183,7 +184,7 @@ tasks {
                     throw GradleException("Plugin description section not found in README.md file:\n$start ... $end")
                 }
                 subList(indexOf(start) + 1, indexOf(end))
-            }.joinToString("\n").run { markdownToHTML(this) }
+            }.joinToString("\n").run { markdownToHTML(this) },
         )
 
         changeNotes.set(provider { changelog.renderItem(changelog.getLatest(), Changelog.OutputType.HTML) })
@@ -207,8 +208,8 @@ tasks {
         failureLevel.set(
             listOf(
                 org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.COMPATIBILITY_PROBLEMS,
-                org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.INVALID_PLUGIN
-            )
+                org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.INVALID_PLUGIN,
+            ),
         )
     }
 }
