@@ -1,6 +1,6 @@
 # Snyk Security Changelog
 
-## [2.9.0]
+## [2.8.2]
 
 ### Added
 - Inserts the IDE specific scripting.

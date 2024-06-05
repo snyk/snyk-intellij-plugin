@@ -81,7 +81,7 @@ class SnykToolWindowSnykScanListenerLS(
             snykResults = securityIssues,
             rootNode = this.rootSecurityIssuesTreeNode,
             securityIssuesCount = securityIssues.values.flatten().distinct().size,
-            fixableIssuesCount = securityIssues.values.flatten().distinct().count { it.hasAIFix() },
+            fixableIssuesCount = securityIssues.values.flatten().distinct().count { it.hasAIFix() }
         )
 
         // display Quality (non Security) issues
@@ -96,6 +96,7 @@ class SnykToolWindowSnykScanListenerLS(
             snykResults = qualityIssues,
             rootNode = this.rootQualityIssuesTreeNode,
             qualityIssuesCount = qualityIssues.values.flatten().distinct().size,
+            fixableIssuesCount = qualityIssues.values.flatten().distinct().count { it.hasAIFix() }
         )
     }
 
@@ -162,7 +163,7 @@ class SnykToolWindowSnykScanListenerLS(
             ossResultsCount = ossResultsCount,
             iacResultsCount = iacResultsCount,
             containerResultsCount = containerResultsCount,
-            addHMLPostfix = rootNodePostFix,
+            addHMLPostfix = rootNodePostFix
         )
 
         snykToolWindowPanel.smartReloadRootNode(
@@ -212,7 +213,7 @@ class SnykToolWindowSnykScanListenerLS(
             if (fixableIssuesCount > 0) {
                 rootNode.add(
                     InfoTreeNode(
-                        "⚡\uFE0F $fixableIssuesCount vulnerabilities can be fixed by Snyk DeepCode AI",
+                        "⚡ $fixableIssuesCount vulnerabilities can be fixed by Snyk DeepCode AI",
                         project,
                     ),
                 )
@@ -226,7 +227,7 @@ class SnykToolWindowSnykScanListenerLS(
 
     private fun displayResultsForRootTreeNode(
         rootNode: DefaultMutableTreeNode,
-        issues: Map<SnykFile, List<ScanIssue>>,
+        issues: Map<SnykFile, List<ScanIssue>>
     ) {
         fun navigateToSource(
             virtualFile: VirtualFile,
@@ -256,8 +257,8 @@ class SnykToolWindowSnykScanListenerLS(
                         fileTreeNode.add(
                             SuggestionTreeNode(
                                 issue,
-                                navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0)),
-                            ),
+                                navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0))
+                            )
                         )
                     }
             }
