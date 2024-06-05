@@ -47,7 +47,6 @@ class AnalyticsScanListenerTest {
         every { pluginInfo.integrationVersion } returns "2.4.61"
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
-        every { projectMock.basePath } returns "/home/user/project"
 
         val virtualFile: VirtualFile = mockk()
         val nioPath: Path = mockk()
