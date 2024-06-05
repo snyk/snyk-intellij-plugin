@@ -3,6 +3,7 @@ package io.snyk.plugin.analytics
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.toVirtualFile
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.ScanDoneEvent
@@ -31,6 +32,7 @@ class AnalyticsScanListener(val project: Project) {
                         low = low
                     ),
                     durationMs = "$duration",
+                    path = project.basePath?.toVirtualFile()?.toNioPath()?.toFile()?.absolutePath.orEmpty()
                 )
             )
         )

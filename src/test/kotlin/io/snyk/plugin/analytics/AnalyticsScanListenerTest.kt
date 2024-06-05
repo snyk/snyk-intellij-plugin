@@ -43,6 +43,7 @@ class AnalyticsScanListenerTest {
         every { pluginInfo.integrationVersion } returns "2.4.61"
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
+        every { projectMock.basePath } returns "/home/user/project"
 
         cut = AnalyticsScanListener(projectMock)
     }
@@ -73,6 +74,8 @@ class AnalyticsScanListenerTest {
         assertEquals("2020.3.2", scanDoneEvent.data.attributes.applicationVersion)
         assertEquals("IntelliJ IDEA", scanDoneEvent.data.attributes.integrationEnvironment)
         assertEquals("2020.3.2", scanDoneEvent.data.attributes.integrationEnvironmentVersion)
+        assertEquals("/home/user/project", scanDoneEvent.data.attributes.path)
+
         assertEquals(getOS(), scanDoneEvent.data.attributes.os)
         assertEquals(getArch(), scanDoneEvent.data.attributes.arch)
 

@@ -23,6 +23,8 @@ data class ScanDoneEvent(
         @SerializedName("os") val os: String = getOS(),
         @SerializedName("arch") val arch: String = getArch(),
 
+        @SerializedName("path") val path: String,
+
         @SerializedName("integration_name")
         val integrationName: String = pluginInfo.integrationName,
 
