@@ -1,12 +1,13 @@
 # Snyk Security Changelog
 
-
-## [2.9.0]
+## [2.8.2]
 
 ### Added
 - Inserts the IDE specific scripting.
+- Add information about the number of ignored and non-ignored vulnerabilities for consistent ignores.
 
 ## [2.8.1]
+
 ### Added
 - Injects custom styling for the HTML panel used by Snyk Code for consistent ignores.
 
