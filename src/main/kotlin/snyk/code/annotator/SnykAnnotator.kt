@@ -69,9 +69,10 @@ abstract class SnykAnnotator(private val product: ProductType): ExternalAnnotato
 
                     codeActions
                         .filter { a ->
+                            val diagnosticKind = a.right.kind
                             val diagnosticCode = a.right.diagnostics?.get(0)?.code?.left
                             val ruleId = issue.ruleId()
-                            diagnosticCode == ruleId
+                            diagnosticCode == ruleId && !(issue.isIgnored() && diagnosticKind == "quickfix")
                         }
                         .sortedBy { it.right.title }.forEach { action ->
                             val codeAction = action.right
