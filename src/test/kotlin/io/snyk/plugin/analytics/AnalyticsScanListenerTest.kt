@@ -1,6 +1,7 @@
 package io.snyk.plugin.analytics
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -12,6 +13,7 @@ import io.snyk.plugin.getArch
 import io.snyk.plugin.getOS
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.toVirtualFile
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.junit.After
@@ -19,6 +21,8 @@ import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.pluginInfo
+import java.io.File
+import java.nio.file.Path
 
 class AnalyticsScanListenerTest {
     private lateinit var cut: AnalyticsScanListener
@@ -43,6 +47,16 @@ class AnalyticsScanListenerTest {
         every { pluginInfo.integrationVersion } returns "2.4.61"
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
+
+        val virtualFile: VirtualFile = mockk()
+        val nioPath: Path = mockk()
+        val file: File = mockk()
+        every { projectMock.basePath } returns "/home/user/project"
+        every { any<String>().toVirtualFile() } returns virtualFile
+        every { virtualFile.toNioPath() } returns nioPath
+        every { nioPath.toFile() } returns file
+        every { file.absolutePath } returns "/home/user/project"
+
 
         cut = AnalyticsScanListener(projectMock)
     }
@@ -73,6 +87,8 @@ class AnalyticsScanListenerTest {
         assertEquals("2020.3.2", scanDoneEvent.data.attributes.applicationVersion)
         assertEquals("IntelliJ IDEA", scanDoneEvent.data.attributes.integrationEnvironment)
         assertEquals("2020.3.2", scanDoneEvent.data.attributes.integrationEnvironmentVersion)
+        assertEquals("/home/user/project", scanDoneEvent.data.attributes.path)
+
         assertEquals(getOS(), scanDoneEvent.data.attributes.os)
         assertEquals(getArch(), scanDoneEvent.data.attributes.arch)
 
