@@ -1,5 +1,10 @@
 # Snyk Security Changelog
 
+## [2.8.3]
+
+### Added
+- Add folder path to report analytics request.
+
 ## [2.8.2]
 
 ### Added
