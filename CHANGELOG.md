@@ -6,6 +6,7 @@
 - Inserts the IDE specific scripting.
 - Add information about the number of ignored and non-ignored vulnerabilities for consistent ignores.
 - Hides the AI Fix panel and adds more custom styling for IntelliJ.
+- Adds position line interaction.
 
 ## [2.8.1]
 
