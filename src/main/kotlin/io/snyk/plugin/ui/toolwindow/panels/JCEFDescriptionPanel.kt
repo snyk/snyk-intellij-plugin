@@ -127,7 +127,13 @@ class SuggestionDescriptionPanelFromLS(
             ideStyle = SnykStylesheets.SnykCodeSuggestion
         }
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
-        html = html.replace("\${ideScript}", "")
+        html = html.replace("\${ideScript}", "<script nonce=\${nonce}>" +
+            "    // Ensure the document is fully loaded before executing script to manipulate DOM.\n" +
+            "    document.addEventListener('DOMContentLoaded', () => {\n" +
+            "        document.getElementById(\"ai-fix-wrapper\").classList.add(\"hidden\");\n" +
+            "        document.getElementById(\"no-ai-fix-wrapper\").classList.remove(\"hidden\");\n" +
+            "    })" +
+            "</script>")
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)

@@ -61,17 +61,29 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
                             return;
                         }
                         window.openFileQuery = function(value) { ${openFileQuery.inject("value")} };
+
+                        function navigateToIssue(e, target) {
+                            e.preventDefault();
+                            window.openFileQuery(target.getAttribute("file-path") + ":" +
+                                 target.getAttribute("start-line") + ":" +
+                                 target.getAttribute("end-line") + ":" +
+                                 target.getAttribute("start-character") + ":" +
+                                 target.getAttribute("end-character"));
+                        }
+
                         // Attach a single event listener to the document
                         document.addEventListener('click', function(e) {
                             // Find the nearest ancestor
                             var target = e.target.closest('.data-flow-clickable-row');
                             if (target) {
-                                e.preventDefault();
-                                window.openFileQuery(target.getAttribute("file-path") + ":" +
-                                     target.getAttribute("start-line") + ":" +
-                                     target.getAttribute("end-line") + ":" +
-                                     target.getAttribute("start-character") + ":" +
-                                     target.getAttribute("end-character"));
+                                navigateToIssue(e, target);
+                            }
+                        });
+                        document.getElementById('position-line').addEventListener('click', (e) => {
+                            // Find the first
+                            var target = document.getElementsByClassName('data-flow-clickable-row')[0];
+                            if (target) {
+                                navigateToIssue(e, target);
                             }
                         });
                     })();

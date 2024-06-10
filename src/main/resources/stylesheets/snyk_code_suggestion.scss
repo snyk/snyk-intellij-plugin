@@ -6,8 +6,19 @@
   background: #595a5c;
 }
 
+html,body {
+  height: 100%;
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   color: var(--text-color);
+  font-weight: 400;
+  font-size: 0.875rem;
 }
 
 a,
@@ -19,30 +30,37 @@ a,
   border: 1px solid #505254;
 }
 
-
 .ignore-warning {
   background: #FFF4ED;
   color: #B6540B;
   border: 1px solid #E27122;
+  font-size: 0.85rem;
 }
-
 
 .ignore-badge {
   background: #FFF4ED;
   color: #B6540B;
   border: 1px solid #E27122;
+  font-size: 0.75rem;
 }
 
 
-.data-flow-body {
-  background-color: var(--data-flow-body-color);
+.issue-overview-header,
+.ignore-details-header,
+.data-flow-header,
+.ai-fix-header,
+.example-fixes-header {
+  font-size: 0.75rem;
 }
 
+.severity-type-container {
+  font-size: 0.85rem;
+
+}
 
 .data-flow-clickable-row {
   color: var(--link-color);
 }
-
 
 .data-flow-delimiter {
   color: #BBBBBB;
@@ -50,6 +68,10 @@ a,
 
 .tabs-nav {
   border-bottom: 1px solid var(--tabs-bottom-color);
+}
+
+.tab-item{
+  font-size: 0.75rem;
 }
 
 .tab-item-icon path {
