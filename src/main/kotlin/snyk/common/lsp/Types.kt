@@ -1,4 +1,4 @@
-@file:Suppress("unused", "SENSELESS_COMPARISON")
+@file:Suppress("unused", "SENSELESS_COMPARISON", "UNNECESSARY_SAFE_CALL", "USELESS_ELVIS", "DuplicatedCode")
 
 package snyk.common.lsp
 
