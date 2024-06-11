@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
@@ -187,8 +186,7 @@ class LanguageServerWrapper(
 
         val params = InitializeParams()
         params.processId = ProcessHandle.current().pid().toInt()
-        val clientInfo = getUserAgentString()
-        params.clientInfo = ClientInfo(clientInfo, "lsp4j")
+        params.clientInfo = ClientInfo(pluginInfo.integrationEnvironment, pluginInfo.integrationEnvironmentVersion)
         params.initializationOptions = getSettings()
         params.workspaceFolders = workspaceFolders
         params.capabilities = getCapabilities()
