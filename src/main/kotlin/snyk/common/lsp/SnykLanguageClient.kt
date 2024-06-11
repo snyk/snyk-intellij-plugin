@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
@@ -47,7 +48,6 @@ import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.concurrency.runAsync
-import org.jetbrains.kotlin.idea.util.application.executeOnPooledThread
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
 import snyk.trust.WorkspaceTrustService
@@ -374,7 +374,7 @@ class SnykLanguageClient() : LanguageClient {
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
-                executeOnPooledThread {
+                ApplicationManager.getApplication().executeOnPooledThread {
                     Thread.sleep(5000)
                     notification.expire()
                 }

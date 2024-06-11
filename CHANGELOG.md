@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.8.4]
+### Fixed
+- dont use kotlin specific convenience function that may cause errors on non kotlin IDEs
+
 ## [2.8.3]
 
 ### Added
