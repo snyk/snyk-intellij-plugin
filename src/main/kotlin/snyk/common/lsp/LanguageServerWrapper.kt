@@ -3,6 +3,7 @@ package snyk.common.lsp
 import com.google.common.util.concurrent.CycleDetectingLockFactory
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.io.toNioPathOrNull
@@ -263,8 +264,10 @@ class LanguageServerWrapper(
 
     fun sendScanCommand(project: Project) {
         if (!ensureLanguageServerInitialized()) return
-        getTrustedContentRoots(project).forEach {
-            sendFolderScanCommand(it.path)
+        DumbService.getInstance(project).runWhenSmart {
+            getTrustedContentRoots(project).forEach {
+                sendFolderScanCommand(it.path)
+            }
         }
     }
 
@@ -325,12 +328,12 @@ class LanguageServerWrapper(
             cliPath = getCliFile().absolutePath,
             token = ps.token,
             filterSeverity =
-                SeverityFilter(
-                    critical = ps.criticalSeverityEnabled,
-                    high = ps.highSeverityEnabled,
-                    medium = ps.mediumSeverityEnabled,
-                    low = ps.lowSeverityEnabled,
-                ),
+            SeverityFilter(
+                critical = ps.criticalSeverityEnabled,
+                high = ps.highSeverityEnabled,
+                medium = ps.mediumSeverityEnabled,
+                low = ps.lowSeverityEnabled,
+            ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,

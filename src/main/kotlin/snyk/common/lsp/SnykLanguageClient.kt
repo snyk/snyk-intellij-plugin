@@ -9,7 +9,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.LogLevel
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -47,6 +46,7 @@ import org.eclipse.lsp4j.WorkDoneProgressNotification
 import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
+import org.jetbrains.concurrency.runAsync
 import org.jetbrains.kotlin.idea.util.application.executeOnPooledThread
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
@@ -54,11 +54,8 @@ import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
 
 class SnykLanguageClient() : LanguageClient {
-    private val progressLock: ReentrantLock = ReentrantLock()
-
     // TODO FIX Log Level
     val logger = Logger.getInstance("Snyk Language Server")
 
@@ -199,7 +196,7 @@ class SnykLanguageClient() : LanguageClient {
 
     @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
     private fun getSnykResult(project: Project, snykScan: SnykScanParams): Map<SnykFile, List<ScanIssue>> {
-        check(snykScan.product == "code" || snykScan.product == "oss" ) { "Expected Snyk Code or Snyk OSS scan result" }
+        check(snykScan.product == "code" || snykScan.product == "oss") { "Expected Snyk Code or Snyk OSS scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
         val pluginSettings = pluginSettings()
@@ -251,77 +248,75 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     private fun createProgressInternal(token: String, begin: WorkDoneProgressBegin) {
-        ProgressManager.getInstance().run(object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
-            override fun run(indicator: ProgressIndicator) {
-                logger.debug("###### Creating progress indicator for: $token, title: ${begin.title}, message: ${begin.message}")
-                indicator.isIndeterminate = false
-                indicator.text = begin.title
-                indicator.text2 = begin.message
-                indicator.fraction = 0.1
-                progresses.put(token, indicator)
-                while (!indicator.isCanceled) {
-                    Thread.sleep(1000)
+        ProgressManager.getInstance()
+            .run(object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
+                override fun run(indicator: ProgressIndicator) {
+                    logger.debug("Creating progress indicator for: $token, title: ${begin.title}, message: ${begin.message}")
+                    indicator.isIndeterminate = false
+                    indicator.text = begin.title
+                    indicator.text2 = begin.message
+                    indicator.fraction = 0.1
+                    progresses.put(token, indicator)
+                    while (!indicator.isCanceled) {
+                        Thread.sleep(1000)
+                    }
+                    logger.debug("Progress indicator canceled for token: $token")
                 }
-                logger.debug("###### Progress indicator canceled for token: $token")
-            }
-        })
+            })
     }
 
     override fun notifyProgress(params: ProgressParams) {
         // first: check if progress has begun
-        val token = params.token?.left ?: return
-        if (progresses.getIfPresent(token) != null) {
-            processProgress(params)
-        } else {
-            when (val progressNotification = params.value.left) {
-                is WorkDoneProgressEnd -> {
-                    progressEndMsgCache.put(token, progressNotification)
-                }
+        runAsync {
+            val token = params.token?.left ?: return@runAsync
+            if (progresses.getIfPresent(token) != null) {
+                processProgress(params)
+            } else {
+                when (val progressNotification = params.value.left) {
+                    is WorkDoneProgressEnd -> {
+                        progressEndMsgCache.put(token, progressNotification)
+                    }
 
-                is WorkDoneProgressReport -> {
-                    val list = progressReportMsgCache.get(token) { mutableListOf() }
-                    list.add(progressNotification)
-                }
+                    is WorkDoneProgressReport -> {
+                        val list = progressReportMsgCache.get(token) { mutableListOf() }
+                        list.add(progressNotification)
+                    }
 
-                else -> {
-                    processProgress(params)
+                    else -> {
+                        processProgress(params)
+                    }
                 }
+                return@runAsync
             }
-            return
         }
     }
 
     private fun processProgress(params: ProgressParams?) {
-        progressLock.lock()
-        try {
-            val token = params?.token?.left ?: return
-            val workDoneProgressNotification = params.value.left ?: return
-            when (workDoneProgressNotification.kind) {
-                begin -> {
-                    val begin: WorkDoneProgressBegin = workDoneProgressNotification as WorkDoneProgressBegin
-                    createProgressInternal(token, begin)
-                    // wait until the progress indicator is created in the background thread
-                    while (progresses.getIfPresent(token) == null) {
-                        Thread.sleep(100)
-                    }
-
-                    // process previously reported progress and end messages for token
-                    processCachedProgressReports(token)
-                    processCachedEndReport(token)
+        val token = params?.token?.left ?: return
+        val workDoneProgressNotification = params.value.left ?: return
+        when (workDoneProgressNotification.kind) {
+            begin -> {
+                val begin: WorkDoneProgressBegin = workDoneProgressNotification as WorkDoneProgressBegin
+                createProgressInternal(token, begin)
+                // wait until the progress indicator is created in the background thread
+                while (progresses.getIfPresent(token) == null) {
+                    Thread.sleep(100)
                 }
 
-                report -> {
-                    progressReport(token, workDoneProgressNotification)
-                }
-
-                end -> {
-                    progressEnd(token, workDoneProgressNotification)
-                }
-
-                null -> {}
+                // process previously reported progress and end messages for token
+                processCachedProgressReports(token)
+                processCachedEndReport(token)
             }
-        } finally {
-            progressLock.unlock()
+
+            report -> {
+                progressReport(token, workDoneProgressNotification)
+            }
+
+            end -> {
+                progressEnd(token, workDoneProgressNotification)
+            }
+
+            null -> {}
         }
     }
 
