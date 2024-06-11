@@ -1,7 +1,9 @@
 package io.snyk.plugin.snykcode
 
+import com.google.common.cache.CacheBuilder
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task.Backgroundable
@@ -17,8 +19,15 @@ import io.snyk.plugin.toSnykFileSet
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import snyk.common.lsp.LanguageServerWrapper
+import java.time.Duration
 
 class SnykCodeBulkFileListener : SnykBulkFileListener() {
+    // Cache for debouncing file updates that come in within one second of the last
+    // Key = path, Value is irrelevant
+    private val debounceFileCache =
+        CacheBuilder.newBuilder()
+            .expireAfterWrite(Duration.ofMillis(1000)).build<String, Boolean>()
+
     override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) = Unit
 
     override fun after(project: Project, virtualFilesAffected: Set<VirtualFile>) {
@@ -35,15 +44,34 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
                 val filesAffected = toSnykFileSet(project, virtualFilesAffected)
                 for (file in filesAffected) {
                     val virtualFile = file.virtualFile
+                    if (!shouldProcess(virtualFile)) continue
                     cache.remove(file)
                     val param =
-                        DidSaveTextDocumentParams(TextDocumentIdentifier(virtualFile.toLanguageServerURL()), virtualFile.readText())
+                        DidSaveTextDocumentParams(
+                            TextDocumentIdentifier(virtualFile.toLanguageServerURL()),
+                            virtualFile.readText()
+                        )
                     languageServer.textDocumentService.didSave(param)
                 }
+
                 VirtualFileManager.getInstance().asyncRefresh()
                 runInEdt { DaemonCodeAnalyzer.getInstance(project).restart() }
             }
         })
+
+    }
+
+    private fun shouldProcess(file: VirtualFile): Boolean {
+        val inCache = debounceFileCache.getIfPresent(file.path)
+
+        return if (inCache != null) {
+            logger<SnykCodeBulkFileListener>().info("not forwarding file event to ls, debouncing")
+            false
+        } else {
+            debounceFileCache.put(file.path, true)
+            logger<SnykCodeBulkFileListener>().info("forwarding file event to ls, not debouncing")
+            true
+        }
     }
 
     override fun forwardEvents(events: MutableList<out VFileEvent>) = Unit
