@@ -10,7 +10,7 @@ import snyk.common.lsp.LanguageServerWrapper
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-private const val TIMEOUT = 5L
+private const val TIMEOUT = 1L
 
 class SnykProjectManagerListener : ProjectManagerListener {
     override fun projectClosing(project: Project) {
@@ -18,10 +18,10 @@ class SnykProjectManagerListener : ProjectManagerListener {
             override fun run(indicator: ProgressIndicator) {
                 // limit clean up to 5s
                 try {
-                    Executors.newSingleThreadExecutor().submit {
+                    Executors.newCachedThreadPool().submit {
                         // lets all running ProgressIndicators release MUTEX first
                         val ls = LanguageServerWrapper.getInstance()
-                        if (ls.ensureLanguageServerInitialized()) {
+                        if (ls.isInitialized) {
                             ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFolders(project))
                         }
                     }.get(TIMEOUT, TimeUnit.SECONDS)

@@ -4,6 +4,8 @@
 
 ### Added
 - Add folder path to report analytics request.
+- Support for 2024.4
+- Spend less time in the UI thread
 
 ## [2.8.2]
 
