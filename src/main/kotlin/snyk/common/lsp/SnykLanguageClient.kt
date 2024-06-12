@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalListener
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
@@ -17,6 +18,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.getOpenedProjects
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.SnykFile
@@ -28,6 +30,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse
 import org.eclipse.lsp4j.LogTraceParams
@@ -55,9 +58,9 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-class SnykLanguageClient() : LanguageClient {
-    // TODO FIX Log Level
+class SnykLanguageClient : LanguageClient, Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
+    private var disposed = false; get() { return ApplicationManager.getApplication().isDisposed || field }
 
     private val progresses: Cache<String, ProgressIndicator> =
         Caffeine.newBuilder()
@@ -82,12 +85,14 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
+        val falseFuture = CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
+        if (disposed) return falseFuture
         val project = params?.edit?.changes?.keys
             ?.firstNotNullOfOrNull {
                 ProjectLocator.getInstance().guessProjectForFile(it.toVirtualFile())
             }
             ?: ProjectUtil.getActiveProject()
-            ?: return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
+            ?: return falseFuture
 
         WriteCommandAction.runWriteCommandAction(project) {
             params?.edit?.changes?.forEach {
@@ -109,8 +114,7 @@ class SnykLanguageClient() : LanguageClient {
 
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
-
-        if (ApplicationManager.getApplication().isDisposed) return completedFuture
+        if (disposed) return completedFuture
 
         ProjectUtil.getOpenProjects()
             .filter { !it.isDisposed }
@@ -125,6 +129,7 @@ class SnykLanguageClient() : LanguageClient {
 
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
+        if (disposed) return
         if (snykScan.product == "oss" && !isSnykOSSLSEnabled()) {
             return
         }
@@ -230,6 +235,8 @@ class SnykLanguageClient() : LanguageClient {
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {
+        if (disposed) return
+
         pluginSettings().token = param.token
 
         ProjectUtil.getOpenProjects().forEach {
@@ -243,6 +250,7 @@ class SnykLanguageClient() : LanguageClient {
 
     @JsonNotification(value = "$/snyk.addTrustedFolders")
     fun addTrustedPaths(param: SnykTrustedFoldersParams) {
+        if (disposed) return
         val trustService = service<WorkspaceTrustService>()
         param.trustedFolders.forEach { it.toNioPathOrNull()?.let { path -> trustService.addTrustedPath(path) } }
     }
@@ -271,6 +279,7 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     override fun notifyProgress(params: ProgressParams) {
+        if (disposed) return
         // first: check if progress has begun
         runAsync {
             val token = params.token?.left ?: return@runAsync
@@ -365,10 +374,12 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     override fun logTrace(params: LogTraceParams?) {
+        if (disposed) return
         logger.info(params?.message)
     }
 
     override fun showMessage(messageParams: MessageParams?) {
+        if (disposed) return
         val project = ProjectUtil.getActiveProject()
         if (project == null) {
             logger.info(messageParams?.message)
@@ -391,7 +402,10 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> {
-        val project = ProjectUtil.getActiveProject() ?: return CompletableFuture.completedFuture(MessageActionItem(""))
+        val completedFuture = CompletableFuture.completedFuture(MessageActionItem(""))
+        if (disposed) return completedFuture
+        val project = ProjectUtil.getActiveProject() ?: return completedFuture
+
         showMessageRequestFutures.clear()
         val actions = requestParams.actions.map {
             object : AnAction(it.title) {
@@ -408,6 +422,7 @@ class SnykLanguageClient() : LanguageClient {
     }
 
     override fun logMessage(message: MessageParams?) {
+        if (disposed) return
         message?.let {
             when (it.type) {
                 MessageType.Error -> logger.error(it.message)
@@ -422,5 +437,13 @@ class SnykLanguageClient() : LanguageClient {
     companion object {
         // we only allow one message request at a time
         val showMessageRequestFutures = ArrayBlockingQueue<MessageActionItem>(1)
+    }
+
+    override fun dispose() {
+        disposed = true
+    }
+
+    init {
+        Disposer.register(SnykPluginDisposable.getInstance(), this)
     }
 }
