@@ -43,7 +43,8 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
             if (DumbService.getInstance(project).isDumb) return@runAsync
 
             val languageServerWrapper = LanguageServerWrapper.getInstance()
-            if (!languageServerWrapper.isInitialized) return@runAsync
+            if (languageServerWrapper.isDisposed() || !languageServerWrapper.isInitialized) return@runAsync
+
             val languageServer = languageServerWrapper.languageServer
             val cache = getSnykCachedResults(project)?.currentSnykCodeResultsLS
             val filesAffected = toSnykFileSet(project, virtualFilesAffected)

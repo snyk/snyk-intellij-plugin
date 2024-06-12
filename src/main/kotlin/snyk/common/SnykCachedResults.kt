@@ -1,6 +1,7 @@
 package snyk.common
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -21,6 +22,18 @@ import snyk.oss.OssResult
 
 @Service(Service.Level.PROJECT)
 class SnykCachedResults(val project: Project) : Disposable {
+
+    var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
+    init {
+        Disposer.register(SnykPluginDisposable.getInstance(project), this)
+    }
+
+    override fun dispose() {
+        disposed = true
+        cleanCaches()
+    }
+    fun isDisposed() = disposed
+
 
     val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
     val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
@@ -140,14 +153,6 @@ class SnykCachedResults(val project: Project) : Disposable {
                 }
             }
         )
-    }
-
-    init {
-        Disposer.register(SnykPluginDisposable.getInstance(project), this)
-    }
-
-    override fun dispose() {
-        cleanCaches()
     }
 }
 

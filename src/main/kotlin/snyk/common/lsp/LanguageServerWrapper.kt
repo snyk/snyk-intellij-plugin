@@ -68,6 +68,9 @@ class LanguageServerWrapper(
     private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
     private var disposed = false ; get() { return ApplicationManager.getApplication().isDisposed || field }
+
+    fun isDisposed() = disposed
+
     val logger = Logger.getInstance("Snyk Language Server")
 
     /**

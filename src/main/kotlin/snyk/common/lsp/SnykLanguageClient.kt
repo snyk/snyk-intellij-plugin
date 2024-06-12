@@ -61,7 +61,7 @@ import java.util.concurrent.TimeUnit
 class SnykLanguageClient : LanguageClient, Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     private var disposed = false; get() { return ApplicationManager.getApplication().isDisposed || field }
-
+    fun isDisposed() = disposed
     private val progresses: Cache<String, ProgressIndicator> =
         Caffeine.newBuilder()
             .expireAfterAccess(10, TimeUnit.SECONDS)
