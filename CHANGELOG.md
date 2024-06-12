@@ -2,7 +2,8 @@
 
 ## [2.8.5]
 ### Fixed
-- don't display balloon warnings if IaC error is ignored (e.g. no IaC files found) 
+- don't display balloon warnings if IaC error is ignored (e.g. no IaC files found)
+- don't output amplitude errors as warning, only debug
 
 ## [2.8.4]
 ### Fixed
