@@ -7,6 +7,7 @@ import snyk.common.SnykError
 // List of IaC errors that are not relevant for users. E.g. IaC fails to parse a non-IaC file for certain reasons.
 // These should not be surfaced.
 val ignorableErrorCodes = intArrayOf(
+    IacError.NO_IAC_FILES_CODE,
     IacError.INVALID_JSON_FILE_ERROR,
     IacError.INVALID_YAML_FILE_ERROR,
     IacError.FAILED_TO_PARSE_INPUT,
