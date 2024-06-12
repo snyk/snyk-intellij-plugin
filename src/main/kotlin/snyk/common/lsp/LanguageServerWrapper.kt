@@ -67,6 +67,7 @@ class LanguageServerWrapper(
 ): Disposable {
     private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
+    private var disposed = false ; get() { return ApplicationManager.getApplication().isDisposed || field }
     val logger = Logger.getInstance("Snyk Language Server")
 
     /**
@@ -108,7 +109,7 @@ class LanguageServerWrapper(
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
-        if (ApplicationManager.getApplication().isDisposed) return
+        if (disposed) return
         if (lsPath.toNioPathOrNull()?.exists() == false) {
             val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
             logger.warn(message)
@@ -160,7 +161,7 @@ class LanguageServerWrapper(
     }
 
     fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
-        if (project.isDisposed) return emptySet()
+        if (disposed || project.isDisposed) return emptySet()
         val normalizedRoots = getTrustedContentRoots(project)
         return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURL(), it.name) }.toSet()
     }
@@ -193,7 +194,7 @@ class LanguageServerWrapper(
         return normalizedRoots
     }
 
-    fun sendInitializeMessage() {
+    private fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()
 
         val params = InitializeParams()
@@ -248,7 +249,7 @@ class LanguageServerWrapper(
     }
 
     fun ensureLanguageServerInitialized(): Boolean {
-        if (ApplicationManager.getApplication().isDisposed) return false
+        if (disposed) return false
         if (!isInitialized) {
             try {
                 assert(isInitializing.holdCount == 0)
@@ -363,7 +364,7 @@ class LanguageServerWrapper(
     }
 
     fun addContentRoots(project: Project) {
-        if (project.isDisposed) return
+        if (disposed || project.isDisposed) return
         assert(isInitialized)
         ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
