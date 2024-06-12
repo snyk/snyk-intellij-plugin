@@ -263,6 +263,7 @@ class SnykTaskQueueService(val project: Project) {
 
     fun downloadLatestRelease(force: Boolean = false) {
         // abort even before submitting a task
+        if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
         val cliDownloader = getSnykCliDownloaderService()
         if (!pluginSettings().manageBinariesAutomatically) {
             if (!isCliInstalled()) {

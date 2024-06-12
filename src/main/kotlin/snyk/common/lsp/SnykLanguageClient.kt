@@ -109,11 +109,16 @@ class SnykLanguageClient() : LanguageClient {
 
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
-        ProjectUtil.getOpenProjects().forEach { project ->
-            ReadAction.run<RuntimeException> {
-                refreshAnnotationsForOpenFiles(project)
+
+        if (ApplicationManager.getApplication().isDisposed) return completedFuture
+
+        ProjectUtil.getOpenProjects()
+            .filter { !it.isDisposed }
+            .forEach { project ->
+                ReadAction.run<RuntimeException> {
+                    refreshAnnotationsForOpenFiles(project)
+                }
             }
-        }
         VirtualFileManager.getInstance().asyncRefresh()
         return completedFuture
     }

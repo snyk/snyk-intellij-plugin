@@ -2,6 +2,7 @@
 
 package snyk.trust
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -20,6 +21,7 @@ private val LOG = Logger.getInstance("snyk.trust.TrustedProjects")
  * @return `false` if the user chose not to scan the project at all; `true` otherwise
  */
 fun confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project: Project): Boolean {
+    if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return false
     val paths = project.getContentRootPaths()
     val trustService = service<WorkspaceTrustService>()
     for (path in paths) {

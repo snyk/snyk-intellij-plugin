@@ -1,7 +1,9 @@
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
@@ -35,8 +37,12 @@ class SnykToolWindowSnykScanListenerLS(
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
-) : SnykScanListenerLS {
+) : SnykScanListenerLS, Disposable {
+    init {
+        Disposer.register(SnykPluginDisposable.getInstance(project), this)
+    }
     override fun scanningStarted(snykScan: SnykScanParams) {
+        if (ApplicationManager.getApplication().isDisposed || project.isDisposed) return
         ApplicationManager.getApplication().invokeLater {
             rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
             rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning...)"
@@ -45,6 +51,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (ApplicationManager.getApplication().isDisposed || project.isDisposed) return
         ApplicationManager.getApplication().invokeLater {
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displaySnykCodeResults(snykResults)
@@ -54,6 +61,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (ApplicationManager.getApplication().isDisposed || project.isDisposed) return
         ApplicationManager.getApplication().invokeLater {
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displayOssResults(snykResults)
@@ -269,5 +277,8 @@ class SnykToolWindowSnykScanListenerLS(
         val medium = results.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
         val low = results.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }
         return ": $high high, $medium medium, $low low"
+    }
+
+    override fun dispose() {
     }
 }

@@ -1,11 +1,14 @@
 package snyk.common.lsp
 
 import com.google.common.util.concurrent.CycleDetectingLockFactory
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
@@ -17,6 +20,7 @@ import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -60,7 +64,7 @@ private const val INITIALIZATION_TIMEOUT = 20L
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
-) {
+): Disposable {
     private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
     val logger = Logger.getInstance("Snyk Language Server")
@@ -98,8 +102,13 @@ class LanguageServerWrapper(
                 process.isAlive &&
                 !isInitializing.isLocked
 
+    init {
+        Disposer.register(SnykPluginDisposable.getInstance(), this)
+    }
+
     @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
+        if (ApplicationManager.getApplication().isDisposed) return
         if (lsPath.toNioPathOrNull()?.exists() == false) {
             val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
             logger.warn(message)
@@ -136,7 +145,6 @@ class LanguageServerWrapper(
 
     fun shutdown(): Future<*> {
         return executorService.submit {
-            logger.info("Shutting down Language Server...")
             process.destroyForcibly()
         }
     }
@@ -144,12 +152,15 @@ class LanguageServerWrapper(
     private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
         val workspaceFolders = mutableSetOf<WorkspaceFolder>()
         ProjectManager.getInstance().openProjects.forEach { project ->
-            workspaceFolders.addAll(getWorkspaceFolders(project))
+            if (!project.isDisposed) {
+                workspaceFolders.addAll(getWorkspaceFolders(project))
+            }
         }
         return workspaceFolders.toList()
     }
 
     fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
+        if (project.isDisposed) return emptySet()
         val normalizedRoots = getTrustedContentRoots(project)
         return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURL(), it.name) }.toSet()
     }
@@ -237,6 +248,7 @@ class LanguageServerWrapper(
     }
 
     fun ensureLanguageServerInitialized(): Boolean {
+        if (ApplicationManager.getApplication().isDisposed) return false
         if (!isInitialized) {
             try {
                 assert(isInitializing.holdCount == 0)
@@ -272,7 +284,7 @@ class LanguageServerWrapper(
     }
 
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
-        ensureLanguageServerInitialized()
+        if (!ensureLanguageServerInitialized()) return false
         return getFeatureFlagStatusInternal(featureFlag)
     }
 
@@ -342,7 +354,7 @@ class LanguageServerWrapper(
     }
 
     fun updateConfiguration() {
-        ensureLanguageServerInitialized()
+        if (!ensureLanguageServerInitialized()) return
         val params = DidChangeConfigurationParams(getInstance().getSettings())
         languageServer.workspaceService.didChangeConfiguration(params)
         if (pluginSettings().scanOnSave) {
@@ -351,6 +363,7 @@ class LanguageServerWrapper(
     }
 
     fun addContentRoots(project: Project) {
+        if (project.isDisposed) return
         assert(isInitialized)
         ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
@@ -379,5 +392,9 @@ class LanguageServerWrapper(
         private var INSTANCE: LanguageServerWrapper? = null
 
         fun getInstance() = INSTANCE ?: LanguageServerWrapper().also { INSTANCE = it }
+    }
+
+    override fun dispose() {
+        shutdown()
     }
 }
