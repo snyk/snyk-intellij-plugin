@@ -194,7 +194,7 @@ class LanguageServerWrapper(
         return normalizedRoots
     }
 
-    private fun sendInitializeMessage() {
+    fun sendInitializeMessage() {
         val workspaceFolders = determineWorkspaceFolders()
 
         val params = InitializeParams()
