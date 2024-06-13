@@ -17,7 +17,7 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
-import com.intellij.openapi.project.getOpenedProjects
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFileManager
@@ -116,7 +116,7 @@ class SnykLanguageClient : LanguageClient, Disposable {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (disposed) return completedFuture
 
-        ProjectUtil.getOpenProjects()
+        ProjectManager.getInstance().openProjects
             .filter { !it.isDisposed }
             .forEach { project ->
                 ReadAction.run<RuntimeException> {
@@ -199,7 +199,7 @@ class SnykLanguageClient : LanguageClient, Disposable {
     }
 
     private fun getProjectsForFolderPath(folderPath: String) =
-        getOpenedProjects().filter {
+        ProjectManager.getInstance().openProjects.filter {
             it.getContentRootVirtualFiles()
                 .contains(folderPath.toVirtualFile())
         }
@@ -239,7 +239,7 @@ class SnykLanguageClient : LanguageClient, Disposable {
 
         pluginSettings().token = param.token
 
-        ProjectUtil.getOpenProjects().forEach {
+        ProjectManager.getInstance().openProjects.forEach {
             LanguageServerWrapper.getInstance().sendScanCommand(it)
         }
 
