@@ -7,17 +7,18 @@ import io.snyk.plugin.net.RetrofitClientFactory
 import io.snyk.plugin.net.SnykApiClient
 import io.snyk.plugin.pluginSettings
 import snyk.common.getEndpointUrl
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.toSnykAPIv1
 import java.net.URI
 
 @Service
 class SnykApiService {
-    fun getSastSettings(): CliConfigSettings? {
-        return getSnykApiClient()?.sastSettings(pluginSettings().organization)
-    }
+    fun getSastSettings(): CliConfigSettings? = getSnykApiClient()?.sastSettings(pluginSettings().organization)
 
     val userId: String?
-        get() = getSnykApiClient()?.getUserId()
+        get() {
+            return LanguageServerWrapper.getInstance().getAuthenticatedUser()
+        }
 
     private fun getSnykApiClient(): SnykApiClient? {
         if (pluginSettings().token.isNullOrBlank()) {

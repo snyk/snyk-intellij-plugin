@@ -134,10 +134,6 @@ fun URI.isSnykDomain() = host != null &&
 
 fun URI.isDeeproxy() = isSnykDomain() && host.lowercase().startsWith("deeproxy.")
 
-fun URI.isSnykGov() = host != null && host.lowercase().endsWith(".snykgov.io")
-
-fun URI.isOauth() = isSnykGov()
-
 fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
 
 fun URI.isAnalyticsPermitted() = host != null &&

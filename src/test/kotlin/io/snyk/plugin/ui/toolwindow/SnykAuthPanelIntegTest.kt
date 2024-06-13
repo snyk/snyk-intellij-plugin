@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.replaceService
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -88,7 +89,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
             it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT
         }
         every { event.source } returns authenticateButton
-        every { cliAuthenticationService.authenticate() } returns ""
+        justRun { cliAuthenticationService.authenticate() }
         assertNotNull(authenticateButton)
 
         authenticateButton!!.action.actionPerformed(event)

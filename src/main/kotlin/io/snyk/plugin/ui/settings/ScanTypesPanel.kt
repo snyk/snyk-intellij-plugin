@@ -185,6 +185,7 @@ class ScanTypesPanel(
         }
     }
 
+    // TODO move to LS
     fun checkSastEnabled() {
         setSnykCodeAvailability(false)
         if (pluginSettings().token.isNullOrBlank()) {
