@@ -215,7 +215,7 @@ class SnykSettingsDialog(
         )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
-        val customEndpointTooltip = "The correct endpoint format is https://api.xxx.snyk.io, e.g. https://api.eu.snyk.io"
+        val customEndpointTooltip = "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
         customEndpointLabel.toolTipText = customEndpointTooltip
         customEndpointLabel.labelFor = customEndpointTextField
         customEndpointTextField.toolTipText = customEndpointTooltip
@@ -645,7 +645,7 @@ class SnykSettingsDialog(
 
     private fun initializeValidation() {
         setupValidation(tokenTextField, "Invalid token", ::isTokenValid)
-        setupValidation(customEndpointTextField, "Invalid custom endpoint URL", ::isUrlValid)
+        setupValidation(customEndpointTextField, "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io", ::isUrlValid)
     }
 
     private fun setupValidation(textField: JTextField, message: String, isValidText: (sourceStr: String?) -> Boolean) {
