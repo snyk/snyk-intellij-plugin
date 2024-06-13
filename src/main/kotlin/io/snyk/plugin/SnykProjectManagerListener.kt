@@ -19,7 +19,7 @@ class SnykProjectManagerListener : ProjectManagerListener {
     override fun projectClosing(project: Project) {
         val closingTask = object : Backgroundable(project, "Project closing ${project.name}") {
             override fun run(indicator: ProgressIndicator) {
-                // limit clean up to 5s
+                // limit clean up to TIMEOUT
                 try {
                     threadPool.submit {
                         // lets all running ProgressIndicators release MUTEX first
