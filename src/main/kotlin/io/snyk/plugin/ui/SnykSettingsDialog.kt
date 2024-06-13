@@ -215,7 +215,10 @@ class SnykSettingsDialog(
         )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
+        val customEndpointTooltip = "The correct endpoint format is https://api.xxx.snyk.io, e.g. https://api.eu.snyk.io"
+        customEndpointLabel.toolTipText = customEndpointTooltip
         customEndpointLabel.labelFor = customEndpointTextField
+        customEndpointTextField.toolTipText = customEndpointTooltip
         generalSettingsPanel.add(
             customEndpointLabel,
             baseGridConstraintsAnchorWest(
