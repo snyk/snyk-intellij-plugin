@@ -74,4 +74,10 @@ class UtilsKtTest {
 
         assertFalse(virtualFile.urlContainsDriveLetter())
     }
+
+    @Test
+    fun isAdditionalParametersValid() {
+        assertFalse(isAdditionalParametersValid("-d"))
+        assertTrue(isAdditionalParametersValid("asdf"))
+    }
 }

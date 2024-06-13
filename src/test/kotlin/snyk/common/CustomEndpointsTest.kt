@@ -1,7 +1,6 @@
 package snyk.common
 
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.pluginSettings
@@ -15,11 +14,12 @@ import org.junit.Test
 import java.net.URI
 
 class CustomEndpointsTest {
+    lateinit var settings :SnykApplicationSettingsStateService
     @Before
     fun setUp() {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
-        val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
+        settings = SnykApplicationSettingsStateService()
         every { pluginSettings() } returns settings
     }
 
@@ -36,6 +36,32 @@ class CustomEndpointsTest {
         assertEquals("https://api.snyk.io", endpointForNull)
         assertEquals("https://api.snyk.io", endpointForEmpty)
     }
+
+    @Test
+    fun `resolveCustomEndpoint converts app endpoint to api endpoint and saves it in settings`() {
+        val endpointUrl = "https://app.snyk.io/api"
+        val snykEndpointUrl = "https://snyk.io/api"
+        val expected = "https://api.snyk.io"
+
+        settings.customEndpointUrl = endpointUrl
+        var actual = resolveCustomEndpoint(endpointUrl)
+
+        assertEquals(expected, actual)
+        assertEquals(expected, pluginSettings().customEndpointUrl)
+
+        settings.customEndpointUrl = snykEndpointUrl
+        actual = resolveCustomEndpoint(snykEndpointUrl)
+
+        assertEquals(expected, actual)
+        assertEquals(expected, pluginSettings().customEndpointUrl)
+
+        settings.customEndpointUrl = ""
+        actual = resolveCustomEndpoint("")
+
+        assertEquals(expected, actual)
+        assertEquals(expected, pluginSettings().customEndpointUrl)
+    }
+
 
     @Test
     fun `resolveCustomEndpoint removes all trailing slashes if present`() {
@@ -64,8 +90,8 @@ class CustomEndpointsTest {
 
     @Test
     fun `isSnykCodeAvailable returns true if local engine is enabled`() {
-        every { pluginSettings().localCodeEngineUrl } returns "https://api.foo.bar"
-        every { pluginSettings().localCodeEngineEnabled } returns true
+        settings.localCodeEngineUrl = "https://api.foo.bar"
+        settings.localCodeEngineEnabled = true
 
         assertEquals(isSnykCodeAvailable("https://api.foo.bar"), true)
     }
@@ -96,8 +122,8 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeApiUrl returns local engine URL if local engine is enabled`() {
-        every { pluginSettings().localCodeEngineUrl } returns "https://api.foo.bar"
-        every { pluginSettings().localCodeEngineEnabled } returns true
+        settings.localCodeEngineUrl = "https://api.foo.bar"
+        settings.localCodeEngineEnabled = true
         val apiUrlForProduction = toSnykCodeApiUrl("https://api.snyk.io")
 
         assertEquals("https://api.foo.bar", apiUrlForProduction)
@@ -131,8 +157,8 @@ class CustomEndpointsTest {
 
     @Test
     fun `toSnykCodeSettingsUrl returns APP-URL for local engine`() {
-        every { pluginSettings().localCodeEngineUrl } returns "https://api.foo.bar"
-        every { pluginSettings().localCodeEngineEnabled } returns true
+        settings.localCodeEngineUrl = "https://api.foo.bar"
+        settings.localCodeEngineEnabled = true
 
         assertEquals("https://app.foo.bar", toSnykCodeSettingsUrl("https://api.foo.bar"))
     }

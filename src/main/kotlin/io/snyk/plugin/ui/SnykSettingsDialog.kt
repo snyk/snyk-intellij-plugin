@@ -32,6 +32,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.isAdditionalParametersValid
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
@@ -77,12 +78,12 @@ class SnykSettingsDialog(
     private val tokenTextField = JBPasswordField()
     private val receiveTokenButton = JButton("Connect IDE to Snyk")
     private val customEndpointTextField = JTextField()
-    private val organizationTextField: JTextField = JTextField()
-    private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox()
-    private val usageAnalyticsCheckBox: JCheckBox = JCheckBox()
-    private val crashReportingCheckBox = JCheckBox()
-    private val scanOnSaveCheckbox = JCheckBox()
-    private val additionalParametersTextField: JTextField = ExpandableTextField()
+    private val organizationTextField: JTextField = JTextField().apply { toolTipText = "The UUID of your organization or the org stub" }
+    private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
+    private val usageAnalyticsCheckBox: JCheckBox = JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
+    private val crashReportingCheckBox = JCheckBox().apply { toolTipText = "If enabled, send error reports to Sentry" }
+    private val scanOnSaveCheckbox = JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
+    private val additionalParametersTextField: JTextField = ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
 
     private val scanTypesPanelOuter = ScanTypesPanel(project, rootPanel)
     private val codeAlertPanel = scanTypesPanelOuter.codeAlertPanel
@@ -215,7 +216,10 @@ class SnykSettingsDialog(
         )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
+        val customEndpointTooltip = "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
+        customEndpointLabel.toolTipText = customEndpointTooltip
         customEndpointLabel.labelFor = customEndpointTextField
+        customEndpointTextField.toolTipText = customEndpointTooltip
         generalSettingsPanel.add(
             customEndpointLabel,
             baseGridConstraintsAnchorWest(
@@ -642,7 +646,8 @@ class SnykSettingsDialog(
 
     private fun initializeValidation() {
         setupValidation(tokenTextField, "Invalid token", ::isTokenValid)
-        setupValidation(customEndpointTextField, "Invalid custom endpoint URL", ::isUrlValid)
+        setupValidation(customEndpointTextField, "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io", ::isUrlValid)
+        setupValidation(additionalParametersTextField, "The -d option is not supported by the Snyk IntelliJ plugin", ::isAdditionalParametersValid)
     }
 
     private fun setupValidation(textField: JTextField, message: String, isValidText: (sourceStr: String?) -> Boolean) {

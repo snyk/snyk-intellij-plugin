@@ -169,6 +169,13 @@ fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {
 val <T> List<T>.head: T
     get() = first()
 
+fun isAdditionalParametersValid(params: String?): Boolean {
+    params.isNullOrEmpty() && return true
+
+    val list = params!!.split(" ")
+    return !list.contains("-d")
+}
+
 fun isUrlValid(url: String?): Boolean {
     url.isNullOrEmpty() && return true
 
