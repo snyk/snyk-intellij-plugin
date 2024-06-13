@@ -1,13 +1,17 @@
 package snyk.common
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -17,43 +21,51 @@ import snyk.iac.IacResult
 import snyk.oss.OssResult
 
 @Service(Service.Level.PROJECT)
-class SnykCachedResults(val project: Project) {
+class SnykCachedResults(val project: Project) : Disposable {
+
+    private var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
+    init {
+        Disposer.register(SnykPluginDisposable.getInstance(project), this)
+    }
+
+    override fun dispose() {
+        disposed = true
+        cleanCaches()
+    }
+    fun isDisposed() = disposed
+
 
     val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-
     val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-
     var currentOssResults: OssResult? = null
         get() = if (field?.isExpired() == false) field else null
 
     val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-
     var currentContainerResult: ContainerResult? = null
         get() = if (field?.isExpired() == false) field else null
 
     val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-
     var currentIacResult: IacResult? = null
         get() = if (field?.isExpired() == false) field else null
 
     var currentOssError: SnykError? = null
-
     var currentContainerError: SnykError? = null
-
     var currentIacError: SnykError? = null
-
     var currentSnykCodeError: SnykError? = null
 
     fun cleanCaches() {
-        currentOSSResultsLS.clear()
         currentOssResults = null
         currentContainerResult = null
         currentIacResult = null
         currentOssError = null
         currentContainerError = null
         currentIacError = null
-        currentSnykCodeResultsLS.clear()
         currentSnykCodeError = null
+
+        currentSnykCodeResultsLS.clear()
+        currentOSSResultsLS.clear()
+        currentIacResultsLS.clear()
+        currentContainerResultsLS.clear()
     }
 
     fun initCacheUpdater() {
@@ -123,19 +135,19 @@ class SnykCachedResults(val project: Project) {
                 override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
                     currentSnykCodeResultsLS.clear()
                     currentSnykCodeResultsLS.putAll(snykResults)
-                    logger.info("scanning finished for project ${project.name}, assigning cache.")
+                    logger.info("Snyk Code: scanning finished for project ${project.name}, assigning cache.")
                 }
 
                 override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
                     currentOSSResultsLS.clear()
                     currentOSSResultsLS.putAll(snykResults)
-                    logger.info("scanning finished for project ${project.name}, assigning cache.")
+                    logger.info("Snyk OSS: scanning finished for project ${project.name}, assigning cache.")
                 }
 
                 override fun scanningError(snykScan: SnykScanParams) {
                     SnykBalloonNotificationHelper
                         .showError(
-                            "scanning error for project ${project.name}, emptying cache.Data: $snykScan",
+                            "scanning error for project ${project.name}. Data: $snykScan",
                             project
                         )
                 }

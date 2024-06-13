@@ -1,8 +1,13 @@
 # Snyk Security Changelog
 
+## [2.8.5]
+### Fixed
+- don't display balloon warnings if IaC error is ignored (e.g. no IaC files found)
+- don't output amplitude errors as warning, only debug
+
 ## [2.8.4]
 ### Fixed
-- dont use kotlin specific convenience function that may cause errors on non kotlin IDEs
+- don't use kotlin specific convenience function that may cause errors on non kotlin IDEs
 
 ## [2.8.3]
 

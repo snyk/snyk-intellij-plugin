@@ -274,6 +274,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         val snykError =
             SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString(), IacError.NO_IAC_FILES_CODE)
+
         val snykErrorControl = SnykError("control", project.basePath.toString())
 
         scanPublisher.scanningIacError(snykErrorControl)
@@ -282,8 +283,9 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // flow and internal state check
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(any(), project)
+            SnykBalloonNotificationHelper.showError(snykErrorControl.message, project)
         }
+
         assertTrue(getSnykCachedResults(project)?.currentIacError == null)
         assertTrue(getSnykCachedResults(project)?.currentIacResult == null)
         // node check

@@ -7,18 +7,21 @@ import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 import snyk.common.lsp.LanguageServerWrapper
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 private const val TIMEOUT = 1L
 
 class SnykProjectManagerListener : ProjectManagerListener {
+    val threadPool: ExecutorService = Executors.newWorkStealingPool()
+
     override fun projectClosing(project: Project) {
         val closingTask = object : Backgroundable(project, "Project closing ${project.name}") {
             override fun run(indicator: ProgressIndicator) {
-                // limit clean up to 5s
+                // limit clean up to TIMEOUT
                 try {
-                    Executors.newCachedThreadPool().submit {
+                    threadPool.submit {
                         // lets all running ProgressIndicators release MUTEX first
                         val ls = LanguageServerWrapper.getInstance()
                         if (ls.isInitialized) {

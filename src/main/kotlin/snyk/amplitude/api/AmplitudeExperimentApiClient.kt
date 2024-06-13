@@ -28,7 +28,8 @@ class AmplitudeExperimentApiClient private constructor(
         return try {
             val response = variantService().sdkVardata(user).execute()
             if (!response.isSuccessful) {
-                log.warn("Error response: $response")
+                // we don't really care
+                log.debug("Error response: $response")
                 return emptyMap()
             }
 
@@ -36,10 +37,10 @@ class AmplitudeExperimentApiClient private constructor(
             log.debug("Received variants: $variants")
             variants ?: emptyMap()
         } catch (e: IOException) {
-            log.warn("Could not fetch variants because of network communication error with amplitude server", e)
+            log.debug("Could not fetch variants because of network communication error with amplitude server. Continuing without", e)
             emptyMap()
         } catch (e: Exception) {
-            log.warn("Could not fetch variants because of unexpected error", e)
+            log.info("Could not fetch variants because of unexpected error. Continuing without.", e)
             emptyMap()
         }
     }

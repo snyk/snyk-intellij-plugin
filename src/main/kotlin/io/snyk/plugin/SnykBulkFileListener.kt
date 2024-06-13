@@ -3,6 +3,7 @@ package io.snyk.plugin
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.isFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
@@ -121,6 +122,7 @@ abstract class SnykBulkFileListener : BulkFileListener {
             .filter { eventsFilter.invoke(it) }
             .mapNotNull(eventToVirtualFileTransformer)
             .filter(VirtualFile::isValid)
+            .filter(VirtualFile::isFile)
             .toSet()
     }
 

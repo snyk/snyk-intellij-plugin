@@ -1,5 +1,6 @@
 package snyk.common
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -28,6 +29,8 @@ object AnnotatorCommon {
         pluginSettings().hasSeverityEnabled(severity) || severity == Severity.UNKNOWN
 
     fun initRefreshing(project: Project) {
+        if (project.isDisposed) return
+        if (ApplicationManager.getApplication().isDisposed) return
         logger.debug("Initializing annotations refresh listener")
         project.messageBus.connect()
             .subscribe(

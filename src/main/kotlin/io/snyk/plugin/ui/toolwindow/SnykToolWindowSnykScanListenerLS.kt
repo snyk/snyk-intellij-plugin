@@ -1,7 +1,9 @@
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
@@ -35,8 +37,19 @@ class SnykToolWindowSnykScanListenerLS(
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
-) : SnykScanListenerLS {
+) : SnykScanListenerLS, Disposable {
+    private var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
+    init {
+        Disposer.register(SnykPluginDisposable.getInstance(project), this)
+    }
+
+    override fun dispose() {
+        disposed = true
+    }
+    fun isDisposed() = disposed
+
     override fun scanningStarted(snykScan: SnykScanParams) {
+        if (disposed) return
         ApplicationManager.getApplication().invokeLater {
             rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
             rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning...)"
@@ -45,6 +58,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (disposed) return
         ApplicationManager.getApplication().invokeLater {
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displaySnykCodeResults(snykResults)
@@ -54,6 +68,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (disposed) return
         ApplicationManager.getApplication().invokeLater {
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displayOssResults(snykResults)
@@ -65,6 +80,7 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningError(snykScan: SnykScanParams) = Unit
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (disposed) return
         if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
 
         val settings = pluginSettings()
@@ -101,6 +117,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (disposed) return
         if (getSnykCachedResults(project)?.currentOssError != null) return
 
         val settings = pluginSettings()
@@ -180,6 +197,8 @@ class SnykToolWindowSnykScanListenerLS(
         securityIssuesCount: Int? = null,
         fixableIssuesCount: Int? = null,
     ) {
+        if (disposed) return
+
         // only add these info tree nodes to Snyk Code security vulnerabilities for now
         if (securityIssuesCount == null) {
             return

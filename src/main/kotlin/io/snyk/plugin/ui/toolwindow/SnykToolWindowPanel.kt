@@ -85,6 +85,7 @@ import snyk.container.ui.ContainerIssueTreeNode
 import snyk.iac.IacError
 import snyk.iac.IacIssue
 import snyk.iac.IacResult
+import snyk.iac.ignorableErrorCodes
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.OssResult
@@ -247,7 +248,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     override fun scanningIacError(snykError: SnykError) {
                         var iacResultsCount: Int? = null
                         ApplicationManager.getApplication().invokeLater {
-                            if (snykError.code == IacError.NO_IAC_FILES_CODE) {
+                            if (snykError.code != null && ignorableErrorCodes.contains(snykError.code)) {
                                 iacResultsCount = NODE_NOT_SUPPORTED_STATE
                             } else {
                                 SnykBalloonNotificationHelper.showError(snykError.message, project)

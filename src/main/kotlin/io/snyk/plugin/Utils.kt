@@ -315,15 +315,16 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
     }
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
-    if (project.isDisposed) return
+    if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
     VirtualFileManager.getInstance().asyncRefresh()
 
     val openFiles = FileEditorManager.getInstance(project).openFiles
 
     ApplicationManager.getApplication().invokeLater {
-        project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+        if (!project.isDisposed) {
+            project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+        }
     }
-
     openFiles.forEach {
         val psiFile = findPsiFileIgnoringExceptions(it, project)
         if (psiFile != null) {

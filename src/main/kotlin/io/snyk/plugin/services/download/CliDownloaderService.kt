@@ -32,7 +32,7 @@ class SnykCliDownloaderService {
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
-    fun isCliDownloading() = currentProgressIndicator != null
+    fun isCliDownloading() = currentProgressIndicator != null && !ApplicationManager.getApplication().isDisposed
 
     fun stopCliDownload() = currentProgressIndicator?.let {
         it.cancel()
