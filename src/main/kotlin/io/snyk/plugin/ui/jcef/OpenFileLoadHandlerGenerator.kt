@@ -48,8 +48,26 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
         return n.coerceIn(0, 255)
     }
 
+    fun getCodeDiffColors(baseColor: Color, isHighContrast: Boolean): Pair<Color, Color> {
+        val addedColor = if (isHighContrast) {
+            Color(28, 68, 40) // high contrast green
+        } else {
+            Color(shift(baseColor.red, 0.75), baseColor.green, shift(baseColor.blue, 0.75))
+        }
+
+        val removedColor = if (isHighContrast) {
+            Color(84, 36, 38)  // high contrast red
+        } else {
+            Color(shift(baseColor.red, 1.25), shift(baseColor.green, 0.85), shift(baseColor.blue, 0.85))
+        }
+        return Pair(addedColor, removedColor)
+    }
+
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
+        val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
+        val isHighContrast = EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
+
         openFileQuery.addHandler { openFile(it) }
 
         return object : CefLoadHandlerAdapter() {
@@ -91,16 +109,7 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
                     browser.executeJavaScript(script, browser.url, 0)
 
                     val baseColor = UIUtil.getTextFieldBackground()
-                    val addedColor = Color(
-                        shift(baseColor.red, 0.75),
-                        baseColor.green,
-                        shift(baseColor.blue, 0.75)
-                    )
-                    val removedColor = Color(
-                        shift(baseColor.red, 1.25),
-                        shift(baseColor.green, 0.85),
-                        shift(baseColor.blue, 0.85)
-                    )
+                    val (addedColor, removedColor) = getCodeDiffColors(baseColor, isHighContrast)
 
                     val textColor = toCssHex(JBColor.namedColor("Label.foreground", JBColor.BLACK))
                     val linkColor = toCssHex(JBColor.namedColor("Link.activeForeground", JBColor.BLUE))
@@ -131,6 +140,11 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
                             for (let [property, value] of Object.entries(properties)) {
                                 document.documentElement.style.setProperty(property, value);
                             }
+
+                            // Add theme class to body
+                            const isDarkTheme = ${isDarkTheme};
+                            const isHighContrast = ${isHighContrast};
+                            document.body.classList.add(isHighContrast ? 'high-contrast' : (isDarkTheme ? 'dark' : 'light'));
                         })();
                         """
                     browser.executeJavaScript(themeScript, browser.url, 0)

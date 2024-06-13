@@ -95,3 +95,13 @@ a,
 .ignore-action-container {
   display: none;
 }
+
+.light .dark-only,
+.high-contrast.high-contrast-light .dark-only {
+  display: none;
+}
+
+.dark .light-only,
+.high-contrast:not(.high-contrast-light) .light-only {
+  display: none;
+}
