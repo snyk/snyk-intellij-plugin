@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.8.6]
+### Fixed
+- automatically migrate old-format endpoint to https://api.xxx.snyk.io endpoint and save it in settings
+
 ## [2.8.5]
 ### Fixed
 - don't display balloon warnings if IaC error is ignored (e.g. no IaC files found)
