@@ -58,6 +58,9 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
+/**
+ * Processes Language Server requests and notifications from the server to the IDE
+ */
 class SnykLanguageClient : LanguageClient, Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     private var disposed = false; get() { return ApplicationManager.getApplication().isDisposed || field }
