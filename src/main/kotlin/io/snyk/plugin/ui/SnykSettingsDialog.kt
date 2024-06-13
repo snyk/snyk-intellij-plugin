@@ -78,7 +78,7 @@ class SnykSettingsDialog(
     private val tokenTextField = JBPasswordField()
     private val receiveTokenButton = JButton("Connect IDE to Snyk")
     private val customEndpointTextField = JTextField()
-    private val organizationTextField: JTextField = JTextField().apply { toolTipText = "The UUID of your organization" }
+    private val organizationTextField: JTextField = JTextField().apply { toolTipText = "The UUID of your organization or the org stub" }
     private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
     private val usageAnalyticsCheckBox: JCheckBox = JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
     private val crashReportingCheckBox = JCheckBox().apply { toolTipText = "If enabled, send error reports to Sentry" }
