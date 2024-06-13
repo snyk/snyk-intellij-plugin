@@ -38,7 +38,7 @@ class SnykToolWindowSnykScanListenerLS(
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListenerLS, Disposable {
-    var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
+    private var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
     init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
     }

@@ -23,7 +23,7 @@ import snyk.oss.OssResult
 @Service(Service.Level.PROJECT)
 class SnykCachedResults(val project: Project) : Disposable {
 
-    var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
+    private var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
     init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
     }
@@ -135,19 +135,19 @@ class SnykCachedResults(val project: Project) : Disposable {
                 override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
                     currentSnykCodeResultsLS.clear()
                     currentSnykCodeResultsLS.putAll(snykResults)
-                    logger.info("scanning finished for project ${project.name}, assigning cache.")
+                    logger.info("Snyk Code: scanning finished for project ${project.name}, assigning cache.")
                 }
 
                 override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
                     currentOSSResultsLS.clear()
                     currentOSSResultsLS.putAll(snykResults)
-                    logger.info("scanning finished for project ${project.name}, assigning cache.")
+                    logger.info("Snyk OSS: scanning finished for project ${project.name}, assigning cache.")
                 }
 
                 override fun scanningError(snykScan: SnykScanParams) {
                     SnykBalloonNotificationHelper
                         .showError(
-                            "scanning error for project ${project.name}, emptying cache.Data: $snykScan",
+                            "scanning error for project ${project.name}. Data: $snykScan",
                             project
                         )
                 }
