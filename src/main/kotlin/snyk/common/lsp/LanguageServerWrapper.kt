@@ -404,6 +404,7 @@ class LanguageServerWrapper(
     }
 
     override fun dispose() {
+        disposed = true
         shutdown()
     }
 }
