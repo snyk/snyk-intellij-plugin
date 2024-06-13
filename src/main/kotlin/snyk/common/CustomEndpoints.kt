@@ -92,12 +92,17 @@ fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
  */
 internal fun resolveCustomEndpoint(endpointUrl: String?): String {
     return if (endpointUrl.isNullOrEmpty()) {
-        "https://api.snyk.io"
+        val normalizedEndpointURL = "https://api.snyk.io"
+        pluginSettings().customEndpointUrl = normalizedEndpointURL
+        normalizedEndpointURL
     } else {
-        endpointUrl
+        val normalizedEndpointURL = endpointUrl
             .removeTrailingSlashesIfPresent()
             .removeSuffix("/api")
+            .replace("https://snyk.io", "https://api.snyk.io")
             .replace("https://app.", "https://api.")
+        pluginSettings().customEndpointUrl = normalizedEndpointURL
+        normalizedEndpointURL
     }
 }
 
