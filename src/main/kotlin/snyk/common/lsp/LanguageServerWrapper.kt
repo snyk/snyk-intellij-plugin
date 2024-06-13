@@ -93,7 +93,8 @@ class LanguageServerWrapper(
      */
     lateinit var process: Process
 
-    private var isInitializing: ReentrantLock =
+    @Suppress("MemberVisibilityCanBePrivate") // because we want to test it
+    var isInitializing: ReentrantLock =
         CycleDetectingLockFactory.newInstance(CycleDetectingLockFactory.Policies.THROW)
             .newReentrantLock("initializeLock")
 
@@ -198,6 +199,7 @@ class LanguageServerWrapper(
     }
 
     fun sendInitializeMessage() {
+        if (disposed) return
         val workspaceFolders = determineWorkspaceFolders()
 
         val params = InitializeParams()
@@ -282,7 +284,7 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return
         DumbService.getInstance(project).runWhenSmart {
             getTrustedContentRoots(project).forEach {
-                sendFolderScanCommand(it.path)
+                sendFolderScanCommand(it.path, project)
             }
         }
     }
@@ -320,7 +322,9 @@ class LanguageServerWrapper(
         }
     }
 
-    private fun sendFolderScanCommand(folder: String) {
+    fun sendFolderScanCommand(folder: String, project: Project) {
+        if (!ensureLanguageServerInitialized()) return
+        if (DumbService.getInstance(project).isDumb) return
         try {
             val param = ExecuteCommandParams()
             param.command = "snyk.workspaceFolder.scan"
@@ -359,8 +363,9 @@ class LanguageServerWrapper(
 
     fun updateConfiguration() {
         if (!ensureLanguageServerInitialized()) return
-        val params = DidChangeConfigurationParams(getInstance().getSettings())
+        val params = DidChangeConfigurationParams(getSettings())
         languageServer.workspaceService.didChangeConfiguration(params)
+
         if (pluginSettings().scanOnSave) {
             ProjectManager.getInstance().openProjects.forEach { sendScanCommand(it) }
         }
