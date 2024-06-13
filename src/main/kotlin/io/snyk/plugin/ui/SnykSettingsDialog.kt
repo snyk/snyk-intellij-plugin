@@ -43,8 +43,11 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
+import snyk.common.isOauth
+import snyk.common.resolveCustomEndpoint
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.net.URI
 import java.util.Objects.nonNull
 import java.util.UUID
 import java.util.function.Supplier
@@ -78,12 +81,17 @@ class SnykSettingsDialog(
     private val tokenTextField = JBPasswordField()
     private val receiveTokenButton = JButton("Connect IDE to Snyk")
     private val customEndpointTextField = JTextField()
-    private val organizationTextField: JTextField = JTextField().apply { toolTipText = "The UUID of your organization or the org stub" }
-    private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
-    private val usageAnalyticsCheckBox: JCheckBox = JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
+    private val organizationTextField: JTextField =
+        JTextField().apply { toolTipText = "The UUID of your organization or the org stub   " }
+    private val ignoreUnknownCACheckBox: JCheckBox =
+        JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
+    private val usageAnalyticsCheckBox: JCheckBox =
+        JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
     private val crashReportingCheckBox = JCheckBox().apply { toolTipText = "If enabled, send error reports to Sentry" }
-    private val scanOnSaveCheckbox = JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
-    private val additionalParametersTextField: JTextField = ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
+    private val scanOnSaveCheckbox =
+        JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
+    private val additionalParametersTextField: JTextField =
+        ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
 
     private val scanTypesPanelOuter = ScanTypesPanel(project, rootPanel)
     private val codeAlertPanel = scanTypesPanelOuter.codeAlertPanel
@@ -216,7 +224,8 @@ class SnykSettingsDialog(
         )
 
         val customEndpointLabel = JLabel("Custom endpoint:")
-        val customEndpointTooltip = "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
+        val customEndpointTooltip =
+            "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
         customEndpointLabel.toolTipText = customEndpointTooltip
         customEndpointLabel.labelFor = customEndpointTextField
         customEndpointTextField.toolTipText = customEndpointTooltip
@@ -646,8 +655,16 @@ class SnykSettingsDialog(
 
     private fun initializeValidation() {
         setupValidation(tokenTextField, "Invalid token", ::isTokenValid)
-        setupValidation(customEndpointTextField, "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io", ::isUrlValid)
-        setupValidation(additionalParametersTextField, "The -d option is not supported by the Snyk IntelliJ plugin", ::isAdditionalParametersValid)
+        setupValidation(
+            customEndpointTextField,
+            "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io",
+            ::isUrlValid
+        )
+        setupValidation(
+            additionalParametersTextField,
+            "The -d option is not supported by the Snyk IntelliJ plugin",
+            ::isAdditionalParametersValid
+        )
     }
 
     private fun setupValidation(textField: JTextField, message: String, isValidText: (sourceStr: String?) -> Boolean) {
@@ -678,10 +695,10 @@ class SnykSettingsDialog(
 
         return try {
             UUID.fromString(token)
-
             true
         } catch (exception: IllegalArgumentException) {
-            false
+            val oauth: Boolean = URI(resolveCustomEndpoint(pluginSettings().customEndpointUrl)).isOauth()
+            oauth
         }
     }
 
