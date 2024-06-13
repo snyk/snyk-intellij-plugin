@@ -130,28 +130,4 @@ class SnykLanguageClientTest {
 
         verify { trustServiceMock.addTrustedPath(eq(Path(path))) }
     }
-
-    @Test
-    fun createProgress() {
-    }
-
-    @Test
-    fun notifyProgress() {
-    }
-
-    @Test
-    fun logTrace() {
-    }
-
-    @Test
-    fun showMessage() {
-    }
-
-    @Test
-    fun showMessageRequest() {
-    }
-
-    @Test
-    fun logMessage() {
-    }
 }
