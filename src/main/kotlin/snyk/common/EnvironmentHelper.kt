@@ -18,21 +18,11 @@ object EnvironmentHelper {
         val snykTokenEnvVar = "SNYK_TOKEN"
 
         val endpointURI = URI(endpoint)
-        val oauthEnabled = endpointURI.isOauth()
-        if (oauthEnabled) {
-            environment[oauthEnabledEnvVar] = "1"
-            environment.remove(snykTokenEnvVar)
-        } else {
-            environment.remove(oauthEnvVar)
-            environment.remove(oauthEnabledEnvVar)
-        }
+        environment[oauthEnabledEnvVar] = "1"
+        environment.remove(snykTokenEnvVar)
 
         if (apiToken.isNotEmpty()) {
-            if (oauthEnabled) {
-                environment[oauthEnvVar] = apiToken
-            } else {
-                environment[snykTokenEnvVar] = apiToken
-            }
+            environment[oauthEnvVar] = apiToken
         }
 
         environment["SNYK_API"] = endpoint
