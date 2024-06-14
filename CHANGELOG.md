@@ -3,6 +3,7 @@
 ## [2.8.6]
 ### Fixed
 - automatically migrate old-format endpoint to https://api.xxx.snyk.io endpoint and save it in settings. Also, add tooltip to custom endpoint field explaining the format.
+- fix multi-file links in the DataFlow HTML panel
 
 ## [2.8.5]
 ### Fixed
