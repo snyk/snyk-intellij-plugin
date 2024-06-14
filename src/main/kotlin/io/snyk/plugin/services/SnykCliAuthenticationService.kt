@@ -22,7 +22,6 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.text.StringEscapeUtils.escapeHtml4
 import snyk.common.getEndpointUrl
-import snyk.common.isOauth
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -71,11 +70,7 @@ class SnykCliAuthenticationService(val project: Project) {
         object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
             override fun run(indicator: ProgressIndicator) {
                 dialog.onCancel = { indicator.cancel() }
-                val endpoint = URI(getEndpointUrl())
-                var commands = buildCliCommands(listOf("auth"))
-                if (endpoint.isOauth()) {
-                    commands = buildCliCommands(listOf("auth", "--auth-type=oauth"))
-                }
+                val commands = buildCliCommands(listOf("auth", "--auth-type=oauth"))
                 val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
                     if (line.startsWith("https://")) {
                         val htmlLink = escapeHtml4(line.removeLineEnd())
@@ -108,12 +103,8 @@ class SnykCliAuthenticationService(val project: Project) {
     }
 
     fun executeGetConfigApiCommand() {
-        val endpoint = URI(getEndpointUrl())
         val getConfigApiTask: () -> Unit = {
-            var key = "INTERNAL_OAUTH_TOKEN_STORAGE"
-            if (!endpoint.isOauth()) {
-                key = "api"
-            }
+            val key = "INTERNAL_OAUTH_TOKEN_STORAGE"
             val commands = buildCliCommands(listOf("config", "get", key))
             val getConfigApiOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
             token = getConfigApiOutput.removeLineEnd()
