@@ -21,13 +21,11 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import org.apache.commons.text.StringEscapeUtils.escapeHtml4
-import snyk.common.getEndpointUrl
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
-import java.net.URI
 import javax.swing.AbstractAction
 import javax.swing.Action
 import javax.swing.JComponent
