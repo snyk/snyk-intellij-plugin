@@ -43,13 +43,9 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
-import snyk.common.isOauth
-import snyk.common.resolveCustomEndpoint
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.net.URI
 import java.util.Objects.nonNull
-import java.util.UUID
 import java.util.function.Supplier
 import javax.swing.JButton
 import javax.swing.JCheckBox
@@ -654,7 +650,6 @@ class SnykSettingsDialog(
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 
     private fun initializeValidation() {
-        setupValidation(tokenTextField, "Invalid token", ::isTokenValid)
         setupValidation(
             customEndpointTextField,
             "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io",
@@ -686,20 +681,6 @@ class SnykSettingsDialog(
                 }
             }
         })
-    }
-
-    private fun isTokenValid(token: String?): Boolean {
-        if (token.isNullOrEmpty()) {
-            return true
-        }
-
-        return try {
-            UUID.fromString(token)
-            true
-        } catch (exception: IllegalArgumentException) {
-            val oauth: Boolean = URI(resolveCustomEndpoint(pluginSettings().customEndpointUrl)).isOauth()
-            oauth
-        }
     }
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text

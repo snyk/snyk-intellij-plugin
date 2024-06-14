@@ -36,7 +36,6 @@ data class LanguageServerSettings(
     @SerializedName("runtimeVersion") val runtimeVersion: String? = SystemUtils.JAVA_VERSION,
     @SerializedName("runtimeName") val runtimeName: String? = SystemUtils.JAVA_RUNTIME_NAME,
     @SerializedName("scanningMode") val scanningMode: String? = null,
-    @SerializedName("authenticationMethod") val authenticationMethod: AuthenticationMethod? = null,
     @SerializedName("snykCodeApi") val snykCodeApi: String? = null,
     @SerializedName("enableSnykLearnCodeActions") val enableSnykLearnCodeActions: String? = null,
     @SerializedName("enableSnykOSSQuickFixCodeActions") val enableSnykOSSQuickFixCodeActions: String? = null,
@@ -50,11 +49,3 @@ data class SeverityFilter(
     @SerializedName("medium") val medium: Boolean?,
     @SerializedName("low") val low: Boolean?,
 )
-
-enum class AuthenticationMethod {
-    @SerializedName("token")
-    TokenAuthentication,
-
-    @SerializedName("oauth")
-    OAuthAuthentication,
-}
