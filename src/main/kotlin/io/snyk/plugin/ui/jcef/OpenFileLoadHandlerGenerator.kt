@@ -4,7 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
@@ -15,9 +15,11 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
-import java.nio.file.Paths
 
-class OpenFileLoadHandlerGenerator(private val project: Project) {
+class OpenFileLoadHandlerGenerator(
+    private val project: Project,
+    private val virtualFiles: LinkedHashMap<String, VirtualFile?>,
+) {
     fun openFile(value: String): JBCefJSQuery.Response {
         val values = value.replace("\n", "").split(":")
         val filePath = values[0]
@@ -26,9 +28,7 @@ class OpenFileLoadHandlerGenerator(private val project: Project) {
         val startCharacter = values[3].toInt()
         val endCharacter = values[4].toInt()
 
-        val virtualFile =
-            VirtualFileManager.getInstance().findFileByNioPath(Paths.get(filePath))
-                ?: return JBCefJSQuery.Response("error")
+        val virtualFile = virtualFiles[filePath] ?: return JBCefJSQuery.Response("success")
 
         ApplicationManager.getApplication().invokeLater {
             val document = virtualFile.getDocument()

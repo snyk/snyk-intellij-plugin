@@ -30,7 +30,10 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
 
-        generator = OpenFileLoadHandlerGenerator(psiFile.project)
+        val virtualFiles = LinkedHashMap<String, VirtualFile?>()
+        virtualFiles[fileName] = psiFile.virtualFile
+
+        generator = OpenFileLoadHandlerGenerator(psiFile.project, virtualFiles)
     }
 
     @Test
