@@ -72,6 +72,9 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.additionalData.fixedIn } returns listOf("fixedIn")
         every { issue.additionalData.exploit } returns "exploit"
         every { issue.additionalData.description } returns "description"
+        every {
+            issue.additionalData.dataFlow
+        } returns emptyList()
     }
 
     @Test

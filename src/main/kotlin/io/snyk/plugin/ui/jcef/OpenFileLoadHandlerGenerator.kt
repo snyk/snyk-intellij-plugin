@@ -3,28 +3,32 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
-import io.snyk.plugin.SnykFile
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
 
-class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
-    private val project = snykFile.project
-    private val virtualFile = snykFile.virtualFile
-
+class OpenFileLoadHandlerGenerator(
+    private val project: Project,
+    private val virtualFiles: LinkedHashMap<String, VirtualFile?>,
+) {
     fun openFile(value: String): JBCefJSQuery.Response {
         val values = value.replace("\n", "").split(":")
+        val filePath = values[0]
         val startLine = values[1].toInt()
         val endLine = values[2].toInt()
         val startCharacter = values[3].toInt()
         val endCharacter = values[4].toInt()
+
+        val virtualFile = virtualFiles[filePath] ?: return JBCefJSQuery.Response("success")
 
         ApplicationManager.getApplication().invokeLater {
             val document = virtualFile.getDocument()
@@ -43,35 +47,48 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
         return "#%02x%02x%02x".format(color.red, color.green, color.blue)
     }
 
-    fun shift(colorComponent: Int, d: Double): Int {
+    fun shift(
+        colorComponent: Int,
+        d: Double,
+    ): Int {
         val n = (colorComponent * d).toInt()
         return n.coerceIn(0, 255)
     }
 
-    fun getCodeDiffColors(baseColor: Color, isHighContrast: Boolean): Pair<Color, Color> {
-        val addedColor = if (isHighContrast) {
-            Color(28, 68, 40) // high contrast green
-        } else {
-            Color(shift(baseColor.red, 0.75), baseColor.green, shift(baseColor.blue, 0.75))
-        }
+    fun getCodeDiffColors(
+        baseColor: Color,
+        isHighContrast: Boolean,
+    ): Pair<Color, Color> {
+        val addedColor =
+            if (isHighContrast) {
+                Color(28, 68, 40) // high contrast green
+            } else {
+                Color(shift(baseColor.red, 0.75), baseColor.green, shift(baseColor.blue, 0.75))
+            }
 
-        val removedColor = if (isHighContrast) {
-            Color(84, 36, 38)  // high contrast red
-        } else {
-            Color(shift(baseColor.red, 1.25), shift(baseColor.green, 0.85), shift(baseColor.blue, 0.85))
-        }
+        val removedColor =
+            if (isHighContrast) {
+                Color(84, 36, 38) // high contrast red
+            } else {
+                Color(shift(baseColor.red, 1.25), shift(baseColor.green, 0.85), shift(baseColor.blue, 0.85))
+            }
         return Pair(addedColor, removedColor)
     }
 
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
         val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
-        val isHighContrast = EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
+        val isHighContrast =
+            EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
 
         openFileQuery.addHandler { openFile(it) }
 
         return object : CefLoadHandlerAdapter() {
-            override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
+            override fun onLoadEnd(
+                browser: CefBrowser,
+                frame: CefFrame,
+                httpStatusCode: Int,
+            ) {
                 if (frame.isMain) {
                     val script = """
                     (function() {
@@ -89,14 +106,12 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
                                  target.getAttribute("end-character"));
                         }
 
-                        // Attach a single event listener to the document
-                        document.addEventListener('click', function(e) {
-                            // Find the nearest ancestor
-                            var target = e.target.closest('.data-flow-clickable-row');
-                            if (target) {
-                                navigateToIssue(e, target);
-                            }
-                        });
+                        const dataFlows = document.getElementsByClassName('data-flow-clickable-row');
+                        for (let i = 0; i < dataFlows.length; i++) {
+                            dataFlows[i].addEventListener('click', (e) => {
+                                navigateToIssue(e, dataFlows[i]);
+                            });
+                        }
                         document.getElementById('position-line').addEventListener('click', (e) => {
                             // Find the first
                             var target = document.getElementsByClassName('data-flow-clickable-row')[0];
@@ -116,8 +131,10 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
                     val dataFlowColor = toCssHex(baseColor)
 
                     val globalScheme = EditorColorsManager.getInstance().globalScheme
-                    val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) // The closest color to target_rgb = (198, 198, 200)
-                    val tabItemHoverColor = globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
+                    val tearLineColor =
+                        globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) // The closest color to target_rgb = (198, 198, 200)
+                    val tabItemHoverColor =
+                        globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
 
                     val themeScript = """
                         (function(){
@@ -142,8 +159,8 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
                             }
 
                             // Add theme class to body
-                            const isDarkTheme = ${isDarkTheme};
-                            const isHighContrast = ${isHighContrast};
+                            const isDarkTheme = $isDarkTheme;
+                            const isHighContrast = $isHighContrast;
                             document.body.classList.add(isHighContrast ? 'high-contrast' : (isDarkTheme ? 'dark' : 'light'));
                         })();
                         """
@@ -153,4 +170,3 @@ class OpenFileLoadHandlerGenerator(snykFile: SnykFile) {
         }
     }
 }
-

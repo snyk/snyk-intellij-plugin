@@ -1,5 +1,7 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.SnykFile
@@ -18,6 +20,7 @@ import snyk.common.lsp.ScanIssue
 import stylesheets.SnykStylesheets
 import java.awt.BorderLayout
 import java.awt.Font
+import java.nio.file.Paths
 import javax.swing.JLabel
 import javax.swing.JPanel
 
@@ -37,7 +40,13 @@ class SuggestionDescriptionPanelFromLS(
             pluginSettings().isGlobalIgnoresFeatureEnabled &&
             issue.canLoadSuggestionPanelFromHTML()
         ) {
-            val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile)
+            val virtualFiles = LinkedHashMap<String, VirtualFile?>()
+            for (dataFlow in issue.additionalData.dataFlow) {
+                virtualFiles[dataFlow.filePath] =
+                    VirtualFileManager.getInstance().findFileByNioPath(Paths.get(dataFlow.filePath))
+            }
+
+            val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile.project, virtualFiles)
             val html = this.getStyledHTML()
             val jbCefBrowserComponent =
                 JCEFUtils.getJBCefBrowserComponentIfSupported(html) {
@@ -127,13 +136,17 @@ class SuggestionDescriptionPanelFromLS(
             ideStyle = SnykStylesheets.SnykCodeSuggestion
         }
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
-        html = html.replace("\${ideScript}", "<script nonce=\${nonce}>" +
-            "    // Ensure the document is fully loaded before executing script to manipulate DOM.\n" +
-            "    document.addEventListener('DOMContentLoaded', () => {\n" +
-            "        document.getElementById(\"ai-fix-wrapper\").classList.add(\"hidden\");\n" +
-            "        document.getElementById(\"no-ai-fix-wrapper\").classList.remove(\"hidden\");\n" +
-            "    })" +
-            "</script>")
+        html =
+            html.replace(
+                "\${ideScript}",
+                "<script nonce=\${nonce}>" +
+                    "    // Ensure the document is fully loaded before executing script to manipulate DOM.\n" +
+                    "    document.addEventListener('DOMContentLoaded', () => {\n" +
+                    "        document.getElementById(\"ai-fix-wrapper\").classList.add(\"hidden\");\n" +
+                    "        document.getElementById(\"no-ai-fix-wrapper\").classList.remove(\"hidden\");\n" +
+                    "    })" +
+                    "</script>",
+            )
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
