@@ -56,7 +56,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     }
 
-    private fun mockScanIssues(): List<ScanIssue> {
+    private fun mockScanIssues(isIgnored: Boolean? = false): List<ScanIssue> {
         val issue =
             ScanIssue(
                 id = "id",
@@ -103,7 +103,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
                         details = "",
                         ruleId = "",
                     ),
-                isIgnored = false,
+                isIgnored = isIgnored,
                 ignoreDetails = null,
             )
         return listOf(issue)
@@ -191,5 +191,63 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         TestCase.assertEquals(3, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1, 1)
         TestCase.assertEquals(5, rootTreeNode.childCount)
+    }
+
+    fun `testAddInfoTreeNodes adds new tree nodes for code security if  all ignored issues are hidden`() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+        pluginSettings().ignoredIssuesEnabled = false
+
+        // setup the rootTreeNode from scratch
+        rootTreeNode = DefaultMutableTreeNode("")
+        rootTreeNode.add(rootOssIssuesTreeNode)
+        rootTreeNode.add(rootSecurityIssuesTreeNode)
+        rootTreeNode.add(rootQualityIssuesTreeNode)
+        vulnerabilitiesTree =
+            Tree(rootTreeNode).apply {
+                this.isRootVisible = false
+            }
+
+        cut =
+            SnykToolWindowSnykScanListenerLS(
+                project,
+                snykToolWindowPanel,
+                vulnerabilitiesTree,
+                rootSecurityIssuesTreeNode,
+                rootQualityIssuesTreeNode,
+                rootOssIssuesTreeNode,
+            )
+
+        TestCase.assertEquals(3, rootTreeNode.childCount)
+        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(true), 1, 1)
+        TestCase.assertEquals(6, rootTreeNode.childCount)
+    }
+
+    fun `testAddInfoTreeNodes adds new tree nodes for code security if all open issues are hidden`() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+        pluginSettings().openIssuesEnabled = false
+
+        // setup the rootTreeNode from scratch
+        rootTreeNode = DefaultMutableTreeNode("")
+        rootTreeNode.add(rootOssIssuesTreeNode)
+        rootTreeNode.add(rootSecurityIssuesTreeNode)
+        rootTreeNode.add(rootQualityIssuesTreeNode)
+        vulnerabilitiesTree =
+            Tree(rootTreeNode).apply {
+                this.isRootVisible = false
+            }
+
+        cut =
+            SnykToolWindowSnykScanListenerLS(
+                project,
+                snykToolWindowPanel,
+                vulnerabilitiesTree,
+                rootSecurityIssuesTreeNode,
+                rootQualityIssuesTreeNode,
+                rootOssIssuesTreeNode,
+            )
+
+        TestCase.assertEquals(3, rootTreeNode.childCount)
+        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(false), 1, 1)
+        TestCase.assertEquals(6, rootTreeNode.childCount)
     }
 }

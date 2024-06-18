@@ -38,7 +38,11 @@ class SnykToolWindowSnykScanListenerLS(
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListenerLS, Disposable {
-    private var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
+    private var disposed = false
+        get() {
+            return project.isDisposed || ApplicationManager.getApplication().isDisposed || field
+        }
+
     init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
     }
@@ -46,6 +50,7 @@ class SnykToolWindowSnykScanListenerLS(
     override fun dispose() {
         disposed = true
     }
+
     fun isDisposed() = disposed
 
     override fun scanningStarted(snykScan: SnykScanParams) {
@@ -97,7 +102,7 @@ class SnykToolWindowSnykScanListenerLS(
             snykResults = securityIssues,
             rootNode = this.rootSecurityIssuesTreeNode,
             securityIssuesCount = securityIssues.values.flatten().distinct().size,
-            fixableIssuesCount = securityIssues.values.flatten().distinct().count { it.hasAIFix() }
+            fixableIssuesCount = securityIssues.values.flatten().distinct().count { it.hasAIFix() },
         )
 
         // display Quality (non Security) issues
@@ -112,7 +117,7 @@ class SnykToolWindowSnykScanListenerLS(
             snykResults = qualityIssues,
             rootNode = this.rootQualityIssuesTreeNode,
             qualityIssuesCount = qualityIssues.values.flatten().distinct().size,
-            fixableIssuesCount = qualityIssues.values.flatten().distinct().count { it.hasAIFix() }
+            fixableIssuesCount = qualityIssues.values.flatten().distinct().count { it.hasAIFix() },
         )
     }
 
@@ -143,7 +148,9 @@ class SnykToolWindowSnykScanListenerLS(
         containerResultsCount: Int? = null,
         fixableIssuesCount: Int? = null,
     ) {
-        if (pluginSettings().token.isNullOrEmpty()) {
+        val settings = pluginSettings()
+
+        if (settings.token.isNullOrEmpty()) {
             snykToolWindowPanel.displayAuthPanel()
             return
         }
@@ -151,7 +158,6 @@ class SnykToolWindowSnykScanListenerLS(
         val userObjectsForExpandedNodes =
             snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
         val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-        val settings = pluginSettings()
 
         rootNode.removeAllChildren()
 
@@ -163,11 +169,22 @@ class SnykToolWindowSnykScanListenerLS(
             if (filterTree) {
                 addInfoTreeNodes(rootNode, snykResults.values.flatten().distinct(), fixableIssuesCount)
 
+                var includeIgnoredIssues = true
+                var includeOpenedIssues = true
+                if (settings.isGlobalIgnoresFeatureEnabled) {
+                    includeOpenedIssues = settings.openIssuesEnabled
+                    includeIgnoredIssues = settings.ignoredIssuesEnabled
+                }
+
                 val resultsToDisplay =
                     snykResults.map { entry ->
                         entry.key to
                             entry.value.filter {
-                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
+                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum()) &&
+                                    it.isVisible(
+                                        includeOpenedIssues,
+                                        includeIgnoredIssues,
+                                    )
                             }
                     }.toMap()
                 displayResultsForRootTreeNode(rootNode, resultsToDisplay)
@@ -180,7 +197,7 @@ class SnykToolWindowSnykScanListenerLS(
             ossResultsCount = ossResultsCount,
             iacResultsCount = iacResultsCount,
             containerResultsCount = containerResultsCount,
-            addHMLPostfix = rootNodePostFix
+            addHMLPostfix = rootNodePostFix,
         )
 
         snykToolWindowPanel.smartReloadRootNode(
@@ -242,11 +259,27 @@ class SnykToolWindowSnykScanListenerLS(
                 )
             }
         }
+
+        if (ignoredIssuesCount == issuesCount && !settings.ignoredIssuesEnabled) {
+            rootNode.add(
+                InfoTreeNode(
+                    "Adjust your Issue View Options to see ignored issues.",
+                    project,
+                ),
+            )
+        } else if (ignoredIssuesCount == 0 && !settings.openIssuesEnabled) {
+            rootNode.add(
+                InfoTreeNode(
+                    "Adjust your Issue View Options to open issues.",
+                    project,
+                ),
+            )
+        }
     }
 
     private fun displayResultsForRootTreeNode(
         rootNode: DefaultMutableTreeNode,
-        issues: Map<SnykFile, List<ScanIssue>>
+        issues: Map<SnykFile, List<ScanIssue>>,
     ) {
         fun navigateToSource(
             virtualFile: VirtualFile,
@@ -276,8 +309,8 @@ class SnykToolWindowSnykScanListenerLS(
                         fileTreeNode.add(
                             SuggestionTreeNode(
                                 issue,
-                                navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0))
-                            )
+                                navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0)),
+                            ),
                         )
                     }
             }
