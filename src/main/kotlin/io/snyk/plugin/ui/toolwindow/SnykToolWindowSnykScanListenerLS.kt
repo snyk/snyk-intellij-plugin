@@ -169,10 +169,12 @@ class SnykToolWindowSnykScanListenerLS(
             if (filterTree) {
                 addInfoTreeNodes(rootNode, snykResults.values.flatten().distinct(), fixableIssuesCount)
 
-                val includeIgnoredIssues =
-                    !(settings.isGlobalIgnoresFeatureEnabled && !settings.ignoredIssuesEnabled)
-                val includeOpenedIssues =
-                    !(settings.isGlobalIgnoresFeatureEnabled && !settings.openIssuesEnabled)
+                var includeIgnoredIssues = true
+                var includeOpenedIssues = true
+                if (settings.isGlobalIgnoresFeatureEnabled) {
+                    includeOpenedIssues = settings.openIssuesEnabled
+                    includeIgnoredIssues = settings.ignoredIssuesEnabled
+                }
 
                 val resultsToDisplay =
                     snykResults.map { entry ->
@@ -268,7 +270,7 @@ class SnykToolWindowSnykScanListenerLS(
         } else if (ignoredIssuesCount == 0 && !settings.openIssuesEnabled) {
             rootNode.add(
                 InfoTreeNode(
-                    "Adjust your Issue View Options to open ignored issues.",
+                    "Adjust your Issue View Options to open issues.",
                     project,
                 ),
             )
