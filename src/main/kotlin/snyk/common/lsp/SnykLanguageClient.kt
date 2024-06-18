@@ -63,7 +63,11 @@ import java.util.concurrent.TimeUnit
  */
 class SnykLanguageClient : LanguageClient, Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
-    private var disposed = false; get() { return ApplicationManager.getApplication().isDisposed || field }
+    private var disposed = false
+    get() {
+            return ApplicationManager.getApplication().isDisposed || field
+        }
+
     fun isDisposed() = disposed
     private val progresses: Cache<String, ProgressIndicator> =
         Caffeine.newBuilder()
@@ -212,17 +216,7 @@ class SnykLanguageClient : LanguageClient, Disposable {
         check(snykScan.product == "code" || snykScan.product == "oss") { "Expected Snyk Code or Snyk OSS scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
-        val pluginSettings = pluginSettings()
-        val includeIgnoredIssues = pluginSettings.ignoredIssuesEnabled
-        val includeOpenedIssues = pluginSettings.openIssuesEnabled
-
-        val processedIssues = if (pluginSettings.isGlobalIgnoresFeatureEnabled) { //
-            snykScan.issues.filter { it.isVisible(includeOpenedIssues, includeIgnoredIssues) }
-        } else {
-            snykScan.issues
-        }
-
-        val map = processedIssues
+        val map = snykScan.issues
             .groupBy { it.filePath }
             .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
             .map {
