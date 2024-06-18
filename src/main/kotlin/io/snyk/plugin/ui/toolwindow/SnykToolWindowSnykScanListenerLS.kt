@@ -167,7 +167,12 @@ class SnykToolWindowSnykScanListenerLS(
             rootNodePostFix = buildSeveritiesPostfixForFileNode(snykResults)
 
             if (filterTree) {
-                addInfoTreeNodes(rootNode, snykResults.values.flatten().distinct(), fixableIssuesCount)
+                addInfoTreeNodes(
+                    rootNode = rootNode,
+                    issues = snykResults.values.flatten().distinct(),
+                    securityIssuesCount = securityIssuesCount,
+                    fixableIssuesCount = fixableIssuesCount,
+                )
 
                 var includeIgnoredIssues = true
                 var includeOpenedIssues = true

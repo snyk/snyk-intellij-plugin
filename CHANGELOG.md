@@ -3,6 +3,7 @@
 ## [2.8.7]
 ### Fixes
 - fix issue counts when there are ignores and add some warnings about the Issue View Options
+- fix AI fix counts when there are ignores
 
 ## [2.8.6]
 ### Fixed
