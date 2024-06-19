@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.8.8]
+### Fixes
+- bumped LS protocol version to 12
+
 ## [2.8.7]
 ### Fixes
 - fix issue counts when there are ignores and add some warnings about the Issue View Options
