@@ -3,6 +3,8 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.colors.EditorColorsScheme
+import com.intellij.openapi.editor.colors.FontPreferences
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.jcef.JBCefBrowserBase
@@ -139,6 +141,11 @@ class OpenFileLoadHandlerGenerator(
                     val tabItemHoverColor =
                         globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
 
+                    val editorColorsManager = EditorColorsManager.getInstance()
+                    val editorColorsScheme: EditorColorsScheme = editorColorsManager.globalScheme
+                    val fontPreferences: FontPreferences = editorColorsScheme.fontPreferences
+                    val editorFont = fontPreferences.fontFamily
+
                     val themeScript = """
                         (function(){
                         if (window.themeApplied) {
@@ -158,6 +165,7 @@ class OpenFileLoadHandlerGenerator(
                                 '--tabs-bottom-color': "${tearLineColor?.let { toCssHex(it) }}",
                                 '--border-color': "$borderColor",
                                 '--editor-color': "$editorColor",
+                                '--editor-font': "'$editorFont'",
                             };
                             for (let [property, value] of Object.entries(properties)) {
                                 document.documentElement.style.setProperty(property, value);

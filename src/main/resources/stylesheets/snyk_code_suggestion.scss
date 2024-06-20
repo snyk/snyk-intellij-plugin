@@ -63,6 +63,11 @@ h2 {
   font-size: 0.85rem;
 }
 
+.data-flow-text {
+  font-family: var(--editor-font);
+  font-size: 1.1rem;
+}
+
 .data-flow-clickable-row {
   color: var(--link-color);
 }
@@ -92,7 +97,8 @@ h2 {
 }
 
 .example-line > code {
-  font-family: "Courier New", Courier, monospace;
+  font-family: var(--editor-font);
+  font-size: 1.1rem;
 }
 
 .example-line.added {
