@@ -11,7 +11,6 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.panels.JCEFDescriptionPanel
 import org.junit.Test
@@ -79,6 +78,7 @@ class JCEFDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
     @Test
     fun `test createUI should build the right panels for Snyk OSS`() {
+        every { issue.canLoadSuggestionPanelFromHTML() } returns false
         cut = JCEFDescriptionPanel(snykFile, issue)
 
         val issueNaming = getJLabelByText(cut, issue.issueNaming())
@@ -111,8 +111,6 @@ class JCEFDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
     @Test
     fun `test getStyledHTML should inject CSS into the HTML`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
-
         every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = JCEFDescriptionPanel(snykFile, issue)

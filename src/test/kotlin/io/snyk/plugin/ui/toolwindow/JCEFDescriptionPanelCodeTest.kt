@@ -12,7 +12,6 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.JCEFDescriptionPanel
@@ -21,7 +20,6 @@ import org.eclipse.lsp4j.Range
 import org.junit.Test
 import snyk.UIComponentFinder.getJBCEFBrowser
 import snyk.UIComponentFinder.getJLabelByText
-import snyk.UIComponentFinder.getJPanelByName
 import snyk.code.annotator.SnykCodeAnnotator
 import snyk.common.ProductType
 import snyk.common.lsp.CommitChangeLine
@@ -82,61 +80,7 @@ class JCEFDescriptionPanelCodeTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test createUI should build the right panels for Snyk Code`() {
-        cut = JCEFDescriptionPanel(snykFile, issue)
-
-        val issueNaming = getJLabelByText(cut, issue.issueNaming())
-        assertNotNull(issueNaming)
-
-        val overviewPanel = getJLabelByText(cut, "<html>Test message</html>")
-        assertNotNull(overviewPanel)
-
-        val dataFlowPanel = getJPanelByName(cut, "dataFlowPanel")
-        assertNotNull(dataFlowPanel)
-
-        val fixExamplesPanel = getJPanelByName(cut, "fixExamplesPanel")
-        assertNotNull(fixExamplesPanel)
-
-        val introducedThroughPanel = getJPanelByName(cut, "introducedThroughPanel")
-        assertNull(introducedThroughPanel)
-
-        val detailedPathsPanel = getJPanelByName(cut, "detailedPathsPanel")
-        assertNull(detailedPathsPanel)
-
-        val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
-        assertNull(ossOverviewPanel)
-    }
-
-    @Test
-    fun `test createUI should build panel with issue message as overview label if the feature flag is not enabled`() {
-        every { issue.details() } returns ""
-        cut = JCEFDescriptionPanel(snykFile, issue)
-
-        val actual = getJLabelByText(cut, "<html>Test message</html>")
-        assertNotNull(actual)
-
-        val actualBrowser = getJBCEFBrowser(cut)
-        assertNull(actualBrowser)
-    }
-
-    @Test
-    fun `test createUI should build panel with issue message as overview label if HTML is not allowed, even if the feature flag is enabled`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
-
-        every { issue.canLoadSuggestionPanelFromHTML() } returns false
-        cut = JCEFDescriptionPanel(snykFile, issue)
-
-        val actual = getJLabelByText(cut, "<html>Test message</html>")
-        assertNotNull(actual)
-
-        val actualBrowser = getJBCEFBrowser(cut)
-        assertNull(actualBrowser)
-    }
-
-    @Test
-    fun `test createUI should show nothing if feature flag is enabled but JCEF is not`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
-
+    fun `test createUI should show nothing if JCEF is not present`() {
         mockkObject(JCEFUtils)
         every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
@@ -152,9 +96,7 @@ class JCEFDescriptionPanelCodeTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test createUI should build panel with HTML from details if feature flag is enabled`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
-
+    fun `test createUI should build panel with HTML from details`() {
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
         mockkObject(JCEFUtils)
         every {
@@ -174,8 +116,6 @@ class JCEFDescriptionPanelCodeTest : BasePlatformTestCase() {
 
     @Test
     fun `test getStyledHTML should inject CSS into the HTML`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
-
         every { issue.details() } returns "<html><head>\${ideStyle}</head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = JCEFDescriptionPanel(snykFile, issue)
