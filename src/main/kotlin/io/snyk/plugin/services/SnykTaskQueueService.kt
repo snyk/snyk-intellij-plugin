@@ -1,5 +1,8 @@
 package io.snyk.plugin.services
 
+import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
@@ -31,6 +34,8 @@ import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.services.download.CliDownloader
+import io.snyk.plugin.services.download.HttpRequestHelper
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
@@ -68,16 +73,8 @@ class SnykTaskQueueService(val project: Project) {
     @TestOnly
     fun getTaskQueue() = taskQueue
 
-    fun scheduleRunnable(title: String, runnable: (indicator: ProgressIndicator) -> Unit) {
-        taskQueue.run(object : Task.Backgroundable(project, title, true) {
-            override fun run(indicator: ProgressIndicator) {
-                runnable.invoke(indicator)
-            }
-        })
-    }
-
     fun connectProjectToLanguageServer(project: Project) {
-            // subscribe to the settings changed topic
+        // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         getSnykToolWindowPanel(project)?.let {
                 project.messageBus.connect(it)
@@ -265,14 +262,40 @@ class SnykTaskQueueService(val project: Project) {
         // abort even before submitting a task
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
         val cliDownloader = getSnykCliDownloaderService()
-        if (!pluginSettings().manageBinariesAutomatically) {
-            if (!isCliInstalled()) {
-                val msg =
-                    "The plugin cannot scan without Snyk CLI, but automatic download is disabled. " +
-                        "Please put a Snyk CLI executable in ${pluginSettings().cliPath} and retry."
-                SnykBalloonNotificationHelper.showError(msg, project)
-                // no need to cancel the indicator here, as isCLIDownloading() will return false
+        val pluginSettings = pluginSettings()
+        if (!pluginSettings.manageBinariesAutomatically) {
+            val mismatchInProtocolVersion =
+                pluginSettings.currentLSProtocolVersion != pluginSettings.requiredLsProtocolVersion
+            var msg: String
+            val latestReleasesUrl = CliDownloader.LATEST_RELEASES_URL
+            val action = object : AnAction("Download required version in Browser") {
+                override fun actionPerformed(e: AnActionEvent) {
+                    ApplicationManager.getApplication().executeOnPooledThread {
+                        val version = HttpRequestHelper.createRequest(latestReleasesUrl).readString()
+                        val downloadURL = CliDownloader.getDownloadURL(version)
+                        BrowserUtil.open(downloadURL)
+                    }
+                }
             }
+            if (!isCliInstalled()) {
+                msg =
+                    "The plugin cannot scan without Snyk CLI, but automatic download is disabled. " +
+                        "Please put a Snyk CLI executable in ${pluginSettings.cliPath} and retry."
+                SnykBalloonNotificationHelper.showError(msg, project, action)
+            }
+            if (mismatchInProtocolVersion) {
+                if (!LanguageServerWrapper.getInstance().protocolVersionChecked) {
+                    msg =
+                        "The Snyk Plugin needs a different CLI (required protocol version: ${settings.requiredLsProtocolVersion}, " +
+                            "current protocol version: ${settings.currentLSProtocolVersion}). <br/><br/>" +
+                            "Please enable automatic management of binaries and delete the current CLI binary manually from ${settings.cliPath}. <br/><br/>" +
+                            "Alternatively, please provide a CLI binary that supports the required protocol version. " +
+                            "You can find a valid version number at ${CliDownloader.LATEST_RELEASES_URL}</a>. " +
+                            "If no fitting version can be found, you may need to change your release channel to 'preview'."
+                    SnykBalloonNotificationHelper.showError(msg, project, action)
+                }
+            }
+
             // no need to cancel the indicator here, as isCliInstalled() will return false
             cliDownloader.stopCliDownload()
             return

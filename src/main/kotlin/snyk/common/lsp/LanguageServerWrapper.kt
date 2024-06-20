@@ -64,10 +64,13 @@ private const val INITIALIZATION_TIMEOUT = 20L
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
-): Disposable {
+) : Disposable {
     private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
-    private var disposed = false ; get() { return ApplicationManager.getApplication().isDisposed || field }
+    private var disposed = false
+        get() {
+            return ApplicationManager.getApplication().isDisposed || field
+        }
 
     fun isDisposed() = disposed
 
@@ -92,11 +95,16 @@ class LanguageServerWrapper(
      * Process is the started IO process
      */
     lateinit var process: Process
+    var protocolVersionChecked = false
 
     @Suppress("MemberVisibilityCanBePrivate") // because we want to test it
     var isInitializing: ReentrantLock =
         CycleDetectingLockFactory.newInstance(CycleDetectingLockFactory.Policies.THROW)
             .newReentrantLock("initializeLock")
+
+    private val protocolVersionLock: ReentrantLock =
+        CycleDetectingLockFactory.newInstance(CycleDetectingLockFactory.Policies.THROW)
+            .newReentrantLock("protocolVersionLock")
 
     internal val isInitialized: Boolean
         get() =
@@ -138,6 +146,7 @@ class LanguageServerWrapper(
 
             launcher.startListening()
             sendInitializeMessage()
+            protocolVersionChecked = false
         } catch (e: Exception) {
             logger.warn(e)
             process.destroy()
@@ -247,7 +256,8 @@ class LanguageServerWrapper(
             if (!ensureLanguageServerInitialized()) return
             val params = DidChangeWorkspaceFoldersParams()
             params.event = WorkspaceFoldersChangeEvent(added.toList(), removed.toList())
-            languageServer.workspaceService.didChangeWorkspaceFolders(params)
+            if (added.isNotEmpty() || removed.isNotEmpty())
+                languageServer.workspaceService.didChangeWorkspaceFolders(params)
         } catch (e: Exception) {
             logger.error(e)
         }
@@ -374,12 +384,17 @@ class LanguageServerWrapper(
     fun addContentRoots(project: Project) {
         if (disposed || project.isDisposed) return
         assert(isInitialized)
-        ensureLanguageServerProtocolVersion(project)
+        protocolVersionLock.lock()
+        if (!protocolVersionChecked && protocolVersionLock.holdCount == 1) {
+            protocolVersionChecked = true
+            ensureLanguageServerProtocolVersion(project)
+        }
+        protocolVersionLock.unlock()
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
     }
 
-    private fun ensureLanguageServerProtocolVersion(project: Project) {
+    fun ensureLanguageServerProtocolVersion(project: Project) {
         val protocolVersion = initializeResult?.serverInfo?.version
         pluginSettings().currentLSProtocolVersion = protocolVersion?.toIntOrNull()
 

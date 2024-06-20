@@ -6,6 +6,7 @@ import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
@@ -29,6 +30,7 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.awaitility.Awaitility.await
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ContainerResult
@@ -88,6 +90,35 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
+    fun testShowsBalloonNotificationOnProtocolVersionMismatch() {
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        val pluginSettings = pluginSettings()
+        pluginSettings.manageBinariesAutomatically = false
+        pluginSettings.currentLSProtocolVersion = pluginSettings.requiredLsProtocolVersion - 1
+        mockkObject(SnykBalloonNotificationHelper)
+
+        justRun { SnykBalloonNotificationHelper.showError(any(), any(), *anyVararg()) }
+
+        snykTaskQueueService.downloadLatestRelease()
+
+        verify (exactly = 1){ SnykBalloonNotificationHelper.showError(any(), any(), *anyVararg()) }
+    }
+
+    fun testDoesNotShowsBalloonNotificationOnProtocolVersionMatch() {
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        val pluginSettings = pluginSettings()
+        pluginSettings.manageBinariesAutomatically = false
+        pluginSettings.currentLSProtocolVersion = pluginSettings.requiredLsProtocolVersion
+        mockkObject(SnykBalloonNotificationHelper)
+
+        justRun { SnykBalloonNotificationHelper.showError(any(), any(), *anyVararg()) }
+
+        snykTaskQueueService.downloadLatestRelease()
+
+        verify (exactly = 0){ SnykBalloonNotificationHelper.showError(any(), any(), *anyVararg()) }
+    }
+
+
     fun testSnykTaskQueueService() {
         setupDummyCliFile()
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
@@ -103,6 +134,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
         assertNull(snykTaskQueueService.ossScanProgressIndicator)
     }
+
     fun testCliDownloadBeforeScanIfNeeded() {
         setupAppSettingsForDownloadTests()
         every { isCliInstalled() } returns true

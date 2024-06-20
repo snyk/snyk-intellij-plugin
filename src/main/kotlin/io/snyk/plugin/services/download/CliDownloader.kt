@@ -19,6 +19,8 @@ class CliDownloader {
             get() = pluginSettings().cliBaseDownloadURL
         val LATEST_RELEASES_URL: String
             get() = "$BASE_URL/cli/${pluginSettings().cliReleaseChannel}/ls-protocol-version-"+ pluginSettings().requiredLsProtocolVersion
+
+        fun getDownloadURL(cliVersion: String) = "$BASE_URL/cli/v$cliVersion/${Platform.current().snykWrapperFileName}"
     }
 
     fun calculateSha256(bytes: ByteArray): String {
@@ -87,6 +89,4 @@ class CliDownloader {
         val request = createRequest(downloadURL)
         return request.readString().split(" ")[0]
     }
-
-    private fun getDownloadURL(cliVersion: String) = "$BASE_URL/cli/v$cliVersion/${Platform.current().snykWrapperFileName}"
 }

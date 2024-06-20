@@ -60,6 +60,7 @@ class LanguageServerWrapperTest {
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
         every { applicationMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable
         every { applicationMock.isDisposed } returns false
+        every { applicationMock.isUnitTestMode } returns true
 
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
         every { projectMock.isDisposed } returns false
@@ -347,5 +348,19 @@ class LanguageServerWrapperTest {
 
         // Assert
         assertEquals(true, result)
+    }
+
+    @Test
+    fun `addContentRoots flips protocolVersionChecked on first run`() {
+        simulateRunningLS()
+        val rootManagerMock = mockk<ProjectRootManager>(relaxed = true)
+        every { projectMock.getService(ProjectRootManager::class.java) } returns rootManagerMock
+        every { rootManagerMock.contentRoots } returns emptyArray()
+
+        cut.protocolVersionChecked = false
+
+        cut.addContentRoots(projectMock)
+
+        assertTrue(cut.protocolVersionChecked)
     }
 }
