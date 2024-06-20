@@ -15,7 +15,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import io.snyk.plugin.ui.toolwindow.panels.JCEFDescriptionPanel
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import org.junit.Test
@@ -31,8 +31,8 @@ import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
 import javax.swing.JLabel
 
-class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
-    private lateinit var cut: SuggestionDescriptionPanelFromLS
+class JCEFDescriptionPanelCodeTest : BasePlatformTestCase() {
+    private lateinit var cut: JCEFDescriptionPanel
     private val fileName = "app.js"
     private lateinit var snykFile: SnykFile
     private lateinit var issue: ScanIssue
@@ -83,7 +83,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
     @Test
     fun `test createUI should build the right panels for Snyk Code`() {
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val issueNaming = getJLabelByText(cut, issue.issueNaming())
         assertNotNull(issueNaming)
@@ -110,7 +110,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
     @Test
     fun `test createUI should build panel with issue message as overview label if the feature flag is not enabled`() {
         every { issue.details() } returns ""
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNotNull(actual)
@@ -124,7 +124,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
 
         every { issue.canLoadSuggestionPanelFromHTML() } returns false
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNotNull(actual)
@@ -142,7 +142,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -163,7 +163,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -178,7 +178,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         every { issue.details() } returns "<html><head>\${ideStyle}</head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val actual = cut.getStyledHTML()
         assertFalse(actual.contains("\${ideStyle}"))

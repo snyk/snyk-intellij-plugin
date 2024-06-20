@@ -13,7 +13,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import io.snyk.plugin.ui.toolwindow.panels.JCEFDescriptionPanel
 import org.junit.Test
 import snyk.UIComponentFinder.getActionLinkByText
 import snyk.UIComponentFinder.getJLabelByText
@@ -24,8 +24,8 @@ import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
 
-class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
-    private lateinit var cut: SuggestionDescriptionPanelFromLS
+class JCEFDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
+    private lateinit var cut: JCEFDescriptionPanel
     private val fileName = "app.js"
     private lateinit var snykFile: SnykFile
     private lateinit var issue: ScanIssue
@@ -79,7 +79,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
     @Test
     fun `test createUI should build the right panels for Snyk OSS`() {
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val issueNaming = getJLabelByText(cut, issue.issueNaming())
         assertNotNull(issueNaming)
@@ -115,7 +115,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
         every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = JCEFDescriptionPanel(snykFile, issue)
 
         val actual = cut.getStyledHTML()
 

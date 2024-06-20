@@ -24,7 +24,7 @@ import java.nio.file.Paths
 import javax.swing.JLabel
 import javax.swing.JPanel
 
-class SuggestionDescriptionPanelFromLS(
+class JCEFDescriptionPanel(
     snykFile: SnykFile,
     private val issue: ScanIssue,
 ) : IssueDescriptionPanelBase(
