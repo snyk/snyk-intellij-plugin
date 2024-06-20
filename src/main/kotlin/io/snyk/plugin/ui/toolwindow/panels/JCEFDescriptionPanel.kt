@@ -5,7 +5,6 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
@@ -36,10 +35,7 @@ class JCEFDescriptionPanel(
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
     init {
-        if (
-            pluginSettings().isGlobalIgnoresFeatureEnabled &&
-            issue.canLoadSuggestionPanelFromHTML()
-        ) {
+        if (issue.canLoadSuggestionPanelFromHTML()) {
             val virtualFiles = LinkedHashMap<String, VirtualFile?>()
             for (dataFlow in issue.additionalData.dataFlow) {
                 virtualFiles[dataFlow.filePath] =
@@ -94,19 +90,12 @@ class JCEFDescriptionPanel(
             JPanel(
                 GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
             ).apply {
-                if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY || issue.additionalData.getProductType() == ProductType.CODE_QUALITY) {
-                    this.add(
-                        SnykCodeOverviewPanel(issue.additionalData),
-                        panelGridConstraints(2),
-                    )
-                    this.add(
-                        SnykCodeDataflowPanel(project, issue.additionalData),
-                        panelGridConstraints(3),
-                    )
-                    this.add(
-                        SnykCodeExampleFixesPanel(issue.additionalData),
-                        panelGridConstraints(4),
-                    )
+                if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
+                    issue.additionalData.getProductType() == ProductType.CODE_QUALITY
+                ) {
+                    val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
+                    this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
+                    SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
                 } else if (issue.additionalData.getProductType() == ProductType.OSS) {
                     this.add(
                         SnykOSSIntroducedThroughPanel(issue.additionalData),
