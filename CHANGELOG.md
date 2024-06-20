@@ -4,6 +4,9 @@
 ### Fixes
 - fix issue counts when there are ignores and add some warnings about the Issue View Options
 
+### Changes
+- warn users if CLI is outdated
+
 ## [2.8.6]
 ### Fixed
 - automatically migrate old-format endpoint to https://api.xxx.snyk.io endpoint and save it in settings. Also, add tooltip to custom endpoint field explaining the format.
