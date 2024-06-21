@@ -44,13 +44,6 @@ a,
   border-top: 1px solid var(--border-color)
 }
 
-/* Need to override h2 settings for the markdown*/
-h2 {
-  line-height: 1.25rem;
-  font-size: 1.4rem;
-  margin-bottom: 10px;
-}
-
 .issue-overview-header,
 .ignore-details-header,
 .data-flow-header,
@@ -66,7 +59,7 @@ h2 {
 
 .data-flow-text {
   font-family: var(--editor-font);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .data-flow-clickable-row {
@@ -99,7 +92,7 @@ h2 {
 
 .example-line > code {
   font-family: var(--editor-font);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .example-line.added {
