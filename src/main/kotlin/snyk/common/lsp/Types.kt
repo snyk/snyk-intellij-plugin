@@ -10,20 +10,20 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
 import snyk.analytics.IssueInTreeIsClicked.IssueType
 import snyk.common.ProductType
 import java.util.Date
-import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
-import javax.swing.Icon
 import java.util.Locale
+import javax.swing.Icon
 
 // Define the SnykScanParams data class
 data class SnykScanParams(
     val status: String, // Status can be either Initial, InProgress or Success
     val product: String, // Product under scan (Snyk Code, Snyk Open Source, etc...)
     val folderPath: String, // FolderPath is the root-folder of the current scan
-    val issues: List<ScanIssue> // Issues contain the scan results in the common issues model
+    val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
 )
 
 // Define the ScanIssue data class
@@ -51,7 +51,9 @@ data class ScanIssue(
             return if (field == null) {
                 field = filePath.toVirtualFile()
                 field
-            } else field
+            } else {
+                field
+            }
         }
 
     private var document: Document?
@@ -59,7 +61,9 @@ data class ScanIssue(
             return if (field == null) {
                 field = virtualFile?.getDocument()
                 field
-            } else field
+            } else {
+                field
+            }
         }
 
     private var startOffset: Int?
@@ -67,7 +71,9 @@ data class ScanIssue(
             return if (field == null) {
                 field = document?.getLineStartOffset(range.start.line)?.plus(range.start.character)
                 field
-            } else field
+            } else {
+                field
+            }
         }
 
     private var endOffset: Int?
@@ -75,7 +81,9 @@ data class ScanIssue(
             return if (field == null) {
                 field = document?.getLineStartOffset(range.end.line)?.plus(range.end.character)
                 field
-            } else field
+            } else {
+                field
+            }
         }
 
     init {
@@ -94,6 +102,7 @@ data class ScanIssue(
                     IssueType.OPEN_SOURCE_VULNERABILITY
                 }
             }
+
             ProductType.IAC -> IssueType.INFRASTRUCTURE_AS_CODE_ISSUE
             ProductType.CONTAINER -> IssueType.CONTAINER_VULNERABILITY
             ProductType.CODE_SECURITY -> IssueType.CODE_SECURITY_VULNERABILITY
@@ -108,9 +117,11 @@ data class ScanIssue(
             ProductType.CODE_QUALITY -> {
                 this.additionalData.message.split('.').firstOrNull() ?: "Unknown issue"
             }
+
             ProductType.CODE_SECURITY -> {
                 this.title.split(":").firstOrNull() ?: "Unknown issue"
             }
+
             else -> TODO()
         }
     }
@@ -120,9 +131,11 @@ data class ScanIssue(
             ProductType.OSS -> {
                 "${this.additionalData.packageName}@${this.additionalData.version}: ${this.title()}"
             }
+
             ProductType.CODE_QUALITY, ProductType.CODE_SECURITY -> {
                 return "${this.title()} [${this.range.start.line + 1},${this.range.start.character}]"
             }
+
             else -> TODO()
         }
     }
@@ -130,7 +143,7 @@ data class ScanIssue(
     fun priority(): Int {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> {
-                return when(this.getSeverityAsEnum()) {
+                return when (this.getSeverityAsEnum()) {
                     Severity.CRITICAL -> 4
                     Severity.HIGH -> 3
                     Severity.MEDIUM -> 2
@@ -138,10 +151,12 @@ data class ScanIssue(
                     Severity.UNKNOWN -> 0
                 }
             }
+
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.priorityScore
             else -> TODO()
         }
     }
+
     fun issueNaming(): String {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> {
@@ -151,21 +166,23 @@ data class ScanIssue(
                     "Vulnerability"
                 }
             }
+
             ProductType.CODE_SECURITY -> "Vulnerability"
             ProductType.CODE_QUALITY -> "Quality Issue"
             else -> TODO()
         }
     }
 
-
     fun cwes(): List<String> {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> {
                 this.additionalData.identifiers?.CWE ?: emptyList()
             }
+
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
                 this.additionalData.cwe ?: emptyList()
             }
+
             else -> TODO()
         }
     }
@@ -173,8 +190,9 @@ data class ScanIssue(
     fun cves(): List<String> {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> {
-                    this.additionalData.identifiers?.CVE ?: emptyList()
+                this.additionalData.identifiers?.CVE ?: emptyList()
             }
+
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> emptyList()
             else -> TODO()
         }
@@ -204,7 +222,7 @@ data class ScanIssue(
         }
     }
 
-    fun ruleId(): String? {
+    fun ruleId(): String {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS, ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.ruleId
             else -> TODO()
@@ -230,11 +248,13 @@ data class ScanIssue(
     fun annotationMessage(): String {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> this.title
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.title.ifBlank {
-                this.additionalData.message.let {
-                    if (it.length < 70) it else "${it.take(70)}..."
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY ->
+                this.title.ifBlank {
+                    this.additionalData.message.let {
+                        if (it.length < 70) it else "${it.take(70)}..."
+                    }
                 }
-            }
+
             else -> TODO()
         }
     }
@@ -251,11 +271,9 @@ data class ScanIssue(
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> false
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
-                if (this.isIgnored()) {
-                    return false
-                }
                 return this.additionalData.hasAIFix
             }
+
             else -> TODO()
         }
     }
@@ -274,14 +292,17 @@ data class ScanIssue(
         }
     }
 
-    fun isVisible(includeOpenedIssues: Boolean, includeIgnoredIssues: Boolean): Boolean {
-        if (includeIgnoredIssues && includeOpenedIssues){
-           return true
+    fun isVisible(
+        includeOpenedIssues: Boolean,
+        includeIgnoredIssues: Boolean,
+    ): Boolean {
+        if (includeIgnoredIssues && includeOpenedIssues) {
+            return true
         }
         if (includeIgnoredIssues) {
             return this.isIgnored == true
         }
-        if (includeOpenedIssues){
+        if (includeOpenedIssues) {
             return this.isIgnored != true
         }
         return false
@@ -297,20 +318,20 @@ data class ScanIssue(
 
 data class ExampleCommitFix(
     @SerializedName("commitURL") val commitURL: String,
-    @SerializedName("lines") val lines: List<CommitChangeLine>
+    @SerializedName("lines") val lines: List<CommitChangeLine>,
 )
 
 data class CommitChangeLine(
     @SerializedName("line") val line: String,
     @SerializedName("lineNumber") val lineNumber: Int,
-    @SerializedName("lineChange") val lineChange: String
+    @SerializedName("lineChange") val lineChange: String,
 )
 
 typealias Point = Array<Int>?
 
 data class Marker(
     @SerializedName("msg") val msg: Point,
-    @SerializedName("pos") val pos: List<MarkerPosition>
+    @SerializedName("pos") val pos: List<MarkerPosition>,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -334,7 +355,7 @@ data class Marker(
 data class MarkerPosition(
     @SerializedName("cols") val cols: Point,
     @SerializedName("rows") val rows: Point,
-    @SerializedName("file") val file: String
+    @SerializedName("file") val file: String,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -345,11 +366,15 @@ data class MarkerPosition(
         if (cols != null) {
             if (other.cols == null) return false
             if (!cols.contentEquals(other.cols)) return false
-        } else if (other.cols != null) return false
+        } else if (other.cols != null) {
+            return false
+        }
         if (rows != null) {
             if (other.rows == null) return false
             if (!rows.contentEquals(other.rows)) return false
-        } else if (other.rows != null) return false
+        } else if (other.rows != null) {
+            return false
+        }
         if (file != other.file) return false
 
         return true
@@ -367,7 +392,7 @@ data class DataFlow(
     @SerializedName("position") val position: Int,
     @SerializedName("filePath") val filePath: String,
     @SerializedName("flowRange") val flowRange: Range,
-    @SerializedName("content") val content: String
+    @SerializedName("content") val content: String,
 )
 
 data class IssueData(
@@ -386,7 +411,6 @@ data class IssueData(
     @SerializedName("priorityScore") val priorityScore: Int,
     @SerializedName("hasAIFix") val hasAIFix: Boolean,
     @SerializedName("dataFlow") val dataFlow: List<DataFlow>,
-
     // OSS
     @SerializedName("license") val license: String?,
     @SerializedName("identifiers") val identifiers: OssIdentifiers?,
@@ -408,12 +432,10 @@ data class IssueData(
     @SerializedName("displayTargetFile") val displayTargetFile: String?,
     @SerializedName("matchingIssues") val matchingIssues: List<IssueData>,
     @SerializedName("lesson") val lesson: String?,
-
     // Code and OSS
     @SerializedName("ruleId") val ruleId: String,
     @SerializedName("details") val details: String?,
 ) {
-
     fun getProductType(): ProductType {
         // TODO: how else to differentiate?
         if (this.packageManager != null) {
@@ -474,11 +496,15 @@ data class IssueData(
         if (cols != null) {
             if (other.cols == null) return false
             if (!cols.contentEquals(other.cols)) return false
-        } else if (other.cols != null) return false
+        } else if (other.cols != null) {
+            return false
+        }
         if (rows != null) {
             if (other.rows == null) return false
             if (!rows.contentEquals(other.rows)) return false
-        } else if (other.rows != null) return false
+        } else if (other.rows != null) {
+            return false
+        }
         if (isSecurityType != other.isSecurityType) return false
         if (priorityScore != other.priorityScore) return false
         if (hasAIFix != other.hasAIFix) return false
@@ -509,7 +535,7 @@ data class IssueData(
             result = 31 * result + (isUpgradable?.hashCode() ?: 0)
             result = 31 * result + displayTargetFile.hashCode()
             result = 31 * result + (details?.hashCode() ?: 0)
-            result = 31 * result +( matchingIssues?.hashCode() ?: 0)
+            result = 31 * result + (matchingIssues?.hashCode() ?: 0)
             result = 31 * result + (lesson?.hashCode() ?: 0)
             return result
         }
@@ -534,9 +560,13 @@ data class IssueData(
     }
 }
 
-data class HasAuthenticatedParam(@SerializedName("token") val token: String?)
+data class HasAuthenticatedParam(
+    @SerializedName("token") val token: String?,
+)
 
-data class SnykTrustedFoldersParams(@SerializedName("trustedFolders") val trustedFolders: List<String>)
+data class SnykTrustedFoldersParams(
+    @SerializedName("trustedFolders") val trustedFolders: List<String>,
+)
 
 data class IgnoreDetails(
     @SerializedName("category") val category: String,
@@ -549,8 +579,7 @@ data class IgnoreDetails(
 data class OssIdentifiers(
     @SerializedName("CWE") val CWE: List<String>?,
     @SerializedName("CVE") val CVE: List<String>?,
-){
-
+) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -569,4 +598,3 @@ data class OssIdentifiers(
         return result
     }
 }
-

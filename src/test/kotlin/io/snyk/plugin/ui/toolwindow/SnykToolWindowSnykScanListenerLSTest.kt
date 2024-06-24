@@ -56,7 +56,10 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
     }
 
-    private fun mockScanIssues(isIgnored: Boolean? = false): List<ScanIssue> {
+    private fun mockScanIssues(
+        isIgnored: Boolean? = false,
+        hasAIFix: Boolean? = false,
+    ): List<ScanIssue> {
         val issue =
             ScanIssue(
                 id = "id",
@@ -78,7 +81,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
                         rows = null,
                         isSecurityType = true,
                         priorityScore = 0,
-                        hasAIFix = true,
+                        hasAIFix = hasAIFix!!,
                         dataFlow = listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), "")),
                         license = null,
                         identifiers = null,
@@ -191,9 +194,20 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         TestCase.assertEquals(3, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1, 1)
         TestCase.assertEquals(5, rootTreeNode.childCount)
+        TestCase.assertEquals(rootTreeNode.children().toList()[0].toString(), " Open Source")
+        TestCase.assertEquals(rootTreeNode.children().toList()[1].toString(), " Code Security")
+        TestCase.assertEquals(rootTreeNode.children().toList()[2].toString(), " Code Quality")
+        TestCase.assertEquals(
+            rootTreeNode.children().toList()[3].toString(),
+            "1 vulnerability found by Snyk, 0 ignored",
+        )
+        TestCase.assertEquals(
+            rootTreeNode.children().toList()[4].toString(),
+            "⚡ 1 vulnerabilities can be fixed by Snyk DeepCode AI",
+        )
     }
 
-    fun `testAddInfoTreeNodes adds new tree nodes for code security if  all ignored issues are hidden`() {
+    fun `testAddInfoTreeNodes adds new tree nodes for code security if all ignored issues are hidden`() {
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
         pluginSettings().ignoredIssuesEnabled = false
 
