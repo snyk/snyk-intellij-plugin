@@ -1,10 +1,13 @@
 # Snyk Security Changelog
 
+## [2.8.8]
+### Fixes
+- change some of the colours used in the HTML panel so it's consistent with designs
+
 ## [2.8.7]
 ### Fixes
 - fix issue counts when there are ignores and add some warnings about the Issue View Options
 - fix AI fix counts when there are ignores
-- change some of the colours used in the HTML panel so it's consistent with designs
 
 ## [2.8.6]
 ### Fixed
