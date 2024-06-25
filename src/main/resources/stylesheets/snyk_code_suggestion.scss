@@ -6,7 +6,7 @@
   background: #595a5c;
 }
 
-html,body {
+html, body {
   height: 100%;
   font-size: 16px;
   display: flex;
@@ -26,10 +26,8 @@ a,
   color: var(--link-color);
 }
 
-.delimiter {
-  border: 1px solid #505254;
-}
-
+// TODO: remove ignore styling at the end of cycle 5 2025
+// TODO: keep the font-size
 .ignore-warning {
   background: #FFF4ED;
   color: #B6540B;
@@ -44,11 +42,16 @@ a,
   font-size: 0.75rem;
 }
 
+.delimiter-top {
+  border-top: 1px solid var(--border-color)
+}
+
 .issue-overview-header,
 .ignore-details-header,
 .data-flow-header,
 .ai-fix-header,
-.example-fixes-header {
+.example-fixes-header,
+.overview-text > h2 {
   font-size: 0.85rem;
 }
 
@@ -56,19 +59,20 @@ a,
   font-size: 0.85rem;
 }
 
-.data-flow-clickable-row {
-  color: var(--link-color);
+.data-flow-text {
+  font-family: var(--editor-font);
+  font-size: 1.05rem;
 }
 
-.data-flow-delimiter {
-  color: #BBBBBB;
+.data-flow-clickable-row {
+  color: var(--link-color);
 }
 
 .tabs-nav {
   border-bottom: 1px solid var(--tabs-bottom-color);
 }
 
-.tab-item{
+.tab-item {
   font-size: 0.85rem;
 }
 
@@ -82,6 +86,15 @@ a,
 
 .tab-item.is-selected {
   border-bottom: 3px solid #3474f0;
+}
+
+.example-line {
+  background-color: var(--editor-color);
+}
+
+.example-line > code {
+  font-family: var(--editor-font);
+  font-size: 1.05rem;
 }
 
 .example-line.added {
