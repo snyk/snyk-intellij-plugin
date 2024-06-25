@@ -6,7 +6,7 @@
   background: #595a5c;
 }
 
-html,body {
+html, body {
   height: 100%;
   font-size: 16px;
   display: flex;
@@ -26,10 +26,6 @@ a,
   color: var(--link-color);
 }
 
-.delimiter {
-  border: 1px solid #505254;
-}
-
 .ignore-warning {
   background: #FFF4ED;
   color: #B6540B;
@@ -42,6 +38,17 @@ a,
   color: #B6540B;
   border: 1px solid #E27122;
   font-size: 0.75rem;
+}
+
+.delimiter-top {
+  border-top: 1px solid var(--border-color)
+}
+
+/* Need to override h2 settings for the markdown*/
+h2 {
+  line-height: 1.25rem;
+  font-size: 1.4rem;
+  margin-bottom: 10px;
 }
 
 .issue-overview-header,
@@ -60,15 +67,11 @@ a,
   color: var(--link-color);
 }
 
-.data-flow-delimiter {
-  color: #BBBBBB;
-}
-
 .tabs-nav {
   border-bottom: 1px solid var(--tabs-bottom-color);
 }
 
-.tab-item{
+.tab-item {
   font-size: 0.85rem;
 }
 
@@ -82,6 +85,14 @@ a,
 
 .tab-item.is-selected {
   border-bottom: 3px solid #3474f0;
+}
+
+.example-line {
+  background-color: var(--editor-color);
+}
+
+.example-line > code {
+  font-family: "Courier New", Courier, monospace;
 }
 
 .example-line.added {

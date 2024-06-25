@@ -5,9 +5,9 @@ import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.navigateToSource
@@ -126,9 +126,12 @@ class OpenFileLoadHandlerGenerator(
                     val baseColor = UIUtil.getTextFieldBackground()
                     val (addedColor, removedColor) = getCodeDiffColors(baseColor, isHighContrast)
 
-                    val textColor = toCssHex(JBColor.namedColor("Label.foreground", JBColor.BLACK))
-                    val linkColor = toCssHex(JBColor.namedColor("Link.activeForeground", JBColor.BLUE))
+                    val textColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
+                    val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
                     val dataFlowColor = toCssHex(baseColor)
+                    val borderColor = toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground())
+                    val editorColor =
+                        toCssHex(UIUtil.getTextFieldBackground())
 
                     val globalScheme = EditorColorsManager.getInstance().globalScheme
                     val tearLineColor =
@@ -153,6 +156,8 @@ class OpenFileLoadHandlerGenerator(
                                 '--tab-item-hover-color': "${tabItemHoverColor?.let { toCssHex(it) }}",
                                 '--scrollbar-thumb-color': "${tearLineColor?.let { toCssHex(it) }}",
                                 '--tabs-bottom-color': "${tearLineColor?.let { toCssHex(it) }}",
+                                '--border-color': "$borderColor",
+                                '--editor-color': "$editorColor",
                             };
                             for (let [property, value] of Object.entries(properties)) {
                                 document.documentElement.style.setProperty(property, value);
