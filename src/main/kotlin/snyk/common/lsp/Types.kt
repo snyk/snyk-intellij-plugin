@@ -262,7 +262,7 @@ data class ScanIssue(
     fun canLoadSuggestionPanelFromHTML(): Boolean {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> false
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.details != null
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> true
             else -> TODO()
         }
     }

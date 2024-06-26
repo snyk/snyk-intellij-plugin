@@ -1,13 +1,12 @@
 package io.snyk.plugin.ui.toolwindow.nodes.leaf
 
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import io.snyk.plugin.ui.toolwindow.panels.JCEFDescriptionPanel
 import snyk.analytics.IssueInTreeIsClicked.Ide
 import snyk.analytics.IssueInTreeIsClicked.Severity
 import snyk.analytics.IssueInTreeIsClicked.builder
@@ -17,9 +16,8 @@ import javax.swing.tree.DefaultMutableTreeNode
 
 class SuggestionTreeNode(
     private val issue: ScanIssue,
-    override val navigateToSource: () -> Unit
+    override val navigateToSource: () -> Unit,
 ) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
-
     @Suppress("UNCHECKED_CAST")
     override fun getDescriptionPanel(logEventNeeded: Boolean): IssueDescriptionPanelBase {
         if (logEventNeeded) {
@@ -35,18 +33,19 @@ class SuggestionTreeNode(
                             "medium" -> Severity.MEDIUM
                             "low" -> Severity.LOW
                             else -> Severity.LOW
-                        }
+                        },
                     )
-                    .build()
+                    .build(),
             )
         }
-        val snykFileTreeNode = this.parent as? SnykCodeFileTreeNode
-            ?: throw IllegalArgumentException(this.toString())
+        val snykFileTreeNode =
+            this.parent as? SnykCodeFileTreeNode
+                ?: throw IllegalArgumentException(this.toString())
 
         @Suppress("UNCHECKED_CAST")
         val entry =
             (snykFileTreeNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>).first
         val snykFile = entry.key
-        return SuggestionDescriptionPanelFromLS(snykFile, issue)
+        return JCEFDescriptionPanel(snykFile, issue)
     }
 }
