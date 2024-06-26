@@ -51,22 +51,6 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
 
-  snyk:
-    name: Snyk Tests
-    needs: gradleValidation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Fetch Sources
-        uses: actions/checkout@v4
-
-      - name: Install Snyk
-        uses: snyk/actions/setup@0.4.0
-
-      - name: Snyk Monitor SCA
-        run: snyk monitor --all-projects --exclude=integTest --org=9cff56cd-57d1-49b8-9238-69ebfde7142f
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
   pluginVerifier:
     name: Plugin Verifier
     needs: gradleValidation
