@@ -22,8 +22,11 @@ import snyk.oss.OssResult
 
 @Service(Service.Level.PROJECT)
 class SnykCachedResults(val project: Project) : Disposable {
+    private var disposed = false
+        get() {
+            return project.isDisposed || ApplicationManager.getApplication().isDisposed || field
+        }
 
-    private var disposed = false; get() { return project.isDisposed || ApplicationManager.getApplication().isDisposed || field }
     init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
     }
@@ -32,8 +35,8 @@ class SnykCachedResults(val project: Project) : Disposable {
         disposed = true
         cleanCaches()
     }
-    fun isDisposed() = disposed
 
+    fun isDisposed() = disposed
 
     val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
     val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
@@ -72,7 +75,6 @@ class SnykCachedResults(val project: Project) : Disposable {
         project.messageBus.connect().subscribe(
             SnykScanListener.SNYK_SCAN_TOPIC,
             object : SnykScanListener {
-
                 override fun scanningStarted() {
                     currentOssError = null
                     currentSnykCodeError = null
@@ -121,15 +123,20 @@ class SnykCachedResults(val project: Project) : Disposable {
                             else -> snykError
                         }
                 }
-            }
+            },
         )
 
         project.messageBus.connect().subscribe(
             SnykScanListenerLS.SNYK_SCAN_TOPIC,
             object : SnykScanListenerLS {
                 val logger = logger<SnykCachedResults>()
+
                 override fun scanningStarted(snykScan: SnykScanParams) {
                     logger.info("scanningStarted for project ${project.name}")
+                    currentOssError = null
+                    currentSnykCodeError = null
+                    currentIacError = null
+                    currentContainerError = null
                 }
 
                 override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
@@ -145,21 +152,48 @@ class SnykCachedResults(val project: Project) : Disposable {
                 }
 
                 override fun scanningError(snykScan: SnykScanParams) {
+                    when (snykScan.product) {
+                        "oss" -> {
+                            currentOssError =
+                                SnykError("Failed to run Snyk OpenSource scan", snykScan.folderPath)
+                        }
+
+                        "code" -> {
+                            currentSnykCodeError =
+                                SnykError("Failed to run Snyk Code scan", snykScan.folderPath)
+                        }
+
+                        "iac" -> {
+                            currentIacError =
+                                SnykError(
+                                    "Failed to run Snyk Infrastructure as Code scan",
+                                    snykScan.folderPath,
+                                )
+                        }
+
+                        "container" -> {
+                            currentContainerError =
+                                SnykError("Failed to run Snyk Container scan", snykScan.folderPath)
+                        }
+                    }
                     SnykBalloonNotificationHelper
                         .showError(
                             "scanning error for project ${project.name}. Data: $snykScan",
-                            project
+                            project,
                         )
                 }
-            }
+            },
         )
     }
 }
 
 internal class SnykFileIssueComparator(
-    private val snykResults: Map<SnykFile, List<ScanIssue>>
+    private val snykResults: Map<SnykFile, List<ScanIssue>>,
 ) : Comparator<SnykFile> {
-    override fun compare(o1: SnykFile, o2: SnykFile): Int {
+    override fun compare(
+        o1: SnykFile,
+        o2: SnykFile,
+    ): Int {
         val files = o1.virtualFile.path.compareTo(o2.virtualFile.path)
         val o1Criticals = getCount(o1, Severity.CRITICAL)
         val o2Criticals = getCount(o2, Severity.CRITICAL)
@@ -179,6 +213,8 @@ internal class SnykFileIssueComparator(
         }
     }
 
-    private fun getCount(file: SnykFile, severity: Severity) =
-        snykResults[file]?.filter { it.getSeverityAsEnum() == severity }?.size ?: 0
+    private fun getCount(
+        file: SnykFile,
+        severity: Severity,
+    ) = snykResults[file]?.filter { it.getSeverityAsEnum() == severity }?.size ?: 0
 }

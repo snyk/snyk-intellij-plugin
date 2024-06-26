@@ -200,6 +200,10 @@ class SnykLanguageClient : LanguageClient, Disposable {
             "iac" -> {
                 // TODO implement
             }
+
+            "container" -> {
+                // TODO implement
+            }
         }
     }
 
