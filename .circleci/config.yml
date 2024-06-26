@@ -13,6 +13,7 @@ jobs:
       - prodsec/security_scans:
           mode: auto
           open-source-additional-arguments: --exclude=test
+          release-branch: master
           iac-scan: disabled
 
 workflows:
