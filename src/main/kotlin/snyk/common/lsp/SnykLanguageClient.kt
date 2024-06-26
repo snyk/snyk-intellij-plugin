@@ -64,18 +64,19 @@ import java.util.concurrent.TimeUnit
 class SnykLanguageClient : LanguageClient, Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     private var disposed = false
-    get() {
+        get() {
             return ApplicationManager.getApplication().isDisposed || field
         }
 
     fun isDisposed() = disposed
+
     private val progresses: Cache<String, ProgressIndicator> =
         Caffeine.newBuilder()
             .expireAfterAccess(10, TimeUnit.SECONDS)
             .removalListener(
                 RemovalListener<String, ProgressIndicator> { _, indicator, _ ->
                     indicator?.cancel()
-                }
+                },
             )
             .build()
     private val progressReportMsgCache: Cache<String, MutableList<WorkDoneProgressReport>> =
@@ -94,12 +95,13 @@ class SnykLanguageClient : LanguageClient, Disposable {
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
         val falseFuture = CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
         if (disposed) return falseFuture
-        val project = params?.edit?.changes?.keys
-            ?.firstNotNullOfOrNull {
-                ProjectLocator.getInstance().guessProjectForFile(it.toVirtualFile())
-            }
-            ?: ProjectUtil.getActiveProject()
-            ?: return falseFuture
+        val project =
+            params?.edit?.changes?.keys
+                ?.firstNotNullOfOrNull {
+                    ProjectLocator.getInstance().guessProjectForFile(it.toVirtualFile())
+                }
+                ?: ProjectUtil.getActiveProject()
+                ?: return falseFuture
 
         WriteCommandAction.runWriteCommandAction(project) {
             params?.edit?.changes?.forEach {
@@ -149,12 +151,17 @@ class SnykLanguageClient : LanguageClient, Disposable {
         }
     }
 
-    private fun processSnykScan(snykScan: SnykScanParams, scanPublisher: SnykScanListenerLS, project: Project) {
-        val product = when (snykScan.product) {
-            "code" -> ProductType.CODE_SECURITY
-            "oss" -> ProductType.OSS
-            else -> return
-        }
+    private fun processSnykScan(
+        snykScan: SnykScanParams,
+        scanPublisher: SnykScanListenerLS,
+        project: Project,
+    ) {
+        val product =
+            when (snykScan.product) {
+                "code" -> ProductType.CODE_SECURITY
+                "oss" -> ProductType.OSS
+                else -> return
+            }
         val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
         when (snykScan.status) {
             "inProgress" -> {
@@ -175,7 +182,11 @@ class SnykLanguageClient : LanguageClient, Disposable {
         }
     }
 
-    private fun processSuccessfulScan(snykScan: SnykScanParams, scanPublisher: SnykScanListenerLS, project: Project) {
+    private fun processSuccessfulScan(
+        snykScan: SnykScanParams,
+        scanPublisher: SnykScanListenerLS,
+        project: Project,
+    ) {
         logger.info("Scan completed")
         when (snykScan.product) {
             "oss" -> {
@@ -216,17 +227,18 @@ class SnykLanguageClient : LanguageClient, Disposable {
         check(snykScan.product == "code" || snykScan.product == "oss") { "Expected Snyk Code or Snyk OSS scan result" }
         if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
-        val map = snykScan.issues
-            .groupBy { it.filePath }
-            .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
-            .map {
-                // initialize all calculated values before they are needed, so we don't have to do it in the UI thread
-                it.first.relativePath
-                it.second.forEach { i -> i.textRange }
-                it
-            }
-            .filter { it.second.isNotEmpty() }
-            .toMap()
+        val map =
+            snykScan.issues
+                .groupBy { it.filePath }
+                .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
+                .map {
+                    // initialize all calculated values before they are needed, so we don't have to do it in the UI thread
+                    it.first.relativePath
+                    it.second.forEach { i -> i.textRange }
+                    it
+                }
+                .filter { it.second.isNotEmpty() }
+                .toMap()
         return map.toSortedMap(SnykFileIssueComparator(map))
     }
 
@@ -252,27 +264,33 @@ class SnykLanguageClient : LanguageClient, Disposable {
         param.trustedFolders.forEach { it.toNioPathOrNull()?.let { path -> trustService.addTrustedPath(path) } }
     }
 
-
     override fun createProgress(params: WorkDoneProgressCreateParams?): CompletableFuture<Void> {
         return CompletableFuture.completedFuture(null)
     }
 
-    private fun createProgressInternal(token: String, begin: WorkDoneProgressBegin) {
+    private fun createProgressInternal(
+        token: String,
+        begin: WorkDoneProgressBegin,
+    ) {
         ProgressManager.getInstance()
-            .run(object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
-                override fun run(indicator: ProgressIndicator) {
-                    logger.debug("Creating progress indicator for: $token, title: ${begin.title}, message: ${begin.message}")
-                    indicator.isIndeterminate = false
-                    indicator.text = begin.title
-                    indicator.text2 = begin.message
-                    indicator.fraction = 0.1
-                    progresses.put(token, indicator)
-                    while (!indicator.isCanceled) {
-                        Thread.sleep(1000)
+            .run(
+                object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
+                    override fun run(indicator: ProgressIndicator) {
+                        logger.debug(
+                            "Creating progress indicator for: $token, title: ${begin.title}, message: ${begin.message}",
+                        )
+                        indicator.isIndeterminate = false
+                        indicator.text = begin.title
+                        indicator.text2 = begin.message
+                        indicator.fraction = 0.1
+                        progresses.put(token, indicator)
+                        while (!indicator.isCanceled) {
+                            Thread.sleep(1000)
+                        }
+                        logger.debug("Progress indicator canceled for token: $token")
                     }
-                    logger.debug("Progress indicator canceled for token: $token")
-                }
-            })
+                },
+            )
     }
 
     override fun notifyProgress(params: ProgressParams) {
@@ -349,7 +367,10 @@ class SnykLanguageClient : LanguageClient, Disposable {
         }
     }
 
-    private fun progressReport(token: String, workDoneProgressNotification: WorkDoneProgressNotification) {
+    private fun progressReport(
+        token: String,
+        workDoneProgressNotification: WorkDoneProgressNotification,
+    ) {
         logger.debug("###### Received progress report notification for token: $token")
         val indicator = progresses.getIfPresent(token)!!
         val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
@@ -361,7 +382,10 @@ class SnykLanguageClient : LanguageClient, Disposable {
         return
     }
 
-    private fun progressEnd(token: String, workDoneProgressNotification: WorkDoneProgressNotification) {
+    private fun progressEnd(
+        token: String,
+        workDoneProgressNotification: WorkDoneProgressNotification,
+    ) {
         logger.debug("###### Received progress end notification for token: $token")
         val indicator = progresses.getIfPresent(token)!!
         val workDoneProgressEnd = workDoneProgressNotification as WorkDoneProgressEnd
@@ -404,13 +428,14 @@ class SnykLanguageClient : LanguageClient, Disposable {
         val project = ProjectUtil.getActiveProject() ?: return completedFuture
 
         showMessageRequestFutures.clear()
-        val actions = requestParams.actions.map {
-            object : AnAction(it.title) {
-                override fun actionPerformed(p0: AnActionEvent) {
-                    showMessageRequestFutures.put(MessageActionItem(it.title))
+        val actions =
+            requestParams.actions.map {
+                object : AnAction(it.title) {
+                    override fun actionPerformed(p0: AnActionEvent) {
+                        showMessageRequestFutures.put(MessageActionItem(it.title))
+                    }
                 }
-            }
-        }.toSet().toTypedArray()
+            }.toSet().toTypedArray()
 
         val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project, *actions)
         val messageActionItem = showMessageRequestFutures.poll(10, TimeUnit.SECONDS)
