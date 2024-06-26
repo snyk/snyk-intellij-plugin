@@ -1,7 +1,19 @@
 version: 2.1
 
 orbs:
-  prodsec: snyk/prodsec-orb@1.0
+  prodsec: snyk/prodsec-orb@1
+
+jobs:
+  security-scans:
+    resource_class: small
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - checkout
+      - prodsec/security_scans:
+          mode: upload
+          open-source-additional-arguments: --exclude=test
+          iac-scan: disabled
 
 workflows:
   version: 2
@@ -11,4 +23,7 @@ workflows:
           name: Scan repository for secrets
           context:
             - snyk-bot-slack
-          channel: dx-local-alerts
+          channel: snyk-on-snyk-devex_ide
+
+      - security-scans:
+          context: devex_ide
