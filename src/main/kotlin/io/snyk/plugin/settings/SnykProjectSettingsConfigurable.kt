@@ -105,6 +105,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()
+            // FIXME we should always send settings updates, and listeners should decide what to do
+            // A settings change should not cause a scan automatically, so the event should be split
             getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
         }
         if (productSelectionChanged || severitySelectionChanged) {
