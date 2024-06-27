@@ -1,0 +1,78 @@
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #595a5c;
+}
+
+html, body {
+  height: 100%;
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  color: var(--text-color);
+  font-weight: 400;
+  font-size: 0.875rem;
+}
+
+.font-light {
+  font-weight: bold;
+}
+
+a,
+.link {
+  color: var(--link-color);
+}
+
+.delimiter {
+  border-right: 1px solid var(--border-color);
+}
+
+.suggestion--header {
+  padding-top: 10px;
+}
+
+.suggestion .suggestion-text {
+  font-size: 1.5rem;
+  position: relative;
+  top: -5%;
+}
+
+.summary .summary-item {
+  margin-bottom: 0.8em;
+}
+
+.summary .label {
+  font-size: 0.8rem;
+}
+
+.suggestion--header > h2,
+.summary > h2,
+.vulnerability-overview > h2 {
+  font-size: 0.9rem;
+  margin-bottom: 1.5em;
+}
+
+.identifiers {
+  padding-bottom: 20px;
+}
+
+.vulnerability-overview pre {
+  font-size: 1.05rem;
+  font-family: var(--editor-font);
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: 0;
+}
+
+.vulnerability-overview code {
+  background-color: transparent;
+  font-size: 1.05rem;
+  font-family: var(--editor-font);
+}

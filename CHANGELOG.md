@@ -4,6 +4,7 @@
 ### Added
 - Updated Open Source, Containers and IaC products to include `.snyk` in the list of supported build files.
 - When a `.snyk` file changes, the OSS cache will be dropped triggering a scan.
+- Render the OSS suggestion panel using HTML from the Languag Server.
 
 Related PRs:
 - [Language Server PR #563](https://github.com/snyk/snyk-ls/pull/563)
