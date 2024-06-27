@@ -82,7 +82,30 @@ class SnykToolWindowSnykScanListenerLS(
         }
     }
 
-    override fun scanningError(snykScan: SnykScanParams) = Unit
+    override fun scanningError(snykScan: SnykScanParams) {
+        when (snykScan.product) {
+            "oss" -> {
+                this.rootOssIssuesTreeNode.removeAllChildren()
+                this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (error)"
+                refreshAnnotationsForOpenFiles(project)
+            }
+
+            "code" -> {
+                this.rootSecurityIssuesTreeNode.removeAllChildren()
+                this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
+                this.rootQualityIssuesTreeNode.removeAllChildren()
+                this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
+            }
+
+            "iac" -> {
+                // TODO implement
+            }
+
+            "container" -> {
+                // TODO implement
+            }
+        }
+    }
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return

@@ -1,8 +1,10 @@
 # Snyk Security Changelog
 
 ## [2.8.8]
+
 ### Fixes
 - change some of the colours used in the HTML panel so it's consistent with designs
+- renders errors or Snyk Code and Snyk OpenSource failed scans through the Language Server
 
 ## [2.8.7]
 ### Fixes
