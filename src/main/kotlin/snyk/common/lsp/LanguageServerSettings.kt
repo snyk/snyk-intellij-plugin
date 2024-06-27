@@ -39,6 +39,8 @@ data class LanguageServerSettings(
     @SerializedName("authenticationMethod") val authenticationMethod: AuthenticationMethod? = null,
     @SerializedName("snykCodeApi") val snykCodeApi: String? = null,
     @SerializedName("enableSnykLearnCodeActions") val enableSnykLearnCodeActions: String? = null,
+    @SerializedName("requiredProtocolVersion") val requiredProtocolVersion: String =
+        pluginSettings().requiredLsProtocolVersion.toString(),
 )
 
 data class SeverityFilter(

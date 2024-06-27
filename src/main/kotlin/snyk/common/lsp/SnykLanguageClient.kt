@@ -416,7 +416,7 @@ class SnykLanguageClient : LanguageClient, Disposable {
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
                 ApplicationManager.getApplication().executeOnPooledThread {
-                    Thread.sleep(5000)
+                    Thread.sleep(10000)
                     notification.expire()
                 }
             }
