@@ -38,7 +38,7 @@ class IacBulkFileListener : SnykBulkFileListener() {
         val allIacIssuesForFiles = currentIacResult.allCliIssues ?: return
 
         val iacRelatedVFsAffected = virtualFilesAffected
-            .filter { iacFileExtensions.contains(it.extension) }
+            .filter { scanInvalidatingFiles.contains(it.extension) }
             .filter { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
 
         allIacIssuesForFiles
@@ -66,11 +66,12 @@ class IacBulkFileListener : SnykBulkFileListener() {
 
     companion object {
         // see https://github.com/snyk/snyk/blob/master/src/lib/iac/constants.ts#L7
-        private val iacFileExtensions = listOf(
+        private val scanInvalidatingFiles = listOf(
             "yaml",
             "yml",
             "json",
-            "tf"
+            "tf",
+            ".snyk"
         )
     }
 }
