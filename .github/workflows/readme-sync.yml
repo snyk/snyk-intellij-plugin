@@ -54,7 +54,7 @@ jobs:
         env:
           SOURCE_PATH: ./docs/docs/scm-ide-and-ci-cd-workflow-and-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/README.md
           FILE_TO_COMMIT: README.md
-          DESTINATION_REPOSITORY: snyk-eclipse-plugin
+          DESTINATION_REPOSITORY: snyk-intellij-plugin
           DESTINATION_BRANCH: docs/automatic-gitbook-update
           MESSAGE: 'docs: synchronizing README from snyk/user-docs'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
