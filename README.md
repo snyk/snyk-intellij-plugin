@@ -1,109 +1,83 @@
-# Snyk
+---
+description: Use this documentation to get started with the JetBrains plugin.
+---
 
-[![Version](https://img.shields.io/jetbrains/plugin/v/10972.svg)](https://plugins.jetbrains.com/plugin/10972)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/10972.svg)](https://plugins.jetbrains.com/plugin/10972)
+# JetBrains plugins
 
-<!-- Plugin description start -->
-### Secure development for developers and teams
-Snyk Security finds and fixes security vulnerabilities, infrastructure misconfigurations, and code quality issues
-in your projects early in the development lifecycle to help you ace your security reviews and avoid a costly fix later
-down the line. If you’re an individual developer, open-source contributor, or maintainer at a large organization, Snyk
-helps you ship secure code, faster.
+Snyk offers IDE integrations that allow you to use the functionality of Snyk in your Integrated Development Environment. This page describes the Snyk JetBrains plugins. For information about all of the IDE plugins and their use, see [Snyk for IDEs](https://docs.snyk.io/ide-tools) in the docs.
 
-Snyk scans for issue types around:
+Snyk supports JetBrains plugins from version 2020.2 for [IntelliJ IDEA](https://snyk.io/lp/intellij-ide-plugin/) and [WebStorm](https://snyk.io/lp/webstorm-ide-plugin/) as well as Android Studio, AppCode, GoLand, PhpStorm, PyCharm, Rider, and RubyMine.
 
-- **[Open Source Security](https://snyk.io/product/open-source-security-management/)** - security vulnerabilities in both the direct and in-direct (transitive) open-source dependencies you are pulling into the project.
-- **[Code Security](https://snyk.io/product/snyk-code/)** - security vulnerabilities identified in your own code.
-- **[Container Security](https://snyk.io/product/container-vulnerability-management/)** - security vulnerabilities in your base images
-- **[Infrastructure as Code (IaC) Security](https://snyk.io/product/infrastructure-as-code-security/)** - configuration issues in your IaC templates (Terraform, Kubernetes, CloudFormation, and Azure Resource Manager)
-- **[Code Quality](https://snyk.io/product/snyk-code/)** - code quality issues in your own code
-- **[Open Source Advisor](https://snyk.io/advisor/)** - package health of the direct dependencies you are using including popularity, maintenance, risk & community insights.
 
-### Security for your entire application
-Comprehensive security for proprietary code, open-source dependencies, container, and infrastructure as code (IaC)
-configurations—all in one plugin. Whether you’re looking for a Java vulnerability scanner, a custom code vulnerability
-scanner, or open-source security scanner, or an application security plugin.
+Snyk uses Python in order to scan and find your dependencies. If you are using multiple Python versions, use the -`-command` option to specify the correct Python command for execution. The plugin does not detect the Python version associated with the project.
 
-### Fast, free and accurate results
-Get security analysis of your code, containers, and configurations free of charge. Snyk scans for vulnerabilities
-and misconfigurations in seconds. When returning your results, Snyk Security categorizes security issues by issue type
-and severity.
 
-### Easy and actionable fixes in your IDE
-Get instant context on the issue, impact, and fix guidance in line with code from within your favorite IDE.
-For open-source, receive automated algorithm-based fix suggestions for both direct and transitive dependencies.
-For containers, you can automate upgrades to the most secure base image to quickly resolve numerous vulnerabilities.
+The Snyk JetBrains plugins provide analysis of your code, containers, and Infrastructure as Code configurations. The plugin is based on the Snyk CLI and also uses Snyk APIs. The plugin supports product features in the CLI for Snyk Open Source and Snyk Container as well as for Snyk Code and Snyk IaC with some limitations.
 
-### Snyk Security supported languages and formats:
-**Java** | **JavaScript** | **Python** | **Kubernetes** | **Terraform** | **CloudFormation** | **Azure Resource Manager (ARM)**
+Snyk scans for vulnerabilities and misconfigurations and returns results with security issues categorized by issue type and severity.
 
-See the [full list of languages and package managers Snyk supports](https://snyk.co/ucWSd).
+For open source, you receive automated algorithm-based fix suggestions for both direct and transitive dependencies. For containers, you can automate upgrades to the most secure base image to quickly resolve numerous vulnerabilities. This single plugin provides a Java vulnerability scanner, a custom code vulnerability scanner, an open-source security scanner, and an application security plugin.
 
-### Speed up security
-By fixing issues early, Snyk Security helps you ace security reviews later down the line and avoid time-intensive
-or costly fixes downstream in a build process.
+Snyk scans for the following types of issues:
 
-### Stay in flow
-With automated and guided fixes in-line with code, Snyk provides the context and know-how to apply a fix while keeping
-you in your IDE.
+[**Open Source Security**](https://snyk.io/product/open-source-security-management/) - security vulnerabilities and license issues in both direct and in-direct (transitive) open-source dependencies pulled into the Snyk Project. See also the [Open Source docs](https://docs.snyk.io/products/snyk-open-source).
 
-### Snyk Vulnerability Database
-Snyk Security relies on the [Snyk Vulnerability DB](https://security.snyk.io/), the most comprehensive, accurate,
-and timely database for open source vulnerabilities. With 370% better coverage than next  largest publicly available
-database and 25 days faster vulnerability discovery than GitHub’s advisory DB. In the case of Javascript vulnerabilities
-92.5% were disclosed faster than the NVD.
+[**Code Security**](https://snyk.io/product/snyk-code/) - security vulnerabilities in your code. See also the [Snyk Code docs](https://docs.snyk.io/products/snyk-code).
 
-### Snyk Code AI and ML
-Snyk Code learns from the knowledge of the global developer community using an unique human guided process which makes
-it industry-leading in its speed and accuracy. Fix guidance is offer in-line with code with additional explanations
-and example fixes from open source projects that fixed similar issues. Address issues in the comfort of your workbench
-even before issues get stored into the source code management.
+[**Container Security**](https://snyk.io/product/container-vulnerability-management/) - security vulnerabilities in your base images. See also the [Snyk Container docs](https://docs.snyk.io/products/snyk-container).
 
-### How to install
+[**Infrastructure as Code (IaC) Security**](https://snyk.io/product/infrastructure-as-code-security/) - configuration issues in your IaC templates: Terraform, Kubernetes, CloudFormation, and Azure Resource Manager. See also the [Snyk Infrastructure as Code docs](https://docs.snyk.io/products/snyk-infrastructure-as-code).
 
-1. Open Settings/ Preferences in your IDE
-2. Search for ‘Snyk’ in the Marketplace
-3. Click Install
-4. Authenticate with Snyk
+The JetBrains plugins also provide the [**Open Source Advisor**](https://snyk.io/advisor/) to help you find the best package for your next project. Information is provided on the package health of the direct dependencies you are using including popularity, maintenance, risk, and community insights.
 
-When navigating back to your IDE, your first scan should automatically start.
+After you complete the installation steps on this page and the [configuration](https://docs.snyk.io/ide-tools/jetbrains-plugins/configuration-environment-variables-and-proxy-for-the-jetbrains-plugins) and [authentication](https://docs.snyk.io/ide-tools/jetbrains-plugins/authentication-for-the-jetbrains-plugins) steps on the next two pages, continue by following the instructions in the other JetBrains plugins docs:
 
-### FAQ
-**Q: What do I need to use Snyk Security?**<br>
-A: Snyk plugins require an API token to connect Snyk’s security database with your IDE. If you haven’t already, sign up for a free Snyk account to get your token.
+* [Run an analysis with the JetBrains plugins](https://docs.snyk.io/ide-tools/jetbrains-plugins/run-an-analysis-with-the-jetbrains-plugins)
+* [JetBrains analysis results: Open Source](https://docs.snyk.io/ide-tools/jetbrains-plugins/jetbrains-analysis-results-snyk-open-source)
+* [JetBrains analysis results: Snyk Code](https://docs.snyk.io/ide-tools/jetbrains-plugins/jetbrains-analysis-results-snyk-code)
+* [JetBrains analysis results: Snyk IaC Configuration](https://docs.snyk.io/ide-tools/jetbrains-plugins/jetbrains-analysis-results-snyk-iac-configuration)
+* [JetBrains analysis results: Snyk Container](https://docs.snyk.io/ide-tools/jetbrains-plugins/jetbrains-analysis-results-snyk-container)
+* [How Snyk Container and Kubernetes JetBrains integration works](https://docs.snyk.io/ide-tools/jetbrains-plugins/how-snyk-container-and-kubernetes-jetbrains-integration-works)
+* [Filter JetBrains results](https://docs.snyk.io/ide-tools/jetbrains-plugins/filter-jetbrains-results)
+* [Troubleshooting for the JetBrains plugin](https://docs.snyk.io/ide-tools/jetbrains-plugins/troubleshooting-for-the-jetbrains-plugin)
 
-**Q: How do I install Snyk Security?**<br>
-A: Open the Settings/Preferences,  search for ‘Snyk Security’ in the Marketplace tab and click Install. Once your IDE has reloaded you can authenticate with Snyk, from there your first security scan will automatically kick off.
+## Supported languages, package managers, and frameworks
 
-**Q: Which JetBrains IDEs does Snyk Security support?**<br>
-A: Snyk provides plugins for all major JetBrains IDEs, including [IntelliJ IDEA](https://snyk.io/lp/intellij-ide-plugin/), [WebStorm](https://snyk.io/lp/webstorm-ide-plugin/), PyCharm, GoLand, PhpStorm, Android Studio, AppCode, Rider and RubyMine.
+* For Snyk Open Source, the JetBrains plugin supports the languages and package managers supported by Snyk Open Source and the CLI. For more information, see [Supported languages, frameworks, and feature availability overview, Open Source section](https://docs.snyk.io/scan-applications/supported-languages-and-frameworks/supported-languages-frameworks-and-feature-availability-overview#open-source-and-licensing-snyk-open-source).
+* For Snyk Code, the JetBrains plugin supports all the languages and frameworks supported by Snyk Code. For more information, see [Supported languages, frameworks, and feature availability overview, Snyk Code section](https://docs.snyk.io/scan-applications/supported-languages-and-frameworks/supported-languages-frameworks-and-feature-availability-overview#code-analysis-snyk-code). Before scanning your repositories with Snyk Code, ensure you have [enabled Snyk Code](../../../scan-with-snyk/snyk-code/configure-snyk-code.md).&#x20;
+* For Snyk Container: the JetBrains plugin supports all the [operating system distributions supported by Snyk Container](https://docs.snyk.io/products/snyk-container/snyk-container-security-basics/supported-operating-system-distributions).
+* For Snyk IaC, the JetBrains plugin supports the following IaC templates: Terraform, Kubernetes, CloudFormation, and Azure Resource Manager.
 
-**Q: Why should I test in my IDE?**<br>
-A: Testing your code within your IDE ensures you are identifying issues early on in development as opposed to finding them later in the process, when it is much more time intensive and costly to fix.
+## Supported operating systems and architecture
 
-_If you aren't addressing problems during the developer workflow and you're finding them and dealing with them in QA, it will take you 10 times longer to fix. That’s where Snyk comes in.” Ryan Kimber, Founder and CEO, FormHero._
 
-**Q: Is Snyk Security free?**<br>
-A: Yes! Anyone can use Snyk Security with zero limitations, free of charge. First, install, and then authenticate with Snyk. If you already have a free Snyk account, you can connect your Snyk Jetbrains plugin back to Snyk in two clicks. If you’re new to Snyk, you can signup for a free account and follow the install instructions to authenticate from there.
+Snyk Plugins are not supported on any Operating System that has reached End Of Life (EOL) with the distributor.
 
-Snyk Security is open source, so feel free to contribute to development or leave feedback in the reviews.
 
-**Q: Can I run Snyk Security locally?**<br>
-A: The plugin operates using the Snyk CLI. Once Snyk Security is  installed, it will automatically download the latest version of the Snyk CLI and use it to run scans.
+You can use the Snyk JetBrains plugin in the following environments:
 
-**Q: Does Snyk Security work in multiple IDEs?**<br>
-A: Yes, Snyk also has plugins for VS Code, Eclipse, and Visual Studio. Read more about it [here](https://snyk.io/ide-plugins/).
+* Linux: 386, AMD64, and ARM64
+* Linux Alpine: 386 and AMD64
+* Windows: 386, AMD64, and ARM64
+* MacOS: AMD64 and ARM64
 
-**Q: I have feedback on the plugin, how do I report it?**<br>
-A: You can always use the [official’s Snyk support channel](https://support.snyk.io/hc/en-us/requests/new) to open a ticket.
-<!-- Plugin description end -->
+## **Install the JetBrains plugin**
 
-### Proxy Setup
-If you are a behind a proxy, please configure the proxy in the IDE. Currently, http and https proxies are supported by the plugin.
+The Snyk JetBrains plugin is available for installation on the [JetBrains marketplace](https://plugins.jetbrains.com/plugin/10972-snyk-vulnerability-scanner).
 
-### Environment setup
-The plugin uses the Snyk CLI to perform vulnerability scans. In order for this to function correctly,
-certain environment variables need to be set.
+Install using the IDE plugins library:
 
-1. `JAVA_HOME` to analyse Java JVM-based projects via Snyk CLI
-2. `PATH` to find maven when analysing Maven projects, to find python for python projects, etc
+1. Open the **Preferences** window in the IDE.
+2. Navigate to the **Plugins** tab.
+3. In the **Plugins** tab, search for **Snyk**.
+4. Select the **Snyk vulnerability scanning** plugin.
+5. Click on the **Install** button.
+6. When the installation is complete, restart the IDE.
+
+<figure><img src="https://github.com/snyk/user-docs/raw/HEAD/docs/.gitbook/assets/Screen Shot 2022-03-09 at 5.06.13 PM (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1) (1 (7).png" alt="Select the Snyk vulnerability scanning plugin"><figcaption><p>Select the Snyk vulnerability scanning plugin</p></figcaption></figure>
+
+Continue with the steps on the JetBrains [configuration](https://docs.snyk.io/ide-tools/jetbrains-plugins/configuration-environment-variables-and-proxy-for-the-jetbrains-plugins) page.
+
+## Support
+
+If you need help, submit a [request](https://support.snyk.io/hc/en-us/requests/new) to Snyk Support.
