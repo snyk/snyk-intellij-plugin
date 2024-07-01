@@ -358,6 +358,7 @@ class LanguageServerWrapper(
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
+            enableSnykOSSQuickFixCodeActions = "true",
         )
     }
 

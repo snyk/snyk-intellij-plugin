@@ -39,6 +39,7 @@ data class LanguageServerSettings(
     @SerializedName("authenticationMethod") val authenticationMethod: AuthenticationMethod? = null,
     @SerializedName("snykCodeApi") val snykCodeApi: String? = null,
     @SerializedName("enableSnykLearnCodeActions") val enableSnykLearnCodeActions: String? = null,
+    @SerializedName("enableSnykOSSQuickFixCodeActions") val enableSnykOSSQuickFixCodeActions: String? = null,
     @SerializedName("requiredProtocolVersion") val requiredProtocolVersion: String =
         pluginSettings().requiredLsProtocolVersion.toString(),
 )
@@ -47,7 +48,7 @@ data class SeverityFilter(
     @SerializedName("critical") val critical: Boolean?,
     @SerializedName("high") val high: Boolean?,
     @SerializedName("medium") val medium: Boolean?,
-    @SerializedName("low") val low: Boolean?
+    @SerializedName("low") val low: Boolean?,
 )
 
 enum class AuthenticationMethod {
@@ -55,5 +56,5 @@ enum class AuthenticationMethod {
     TokenAuthentication,
 
     @SerializedName("oauth")
-    OAuthAuthentication
+    OAuthAuthentication,
 }

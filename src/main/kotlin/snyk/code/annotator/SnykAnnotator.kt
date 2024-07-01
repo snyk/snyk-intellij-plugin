@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException
 
 private const val CODEACTION_TIMEOUT = 2L
 
-abstract class SnykAnnotator(private val product: ProductType): ExternalAnnotator<PsiFile, Unit>() {
+abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykAnnotator>()
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
@@ -32,7 +32,11 @@ abstract class SnykAnnotator(private val product: ProductType): ExternalAnnotato
         AnnotatorCommon.prepareAnnotate(psiFile)
     }
 
-    override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
+    override fun apply(
+        psiFile: PsiFile,
+        annotationResult: Unit,
+        holder: AnnotationHolder,
+    ) {
         if (!LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()) return
 
         getIssuesForFile(psiFile)
@@ -47,25 +51,27 @@ abstract class SnykAnnotator(private val product: ProductType): ExternalAnnotato
                     return@forEach
                 }
                 if (!textRange.isEmpty) {
-                    val annotationMessage = "${issue.annotationMessage()} (Snyk)"
+                    val annotationMessage = issue.annotationMessage()
                     holder.newAnnotation(highlightSeverity, annotationMessage)
                         .range(textRange)
                         .withFix(ShowDetailsIntentionAction(annotationMessage, issue))
                         .create()
 
-                    val params = CodeActionParams(
-                        TextDocumentIdentifier(psiFile.virtualFile.toLanguageServerURL()),
-                        issue.range,
-                        CodeActionContext(emptyList())
-                    )
+                    val params =
+                        CodeActionParams(
+                            TextDocumentIdentifier(psiFile.virtualFile.toLanguageServerURL()),
+                            issue.range,
+                            CodeActionContext(emptyList()),
+                        )
                     val languageServer = LanguageServerWrapper.getInstance().languageServer
-                    val codeActions = try {
-                        languageServer.textDocumentService
-                            .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
-                    } catch (ignored: TimeoutException) {
-                        logger.info("Timeout fetching code actions for issue: $issue")
-                        emptyList()
-                    }
+                    val codeActions =
+                        try {
+                            languageServer.textDocumentService
+                                .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
+                        } catch (ignored: TimeoutException) {
+                            logger.info("Timeout fetching code actions for issue: $issue")
+                            emptyList()
+                        }
 
                     codeActions
                         .filter { a ->
@@ -78,7 +84,7 @@ abstract class SnykAnnotator(private val product: ProductType): ExternalAnnotato
                             val title = codeAction.title
                             holder.newAnnotation(highlightSeverity, title)
                                 .range(textRange)
-                                .withFix(CodeActionIntention(issue, codeAction, ProductType.CODE_SECURITY))
+                                .withFix(CodeActionIntention(issue, codeAction, product))
                                 .create()
                         }
                 }
@@ -94,7 +100,10 @@ abstract class SnykAnnotator(private val product: ProductType): ExternalAnnotato
             ?: emptySet()
 
     /** Public for Tests only */
-    fun textRange(psiFile: PsiFile, range: Range): TextRange? {
+    fun textRange(
+        psiFile: PsiFile,
+        range: Range,
+    ): TextRange? {
         try {
             val document =
                 psiFile.viewProvider.document ?: throw IllegalArgumentException("No document found for $psiFile")
