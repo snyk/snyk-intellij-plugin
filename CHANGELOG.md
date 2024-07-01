@@ -1,5 +1,13 @@
 # Snyk Security Changelog
 
+## [2.8.9]
+### Features
+- Updated `OssBulkFileListener` to include `.snyk` in the list of supported build files.
+- When a `.snyk` file changes, the OSS cache will be dropped and rescans should be triggered.
+
+Related PRs:
+- [Language Server PR #563](https://github.com/snyk/snyk-ls/pull/563)
+
 ## [2.8.8]
 
 ### Fixes

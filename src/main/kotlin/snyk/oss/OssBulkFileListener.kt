@@ -111,7 +111,8 @@ class OssBulkFileListener : SnykBulkFileListener() {
             "Podfile",
             "Podfile.lock",
             "pyproject.toml",
-            "poetry.lock"
+            "poetry.lock",
+            ".snyk"
         )
     }
 }
