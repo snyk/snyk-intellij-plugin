@@ -34,7 +34,9 @@ import javax.swing.JProgressBar
 import javax.swing.ScrollPaneConstants
 
 @Service(Service.Level.PROJECT)
-class SnykCliAuthenticationService(val project: Project) {
+class SnykCliAuthenticationService(
+    val project: Project,
+) {
     private val logger = logger<SnykCliAuthenticationService>()
 
     private var isAuthenticated = false
@@ -58,7 +60,10 @@ class SnykCliAuthenticationService(val project: Project) {
             }
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            downloadCliTask, "Download Snyk CLI latest release", true, null
+            downloadCliTask,
+            "Download Snyk CLI latest release",
+            true,
+            null,
         )
     }
 
@@ -75,22 +80,24 @@ class SnykCliAuthenticationService(val project: Project) {
                     cmd.add("--auth-type=oauth")
                 }
                 val commands = buildCliCommands(cmd)
-                val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
-                    if (line.startsWith("https://")) {
-                        val htmlLink = escapeHtml4(line.removeLineEnd())
-                        val htmlText =
-                            """<html>
-                                We are now redirecting you to our auth page, go ahead and log in.<br><br>
-                                Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.<br><br>
-                                If a browser window doesn't open after a few seconds, please <a href="$htmlLink">click here</a>
-                                or copy the url using the button below and manually paste it in a browser.
-                            </html>
-                            """.trimIndent()
-                        dialog.updateHtmlText(htmlText)
-                        dialog.copyUrlAction.url = htmlLink
-                        dialog.copyUrlAction.isEnabled = true
+                val finalOutput =
+                    getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
+                        if (line.startsWith("https://")) {
+                            val htmlLink = escapeHtml4(line.removeLineEnd())
+                            val htmlText =
+                                """
+                                <html>
+                                    We are now redirecting you to our auth page, go ahead and log in.<br><br>
+                                    Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.<br><br>
+                                    If a browser window doesn't open after a few seconds, please <a href="$htmlLink">click here</a>
+                                    or copy the url using the button below and manually paste it in a browser.
+                                </html>
+                                """.trimIndent()
+                            dialog.updateHtmlText(htmlText)
+                            dialog.copyUrlAction.url = htmlLink
+                            dialog.copyUrlAction.isEnabled = true
+                        }
                     }
-                }
                 val authSucceed = finalOutput.contains("Your account has been authenticated.")
                 if (!authSucceed && finalOutput != ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER) {
                     SnykBalloonNotificationHelper.showError("Failed to authenticate.", project)
@@ -98,7 +105,7 @@ class SnykCliAuthenticationService(val project: Project) {
                 val exitCode = if (authSucceed) DialogWrapper.OK_EXIT_CODE else DialogWrapper.CLOSE_EXIT_CODE
                 ApplicationManager.getApplication().invokeLater(
                     { dialog.close(exitCode) },
-                    ModalityState.any()
+                    ModalityState.any(),
                 )
             }
         }.queue()
@@ -108,13 +115,28 @@ class SnykCliAuthenticationService(val project: Project) {
 
     fun executeGetConfigApiCommand() {
         val getConfigApiTask: () -> Unit = {
-            val key = "INTERNAL_OAUTH_TOKEN_STORAGE"
-            val commands = buildCliCommands(listOf("config", "get", key))
+            val oauthKey = "INTERNAL_OAUTH_TOKEN_STORAGE:"
+            val tokenKey = "API:"
+            val commands = buildCliCommands(listOf("config"))
+            var key = oauthKey
+            if (pluginSettings().useTokenAuthentication) {
+                key = tokenKey
+            }
             val getConfigApiOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
-            token = getConfigApiOutput.removeLineEnd()
+            val lines = getConfigApiOutput.lines()
+            token =
+                lines
+                    .firstOrNull { it.uppercase().startsWith(key) }
+                    ?.split(":")
+                    ?.get(1)
+                    ?.trim()
+                    .orEmpty()
         }
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            getConfigApiTask, "Get Snyk API Token", true, null
+            getConfigApiTask,
+            "Get Snyk API Token",
+            true,
+            null,
         )
     }
 
@@ -130,9 +152,7 @@ class SnykCliAuthenticationService(val project: Project) {
         return cli.toList()
     }
 
-    private fun getConsoleCommandRunner(): ConsoleCommandRunner {
-        return ConsoleCommandRunner()
-    }
+    private fun getConsoleCommandRunner(): ConsoleCommandRunner = ConsoleCommandRunner()
 }
 
 class AuthDialog : DialogWrapper(true) {
@@ -148,16 +168,18 @@ class AuthDialog : DialogWrapper(true) {
 
     override fun createCenterPanel(): JComponent {
         val centerPanel = JPanel(BorderLayout(JBUIScale.scale(5), JBUIScale.scale(5)))
-        val scrollPane = JBScrollPane(
-            viewer,
-            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-        )
+        val scrollPane =
+            JBScrollPane(
+                viewer,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER,
+            )
         centerPanel.add(scrollPane, BorderLayout.CENTER)
 
-        val progressBar = JProgressBar().apply {
-            isIndeterminate = true
-        }
+        val progressBar =
+            JProgressBar().apply {
+                isIndeterminate = true
+            }
         centerPanel.add(progressBar, BorderLayout.SOUTH)
 
         centerPanel.preferredSize = Dimension(500, 150)
@@ -178,13 +200,15 @@ class AuthDialog : DialogWrapper(true) {
 
     override fun createLeftSideActions(): Array<Action> = arrayOf(copyUrlAction)
 
-    inner class CopyUrlAction(var url: String = "") : AbstractAction("&Copy URL", PlatformIcons.COPY_ICON) {
+    inner class CopyUrlAction(
+        var url: String = "",
+    ) : AbstractAction("&Copy URL", PlatformIcons.COPY_ICON) {
         override fun actionPerformed(e: ActionEvent) {
             CopyPasteManager.getInstance().setContents(StringSelection(url))
             SnykBalloonNotificationHelper.showInfoBalloonForComponent(
                 "URL copied",
                 getButton(this) ?: viewer,
-                showAbove = getButton(this) != null
+                showAbove = getButton(this) != null,
             )
         }
     }

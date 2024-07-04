@@ -148,7 +148,6 @@ class SnykSettingsDialog(
                 }
                 val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
                 tokenTextField.text = token
-                tokenTextField.setPasswordIsStored(true)
                 runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
                     this.scanTypesPanelOuter.checkSastEnabled()
                 }
@@ -157,7 +156,6 @@ class SnykSettingsDialog(
 
         if (nonNull(applicationSettings)) {
             tokenTextField.text = applicationSettings.token
-            tokenTextField.setPasswordIsStored(true)
             useTokenAuthenticationCheckbox.isSelected = applicationSettings.useTokenAuthentication
             customEndpointTextField.text = applicationSettings.customEndpointUrl
             organizationTextField.text = applicationSettings.organization
