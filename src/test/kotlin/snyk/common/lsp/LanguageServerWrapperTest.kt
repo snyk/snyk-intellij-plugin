@@ -34,7 +34,6 @@ import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
-
     private val applicationMock: Application = mockk()
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
@@ -128,14 +127,15 @@ class LanguageServerWrapperTest {
         cut.sendReportAnalyticsCommand(
             ScanDoneEvent(
                 ScanDoneEvent.Data(
-                    attributes = ScanDoneEvent.Attributes(
-                        durationMs = 1000.toString(),
-                        path = "testPath",
-                        scanType = "testScan",
-                        uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(0, 0, 0, 0)
-                    )
-                )
-            )
+                    attributes =
+                        ScanDoneEvent.Attributes(
+                            durationMs = 1000.toString(),
+                            path = "testPath",
+                            scanType = "testScan",
+                            uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(0, 0, 0, 0),
+                        ),
+                ),
+            ),
         )
 
         verify(exactly = 0) { lsMock.workspaceService.executeCommand(any()) }
@@ -219,7 +219,6 @@ class LanguageServerWrapperTest {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
 
-
         cut.sendFolderScanCommand("testFolder", projectMock)
 
         verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
@@ -234,10 +233,9 @@ class LanguageServerWrapperTest {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
 
-
         cut.sendFolderScanCommand("testFolder", projectMock)
 
-        verify (exactly = 0) { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+        verify(exactly = 0) { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
     }
 
     @Test
@@ -286,7 +284,7 @@ class LanguageServerWrapperTest {
         verify { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
 
         // scan only runs when smart
-        verify (exactly = 0){ dumbServiceMock.runWhenSmart(any()) }
+        verify(exactly = 0) { dumbServiceMock.runWhenSmart(any()) }
     }
 
     @Test
@@ -297,7 +295,6 @@ class LanguageServerWrapperTest {
         every {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
-
 
         cut.sendFolderScanCommand("testFolder", projectMock)
 
