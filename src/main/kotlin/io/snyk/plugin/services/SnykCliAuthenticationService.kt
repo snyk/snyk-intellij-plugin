@@ -68,7 +68,13 @@ class SnykCliAuthenticationService(val project: Project) {
         object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
             override fun run(indicator: ProgressIndicator) {
                 dialog.onCancel = { indicator.cancel() }
-                val commands = buildCliCommands(listOf("auth", "--auth-type=oauth"))
+                val cmd = mutableListOf("auth")
+                if (pluginSettings().useTokenAuthentication) {
+                    cmd.add("--auth-type=token")
+                } else {
+                    cmd.add("--auth-type=oauth")
+                }
+                val commands = buildCliCommands(cmd)
                 val finalOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project) { line ->
                     if (line.startsWith("https://")) {
                         val htmlLink = escapeHtml4(line.removeLineEnd())
