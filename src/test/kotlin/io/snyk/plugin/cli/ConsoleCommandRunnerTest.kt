@@ -29,10 +29,8 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import snyk.PLUGIN_ID
-import snyk.common.isOauth
 import snyk.errorHandler.SentryErrorReporter
 import snyk.oss.OssService
-import java.net.URI
 import java.net.URLEncoder
 import java.util.Locale
 import java.util.UUID
@@ -96,7 +94,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             val generalCommandLine = GeneralCommandLine("")
             val expectedEndpoint = "https://api.xxx.snykgov.io/v1"
             generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
-            assertTrue(URI(expectedEndpoint).isOauth())
 
             pluginSettings().customEndpointUrl = expectedEndpoint
 
@@ -118,9 +115,9 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             val generalCommandLine = GeneralCommandLine("")
             val expectedEndpoint = "https://api.snyk.io/v1"
             generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = "{}"
-            assertFalse(URI(expectedEndpoint).isOauth())
 
             pluginSettings().customEndpointUrl = expectedEndpoint
+            pluginSettings().useTokenAuthentication = true
 
             val token = UUID.randomUUID().toString()
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
@@ -258,7 +255,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     fun testSetupCliEnvironmentVariables() {
         val generalCommandLine = GeneralCommandLine("")
         val snykPluginVersion = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
-
+        pluginSettings().useTokenAuthentication = true
         ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "test-api-token")
 
         assertEquals("test-api-token", generalCommandLine.environment["SNYK_TOKEN"])
