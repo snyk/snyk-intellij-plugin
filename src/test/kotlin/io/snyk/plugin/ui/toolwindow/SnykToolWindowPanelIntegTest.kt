@@ -143,7 +143,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         val mockRunner = mockk<ConsoleCommandRunner>()
         every {
             mockRunner.execute(
-                commands = listOf(getCliFile().absolutePath, "test", "--json"),
+                commands = listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"),
                 workDirectory = project.basePath!!,
                 apiToken = fakeApiToken,
                 project = project

@@ -153,7 +153,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
         every {
             mockRunner.execute(
-                listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project
+                listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"), project.basePath!!, project = project
             )
         } returns """
               {
@@ -182,7 +182,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
         every {
             mockRunner.execute(
-                listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project
+                listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"), project.basePath!!, project = project
             )
         } returns getResourceAsString("group-vulnerabilities-test.json")
 
@@ -208,7 +208,7 @@ class OssServiceTest : LightPlatformTestCase() {
 
         every {
             mockRunner.execute(
-                listOf(getCliFile().absolutePath, "test", "--json"), project.basePath!!, project = project
+                listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"), project.basePath!!, project = project
             )
         } returns getResourceAsString("licence-vulnerabilities.json")
 
