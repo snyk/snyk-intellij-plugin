@@ -1,6 +1,8 @@
 # Snyk Security Changelog
 
 ## [2.8.8]
+### Added
+- renders code actions and code lenses for OpenSource scans via the LS
 
 ### Fixes
 - change some of the colours used in the HTML panel so it's consistent with designs
