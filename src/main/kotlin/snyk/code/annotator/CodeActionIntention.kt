@@ -71,7 +71,13 @@ class CodeActionIntention(
 
     override fun getIcon(p0: Int): Icon {
         return when (product) {
-            ProductType.OSS -> SnykIcons.OPEN_SOURCE_SECURITY
+            ProductType.OSS -> {
+                if (this.codeAction.title.startsWith("Upgrade to")) {
+                    SnykIcons.CHECKMARK_GREEN
+                } else {
+                    SnykIcons.OPEN_SOURCE_SECURITY
+                }
+            }
             ProductType.IAC -> SnykIcons.IAC
             ProductType.CONTAINER -> SnykIcons.CONTAINER
             ProductType.CODE_SECURITY -> SnykIcons.SNYK_CODE
@@ -84,6 +90,7 @@ class CodeActionIntention(
     override fun getPriority(): PriorityAction.Priority {
         return when {
             codeAction.title.contains("fix", ignoreCase = true) -> PriorityAction.Priority.TOP
+            codeAction.title.contains("Upgrade to", ignoreCase = true) -> PriorityAction.Priority.TOP
             else -> issue.getSeverityAsEnum().getQuickFixPriority()
         }
     }
