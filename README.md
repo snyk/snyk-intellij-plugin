@@ -3,6 +3,7 @@ description: Use this documentation to get started with the JetBrains plugin.
 ---
 
 # JetBrains plugins
+<!-- Plugin description start -->
 
 Snyk offers IDE integrations that allow you to use the functionality of Snyk in your Integrated Development Environment. This page describes the Snyk JetBrains plugins. For information about all of the IDE plugins and their use, see [Snyk for IDEs](https://docs.snyk.io/ide-tools) in the docs.
 
@@ -41,6 +42,7 @@ After you complete the installation steps on this page and the [configuration](h
 * [Filter JetBrains results](https://docs.snyk.io/ide-tools/jetbrains-plugins/filter-jetbrains-results)
 * [Troubleshooting for the JetBrains plugin](https://docs.snyk.io/ide-tools/jetbrains-plugins/troubleshooting-for-the-jetbrains-plugin)
 
+<!-- Plugin description end -->
 ## Supported languages, package managers, and frameworks
 
 * For Snyk Open Source, the JetBrains plugin supports the languages and package managers supported by Snyk Open Source and the CLI. For more information, see [Supported languages, frameworks, and feature availability overview, Open Source section](https://docs.snyk.io/scan-applications/supported-languages-and-frameworks/supported-languages-frameworks-and-feature-availability-overview#open-source-and-licensing-snyk-open-source).
