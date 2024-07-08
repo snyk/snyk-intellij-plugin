@@ -29,6 +29,17 @@ jobs:
               -E 's|(\{%.*%\})||g' \
               ./$DESTINATION_REPOSITORY/$FILE_TO_COMMIT
 
+          # Add markers back to the README.md if they are not already present
+          if ! grep -q '<!-- Plugin description start -->' ./$DESTINATION_REPOSITORY/$FILE_TO_COMMIT; then
+          sed -i '/^# JetBrains plugins$/a\
+          <!-- Plugin description start -->' ./$DESTINATION_REPOSITORY/$FILE_TO_COMMIT
+          fi
+
+          if ! grep -q '<!-- Plugin description end -->' ./$DESTINATION_REPOSITORY/$FILE_TO_COMMIT; then
+          sed -i '/^## Supported languages/i\
+          <!-- Plugin description end -->' ./$DESTINATION_REPOSITORY/$FILE_TO_COMMIT
+          fi
+
           if [[ $(git -C ./$DESTINATION_REPOSITORY status --porcelain) ]]; then
             echo "Documentation changes detected"
             cd ./$DESTINATION_REPOSITORY
