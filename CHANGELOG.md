@@ -11,6 +11,10 @@
 ### Fixes
 - change some of the colours used in the HTML panel so it's consistent with designs
 - renders errors or Snyk Code and Snyk OpenSource failed scans through the Language Server
+- update plugin description generation to updated readme
+- add `--all-projects` to all IDEs, not only Rider
+
+### Changes
 - update required protocol version to 12
 
 ## [2.8.7]

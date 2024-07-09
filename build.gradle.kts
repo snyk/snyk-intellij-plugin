@@ -174,17 +174,10 @@ tasks {
         sinceBuild.set(properties("pluginSinceBuild"))
         untilBuild.set(properties("pluginUntilBuild"))
 
-        pluginDescription.set(
-            File("$projectDir/README.md").readText().lines().run {
-                val start = "<!-- Plugin description start -->"
-                val end = "<!-- Plugin description end -->"
-
-                if (!containsAll(listOf(start, end))) {
-                    throw GradleException("Plugin description section not found in README.md file:\n$start ... $end")
-                }
-                subList(indexOf(start) + 1, indexOf(end))
-            }.joinToString("\n").run { markdownToHTML(this) }
-        )
+        val content = File("$projectDir/README.md").readText()
+        val startIndex = content.indexOf("# JetBrains plugins")
+        val descriptionFromReadme = content.substring(startIndex).lines().joinToString("\n").run { markdownToHTML(this) }
+        pluginDescription.set(descriptionFromReadme)
 
         changeNotes.set(provider { changelog.renderItem(changelog.getLatest(), Changelog.OutputType.HTML) })
     }

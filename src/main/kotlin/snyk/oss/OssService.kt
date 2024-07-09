@@ -42,12 +42,9 @@ class OssService(project: Project) : CliAdapter<OssVulnerabilitiesForFile, OssRe
         options.add("--json")
 
         val additionalParameters = settings.getAdditionalParameters(project)
-        val hasAllProjectsParam = additionalParameters != null &&
-            additionalParameters.contains(ALL_PROJECTS_PARAM)
+        val hasAllProjectsParam = additionalParameters != null && additionalParameters.contains(ALL_PROJECTS_PARAM)
 
-        if (pluginInfo.integrationEnvironment.contains("RIDER") &&
-            !hasAllProjectsParam
-        ) {
+        if (!hasAllProjectsParam) {
             options.add(ALL_PROJECTS_PARAM)
         }
 
