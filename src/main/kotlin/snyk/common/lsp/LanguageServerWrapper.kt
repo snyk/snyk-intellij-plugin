@@ -345,6 +345,11 @@ class LanguageServerWrapper(
 
     fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
+        val authMethod = if (ps.useTokenAuthentication) {
+            "token"
+        } else {
+            "oauth"
+        }
         return LanguageServerSettings(
             activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
@@ -366,6 +371,7 @@ class LanguageServerWrapper(
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
+            authenticationMethod = authMethod
             enableSnykOSSQuickFixCodeActions = "true",
         )
     }
