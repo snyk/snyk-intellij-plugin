@@ -1,14 +1,11 @@
 # Snyk Security Changelog
 
-## [2.9.0]
-### Fixes
-- Upgraded `github/codeql-action/upload-sarif` from v1 to v3 in GitHub Actions workflow.
-
 ## [2.8.8]
 ### Added
 - renders code actions and code lenses for OpenSource scans via the LS
 
 ### Fixes
+- Upgraded `github/codeql-action/upload-sarif` from v1 to v3 in GitHub Actions workflow.
 - change some of the colours used in the HTML panel so it's consistent with designs
 - renders errors or Snyk Code and Snyk OpenSource failed scans through the Language Server
 - update plugin description generation to updated readme
