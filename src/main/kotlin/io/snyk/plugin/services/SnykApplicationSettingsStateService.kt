@@ -28,7 +28,7 @@ import java.util.UUID
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
     val requiredLsProtocolVersion = 12
 
-    var useTokenAuthentication = false
+    var useTokenAuthentication = true
     var currentLSProtocolVersion: Int? = 0
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://static.snyk.io"
