@@ -1,5 +1,13 @@
 # Snyk Security Changelog
 
+## [2.8.9]
+### Added
+- Updated Open Source, Containers and IaC products to include `.snyk` in the list of supported build files.
+- When a `.snyk` file changes, the OSS cache will be dropped triggering a scan.
+
+Related PRs:
+- [Language Server PR #563](https://github.com/snyk/snyk-ls/pull/563)
+
 ## [2.8.8]
 ### Added
 - renders code actions and code lenses for OpenSource scans via the LS

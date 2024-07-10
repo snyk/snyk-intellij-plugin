@@ -42,7 +42,7 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
                     .flatMap { it.workloadImages }
                     .map { it.virtualFile }
                 // if file was cached before - we should update cache even if it's none k8s file anymore
-                if (containerFilesCached.contains(virtualFile)) return@filter true
+                if (containerFilesCached.contains(virtualFile) || isDotSnykFile(virtualFile)) return@filter true
 
                 val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
                 YAMLImageExtractor.isKubernetes(psiFile)
@@ -51,22 +51,29 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
         }
     }
 
+    private fun isDotSnykFile(virtualFile: VirtualFile) = virtualFile.name.endsWith(".snyk")
+
     private fun updateContainerCache(
         containerRelatedVirtualFilesAffected: List<VirtualFile>,
         project: Project
     ) {
         if (containerRelatedVirtualFilesAffected.isEmpty()) return
         log.debug("update Container cache for $containerRelatedVirtualFilesAffected")
+
+        val isDotSnyk = containerRelatedVirtualFilesAffected.any(::isDotSnykFile)
+
         val snykCachedResults = getSnykCachedResults(project)
         val currentContainerResult = snykCachedResults?.currentContainerResult ?: return
         val containerIssuesForImages = currentContainerResult.allCliIssues ?: return
 
         val newContainerIssuesForImagesList = containerIssuesForImages.map { issuesForImage ->
-            if (issuesForImage.workloadImages.any { containerRelatedVirtualFilesAffected.contains(it.virtualFile) }) {
+            if (issuesForImage.workloadImages.any { containerRelatedVirtualFilesAffected.contains(it.virtualFile) } || isDotSnyk) {
                 makeObsolete(issuesForImage)
             } else {
                 issuesForImage
             }
+
+
         }
 
         val newContainerCache = ContainerResult(newContainerIssuesForImagesList, currentContainerResult.errors)

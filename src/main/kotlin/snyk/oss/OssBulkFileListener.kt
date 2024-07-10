@@ -68,7 +68,7 @@ class OssBulkFileListener : SnykBulkFileListener() {
         val snykCachedResults = getSnykCachedResults(project)
         if (snykCachedResults?.currentOssResults != null) {
             val buildFileChanged = virtualFilesAffected
-                .filter { supportedBuildFiles.contains(it.name) }
+                .filter { scanInvalidatingFiles.contains(it.name) }
                 .find { ProjectRootManager.getInstance(project).fileIndex.isInContent(it) }
             if (buildFileChanged != null) {
                 snykCachedResults.currentOssResults = null
@@ -88,7 +88,7 @@ class OssBulkFileListener : SnykBulkFileListener() {
 
     companion object {
         // see https://github.com/snyk/snyk/blob/master/src/lib/detect.ts#L10
-        private val supportedBuildFiles = listOf(
+        private val scanInvalidatingFiles = listOf(
             "yarn.lock",
             "package-lock.json",
             "package.json",
@@ -111,7 +111,8 @@ class OssBulkFileListener : SnykBulkFileListener() {
             "Podfile",
             "Podfile.lock",
             "pyproject.toml",
-            "poetry.lock"
+            "poetry.lock",
+            ".snyk"
         )
     }
 }
