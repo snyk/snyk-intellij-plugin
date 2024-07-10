@@ -5,6 +5,9 @@
 - Updated Open Source, Containers and IaC products to include `.snyk` in the list of supported build files.
 - When a `.snyk` file changes, the OSS cache will be dropped triggering a scan.
 
+### Fixed
+- Refresh the OSS cache for Language Server scans when a file is changed.   
+
 Related PRs:
 - [Language Server PR #563](https://github.com/snyk/snyk-ls/pull/563)
 
