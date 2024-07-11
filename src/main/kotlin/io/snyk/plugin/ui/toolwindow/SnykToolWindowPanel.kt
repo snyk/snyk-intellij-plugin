@@ -1059,9 +1059,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
 
-    @TestOnly
-    fun getRootCodeQualityIssuesTreeNode() = rootQualityIssuesTreeNode
-
     fun getTree() = vulnerabilitiesTree
 
     @TestOnly
