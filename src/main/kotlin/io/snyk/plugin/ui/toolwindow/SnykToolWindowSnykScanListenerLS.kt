@@ -15,6 +15,8 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NODE_NOT_SUPPORTED_STATE
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NO_OSS_FILES
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.OSS_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
@@ -25,6 +27,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
 import snyk.common.ProductType
+import snyk.common.lsp.CliError
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -218,10 +221,19 @@ class SnykToolWindowSnykScanListenerLS(
             }
         }
 
+        val currentOssError = getSnykCachedResults(project)?.currentOssError
+        val cliErrorMessage = currentOssError?.message
+
+        var ossResultsCountForDisplay = ossResultsCount
+        if (cliErrorMessage?.contains(NO_OSS_FILES) == true) {
+            snykToolWindowPanel.getRootOssIssuesTreeNode().originalCliErrorMessage = cliErrorMessage
+            ossResultsCountForDisplay = NODE_NOT_SUPPORTED_STATE
+        }
+
         snykToolWindowPanel.updateTreeRootNodesPresentation(
             securityIssuesCount = securityIssuesCount,
             qualityIssuesCount = qualityIssuesCount,
-            ossResultsCount = ossResultsCount,
+            ossResultsCount = ossResultsCountForDisplay,
             iacResultsCount = iacResultsCount,
             containerResultsCount = containerResultsCount,
             addHMLPostfix = rootNodePostFix,
