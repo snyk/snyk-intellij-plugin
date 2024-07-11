@@ -14,12 +14,10 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -64,10 +62,13 @@ private const val INITIALIZATION_TIMEOUT = 20L
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
-): Disposable {
+) : Disposable {
     private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
-    private var disposed = false ; get() { return ApplicationManager.getApplication().isDisposed || field }
+    private var disposed = false
+        get() {
+            return ApplicationManager.getApplication().isDisposed || field
+        }
 
     fun isDisposed() = disposed
 
@@ -95,7 +96,8 @@ class LanguageServerWrapper(
 
     @Suppress("MemberVisibilityCanBePrivate") // because we want to test it
     var isInitializing: ReentrantLock =
-        CycleDetectingLockFactory.newInstance(CycleDetectingLockFactory.Policies.THROW)
+        CycleDetectingLockFactory
+            .newInstance(CycleDetectingLockFactory.Policies.THROW)
             .newReentrantLock("initializeLock")
 
     internal val isInitialized: Boolean
@@ -148,11 +150,10 @@ class LanguageServerWrapper(
             getFeatureFlagStatusInternal("snykCodeConsistentIgnores")
     }
 
-    fun shutdown(): Future<*> {
-        return executorService.submit {
+    fun shutdown(): Future<*> =
+        executorService.submit {
             process.destroyForcibly()
         }
-    }
 
     private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
         val workspaceFolders = mutableSetOf<WorkspaceFolder>()
@@ -322,7 +323,10 @@ class LanguageServerWrapper(
         }
     }
 
-    fun sendFolderScanCommand(folder: String, project: Project) {
+    fun sendFolderScanCommand(
+        folder: String,
+        project: Project,
+    ) {
         if (!ensureLanguageServerInitialized()) return
         if (DumbService.getInstance(project).isDumb) return
         try {
@@ -348,12 +352,12 @@ class LanguageServerWrapper(
             cliPath = getCliFile().absolutePath,
             token = ps.token,
             filterSeverity =
-            SeverityFilter(
-                critical = ps.criticalSeverityEnabled,
-                high = ps.highSeverityEnabled,
-                medium = ps.mediumSeverityEnabled,
-                low = ps.lowSeverityEnabled,
-            ),
+                SeverityFilter(
+                    critical = ps.criticalSeverityEnabled,
+                    high = ps.highSeverityEnabled,
+                    medium = ps.mediumSeverityEnabled,
+                    low = ps.lowSeverityEnabled,
+                ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
@@ -391,9 +395,9 @@ class LanguageServerWrapper(
     }
 
     companion object {
-        private var INSTANCE: LanguageServerWrapper? = null
+        private var instance: LanguageServerWrapper? = null
 
-        fun getInstance() = INSTANCE ?: LanguageServerWrapper().also { INSTANCE = it }
+        fun getInstance() = instance ?: LanguageServerWrapper().also { instance = it }
     }
 
     override fun dispose() {
