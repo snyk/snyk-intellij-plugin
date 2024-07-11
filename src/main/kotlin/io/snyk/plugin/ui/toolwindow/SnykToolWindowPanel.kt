@@ -105,7 +105,7 @@ import javax.swing.tree.TreePath
  */
 @Service(Service.Level.PROJECT)
 class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
-    private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
+    internal val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
     private val logger = Logger.getInstance(this::class.java)
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)

@@ -20,10 +20,11 @@ import javax.swing.Icon
 
 // Define the SnykScanParams data class
 data class SnykScanParams(
-    val status: String, // Status can be either Initial, InProgress or Success
+    val status: String, // Status can be either Initial, InProgress, Success or Error
     val product: String, // Product under scan (Snyk Code, Snyk Open Source, etc...)
     val folderPath: String, // FolderPath is the root-folder of the current scan
     val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
+    val errorMessage: String? = null,
 )
 
 // Define the ScanIssue data class

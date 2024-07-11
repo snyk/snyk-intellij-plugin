@@ -87,7 +87,6 @@ class SnykToolWindowSnykScanListenerLS(
             "oss" -> {
                 this.rootOssIssuesTreeNode.removeAllChildren()
                 this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (error)"
-                refreshAnnotationsForOpenFiles(project)
             }
 
             "code" -> {
