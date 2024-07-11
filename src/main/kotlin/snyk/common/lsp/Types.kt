@@ -25,6 +25,7 @@ data class SnykScanParams(
     val folderPath: String, // FolderPath is the root-folder of the current scan
     val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
     val errorMessage: String? = null,
+    val errorCode: Int? = 0,
 )
 
 // Define the ScanIssue data class

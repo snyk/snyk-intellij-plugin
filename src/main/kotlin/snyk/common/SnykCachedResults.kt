@@ -160,6 +160,7 @@ class SnykCachedResults(
                                 SnykError(
                                     "Failed to run Snyk Open Source scan: ${snykScan.errorMessage}",
                                     snykScan.folderPath,
+                                    snykScan.errorCode
                                 )
                         }
 
@@ -168,6 +169,7 @@ class SnykCachedResults(
                                 SnykError(
                                     "Failed to run Snyk Code scan: ${snykScan.errorMessage}",
                                     snykScan.folderPath,
+                                    snykScan.errorCode
                                 )
                         }
 
@@ -176,6 +178,7 @@ class SnykCachedResults(
                                 SnykError(
                                     "Failed to run Snyk Infrastructure as Code scan: ${snykScan.errorMessage}",
                                     snykScan.folderPath,
+                                    snykScan.errorCode
                                 )
                         }
 
@@ -184,6 +187,7 @@ class SnykCachedResults(
                                 SnykError(
                                     "Failed to run Snyk Container scan: ${snykScan.errorMessage}",
                                     snykScan.folderPath,
+                                    snykScan.errorCode
                                 )
                         }
                     }

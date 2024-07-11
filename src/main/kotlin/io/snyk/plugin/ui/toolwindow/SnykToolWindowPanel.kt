@@ -233,7 +233,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     override fun scanningOssError(snykError: SnykError) {
                         var ossResultsCount: Int? = null
                         ApplicationManager.getApplication().invokeLater {
-                            if (snykError.message.startsWith(NO_OSS_FILES)) {
+                            if (snykError.message.contains(NO_OSS_FILES)) {
                                 rootOssTreeNode.originalCliErrorMessage = snykError.message
                                 ossResultsCount = NODE_NOT_SUPPORTED_STATE
                             } else {
