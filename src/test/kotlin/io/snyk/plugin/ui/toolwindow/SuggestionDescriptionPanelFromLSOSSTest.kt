@@ -8,11 +8,12 @@ import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import org.junit.Test
 import snyk.UIComponentFinder.getActionLinkByText
@@ -23,6 +24,7 @@ import snyk.common.ProductType
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
+import javax.swing.JLabel
 
 class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
     private lateinit var cut: SuggestionDescriptionPanelFromLS
@@ -78,7 +80,9 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test createUI should build the right panels for Snyk OSS`() {
+    fun `test createUI should build the right panels for Snyk OSS if HTML not allowed`() {
+        every { issue.canLoadSuggestionPanelFromHTML() } returns false
+
         cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
         val issueNaming = getJLabelByText(cut, issue.issueNaming())
@@ -110,9 +114,26 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun `test getStyledHTML should inject CSS into the HTML`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+    fun `test createUI should build panel with HTML from details if allowed`() {
+        val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
+        mockkObject(JCEFUtils)
+        every {
+            JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any())
+        } returns mockJBCefBrowserComponent
 
+        every { issue.details() } returns "<html>HTML message</html>"
+        every { issue.canLoadSuggestionPanelFromHTML() } returns true
+        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+
+        val actual = getJLabelByText(cut, "<html>Test message</html>")
+        assertNull(actual)
+
+        val actualBrowser = getJLabelByText(cut, "<html>HTML message</html>")
+        assertNotNull(actualBrowser)
+    }
+
+    @Test
+    fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
         every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(snykFile, issue)

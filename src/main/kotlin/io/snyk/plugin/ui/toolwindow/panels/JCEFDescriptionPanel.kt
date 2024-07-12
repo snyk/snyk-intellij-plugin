@@ -5,13 +5,14 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.jcef.JCEFUtils
+import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
+import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -23,6 +24,7 @@ import java.awt.Font
 import java.nio.file.Paths
 import javax.swing.JLabel
 import javax.swing.JPanel
+import kotlin.collections.set
 
 class SuggestionDescriptionPanelFromLS(
     snykFile: SnykFile,
@@ -36,22 +38,31 @@ class SuggestionDescriptionPanelFromLS(
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
     init {
-        if (
-            pluginSettings().isGlobalIgnoresFeatureEnabled &&
-            issue.canLoadSuggestionPanelFromHTML()
-        ) {
-            val virtualFiles = LinkedHashMap<String, VirtualFile?>()
-            for (dataFlow in issue.additionalData.dataFlow) {
-                virtualFiles[dataFlow.filePath] =
-                    VirtualFileManager.getInstance().findFileByNioPath(Paths.get(dataFlow.filePath))
+        if (issue.canLoadSuggestionPanelFromHTML()) {
+            val loadHandlerGenerators: MutableList<LoadHandlerGenerator> =
+                emptyList<LoadHandlerGenerator>().toMutableList()
+
+            loadHandlerGenerators += {
+                ThemeBasedStylingGenerator().generate(it)
             }
 
-            val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile.project, virtualFiles)
-            val html = this.getStyledHTML()
-            val jbCefBrowserComponent =
-                JCEFUtils.getJBCefBrowserComponentIfSupported(html) {
+            if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
+                issue.additionalData.getProductType() == ProductType.CODE_QUALITY
+            ) {
+                val virtualFiles = LinkedHashMap<String, VirtualFile?>()
+                for (dataFlow in issue.additionalData.dataFlow) {
+                    virtualFiles[dataFlow.filePath] =
+                        VirtualFileManager.getInstance().findFileByNioPath(Paths.get(dataFlow.filePath))
+                }
+
+                val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile.project, virtualFiles)
+                loadHandlerGenerators += {
                     openFileLoadHandlerGenerator.generate(it)
                 }
+            }
+            val html = this.getStyledHTML()
+            val jbCefBrowserComponent =
+                JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
             if (jbCefBrowserComponent == null) {
                 val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
                 this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
@@ -94,7 +105,9 @@ class SuggestionDescriptionPanelFromLS(
             JPanel(
                 GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
             ).apply {
-                if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY || issue.additionalData.getProductType() == ProductType.CODE_QUALITY) {
+                if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
+                    issue.additionalData.getProductType() == ProductType.CODE_QUALITY
+                ) {
                     this.add(
                         SnykCodeOverviewPanel(issue.additionalData),
                         panelGridConstraints(2),
@@ -134,8 +147,11 @@ class SuggestionDescriptionPanelFromLS(
             issue.additionalData.getProductType() == ProductType.CODE_QUALITY
         ) {
             ideStyle = SnykStylesheets.SnykCodeSuggestion
+        } else if (issue.additionalData.getProductType() == ProductType.OSS) {
+            ideStyle = SnykStylesheets.SnykOSSSuggestion
         }
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
+        html = html.replace("\${headerEnd}", "")
         html =
             html.replace(
                 "\${ideScript}",
