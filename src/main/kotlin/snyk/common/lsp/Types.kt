@@ -18,12 +18,26 @@ import java.util.Date
 import java.util.Locale
 import javax.swing.Icon
 
+// type CliOutput struct {
+//	Code         int    `json:"code,omitempty"`
+//	ErrorMessage string `json:"error,omitempty"`
+//	Path         string `json:"path,omitempty"`
+//	Command      string `json:"command,omitempty"`
+//}
+data class CliError (
+    val code: Int? = 0,
+    val error: String? = null,
+    val path: String? = null,
+    val command: String? = null,
+)
 // Define the SnykScanParams data class
 data class SnykScanParams(
-    val status: String, // Status can be either Initial, InProgress or Success
+    val status: String, // Status can be either Initial, InProgress, Success or Error
     val product: String, // Product under scan (Snyk Code, Snyk Open Source, etc...)
     val folderPath: String, // FolderPath is the root-folder of the current scan
     val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
+    val errorMessage: String? = null, // Error Message if applicable
+    val cliError: CliError? = null, // structured error information if applicable
 )
 
 // Define the ScanIssue data class

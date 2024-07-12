@@ -104,8 +104,11 @@ import javax.swing.tree.TreePath
  * Main panel for Snyk tool window.
  */
 @Service(Service.Level.PROJECT)
-class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
-    private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
+class SnykToolWindowPanel(
+    val project: Project,
+) : JPanel(),
+    Disposable {
+    internal val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
     private val logger = Logger.getInstance(this::class.java)
     private val rootTreeNode = DefaultMutableTreeNode("")
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -174,7 +177,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 scanListener
             }
 
-        project.messageBus.connect(this)
+        project.messageBus
+            .connect(this)
             .subscribe(
                 SnykScanListener.SNYK_SCAN_TOPIC,
                 object : SnykScanListener {
@@ -233,7 +237,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                     override fun scanningOssError(snykError: SnykError) {
                         var ossResultsCount: Int? = null
                         ApplicationManager.getApplication().invokeLater {
-                            if (snykError.message.startsWith(NO_OSS_FILES)) {
+                            if (snykError.message.contains(NO_OSS_FILES)) {
                                 rootOssTreeNode.originalCliErrorMessage = snykError.message
                                 ossResultsCount = NODE_NOT_SUPPORTED_STATE
                             } else {
@@ -288,7 +292,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 },
             )
 
-        project.messageBus.connect(this)
+        project.messageBus
+            .connect(this)
             .subscribe(
                 SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
                 object : SnykResultsFilteringListener {
@@ -319,7 +324,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 },
             )
 
-        ApplicationManager.getApplication().messageBus.connect(this)
+        ApplicationManager
+            .getApplication()
+            .messageBus
+            .connect(this)
             .subscribe(
                 SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
                 object : SnykCliDownloadListener {
@@ -333,7 +341,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 },
             )
 
-        project.messageBus.connect(this)
+        project.messageBus
+            .connect(this)
             .subscribe(
                 SnykSettingsListener.SNYK_SETTINGS_TOPIC,
                 object : SnykSettingsListener {
@@ -344,7 +353,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 },
             )
 
-        project.messageBus.connect(this)
+        project.messageBus
+            .connect(this)
             .subscribe(
                 SnykTaskQueueListener.TASK_QUEUE_TOPIC,
                 object : SnykTaskQueueListener {
@@ -484,7 +494,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     private fun triggerScan() {
         getSnykAnalyticsService().logAnalysisIsTriggered(
-            AnalysisIsTriggered.builder()
+            AnalysisIsTriggered
+                .builder()
                 .analysisType(getSelectedProducts(pluginSettings()))
                 .ide(AnalysisIsTriggered.Ide.JETBRAINS)
                 .triggeredByUser(true)
@@ -504,7 +515,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         revalidate()
 
         getSnykAnalyticsService().logWelcomeIsViewed(
-            WelcomeIsViewed.builder()
+            WelcomeIsViewed
+                .builder()
                 .ide(JETBRAINS)
                 .build(),
         )
@@ -566,10 +578,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     ) {
         val settings = pluginSettings()
 
+        val realError = getSnykCachedResults(project)?.currentOssError != null
+            && ossResultsCount != NODE_NOT_SUPPORTED_STATE
+
         val newOssTreeNodeText =
             when {
-                getSnykCachedResults(project)?.currentOssError != null -> "$OSS_ROOT_TEXT (error)"
                 isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
+                realError -> "$OSS_ROOT_TEXT (error)"
 
                 else ->
                     ossResultsCount?.let { count ->
@@ -590,7 +605,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
                 isSnykCodeRunning(
                     project,
-                ) && settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
+                ) &&
+                    settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
 
                 else ->
                     securityIssuesCount?.let { count ->
@@ -610,7 +626,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_QUALITY_ROOT_TEXT (error)"
                 isSnykCodeRunning(
                     project,
-                ) && settings.snykCodeQualityIssuesScanEnable -> "$CODE_QUALITY_ROOT_TEXT (scanning...)"
+                ) &&
+                    settings.snykCodeQualityIssuesScanEnable -> "$CODE_QUALITY_ROOT_TEXT (scanning...)"
 
                 else ->
                     qualityIssuesCount?.let { count ->
@@ -1059,9 +1076,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
 
-    @TestOnly
-    fun getRootCodeQualityIssuesTreeNode() = rootQualityIssuesTreeNode
-
     fun getTree() = vulnerabilitiesTree
 
     @TestOnly
@@ -1089,7 +1103,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
         internal const val NODE_INITIAL_STATE = -1
-        private const val NODE_NOT_SUPPORTED_STATE = -2
+        const val NODE_NOT_SUPPORTED_STATE = -2
 
         private val CONTAINER_DOCS_TEXT_WITH_LINK =
             """

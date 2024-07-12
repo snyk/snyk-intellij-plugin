@@ -21,7 +21,9 @@ import snyk.iac.IacResult
 import snyk.oss.OssResult
 
 @Service(Service.Level.PROJECT)
-class SnykCachedResults(val project: Project) : Disposable {
+class SnykCachedResults(
+    val project: Project,
+) : Disposable {
     private var disposed = false
         get() {
             return project.isDisposed || ApplicationManager.getApplication().isDisposed || field
@@ -155,25 +157,41 @@ class SnykCachedResults(val project: Project) : Disposable {
                     when (snykScan.product) {
                         "oss" -> {
                             currentOssError =
-                                SnykError("Failed to run Snyk OpenSource scan", snykScan.folderPath)
+                                SnykError(
+                                    snykScan.cliError?.error ?: snykScan.errorMessage
+                                    ?: "Failed to run Snyk Open Source Scan",
+                                    snykScan.cliError?.path ?: snykScan.folderPath,
+                                    snykScan.cliError?.code,
+                                )
                         }
 
                         "code" -> {
                             currentSnykCodeError =
-                                SnykError("Failed to run Snyk Code scan", snykScan.folderPath)
+                                SnykError(
+                                    snykScan.cliError?.error ?: snykScan.errorMessage
+                                        ?: "Failed to run Snyk Code Scan",
+                                    snykScan.cliError?.path ?: snykScan.folderPath,
+                                    snykScan.cliError?.code,
+                                )
                         }
 
                         "iac" -> {
                             currentIacError =
                                 SnykError(
-                                    "Failed to run Snyk Infrastructure as Code scan",
-                                    snykScan.folderPath,
+                                    snykScan.cliError?.error ?: snykScan.errorMessage ?: "Failed to run Snyk IaC Scan",
+                                    snykScan.cliError?.path ?: snykScan.folderPath,
+                                    snykScan.cliError?.code,
                                 )
                         }
 
                         "container" -> {
                             currentContainerError =
-                                SnykError("Failed to run Snyk Container scan", snykScan.folderPath)
+                                SnykError(
+                                    snykScan.cliError?.error ?: snykScan.errorMessage
+                                    ?: "Failed to run Snyk Container Scan",
+                                    snykScan.cliError?.path ?: snykScan.folderPath,
+                                    snykScan.cliError?.code,
+                                )
                         }
                     }
                     SnykBalloonNotificationHelper
