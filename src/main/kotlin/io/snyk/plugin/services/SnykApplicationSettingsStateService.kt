@@ -27,7 +27,7 @@ import java.util.UUID
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
 
-    val requiredLsProtocolVersion = 12
+    val requiredLsProtocolVersion = 13
 
     var currentLSProtocolVersion: Int? = 0
     var isGlobalIgnoresFeatureEnabled = false
