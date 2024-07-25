@@ -255,10 +255,6 @@ class SnykLanguageClient : LanguageClient, Disposable {
         ProjectManager.getInstance().openProjects.forEach {
             LanguageServerWrapper.getInstance().sendScanCommand(it)
         }
-
-        if (!param.token.isNullOrBlank()) {
-            SnykBalloonNotificationHelper.showInfo("Authentication successful", ProjectUtil.getActiveProject()!!)
-        }
     }
 
     @JsonNotification(value = "$/snyk.addTrustedFolders")
