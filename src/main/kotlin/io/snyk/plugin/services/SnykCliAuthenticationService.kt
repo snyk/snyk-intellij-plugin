@@ -116,13 +116,7 @@ class SnykCliAuthenticationService(
     fun executeGetConfigApiCommand() {
         val getConfigApiTask: () -> Unit = {
             // must be uppercase in snake case
-            val oauthKey = "INTERNAL_OAUTH_TOKEN_STORAGE"
-            // must be lowercase
-            val tokenKey = "api"
-            var key = oauthKey
-            if (pluginSettings().useTokenAuthentication) {
-                key = tokenKey
-            }
+            val key = getAuthenticationConfigKey()
             val commands = buildCliCommands(listOf("config", "get", key))
             val getConfigApiOutput = getConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
             token = getConfigApiOutput.removeLineEnd()
@@ -130,6 +124,32 @@ class SnykCliAuthenticationService(
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
             getConfigApiTask,
             "Get Snyk API Token",
+            true,
+            null,
+        )
+    }
+
+    private fun getAuthenticationConfigKey(): String {
+        val oauthKey = "INTERNAL_OAUTH_TOKEN_STORAGE"
+        // must be lowercase
+        val tokenKey = "api"
+        var key = oauthKey
+        if (pluginSettings().useTokenAuthentication) {
+            key = tokenKey
+        }
+        return key
+    }
+
+    fun updateAuthenticationTokenInCLIConfig(token: String) {
+        val getConfigApiTask: () -> Unit = {
+            // must be uppercase in snake case
+            val key = getAuthenticationConfigKey()
+            val commands = buildCliCommands(listOf("config", "set", key, token))
+            getConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
+        }
+        ProgressManager.getInstance().runProcessWithProgressSynchronously(
+            getConfigApiTask,
+            "Set Snyk API Token",
             true,
             null,
         )

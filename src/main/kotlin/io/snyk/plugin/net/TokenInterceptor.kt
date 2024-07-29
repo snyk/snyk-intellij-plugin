@@ -2,9 +2,7 @@ package io.snyk.plugin.net
 
 import com.google.gson.Gson
 import com.intellij.openapi.project.ProjectManager
-import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getUserAgentString
-import io.snyk.plugin.getWhoamiService
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -26,7 +24,7 @@ class TokenInterceptor(private var projectManager: ProjectManager? = null) : Int
             val oldSnykCodeHeaderName = "Session-Token"
             val authorizationHeaderName = "Authorization"
             request.removeHeader(oldSnykCodeHeaderName)
-            if (!token.startsWith('{')) {
+            if (pluginSettings().useTokenAuthentication) {
                 request.addHeader(oldSnykCodeHeaderName, token)
                 request.addHeader(authorizationHeaderName, "token $token")
             } else {
@@ -38,6 +36,7 @@ class TokenInterceptor(private var projectManager: ProjectManager? = null) : Int
                 val oAuthToken = Gson().fromJson(token, OAuthToken::class.java)
                 val expiry = OffsetDateTime.parse(oAuthToken.expiry)
                 if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {
+                    // should we wait?
                     LanguageServerWrapper.getInstance().languageServer.workspaceService.executeCommand(
                         ExecuteCommandParams("snyk.getActiveUser", emptyList())
                     )

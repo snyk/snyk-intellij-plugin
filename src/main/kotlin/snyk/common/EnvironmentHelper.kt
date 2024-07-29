@@ -9,7 +9,7 @@ import java.net.URLEncoder
 object EnvironmentHelper {
     fun updateEnvironment(
         environment: MutableMap<String, String>,
-        apiToken: String
+        apiToken: String,
     ) {
         val endpoint = getEndpointUrl()
 
@@ -23,9 +23,11 @@ object EnvironmentHelper {
         if (apiToken.isNotEmpty()) {
             when (pluginSettings().useTokenAuthentication) {
                 true -> {
-                    environment[snykTokenEnvVar] = apiToken
+                    environment[oauthEnabledEnvVar] = "0"
                     environment.remove(oauthEnvVar)
+                    environment[snykTokenEnvVar] = apiToken
                 }
+
                 false -> {
                     environment[oauthEnabledEnvVar] = "1"
                     environment[oauthEnvVar] = apiToken
@@ -47,10 +49,17 @@ object EnvironmentHelper {
         val proxySettings = HttpConfigurable.getInstance()
         val proxyHost = proxySettings.PROXY_HOST
         if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxyHost.isNotEmpty()) {
-            val authentication = if (proxySettings.PROXY_AUTHENTICATION) {
-                val auth = proxySettings.getPromptedAuthentication(proxyHost, "Snyk: Please enter your proxy password")
-                if (auth == null) "" else auth.userName.urlEncode() + ":" + String(auth.password).urlEncode() + "@"
-            } else ""
+            val authentication =
+                if (proxySettings.PROXY_AUTHENTICATION) {
+                    val auth =
+                        proxySettings.getPromptedAuthentication(
+                            proxyHost,
+                            "Snyk: Please enter your proxy password",
+                        )
+                    if (auth == null) "" else auth.userName.urlEncode() + ":" + String(auth.password).urlEncode() + "@"
+                } else {
+                    ""
+                }
             environment["http_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
             environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
         }
