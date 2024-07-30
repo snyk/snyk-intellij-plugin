@@ -257,8 +257,12 @@ class SnykLanguageClient :
         pluginSettings().token = param.token
 
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
+            val wrapper = LanguageServerWrapper.getInstance()
+            // retrieve global ignores feature flag status after auth
+            pluginSettings().isGlobalIgnoresFeatureEnabled = wrapper.isGlobalIgnoresFeatureEnabled()
+
             ProjectManager.getInstance().openProjects.forEach {
-                LanguageServerWrapper.getInstance().sendScanCommand(it)
+                wrapper.sendScanCommand(it)
             }
         }
     }
