@@ -68,14 +68,6 @@ class SnykTaskQueueService(val project: Project) {
     @TestOnly
     fun getTaskQueue() = taskQueue
 
-    fun scheduleRunnable(title: String, runnable: (indicator: ProgressIndicator) -> Unit) {
-        taskQueue.run(object : Task.Backgroundable(project, title, true) {
-            override fun run(indicator: ProgressIndicator) {
-                runnable.invoke(indicator)
-            }
-        })
-    }
-
     fun connectProjectToLanguageServer(project: Project) {
             // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()

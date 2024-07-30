@@ -22,7 +22,7 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.util.maximumWidth
+import com.intellij.ui.util.minimumWidth
 import com.intellij.ui.util.preferredWidth
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
@@ -45,7 +45,6 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
-import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.util.Objects.nonNull
@@ -79,17 +78,19 @@ class SnykSettingsDialog(
 
     private val tokenTextField = JBPasswordField().apply { preferredWidth = 600 }
     private val receiveTokenButton = JButton("Connect IDE to Snyk")
-    private val useTokenAuthenticationCheckbox =
-        JCheckBox().apply {
-            val description =
-                "Use token authentication. It is recommended to keep this turned off, as the default OAuth2 authentication is more secure."
-            text = description
-            toolTipText =
-                description
+    private val useTokenAuthentication =
+        ComboBox(arrayOf("OAuth2 authentication", "Token authentication")).apply {
+            this.isEditable = false
+            this.preferredWidth = 200
+            this.minimumWidth = 200
         }
-    private val customEndpointTextField = JTextField()
+
+    private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
     private val organizationTextField: JTextField =
-        JTextField().apply { toolTipText = "The UUID of your organization or the org stub   " }
+        JTextField().apply {
+            toolTipText = "The UUID of your organization or the org stub"
+            preferredWidth = tokenTextField.preferredWidth
+        }
     private val ignoreUnknownCACheckBox: JCheckBox =
         JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
     private val usageAnalyticsCheckBox: JCheckBox =
@@ -156,7 +157,12 @@ class SnykSettingsDialog(
 
         if (nonNull(applicationSettings)) {
             tokenTextField.text = applicationSettings.token
-            useTokenAuthenticationCheckbox.isSelected = applicationSettings.useTokenAuthentication
+            if (applicationSettings.useTokenAuthentication) {
+                // the combobox order is OAuth2, Token
+                useTokenAuthentication.selectedIndex = 1
+            } else {
+                useTokenAuthentication.selectedIndex = 0
+            }
             customEndpointTextField.text = applicationSettings.customEndpointUrl
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
@@ -192,7 +198,7 @@ class SnykSettingsDialog(
 
         /** General settings ------------------ */
 
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(6, 4, JBUI.emptyInsets(), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(7, 4, JBUI.emptyInsets(), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -206,19 +212,38 @@ class SnykSettingsDialog(
             ),
         )
 
-
-
+        val authenticationMethodLabel = JLabel("Authentication method:")
         generalSettingsPanel.add(
-            receiveTokenButton,
-            baseGridConstraintsAnchorWest(
+            authenticationMethodLabel,
+            baseGridConstraints(
                 row = 0,
-                column = 1,
                 indent = 0,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST
             ),
         )
 
         generalSettingsPanel.add(
-            useTokenAuthenticationCheckbox,
+            useTokenAuthentication,
+            baseGridConstraints(
+                row = 0,
+                column = 1,
+                colSpan = 3,
+                indent = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_HORIZONTAL,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+            ),
+        )
+
+        val descriptionLabel =
+            JLabel(
+                "<html>Specifies whether to authenticate with OAuth2 or with an API token.<br/>" +
+                    "<u>Note:</u> OAuth2 is currently experimental. Once it is fully supported, using <br>" +
+                    "OAuth2 authentication is recommended as it provides enhanced security.</html>",
+            ).apply { font = FontUtil.minusOne(this.font) }
+
+        generalSettingsPanel.add(
+            descriptionLabel,
             baseGridConstraints(
                 row = 1,
                 column = 1,
@@ -226,6 +251,16 @@ class SnykSettingsDialog(
                 indent = 0,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+            ),
+        )
+
+        generalSettingsPanel.add(
+            receiveTokenButton,
+            baseGridConstraintsAnchorWest(
+                row = 2,
+                column = 1,
+                indent = 0,
             ),
         )
 
@@ -233,7 +268,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             tokenLabel,
             baseGridConstraintsAnchorWest(
-                row = 2,
+                row = 3,
                 indent = 0,
             ),
         )
@@ -241,7 +276,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             tokenTextField,
             baseGridConstraints(
-                row = 2,
+                row = 3,
                 column = 1,
                 colSpan = 3,
                 anchor = UIGridConstraints.ANCHOR_WEST,
@@ -260,7 +295,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             customEndpointLabel,
             baseGridConstraintsAnchorWest(
-                row = 3,
+                row = 4,
                 indent = 0,
             ),
         )
@@ -268,12 +303,12 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             customEndpointTextField,
             baseGridConstraints(
-                row = 3,
+                row = 4,
                 column = 1,
                 colSpan = 3,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -282,12 +317,12 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             ignoreUnknownCACheckBox,
             baseGridConstraints(
-                row = 4,
+                row = 5,
                 column = 1,
                 colSpan = 3,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -297,7 +332,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationLabel,
             baseGridConstraintsAnchorWest(
-                row = 5,
+                row = 6,
                 indent = 0,
             ),
         )
@@ -305,12 +340,12 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationTextField,
             baseGridConstraints(
-                row = 5,
+                row = 6,
                 column = 1,
                 colSpan = 2,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -326,7 +361,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationContextHelpLabel,
             baseGridConstraintsAnchorWest(
-                row = 5,
+                row = 6,
                 column = 3,
                 indent = 0,
             ),
@@ -740,5 +775,5 @@ class SnykSettingsDialog(
 
     fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
 
-    fun getUseTokenAuthentication(): Boolean = useTokenAuthenticationCheckbox.isSelected
+    fun getUseTokenAuthentication(): Boolean = useTokenAuthentication.selectedIndex == 1
 }

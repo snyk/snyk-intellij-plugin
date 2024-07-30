@@ -52,13 +52,20 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
-            snykSettingsDialog.getUseTokenAuthentication() != settingsStateService.useTokenAuthentication
+            isAuthenticationMethodModified()
+
+    private fun isAuthenticationMethodModified() =
+        snykSettingsDialog.getUseTokenAuthentication() != settingsStateService.useTokenAuthentication
 
     private fun isCoreParamsModified() =
         isTokenModified() ||
             isCustomEndpointModified() ||
             isOrganizationModified() ||
-            isAdditionalParametersModified()
+            isAdditionalParametersModified() ||
+            isAuthenticationMethodModified() ||
+            snykSettingsDialog.isSeverityEnablementChanged() ||
+            snykSettingsDialog.isIssueOptionChanged() ||
+            snykSettingsDialog.isScanTypeChanged()
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
