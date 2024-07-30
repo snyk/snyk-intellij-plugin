@@ -33,7 +33,7 @@ class TokenInterceptor(private var projectManager: ProjectManager? = null) : Int
                 }
                 projectManager?.openProjects!!.firstOrNull()
                 // when the token is about to expire, call the whoami workflow to refresh it
-                val oAuthToken = Gson().fromJson(token, OAuthToken::class.java)
+                val oAuthToken = Gson().fromJson(token, OAuthToken::class.java) ?: return chain.proceed(request.build())
                 val expiry = OffsetDateTime.parse(oAuthToken.expiry)
                 if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {
                     LanguageServerWrapper.getInstance().getAuthenticatedUser()

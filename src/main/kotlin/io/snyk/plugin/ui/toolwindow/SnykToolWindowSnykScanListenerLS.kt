@@ -9,7 +9,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.cancelOss
+import io.snyk.plugin.cancelOssIndicator
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
@@ -78,7 +78,7 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
         ApplicationManager.getApplication().invokeLater {
-            cancelOss(project)
+            cancelOssIndicator(project)
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displayOssResults(snykResults)
             refreshAnnotationsForOpenFiles(project)

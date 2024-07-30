@@ -392,7 +392,7 @@ class LanguageServerWrapper(
 
     fun getAuthenticatedUser(): String? {
         if (pluginSettings().token.isNullOrBlank()) return null
-        if (!ensureLanguageServerInitialized()) return null
+        if (!isInitialized) return null
         if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
         val cmd = ExecuteCommandParams("snyk.getActiveUser", emptyList())
         val result =

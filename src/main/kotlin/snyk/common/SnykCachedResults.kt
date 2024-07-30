@@ -156,6 +156,7 @@ class SnykCachedResults(
                 override fun scanningError(snykScan: SnykScanParams) {
                     when (snykScan.product) {
                         "oss" -> {
+                            currentOSSResultsLS.clear()
                             currentOssError =
                                 SnykError(
                                     snykScan.cliError?.error ?: snykScan.errorMessage
@@ -166,6 +167,7 @@ class SnykCachedResults(
                         }
 
                         "code" -> {
+                            currentSnykCodeResultsLS.clear()
                             currentSnykCodeError =
                                 SnykError(
                                     snykScan.cliError?.error ?: snykScan.errorMessage
@@ -176,6 +178,7 @@ class SnykCachedResults(
                         }
 
                         "iac" -> {
+                            currentIacResultsLS.clear()
                             currentIacError =
                                 SnykError(
                                     snykScan.cliError?.error ?: snykScan.errorMessage ?: "Failed to run Snyk IaC Scan",

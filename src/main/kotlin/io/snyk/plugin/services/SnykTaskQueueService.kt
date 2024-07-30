@@ -9,7 +9,7 @@ import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.cancelOss
+import io.snyk.plugin.cancelOssIndicator
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
@@ -295,7 +295,7 @@ class SnykTaskQueueService(val project: Project) {
 
     fun stopScan() {
         val wasOssRunning = isOssRunning(project)
-        cancelOss(project)
+        cancelOssIndicator(project)
 
         val wasSnykCodeRunning = isSnykCodeRunning(project)
 
