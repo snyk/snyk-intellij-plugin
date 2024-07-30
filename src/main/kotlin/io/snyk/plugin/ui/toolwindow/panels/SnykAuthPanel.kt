@@ -56,8 +56,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
                     jButton.setText("Authenticating...")
-                    val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
-                    pluginSettings().token = token
+                    getSnykCliAuthenticationService(project)?.authenticate() ?: ""
 
                     // explicitly add the project to workspace trusted paths, because
                     // scan can be auto-triggered depending on "settings.pluginFirstRun" value
@@ -69,7 +68,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     }
 
                     if (pluginSettings().usageAnalyticsEnabled) {
-                        val userId = analytics.obtainUserId(token)
+                        val userId = analytics.obtainUserId(pluginSettings().token)
                         if (userId.isNotBlank()) {
                             runBackgroundableTask("Snyk: Fetching experiments", project, true) {
                                 analytics.setUserId(userId)

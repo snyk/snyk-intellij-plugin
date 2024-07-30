@@ -255,10 +255,6 @@ class SnykLanguageClient :
         if (pluginSettings().token == param.token) return
         pluginSettings().token = param.token
 
-        getSnykCliAuthenticationService(ProjectUtil.getActiveProject())?.updateAuthenticationTokenInCLIConfig(
-            pluginSettings().token ?: "",
-        )
-
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
             ProjectManager.getInstance().openProjects.forEach {
                 LanguageServerWrapper.getInstance().sendScanCommand(it)

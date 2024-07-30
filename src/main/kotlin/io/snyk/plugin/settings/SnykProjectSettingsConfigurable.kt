@@ -51,7 +51,8 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
-            snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel
+            snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
+            snykSettingsDialog.getUseTokenAuthentication() != settingsStateService.useTokenAuthentication
 
     private fun isCoreParamsModified() =
         isTokenModified() ||
@@ -98,13 +99,14 @@ class SnykProjectSettingsConfigurable(
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        runBackgroundableTask("Updating Snyk Code settings", project, true) {
+        runBackgroundableTask("processing config changes", project, true) {
+            LanguageServerWrapper.getInstance().updateConfiguration()
             settingsStateService.isGlobalIgnoresFeatureEnabled =
                 LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
-        }
 
-        if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
-            handleReleaseChannelChanged()
+            if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
+                handleReleaseChannelChanged()
+            }
         }
 
         if (rescanNeeded) {

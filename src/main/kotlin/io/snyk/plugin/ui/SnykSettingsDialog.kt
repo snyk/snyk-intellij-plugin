@@ -146,8 +146,8 @@ class SnykSettingsDialog(
                 } catch (e: Exception) {
                     logger.error("Failed to apply Snyk settings", e)
                 }
-                val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
-                tokenTextField.text = token
+                getSnykCliAuthenticationService(project)?.authenticate()
+                tokenTextField.text = pluginSettings().token
                 runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
                     this.scanTypesPanelOuter.checkSastEnabled()
                 }

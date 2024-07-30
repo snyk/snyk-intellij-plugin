@@ -96,6 +96,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
 
             pluginSettings().customEndpointUrl = expectedEndpoint
+            pluginSettings().useTokenAuthentication = false
 
             val token = """{ "access_token":"IntelliJ TEST"}"""
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
@@ -125,7 +126,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
             assertEquals(token, generalCommandLine.environment["SNYK_TOKEN"])
             assertEquals(null, generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"])
-            assertEquals(null, generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
+            assertEquals("0", generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
         } finally {
             pluginSettings().customEndpointUrl = oldEndpoint
         }

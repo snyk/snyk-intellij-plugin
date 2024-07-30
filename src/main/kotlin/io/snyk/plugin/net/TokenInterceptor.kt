@@ -36,10 +36,7 @@ class TokenInterceptor(private var projectManager: ProjectManager? = null) : Int
                 val oAuthToken = Gson().fromJson(token, OAuthToken::class.java)
                 val expiry = OffsetDateTime.parse(oAuthToken.expiry)
                 if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {
-                    // should we wait?
-                    LanguageServerWrapper.getInstance().languageServer.workspaceService.executeCommand(
-                        ExecuteCommandParams("snyk.getActiveUser", emptyList())
-                    )
+                    LanguageServerWrapper.getInstance().getAuthenticatedUser()
                 }
                 request.addHeader(authorizationHeaderName, "Bearer ${oAuthToken.access_token}")
                 request.addHeader(oldSnykCodeHeaderName, "Bearer ${oAuthToken.access_token}")
