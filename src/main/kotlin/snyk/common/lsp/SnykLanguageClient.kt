@@ -22,7 +22,6 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.cancelOss
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
@@ -129,8 +128,10 @@ class SnykLanguageClient : LanguageClient, Disposable {
         ProjectManager.getInstance().openProjects
             .filter { !it.isDisposed }
             .forEach { project ->
-                ReadAction.run<RuntimeException> {
-                    refreshAnnotationsForOpenFiles(project)
+                runAsync {
+                    ReadAction.run<RuntimeException> {
+                        if (!project.isDisposed) refreshAnnotationsForOpenFiles(project)
+                    }
                 }
             }
         VirtualFileManager.getInstance().asyncRefresh()

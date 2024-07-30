@@ -45,14 +45,18 @@ import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
+import snyk.common.isOauth
 import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.resolveCustomEndpoint
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.io.path.exists
 
@@ -63,6 +67,7 @@ class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
 ) : Disposable {
+    private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
     private var disposed = false
@@ -124,7 +129,12 @@ class LanguageServerWrapper(
         try {
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
-            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
+            val logLevel =
+                when {
+                    snykLanguageClient.logger.isDebugEnabled -> "debug"
+                    snykLanguageClient.logger.isTraceEnabled -> "trace"
+                    else -> "info"
+                }
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
@@ -341,6 +351,12 @@ class LanguageServerWrapper(
 
     fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
+        val authMethod =
+            if (URI(getEndpointUrl()).isOauth()) {
+                AuthenticationMethod.OAuthAuthentication
+            } else {
+                AuthenticationMethod.TokenAuthentication
+            }
         return LanguageServerSettings(
             activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
@@ -362,6 +378,7 @@ class LanguageServerWrapper(
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
+            authenticationMethod = authMethod,
             enableSnykOSSQuickFixCodeActions = "true",
         )
     }
@@ -373,6 +390,68 @@ class LanguageServerWrapper(
 
         if (pluginSettings().scanOnSave) {
             ProjectManager.getInstance().openProjects.forEach { sendScanCommand(it) }
+        }
+    }
+
+    fun getAuthenticatedUser(): String? {
+        if (pluginSettings().token.isNullOrBlank()) return null
+        if (!isInitialized) return null
+        if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
+        val cmd = ExecuteCommandParams("snyk.getActiveUser", emptyList())
+        val result =
+            try {
+                languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
+            } catch (e: TimeoutException) {
+                logger.warn("could not retrieve authenticated user", e)
+                null
+            }
+        if (result != null) {
+            @Suppress("UNCHECKED_CAST")
+            this.authenticatedUser = result as Map<String, String>?
+            return result["username"]
+        }
+        return null
+    }
+
+    // triggers login and returns auth URL
+    fun login(): String? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val loginCmd = ExecuteCommandParams("snyk.login", emptyList())
+            pluginSettings().token =
+                languageServer.workspaceService
+                    .executeCommand(loginCmd)
+                    .get(120, TimeUnit.SECONDS)
+                    ?.toString() ?: ""
+        } catch (e: TimeoutException) {
+            logger.warn("could not login", e)
+        }
+        return pluginSettings().token
+    }
+
+    fun getAuthLink(): String? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val authLinkCmd = ExecuteCommandParams("snyk.copyAuthLink", emptyList())
+            val url =
+                languageServer.workspaceService
+                    .executeCommand(authLinkCmd)
+                    .get(10, TimeUnit.SECONDS)
+                    .toString()
+            return url
+        } catch (e: TimeoutException) {
+            logger.warn("could not login", e)
+            return null
+        }
+    }
+
+    fun logout() {
+        if (!ensureLanguageServerInitialized()) return
+        val cmd = ExecuteCommandParams("snyk.logout", emptyList())
+        try {
+            languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
+        } catch (e: TimeoutException) {
+            logger.warn("could not logout", e)
         }
     }
 
