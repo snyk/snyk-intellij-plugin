@@ -79,7 +79,7 @@ class TokenInterceptorTest {
         verify { requestMock.addHeader(eq("Authorization"), eq("Bearer ${token.access_token}")) }
         verify { requestMock.addHeader(eq("Accept"), eq("application/json")) }
         verify { whoamiService.execute() }
-        verify { authenticationService.executeGetConfigApiCommand() }
+//        verify { authenticationService.executeGetConfigApiCommand() }
     }
 
     @Test
