@@ -96,11 +96,11 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
         runBackgroundableTask("Updating Snyk Code settings", project, true) {
             settingsStateService.isGlobalIgnoresFeatureEnabled =
-                LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
-        }
+                LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
 
-        if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
-            handleReleaseChannelChanged()
+            if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
+                handleReleaseChannelChanged()
+            }
         }
 
         if (rescanNeeded) {

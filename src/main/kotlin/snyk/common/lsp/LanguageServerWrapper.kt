@@ -47,7 +47,6 @@ import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.isOauth
 import snyk.common.lsp.commands.ScanDoneEvent
-import snyk.common.resolveCustomEndpoint
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
@@ -395,7 +394,8 @@ class LanguageServerWrapper(
 
     fun getAuthenticatedUser(): String? {
         if (pluginSettings().token.isNullOrBlank()) return null
-        if (!isInitialized) return null
+        if (!ensureLanguageServerInitialized()) return null
+
         if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
         val cmd = ExecuteCommandParams("snyk.getActiveUser", emptyList())
         val result =
@@ -461,6 +461,10 @@ class LanguageServerWrapper(
         ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
+    }
+
+    fun isGlobalIgnoresFeatureEnabled(): Boolean {
+        return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {
