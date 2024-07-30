@@ -218,7 +218,7 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 0,
                 indent = 0,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST
+                anchor = UIGridConstraints.ANCHOR_WEST
             ),
         )
 
