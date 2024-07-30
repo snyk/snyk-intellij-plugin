@@ -22,7 +22,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.ScanIssue
@@ -102,7 +102,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
 
-                val parentFileNode = value.parent as SnykCodeFileTreeNode
+                val parentFileNode = value.parent as SnykFileTreeNode
                 val (entry, productType) =
                     parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
 
@@ -114,7 +114,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 }
             }
 
-            is SnykCodeFileTreeNode -> {
+            is SnykFileTreeNode -> {
                 val (entry, productType) =
                     value.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
                 val file = entry.key

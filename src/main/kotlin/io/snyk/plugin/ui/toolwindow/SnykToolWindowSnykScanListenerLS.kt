@@ -9,6 +9,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.cancelOss
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
@@ -25,9 +26,8 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
-import snyk.common.lsp.CliError
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -78,6 +78,7 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
         ApplicationManager.getApplication().invokeLater {
+            cancelOss(project)
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displayOssResults(snykResults)
             refreshAnnotationsForOpenFiles(project)
@@ -341,7 +342,7 @@ class SnykToolWindowSnykScanListenerLS(
                     }
 
                 val fileTreeNode =
-                    SnykCodeFileTreeNode(entry, productType)
+                    SnykFileTreeNode(entry, productType)
                 rootNode.add(fileTreeNode)
                 entry.value.sortedByDescending { it.priority() }
                     .forEach { issue ->

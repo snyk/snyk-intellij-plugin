@@ -594,7 +594,7 @@ class SnykToolWindowPanel(
                                 count == 0 -> NO_ISSUES_FOUND_TEXT
                                 count > 0 -> ProductType.OSS.getCountText(count, isUniqueCount = true) + addHMLPostfix
                                 count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_PACKAGE_MANAGER_FOUND
-                                else -> throw IllegalStateException("ResultsCount is meaningful")
+                                else -> throw IllegalStateException("ResultsCount is not meaningful")
                             }
                     }
             }
