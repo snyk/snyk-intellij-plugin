@@ -392,7 +392,8 @@ class LanguageServerWrapper(
 
     fun getAuthenticatedUser(): String? {
         if (pluginSettings().token.isNullOrBlank()) return null
-        if (!isInitialized) return null
+        if (!ensureLanguageServerInitialized()) return null
+
         if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
         val cmd = ExecuteCommandParams("snyk.getActiveUser", emptyList())
         val result =
@@ -460,6 +461,10 @@ class LanguageServerWrapper(
         updateWorkspaceFolders(added, emptySet())
     }
 
+    fun isGlobalIgnoresFeatureEnabled(): Boolean {
+        return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
+    }
+
     private fun ensureLanguageServerProtocolVersion(project: Project) {
         val protocolVersion = initializeResult?.serverInfo?.version
         pluginSettings().currentLSProtocolVersion = protocolVersion?.toIntOrNull()
@@ -471,8 +476,8 @@ class LanguageServerWrapper(
     }
 
     companion object {
-        private var instance: LanguageServerWrapper? = null
 
+        private var instance: LanguageServerWrapper? = null
         fun getInstance() = instance ?: LanguageServerWrapper().also { instance = it }
     }
 

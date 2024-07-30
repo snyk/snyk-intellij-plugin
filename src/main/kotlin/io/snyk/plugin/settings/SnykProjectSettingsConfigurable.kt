@@ -109,7 +109,7 @@ class SnykProjectSettingsConfigurable(
         runBackgroundableTask("processing config changes", project, true) {
             LanguageServerWrapper.getInstance().updateConfiguration()
             settingsStateService.isGlobalIgnoresFeatureEnabled =
-                LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
+                LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
 
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
