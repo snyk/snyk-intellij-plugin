@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture
     storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
-    val requiredLsProtocolVersion = 12
+    val requiredLsProtocolVersion = 13
 
     var useTokenAuthentication = true
     var currentLSProtocolVersion: Int? = 0
