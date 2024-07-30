@@ -61,7 +61,9 @@ import java.util.concurrent.TimeUnit
 /**
  * Processes Language Server requests and notifications from the server to the IDE
  */
-class SnykLanguageClient : LanguageClient, Disposable {
+class SnykLanguageClient :
+    LanguageClient,
+    Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     private var disposed = false
         get() {
@@ -71,14 +73,14 @@ class SnykLanguageClient : LanguageClient, Disposable {
     fun isDisposed() = disposed
 
     private val progresses: Cache<String, ProgressIndicator> =
-        Caffeine.newBuilder()
+        Caffeine
+            .newBuilder()
             .expireAfterAccess(10, TimeUnit.SECONDS)
             .removalListener(
                 RemovalListener<String, ProgressIndicator> { _, indicator, _ ->
                     indicator?.cancel()
                 },
-            )
-            .build()
+            ).build()
     private val progressReportMsgCache: Cache<String, MutableList<WorkDoneProgressReport>> =
         Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
     private val progressEndMsgCache: Cache<String, WorkDoneProgressEnd> =
@@ -96,7 +98,10 @@ class SnykLanguageClient : LanguageClient, Disposable {
         val falseFuture = CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
         if (disposed) return falseFuture
         val project =
-            params?.edit?.changes?.keys
+            params
+                ?.edit
+                ?.changes
+                ?.keys
                 ?.firstNotNullOfOrNull {
                     ProjectLocator.getInstance().guessProjectForFile(it.toVirtualFile())
                 }
@@ -113,19 +118,17 @@ class SnykLanguageClient : LanguageClient, Disposable {
         return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(true))
     }
 
-    override fun refreshCodeLenses(): CompletableFuture<Void> {
-        return refreshUI()
-    }
+    override fun refreshCodeLenses(): CompletableFuture<Void> = refreshUI()
 
-    override fun refreshInlineValues(): CompletableFuture<Void> {
-        return refreshUI()
-    }
+    override fun refreshInlineValues(): CompletableFuture<Void> = refreshUI()
 
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (disposed) return completedFuture
 
-        ProjectManager.getInstance().openProjects
+        ProjectManager
+            .getInstance()
+            .openProjects
             .filter { !it.isDisposed }
             .forEach { project ->
                 runAsync {
@@ -213,18 +216,18 @@ class SnykLanguageClient : LanguageClient, Disposable {
      * Get all the scan publishers for the given scan. As the folder path could apply to different projects
      * containing that content root, we need to notify all of them.
      */
-    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykScanListenerLS>> {
-        return getProjectsForFolderPath(snykScan.folderPath)
+    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykScanListenerLS>> =
+        getProjectsForFolderPath(snykScan.folderPath)
             .mapNotNull { p ->
                 getSyncPublisher(p, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
                     Pair(p, scanListenerLS)
                 }
             }.toSet()
-    }
 
     private fun getProjectsForFolderPath(folderPath: String) =
         ProjectManager.getInstance().openProjects.filter {
-            it.getContentRootVirtualFiles()
+            it
+                .getContentRootVirtualFiles()
                 .contains(folderPath.toVirtualFile())
         }
 
@@ -242,8 +245,7 @@ class SnykLanguageClient : LanguageClient, Disposable {
                     it.first.relativePath
                     it.second.forEach { i -> i.textRange }
                     it
-                }
-                .filter { it.second.isNotEmpty() }
+                }.filter { it.second.isNotEmpty() }
                 .toMap()
         return map.toSortedMap(SnykFileIssueComparator(map))
     }
@@ -251,15 +253,17 @@ class SnykLanguageClient : LanguageClient, Disposable {
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {
         if (disposed) return
-
+        if (pluginSettings().token == param.token) return
         pluginSettings().token = param.token
 
-        ProjectManager.getInstance().openProjects.forEach {
-            LanguageServerWrapper.getInstance().sendScanCommand(it)
-        }
+        if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
+            val wrapper = LanguageServerWrapper.getInstance()
+            // retrieve global ignores feature flag status after auth
+            pluginSettings().isGlobalIgnoresFeatureEnabled = wrapper.isGlobalIgnoresFeatureEnabled()
 
-        if (!param.token.isNullOrBlank()) {
-            SnykBalloonNotificationHelper.showInfo("Authentication successful", ProjectUtil.getActiveProject()!!)
+            ProjectManager.getInstance().openProjects.forEach {
+                wrapper.sendScanCommand(it)
+            }
         }
     }
 
@@ -270,15 +274,15 @@ class SnykLanguageClient : LanguageClient, Disposable {
         param.trustedFolders.forEach { it.toNioPathOrNull()?.let { path -> trustService.addTrustedPath(path) } }
     }
 
-    override fun createProgress(params: WorkDoneProgressCreateParams?): CompletableFuture<Void> {
-        return CompletableFuture.completedFuture(null)
-    }
+    override fun createProgress(params: WorkDoneProgressCreateParams?): CompletableFuture<Void> =
+        CompletableFuture.completedFuture(null)
 
     private fun createProgressInternal(
         token: String,
         begin: WorkDoneProgressBegin,
     ) {
-        ProgressManager.getInstance()
+        ProgressManager
+            .getInstance()
             .run(
                 object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
                     override fun run(indicator: ProgressIndicator) {
@@ -435,13 +439,15 @@ class SnykLanguageClient : LanguageClient, Disposable {
 
         showMessageRequestFutures.clear()
         val actions =
-            requestParams.actions.map {
-                object : AnAction(it.title) {
-                    override fun actionPerformed(p0: AnActionEvent) {
-                        showMessageRequestFutures.put(MessageActionItem(it.title))
+            requestParams.actions
+                .map {
+                    object : AnAction(it.title) {
+                        override fun actionPerformed(p0: AnActionEvent) {
+                            showMessageRequestFutures.put(MessageActionItem(it.title))
+                        }
                     }
-                }
-            }.toSet().toTypedArray()
+                }.toSet()
+                .toTypedArray()
 
         val notification = SnykBalloonNotificationHelper.showInfo(requestParams.message, project, *actions)
         val messageActionItem = showMessageRequestFutures.poll(10, TimeUnit.SECONDS)
