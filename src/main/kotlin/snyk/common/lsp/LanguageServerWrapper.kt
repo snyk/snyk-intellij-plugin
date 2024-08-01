@@ -113,10 +113,6 @@ class LanguageServerWrapper(
                 process.isAlive &&
                 !isInitializing.isLocked
 
-    init {
-        Disposer.register(SnykPluginDisposable.getInstance(), this)
-    }
-
     @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
         if (disposed) return
@@ -161,10 +157,12 @@ class LanguageServerWrapper(
 
     fun shutdown(): Future<*> =
         executorService.submit {
-            languageServer.shutdown()
-            languageServer.exit()
             if (process.isAlive) {
-                process.destroyForcibly()
+                languageServer.shutdown().get(1, TimeUnit.SECONDS)
+                languageServer.exit()
+                if (process.isAlive) {
+                    process.destroyForcibly()
+                }
             }
         }
 
@@ -486,7 +484,10 @@ class LanguageServerWrapper(
     companion object {
         private var instance: LanguageServerWrapper? = null
 
-        fun getInstance() = instance ?: LanguageServerWrapper().also { instance = it }
+        fun getInstance() = instance ?: LanguageServerWrapper().also {
+            Disposer.register(SnykPluginDisposable.getInstance(), it)
+            instance = it
+        }
     }
 
     override fun dispose() {
