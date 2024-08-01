@@ -49,6 +49,7 @@ import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -138,7 +139,13 @@ class LanguageServerWrapper(
             languageServer = launcher.remoteProxy
 
             GlobalScope.launch {
-                process.errorStream.bufferedReader().forEachLine { println(it) }
+                if (!disposed) {
+                    try {
+                        process.errorStream.bufferedReader().forEachLine { println(it) }
+                    } catch (ignored: IOException) {
+                        // ignore
+                    }
+                }
             }
 
             launcher.startListening()
