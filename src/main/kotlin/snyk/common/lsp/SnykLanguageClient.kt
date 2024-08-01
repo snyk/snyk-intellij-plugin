@@ -294,7 +294,7 @@ class SnykLanguageClient :
                         indicator.text2 = begin.message
                         indicator.fraction = 0.1
                         progresses.put(token, indicator)
-                        while (!indicator.isCanceled) {
+                        while (!indicator.isCanceled && !disposed) {
                             Thread.sleep(1000)
                         }
                         logger.debug("Progress indicator canceled for token: $token")
@@ -456,7 +456,6 @@ class SnykLanguageClient :
     }
 
     override fun logMessage(message: MessageParams?) {
-        if (disposed) return
         message?.let {
             when (it.type) {
                 MessageType.Error -> logger.error(it.message)

@@ -159,7 +159,11 @@ class LanguageServerWrapper(
 
     fun shutdown(): Future<*> =
         executorService.submit {
-            process.destroyForcibly()
+            languageServer.shutdown()
+            languageServer.exit()
+            if (process.isAlive) {
+                process.destroyForcibly()
+            }
         }
 
     private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
@@ -251,6 +255,7 @@ class LanguageServerWrapper(
         added: Set<WorkspaceFolder>,
         removed: Set<WorkspaceFolder>,
     ) {
+        if (disposed) return
         try {
             if (!ensureLanguageServerInitialized()) return
             val params = DidChangeWorkspaceFoldersParams()
@@ -462,6 +467,7 @@ class LanguageServerWrapper(
     }
 
     fun isGlobalIgnoresFeatureEnabled(): Boolean {
+        if (!ensureLanguageServerInitialized()) return false
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
