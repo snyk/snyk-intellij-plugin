@@ -50,6 +50,7 @@ import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.io.IOException
 import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -140,7 +141,13 @@ class LanguageServerWrapper(
             languageServer = launcher.remoteProxy
 
             GlobalScope.launch {
-                process.errorStream.bufferedReader().forEachLine { println(it) }
+                if (!disposed) {
+                    try {
+                        process.errorStream.bufferedReader().forEachLine { println(it) }
+                    } catch (ignored: IOException) {
+                        // ignore
+                    }
+                }
             }
 
             launcher.startListening()
@@ -432,32 +439,6 @@ class LanguageServerWrapper(
         return pluginSettings().token
     }
 
-    fun getAuthLink(): String? {
-        if (!ensureLanguageServerInitialized()) return null
-        try {
-            val authLinkCmd = ExecuteCommandParams("snyk.copyAuthLink", emptyList())
-            val url =
-                languageServer.workspaceService
-                    .executeCommand(authLinkCmd)
-                    .get(10, TimeUnit.SECONDS)
-                    .toString()
-            return url
-        } catch (e: TimeoutException) {
-            logger.warn("could not login", e)
-            return null
-        }
-    }
-
-    fun logout() {
-        if (!ensureLanguageServerInitialized()) return
-        val cmd = ExecuteCommandParams("snyk.logout", emptyList())
-        try {
-            languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
-        } catch (e: TimeoutException) {
-            logger.warn("could not logout", e)
-        }
-    }
-
     fun addContentRoots(project: Project) {
         if (disposed || project.isDisposed) return
         assert(isInitialized)
@@ -484,10 +465,11 @@ class LanguageServerWrapper(
     companion object {
         private var instance: LanguageServerWrapper? = null
 
-        fun getInstance() = instance ?: LanguageServerWrapper().also {
-            Disposer.register(SnykPluginDisposable.getInstance(), it)
-            instance = it
-        }
+        fun getInstance() =
+            instance ?: LanguageServerWrapper().also {
+                Disposer.register(SnykPluginDisposable.getInstance(), it)
+                instance = it
+            }
     }
 
     override fun dispose() {
