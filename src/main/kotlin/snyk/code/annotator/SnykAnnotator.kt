@@ -2,6 +2,8 @@ package snyk.code.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
@@ -20,8 +22,18 @@ import java.util.concurrent.TimeoutException
 
 private const val CODEACTION_TIMEOUT = 700L
 
-abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotator<PsiFile, Unit>() {
+abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotator<PsiFile, Unit>(), Disposable {
     val logger = logger<SnykAnnotator>()
+    protected var disposed = false
+        get() {
+            return ApplicationManager.getApplication().isDisposed || field
+        }
+
+    fun isDisposed() = disposed
+
+    override fun dispose() {
+        disposed = true
+    }
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile {
@@ -29,6 +41,7 @@ abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotat
     }
 
     override fun doAnnotate(psiFile: PsiFile?) {
+        if (disposed) return
         AnnotatorCommon.prepareAnnotate(psiFile)
     }
 
@@ -37,6 +50,7 @@ abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotat
         annotationResult: Unit,
         holder: AnnotationHolder,
     ) {
+        if (disposed) return
         if (!LanguageServerWrapper.getInstance().isInitialized) return
 
         getIssuesForFile(psiFile)
