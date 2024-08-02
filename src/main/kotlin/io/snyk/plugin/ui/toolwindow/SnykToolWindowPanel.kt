@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -748,17 +749,25 @@ class SnykToolWindowPanel(
         ): () -> Unit =
             {
                 runAsync {
-                    val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(filePath))
-                    if (virtualFile != null && virtualFile.isValid) {
-                        if (vulnerability == null) {
-                            navigateToSource(project, virtualFile, 0)
-                        } else {
-                            val psiFile = PsiManager.getInstance(project).findFile(virtualFile)
+                    var virtualFile: VirtualFile? = null
+                    ReadAction.run<RuntimeException> {
+                        virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(filePath))
+                    }
+                    val vf = virtualFile
+                    if (vf == null || !vf.isValid) {
+                        return@runAsync
+                    }
+
+                    if (vulnerability == null) {
+                        navigateToSource(project, vf, 0)
+                    } else {
+                        ReadAction.run<RuntimeException> {
+                            val psiFile = PsiManager.getInstance(project).findFile(vf)
                             val textRange =
                                 psiFile?.let { getOssTextRangeFinderService().findTextRange(it, vulnerability) }
                             navigateToSource(
                                 project = project,
-                                virtualFile = virtualFile,
+                                virtualFile = vf,
                                 selectionStartOffset = textRange?.startOffset ?: 0,
                                 selectionEndOffset = textRange?.endOffset,
                             )

@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.jcef
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -26,16 +25,13 @@ class OpenFileLoadHandlerGenerator(
 
         val virtualFile = virtualFiles[filePath] ?: return JBCefJSQuery.Response("success")
 
-        ApplicationManager.getApplication().invokeLater {
-            val document = virtualFile.getDocument()
-            val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
-            val startOffset = startLineStartOffset + (startCharacter)
-            val endLineStartOffset = document?.getLineStartOffset(endLine) ?: 0
-            val endOffset = endLineStartOffset + endCharacter - 1
+        val document = virtualFile.getDocument()
+        val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
+        val startOffset = startLineStartOffset + (startCharacter)
+        val endLineStartOffset = document?.getLineStartOffset(endLine) ?: 0
+        val endOffset = endLineStartOffset + endCharacter - 1
 
-            navigateToSource(project, virtualFile, startOffset, endOffset)
-        }
-
+        navigateToSource(project, virtualFile, startOffset, endOffset)
         return JBCefJSQuery.Response("success")
     }
 
@@ -43,7 +39,10 @@ class OpenFileLoadHandlerGenerator(
         val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
         val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
         val isHighContrast =
-            EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
+            EditorColorsManager
+                .getInstance()
+                .globalScheme.name
+                .contains("High contrast", ignoreCase = true)
 
         openFileQuery.addHandler { openFile(it) }
 

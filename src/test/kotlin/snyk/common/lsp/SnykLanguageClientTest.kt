@@ -6,6 +6,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -45,6 +46,7 @@ class SnykLanguageClientTest {
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
         every { applicationMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable
         every { applicationMock.isDisposed } returns false
+        every { applicationMock.messageBus } returns mockk(relaxed = true)
 
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
         every { projectMock.isDisposed } returns false
