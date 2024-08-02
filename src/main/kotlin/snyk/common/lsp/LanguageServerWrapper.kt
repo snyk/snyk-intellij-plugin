@@ -362,10 +362,11 @@ class LanguageServerWrapper(
         val ps = pluginSettings()
         val authMethod =
             if (URI(getEndpointUrl()).isOauth()) {
-                AuthenticationMethod.OAuthAuthentication
+                "oauth"
             } else {
-                AuthenticationMethod.TokenAuthentication
+                "token"
             }
+
         return LanguageServerSettings(
             activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
