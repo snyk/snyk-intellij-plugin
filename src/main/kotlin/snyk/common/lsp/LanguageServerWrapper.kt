@@ -423,22 +423,6 @@ class LanguageServerWrapper(
         return null
     }
 
-    // triggers login and returns auth URL
-    fun login(): String? {
-        if (!ensureLanguageServerInitialized()) return null
-        try {
-            val loginCmd = ExecuteCommandParams("snyk.login", emptyList())
-            pluginSettings().token =
-                languageServer.workspaceService
-                    .executeCommand(loginCmd)
-                    .get(120, TimeUnit.SECONDS)
-                    ?.toString() ?: ""
-        } catch (e: TimeoutException) {
-            logger.warn("could not login", e)
-        }
-        return pluginSettings().token
-    }
-
     fun addContentRoots(project: Project) {
         if (disposed || project.isDisposed) return
         assert(isInitialized)
