@@ -4,8 +4,7 @@ import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykCodeFileTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import snyk.analytics.IssueInTreeIsClicked.Ide
@@ -40,7 +39,7 @@ class SuggestionTreeNode(
                     .build()
             )
         }
-        val snykFileTreeNode = this.parent as? SnykCodeFileTreeNode
+        val snykFileTreeNode = this.parent as? SnykFileTreeNode
             ?: throw IllegalArgumentException(this.toString())
 
         @Suppress("UNCHECKED_CAST")

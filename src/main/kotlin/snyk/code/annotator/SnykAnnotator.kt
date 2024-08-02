@@ -18,7 +18,7 @@ import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-private const val CODEACTION_TIMEOUT = 2L
+private const val CODEACTION_TIMEOUT = 700L
 
 abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotator<PsiFile, Unit>() {
     val logger = logger<SnykAnnotator>()
@@ -37,7 +37,7 @@ abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotat
         annotationResult: Unit,
         holder: AnnotationHolder,
     ) {
-        if (!LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()) return
+        if (!LanguageServerWrapper.getInstance().isInitialized) return
 
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
@@ -67,7 +67,7 @@ abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotat
                     val codeActions =
                         try {
                             languageServer.textDocumentService
-                                .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
+                                .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.MILLISECONDS) ?: emptyList()
                         } catch (ignored: TimeoutException) {
                             logger.info("Timeout fetching code actions for issue: $issue")
                             emptyList()

@@ -24,8 +24,9 @@ import snyk.amplitude.api.ExperimentUser
 import snyk.common.lsp.LanguageServerWrapper
 import javax.swing.JComponent
 
-class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
-
+class SnykProjectSettingsConfigurable(
+    val project: Project,
+) : SearchableConfigurable {
     private val settingsStateService
         get() = pluginSettings()
 
@@ -38,23 +39,33 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
 
     override fun createComponent(): JComponent = snykSettingsDialog.getRootPanel()
 
-    override fun isModified(): Boolean = isCoreParamsModified() ||
-        isIgnoreUnknownCAModified() ||
-        isSendUsageAnalyticsModified() ||
-        isCrashReportingModified() ||
-        snykSettingsDialog.isScanTypeChanged() ||
-        snykSettingsDialog.isSeverityEnablementChanged() ||
-        snykSettingsDialog.isIssueOptionChanged() ||
-        snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
-        snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
-        snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
-        snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
-        snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel
+    override fun isModified(): Boolean =
+        isCoreParamsModified() ||
+            isIgnoreUnknownCAModified() ||
+            isSendUsageAnalyticsModified() ||
+            isCrashReportingModified() ||
+            snykSettingsDialog.isScanTypeChanged() ||
+            snykSettingsDialog.isSeverityEnablementChanged() ||
+            snykSettingsDialog.isIssueOptionChanged() ||
+            snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
+            snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
+            snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
+            snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
+            snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
+            isAuthenticationMethodModified()
 
-    private fun isCoreParamsModified() = isTokenModified() ||
-        isCustomEndpointModified() ||
-        isOrganizationModified() ||
-        isAdditionalParametersModified()
+    private fun isAuthenticationMethodModified() =
+        snykSettingsDialog.getUseTokenAuthentication() != settingsStateService.useTokenAuthentication
+
+    private fun isCoreParamsModified() =
+        isTokenModified() ||
+            isCustomEndpointModified() ||
+            isOrganizationModified() ||
+            isAdditionalParametersModified() ||
+            isAuthenticationMethodModified() ||
+            snykSettingsDialog.isSeverityEnablementChanged() ||
+            snykSettingsDialog.isIssueOptionChanged() ||
+            snykSettingsDialog.isScanTypeChanged()
 
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
@@ -73,6 +84,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         }
 
         settingsStateService.token = snykSettingsDialog.getToken()
+        settingsStateService.useTokenAuthentication = snykSettingsDialog.getUseTokenAuthentication()
         settingsStateService.organization = snykSettingsDialog.getOrganization()
         settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
@@ -94,13 +106,14 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
         }
 
-        runBackgroundableTask("Updating Snyk Code settings", project, true) {
+        runBackgroundableTask("processing config changes", project, true) {
+            LanguageServerWrapper.getInstance().updateConfiguration()
             settingsStateService.isGlobalIgnoresFeatureEnabled =
-                LanguageServerWrapper.getInstance().getFeatureFlagStatus("snykCodeConsistentIgnores")
-        }
+                LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
 
-        if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
-            handleReleaseChannelChanged()
+            if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
+                handleReleaseChannelChanged()
+            }
         }
 
         if (rescanNeeded) {
@@ -128,28 +141,30 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     private fun handleReleaseChannelChanged() {
         settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
         var notification: Notification? = null
-        val downloadAction = object : AnAction("Download") {
-            override fun actionPerformed(e: AnActionEvent) {
-                getSnykTaskQueueService(project)?.downloadLatestRelease(true)
-                    ?: SnykBalloonNotificationHelper.showWarn("Could not download Snyk CLI", project)
-                notification?.expire()
+        val downloadAction =
+            object : AnAction("Download") {
+                override fun actionPerformed(e: AnActionEvent) {
+                    getSnykTaskQueueService(project)?.downloadLatestRelease(true)
+                        ?: SnykBalloonNotificationHelper.showWarn("Could not download Snyk CLI", project)
+                    notification?.expire()
+                }
             }
-        }
-        val noAction = object : AnAction("Cancel") {
-            override fun actionPerformed(e: AnActionEvent) {
-                notification?.expire()
+        val noAction =
+            object : AnAction("Cancel") {
+                override fun actionPerformed(e: AnActionEvent) {
+                    notification?.expire()
+                }
             }
-        }
-        notification = SnykBalloonNotificationHelper.showInfo(
-            "You changed the release channel. Would you like to download a new Snyk CLI now?",
-            project,
-            downloadAction,
-            noAction
-        )
+        notification =
+            SnykBalloonNotificationHelper.showInfo(
+                "You changed the release channel. Would you like to download a new Snyk CLI now?",
+                project,
+                downloadAction,
+                noAction,
+            )
     }
 
-    private fun isTokenModified(): Boolean =
-        snykSettingsDialog.getToken() != settingsStateService.token
+    private fun isTokenModified(): Boolean = snykSettingsDialog.getToken() != settingsStateService.token
 
     private fun isCustomEndpointModified(): Boolean =
         snykSettingsDialog.getCustomEndpoint() != settingsStateService.customEndpointUrl
@@ -166,6 +181,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     private fun isCrashReportingModified(): Boolean =
         snykSettingsDialog.isCrashReportingEnabled() != settingsStateService.crashReportingEnabled
 
-    private fun isAdditionalParametersModified(): Boolean = isProjectSettingsAvailable(project) &&
-        snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(project)?.additionalParameters
+    private fun isAdditionalParametersModified(): Boolean =
+        isProjectSettingsAvailable(project) &&
+            snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(project)?.additionalParameters
 }

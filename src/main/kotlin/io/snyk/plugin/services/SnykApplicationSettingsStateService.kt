@@ -19,16 +19,17 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 @Service
 @State(
     name = "SnykApplicationSettingsState",
-    storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)]
+    storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
+    val requiredLsProtocolVersion = 13
 
-    val requiredLsProtocolVersion = 12
-
+    var useTokenAuthentication = true
     var currentLSProtocolVersion: Int? = 0
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://static.snyk.io"
@@ -103,19 +104,19 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         }
     }
 
-    fun getAdditionalParameters(project: Project? = null): String? {
-        return if (isProjectSettingsAvailable(project)) {
+    fun getAdditionalParameters(project: Project? = null): String? =
+        if (isProjectSettingsAvailable(project)) {
             getSnykProjectSettingsService(project!!)?.additionalParameters
         } else {
             ""
         }
-    }
 
-    fun getLastCheckDate(): LocalDate? = if (lastCheckDate != null) {
-        lastCheckDate!!.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-    } else {
-        null
-    }
+    fun getLastCheckDate(): LocalDate? =
+        if (lastCheckDate != null) {
+            lastCheckDate!!.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        } else {
+            null
+        }
 
     fun setLastCheckDate(localDate: LocalDateTime) {
         this.lastCheckDate = Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant())
@@ -139,7 +140,10 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
             else -> false
         }
 
-    fun setSeverityTreeFiltered(severity: Severity, state: Boolean) {
+    fun setSeverityTreeFiltered(
+        severity: Severity,
+        state: Boolean,
+    ) {
         when (severity) {
             Severity.CRITICAL -> treeFiltering.criticalSeverity = state
             Severity.HIGH -> treeFiltering.highSeverity = state
@@ -157,7 +161,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
             hasSeverityEnabledAndFiltered(Severity.CRITICAL),
             hasSeverityEnabledAndFiltered(Severity.HIGH),
             hasSeverityEnabledAndFiltered(Severity.MEDIUM),
-            hasSeverityEnabledAndFiltered(Severity.LOW)
+            hasSeverityEnabledAndFiltered(Severity.LOW),
         ).count { it } == 1
 
     fun matchFilteringWithEnablement() {
