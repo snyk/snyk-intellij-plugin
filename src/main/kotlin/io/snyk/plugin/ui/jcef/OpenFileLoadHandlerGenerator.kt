@@ -37,13 +37,6 @@ class OpenFileLoadHandlerGenerator(
 
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
-        val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
-        val isHighContrast =
-            EditorColorsManager
-                .getInstance()
-                .globalScheme.name
-                .contains("High contrast", ignoreCase = true)
-
         openFileQuery.addHandler { openFile(it) }
 
         return object : CefLoadHandlerAdapter() {
