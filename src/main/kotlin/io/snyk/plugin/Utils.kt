@@ -45,6 +45,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.apache.commons.lang3.SystemUtils
+import org.jetbrains.concurrency.runAsync
 import snyk.advisor.AdvisorService
 import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
@@ -348,32 +349,34 @@ fun navigateToSource(
     selectionStartOffset: Int,
     selectionEndOffset: Int? = null,
 ) {
-    if (!virtualFile.isValid) return
-    val textLength = virtualFile.contentsToByteArray().size
-    if (selectionStartOffset in (0 until textLength)) {
-        // jump to Source
-        val navigatable =
-            PsiNavigationSupport.getInstance().createNavigatable(
-                project,
-                virtualFile,
-                selectionStartOffset,
-            )
-        invokeLater { navigatable.navigate(false) }
-    } else {
-        logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
-    }
-
-    if (selectionEndOffset != null) {
-        // highlight(by selection) suggestion range in source file
-        if (selectionEndOffset in (0 until textLength) &&
-            selectionStartOffset < selectionEndOffset
-        ) {
-            invokeLater {
-                val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
-            }
+    runAsync {
+        if (!virtualFile.isValid) return@runAsync
+        val textLength = virtualFile.contentsToByteArray().size
+        if (selectionStartOffset in (0 until textLength)) {
+            // jump to Source
+            val navigatable =
+                PsiNavigationSupport.getInstance().createNavigatable(
+                    project,
+                    virtualFile,
+                    selectionStartOffset,
+                )
+            invokeLater { navigatable.navigate(false) }
         } else {
-            logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
+            logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
+        }
+
+        if (selectionEndOffset != null) {
+            // highlight(by selection) suggestion range in source file
+            if (selectionEndOffset in (0 until textLength) &&
+                selectionStartOffset < selectionEndOffset
+            ) {
+                invokeLater {
+                    val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                    editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
+                }
+            } else {
+                logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
+            }
         }
     }
 }
