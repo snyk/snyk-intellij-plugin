@@ -91,6 +91,7 @@ class CodeActionIntention(
         return when {
             codeAction.title.contains("fix", ignoreCase = true) -> PriorityAction.Priority.TOP
             codeAction.title.contains("Upgrade to", ignoreCase = true) -> PriorityAction.Priority.TOP
+            codeAction.title.contains("Learn", ignoreCase = true) -> PriorityAction.Priority.BOTTOM
             else -> issue.getSeverityAsEnum().getQuickFixPriority()
         }
     }

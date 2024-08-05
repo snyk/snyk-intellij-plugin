@@ -9,6 +9,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -44,6 +45,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.apache.commons.lang3.SystemUtils
+import org.jetbrains.concurrency.runAsync
 import snyk.advisor.AdvisorService
 import snyk.advisor.AdvisorServiceImpl
 import snyk.advisor.SnykAdvisorModel
@@ -197,7 +199,7 @@ fun isOssRunning(project: Project): Boolean {
         (indicator != null && indicator.isRunning && !indicator.isCanceled)
 }
 
-fun cancelOss(project: Project) {
+fun cancelOssIndicator(project: Project) {
     val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
     indicator?.cancel()
 }
@@ -234,6 +236,7 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     var currentAttempt = 1
     val maxAttempts = 20
     lateinit var checkIfSastEnabled: () -> Unit
+    // TODO use ls
     checkIfSastEnabled = {
         if (settings.sastOnServerEnabled != true) {
             settings.sastOnServerEnabled = try {
@@ -344,30 +347,40 @@ fun navigateToSource(
     project: Project,
     virtualFile: VirtualFile,
     selectionStartOffset: Int,
-    selectionEndOffset: Int? = null
+    selectionEndOffset: Int? = null,
 ) {
-    if (!virtualFile.isValid) return
-    val textLength = virtualFile.contentsToByteArray().size
-    if (selectionStartOffset in (0 until textLength)) {
-        // jump to Source
-        PsiNavigationSupport.getInstance().createNavigatable(
-            project,
-            virtualFile,
-            selectionStartOffset
-        ).navigate(false)
-    } else {
-        logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
-    }
-
-    if (selectionEndOffset != null) {
-        // highlight(by selection) suggestion range in source file
-        if (selectionEndOffset in (0 until textLength) &&
-            selectionStartOffset < selectionEndOffset
-        ) {
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
-            editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
+    runAsync {
+        if (!virtualFile.isValid) return@runAsync
+        val textLength = virtualFile.contentsToByteArray().size
+        if (selectionStartOffset in (0 until textLength)) {
+            // jump to Source
+            val navigatable =
+                PsiNavigationSupport.getInstance().createNavigatable(
+                    project,
+                    virtualFile,
+                    selectionStartOffset,
+                )
+            invokeLater {
+                if (navigatable.canNavigateToSource()) {
+                    navigatable.navigate(false)
+                }
+            }
         } else {
-            logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
+            logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
+        }
+
+        if (selectionEndOffset != null) {
+            // highlight(by selection) suggestion range in source file
+            if (selectionEndOffset in (0 until textLength) &&
+                selectionStartOffset < selectionEndOffset
+            ) {
+                invokeLater {
+                    val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                    editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
+                }
+            } else {
+                logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
+            }
         }
     }
 }

@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.8.11]
+### Added
+- Improved UI thread usage and app shutdown handling
+
 ## [2.8.9]
 ### Added
 - Updated Open Source, Containers and IaC products to include `.snyk` in the list of supported build files.

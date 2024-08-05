@@ -2,6 +2,8 @@ package snyk.code.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
@@ -18,10 +20,20 @@ import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-private const val CODEACTION_TIMEOUT = 2L
+private const val CODEACTION_TIMEOUT = 700L
 
-abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotator<PsiFile, Unit>() {
+abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotator<PsiFile, Unit>(), Disposable {
     val logger = logger<SnykAnnotator>()
+    protected var disposed = false
+        get() {
+            return ApplicationManager.getApplication().isDisposed || field
+        }
+
+    fun isDisposed() = disposed
+
+    override fun dispose() {
+        disposed = true
+    }
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): PsiFile {
@@ -29,6 +41,7 @@ abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotat
     }
 
     override fun doAnnotate(psiFile: PsiFile?) {
+        if (disposed) return
         AnnotatorCommon.prepareAnnotate(psiFile)
     }
 
@@ -37,7 +50,8 @@ abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotat
         annotationResult: Unit,
         holder: AnnotationHolder,
     ) {
-        if (!LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()) return
+        if (disposed) return
+        if (!LanguageServerWrapper.getInstance().isInitialized) return
 
         getIssuesForFile(psiFile)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
@@ -67,7 +81,7 @@ abstract class SnykAnnotator(private val product: ProductType) : ExternalAnnotat
                     val codeActions =
                         try {
                             languageServer.textDocumentService
-                                .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
+                                .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.MILLISECONDS) ?: emptyList()
                         } catch (ignored: TimeoutException) {
                             logger.info("Timeout fetching code actions for issue: $issue")
                             emptyList()

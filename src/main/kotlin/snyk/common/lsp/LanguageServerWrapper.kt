@@ -43,16 +43,21 @@ import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
+import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
+import snyk.common.isOauth
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.io.IOException
+import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.io.path.exists
 
@@ -63,6 +68,7 @@ class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
     private val executorService: ExecutorService = Executors.newCachedThreadPool(),
 ) : Disposable {
+    private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private val gson = com.google.gson.Gson()
     private var disposed = false
@@ -109,10 +115,6 @@ class LanguageServerWrapper(
                 process.isAlive &&
                 !isInitializing.isLocked
 
-    init {
-        Disposer.register(SnykPluginDisposable.getInstance(), this)
-    }
-
     @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
         if (disposed) return
@@ -124,7 +126,12 @@ class LanguageServerWrapper(
         try {
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
-            val logLevel = if (snykLanguageClient.logger.isDebugEnabled) "debug" else "info"
+            val logLevel =
+                when {
+                    snykLanguageClient.logger.isDebugEnabled -> "debug"
+                    snykLanguageClient.logger.isTraceEnabled -> "trace"
+                    else -> "info"
+                }
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
@@ -135,7 +142,13 @@ class LanguageServerWrapper(
             languageServer = launcher.remoteProxy
 
             GlobalScope.launch {
-                process.errorStream.bufferedReader().forEachLine { println(it) }
+                if (!disposed) {
+                    try {
+                        process.errorStream.bufferedReader().forEachLine { println(it) }
+                    } catch (ignored: IOException) {
+                        // ignore
+                    }
+                }
             }
 
             launcher.startListening()
@@ -146,13 +159,18 @@ class LanguageServerWrapper(
         }
 
         // update feature flags
-        pluginSettings().isGlobalIgnoresFeatureEnabled =
-            getFeatureFlagStatusInternal("snykCodeConsistentIgnores")
+        runAsync { pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled() }
     }
 
     fun shutdown(): Future<*> =
         executorService.submit {
-            process.destroyForcibly()
+            if (process.isAlive) {
+                languageServer.shutdown().get(1, TimeUnit.SECONDS)
+                languageServer.exit()
+                if (process.isAlive) {
+                    process.destroyForcibly()
+                }
+            }
         }
 
     private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
@@ -244,6 +262,7 @@ class LanguageServerWrapper(
         added: Set<WorkspaceFolder>,
         removed: Set<WorkspaceFolder>,
     ) {
+        if (disposed) return
         try {
             if (!ensureLanguageServerInitialized()) return
             val params = DidChangeWorkspaceFoldersParams()
@@ -304,7 +323,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = "snyk.getFeatureFlagStatus"
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
+            val result = languageServer.workspaceService.executeCommand(param).get(10, TimeUnit.SECONDS)
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
@@ -341,6 +360,13 @@ class LanguageServerWrapper(
 
     fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
+        val authMethod =
+            if (URI(getEndpointUrl()).isOauth()) {
+                "oauth"
+            } else {
+                "token"
+            }
+
         return LanguageServerSettings(
             activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
@@ -362,6 +388,7 @@ class LanguageServerWrapper(
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
+            authenticationMethod = authMethod,
             enableSnykOSSQuickFixCodeActions = "true",
         )
     }
@@ -376,12 +403,38 @@ class LanguageServerWrapper(
         }
     }
 
+    fun getAuthenticatedUser(): String? {
+        if (pluginSettings().token.isNullOrBlank()) return null
+        if (!ensureLanguageServerInitialized()) return null
+
+        if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
+        val cmd = ExecuteCommandParams("snyk.getActiveUser", emptyList())
+        val result =
+            try {
+                languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
+            } catch (e: TimeoutException) {
+                logger.warn("could not retrieve authenticated user", e)
+                null
+            }
+        if (result != null) {
+            @Suppress("UNCHECKED_CAST")
+            this.authenticatedUser = result as Map<String, String>?
+            return result["username"]
+        }
+        return null
+    }
+
     fun addContentRoots(project: Project) {
         if (disposed || project.isDisposed) return
         assert(isInitialized)
         ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
+    }
+
+    fun isGlobalIgnoresFeatureEnabled(): Boolean {
+        if (!ensureLanguageServerInitialized()) return false
+        return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {
@@ -397,7 +450,11 @@ class LanguageServerWrapper(
     companion object {
         private var instance: LanguageServerWrapper? = null
 
-        fun getInstance() = instance ?: LanguageServerWrapper().also { instance = it }
+        fun getInstance() =
+            instance ?: LanguageServerWrapper().also {
+                Disposer.register(SnykPluginDisposable.getInstance(), it)
+                instance = it
+            }
     }
 
     override fun dispose() {

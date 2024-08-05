@@ -14,10 +14,9 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.junit.After
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
-
-import org.junit.Assert.*
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import kotlin.io.path.Path
@@ -45,6 +44,7 @@ class SnykLanguageClientTest {
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
         every { applicationMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable
         every { applicationMock.isDisposed } returns false
+        every { applicationMock.messageBus } returns mockk(relaxed = true)
 
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
         every { projectMock.isDisposed } returns false
