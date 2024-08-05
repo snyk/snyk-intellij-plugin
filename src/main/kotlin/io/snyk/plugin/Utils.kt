@@ -360,7 +360,11 @@ fun navigateToSource(
                     virtualFile,
                     selectionStartOffset,
                 )
-            invokeLater { navigatable.navigate(false) }
+            invokeLater {
+                if (navigatable.canNavigateToSource()) {
+                    navigatable.navigate(false)
+                }
+            }
         } else {
             logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
         }
