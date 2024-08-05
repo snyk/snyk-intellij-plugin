@@ -43,6 +43,7 @@ import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
+import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.isOauth
@@ -158,8 +159,7 @@ class LanguageServerWrapper(
         }
 
         // update feature flags
-        pluginSettings().isGlobalIgnoresFeatureEnabled =
-            getFeatureFlagStatusInternal("snykCodeConsistentIgnores")
+        runAsync { pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled() }
     }
 
     fun shutdown(): Future<*> =
@@ -323,7 +323,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = "snyk.getFeatureFlagStatus"
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
+            val result = languageServer.workspaceService.executeCommand(param).get(10, TimeUnit.SECONDS)
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
