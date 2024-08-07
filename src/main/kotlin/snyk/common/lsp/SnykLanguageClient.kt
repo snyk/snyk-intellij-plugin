@@ -3,6 +3,7 @@ package snyk.common.lsp
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalListener
+import com.google.gson.Gson
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
@@ -33,6 +34,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse
+import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.LogTraceParams
 import org.eclipse.lsp4j.MessageActionItem
 import org.eclipse.lsp4j.MessageParams
@@ -56,7 +58,10 @@ import snyk.common.SnykFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import kotlin.streams.toList
+
 
 /**
  * Processes Language Server requests and notifications from the server to the IDE
@@ -85,13 +90,35 @@ class SnykLanguageClient :
         Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
     private val progressEndMsgCache: Cache<String, WorkDoneProgressEnd> =
         Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
+    private var diagnosticsMap: ConcurrentHashMap<String, List<Diagnostic>> =
+        ConcurrentHashMap<String, List<Diagnostic>>()
+
+    //todo: Do we want these constants to be object? Maybe we should move these to Types.kt?
+    object ProductConstants {
+        const val OpenSource = "Snyk Open Source"
+        const val Code = "Snyk Code"
+        const val InfrastructureAsCode = "Snyk IaC"
+        const val Container = "Snyk Container"
+        const val Unknown = ""
+    }
+
 
     override fun telemetryEvent(`object`: Any?) {
         // do nothing
     }
 
-    override fun publishDiagnostics(diagnostics: PublishDiagnosticsParams?) {
-        // do nothing for now
+    override fun publishDiagnostics(diagnosticsParams: PublishDiagnosticsParams?) {
+        if (diagnosticsParams == null) {
+            return
+        }
+
+        if (diagnosticsParams.diagnostics == null || diagnosticsParams.diagnostics.isEmpty()) {
+            diagnosticsMap.remove(diagnosticsParams.uri)
+            return
+        }
+
+        diagnosticsMap[diagnosticsParams.uri] = diagnosticsParams.diagnostics
+
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
@@ -234,10 +261,18 @@ class SnykLanguageClient :
     @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
     private fun getSnykResult(project: Project, snykScan: SnykScanParams): Map<SnykFile, List<ScanIssue>> {
         check(snykScan.product == "code" || snykScan.product == "oss") { "Expected Snyk Code or Snyk OSS scan result" }
-        if (snykScan.issues.isNullOrEmpty()) return emptyMap()
 
+        val product =
+            when (snykScan.product) {
+                "code" -> ProductConstants.Code
+                "oss" -> ProductConstants.OpenSource
+                else -> return emptyMap() //todo: is this emptyMap return ok?
+            }
+
+        val issueList = diagnosticsMap.values.flatten().filter { it -> it.source == product }
         val map =
-            snykScan.issues
+            issueList
+                .map { it -> Gson().fromJson(it.data.toString(), ScanIssue::class.java) }
                 .groupBy { it.filePath }
                 .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
                 .map {
