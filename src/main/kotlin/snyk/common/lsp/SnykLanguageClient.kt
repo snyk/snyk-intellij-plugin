@@ -60,8 +60,6 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlin.streams.toList
-
 
 /**
  * Processes Language Server requests and notifications from the server to the IDE
@@ -93,14 +91,6 @@ class SnykLanguageClient :
     private var diagnosticsMap: ConcurrentHashMap<String, List<Diagnostic>> =
         ConcurrentHashMap<String, List<Diagnostic>>()
 
-    //todo: Do we want these constants to be object? Maybe we should move these to Types.kt?
-    object ProductConstants {
-        const val OpenSource = "Snyk Open Source"
-        const val Code = "Snyk Code"
-        const val InfrastructureAsCode = "Snyk IaC"
-        const val Container = "Snyk Container"
-        const val Unknown = ""
-    }
 
 
     override fun telemetryEvent(`object`: Any?) {
@@ -118,7 +108,6 @@ class SnykLanguageClient :
         }
 
         diagnosticsMap[diagnosticsParams.uri] = diagnosticsParams.diagnostics
-
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
@@ -264,14 +253,15 @@ class SnykLanguageClient :
 
         val product =
             when (snykScan.product) {
-                "code" -> ProductConstants.Code
-                "oss" -> ProductConstants.OpenSource
-                else -> return emptyMap() //todo: is this emptyMap return ok?
+                "code" -> LsProductConstants.Code.value
+                "oss" -> LsProductConstants.OpenSource.value
+                else -> LsProductConstants.Unknown
             }
 
         val issueList = diagnosticsMap.values.flatten().filter { it -> it.source == product }
         val map =
             issueList
+                .asSequence()
                 .map { it -> Gson().fromJson(it.data.toString(), ScanIssue::class.java) }
                 .groupBy { it.filePath }
                 .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
