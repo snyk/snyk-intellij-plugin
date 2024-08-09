@@ -142,12 +142,20 @@ class SnykCachedResults(
                 }
 
                 override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+                    updateCodeCache(snykResults)
+                }
+
+                private fun updateCodeCache(snykResults: Map<SnykFile, List<ScanIssue>>) {
                     currentSnykCodeResultsLS.clear()
                     currentSnykCodeResultsLS.putAll(snykResults)
                     logger.info("Snyk Code: scanning finished for project ${project.name}, assigning cache.")
                 }
 
                 override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+                    updateOSSCache(snykResults)
+                }
+
+                private fun updateOSSCache(snykResults: Map<SnykFile, List<ScanIssue>>) {
                     currentOSSResultsLS.clear()
                     currentOSSResultsLS.putAll(snykResults)
                     logger.info("Snyk OSS: scanning finished for project ${project.name}, assigning cache.")
@@ -200,6 +208,32 @@ class SnykCachedResults(
                     SnykBalloonNotificationHelper
                         .showError(
                             "scanning error for project ${project.name}. Data: $snykScan",
+                            project,
+                        )
+                }
+
+                override fun onPublishDiagnostics(product: String, snykResults: SnykCachedResults) {
+
+                    when (product) {
+                        "oss" -> {
+                            updateOSSCache(snykResults)
+                        }
+
+                        "code" -> {
+                            updateCodeCache(snykResults)
+                        }
+
+                        "iac" -> {
+
+                        }
+
+                        "container" -> {
+
+                        }
+                    }
+                    SnykBalloonNotificationHelper
+                        .showError(
+                            "scanning error for project ${project.name}. Data: $snykResults",
                             project,
                         )
                 }

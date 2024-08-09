@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.8.12]
+### Added
+- Updated the language server protocol version to 14 to support new communication model.
+
 ## [2.8.11]
 ### Added
 - Improved UI thread usage and app shutdown handling

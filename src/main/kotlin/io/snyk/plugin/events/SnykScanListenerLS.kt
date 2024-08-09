@@ -2,6 +2,7 @@ package io.snyk.plugin.events
 
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.SnykFile
+import snyk.common.SnykCachedResults
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 
@@ -18,4 +19,6 @@ interface SnykScanListenerLS {
     fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>)
 
     fun scanningError(snykScan: SnykScanParams)
+
+    fun onPublishDiagnostics(product: String, snykResults: SnykCachedResults)
 }
