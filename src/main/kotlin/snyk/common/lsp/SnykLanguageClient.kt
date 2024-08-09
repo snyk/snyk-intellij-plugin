@@ -58,8 +58,9 @@ import snyk.common.SnykFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import io.snyk.plugin.getSnykCachedResults
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Processes Language Server requests and notifications from the server to the IDE
@@ -88,9 +89,6 @@ class SnykLanguageClient :
         Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
     private val progressEndMsgCache: Cache<String, WorkDoneProgressEnd> =
         Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
-    private var diagnosticsMap: ConcurrentHashMap<String, List<Diagnostic>> =
-        ConcurrentHashMap<String, List<Diagnostic>>()
-
 
 
     override fun telemetryEvent(`object`: Any?) {
@@ -102,12 +100,64 @@ class SnykLanguageClient :
             return
         }
 
-        if (diagnosticsParams.diagnostics == null || diagnosticsParams.diagnostics.isEmpty()) {
-            diagnosticsMap.remove(diagnosticsParams.uri)
-            return
-        }
+        updateCache(diagnosticsParams)
+    }
 
-        diagnosticsMap[diagnosticsParams.uri] = diagnosticsParams.diagnostics
+    private fun updateCache(diagnosticsParams: PublishDiagnosticsParams) {
+        /*
+        If we have diagnostics for file app.js for product code
+            Delete diagnostics for product code file app.js from the cache
+
+        If we have empty diagnostics for file app.js product code
+            Delete diagnostics for product code file app.js from the cache
+
+        If issues exists
+            add new findings to the cache for app.js product code ONLY
+
+         */
+
+        val filePath = diagnosticsParams.uri
+        try {
+            getScanPublishersFor(filePath).forEach { (project, scanPublisher) ->
+                val snykFile = SnykFile(project, filePath.toVirtualFile())
+                val snykCachedResults = getSnykCachedResults(project) ?: return
+                val firstElement = diagnosticsParams.diagnostics.firstOrNull()
+                if (firstElement == null) {
+
+                    snykCachedResults.currentOSSResultsLS[snykFile] = emptyList()
+                    snykCachedResults.currentSnykCodeResultsLS[snykFile] = emptyList()
+                    return
+                }
+                // We always send PublishDiagnostics for one product. So if there is an item in the array
+                val product = firstElement.source
+
+                val issueList = diagnosticsParams.diagnostics.stream().map { it ->
+                    Gson().fromJson(it.data.toString(), ScanIssue::class.java)
+                }.toList()
+
+                when (product) {
+                    LsProductConstants.OpenSource.value -> {
+                        snykCachedResults.currentOSSResultsLS[snykFile] = issueList
+                        scanPublisher.onPublishDiagnostics(product, snykCachedResults)
+                    }
+
+                    LsProductConstants.Code.value -> {
+                        snykCachedResults.currentSnykCodeResultsLS[snykFile] = issueList
+                        scanPublisher.onPublishDiagnostics(product, snykCachedResults)
+                    }
+
+                    LsProductConstants.InfrastructureAsCode.value -> {
+                        // TODO implement
+                    }
+
+                    LsProductConstants.Container.value -> {
+                        // TODO implement
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error processing snyk scan", e)
+        }
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
@@ -164,7 +214,7 @@ class SnykLanguageClient :
             return
         }
         try {
-            getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
+            getScanPublishersFor(snykScan.folderPath).forEach { (project, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher, project)
             }
         } catch (e: Exception) {
@@ -232,8 +282,9 @@ class SnykLanguageClient :
      * Get all the scan publishers for the given scan. As the folder path could apply to different projects
      * containing that content root, we need to notify all of them.
      */
-    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykScanListenerLS>> =
-        getProjectsForFolderPath(snykScan.folderPath)
+//use the filepath instead of the scanparams
+    private fun getScanPublishersFor(folderPath: String): Set<Pair<Project, SnykScanListenerLS>> =
+        getProjectsForFolderPath(folderPath)
             .mapNotNull { p ->
                 getSyncPublisher(p, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
                     Pair(p, scanListenerLS)
@@ -272,6 +323,7 @@ class SnykLanguageClient :
                     it
                 }.filter { it.second.isNotEmpty() }
                 .toMap()
+
         return map.toSortedMap(SnykFileIssueComparator(map))
     }
 
