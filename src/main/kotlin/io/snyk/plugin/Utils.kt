@@ -32,7 +32,6 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.analytics.AnalyticsScanListener
-import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
@@ -48,6 +47,7 @@ import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
@@ -224,9 +224,8 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     checkIfSastEnabled = {
         if (settings.sastOnServerEnabled != true) {
             settings.sastOnServerEnabled = try {
-//                getSnykApiService().getSastSettings()?.sastEnabled ?: false
-                TODO("use language server")
-            } catch (ignored: ClientException) {
+                LanguageServerWrapper.getInstance().getSastSettings()?.sastEnabled ?: false
+            } catch (ignored: RuntimeException) {
                 false
             }
 

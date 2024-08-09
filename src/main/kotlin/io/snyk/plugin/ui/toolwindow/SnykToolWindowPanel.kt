@@ -508,7 +508,7 @@ class SnykToolWindowPanel(
             try {
                 // update settings if we get a valid/correct response, else log the error and do nothing
                 val sastSettings = LanguageServerWrapper.getInstance().getSastSettings()
-                sastOnServerEnabled = sastSettings.sastEnabled
+                sastOnServerEnabled = sastSettings?.sastEnabled ?: false
                 val codeScanAllowed = sastOnServerEnabled == true
                 snykCodeSecurityIssuesScanEnable = snykCodeSecurityIssuesScanEnable && codeScanAllowed
                 snykCodeQualityIssuesScanEnable = snykCodeQualityIssuesScanEnable && codeScanAllowed

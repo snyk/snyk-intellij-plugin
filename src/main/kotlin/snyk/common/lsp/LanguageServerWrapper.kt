@@ -63,8 +63,6 @@ import kotlin.io.path.exists
 
 private const val INITIALIZATION_TIMEOUT = 20L
 
-data class SastSettings (val sastEnabled: Boolean)
-
 @Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
@@ -77,7 +75,6 @@ class LanguageServerWrapper(
         get() {
             return ApplicationManager.getApplication().isDisposed || field
         }
-
     fun isDisposed() = disposed
 
     val logger = Logger.getInstance("Snyk Language Server")
@@ -449,6 +446,31 @@ class LanguageServerWrapper(
         getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
     }
 
+    data class SastSettings (
+        val sastEnabled: Boolean,
+        val localCodeEngine:LocalCodeEngine,
+        val org: String,
+        val supportedLanguages: List<String>,
+        val reportFalsePositivesEnabled: String,
+        val autofixEnabled: Boolean,
+    )
+
+    data class LocalCodeEngine(val allowCloudUpload : Boolean, val url : String, val enabled: Boolean)
+
+    fun getSastSettings(): SastSettings? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val executeCommandParams = ExecuteCommandParams("snyk.getSettingsSastEnabled", emptyList())
+            val response = languageServer.workspaceService.executeCommand(executeCommandParams).get(5, TimeUnit.SECONDS)
+            if (response is SastSettings) {
+                return response
+            }
+        } catch (e: TimeoutException) {
+            logger.debug(e)
+        }
+        return null
+    }
+
     companion object {
         private var instance: LanguageServerWrapper? = null
 
@@ -464,7 +486,5 @@ class LanguageServerWrapper(
         shutdown()
     }
 
-    fun getSastSettings(): SastSettings {
-        TODO("implement ls call")
-    }
 }
+
