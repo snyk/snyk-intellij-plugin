@@ -216,11 +216,11 @@ class SnykCachedResults(
 
                     when (product) {
                         "oss" -> {
-                            updateOSSCache(snykResults)
+                            updateOSSCache(snykResults.currentOSSResultsLS)
                         }
 
                         "code" -> {
-                            updateCodeCache(snykResults)
+                            updateCodeCache(snykResults.currentSnykCodeResultsLS)
                         }
 
                         "iac" -> {

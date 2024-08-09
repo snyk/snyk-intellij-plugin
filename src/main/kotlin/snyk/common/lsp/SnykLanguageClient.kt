@@ -34,7 +34,6 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse
-import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.LogTraceParams
 import org.eclipse.lsp4j.MessageActionItem
 import org.eclipse.lsp4j.MessageParams
@@ -54,13 +53,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
-import snyk.common.SnykFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import io.snyk.plugin.getSnykCachedResults
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Processes Language Server requests and notifications from the server to the IDE
@@ -116,22 +113,24 @@ class SnykLanguageClient :
 
          */
 
+        // TODO This filePath might not work.
         val filePath = diagnosticsParams.uri
         try {
             getScanPublishersFor(filePath).forEach { (project, scanPublisher) ->
                 val snykFile = SnykFile(project, filePath.toVirtualFile())
                 val snykCachedResults = getSnykCachedResults(project) ?: return
                 val firstElement = diagnosticsParams.diagnostics.firstOrNull()
-                if (firstElement == null) {
 
+                if (firstElement == null) {
                     snykCachedResults.currentOSSResultsLS[snykFile] = emptyList()
                     snykCachedResults.currentSnykCodeResultsLS[snykFile] = emptyList()
                     return
                 }
+
                 // We always send PublishDiagnostics for one product. So if there is an item in the array
                 val product = firstElement.source
 
-                val issueList = diagnosticsParams.diagnostics.stream().map { it ->
+                val issueList = diagnosticsParams.diagnostics.stream().map {
                     Gson().fromJson(it.data.toString(), ScanIssue::class.java)
                 }.toList()
 
@@ -259,13 +258,15 @@ class SnykLanguageClient :
         project: Project,
     ) {
         logger.info("Scan completed")
+        val snykCachedResults = getSnykCachedResults(project) ?: return
+
         when (snykScan.product) {
             "oss" -> {
-                scanPublisher.scanningOssFinished(getSnykResult(project, snykScan))
+                scanPublisher.scanningOssFinished(snykCachedResults.currentOSSResultsLS)
             }
 
             "code" -> {
-                scanPublisher.scanningSnykCodeFinished(getSnykResult(project, snykScan))
+                scanPublisher.scanningSnykCodeFinished(snykCachedResults.currentSnykCodeResultsLS)
             }
 
             "iac" -> {
@@ -282,7 +283,6 @@ class SnykLanguageClient :
      * Get all the scan publishers for the given scan. As the folder path could apply to different projects
      * containing that content root, we need to notify all of them.
      */
-//use the filepath instead of the scanparams
     private fun getScanPublishersFor(folderPath: String): Set<Pair<Project, SnykScanListenerLS>> =
         getProjectsForFolderPath(folderPath)
             .mapNotNull { p ->
@@ -297,35 +297,6 @@ class SnykLanguageClient :
                 .getContentRootVirtualFiles()
                 .contains(folderPath.toVirtualFile())
         }
-
-    @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
-    private fun getSnykResult(project: Project, snykScan: SnykScanParams): Map<SnykFile, List<ScanIssue>> {
-        check(snykScan.product == "code" || snykScan.product == "oss") { "Expected Snyk Code or Snyk OSS scan result" }
-
-        val product =
-            when (snykScan.product) {
-                "code" -> LsProductConstants.Code.value
-                "oss" -> LsProductConstants.OpenSource.value
-                else -> LsProductConstants.Unknown
-            }
-
-        val issueList = diagnosticsMap.values.flatten().filter { it -> it.source == product }
-        val map =
-            issueList
-                .asSequence()
-                .map { it -> Gson().fromJson(it.data.toString(), ScanIssue::class.java) }
-                .groupBy { it.filePath }
-                .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
-                .map {
-                    // initialize all calculated values before they are needed, so we don't have to do it in the UI thread
-                    it.first.relativePath
-                    it.second.forEach { i -> i.textRange }
-                    it
-                }.filter { it.second.isNotEmpty() }
-                .toMap()
-
-        return map.toSortedMap(SnykFileIssueComparator(map))
-    }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {
