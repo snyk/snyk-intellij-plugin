@@ -15,7 +15,6 @@ import com.intellij.util.Alarm
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.getKubernetesImageCache
-import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.net.CliConfigSettings
 import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
@@ -194,7 +193,7 @@ class ScanTypesPanel(
 
         var sastSettingsError = ""
         val sastCliConfigSettings: CliConfigSettings? = try {
-            val sastSettings = getSnykApiService().getSastSettings()
+            val sastSettings = TODO("get sast settings from ls")
             settings.sastSettingsError = false
             sastSettings
         } catch (t: ClientException) {

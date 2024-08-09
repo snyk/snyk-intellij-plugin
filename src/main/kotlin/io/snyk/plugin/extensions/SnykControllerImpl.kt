@@ -1,8 +1,8 @@
 package io.snyk.plugin.extensions
 
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.getSnykTaskQueueService
+import snyk.common.lsp.LanguageServerWrapper
 
 /**
  * SnykController is used by third-party plugins to interact with the Snyk plugin.
@@ -22,6 +22,6 @@ class SnykControllerImpl(val project: Project) : SnykController {
      * If no user is authenticated, this will return null.
      */
     override fun userId(): String? {
-        return getSnykApiService().userId
+        return LanguageServerWrapper.getInstance().getAuthenticatedUser()
     }
 }

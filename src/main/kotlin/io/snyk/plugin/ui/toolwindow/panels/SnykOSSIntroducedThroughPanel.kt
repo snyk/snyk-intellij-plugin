@@ -5,8 +5,8 @@ import com.intellij.util.ui.JBUI
 import io.snyk.plugin.ui.addRowOfItemsToPanel
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.boldLabel
-import snyk.common.lsp.IssueData
 import io.snyk.plugin.ui.toolwindow.LabelProvider
+import snyk.common.lsp.IssueData
 import javax.swing.JLabel
 import javax.swing.JPanel
 

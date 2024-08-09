@@ -1,24 +1,16 @@
 package io.snyk.plugin.ui.jcef
 
-import com.intellij.execution.testframework.TestsUIUtil
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.util.concurrency.AppExecutorUtil
-import com.jetbrains.rd.util.threading.coroutines.waitFor
 import io.mockk.unmockkAll
 import io.snyk.plugin.resetSettings
-import junit.framework.TestCase
-import org.awaitility.Awaitility
 import org.junit.Test
 import snyk.code.annotator.SnykCodeAnnotator
 import java.nio.file.Paths
-import java.time.Duration
-import java.time.temporal.TemporalUnit
-import java.util.concurrent.TimeUnit
 import java.util.function.BooleanSupplier
 
 class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
@@ -49,7 +41,7 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
 
     @Test
     fun `test openFile should navigate to source`() {
-        val res = generator.openFile("$fileName:1:2:3:4")
+        generator.openFile("$fileName:1:2:3:4")
         val matcher = BooleanSupplier { FileEditorManager.getInstance(project).isFileOpen(psiFile.virtualFile) }
         PlatformTestUtil.waitWithEventsDispatching("navigate was not called", matcher, 10)
     }

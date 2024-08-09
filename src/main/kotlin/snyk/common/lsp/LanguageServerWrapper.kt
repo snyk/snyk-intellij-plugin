@@ -63,6 +63,8 @@ import kotlin.io.path.exists
 
 private const val INITIALIZATION_TIMEOUT = 20L
 
+data class SastSettings (val sastEnabled: Boolean)
+
 @Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
@@ -460,5 +462,9 @@ class LanguageServerWrapper(
     override fun dispose() {
         disposed = true
         shutdown()
+    }
+
+    fun getSastSettings(): SastSettings {
+        TODO("implement ls call")
     }
 }

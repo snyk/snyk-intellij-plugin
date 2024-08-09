@@ -9,18 +9,14 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import com.intellij.util.DocumentUtil
 import icons.SnykIcons
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import snyk.analytics.QuickFixIsTriggered
 import javax.swing.Icon
 
 class AlwaysAvailableReplacementIntentionAction(
     val range: TextRange,
     val replacementText: String,
-    val message: String = "",
-    val analyticsService: SnykAnalyticsService = getSnykAnalyticsService()
+    val message: String = ""
 ) : SnykIntentionActionBase() {
 
     override fun getIcon(@IconFlags flags: Int): Icon = SnykIcons.CHECKMARK_GREEN
@@ -40,11 +36,6 @@ class AlwaysAvailableReplacementIntentionAction(
                 SnykBalloonNotificationHelper.showWarn(message, project)
             }
         }
-        val event = QuickFixIsTriggered.builder()
-            .ide(QuickFixIsTriggered.Ide.JETBRAINS)
-            .quickFixType(arrayOf(AlwaysAvailableReplacementIntentionAction::class.simpleName))
-            .build()
-        analyticsService.logQuickFixIsTriggered(event)
     }
 
     companion object {

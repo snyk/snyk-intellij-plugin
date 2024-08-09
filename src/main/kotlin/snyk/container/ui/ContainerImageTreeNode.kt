@@ -13,7 +13,7 @@ class ContainerImageTreeNode(
     override val navigateToSource: () -> Unit
 ) : DefaultMutableTreeNode(issuesForImage), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
-    override fun getDescriptionPanel(logEventNeeded: Boolean): IssueDescriptionPanelBase {
+    override fun getDescriptionPanel(): IssueDescriptionPanelBase {
         // TODO: Add image click event logging ?
         return BaseImageRemediationDetailPanel(project, issuesForImage)
     }

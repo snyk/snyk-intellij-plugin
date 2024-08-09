@@ -33,8 +33,6 @@ import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.net.ClientException
-import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
@@ -46,10 +44,6 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.apache.commons.lang3.SystemUtils
 import org.jetbrains.concurrency.runAsync
-import snyk.advisor.AdvisorService
-import snyk.advisor.AdvisorServiceImpl
-import snyk.advisor.SnykAdvisorModel
-import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
@@ -108,8 +102,6 @@ fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? = project
 
 fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
 
-fun getAmplitudeExperimentService(): AmplitudeExperimentService = getApplicationService()
-
 fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationService? = project?.serviceIfNotDisposed()
 
 fun getSnykCliDownloaderService(): SnykCliDownloaderService = getApplicationService()
@@ -121,14 +113,6 @@ fun getCliFile() = File(pluginSettings().cliPath)
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
-
-fun getSnykApiService(): SnykApiService = getApplicationService()
-
-fun getSnykAnalyticsService(): SnykAnalyticsService = getApplicationService()
-
-fun getSnykAdvisorModel(): SnykAdvisorModel = getApplicationService()
-
-fun getAdvisorService(): AdvisorService = getApplicationService<AdvisorServiceImpl>()
 
 fun getWhoamiService(project: Project?): WhoamiService? = project?.serviceIfNotDisposed()
 
@@ -236,11 +220,12 @@ fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> 
     var currentAttempt = 1
     val maxAttempts = 20
     lateinit var checkIfSastEnabled: () -> Unit
-    // TODO use ls
+
     checkIfSastEnabled = {
         if (settings.sastOnServerEnabled != true) {
             settings.sastOnServerEnabled = try {
-                getSnykApiService().getSastSettings()?.sastEnabled ?: false
+//                getSnykApiService().getSastSettings()?.sastEnabled ?: false
+                TODO("use language server")
             } catch (ignored: ClientException) {
                 false
             }
