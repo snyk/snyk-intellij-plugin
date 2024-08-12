@@ -67,22 +67,24 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     //todo get snyk cached results. instead of giving this function the map snykResluts.
-    override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    override fun scanningSnykCodeFinished() {
         if (disposed) return
+        val snykCachedResults = getSnykCachedResults(project) ?: return
         ApplicationManager.getApplication().invokeLater {
             this.snykToolWindowPanel.navigateToSourceEnabled = false
-            displaySnykCodeResults(snykResults)
+            displaySnykCodeResults(snykCachedResults.currentSnykCodeResultsLS)
             refreshAnnotationsForOpenFiles(project)
             this.snykToolWindowPanel.navigateToSourceEnabled = true
         }
     }
 
-    override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    override fun scanningOssFinished() {
         if (disposed) return
+        val snykCachedResults = getSnykCachedResults(project) ?: return
         ApplicationManager.getApplication().invokeLater {
             cancelOssIndicator(project)
             this.snykToolWindowPanel.navigateToSourceEnabled = false
-            displayOssResults(snykResults)
+            displayOssResults(snykCachedResults.currentOSSResultsLS)
             refreshAnnotationsForOpenFiles(project)
             this.snykToolWindowPanel.navigateToSourceEnabled = true
         }
@@ -113,7 +115,6 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     override fun onPublishDiagnostics(product: String, snykResults: SnykCachedResults) {
-        TODO("Not yet implemented")
     }
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {

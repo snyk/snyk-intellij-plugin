@@ -1,9 +1,7 @@
 package io.snyk.plugin.events
 
 import com.intellij.util.messages.Topic
-import io.snyk.plugin.SnykFile
 import snyk.common.SnykCachedResults
-import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 
 interface SnykScanListenerLS {
@@ -14,9 +12,9 @@ interface SnykScanListenerLS {
 
     fun scanningStarted(snykScan: SnykScanParams) {}
 
-    fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>)
+    fun scanningSnykCodeFinished()
 
-    fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>)
+    fun scanningOssFinished()
 
     fun scanningError(snykScan: SnykScanParams)
 

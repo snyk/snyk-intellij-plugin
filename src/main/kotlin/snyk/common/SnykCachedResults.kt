@@ -141,8 +141,7 @@ class SnykCachedResults(
                     currentContainerError = null
                 }
 
-                override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
-                    updateCodeCache(snykResults)
+                override fun scanningSnykCodeFinished() {
                 }
 
                 private fun updateCodeCache(snykResults: Map<SnykFile, List<ScanIssue>>) {
@@ -151,8 +150,7 @@ class SnykCachedResults(
                     logger.info("Snyk Code: scanning finished for project ${project.name}, assigning cache.")
                 }
 
-                override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
-                    updateOSSCache(snykResults)
+                override fun scanningOssFinished() {
                 }
 
                 private fun updateOSSCache(snykResults: Map<SnykFile, List<ScanIssue>>) {
@@ -231,11 +229,6 @@ class SnykCachedResults(
 
                         }
                     }
-                    SnykBalloonNotificationHelper
-                        .showError(
-                            "scanning error for project ${project.name}. Data: $snykResults",
-                            project,
-                        )
                 }
             },
         )

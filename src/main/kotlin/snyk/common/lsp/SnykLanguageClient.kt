@@ -21,6 +21,7 @@ import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
@@ -110,13 +111,12 @@ class SnykLanguageClient :
 
         If issues exists
             add new findings to the cache for app.js product code ONLY
-
          */
 
-        // TODO This filePath might not work.
         val filePath = diagnosticsParams.uri
+
         try {
-            getScanPublishersFor(filePath).forEach { (project, scanPublisher) ->
+            getScanPublishersFor(filePath.toVirtualFile().path).forEach { (project, scanPublisher) ->
                 val snykFile = SnykFile(project, filePath.toVirtualFile())
                 val snykCachedResults = getSnykCachedResults(project) ?: return
                 val firstElement = diagnosticsParams.diagnostics.firstOrNull()
@@ -252,21 +252,21 @@ class SnykLanguageClient :
         }
     }
 
+
     private fun processSuccessfulScan(
         snykScan: SnykScanParams,
         scanPublisher: SnykScanListenerLS,
         project: Project,
     ) {
         logger.info("Scan completed")
-        val snykCachedResults = getSnykCachedResults(project) ?: return
 
         when (snykScan.product) {
             "oss" -> {
-                scanPublisher.scanningOssFinished(snykCachedResults.currentOSSResultsLS)
+                scanPublisher.scanningOssFinished()
             }
 
             "code" -> {
-                scanPublisher.scanningSnykCodeFinished(snykCachedResults.currentSnykCodeResultsLS)
+                scanPublisher.scanningSnykCodeFinished()
             }
 
             "iac" -> {
@@ -294,8 +294,10 @@ class SnykLanguageClient :
     private fun getProjectsForFolderPath(folderPath: String) =
         ProjectManager.getInstance().openProjects.filter {
             it
-                .getContentRootVirtualFiles()
-                .contains(folderPath.toVirtualFile())
+                .getContentRootVirtualFiles().any { ancestor ->
+                    val folder = folderPath.toVirtualFile()
+                    VfsUtilCore.isAncestor(ancestor, folder, true) || ancestor == folder
+                }
         }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
