@@ -207,12 +207,10 @@ class SnykCachedResults(
 
                     when (product) {
                         LsProductConstants.OpenSource.value -> {
-                            currentOSSResultsLS[snykFile] = emptyList()
                             currentOSSResultsLS[snykFile] = issueList
                         }
 
                         LsProductConstants.Code.value -> {
-                            currentSnykCodeResultsLS[snykFile] = emptyList()
                             currentSnykCodeResultsLS[snykFile] = issueList
                         }
 
