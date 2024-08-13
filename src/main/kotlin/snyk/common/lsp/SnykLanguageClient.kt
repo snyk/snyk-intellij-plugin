@@ -58,7 +58,6 @@ import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
-import io.snyk.plugin.getSnykCachedResults
 
 /**
  * Processes Language Server requests and notifications from the server to the IDE
@@ -102,32 +101,21 @@ class SnykLanguageClient :
     }
 
     private fun updateCache(diagnosticsParams: PublishDiagnosticsParams) {
-        /*
-        If we have diagnostics for file app.js for product code
-            Delete diagnostics for product code file app.js from the cache
-
-        If we have empty diagnostics for file app.js product code
-            Delete diagnostics for product code file app.js from the cache
-
-        If issues exists
-            add new findings to the cache for app.js product code ONLY
-         */
-
         val filePath = diagnosticsParams.uri
 
         try {
             getScanPublishersFor(filePath.toVirtualFile().path).forEach { (project, scanPublisher) ->
                 val snykFile = SnykFile(project, filePath.toVirtualFile())
-                val snykCachedResults = getSnykCachedResults(project) ?: return
                 val firstElement = diagnosticsParams.diagnostics.firstOrNull()
 
+                //If the diagnostics for the file is empty, clear the cache.
                 if (firstElement == null) {
-                    snykCachedResults.currentOSSResultsLS[snykFile] = emptyList()
-                    snykCachedResults.currentSnykCodeResultsLS[snykFile] = emptyList()
+                    scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
+                    scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
                     return
                 }
 
-                // We always send PublishDiagnostics for one product. So if there is an item in the array
+                // We always send PublishDiagnostics for one product. So if there is an item in the array, we can deduct the product.
                 val product = firstElement.source
 
                 val issueList = diagnosticsParams.diagnostics.stream().map {
@@ -136,13 +124,11 @@ class SnykLanguageClient :
 
                 when (product) {
                     LsProductConstants.OpenSource.value -> {
-                        snykCachedResults.currentOSSResultsLS[snykFile] = issueList
-                        scanPublisher.onPublishDiagnostics(product, snykCachedResults)
+                        scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
                     }
 
                     LsProductConstants.Code.value -> {
-                        snykCachedResults.currentSnykCodeResultsLS[snykFile] = issueList
-                        scanPublisher.onPublishDiagnostics(product, snykCachedResults)
+                        scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
                     }
 
                     LsProductConstants.InfrastructureAsCode.value -> {
@@ -214,7 +200,7 @@ class SnykLanguageClient :
         }
         try {
             getScanPublishersFor(snykScan.folderPath).forEach { (project, scanPublisher) ->
-                processSnykScan(snykScan, scanPublisher, project)
+                processSnykScan(snykScan, scanPublisher)
             }
         } catch (e: Exception) {
             logger.error("Error processing snyk scan", e)
@@ -224,7 +210,6 @@ class SnykLanguageClient :
     private fun processSnykScan(
         snykScan: SnykScanParams,
         scanPublisher: SnykScanListenerLS,
-        project: Project,
     ) {
         val product =
             when (snykScan.product) {
@@ -242,7 +227,7 @@ class SnykLanguageClient :
 
             "success" -> {
                 ScanState.scanInProgress[key] = false
-                processSuccessfulScan(snykScan, scanPublisher, project)
+                processSuccessfulScan(snykScan, scanPublisher)
             }
 
             "error" -> {
@@ -256,7 +241,6 @@ class SnykLanguageClient :
     private fun processSuccessfulScan(
         snykScan: SnykScanParams,
         scanPublisher: SnykScanListenerLS,
-        project: Project,
     ) {
         logger.info("Scan completed")
 

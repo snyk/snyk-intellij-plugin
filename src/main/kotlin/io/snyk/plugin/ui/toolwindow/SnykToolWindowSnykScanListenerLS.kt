@@ -28,7 +28,6 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
-import snyk.common.SnykCachedResults
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -66,7 +65,6 @@ class SnykToolWindowSnykScanListenerLS(
         }
     }
 
-    //todo get snyk cached results. instead of giving this function the map snykResluts.
     override fun scanningSnykCodeFinished() {
         if (disposed) return
         val snykCachedResults = getSnykCachedResults(project) ?: return
@@ -114,7 +112,7 @@ class SnykToolWindowSnykScanListenerLS(
         }
     }
 
-    override fun onPublishDiagnostics(product: String, snykResults: SnykCachedResults) {
+    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
     }
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {

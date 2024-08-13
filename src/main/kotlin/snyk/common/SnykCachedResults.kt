@@ -13,6 +13,7 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.common.lsp.LsProductConstants
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
@@ -144,19 +145,7 @@ class SnykCachedResults(
                 override fun scanningSnykCodeFinished() {
                 }
 
-                private fun updateCodeCache(snykResults: Map<SnykFile, List<ScanIssue>>) {
-                    currentSnykCodeResultsLS.clear()
-                    currentSnykCodeResultsLS.putAll(snykResults)
-                    logger.info("Snyk Code: scanning finished for project ${project.name}, assigning cache.")
-                }
-
                 override fun scanningOssFinished() {
-                }
-
-                private fun updateOSSCache(snykResults: Map<SnykFile, List<ScanIssue>>) {
-                    currentOSSResultsLS.clear()
-                    currentOSSResultsLS.putAll(snykResults)
-                    logger.info("Snyk OSS: scanning finished for project ${project.name}, assigning cache.")
                 }
 
                 override fun scanningError(snykScan: SnykScanParams) {
@@ -210,15 +199,21 @@ class SnykCachedResults(
                         )
                 }
 
-                override fun onPublishDiagnostics(product: String, snykResults: SnykCachedResults) {
+                override fun onPublishDiagnostics(
+                    product: String,
+                    snykFile: SnykFile,
+                    issueList: List<ScanIssue>
+                ) {
 
                     when (product) {
-                        "oss" -> {
-                            updateOSSCache(snykResults.currentOSSResultsLS)
+                        LsProductConstants.OpenSource.value -> {
+                            currentOSSResultsLS[snykFile] = emptyList()
+                            currentOSSResultsLS[snykFile] = issueList
                         }
 
-                        "code" -> {
-                            updateCodeCache(snykResults.currentSnykCodeResultsLS)
+                        LsProductConstants.Code.value -> {
+                            currentSnykCodeResultsLS[snykFile] = emptyList()
+                            currentSnykCodeResultsLS[snykFile] = issueList
                         }
 
                         "iac" -> {
