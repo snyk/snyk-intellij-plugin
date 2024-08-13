@@ -106,17 +106,17 @@ class SnykLanguageClient :
         try {
             getScanPublishersFor(filePath.toVirtualFile().path).forEach { (project, scanPublisher) ->
                 val snykFile = SnykFile(project, filePath.toVirtualFile())
-                val firstElement = diagnosticsParams.diagnostics.firstOrNull()
+                val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
 
                 //If the diagnostics for the file is empty, clear the cache.
-                if (firstElement == null) {
+                if (firstDiagnostic == null) {
                     scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
                     scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
                     return
                 }
 
                 // We always send PublishDiagnostics for one product. So if there is an item in the array, we can deduct the product.
-                val product = firstElement.source
+                val product = firstDiagnostic.source
 
                 val issueList = diagnosticsParams.diagnostics.stream().map {
                     Gson().fromJson(it.data.toString(), ScanIssue::class.java)
