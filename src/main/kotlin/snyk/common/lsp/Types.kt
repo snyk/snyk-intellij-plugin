@@ -41,11 +41,6 @@ data class SnykScanParams(
     val cliError: CliError? = null, // structured error information if applicable
 )
 
-data class ErrorResponse(
-    @SerializedName("error") val error: String,
-    @SerializedName("path") val path: String
-)
-
 enum class LsProductConstants(val value: String) {
     OpenSource("Snyk Open Source"),
     Code("Snyk Code"),

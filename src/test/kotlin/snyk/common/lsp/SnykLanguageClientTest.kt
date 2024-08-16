@@ -1,18 +1,27 @@
 package snyk.common.lsp
 
+import com.google.gson.Gson
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.vfs.VirtualFile
+import io.mockk.Called
+import io.mockk.MockKStubScope
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
+import org.eclipse.lsp4j.Diagnostic
+import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.junit.After
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
@@ -20,6 +29,8 @@ import org.junit.Test
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import kotlin.io.path.Path
+
+import com.intellij.openapi.diagnostic.Logger
 
 class SnykLanguageClientTest {
     private lateinit var cut: SnykLanguageClient
@@ -31,6 +42,18 @@ class SnykLanguageClientTest {
     private val trustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
     private val dumbServiceMock = mockk<DumbService>()
     private val projectManagerMock = mockk<ProjectManager>()
+    private val loggerMock = mockk<Logger>()
+
+    private val mockProject = mockk<Project>()
+    private val mockScanPublisher = mockk<SnykScanListenerLS>()
+    private val mockVirtualFile = mockk<VirtualFile>()
+
+    private val filePath = "some/file.txt"
+
+    private val diagnosticsParams = mockk<PublishDiagnosticsParams>()
+    private val diagnostic = mockk<Diagnostic>()
+
+    private val issueList = listOf(mockk<ScanIssue>())
 
     @Before
     fun setUp() {
@@ -58,6 +81,12 @@ class SnykLanguageClientTest {
         every { pluginInfo.integrationVersion } returns "2.4.61"
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
+
+        mockkObject(filePath)
+        every { filePath.toVirtualFile() } returns mockVirtualFile
+        every { diagnostic.source } returns "Snyk Error"
+        every { diagnosticsParams.diagnostics } returns listOf(diagnostic)
+
 
         snykPluginDisposable = SnykPluginDisposable()
 
@@ -130,4 +159,48 @@ class SnykLanguageClientTest {
 
         verify { trustServiceMock.addTrustedPath(eq(Path(path))) }
     }
+
+    @Test
+    fun `should clear cache for empty diagnostics`() {
+        cut.updateCache(diagnosticsParams)
+
+        verify { mockScanPublisher.onPublishDiagnostics("code", any(), emptyList()) }
+        verify { mockScanPublisher.onPublishDiagnostics("oss", any(), emptyList()) }
+    }
+
+
+    @Test
+    fun `should handle Snyk Error diagnostics`() {
+        cut.updateCache(diagnosticsParams)
+
+        verify { mockScanPublisher.onPublishDiagnostics(any(), any(), any()) wasNot Called }
+        verify { cut.handleDiagnosticError(mockProject, diagnosticsParams) }
+    }
+
+    @Test
+    fun `should publish diagnostics for supported products`() {
+        val supportedProducts = listOf("Snyk Open Source", "Snyk Code")
+
+        for (product in supportedProducts) {
+            every { Gson().fromJson(issueList.toString(), ScanIssue::class.java) } returns issueList.first()
+            cut.updateCache(diagnosticsParams)
+            verify { mockScanPublisher.onPublishDiagnostics(product, any(), issueList) }
+        }
+    }
+
+
+    @Test
+    fun `should handle exceptions during publishing`() {
+        val exception = RuntimeException("Test Exception")
+        every { cut.getScanPublishersFor(any()) } throws exception
+
+        cut.updateCache(diagnosticsParams)
+
+        verify { loggerMock.error("Error publishing the new diagnostics", exception) }
+    }
 }
+
+private infix fun <T, B> MockKStubScope<T, B>.returns(first: ScanIssue): B {
+    TODO("Not yet implemented")
+}
+

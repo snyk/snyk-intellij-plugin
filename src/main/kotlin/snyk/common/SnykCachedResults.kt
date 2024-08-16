@@ -14,7 +14,6 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
-import snyk.common.lsp.ErrorResponse
 import snyk.common.lsp.LsProductConstants
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -195,11 +194,9 @@ class SnykCachedResults(
                         }
                     }
 
-                    val errorResponse = Gson().fromJson(snykScan.errorMessage, ErrorResponse::class.java)
-
                     SnykBalloonNotificationHelper
                         .showError(
-                            "scanning error for project ${project.name}, ${errorResponse.error}",
+                            "scanning error for project ${project.name}. Data: ${snykScan}",
                             project,
                         )
                 }
@@ -219,11 +216,11 @@ class SnykCachedResults(
                             currentSnykCodeResultsLS[snykFile] = issueList
                         }
 
-                        "iac" -> {
+                        LsProductConstants.InfrastructureAsCode.value -> {
 
                         }
 
-                        "container" -> {
+                        LsProductConstants.Container.value-> {
 
                         }
                     }
