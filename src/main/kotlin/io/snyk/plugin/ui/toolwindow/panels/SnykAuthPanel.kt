@@ -3,7 +3,6 @@ package io.snyk.plugin.ui.toolwindow.panels
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
-import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
@@ -14,9 +13,7 @@ import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.getAmplitudeExperimentService
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -28,11 +25,6 @@ import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPaneFixedSize
 import io.snyk.plugin.ui.getStandardLayout
 import snyk.SnykBundle
-import snyk.amplitude.api.ExperimentUser
-import snyk.analytics.AuthenticateButtonIsClicked
-import snyk.analytics.AuthenticateButtonIsClicked.EventSource
-import snyk.analytics.AuthenticateButtonIsClicked.Ide
-import snyk.analytics.AuthenticateButtonIsClicked.builder
 import snyk.trust.WorkspaceTrustService
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
@@ -51,8 +43,6 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                 val jButton = e?.source as JButton
                 jButton.text = waitingMessage
                 DumbService.getInstance(project).runWhenSmart {
-                    val analytics = getSnykAnalyticsService()
-                    analytics.logAuthenticateButtonIsClicked(authenticateEvent())
                     getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
                     jButton.setText("Authenticating...")
@@ -65,17 +55,6 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     val paths = project.getContentRootPaths()
                     for (path in paths) {
                         trustService.addTrustedPath(path)
-                    }
-
-                    if (pluginSettings().usageAnalyticsEnabled) {
-                        val userId = analytics.obtainUserId(pluginSettings().token)
-                        if (userId.isNotBlank()) {
-                            runBackgroundableTask("Snyk: Fetching experiments", project, true) {
-                                analytics.setUserId(userId)
-                                analytics.identify()
-                                getAmplitudeExperimentService().fetch(ExperimentUser(userId))
-                            }
-                        }
                     }
                     getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
                 }
@@ -118,10 +97,6 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     authButton.isEnabled = succeed
                 }
             })
-    }
-
-    private fun authenticateEvent(): AuthenticateButtonIsClicked {
-        return builder().ide(Ide.JETBRAINS).eventSource(EventSource.IDE).build()
     }
 
     private fun descriptionLabelText(): String {

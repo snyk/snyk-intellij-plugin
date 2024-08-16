@@ -16,7 +16,6 @@ import io.snyk.plugin.pluginSettings
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.plugins.groovy.GroovyFileType
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile
-import org.junit.Before
 import org.junit.Test
 import snyk.common.SnykCachedResults
 import snyk.common.intentionactions.AlwaysAvailableReplacementIntentionAction

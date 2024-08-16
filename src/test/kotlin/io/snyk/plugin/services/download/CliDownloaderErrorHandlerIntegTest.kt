@@ -13,7 +13,6 @@ import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper

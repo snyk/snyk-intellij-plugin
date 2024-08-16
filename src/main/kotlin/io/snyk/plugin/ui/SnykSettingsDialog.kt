@@ -101,9 +101,8 @@ class SnykSettingsDialog(
     private val additionalParametersTextField: JTextField =
         ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
 
-    private val scanTypesPanelOuter = ScanTypesPanel(project, rootPanel)
-    private val codeAlertPanel = scanTypesPanelOuter.codeAlertPanel
-    private val scanTypesPanel = scanTypesPanelOuter.panel
+    private val scanTypesPanelOuter = ScanTypesPanel(project)
+    private val scanTypesPanel = scanTypesPanelOuter.scanTypesPanel
 
     private val issueViewOptionsPanel = IssueViewOptionsPanel(project).panel
 
@@ -174,7 +173,6 @@ class SnykSettingsDialog(
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
-
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
         }
     }
@@ -418,29 +416,13 @@ class SnykSettingsDialog(
             ),
         )
 
-        val productSelectionPanel = JPanel(UIGridLayoutManager(1, 1, JBUI.emptyInsets(), -1, -1))
-        productSelectionPanel.border = IdeBorderFactory.createTitledBorder("Product selection")
-
         productAndSeveritiesPanel.add(
-            productSelectionPanel,
-            baseGridConstraints(
-                row = 0,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0,
-            ),
-        )
-
-        productSelectionPanel.add(
             scanTypesPanel,
             baseGridConstraints(
                 row = 0,
-                column = 0,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
         )
@@ -469,15 +451,6 @@ class SnykSettingsDialog(
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
-            ),
-        )
-
-        rootPanel.add(
-            codeAlertPanel,
-            baseGridConstraints(
-                row = 2,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 2,
             ),
         )
 

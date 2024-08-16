@@ -36,7 +36,6 @@ object SnykBalloonNotificationHelper {
     fun showWarn(message: String, project: Project, vararg actions: AnAction) =
         showNotification(message, project, NotificationType.WARNING, *actions)
 
-    // TODO(pavel): refactor showNotification function to make it more generic + default arguments
     private fun showNotification(
         message: String,
         project: Project?,

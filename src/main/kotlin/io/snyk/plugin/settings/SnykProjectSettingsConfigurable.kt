@@ -9,8 +9,6 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.getAmplitudeExperimentService
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -20,7 +18,6 @@ import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
-import snyk.amplitude.api.ExperimentUser
 import snyk.common.lsp.LanguageServerWrapper
 import javax.swing.JComponent
 
@@ -107,13 +104,14 @@ class SnykProjectSettingsConfigurable(
         }
 
         runBackgroundableTask("processing config changes", project, true) {
-            LanguageServerWrapper.getInstance().updateConfiguration()
             settingsStateService.isGlobalIgnoresFeatureEnabled =
                 LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
 
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
             }
+
+            LanguageServerWrapper.getInstance().updateConfiguration()
         }
 
         if (rescanNeeded) {
@@ -126,15 +124,6 @@ class SnykProjectSettingsConfigurable(
             settingsStateService.matchFilteringWithEnablement()
             getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
             getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
-        }
-
-        if (pluginSettings().usageAnalyticsEnabled) {
-            runBackgroundableTask("Identifying with Analytics service", project, true) {
-                val analytics = getSnykAnalyticsService()
-                val userId = analytics.obtainUserId(snykSettingsDialog.getToken())
-                analytics.setUserId(userId)
-                getAmplitudeExperimentService().fetch(ExperimentUser(userId))
-            }
         }
     }
 

@@ -27,10 +27,11 @@ import java.util.concurrent.CompletableFuture
     storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
-    val requiredLsProtocolVersion = 13
+    val requiredLsProtocolVersion = 14
 
     var useTokenAuthentication = true
     var currentLSProtocolVersion: Int? = 0
+    var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://static.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
@@ -49,7 +50,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var cliScanEnable: Boolean = true
 
     var ossScanEnable: Boolean = true
-    var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = true
     var iacScanEnabled: Boolean = true
@@ -74,14 +74,10 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     var lastCheckDate: Date? = null
     var pluginFirstRun = true
-    var pluginInstalled = false
 
     // Instant could not be used here due to serialisation Exception
-    var pluginFirstInstallTime: Date = Date.from(Instant.now())
     var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
     var showFeedbackRequest = true
-
-    var scanningReminderWasShown: Boolean = false
 
     /**
      * Random UUID used by analytics events if enabled.

@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.jcef
 
-import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.jcef.JBCefBrowserBase

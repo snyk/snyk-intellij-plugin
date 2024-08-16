@@ -15,10 +15,6 @@ import io.snyk.plugin.extensions.SnykControllerImpl
 import io.snyk.plugin.extensions.SnykControllerManager
 import io.snyk.plugin.snykcode.SnykCodeBulkFileListener
 import io.snyk.plugin.ui.SnykBalloonNotifications
-import snyk.PLUGIN_ID
-import snyk.amplitude.api.ExperimentUser
-import snyk.analytics.PluginIsInstalled
-import snyk.analytics.PluginIsUninstalled
 import snyk.common.AnnotatorCommon
 import snyk.container.ContainerBulkFileListener
 import snyk.iac.IacBulkFileListener
@@ -47,15 +43,6 @@ class SnykPostStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
         PluginInstaller.addStateListener(UninstallListener())
 
-        if (!settings.pluginInstalled) {
-            settings.pluginInstalled = true
-            getSnykAnalyticsService().logPluginIsInstalled(
-                PluginIsInstalled.builder()
-                    .ide(PluginIsInstalled.Ide.JETBRAINS)
-                    .build()
-            )
-        }
-
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
             // TODO: add subscription for language server messages
@@ -68,8 +55,6 @@ class SnykPostStartupActivity : ProjectActivity {
         }
 
         getSnykCachedResults(project)?.initCacheUpdater()
-
-        getSnykAnalyticsService().initAnalyticsReporter(project)
 
         AnnotatorCommon.initRefreshing(project)
 
@@ -96,15 +81,6 @@ class SnykPostStartupActivity : ProjectActivity {
             settings.lastTimeFeedbackRequestShown = Date.from(Instant.now())
         }
 
-        val userToken = settings.token ?: ""
-        val publicUserId = if (userToken.isNotBlank()) {
-            getSnykApiService().userId ?: ""
-        } else ""
-
-        LOG.info("Loading variants for all amplitude experiments")
-        val experimentUser = ExperimentUser(publicUserId)
-        getAmplitudeExperimentService().fetch(experimentUser)
-
         if (isContainerEnabled()) {
             getKubernetesImageCache(project)?.cacheKubernetesFileFromProject()
         }
@@ -124,16 +100,5 @@ private class UninstallListener : PluginStateListener {
     override fun install(descriptor: IdeaPluginDescriptor) {
     }
 
-    override fun uninstall(descriptor: IdeaPluginDescriptor) {
-        if (descriptor.pluginId.idString != PLUGIN_ID) return
-
-        // reset pluginInstalled flag to track PluginIsInstalled event next time
-        pluginSettings().pluginInstalled = false
-
-        getSnykAnalyticsService().logPluginIsUninstalled(
-            PluginIsUninstalled.builder()
-                .ide(PluginIsUninstalled.Ide.JETBRAINS)
-                .build()
-        )
-    }
+    override fun uninstall(descriptor: IdeaPluginDescriptor) {}
 }

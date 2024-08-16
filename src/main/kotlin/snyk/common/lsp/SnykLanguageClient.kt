@@ -3,6 +3,7 @@ package snyk.common.lsp
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalListener
+import com.google.gson.Gson
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
@@ -20,6 +21,7 @@ import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
@@ -52,7 +54,6 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
-import snyk.common.SnykFileIssueComparator
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
@@ -86,12 +87,60 @@ class SnykLanguageClient :
     private val progressEndMsgCache: Cache<String, WorkDoneProgressEnd> =
         Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
 
+
     override fun telemetryEvent(`object`: Any?) {
         // do nothing
     }
 
-    override fun publishDiagnostics(diagnostics: PublishDiagnosticsParams?) {
-        // do nothing for now
+    override fun publishDiagnostics(diagnosticsParams: PublishDiagnosticsParams?) {
+        if (diagnosticsParams == null) {
+            return
+        }
+
+        updateCache(diagnosticsParams)
+    }
+
+    private fun updateCache(diagnosticsParams: PublishDiagnosticsParams) {
+        val filePath = diagnosticsParams.uri
+
+        try {
+            getScanPublishersFor(filePath.toVirtualFile().path).forEach { (project, scanPublisher) ->
+                val snykFile = SnykFile(project, filePath.toVirtualFile())
+                val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
+                val product = firstDiagnostic?.source
+
+                //If the diagnostics for the file is empty, clear the cache.
+                if (firstDiagnostic == null) {
+                    scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
+                    scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
+                    return
+                }
+
+                val issueList = diagnosticsParams.diagnostics.stream().map {
+                    Gson().fromJson(it.data.toString(), ScanIssue::class.java)
+                }.toList()
+
+                when (product) {
+                    LsProductConstants.OpenSource.value -> {
+                        scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
+                    }
+
+                    LsProductConstants.Code.value -> {
+                        scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
+                    }
+
+                    LsProductConstants.InfrastructureAsCode.value -> {
+                        // TODO implement
+                    }
+
+                    LsProductConstants.Container.value -> {
+                        // TODO implement
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error publishing the new diagnostics", e)
+        }
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
@@ -148,8 +197,8 @@ class SnykLanguageClient :
             return
         }
         try {
-            getScanPublishersFor(snykScan).forEach { (project, scanPublisher) ->
-                processSnykScan(snykScan, scanPublisher, project)
+            getScanPublishersFor(snykScan.folderPath).forEach { (project, scanPublisher) ->
+                processSnykScan(snykScan, scanPublisher)
             }
         } catch (e: Exception) {
             logger.error("Error processing snyk scan", e)
@@ -159,7 +208,6 @@ class SnykLanguageClient :
     private fun processSnykScan(
         snykScan: SnykScanParams,
         scanPublisher: SnykScanListenerLS,
-        project: Project,
     ) {
         val product =
             when (snykScan.product) {
@@ -177,7 +225,7 @@ class SnykLanguageClient :
 
             "success" -> {
                 ScanState.scanInProgress[key] = false
-                processSuccessfulScan(snykScan, scanPublisher, project)
+                processSuccessfulScan(snykScan, scanPublisher)
             }
 
             "error" -> {
@@ -187,19 +235,20 @@ class SnykLanguageClient :
         }
     }
 
+
     private fun processSuccessfulScan(
         snykScan: SnykScanParams,
         scanPublisher: SnykScanListenerLS,
-        project: Project,
     ) {
         logger.info("Scan completed")
+
         when (snykScan.product) {
             "oss" -> {
-                scanPublisher.scanningOssFinished(getSnykResult(project, snykScan))
+                scanPublisher.scanningOssFinished()
             }
 
             "code" -> {
-                scanPublisher.scanningSnykCodeFinished(getSnykResult(project, snykScan))
+                scanPublisher.scanningSnykCodeFinished()
             }
 
             "iac" -> {
@@ -216,8 +265,8 @@ class SnykLanguageClient :
      * Get all the scan publishers for the given scan. As the folder path could apply to different projects
      * containing that content root, we need to notify all of them.
      */
-    private fun getScanPublishersFor(snykScan: SnykScanParams): Set<Pair<Project, SnykScanListenerLS>> =
-        getProjectsForFolderPath(snykScan.folderPath)
+    private fun getScanPublishersFor(folderPath: String): Set<Pair<Project, SnykScanListenerLS>> =
+        getProjectsForFolderPath(folderPath)
             .mapNotNull { p ->
                 getSyncPublisher(p, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
                     Pair(p, scanListenerLS)
@@ -227,28 +276,11 @@ class SnykLanguageClient :
     private fun getProjectsForFolderPath(folderPath: String) =
         ProjectManager.getInstance().openProjects.filter {
             it
-                .getContentRootVirtualFiles()
-                .contains(folderPath.toVirtualFile())
+                .getContentRootVirtualFiles().any { ancestor ->
+                    val folder = folderPath.toVirtualFile()
+                    VfsUtilCore.isAncestor(ancestor, folder, true) || ancestor == folder
+                }
         }
-
-    @Suppress("UselessCallOnNotNull") // because lsp4j doesn't care about Kotlin non-null safety
-    private fun getSnykResult(project: Project, snykScan: SnykScanParams): Map<SnykFile, List<ScanIssue>> {
-        check(snykScan.product == "code" || snykScan.product == "oss") { "Expected Snyk Code or Snyk OSS scan result" }
-        if (snykScan.issues.isNullOrEmpty()) return emptyMap()
-
-        val map =
-            snykScan.issues
-                .groupBy { it.filePath }
-                .mapNotNull { (file, issues) -> SnykFile(project, file.toVirtualFile()) to issues.sorted() }
-                .map {
-                    // initialize all calculated values before they are needed, so we don't have to do it in the UI thread
-                    it.first.relativePath
-                    it.second.forEach { i -> i.textRange }
-                    it
-                }.filter { it.second.isNotEmpty() }
-                .toMap()
-        return map.toSortedMap(SnykFileIssueComparator(map))
-    }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {

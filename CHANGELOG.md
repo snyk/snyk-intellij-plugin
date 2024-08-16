@@ -1,5 +1,12 @@
 # Snyk Security Changelog
 
+## [2.9.0]
+### Changed
+- Updated the language server protocol version to 14 to support new communication model.
+- All HTTP communications now goes through language server
+- Removed Snyk Advisor
+- Removed Amplitude integration
+
 ## [2.8.11]
 ### Added
 - Improved UI thread usage and app shutdown handling

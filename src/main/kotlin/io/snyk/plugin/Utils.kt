@@ -5,7 +5,6 @@ package io.snyk.plugin
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.util.PsiNavigationSupport
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
@@ -32,9 +31,6 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
 import io.snyk.plugin.analytics.AnalyticsScanListener
-import io.snyk.plugin.net.ClientException
-import io.snyk.plugin.services.SnykAnalyticsService
-import io.snyk.plugin.services.SnykApiService
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
@@ -46,10 +42,6 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.apache.commons.lang3.SystemUtils
 import org.jetbrains.concurrency.runAsync
-import snyk.advisor.AdvisorService
-import snyk.advisor.AdvisorServiceImpl
-import snyk.advisor.SnykAdvisorModel
-import snyk.amplitude.AmplitudeExperimentService
 import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
@@ -64,7 +56,6 @@ import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
 import snyk.pluginInfo
-import snyk.whoami.WhoamiService
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
@@ -100,15 +91,12 @@ fun getSnykCachedResultsForProduct(project: Project, product: ProductType): Muta
         ProductType.CONTAINER -> getSnykCachedResults(project)?.currentContainerResultsLS
         ProductType.CODE_SECURITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
         ProductType.CODE_QUALITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
-        ProductType.ADVISOR -> mutableMapOf()
     }
 }
 
 fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? = project.serviceIfNotDisposed()
 
 fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
-
-fun getAmplitudeExperimentService(): AmplitudeExperimentService = getApplicationService()
 
 fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationService? = project?.serviceIfNotDisposed()
 
@@ -121,16 +109,6 @@ fun getCliFile() = File(pluginSettings().cliPath)
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
-
-fun getSnykApiService(): SnykApiService = getApplicationService()
-
-fun getSnykAnalyticsService(): SnykAnalyticsService = getApplicationService()
-
-fun getSnykAdvisorModel(): SnykAdvisorModel = getApplicationService()
-
-fun getAdvisorService(): AdvisorService = getApplicationService<AdvisorServiceImpl>()
-
-fun getWhoamiService(project: Project?): WhoamiService? = project?.serviceIfNotDisposed()
 
 fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
@@ -229,33 +207,6 @@ fun isScanRunning(project: Project): Boolean =
 fun isCliDownloading(): Boolean = getSnykCliDownloaderService().isCliDownloading()
 
 // check sastEnablement in a loop with rising timeout
-fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
-    val settings = pluginSettings()
-    val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
-
-    var currentAttempt = 1
-    val maxAttempts = 20
-    lateinit var checkIfSastEnabled: () -> Unit
-    // TODO use ls
-    checkIfSastEnabled = {
-        if (settings.sastOnServerEnabled != true) {
-            settings.sastOnServerEnabled = try {
-                getSnykApiService().getSastSettings()?.sastEnabled ?: false
-            } catch (ignored: ClientException) {
-                false
-            }
-
-            if (settings.sastOnServerEnabled == true) {
-                onSuccess.invoke()
-            } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
-                currentAttempt++
-                alarm.addRequest(checkIfSastEnabled, 2000 * currentAttempt)
-            }
-        }
-    }
-    checkIfSastEnabled.invoke()
-}
-
 private val alarm = Alarm()
 
 fun controlExternalProcessWithProgressIndicator(

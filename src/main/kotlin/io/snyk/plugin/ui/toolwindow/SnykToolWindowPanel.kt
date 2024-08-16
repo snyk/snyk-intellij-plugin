@@ -19,7 +19,6 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
-import io.snyk.plugin.analytics.getSelectedProducts
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
@@ -29,8 +28,6 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getOssTextRangeFinderService
-import io.snyk.plugin.getSnykAnalyticsService
-import io.snyk.plugin.getSnykApiService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykCliDownloaderService
@@ -46,7 +43,6 @@ import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.navigateToSource
-import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykToolWindow
@@ -73,11 +69,9 @@ import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
-import snyk.analytics.AnalysisIsTriggered
-import snyk.analytics.WelcomeIsViewed
-import snyk.analytics.WelcomeIsViewed.Ide.JETBRAINS
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -397,7 +391,7 @@ class SnykToolWindowPanel(
                 when (val selectedNode: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
                     is DescriptionHolderTreeNode -> {
                         descriptionPanel.add(
-                            selectedNode.getDescriptionPanel(logEventNeeded = !capturedSmartReloadMode),
+                            selectedNode.getDescriptionPanel(),
                             BorderLayout.CENTER,
                         )
                     }
@@ -495,15 +489,6 @@ class SnykToolWindowPanel(
     }
 
     private fun triggerScan() {
-        getSnykAnalyticsService().logAnalysisIsTriggered(
-            AnalysisIsTriggered
-                .builder()
-                .analysisType(getSelectedProducts(pluginSettings()))
-                .ide(AnalysisIsTriggered.Ide.JETBRAINS)
-                .triggeredByUser(true)
-                .build(),
-        )
-
         getSnykTaskQueueService(project)?.scan(false)
     }
 
@@ -515,25 +500,18 @@ class SnykToolWindowPanel(
         Disposer.register(this, authPanel)
         descriptionPanel.add(authPanel, BorderLayout.CENTER)
         revalidate()
-
-        getSnykAnalyticsService().logWelcomeIsViewed(
-            WelcomeIsViewed
-                .builder()
-                .ide(JETBRAINS)
-                .build(),
-        )
     }
 
     private fun enableCodeScanAccordingToServerSetting() {
         pluginSettings().apply {
             try {
                 // update settings if we get a valid/correct response, else log the error and do nothing
-                val sastSettings = getSnykApiService().getSastSettings()
-                sastOnServerEnabled = sastSettings?.sastEnabled
+                val sastSettings = LanguageServerWrapper.getInstance().getSastSettings()
+                sastOnServerEnabled = sastSettings?.sastEnabled ?: false
                 val codeScanAllowed = sastOnServerEnabled == true
                 snykCodeSecurityIssuesScanEnable = snykCodeSecurityIssuesScanEnable && codeScanAllowed
                 snykCodeQualityIssuesScanEnable = snykCodeQualityIssuesScanEnable && codeScanAllowed
-            } catch (clientException: ClientException) {
+            } catch (clientException: RuntimeException) {
                 logger.error(clientException)
             }
         }

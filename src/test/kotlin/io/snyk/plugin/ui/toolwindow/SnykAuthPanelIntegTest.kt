@@ -8,21 +8,17 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.verify
-import io.snyk.plugin.services.SnykAnalyticsService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import org.junit.Test
 import snyk.common.UIComponentFinder
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.awt.event.ActionEvent
 import javax.swing.JButton
 import javax.swing.JLabel
 
 class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
 
-    private val analyticsService: SnykAnalyticsService = mockk(relaxed = true)
     private val cliAuthenticationService = mockk<SnykCliAuthenticationService>(relaxed = true)
     private val workspaceTrustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
 
@@ -32,7 +28,6 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
         mockkStatic("snyk.trust.TrustedProjectsKt")
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
         val application = ApplicationManager.getApplication()
-        application.replaceService(SnykAnalyticsService::class.java, analyticsService, application)
         application.replaceService(WorkspaceTrustService::class.java, workspaceTrustServiceMock, application)
         project.replaceService(SnykCliAuthenticationService::class.java, cliAuthenticationService, project)
     }
@@ -40,7 +35,6 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
     override fun tearDown() {
         unmockkAll()
         val application = ApplicationManager.getApplication()
-        application.replaceService(SnykAnalyticsService::class.java, SnykAnalyticsService(), application)
         application.replaceService(WorkspaceTrustService::class.java, workspaceTrustServiceMock, application)
         project.replaceService(SnykCliAuthenticationService::class.java, SnykCliAuthenticationService(project), project)
         super.tearDown()
@@ -78,22 +72,5 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
             it.text == expectedText
         }
         assertNotNull(jLabel)
-    }
-
-    @Test
-    fun `should send tracking to amplitude on authenticate button press`() {
-        val event = mockk<ActionEvent>()
-
-        val cut = SnykAuthPanel(project)
-        val authenticateButton = UIComponentFinder.getComponentByCondition(cut, JButton::class) {
-            it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT
-        }
-        every { event.source } returns authenticateButton
-        justRun { cliAuthenticationService.authenticate() }
-        assertNotNull(authenticateButton)
-
-        authenticateButton!!.action.actionPerformed(event)
-
-        verify { analyticsService.logAuthenticateButtonIsClicked(any()) }
     }
 }

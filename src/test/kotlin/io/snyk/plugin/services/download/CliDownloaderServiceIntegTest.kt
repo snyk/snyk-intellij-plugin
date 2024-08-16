@@ -48,6 +48,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         val settings = SnykApplicationSettingsStateService()
         every { pluginSettings() } returns settings
         settings.currentLSProtocolVersion = settings.requiredLsProtocolVersion
+        settings.cliReleaseChannel = "preview"
 
         cliFile = getCliFile()
 

@@ -44,17 +44,7 @@ enum class ProductType(
     ) {
         override fun getCountText(count: Int, isUniqueCount: Boolean): String =
             getIssuesCountText(count, isUniqueCount)
-    },
-    ADVISOR(
-        productSelectionName = "Snyk Advisor (early preview)",
-        treeName = "",
-        description = "Discover the health (maintenance, community, popularity & security)\n" +
-            "status of your open source packages"
-    ) {
-        override fun getCountText(count: Int, isUniqueCount: Boolean): String =
-            getIssuesCountText(count, isUniqueCount)
     };
-
     override fun toString(): String = productSelectionName
 
     abstract fun getCountText(count: Int, isUniqueCount: Boolean = false): String

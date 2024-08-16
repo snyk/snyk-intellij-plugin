@@ -12,7 +12,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
-import snyk.analytics.IssueInTreeIsClicked.IssueType
 import snyk.common.ProductType
 import java.util.Date
 import java.util.Locale
@@ -30,6 +29,7 @@ data class CliError (
     val path: String? = null,
     val command: String? = null,
 )
+
 // Define the SnykScanParams data class
 data class SnykScanParams(
     val status: String, // Status can be either Initial, InProgress, Success or Error
@@ -39,6 +39,24 @@ data class SnykScanParams(
     val errorMessage: String? = null, // Error Message if applicable
     val cliError: CliError? = null, // structured error information if applicable
 )
+
+data class ErrorResponse(
+    @SerializedName("error") val error: String,
+    @SerializedName("path") val path: String
+)
+
+enum class LsProductConstants(val value: String) {
+    OpenSource("Snyk Open Source"),
+    Code("Snyk Code"),
+    InfrastructureAsCode("Snyk IaC"),
+    Container("Snyk Container"),
+    Unknown("");
+
+    override fun toString(): String {
+        return value
+    }
+}
+
 
 // Define the ScanIssue data class
 data class ScanIssue(
@@ -105,24 +123,6 @@ data class ScanIssue(
         document = virtualFile?.getDocument()
         startOffset = document?.getLineStartOffset(range.start.line)?.plus(range.start.character)
         endOffset = document?.getLineStartOffset(range.end.line)?.plus(range.end.character)
-    }
-
-    fun type(): IssueType {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> {
-                if (this.additionalData.license != null) {
-                    IssueType.LICENCE_ISSUE
-                } else {
-                    IssueType.OPEN_SOURCE_VULNERABILITY
-                }
-            }
-
-            ProductType.IAC -> IssueType.INFRASTRUCTURE_AS_CODE_ISSUE
-            ProductType.CONTAINER -> IssueType.CONTAINER_VULNERABILITY
-            ProductType.CODE_SECURITY -> IssueType.CODE_SECURITY_VULNERABILITY
-            ProductType.CODE_QUALITY -> IssueType.CODE_QUALITY_ISSUE
-            ProductType.ADVISOR -> IssueType.ADVISOR
-        }
     }
 
     fun title(): String {

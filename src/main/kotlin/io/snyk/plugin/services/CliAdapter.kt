@@ -174,7 +174,7 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
         }
 
         val organization = settings.organization
-        if (organization != null && organization.isNotEmpty()) {
+        if (!organization.isNullOrEmpty()) {
             commands.add("--org=$organization")
         }
 
