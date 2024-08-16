@@ -43,13 +43,17 @@ import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
+import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
+import snyk.common.isOauth
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.IOException
+import java.io.IOException
+import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -156,8 +160,7 @@ class LanguageServerWrapper(
         }
 
         // update feature flags
-        pluginSettings().isGlobalIgnoresFeatureEnabled =
-            getFeatureFlagStatusInternal("snykCodeConsistentIgnores")
+        runAsync { pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled() }
     }
 
     fun shutdown(): Future<*> =
@@ -321,7 +324,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = "snyk.getFeatureFlagStatus"
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
+            val result = languageServer.workspaceService.executeCommand(param).get(10, TimeUnit.SECONDS)
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
@@ -489,10 +492,11 @@ class LanguageServerWrapper(
     companion object {
         private var instance: LanguageServerWrapper? = null
 
-        fun getInstance() = instance ?: LanguageServerWrapper().also {
-            Disposer.register(SnykPluginDisposable.getInstance(), it)
-            instance = it
-        }
+        fun getInstance() =
+            instance ?: LanguageServerWrapper().also {
+                Disposer.register(SnykPluginDisposable.getInstance(), it)
+                instance = it
+            }
     }
 
     override fun dispose() {

@@ -6,7 +6,6 @@ import io.snyk.plugin.getUserAgentString
 import io.snyk.plugin.pluginSettings
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.eclipse.lsp4j.ExecuteCommandParams
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.needsSnykToken
 import snyk.pluginInfo
@@ -31,10 +30,9 @@ class TokenInterceptor(private var projectManager: ProjectManager? = null) : Int
                 if (projectManager == null) {
                     projectManager = ProjectManager.getInstance()
                 }
-                projectManager?.openProjects!!.firstOrNull()
                 // when the token is about to expire, call the whoami workflow to refresh it
                 val oAuthToken = Gson().fromJson(token, OAuthToken::class.java) ?: return chain.proceed(request.build())
-                val expiry = OffsetDateTime.parse(oAuthToken.expiry)
+                val expiry = OffsetDateTime.parse(oAuthToken.expiry!!)
                 if (expiry.isBefore(OffsetDateTime.now().plusMinutes(2))) {
                     LanguageServerWrapper.getInstance().getAuthenticatedUser()
                 }
