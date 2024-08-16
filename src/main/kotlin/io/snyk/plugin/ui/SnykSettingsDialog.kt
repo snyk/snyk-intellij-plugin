@@ -85,7 +85,7 @@ class SnykSettingsDialog(
     private val scanOnSaveCheckbox = JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
     private val additionalParametersTextField: JTextField = ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
 
-    private val scanTypesPanelOuter = ScanTypesPanel(project, rootPanel)
+    private val scanTypesPanelOuter = ScanTypesPanel(project)
     private val scanTypesPanel = scanTypesPanelOuter.scanTypesPanel
 
     private val issueViewOptionsPanel = IssueViewOptionsPanel(project).panel

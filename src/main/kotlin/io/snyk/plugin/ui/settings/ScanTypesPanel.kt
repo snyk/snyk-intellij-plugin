@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.settings
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
@@ -12,7 +11,6 @@ import com.intellij.ui.dsl.builder.Panel
 import com.intellij.ui.dsl.builder.actionListener
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.util.Alarm
 import com.intellij.util.FontUtil
 import com.intellij.util.progress.sleepCancellable
 import com.intellij.util.ui.JBUI
@@ -33,7 +31,6 @@ import javax.swing.event.HyperlinkListener
 
 class ScanTypesPanel(
     private val project: Project,
-    parentDisposable: Disposable,
     cliScanComments: String? = null,
 ) {
     private val settings

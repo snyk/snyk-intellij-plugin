@@ -20,7 +20,6 @@ import snyk.common.UIComponentFinder.getComponentByName
 import snyk.common.isSnykCodeAvailable
 import snyk.container.KubernetesImageCache
 
-@Suppress("FunctionName")
 class ScanTypesPanelTest : LightPlatform4TestCase() {
     private lateinit var disposable: Disposable
 
@@ -52,7 +51,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         switchSelection: Boolean
     ): JBCheckBox {
         pluginSettings().containerScanEnabled = initialValue
-        val scanTypesPanel = ScanTypesPanel(project, disposable)
+        val scanTypesPanel = ScanTypesPanel(project)
         val containerCheckBox =
             getComponentByName(scanTypesPanel.scanTypesPanel, JBCheckBox::class, ProductType.CONTAINER.toString())
                 ?: throw IllegalStateException("containerEnablementCheckBox not found")

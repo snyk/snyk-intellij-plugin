@@ -32,7 +32,6 @@ import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import io.snyk.plugin.ui.SnykBalloonNotifications
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
@@ -68,14 +67,6 @@ class SnykTaskQueueService(val project: Project) {
 
     @TestOnly
     fun getTaskQueue() = taskQueue
-
-    fun scheduleRunnable(title: String, runnable: (indicator: ProgressIndicator) -> Unit) {
-        taskQueue.run(object : Task.Backgroundable(project, title, true) {
-            override fun run(indicator: ProgressIndicator) {
-                runnable.invoke(indicator)
-            }
-        })
-    }
 
     fun connectProjectToLanguageServer(project: Project) {
             // subscribe to the settings changed topic

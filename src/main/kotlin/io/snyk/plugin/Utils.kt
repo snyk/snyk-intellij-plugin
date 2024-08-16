@@ -46,7 +46,6 @@ import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState

@@ -74,14 +74,10 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     var lastCheckDate: Date? = null
     var pluginFirstRun = true
-    var pluginInstalled = false
 
     // Instant could not be used here due to serialisation Exception
-    var pluginFirstInstallTime: Date = Date.from(Instant.now())
     var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
     var showFeedbackRequest = true
-
-    var scanningReminderWasShown: Boolean = false
 
     /**
      * Random UUID used by analytics events if enabled.
