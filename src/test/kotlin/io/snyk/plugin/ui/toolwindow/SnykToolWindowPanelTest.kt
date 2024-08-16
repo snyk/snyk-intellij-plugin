@@ -13,16 +13,25 @@ import io.mockk.verify
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
+import org.eclipse.lsp4j.services.LanguageServer
+import org.eclipse.lsp4j.services.WorkspaceService
 import org.junit.Test
 import snyk.UIComponentFinder
+import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.SnykLanguageClient
 import snyk.oss.OssVulnerabilitiesForFile
 import java.awt.Container
 import java.io.File
+import java.util.concurrent.CompletableFuture
 
 class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     private val taskQueueService = mockk<SnykTaskQueueService>(relaxed = true)
     private val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
     private lateinit var cut: SnykToolWindowPanel
+    val lsMock = mockk<LanguageServer>()
+    val lsClientMock = mockk<SnykLanguageClient>()
+    val lsProcessMock = mockk<Process>()
+    val workspaceServiceMock = mockk<WorkspaceService>()
 
     override fun setUp() {
         super.setUp()
@@ -33,6 +42,30 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
         project.replaceService(SnykTaskQueueService::class.java, taskQueueService, project)
 
+        val lsw = LanguageServerWrapper.getInstance()
+        lsw.languageServer = lsMock
+        lsw.languageClient = lsClientMock
+        lsw.process = lsProcessMock
+
+        every { lsProcessMock.info().startInstant().isPresent } returns true
+        every { lsProcessMock.isAlive } returns true
+        every { lsMock.workspaceService } returns workspaceServiceMock
+        val sastSettings = mapOf(
+            Pair("sastEnabled", true),
+            Pair(
+                "localCodeEngine", mapOf(
+                    Pair("allowCloudUpload", false),
+                    Pair("enabled", false),
+                    Pair("url", "")
+                )
+            ),
+            Pair("org", "1234"),
+            Pair("reportFalsePositivesEnabled", false),
+            Pair("autofixEnabled", false),
+            Pair("supportedLanguages", emptyList<String>()),
+        )
+        every { workspaceServiceMock.executeCommand(any()) } returns CompletableFuture.completedFuture(sastSettings)
+
         every { settings.token } returns null
         every { settings.sastOnServerEnabled } returns true
         every { settings.localCodeEngineEnabled } returns false
@@ -42,7 +75,11 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         unmockkAll()
 
         val application = ApplicationManager.getApplication()
-        application.replaceService(SnykApplicationSettingsStateService::class.java, SnykApplicationSettingsStateService(), application)
+        application.replaceService(
+            SnykApplicationSettingsStateService::class.java,
+            SnykApplicationSettingsStateService(),
+            application
+        )
 
         project.replaceService(SnykTaskQueueService::class.java, SnykTaskQueueService(project), project)
         super.tearDown()
@@ -144,6 +181,8 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         )
         pluginSettings().token = "test-token"
         pluginSettings().pluginFirstRun = true
+
+        assertTrue(LanguageServerWrapper.getInstance().isInitialized)
 
         SnykToolWindowPanel(project)
 
