@@ -101,7 +101,7 @@ class SnykLanguageClient :
 
         try {
             getScanPublishersFor(filePath.toVirtualFile().path).forEach { (project, scanPublisher) ->
-                if (updateCache(project, filePath, diagnosticsParams, scanPublisher)) return
+                updateCache(project, filePath, diagnosticsParams, scanPublisher)
             }
         } catch (e: Exception) {
             logger.error("Error publishing the new diagnostics", e)
@@ -113,7 +113,7 @@ class SnykLanguageClient :
         filePath: String,
         diagnosticsParams: PublishDiagnosticsParams,
         scanPublisher: SnykScanListenerLS
-    ): Boolean {
+    ) {
         val snykFile = SnykFile(project, filePath.toVirtualFile())
         val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
         val product = firstDiagnostic?.source
@@ -122,7 +122,7 @@ class SnykLanguageClient :
         if (firstDiagnostic == null) {
             scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
             scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
-            return true
+            return
         }
 
         val issueList = diagnosticsParams.diagnostics.stream().map {
@@ -146,7 +146,7 @@ class SnykLanguageClient :
                 // TODO implement
             }
         }
-        return false
+        return
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
