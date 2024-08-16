@@ -43,7 +43,6 @@ import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.navigateToSource
-import io.snyk.plugin.net.ClientException
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.snykToolWindow
@@ -512,7 +511,7 @@ class SnykToolWindowPanel(
                 val codeScanAllowed = sastOnServerEnabled == true
                 snykCodeSecurityIssuesScanEnable = snykCodeSecurityIssuesScanEnable && codeScanAllowed
                 snykCodeQualityIssuesScanEnable = snykCodeQualityIssuesScanEnable && codeScanAllowed
-            } catch (clientException: ClientException) {
+            } catch (clientException: RuntimeException) {
                 logger.error(clientException)
             }
         }

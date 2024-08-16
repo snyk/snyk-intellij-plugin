@@ -30,6 +30,8 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     val requiredLsProtocolVersion = 14
 
     var currentLSProtocolVersion: Int? = 0
+
+    var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://static.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
@@ -48,7 +50,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var cliScanEnable: Boolean = true
 
     var ossScanEnable: Boolean = true
-    var advisorEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
     var snykCodeQualityIssuesScanEnable: Boolean = true
     var iacScanEnabled: Boolean = true

@@ -92,8 +92,11 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
         }
 
         runBackgroundableTask("Updating Snyk Code settings", project, true) {
+
             settingsStateService.isGlobalIgnoresFeatureEnabled =
                 LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
+
+            LanguageServerWrapper.getInstance().updateConfiguration()
 
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()

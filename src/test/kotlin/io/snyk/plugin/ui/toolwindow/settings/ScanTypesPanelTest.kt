@@ -54,11 +54,11 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
         pluginSettings().containerScanEnabled = initialValue
         val scanTypesPanel = ScanTypesPanel(project, disposable)
         val containerCheckBox =
-            getComponentByName(scanTypesPanel.panel, JBCheckBox::class, ProductType.CONTAINER.toString())
+            getComponentByName(scanTypesPanel.scanTypesPanel, JBCheckBox::class, ProductType.CONTAINER.toString())
                 ?: throw IllegalStateException("containerEnablementCheckBox not found")
         if (switchSelection) {
             containerCheckBox.doClick()
-            scanTypesPanel.panel.apply()
+            scanTypesPanel.scanTypesPanel.apply()
         }
         return containerCheckBox
     }

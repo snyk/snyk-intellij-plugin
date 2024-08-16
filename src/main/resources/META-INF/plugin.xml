@@ -32,8 +32,6 @@
                          groupId="tools"
                          displayName="Snyk"/>
 
-    <editorFactoryListener implementation="snyk.advisor.AdvisorEditorFactoryListener"/>
-
     <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
 
     <!-- Registry keys -->

@@ -12,18 +12,17 @@ import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.BrowserHyperlinkListener
-import com.intellij.util.Alarm
+import com.intellij.util.progress.sleepCancellable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.snykToolWindow
-import io.snyk.plugin.startSastEnablementCheckLoop
+import org.jetbrains.concurrency.runAsync
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.toSnykCodeSettingsUrl
 import java.awt.event.MouseEvent
 
 object SnykBalloonNotifications {
-
     private val logger = logger<SnykBalloonNotifications>()
-    private val alarm = Alarm()
 
     const val sastForOrgEnablementMessage = "Snyk Code is disabled by your organisation's configuration."
     const val networkErrorAlertMessage = "Not able to connect to Snyk server."
@@ -42,31 +41,6 @@ object SnykBalloonNotifications {
             }
         )
         notification.notify(project)
-    }
-
-    fun showSastForOrgEnablement(project: Project): Notification {
-        val notification = SnykBalloonNotificationHelper.showInfo(
-            "$sastForOrgEnablementMessage To enable navigate to ",
-            project,
-            NotificationAction.createSimpleExpiring("SNYK > SETTINGS > SNYK CODE") {
-                BrowserUtil.browse(toSnykCodeSettingsUrl(pluginSettings().customEndpointUrl))
-                startSastEnablementCheckLoop(parentDisposable = project)
-            }
-        )
-        var currentAttempt = 1
-        val maxAttempts = 200
-        lateinit var checkIfSastEnabled: () -> Unit
-        checkIfSastEnabled = {
-            if (pluginSettings().sastOnServerEnabled == true) {
-                notification.expire()
-            } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
-                currentAttempt++
-                alarm.addRequest(checkIfSastEnabled, 1000)
-            }
-        }
-        checkIfSastEnabled.invoke()
-
-        return notification
     }
 
     fun showFeedbackRequest(project: Project) = SnykBalloonNotificationHelper.showInfo(

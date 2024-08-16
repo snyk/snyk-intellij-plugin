@@ -5,7 +5,6 @@ package io.snyk.plugin
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.util.PsiNavigationSupport
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
@@ -94,7 +93,6 @@ fun getSnykCachedResultsForProduct(project: Project, product: ProductType): Muta
         ProductType.CONTAINER -> getSnykCachedResults(project)?.currentContainerResultsLS
         ProductType.CODE_SECURITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
         ProductType.CODE_QUALITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
-        ProductType.ADVISOR -> mutableMapOf()
     }
 }
 
@@ -213,33 +211,6 @@ fun isScanRunning(project: Project): Boolean =
 fun isCliDownloading(): Boolean = getSnykCliDownloaderService().isCliDownloading()
 
 // check sastEnablement in a loop with rising timeout
-fun startSastEnablementCheckLoop(parentDisposable: Disposable, onSuccess: () -> Unit = {}) {
-    val settings = pluginSettings()
-    val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, parentDisposable)
-
-    var currentAttempt = 1
-    val maxAttempts = 20
-    lateinit var checkIfSastEnabled: () -> Unit
-
-    checkIfSastEnabled = {
-        if (settings.sastOnServerEnabled != true) {
-            settings.sastOnServerEnabled = try {
-                LanguageServerWrapper.getInstance().getSastSettings()?.sastEnabled ?: false
-            } catch (ignored: RuntimeException) {
-                false
-            }
-
-            if (settings.sastOnServerEnabled == true) {
-                onSuccess.invoke()
-            } else if (!alarm.isDisposed && currentAttempt < maxAttempts) {
-                currentAttempt++
-                alarm.addRequest(checkIfSastEnabled, 2000 * currentAttempt)
-            }
-        }
-    }
-    checkIfSastEnabled.invoke()
-}
-
 private val alarm = Alarm()
 
 fun controlExternalProcessWithProgressIndicator(

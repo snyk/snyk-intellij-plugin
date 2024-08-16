@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.google.common.util.concurrent.CycleDetectingLockFactory
+import com.google.gson.Gson
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -70,7 +71,7 @@ class LanguageServerWrapper(
 ) : Disposable {
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
-    private val gson = com.google.gson.Gson()
+    private val gson = Gson()
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -446,24 +447,38 @@ class LanguageServerWrapper(
         getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
     }
 
+
     data class SastSettings (
         val sastEnabled: Boolean,
         val localCodeEngine:LocalCodeEngine,
-        val org: String,
+        val org: String? = null,
         val supportedLanguages: List<String>,
-        val reportFalsePositivesEnabled: String,
+        val reportFalsePositivesEnabled: Boolean,
         val autofixEnabled: Boolean,
     )
 
     data class LocalCodeEngine(val allowCloudUpload : Boolean, val url : String, val enabled: Boolean)
 
+    @Suppress("UNCHECKED_CAST")
     fun getSastSettings(): SastSettings? {
         if (!ensureLanguageServerInitialized()) return null
         try {
             val executeCommandParams = ExecuteCommandParams("snyk.getSettingsSastEnabled", emptyList())
-            val response = languageServer.workspaceService.executeCommand(executeCommandParams).get(5, TimeUnit.SECONDS)
-            if (response is SastSettings) {
-                return response
+            val response = languageServer.workspaceService.executeCommand(executeCommandParams).get(10, TimeUnit.SECONDS)
+            if (response is Map<*, *>) {
+                val localCodeEngineMap : Map<String,*> = response["localCodeEngine"] as Map<String,*>
+                return SastSettings(
+                    sastEnabled = response["sastEnabled"] as Boolean,
+                    localCodeEngine = LocalCodeEngine(
+                        allowCloudUpload = localCodeEngineMap["allowCloudUpload"] as Boolean,
+                        url = localCodeEngineMap["url"] as String,
+                        enabled = localCodeEngineMap["enabled"] as Boolean,
+                    ),
+                    org = response["org"] as String?,
+                    reportFalsePositivesEnabled = response["reportFalsePositivesEnabled"] as Boolean,
+                    autofixEnabled = response["autofixEnabled"] as Boolean,
+                    supportedLanguages = response["supportedLanguages"] as List<String>,
+                )
             }
         } catch (e: TimeoutException) {
             logger.debug(e)

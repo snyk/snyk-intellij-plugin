@@ -32,6 +32,7 @@ import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.SnykBalloonNotifications
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
@@ -114,7 +115,7 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-                if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable) {
+                if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable || isSnykOSSLSEnabled()) {
                     if (!isStartup) {
                         LanguageServerWrapper.getInstance().sendScanCommand(project)
                     }
@@ -122,12 +123,6 @@ class SnykTaskQueueService(val project: Project) {
                 if (settings.ossScanEnable) {
                     if (!isSnykOSSLSEnabled()) {
                         scheduleOssScan()
-                    } else {
-                        // the LS deals with triggering scans at startup
-                        // TODO: Refactor when more than Snyk Code is available in LS for IntelliJ
-                        if (!isStartup) {
-                            LanguageServerWrapper.getInstance().sendScanCommand(project)
-                        }
                     }
                 }
                 if (isIacEnabled() && settings.iacScanEnabled) {
