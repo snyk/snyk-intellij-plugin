@@ -96,11 +96,12 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
             settingsStateService.isGlobalIgnoresFeatureEnabled =
                 LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
 
-            LanguageServerWrapper.getInstance().updateConfiguration()
 
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
             }
+
+            LanguageServerWrapper.getInstance().updateConfiguration()
         }
 
         if (rescanNeeded) {
