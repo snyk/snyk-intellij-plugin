@@ -46,14 +46,10 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
-import snyk.common.isOauth
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.io.IOException
-import java.io.IOException
-import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -146,7 +142,7 @@ class LanguageServerWrapper(
                 if (!disposed) {
                     try {
                         process.errorStream.bufferedReader().forEachLine { println(it) }
-                    } catch (ignored: IOException) {
+                    } catch (ignored: RuntimeException) {
                         // ignore
                     }
                 }

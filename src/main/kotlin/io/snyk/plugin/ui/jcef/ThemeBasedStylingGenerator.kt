@@ -45,6 +45,7 @@ class ThemeBasedStylingGenerator {
         return Pair(addedColor, removedColor)
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
         val isHighContrast =
