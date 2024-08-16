@@ -56,7 +56,6 @@ import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
 import snyk.pluginInfo
-import snyk.whoami.WhoamiService
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
@@ -110,8 +109,6 @@ fun getCliFile() = File(pluginSettings().cliPath)
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
-
-fun getWhoamiService(project: Project?): WhoamiService? = project?.serviceIfNotDisposed()
 
 fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
