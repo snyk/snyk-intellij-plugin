@@ -1,5 +1,6 @@
 package snyk.common
 
+import com.google.gson.Gson
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -13,6 +14,7 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import snyk.common.lsp.LsProductConstants
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
@@ -141,16 +143,10 @@ class SnykCachedResults(
                     currentContainerError = null
                 }
 
-                override fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
-                    currentSnykCodeResultsLS.clear()
-                    currentSnykCodeResultsLS.putAll(snykResults)
-                    logger.info("Snyk Code: scanning finished for project ${project.name}, assigning cache.")
+                override fun scanningSnykCodeFinished() {
                 }
 
-                override fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>) {
-                    currentOSSResultsLS.clear()
-                    currentOSSResultsLS.putAll(snykResults)
-                    logger.info("Snyk OSS: scanning finished for project ${project.name}, assigning cache.")
+                override fun scanningOssFinished() {
                 }
 
                 override fun scanningError(snykScan: SnykScanParams) {
@@ -197,11 +193,37 @@ class SnykCachedResults(
                                 )
                         }
                     }
+
                     SnykBalloonNotificationHelper
                         .showError(
-                            "scanning error for project ${project.name}. Data: $snykScan",
+                            "scanning error for project ${project.name}. Data: ${snykScan}",
                             project,
                         )
+                }
+
+                override fun onPublishDiagnostics(
+                    product: String,
+                    snykFile: SnykFile,
+                    issueList: List<ScanIssue>
+                ) {
+
+                    when (product) {
+                        LsProductConstants.OpenSource.value -> {
+                            currentOSSResultsLS[snykFile] = issueList
+                        }
+
+                        LsProductConstants.Code.value -> {
+                            currentSnykCodeResultsLS[snykFile] = issueList
+                        }
+
+                        LsProductConstants.InfrastructureAsCode.value -> {
+
+                        }
+
+                        LsProductConstants.Container.value-> {
+
+                        }
+                    }
                 }
             },
         )
