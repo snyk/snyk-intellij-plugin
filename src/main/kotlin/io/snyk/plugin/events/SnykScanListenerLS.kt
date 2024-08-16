@@ -13,9 +13,11 @@ interface SnykScanListenerLS {
 
     fun scanningStarted(snykScan: SnykScanParams) {}
 
-    fun scanningSnykCodeFinished(snykResults: Map<SnykFile, List<ScanIssue>>)
+    fun scanningSnykCodeFinished()
 
-    fun scanningOssFinished(snykResults: Map<SnykFile, List<ScanIssue>>)
+    fun scanningOssFinished()
 
     fun scanningError(snykScan: SnykScanParams)
+
+    fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>)
 }

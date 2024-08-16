@@ -29,6 +29,7 @@ data class CliError (
     val path: String? = null,
     val command: String? = null,
 )
+
 // Define the SnykScanParams data class
 data class SnykScanParams(
     val status: String, // Status can be either Initial, InProgress, Success or Error
@@ -38,6 +39,24 @@ data class SnykScanParams(
     val errorMessage: String? = null, // Error Message if applicable
     val cliError: CliError? = null, // structured error information if applicable
 )
+
+data class ErrorResponse(
+    @SerializedName("error") val error: String,
+    @SerializedName("path") val path: String
+)
+
+enum class LsProductConstants(val value: String) {
+    OpenSource("Snyk Open Source"),
+    Code("Snyk Code"),
+    InfrastructureAsCode("Snyk IaC"),
+    Container("Snyk Container"),
+    Unknown("");
+
+    override fun toString(): String {
+        return value
+    }
+}
+
 
 // Define the ScanIssue data class
 data class ScanIssue(
