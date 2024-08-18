@@ -74,10 +74,7 @@ class ThemeBasedStylingGenerator {
                     val tabItemHoverColor =
                         globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
 
-                    val editorColorsManager = EditorColorsManager.getInstance()
-                    val editorColorsScheme: EditorColorsScheme = editorColorsManager.globalScheme
-                    val fontPreferences: FontPreferences = editorColorsScheme.fontPreferences
-                    val editorFont = fontPreferences.fontFamily
+                    val preBackgroundColor = if (isDarkTheme) "#000000" else "#ffffff"
 
                     val themeScript = """
                         (function(){
@@ -98,6 +95,7 @@ class ThemeBasedStylingGenerator {
                                 '--tabs-bottom-color': "${tearLineColor?.let { toCssHex(it) }}",
                                 '--border-color': "$borderColor",
                                 '--editor-color': "$editorColor",
+                                '--vulnerability-overview-pre-background-color': "$preBackgroundColor",
                                 '--label-color': "'$labelColor'",
                             };
                             for (let [property, value] of Object.entries(properties)) {

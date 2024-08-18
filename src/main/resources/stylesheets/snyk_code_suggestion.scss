@@ -59,10 +59,6 @@ a,
   font-size: 0.85rem;
 }
 
-.data-flow-text {
-  font-size: 1.05rem;
-}
-
 .data-flow-clickable-row {
   color: var(--link-color);
 }
@@ -89,10 +85,6 @@ a,
 
 .example-line {
   background-color: var(--editor-color);
-}
-
-.example-line > code {
-  font-size: 1.05rem;
 }
 
 .example-line.added {
