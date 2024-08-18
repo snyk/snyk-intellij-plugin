@@ -98,7 +98,6 @@ class ThemeBasedStylingGenerator {
                                 '--tabs-bottom-color': "${tearLineColor?.let { toCssHex(it) }}",
                                 '--border-color': "$borderColor",
                                 '--editor-color': "$editorColor",
-                                '--editor-font': "'$editorFont'",
                                 '--label-color': "'$labelColor'",
                             };
                             for (let [property, value] of Object.entries(properties)) {

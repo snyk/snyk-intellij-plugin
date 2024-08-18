@@ -27,7 +27,7 @@ a,
 }
 
 // TODO: remove ignore styling at the end of cycle 5 2025
-// TODO: keep the font-size
+// TODO: keep the font-size - it should come from Language Server
 .ignore-warning {
   background: #FFF4ED;
   color: #B6540B;
@@ -60,7 +60,6 @@ a,
 }
 
 .data-flow-text {
-  font-family: var(--editor-font);
   font-size: 1.05rem;
 }
 
@@ -93,7 +92,6 @@ a,
 }
 
 .example-line > code {
-  font-family: var(--editor-font);
   font-size: 1.05rem;
 }
 
