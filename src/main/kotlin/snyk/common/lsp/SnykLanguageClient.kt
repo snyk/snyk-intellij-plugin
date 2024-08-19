@@ -97,50 +97,56 @@ class SnykLanguageClient :
             return
         }
 
-        updateCache(diagnosticsParams)
-    }
-
-    private fun updateCache(diagnosticsParams: PublishDiagnosticsParams) {
         val filePath = diagnosticsParams.uri
 
         try {
             getScanPublishersFor(filePath.toVirtualFile().path).forEach { (project, scanPublisher) ->
-                val snykFile = SnykFile(project, filePath.toVirtualFile())
-                val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
-                val product = firstDiagnostic?.source
-
-                //If the diagnostics for the file is empty, clear the cache.
-                if (firstDiagnostic == null) {
-                    scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
-                    scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
-                    return
-                }
-
-                val issueList = diagnosticsParams.diagnostics.stream().map {
-                    Gson().fromJson(it.data.toString(), ScanIssue::class.java)
-                }.toList()
-
-                when (product) {
-                    LsProductConstants.OpenSource.value -> {
-                        scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
-                    }
-
-                    LsProductConstants.Code.value -> {
-                        scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
-                    }
-
-                    LsProductConstants.InfrastructureAsCode.value -> {
-                        // TODO implement
-                    }
-
-                    LsProductConstants.Container.value -> {
-                        // TODO implement
-                    }
-                }
+                updateCache(project, filePath, diagnosticsParams, scanPublisher)
             }
         } catch (e: Exception) {
             logger.error("Error publishing the new diagnostics", e)
         }
+    }
+
+    fun updateCache(
+        project: Project,
+        filePath: String,
+        diagnosticsParams: PublishDiagnosticsParams,
+        scanPublisher: SnykScanListenerLS
+    ) {
+        val snykFile = SnykFile(project, filePath.toVirtualFile())
+        val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
+        val product = firstDiagnostic?.source
+
+        //If the diagnostics for the file is empty, clear the cache.
+        if (firstDiagnostic == null) {
+            scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
+            return
+        }
+
+        val issueList = diagnosticsParams.diagnostics.stream().map {
+            Gson().fromJson(it.data.toString(), ScanIssue::class.java)
+        }.toList()
+
+        when (product) {
+            LsProductConstants.OpenSource.value -> {
+                scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
+            }
+
+            LsProductConstants.Code.value -> {
+                scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
+            }
+
+            LsProductConstants.InfrastructureAsCode.value -> {
+                // TODO implement
+            }
+
+            LsProductConstants.Container.value -> {
+                // TODO implement
+            }
+        }
+        return
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
@@ -265,8 +271,8 @@ class SnykLanguageClient :
      * Get all the scan publishers for the given scan. As the folder path could apply to different projects
      * containing that content root, we need to notify all of them.
      */
-    private fun getScanPublishersFor(folderPath: String): Set<Pair<Project, SnykScanListenerLS>> =
-        getProjectsForFolderPath(folderPath)
+    private fun getScanPublishersFor(path: String): Set<Pair<Project, SnykScanListenerLS>> =
+        getProjectsForFolderPath(path)
             .mapNotNull { p ->
                 getSyncPublisher(p, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
                     Pair(p, scanListenerLS)

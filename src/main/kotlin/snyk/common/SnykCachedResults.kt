@@ -195,11 +195,9 @@ class SnykCachedResults(
                         }
                     }
 
-                    val errorResponse = Gson().fromJson(snykScan.errorMessage, ErrorResponse::class.java)
-
                     SnykBalloonNotificationHelper
                         .showError(
-                            "scanning error for project ${project.name}, ${errorResponse.error}",
+                            "scanning error for project ${project.name}. Data: $snykScan",
                             project,
                         )
                 }
@@ -219,11 +217,11 @@ class SnykCachedResults(
                             currentSnykCodeResultsLS[snykFile] = issueList
                         }
 
-                        "iac" -> {
+                        LsProductConstants.InfrastructureAsCode.value -> {
 
                         }
 
-                        "container" -> {
+                        LsProductConstants.Container.value-> {
 
                         }
                     }
