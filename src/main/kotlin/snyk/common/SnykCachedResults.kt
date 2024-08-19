@@ -1,6 +1,5 @@
 package snyk.common
 
-import com.google.gson.Gson
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -14,7 +13,6 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
-import snyk.common.lsp.ErrorResponse
 import snyk.common.lsp.LsProductConstants
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -168,7 +166,7 @@ class SnykCachedResults(
                             currentSnykCodeError =
                                 SnykError(
                                     snykScan.cliError?.error ?: snykScan.errorMessage
-                                        ?: "Failed to run Snyk Code Scan",
+                                    ?: "Failed to run Snyk Code Scan",
                                     snykScan.cliError?.path ?: snykScan.folderPath,
                                     snykScan.cliError?.code,
                                 )
@@ -221,7 +219,7 @@ class SnykCachedResults(
 
                         }
 
-                        LsProductConstants.Container.value-> {
+                        LsProductConstants.Container.value -> {
 
                         }
                     }
@@ -231,6 +229,7 @@ class SnykCachedResults(
     }
 }
 
+// TODO use this!
 internal class SnykFileIssueComparator(
     private val snykResults: Map<SnykFile, List<ScanIssue>>,
 ) : Comparator<SnykFile> {
