@@ -166,7 +166,7 @@ class SnykCachedResults(
                             currentSnykCodeError =
                                 SnykError(
                                     snykScan.cliError?.error ?: snykScan.errorMessage
-                                        ?: "Failed to run Snyk Code Scan",
+                                    ?: "Failed to run Snyk Code Scan",
                                     snykScan.cliError?.path ?: snykScan.folderPath,
                                     snykScan.cliError?.code,
                                 )
@@ -219,7 +219,7 @@ class SnykCachedResults(
 
                         }
 
-                        LsProductConstants.Container.value-> {
+                        LsProductConstants.Container.value -> {
 
                         }
                     }
@@ -229,6 +229,7 @@ class SnykCachedResults(
     }
 }
 
+// TODO use this!
 internal class SnykFileIssueComparator(
     private val snykResults: Map<SnykFile, List<ScanIssue>>,
 ) : Comparator<SnykFile> {
