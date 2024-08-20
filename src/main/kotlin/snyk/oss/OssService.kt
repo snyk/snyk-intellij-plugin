@@ -7,7 +7,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.CliAdapter
 import snyk.common.RelativePathHelper
 import snyk.common.SnykError
-import snyk.pluginInfo
 
 /**
  * Wrap work with Snyk CLI for OSS (`test` command).

@@ -10,11 +10,8 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import io.mockk.verify
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykAnalyticsService
-import org.junit.Before
 import org.junit.Test
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -28,7 +25,6 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
     private lateinit var cut: BaseImageRemediationFix
 
     private val fileName = "package.json"
-    private val analyticsMock = mockk<SnykAnalyticsService>(relaxed = true)
 
     private lateinit var psiFile: PsiFile
 
@@ -50,8 +46,7 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
         val containerIssuesForImage = createContainerIssuesForImage()
         cut = BaseImageRemediationFix(
             containerIssuesForImage = containerIssuesForImage,
-            range = range,
-            analyticsService = analyticsMock
+            range = range
         )
     }
 
@@ -81,7 +76,6 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
         cut.invoke(project, editor, psiFile)
 
         assertEquals("nginx:1.21.4", doc.text)
-        verify { analyticsMock.logQuickFixIsTriggered(any()) }
     }
 
     private val containerResultWithRemediationJson =

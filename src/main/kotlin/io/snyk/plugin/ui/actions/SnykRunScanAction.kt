@@ -5,13 +5,10 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
-import io.snyk.plugin.analytics.getSelectedProducts
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.pluginSettings
-import snyk.analytics.AnalysisIsTriggered
 
 /**
  * Run scan project with Snyk action.
@@ -20,14 +17,6 @@ class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
         getSnykTaskQueueService(actionEvent.project!!)?.scan(false)
-
-        getSnykAnalyticsService().logAnalysisIsTriggered(
-            AnalysisIsTriggered.builder()
-                .analysisType(getSelectedProducts(pluginSettings()))
-                .ide(AnalysisIsTriggered.Ide.JETBRAINS)
-                .triggeredByUser(true)
-                .build()
-        )
     }
 
     override fun update(actionEvent: AnActionEvent) {

@@ -82,8 +82,6 @@ class CodeActionIntention(
             ProductType.CONTAINER -> SnykIcons.CONTAINER
             ProductType.CODE_SECURITY -> SnykIcons.SNYK_CODE
             ProductType.CODE_QUALITY -> SnykIcons.SNYK_CODE
-            ProductType.ADVISOR -> TODO()
-
         }
     }
 
@@ -103,7 +101,6 @@ class CodeActionIntention(
             ProductType.CONTAINER -> "Applying Snyk Container Action"
             ProductType.CODE_SECURITY -> "Applying Snyk Code Action"
             ProductType.CODE_QUALITY -> "Applying Snyk Code Action"
-            ProductType.ADVISOR -> TODO()
         }
     }
 }

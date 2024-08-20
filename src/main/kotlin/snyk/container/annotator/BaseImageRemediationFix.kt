@@ -9,10 +9,7 @@ import com.intellij.openapi.util.Iconable
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
-import io.snyk.plugin.getSnykAnalyticsService
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
-import io.snyk.plugin.services.SnykAnalyticsService
-import snyk.analytics.QuickFixIsTriggered
 import snyk.common.intentionactions.SnykIntentionActionBase
 import snyk.container.BaseImageRemediationInfo
 import snyk.container.ContainerIssuesForImage
@@ -20,8 +17,7 @@ import javax.swing.Icon
 
 class BaseImageRemediationFix(
     private val containerIssuesForImage: ContainerIssuesForImage,
-    private val range: TextRange,
-    private val analyticsService: SnykAnalyticsService = getSnykAnalyticsService()
+    private val range: TextRange
 ) : SnykIntentionActionBase() {
     private val imageNameToFix: CharSequence
     private val logger = logger<BaseImageRemediationFix>()
@@ -54,11 +50,6 @@ class BaseImageRemediationFix(
             doc.replaceString(range.startOffset, range.endOffset, imageNameToFix)
             refreshAnnotationsForOpenFiles(project)
         }
-        val event = QuickFixIsTriggered.builder()
-            .ide(QuickFixIsTriggered.Ide.JETBRAINS)
-            .quickFixType(arrayOf(BaseImageRemediationFix::class.simpleName))
-            .build()
-        analyticsService.logQuickFixIsTriggered(event)
     }
 
     companion object {

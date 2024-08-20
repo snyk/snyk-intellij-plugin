@@ -9,10 +9,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import io.mockk.verify
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykAnalyticsService
-import org.junit.Before
 import org.junit.Test
 import java.nio.file.Paths
 
@@ -24,7 +21,6 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
     private lateinit var cut: AlwaysAvailableReplacementIntentionAction
 
     private val fileName = "package.json"
-    private val analyticsMock = mockk<SnykAnalyticsService>(relaxed = true)
 
     private lateinit var psiFile: PsiFile
 
@@ -45,8 +41,7 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
         cut = AlwaysAvailableReplacementIntentionAction(
             range = range,
-            replacementText = replacementText,
-            analyticsService = analyticsMock
+            replacementText = replacementText
         )
     }
 
@@ -76,6 +71,5 @@ class AlwaysAvailableReplacementIntentionActionTest : BasePlatformTestCase() {
         cut.invoke(project, editor, psiFile)
 
         assertEquals("b", doc.text)
-        verify { analyticsMock.logQuickFixIsTriggered(any()) }
     }
 }

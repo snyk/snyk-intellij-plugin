@@ -1,6 +1,5 @@
 package io.snyk.plugin.services
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
@@ -21,8 +20,6 @@ import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isIacEnabled
-import io.snyk.plugin.net.CliConfigSettings
-import io.snyk.plugin.net.LocalCodeEngine
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
@@ -42,7 +39,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     private lateinit var ossServiceMock: OssService
     private lateinit var downloaderServiceMock: SnykCliDownloaderService
-    private lateinit var snykApiServiceMock: SnykApiService
 
     override fun setUp() {
         super.setUp()
@@ -51,9 +47,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         ossServiceMock = mockk(relaxed = true)
         project.replaceService(OssService::class.java, ossServiceMock, project)
-
-        mockSnykApiServiceSastEnabled()
-        replaceSnykApiServiceMockInContainer()
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic("snyk.trust.TrustedProjectsKt")
@@ -67,18 +60,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
-    }
-
-    private fun mockSnykApiServiceSastEnabled() {
-        snykApiServiceMock = mockk()
-        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
-            true,
-            LocalCodeEngine(false, "", false),
-        )
-        every { snykApiServiceMock.getSastSettings() } returns CliConfigSettings(
-            true,
-            LocalCodeEngine(false, "", false),
-        )
     }
 
     override fun tearDown() {
@@ -164,11 +145,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val settings = pluginSettings()
 
         assertNull(settings.localCodeEngineEnabled)
-    }
-
-    private fun replaceSnykApiServiceMockInContainer() {
-        val application = ApplicationManager.getApplication()
-        application.replaceService(SnykApiService::class.java, snykApiServiceMock, application)
     }
 
     fun testIacScanTriggeredAndProduceResults() {
