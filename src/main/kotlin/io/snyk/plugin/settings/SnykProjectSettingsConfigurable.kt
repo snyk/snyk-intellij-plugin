@@ -107,6 +107,7 @@ class SnykProjectSettingsConfigurable(
             settingsStateService.isGlobalIgnoresFeatureEnabled =
                 LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
 
+
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
             }
