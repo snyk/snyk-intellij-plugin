@@ -28,6 +28,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
+import snyk.common.SnykFileIssueComparator
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -59,9 +60,12 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningStarted(snykScan: SnykScanParams) {
         if (disposed) return
         ApplicationManager.getApplication().invokeLater {
-            rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
-            rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning...)"
-            rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning...)"
+            if (pluginSettings().snykCodeSecurityIssuesScanEnable)
+                rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning...)"
+            if (pluginSettings().snykCodeQualityIssuesScanEnable)
+                rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning...)"
+            if (pluginSettings().ossScanEnable)
+                rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning...)"
         }
     }
 
@@ -69,6 +73,8 @@ class SnykToolWindowSnykScanListenerLS(
         if (disposed) return
         val snykCachedResults = getSnykCachedResults(project) ?: return
         ApplicationManager.getApplication().invokeLater {
+            this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
+            this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displaySnykCodeResults(snykCachedResults.currentSnykCodeResultsLS)
             refreshAnnotationsForOpenFiles(project)
@@ -81,6 +87,7 @@ class SnykToolWindowSnykScanListenerLS(
         val snykCachedResults = getSnykCachedResults(project) ?: return
         ApplicationManager.getApplication().invokeLater {
             cancelOssIndicator(project)
+            this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.navigateToSourceEnabled = false
             displayOssResults(snykCachedResults.currentOSSResultsLS)
             refreshAnnotationsForOpenFiles(project)
@@ -334,6 +341,7 @@ class SnykToolWindowSnykScanListenerLS(
                 io.snyk.plugin.navigateToSource(project, virtualFile, textRange.startOffset, textRange.endOffset)
             }
         issues
+            .toSortedMap(SnykFileIssueComparator(issues))
             .filter { it.value.isNotEmpty() }
             .forEach { entry ->
                 val productType =

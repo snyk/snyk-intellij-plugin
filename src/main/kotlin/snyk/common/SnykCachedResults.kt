@@ -229,7 +229,6 @@ class SnykCachedResults(
     }
 }
 
-// TODO use this!
 internal class SnykFileIssueComparator(
     private val snykResults: Map<SnykFile, List<ScanIssue>>,
 ) : Comparator<SnykFile> {
