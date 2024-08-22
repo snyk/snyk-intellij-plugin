@@ -11,10 +11,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.VirtualFile
+import com.jetbrains.rd.generator.nova.PredefinedType
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
+import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
@@ -73,6 +76,7 @@ class LanguageServerWrapper(
         get() {
             return ApplicationManager.getApplication().isDisposed || field
         }
+
     fun isDisposed() = disposed
 
     val logger = Logger.getInstance("Snyk Language Server")
@@ -374,12 +378,12 @@ class LanguageServerWrapper(
             cliPath = getCliFile().absolutePath,
             token = ps.token,
             filterSeverity =
-                SeverityFilter(
-                    critical = ps.criticalSeverityEnabled,
-                    high = ps.highSeverityEnabled,
-                    medium = ps.mediumSeverityEnabled,
-                    low = ps.lowSeverityEnabled,
-                ),
+            SeverityFilter(
+                critical = ps.criticalSeverityEnabled,
+                high = ps.highSeverityEnabled,
+                medium = ps.mediumSeverityEnabled,
+                low = ps.lowSeverityEnabled,
+            ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
@@ -486,25 +490,26 @@ class LanguageServerWrapper(
     }
 
 
-    data class SastSettings (
+    data class SastSettings(
         val sastEnabled: Boolean,
-        val localCodeEngine:LocalCodeEngine,
+        val localCodeEngine: LocalCodeEngine,
         val org: String? = null,
         val supportedLanguages: List<String>,
         val reportFalsePositivesEnabled: Boolean,
         val autofixEnabled: Boolean,
     )
 
-    data class LocalCodeEngine(val allowCloudUpload : Boolean, val url : String, val enabled: Boolean)
+    data class LocalCodeEngine(val allowCloudUpload: Boolean, val url: String, val enabled: Boolean)
 
     @Suppress("UNCHECKED_CAST")
     fun getSastSettings(): SastSettings? {
         if (!ensureLanguageServerInitialized()) return null
         try {
             val executeCommandParams = ExecuteCommandParams("snyk.getSettingsSastEnabled", emptyList())
-            val response = languageServer.workspaceService.executeCommand(executeCommandParams).get(10, TimeUnit.SECONDS)
+            val response =
+                languageServer.workspaceService.executeCommand(executeCommandParams).get(10, TimeUnit.SECONDS)
             if (response is Map<*, *>) {
-                val localCodeEngineMap : Map<String,*> = response["localCodeEngine"] as Map<String,*>
+                val localCodeEngineMap: Map<String, *> = response["localCodeEngine"] as Map<String, *>
                 return SastSettings(
                     sastEnabled = response["sastEnabled"] as Boolean,
                     localCodeEngine = LocalCodeEngine(
@@ -524,9 +529,25 @@ class LanguageServerWrapper(
         return null
     }
 
-    companion object {
-        private var instance: LanguageServerWrapper? = null
+    fun executeCLIScan(cmds: List<String>, path: String): String {
+        if (!ensureLanguageServerInitialized()) throw RuntimeException("couldn't initialize language server")
+        // this will fail on some multi-module projects, but we will move to explicit calls anyway
+        // and this is just a stop gap
+        val args: List<String> = mutableListOf(path, *cmds.toTypedArray())
+        val executeCommandParams = ExecuteCommandParams("snyk.executeCLI", args)
 
+        val timeoutMs = getWaitForResultsTimeout()
+        val response =
+            languageServer.workspaceService.executeCommand(executeCommandParams).get(timeoutMs, TimeUnit.MILLISECONDS)
+        if (response is Map<*, *>) {
+            return response["stdOut"] as String
+        }
+        return ""
+    }
+
+    companion object {
+
+        private var instance: LanguageServerWrapper? = null
         fun getInstance() =
             instance ?: LanguageServerWrapper().also {
                 Disposer.register(SnykPluginDisposable.getInstance(), it)
