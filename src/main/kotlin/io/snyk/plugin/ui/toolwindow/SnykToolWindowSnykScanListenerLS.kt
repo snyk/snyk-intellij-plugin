@@ -28,7 +28,6 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
-import snyk.common.SnykCachedResults
 import snyk.common.SnykFileIssueComparator
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
