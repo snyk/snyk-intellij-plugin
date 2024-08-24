@@ -125,33 +125,19 @@ class SnykLanguageClient :
             return
         }
 
-        val issueList = diagnosticsParams.diagnostics
-            .filter { it.data != null }
-            .map {
-                val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
-                // load textrange for issue so it doesn't happen in UI thread
-                issue.textRange
-                issue
-            }.toList()
-
-        when (product) {
-            LsProductConstants.OpenSource.value -> {
-                scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
-            }
-
-            LsProductConstants.Code.value -> {
-                scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
-            }
-
-            LsProductConstants.InfrastructureAsCode.value -> {
-                // TODO implement
-            }
-
-            LsProductConstants.Container.value -> {
-                // TODO implement
-            }
+        val issueList = getScanIssues(diagnosticsParams)
+        if (product != null) {
+            scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
         }
+
         return
+    }
+
+    fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): List<ScanIssue> {
+        val issueList = diagnosticsParams.diagnostics.stream().map {
+            Gson().fromJson(it.data.toString(), ScanIssue::class.java)
+        }.toList()
+        return issueList
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
