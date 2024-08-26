@@ -1,6 +1,5 @@
 package snyk.common.lsp
 
-import com.google.common.util.concurrent.CycleDetectingLockFactory
 import com.google.gson.Gson
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -99,20 +98,9 @@ class LanguageServerWrapper(
      */
     lateinit var process: Process
 
-    @Suppress("MemberVisibilityCanBePrivate") // because we want to test it
-    var isInitializing: ReentrantLock =
-        CycleDetectingLockFactory
-            .newInstance(CycleDetectingLockFactory.Policies.THROW)
-            .newReentrantLock("initializeLock")
+    var isInitializing: ReentrantLock = ReentrantLock()
 
-    internal val isInitialized: Boolean
-        get() =
-            ::languageClient.isInitialized &&
-                ::languageServer.isInitialized &&
-                ::process.isInitialized &&
-                process.info().startInstant().isPresent &&
-                process.isAlive &&
-                !isInitializing.isLocked
+    var isInitialized: Boolean = false
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
@@ -152,9 +140,11 @@ class LanguageServerWrapper(
 
             launcher.startListening()
             sendInitializeMessage()
+            isInitialized = true
         } catch (e: Exception) {
             logger.warn(e)
             process.destroy()
+            isInitialized = false
         }
 
         // update feature flags
@@ -274,15 +264,17 @@ class LanguageServerWrapper(
 
     fun ensureLanguageServerInitialized(): Boolean {
         if (disposed) return false
+        isInitializing.lock()
+        assert(isInitializing.holdCount == 1)
+
         if (!isInitialized) {
             try {
-                assert(isInitializing.holdCount == 0)
-                isInitializing.lock()
                 initialize()
-            } finally {
-                isInitializing.unlock()
+            } catch (e: RuntimeException) {
+                throw (e)
             }
         }
+        isInitializing.unlock()
         return isInitialized
     }
 

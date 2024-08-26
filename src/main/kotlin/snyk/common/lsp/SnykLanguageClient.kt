@@ -208,7 +208,7 @@ class SnykLanguageClient :
             return
         }
         try {
-            getScanPublishersFor(snykScan.folderPath).forEach { (project, scanPublisher) ->
+            getScanPublishersFor(snykScan.folderPath).forEach { (_, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher)
             }
         } catch (e: Exception) {
