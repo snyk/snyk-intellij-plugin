@@ -840,9 +840,10 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         every { getKubernetesImageCache(project)?.getKubernetesWorkloadImageNamesFromCache() } returns
             setOf("ignored_image_name")
         val containerService = ContainerService(project)
-        val mockkRunner = mockk<ConsoleCommandRunner>()
-        every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultJson
-        containerService.setConsoleCommandRunner(mockkRunner)
+
+        val param = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "container", "test", "ignored_image_name", "--json"))
+
+        every { lsMock.workspaceService.executeCommand(param) } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut", containerResultJson)))
 
         val containerResult = containerService.scan()
         setUpContainerTest(containerResult)
