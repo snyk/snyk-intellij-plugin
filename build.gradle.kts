@@ -182,6 +182,12 @@ tasks {
         changeNotes.set(provider { changelog.renderItem(changelog.getLatest(), Changelog.OutputType.HTML) })
     }
 
+    signPlugin {
+        certificateChain.set(System.getenv("CERTIFICATECHAIN").trimIndent())
+        privateKey.set(System.getenv("PRIVATEKEY").trimIndent())
+        password.set(System.getenv("PASSWORD"))
+    }
+
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))

@@ -90,6 +90,14 @@ jobs:
       - name: Publish Plugin
         if: ${{ !env.ACT }}
         env:
+          CERTIFICATECHAIN: ${{ secrets.CERTIFICATECHAIN }}
+          PRIVATEKEY: ${{ secrets.PRIVATEKEY }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+
+
+      - name: Publish Plugin
+        if: ${{ !env.ACT }}
+        env:
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
           ORG_GRADLE_PROJECT_amplitudeExperimentApiKey: ${{ secrets.AMPLITUDE_EXPERIMENT_API_KEY }}
           ORG_GRADLE_PROJECT_environment: "PRODUCTION"
