@@ -23,7 +23,7 @@ import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-private const val CODEACTION_TIMEOUT = 700L
+private const val CODEACTION_TIMEOUT = 5000L
 
 abstract class SnykAnnotator(private val product: ProductType) :
     ExternalAnnotator<Pair<PsiFile, List<ScanIssue>>, List<SnykAnnotation>>(), Disposable {
