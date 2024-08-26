@@ -14,7 +14,7 @@ class SnykCodeAnnotator : SnykAnnotator(product = ProductType.CODE_SECURITY) {
 
     override fun apply(
         psiFile: PsiFile,
-        annotationResult: Unit,
+        annotationResult: List<SnykAnnotation>,
         holder: AnnotationHolder,
     ) {
         if (disposed) return
