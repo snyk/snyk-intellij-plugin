@@ -10,9 +10,7 @@ import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.util.ui.tree.TreeUtil
-import com.jetbrains.rd.generator.nova.PredefinedType
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
@@ -22,7 +20,6 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getKubernetesImageCache
