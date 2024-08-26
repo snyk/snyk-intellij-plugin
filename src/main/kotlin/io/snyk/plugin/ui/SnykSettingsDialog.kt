@@ -236,8 +236,7 @@ class SnykSettingsDialog(
         val descriptionLabel =
             JLabel(
                 "<html>Specifies whether to authenticate with OAuth2 or with an API token.<br/>" +
-                    "<u>Note:</u> OAuth2 is currently experimental. Once it is fully supported, using <br>" +
-                    "OAuth2 authentication is recommended as it provides enhanced security.</html>",
+                    "<u>Note:</u> OAuth2 authentication is recommended as it provides enhanced security.</html>",
             ).apply { font = FontUtil.minusOne(this.font) }
 
         generalSettingsPanel.add(
