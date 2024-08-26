@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
     val requiredLsProtocolVersion = 14
 
-    var useTokenAuthentication = true
+    var useTokenAuthentication = false
     var currentLSProtocolVersion: Int? = 0
     var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
