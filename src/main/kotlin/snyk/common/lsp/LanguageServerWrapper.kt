@@ -47,6 +47,15 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
+import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
+import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
+import snyk.common.lsp.commands.COMMAND_GET_ACTIVE_USER
+import snyk.common.lsp.commands.COMMAND_GET_FEATURE_FLAG_STATUS
+import snyk.common.lsp.commands.COMMAND_GET_SETTINGS_SAST_ENABLED
+import snyk.common.lsp.commands.COMMAND_LOGIN
+import snyk.common.lsp.commands.COMMAND_LOGOUT
+import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
+import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -283,7 +292,7 @@ class LanguageServerWrapper(
         try {
             val eventString = gson.toJson(scanDoneEvent)
             val param = ExecuteCommandParams()
-            param.command = "snyk.reportAnalytics"
+            param.command = COMMAND_REPORT_ANALYTICS
             param.arguments = listOf(eventString)
             languageServer.workspaceService.executeCommand(param)
         } catch (e: Exception) {
@@ -312,7 +321,7 @@ class LanguageServerWrapper(
 
         try {
             val param = ExecuteCommandParams()
-            param.command = "snyk.getFeatureFlagStatus"
+            param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
             val result = languageServer.workspaceService.executeCommand(param).get(10, TimeUnit.SECONDS)
 
@@ -341,7 +350,7 @@ class LanguageServerWrapper(
         if (DumbService.getInstance(project).isDumb) return
         try {
             val param = ExecuteCommandParams()
-            param.command = "snyk.workspaceFolder.scan"
+            param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
         } catch (ignored: Exception) {
@@ -398,7 +407,7 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return null
 
         if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
-        val cmd = ExecuteCommandParams("snyk.getActiveUser", emptyList())
+        val cmd = ExecuteCommandParams(COMMAND_GET_ACTIVE_USER, emptyList())
         val result =
             try {
                 languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
@@ -418,7 +427,7 @@ class LanguageServerWrapper(
     fun login(): String? {
         if (!ensureLanguageServerInitialized()) return null
         try {
-            val loginCmd = ExecuteCommandParams("snyk.login", emptyList())
+            val loginCmd = ExecuteCommandParams(COMMAND_LOGIN, emptyList())
             pluginSettings().token =
                 languageServer.workspaceService
                     .executeCommand(loginCmd)
@@ -433,7 +442,7 @@ class LanguageServerWrapper(
     fun getAuthLink(): String? {
         if (!ensureLanguageServerInitialized()) return null
         try {
-            val authLinkCmd = ExecuteCommandParams("snyk.copyAuthLink", emptyList())
+            val authLinkCmd = ExecuteCommandParams(COMMAND_COPY_AUTH_LINK, emptyList())
             val url =
                 languageServer.workspaceService
                     .executeCommand(authLinkCmd)
@@ -448,7 +457,7 @@ class LanguageServerWrapper(
 
     fun logout() {
         if (!ensureLanguageServerInitialized()) return
-        val cmd = ExecuteCommandParams("snyk.logout", emptyList())
+        val cmd = ExecuteCommandParams(COMMAND_LOGOUT, emptyList())
         try {
             languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
         } catch (e: TimeoutException) {
@@ -495,7 +504,7 @@ class LanguageServerWrapper(
     fun getSastSettings(): SastSettings? {
         if (!ensureLanguageServerInitialized()) return null
         try {
-            val executeCommandParams = ExecuteCommandParams("snyk.getSettingsSastEnabled", emptyList())
+            val executeCommandParams = ExecuteCommandParams(COMMAND_GET_SETTINGS_SAST_ENABLED, emptyList())
             val response =
                 languageServer.workspaceService.executeCommand(executeCommandParams).get(10, TimeUnit.SECONDS)
             if (response is Map<*, *>) {
@@ -524,7 +533,7 @@ class LanguageServerWrapper(
         // this will fail on some multi-module projects, but we will move to explicit calls anyway
         // and this is just a stop gap
         val args: List<String> = mutableListOf(path, *cmds.toTypedArray())
-        val executeCommandParams = ExecuteCommandParams("snyk.executeCLI", args)
+        val executeCommandParams = ExecuteCommandParams(COMMAND_EXECUTE_CLI, args)
 
         val timeoutMs = getWaitForResultsTimeout()
         val response =

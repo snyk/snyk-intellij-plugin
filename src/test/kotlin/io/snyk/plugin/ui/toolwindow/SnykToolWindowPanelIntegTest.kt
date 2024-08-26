@@ -10,7 +10,9 @@ import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.util.ui.tree.TreeUtil
+import com.jetbrains.rd.generator.nova.PredefinedType
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
@@ -40,10 +42,13 @@ import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
+import org.eclipse.lsp4j.ExecuteCommandParams
+import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
 import snyk.common.SnykError
 import snyk.common.UIComponentFinder
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -58,12 +63,14 @@ import snyk.iac.IacError
 import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
+import snyk.iac.IacScanService
 import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.iac.IgnoreButtonActionListener
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.oss.Vulnerability
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.util.concurrent.CompletableFuture
 import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JLabel
@@ -86,16 +93,17 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)!!
 
     private val fakeApiToken = "fake_token"
+    private val lsMock = mockk<LanguageServer>(relaxed = true)
 
     override fun setUp() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
         mockkStatic("snyk.trust.TrustedProjectsKt")
-        mockkObject(LanguageServerWrapper.Companion)
-        every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
-        pluginSettings().token = fakeApiToken // needed to avoid forced Auth panel showing
-        pluginSettings().pluginFirstRun = false
+        val settings = pluginSettings()
+        settings.token = fakeApiToken // needed to avoid forced Auth panel showing
+        settings.pluginFirstRun = false
+        settings.cliReleaseChannel = "preview"
         // ToolWindow need to be reinitialised for every test as Project is recreated for Heavy tests
         // also we MUST do it *before* any actual test code due to initialisation of SnykScanListener in init{}
         toolWindowPanel = project.service()
@@ -103,6 +111,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
         mockkStatic(GotoFileCellRenderer::class)
         every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.isInitialized = true
+        languageServerWrapper.languageServer = lsMock
+        languageServerWrapper.process = mockk(relaxed = true)
+        languageServerWrapper.languageClient = mockk(relaxed = true)
     }
 
     override fun tearDown() {
@@ -140,16 +153,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     private fun prepareTreeWithFakeOssResults() {
-        val mockRunner = mockk<ConsoleCommandRunner>()
-        every {
-            mockRunner.execute(
-                commands = listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"),
-                workDirectory = project.basePath!!,
-                apiToken = fakeApiToken,
-                project = project
-            )
-        } returns (ossGoofJson)
-        getOssService(project)?.setConsoleCommandRunner(mockRunner)
+        val param =
+            ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "test", "--json", "--all-projects"))
+
+        every { lsMock.workspaceService.executeCommand(param) } returns
+            CompletableFuture.completedFuture(mapOf(Pair("stdOut", ossGoofJson)))
 
         val ossResult = getOssService(project)?.scan()!!
         scanPublisher.scanningOssFinished(ossResult)
@@ -159,18 +167,28 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     private fun prepareTreeWithFakeIacResults() {
         setUpIacTest()
 
-        val mockRunner = mockk<ConsoleCommandRunner>()
-        every {
-            mockRunner.execute(
-                commands = listOf(getCliFile().absolutePath, "iac", "test", "--json"),
-                workDirectory = project.basePath!!,
-                apiToken = fakeApiToken,
-                project = project
-            )
-        } returns (iacGoofJson)
-        getIacService(project)?.setConsoleCommandRunner(mockRunner)
+        val lsMock = mockk<LanguageServer>()
+        LanguageServerWrapper.getInstance().languageServer = lsMock
+        val param = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "iac", "test", "--json"))
 
-        project.service<SnykTaskQueueService>().scan(false)
+        every { lsMock.workspaceService.executeCommand(param) } returns
+            CompletableFuture.completedFuture(mapOf(Pair("stdOut", iacGoofJson)))
+
+        val ignoreParam = ExecuteCommandParams(
+            COMMAND_EXECUTE_CLI,
+            listOf(
+                project.basePath,
+                "ignore",
+                "--id=SNYK-CC-TF-53",
+                "--path=* > [DocId:0] > Resources > LaunchConfig > Properties > BlockDeviceMappings"
+            )
+        )
+
+        every { lsMock.workspaceService.executeCommand(ignoreParam) } returns
+            CompletableFuture.completedFuture(mapOf(Pair("stdOut", "")))
+
+        val iacResult = project.service<IacScanService>().scan()
+        scanPublisher.scanningIacFinished(iacResult)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
@@ -576,6 +594,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun test_WhenIacIssueIgnored_ThenItMarkedIgnored_AndButtonRemainsDisabled() {
         // pre-test setup
         prepareTreeWithFakeIacResults()
+
         val tree = toolWindowPanel.getTree()
 
         // select first IaC issue and ignore it
