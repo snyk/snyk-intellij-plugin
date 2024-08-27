@@ -110,7 +110,7 @@ class SnykLanguageClient :
         }
     }
 
-    fun updateCache(
+    private fun updateCache(
         project: Project,
         filePath: String,
         diagnosticsParams: PublishDiagnosticsParams,
@@ -127,12 +127,14 @@ class SnykLanguageClient :
             return
         }
 
-        val issueList = diagnosticsParams.diagnostics.stream().map {
-            val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
-            // load textrange for issue so it doesn't happen in UI thread
-            issue.textRange
-            issue
-        }.toList()
+        val issueList = diagnosticsParams.diagnostics
+            .filter { it.data != null }
+            .map {
+                val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
+                // load textrange for issue so it doesn't happen in UI thread
+                issue.textRange
+                issue
+            }.toList()
 
         when (product) {
             LsProductConstants.OpenSource.value -> {
@@ -424,14 +426,14 @@ class SnykLanguageClient :
         token: String,
         workDoneProgressNotification: WorkDoneProgressNotification,
     ) {
-        logger.debug("###### Received progress report notification for token: $token")
-        val indicator = progresses.getIfPresent(token)!!
-        val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
-        logger.debug("###### Token: $token, progress: ${report.percentage}%, message: ${report.message}")
-
-        indicator.text = report.message
-        indicator.isIndeterminate = false
-        indicator.fraction = report.percentage / 100.0
+        logger.debug("Received progress report notification for token: $token")
+        progresses.getIfPresent(token)?.let {
+            val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
+            logger.debug("Token: $token, progress: ${report.percentage}%, message: ${report.message}")
+            it.text = report.message
+            it.isIndeterminate = false
+            it.fraction = report.percentage / 100.0
+        }
         return
     }
 
@@ -439,11 +441,12 @@ class SnykLanguageClient :
         token: String,
         workDoneProgressNotification: WorkDoneProgressNotification,
     ) {
-        logger.debug("###### Received progress end notification for token: $token")
-        val indicator = progresses.getIfPresent(token)!!
-        val workDoneProgressEnd = workDoneProgressNotification as WorkDoneProgressEnd
-        indicator.text = workDoneProgressEnd.message
-        progresses.invalidate(token)
+        logger.debug("Received progress end notification for token: $token")
+        progresses.getIfPresent(token)?.let {
+            val workDoneProgressEnd = workDoneProgressNotification as WorkDoneProgressEnd
+            it.text = workDoneProgressEnd.message
+            progresses.invalidate(token)
+        }
         return
     }
 

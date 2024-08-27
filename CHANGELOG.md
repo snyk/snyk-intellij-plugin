@@ -6,6 +6,10 @@
 - All HTTP communications now goes through language server
 - Removed Snyk Advisor
 - Removed Amplitude integration
+- Handle exception
+- Do not excessively spawn CLIs
+- Remove UI freezes caused by annotator
+- Limit navigation functions to only use UI thread when needed
 
 ## [2.8.11]
 ### Added

@@ -11,7 +11,7 @@ import snyk.common.SnykError
 
 private val LOG = logger<ContainerService>()
 
-@Service
+@Service(Service.Level.PROJECT)
 class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, ContainerResult>(
     project = project
 ) {
@@ -138,17 +138,18 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
     override fun getProductResult(cliIssues: List<ContainerIssuesForImage>?, snykErrors: List<SnykError>): ContainerResult =
         ContainerResult(cliIssues, snykErrors)
 
+    @Suppress("UNNECESSARY_SAFE_CALL")
     override fun sanitizeCliIssues(cliIssues: ContainerIssuesForImage): ContainerIssuesForImage =
         // .copy() will check nullability of fields
         cliIssues.copy(
-            vulnerabilities = cliIssues.vulnerabilities.map { containerIssue ->
+            vulnerabilities = cliIssues?.vulnerabilities?.map { containerIssue ->
                 containerIssue.copy(
                     identifiers = containerIssue.identifiers?.copy(),
                     // @Expose fields are `null` after Gson parser, so explicit init needed
                     obsolete = false,
                     ignored = false
                 )
-            },
+            }.orEmpty(),
             workloadImages = emptyList()
         )
 
