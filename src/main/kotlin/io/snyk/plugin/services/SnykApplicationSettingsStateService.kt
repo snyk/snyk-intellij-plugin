@@ -19,7 +19,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 @Service
 @State(

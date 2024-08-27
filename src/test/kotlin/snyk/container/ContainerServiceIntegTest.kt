@@ -7,7 +7,6 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel

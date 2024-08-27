@@ -3,7 +3,6 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.colors.EditorColorsScheme
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
