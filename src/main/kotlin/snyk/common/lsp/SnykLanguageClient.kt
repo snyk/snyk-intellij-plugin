@@ -110,7 +110,7 @@ class SnykLanguageClient :
         }
     }
 
-    fun updateCache(
+    private fun updateCache(
         project: Project,
         filePath: String,
         diagnosticsParams: PublishDiagnosticsParams,
@@ -127,11 +127,13 @@ class SnykLanguageClient :
             return
         }
 
-        val issueList = diagnosticsParams.diagnostics.stream().map {
-            val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
-            // load textrange for issue so it doesn't happen in UI thread
-            issue.textRange
-            issue
+        val issueList = diagnosticsParams.diagnostics
+            .filter { it.data != null }
+            .map {
+                val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
+                // load textrange for issue so it doesn't happen in UI thread
+                issue.textRange
+                issue
         }.toList()
 
         when (product) {
