@@ -141,14 +141,14 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
     override fun sanitizeCliIssues(cliIssues: ContainerIssuesForImage): ContainerIssuesForImage =
         // .copy() will check nullability of fields
         cliIssues.copy(
-            vulnerabilities = cliIssues.vulnerabilities.map { containerIssue ->
+            vulnerabilities = cliIssues?.vulnerabilities?.map { containerIssue ->
                 containerIssue.copy(
                     identifiers = containerIssue.identifiers?.copy(),
                     // @Expose fields are `null` after Gson parser, so explicit init needed
                     obsolete = false,
                     ignored = false
                 )
-            },
+            }.orEmpty(),
             workloadImages = emptyList()
         )
 
