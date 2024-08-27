@@ -11,7 +11,7 @@ import snyk.common.SnykError
 
 private val LOG = logger<ContainerService>()
 
-@Service
+@Service(Service.Level.PROJECT)
 class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, ContainerResult>(
     project = project
 ) {
