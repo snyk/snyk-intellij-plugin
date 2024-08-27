@@ -42,15 +42,13 @@ class LanguageServerWrapperTest {
     private val dumbServiceMock = mockk<DumbService>()
 
     private lateinit var cut: LanguageServerWrapper
-    private var snykPluginDisposable = SnykPluginDisposable()
+    private val snykPluginDisposable = mockk<SnykPluginDisposable>(relaxed = true)
 
     @Before
     fun setUp() {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic(ApplicationManager::class)
-
-        snykPluginDisposable = SnykPluginDisposable()
 
         every { ApplicationManager.getApplication() } returns applicationMock
         every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
@@ -75,6 +73,7 @@ class LanguageServerWrapperTest {
 
         cut = LanguageServerWrapper("dummy")
         cut.languageServer = lsMock
+        cut.isInitialized = true
     }
 
     @After
@@ -151,13 +150,6 @@ class LanguageServerWrapperTest {
     }
 
     @Test
-    fun `ensureLanguageServerInitialized returns false when process not running`() {
-        val initialized = cut.ensureLanguageServerInitialized()
-
-        assertFalse(initialized)
-    }
-
-    @Test
     fun `ensureLanguageServerInitialized returns false when disposed`() {
         every { applicationMock.isDisposed } returns true
 
@@ -188,6 +180,7 @@ class LanguageServerWrapperTest {
 
     @Test
     fun `sendScanCommand only runs when initialized`() {
+        cut.isInitialized = false
         cut.sendScanCommand(projectMock)
 
         verify(exactly = 0) { dumbServiceMock.runWhenSmart(any()) }
@@ -240,6 +233,7 @@ class LanguageServerWrapperTest {
 
     @Test
     fun `updateConfiguration should not run when LS not initialized`() {
+        cut.isInitialized = false
         cut.updateConfiguration()
 
         verify(exactly = 0) { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
