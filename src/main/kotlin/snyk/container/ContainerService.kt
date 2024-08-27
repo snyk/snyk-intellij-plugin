@@ -138,6 +138,7 @@ class ContainerService(project: Project) : CliAdapter<ContainerIssuesForImage, C
     override fun getProductResult(cliIssues: List<ContainerIssuesForImage>?, snykErrors: List<SnykError>): ContainerResult =
         ContainerResult(cliIssues, snykErrors)
 
+    @Suppress("UNNECESSARY_SAFE_CALL")
     override fun sanitizeCliIssues(cliIssues: ContainerIssuesForImage): ContainerIssuesForImage =
         // .copy() will check nullability of fields
         cliIssues.copy(
