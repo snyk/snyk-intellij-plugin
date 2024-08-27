@@ -41,7 +41,7 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             cmds.removeAt(0)
             val rawResultStr = LanguageServerWrapper.getInstance().executeCLIScan(cmds, projectPath)
             convertRawCliStringToCliResult(rawResultStr)
-        } catch (exception: CliNotExistsException) {
+        } catch (exception: Exception) {
             getErrorResult(exception.message ?: "Snyk CLI not installed.")
         }
 
@@ -202,6 +202,6 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
         if (isCliInstalled()) getCliFile().absolutePath else throw CliNotExistsException()
 
     companion object {
-        const val CLI_PRODUCE_NO_OUTPUT = "CLI doesn't produce any output"
+        const val CLI_PRODUCE_NO_OUTPUT = "CLI didn't produce any output"
     }
 }
