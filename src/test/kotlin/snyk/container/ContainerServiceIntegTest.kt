@@ -11,8 +11,13 @@ import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.eclipse.lsp4j.ExecuteCommandParams
+import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.container.TestYamls.podYaml
+import java.util.concurrent.CompletableFuture
 
 @Suppress("FunctionName")
 class ContainerServiceIntegTest : LightPlatform4TestCase() {
@@ -41,11 +46,16 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
             ]
         """.trimIndent()
 
+    val lsMock = mockk<LanguageServer>()
+
     override fun setUp() {
         super.setUp()
         unmockkAll()
         setupDummyCliFile()
         cut = ContainerService(project)
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.languageServer = lsMock
+        languageServerWrapper.isInitialized = true
     }
 
     override fun tearDown() {
@@ -88,10 +98,14 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
     private fun executeScan(expectedResult: String): Pair<ContainerResult, ContainerResult> {
         val cache = setupCacheAndFile()
 
-        // create CLI mock
-        val mockkRunner = mockk<ConsoleCommandRunner>()
-        every { mockkRunner.execute(any(), any(), any(), project) } returns expectedResult
-        cut.setConsoleCommandRunner(mockkRunner)
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(
+            mapOf(
+                Pair(
+                    "stdOut",
+                    expectedResult
+                )
+            )
+        )
 
         val expectedContainerResult =
             ContainerResult(listOf(Gson().fromJson(expectedResult, ContainerIssuesForImage::class.java)))
@@ -127,18 +141,20 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
                 KubernetesWorkloadImage("nginx", fakeVirtualFile)
             )
         cut.setKubernetesImageCache(cache)
-        // create CLI mock
-        val mockkRunner = mockk<ConsoleCommandRunner>()
-        every { mockkRunner.execute(any(), any(), any(), project) } returns containerResultForFewImagesJson
-        cut.setConsoleCommandRunner(mockkRunner)
-
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(
+            mapOf(
+                Pair(
+                    "stdOut",
+                    containerResultForFewImagesJson
+                )
+            )
+        )
         val containerResult = cut.scan()
 
         verify { cache.getKubernetesWorkloadImages() }
         verify {
-            cut.execute(
-                listOf("container", "test", "debian", "fake-image-name", "nginx")
-            )
+            val param = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "container", "test", "debian", "fake-image-name", "nginx", "--json"))
+            lsMock.workspaceService.executeCommand(param)
         }
         assertTrue("Container scan should succeed", containerResult.isSuccessful())
         val allCliIssues = containerResult.allCliIssues
@@ -170,18 +186,22 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
                 KubernetesWorkloadImage("jenkins/jenkins:lts", fakeVirtualFile)
             )
         cut.setKubernetesImageCache(cache)
-        // create CLI mock
-        val mockkRunner = mockk<ConsoleCommandRunner>()
-        every { mockkRunner.execute(any(), any(), any(), project) } returns containerDoubleJenkinsWithPathJson
-        cut.setConsoleCommandRunner(mockkRunner)
+
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(
+            mapOf(
+                Pair(
+                    "stdOut",
+                    containerDoubleJenkinsWithPathJson
+                )
+            )
+        )
 
         val containerResult = cut.scan()
 
         verify { cache.getKubernetesWorkloadImages() }
         verify {
-            cut.execute(
-                listOf("container", "test", "jenkins/jenkins", "jenkins/jenkins:lts")
-            )
+            val param = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "container", "test", "jenkins/jenkins", "jenkins/jenkins:lts", "--json"))
+            lsMock.workspaceService.executeCommand(param)
         }
         assertTrue("Container scan should succeed", containerResult.isSuccessful())
         val allCliIssues = containerResult.allCliIssues
@@ -222,10 +242,14 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         every { cache.getKubernetesWorkloadImages() } returns
             setOf(KubernetesWorkloadImage("fake-image", fakeVirtualFile))
         cut.setKubernetesImageCache(cache)
-        // create CLI mock
-        val mockkRunner = mockk<ConsoleCommandRunner>()
-        every { mockkRunner.execute(any(), any(), any(), project) } returns containerArrayDoubleAuthFailureJson
-        cut.setConsoleCommandRunner(mockkRunner)
+//        // create CLI mock
+//        val mockkRunner = mockk<ConsoleCommandRunner>()
+//        every { mockkRunner.execute(any(), any(), any(), project) } returns containerArrayDoubleAuthFailureJson
+//        cut.setConsoleCommandRunner(mockkRunner)
+
+        every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns CompletableFuture.completedFuture(
+            mapOf(Pair("stdOut", containerArrayDoubleAuthFailureJson))
+        )
 
         val containerResult = cut.scan()
 
