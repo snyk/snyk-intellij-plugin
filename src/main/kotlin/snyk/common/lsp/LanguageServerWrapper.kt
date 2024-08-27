@@ -1,6 +1,5 @@
 package snyk.common.lsp
 
-import com.google.common.util.concurrent.CycleDetectingLockFactory
 import com.google.gson.Gson
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -15,6 +14,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
+import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
@@ -47,13 +47,19 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
-import snyk.common.isOauth
+import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
+import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
+import snyk.common.lsp.commands.COMMAND_GET_ACTIVE_USER
+import snyk.common.lsp.commands.COMMAND_GET_FEATURE_FLAG_STATUS
+import snyk.common.lsp.commands.COMMAND_GET_SETTINGS_SAST_ENABLED
+import snyk.common.lsp.commands.COMMAND_LOGIN
+import snyk.common.lsp.commands.COMMAND_LOGOUT
+import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
+import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.io.IOException
-import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -76,6 +82,7 @@ class LanguageServerWrapper(
         get() {
             return ApplicationManager.getApplication().isDisposed || field
         }
+
     fun isDisposed() = disposed
 
     val logger = Logger.getInstance("Snyk Language Server")
@@ -100,20 +107,9 @@ class LanguageServerWrapper(
      */
     lateinit var process: Process
 
-    @Suppress("MemberVisibilityCanBePrivate") // because we want to test it
-    var isInitializing: ReentrantLock =
-        CycleDetectingLockFactory
-            .newInstance(CycleDetectingLockFactory.Policies.THROW)
-            .newReentrantLock("initializeLock")
+    var isInitializing: ReentrantLock = ReentrantLock()
 
-    internal val isInitialized: Boolean
-        get() =
-            ::languageClient.isInitialized &&
-                ::languageServer.isInitialized &&
-                ::process.isInitialized &&
-                process.info().startInstant().isPresent &&
-                process.isAlive &&
-                !isInitializing.isLocked
+    var isInitialized: Boolean = false
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
@@ -145,7 +141,7 @@ class LanguageServerWrapper(
                 if (!disposed) {
                     try {
                         process.errorStream.bufferedReader().forEachLine { println(it) }
-                    } catch (ignored: IOException) {
+                    } catch (ignored: RuntimeException) {
                         // ignore
                     }
                 }
@@ -153,9 +149,11 @@ class LanguageServerWrapper(
 
             launcher.startListening()
             sendInitializeMessage()
+            isInitialized = true
         } catch (e: Exception) {
             logger.warn(e)
             process.destroy()
+            isInitialized = false
         }
 
         // update feature flags
@@ -275,15 +273,17 @@ class LanguageServerWrapper(
 
     fun ensureLanguageServerInitialized(): Boolean {
         if (disposed) return false
+        isInitializing.lock()
+        assert(isInitializing.holdCount == 1)
+
         if (!isInitialized) {
             try {
-                assert(isInitializing.holdCount == 0)
-                isInitializing.lock()
                 initialize()
-            } finally {
-                isInitializing.unlock()
+            } catch (e: RuntimeException) {
+                throw (e)
             }
         }
+        isInitializing.unlock()
         return isInitialized
     }
 
@@ -292,7 +292,7 @@ class LanguageServerWrapper(
         try {
             val eventString = gson.toJson(scanDoneEvent)
             val param = ExecuteCommandParams()
-            param.command = "snyk.reportAnalytics"
+            param.command = COMMAND_REPORT_ANALYTICS
             param.arguments = listOf(eventString)
             languageServer.workspaceService.executeCommand(param)
         } catch (e: Exception) {
@@ -321,7 +321,7 @@ class LanguageServerWrapper(
 
         try {
             val param = ExecuteCommandParams()
-            param.command = "snyk.getFeatureFlagStatus"
+            param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
             val result = languageServer.workspaceService.executeCommand(param).get(10, TimeUnit.SECONDS)
 
@@ -350,7 +350,7 @@ class LanguageServerWrapper(
         if (DumbService.getInstance(project).isDumb) return
         try {
             val param = ExecuteCommandParams()
-            param.command = "snyk.workspaceFolder.scan"
+            param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
         } catch (ignored: Exception) {
@@ -361,12 +361,11 @@ class LanguageServerWrapper(
     fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
         val authMethod =
-            if (URI(getEndpointUrl()).isOauth()) {
-                "oauth"
-            } else {
+            if (ps.useTokenAuthentication) {
                 "token"
+            } else {
+                "oauth"
             }
-
         return LanguageServerSettings(
             activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
@@ -378,12 +377,12 @@ class LanguageServerWrapper(
             cliPath = getCliFile().absolutePath,
             token = ps.token,
             filterSeverity =
-                SeverityFilter(
-                    critical = ps.criticalSeverityEnabled,
-                    high = ps.highSeverityEnabled,
-                    medium = ps.mediumSeverityEnabled,
-                    low = ps.lowSeverityEnabled,
-                ),
+            SeverityFilter(
+                critical = ps.criticalSeverityEnabled,
+                high = ps.highSeverityEnabled,
+                medium = ps.mediumSeverityEnabled,
+                low = ps.lowSeverityEnabled,
+            ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
@@ -408,7 +407,7 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return null
 
         if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
-        val cmd = ExecuteCommandParams("snyk.getActiveUser", emptyList())
+        val cmd = ExecuteCommandParams(COMMAND_GET_ACTIVE_USER, emptyList())
         val result =
             try {
                 languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
@@ -422,6 +421,48 @@ class LanguageServerWrapper(
             return result["username"]
         }
         return null
+    }
+
+    // triggers login and returns auth URL
+    fun login(): String? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val loginCmd = ExecuteCommandParams(COMMAND_LOGIN, emptyList())
+            pluginSettings().token =
+                languageServer.workspaceService
+                    .executeCommand(loginCmd)
+                    .get(120, TimeUnit.SECONDS)
+                    ?.toString() ?: ""
+        } catch (e: TimeoutException) {
+            logger.warn("could not login", e)
+        }
+        return pluginSettings().token
+    }
+
+    fun getAuthLink(): String? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val authLinkCmd = ExecuteCommandParams(COMMAND_COPY_AUTH_LINK, emptyList())
+            val url =
+                languageServer.workspaceService
+                    .executeCommand(authLinkCmd)
+                    .get(10, TimeUnit.SECONDS)
+                    .toString()
+            return url
+        } catch (e: TimeoutException) {
+            logger.warn("could not login", e)
+            return null
+        }
+    }
+
+    fun logout() {
+        if (!ensureLanguageServerInitialized()) return
+        val cmd = ExecuteCommandParams(COMMAND_LOGOUT, emptyList())
+        try {
+            languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
+        } catch (e: TimeoutException) {
+            logger.warn("could not logout", e)
+        }
     }
 
     fun addContentRoots(project: Project) {
@@ -448,25 +489,26 @@ class LanguageServerWrapper(
     }
 
 
-    data class SastSettings (
+    data class SastSettings(
         val sastEnabled: Boolean,
-        val localCodeEngine:LocalCodeEngine,
+        val localCodeEngine: LocalCodeEngine,
         val org: String? = null,
         val supportedLanguages: List<String>,
         val reportFalsePositivesEnabled: Boolean,
         val autofixEnabled: Boolean,
     )
 
-    data class LocalCodeEngine(val allowCloudUpload : Boolean, val url : String, val enabled: Boolean)
+    data class LocalCodeEngine(val allowCloudUpload: Boolean, val url: String, val enabled: Boolean)
 
     @Suppress("UNCHECKED_CAST")
     fun getSastSettings(): SastSettings? {
         if (!ensureLanguageServerInitialized()) return null
         try {
-            val executeCommandParams = ExecuteCommandParams("snyk.getSettingsSastEnabled", emptyList())
-            val response = languageServer.workspaceService.executeCommand(executeCommandParams).get(10, TimeUnit.SECONDS)
+            val executeCommandParams = ExecuteCommandParams(COMMAND_GET_SETTINGS_SAST_ENABLED, emptyList())
+            val response =
+                languageServer.workspaceService.executeCommand(executeCommandParams).get(10, TimeUnit.SECONDS)
             if (response is Map<*, *>) {
-                val localCodeEngineMap : Map<String,*> = response["localCodeEngine"] as Map<String,*>
+                val localCodeEngineMap: Map<String, *> = response["localCodeEngine"] as Map<String, *>
                 return SastSettings(
                     sastEnabled = response["sastEnabled"] as Boolean,
                     localCodeEngine = LocalCodeEngine(
@@ -486,9 +528,25 @@ class LanguageServerWrapper(
         return null
     }
 
-    companion object {
-        private var instance: LanguageServerWrapper? = null
+    fun executeCLIScan(cmds: List<String>, path: String): String {
+        if (!ensureLanguageServerInitialized()) throw RuntimeException("couldn't initialize language server")
+        // this will fail on some multi-module projects, but we will move to explicit calls anyway
+        // and this is just a stop gap
+        val args: List<String> = mutableListOf(path, *cmds.toTypedArray())
+        val executeCommandParams = ExecuteCommandParams(COMMAND_EXECUTE_CLI, args)
 
+        val timeoutMs = getWaitForResultsTimeout()
+        val response =
+            languageServer.workspaceService.executeCommand(executeCommandParams).get(timeoutMs, TimeUnit.MILLISECONDS)
+        if (response is Map<*, *>) {
+            return response["stdOut"] as String
+        }
+        return ""
+    }
+
+    companion object {
+
+        private var instance: LanguageServerWrapper? = null
         fun getInstance() =
             instance ?: LanguageServerWrapper().also {
                 Disposer.register(SnykPluginDisposable.getInstance(), it)

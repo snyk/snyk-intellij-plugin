@@ -15,7 +15,7 @@ class SnykOSSAnnotatorLS : SnykAnnotator(product = ProductType.OSS) {
 
     override fun apply(
         psiFile: PsiFile,
-        annotationResult: Unit,
+        annotationResult: List<SnykAnnotation>,
         holder: AnnotationHolder,
     ) {
         if (disposed) return

@@ -66,6 +66,8 @@ class SnykLanguageClient :
     LanguageClient,
     Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
+    val gson = Gson()
+
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -126,7 +128,10 @@ class SnykLanguageClient :
         }
 
         val issueList = diagnosticsParams.diagnostics.stream().map {
-            Gson().fromJson(it.data.toString(), ScanIssue::class.java)
+            val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
+            // load textrange for issue so it doesn't happen in UI thread
+            issue.textRange
+            issue
         }.toList()
 
         when (product) {
@@ -203,7 +208,7 @@ class SnykLanguageClient :
             return
         }
         try {
-            getScanPublishersFor(snykScan.folderPath).forEach { (project, scanPublisher) ->
+            getScanPublishersFor(snykScan.folderPath).forEach { (_, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher)
             }
         } catch (e: Exception) {

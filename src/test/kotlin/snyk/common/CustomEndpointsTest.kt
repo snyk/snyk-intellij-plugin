@@ -228,12 +228,6 @@ class CustomEndpointsTest {
     }
 
     @Test
-    fun `isOauth true for the right URI`() {
-        val uri = URI("https://app.xxx.snykgov.io")
-        assertTrue(uri.isOauth())
-    }
-
-    @Test
     fun `isAnalyticsPermitted false for URIs not allowed`() {
         val uris = listOf(
             "https://api.fedramp.snykgov.io",

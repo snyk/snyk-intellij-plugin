@@ -4,7 +4,6 @@ import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
-import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.pluginSettings
@@ -12,10 +11,14 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
+import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
+import java.util.concurrent.CompletableFuture
 
 class IacServiceTest : LightPlatformTestCase() {
 
+    private val lsMock: LanguageServer = mockk()
     private val wholeProjectJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")
     private val singleFileJson = getResourceAsString("iac-test-results/fargate.json")
 
@@ -39,6 +42,10 @@ class IacServiceTest : LightPlatformTestCase() {
         settingsStateService.organization = ""
 
         project.service<SnykProjectSettingsStateService>().additionalParameters = ""
+
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.languageServer = lsMock
+        languageServerWrapper.isInitialized = true
     }
 
     override fun tearDown() {
@@ -76,25 +83,20 @@ class IacServiceTest : LightPlatformTestCase() {
     fun testScanWithErrorResult() {
         setupDummyCliFile()
 
-        val mockRunner = mockk<ConsoleCommandRunner>()
-
         val errorMsg = "Some error here"
         val errorPath = "/Users/user/Desktop/example-npm-project"
-
-        every {
-            mockRunner.execute(
-                listOf(getCliFile().absolutePath, "iac", "test", "--json"),
-                project.basePath!!,
-                project = project
-            )
-        } returns """
+        val expectedResult = mapOf(
+            Pair(
+                "stdOut", """
             {
               "error": "$errorMsg",
               "path": "$errorPath"
             }
         """.trimIndent()
+            )
+        )
 
-        iacService.setConsoleCommandRunner(mockRunner)
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(expectedResult)
 
         val iacResult = iacService.scan()
 
@@ -107,17 +109,9 @@ class IacServiceTest : LightPlatformTestCase() {
     fun testScanWithSuccessfulIacResult() {
         setupDummyCliFile()
 
-        val mockRunner = mockk<ConsoleCommandRunner>()
+        val expectedResult = mapOf(Pair("stdOut", wholeProjectJson))
 
-        every {
-            mockRunner.execute(
-                listOf(getCliFile().absolutePath, "iac", "test", "--json"),
-                project.basePath!!,
-                project = project
-            )
-        } returns (wholeProjectJson)
-
-        iacService.setConsoleCommandRunner(mockRunner)
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(expectedResult)
 
         val iacResult = iacService.scan()
 
@@ -141,12 +135,14 @@ class IacServiceTest : LightPlatformTestCase() {
 
         val errorMsg = "Some error here"
         val errorPath = "/Users/user/Desktop/example-npm-project"
-        val jsonErrorIacResult = iacService.convertRawCliStringToCliResult("""
+        val jsonErrorIacResult = iacService.convertRawCliStringToCliResult(
+            """
                     {
                       "error": "$errorMsg",
                       "path": "$errorPath"
                     }
-                """.trimIndent())
+                """.trimIndent()
+        )
         assertFalse(jsonErrorIacResult.isSuccessful())
         assertEquals(errorMsg, jsonErrorIacResult.getFirstError()!!.message)
         assertEquals(errorPath, jsonErrorIacResult.getFirstError()!!.path)
@@ -165,13 +161,15 @@ class IacServiceTest : LightPlatformTestCase() {
 
     @Test
     fun testConvertRawCliStringToIacResultWithMissformedJson() {
-        val cliResult = iacService.convertRawCliStringToCliResult("""
+        val cliResult = iacService.convertRawCliStringToCliResult(
+            """
                     {
                       "ok": false,
                       "error": ["could not be","array here"],
                       "path": "some/path/here"
                     }
-                """.trimIndent())
+                """.trimIndent()
+        )
         assertFalse(cliResult.isSuccessful())
     }
 

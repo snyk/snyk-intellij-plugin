@@ -22,6 +22,8 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.util.minimumWidth
+import com.intellij.ui.util.preferredWidth
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.FontUtil
@@ -46,7 +48,6 @@ import snyk.SnykBundle
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.util.Objects.nonNull
-import java.util.UUID
 import java.util.function.Supplier
 import javax.swing.JButton
 import javax.swing.JCheckBox
@@ -62,28 +63,43 @@ import com.intellij.uiDesigner.core.GridLayoutManager as UIGridLayoutManager
 class SnykSettingsDialog(
     private val project: Project,
     applicationSettings: SnykApplicationSettingsStateService,
-    snykProjectSettingsConfigurable: SnykProjectSettingsConfigurable
+    snykProjectSettingsConfigurable: SnykProjectSettingsConfigurable,
 ) {
+    private val rootPanel =
+        object : JPanel(), Disposable {
+            init {
+                Disposer.register(SnykPluginDisposable.getInstance(project), this)
+            }
 
-    private val rootPanel = object : JPanel(), Disposable {
-        init {
-            Disposer.register(SnykPluginDisposable.getInstance(project), this)
+            override fun dispose() = Unit
         }
-
-        override fun dispose() = Unit
-    }
 
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, rootPanel)
 
-    private val tokenTextField = JBPasswordField()
+    private val tokenTextField = JBPasswordField().apply { preferredWidth = 600 }
     private val receiveTokenButton = JButton("Connect IDE to Snyk")
-    private val customEndpointTextField = JTextField()
-    private val organizationTextField: JTextField = JTextField().apply { toolTipText = "The UUID of your organization or the org stub" }
-    private val ignoreUnknownCACheckBox: JCheckBox = JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
-    private val usageAnalyticsCheckBox: JCheckBox = JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
+    private val useTokenAuthentication =
+        ComboBox(arrayOf("OAuth2 authentication", "Token authentication")).apply {
+            this.isEditable = false
+            this.preferredWidth = 200
+            this.minimumWidth = 200
+        }
+
+    private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
+    private val organizationTextField: JTextField =
+        JTextField().apply {
+            toolTipText = "The UUID of your organization or the org stub"
+            preferredWidth = tokenTextField.preferredWidth
+        }
+    private val ignoreUnknownCACheckBox: JCheckBox =
+        JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
+    private val usageAnalyticsCheckBox: JCheckBox =
+        JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
     private val crashReportingCheckBox = JCheckBox().apply { toolTipText = "If enabled, send error reports to Sentry" }
-    private val scanOnSaveCheckbox = JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
-    private val additionalParametersTextField: JTextField = ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
+    private val scanOnSaveCheckbox =
+        JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
+    private val additionalParametersTextField: JTextField =
+        ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
 
     private val scanTypesPanelOuter = ScanTypesPanel(project)
     private val scanTypesPanel = scanTypesPanelOuter.scanTypesPanel
@@ -106,7 +122,10 @@ class SnykSettingsDialog(
 
         receiveTokenButton.isEnabled = !getSnykCliDownloaderService().isCliDownloading()
 
-        ApplicationManager.getApplication().messageBus.connect(rootPanel)
+        ApplicationManager
+            .getApplication()
+            .messageBus
+            .connect(rootPanel)
             .subscribe(
                 SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
                 object : SnykCliDownloadListener {
@@ -117,7 +136,7 @@ class SnykSettingsDialog(
                     override fun cliDownloadFinished(succeed: Boolean) {
                         receiveTokenButton.isEnabled = true
                     }
-                }
+                },
             )
 
         receiveTokenButton.addActionListener {
@@ -127,8 +146,8 @@ class SnykSettingsDialog(
                 } catch (e: Exception) {
                     logger.error("Failed to apply Snyk settings", e)
                 }
-                val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
-                tokenTextField.text = token
+                getSnykCliAuthenticationService(project)?.authenticate()
+                tokenTextField.text = pluginSettings().token
                 runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
                     this.scanTypesPanelOuter.checkSastEnabled()
                 }
@@ -137,6 +156,12 @@ class SnykSettingsDialog(
 
         if (nonNull(applicationSettings)) {
             tokenTextField.text = applicationSettings.token
+            if (applicationSettings.useTokenAuthentication) {
+                // the combobox order is OAuth2, Token
+                useTokenAuthentication.selectedIndex = 1
+            } else {
+                useTokenAuthentication.selectedIndex = 0
+            }
             customEndpointTextField.text = applicationSettings.customEndpointUrl
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
@@ -157,7 +182,10 @@ class SnykSettingsDialog(
     // We have to do background task run through Alarm on Alarm.ThreadToUse.POOLED_THREAD due to next (Idea?) bug:
     // Creation of Task.Backgroundable under another Task.Backgroundable does not work for Settings dialog,
     // it postpones inner Background task execution till Setting dialog exit
-    fun runBackgroundable(runnable: () -> Unit, delayMillis: Int = 10) {
+    fun runBackgroundable(
+        runnable: () -> Unit,
+        delayMillis: Int = 10,
+    ) {
         if (!alarm.isDisposed) {
             alarm.addRequest(runnable, delayMillis)
         }
@@ -168,7 +196,7 @@ class SnykSettingsDialog(
 
         /** General settings ------------------ */
 
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(5, 4, JBUI.emptyInsets(), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(7, 4, JBUI.emptyInsets(), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -178,79 +206,122 @@ class SnykSettingsDialog(
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
-            )
+                indent = 0,
+            ),
+        )
+
+        val authenticationMethodLabel = JLabel("Authentication method:")
+        generalSettingsPanel.add(
+            authenticationMethodLabel,
+            baseGridConstraints(
+                row = 0,
+                indent = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST
+            ),
+        )
+
+        generalSettingsPanel.add(
+            useTokenAuthentication,
+            baseGridConstraints(
+                row = 0,
+                column = 1,
+                colSpan = 3,
+                indent = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_HORIZONTAL,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+            ),
+        )
+
+        val descriptionLabel =
+            JLabel(
+                "<html>Specifies whether to authenticate with OAuth2 or with an API token.<br/>" +
+                    "<u>Note:</u> OAuth2 authentication is recommended as it provides enhanced security.</html>",
+            ).apply { font = FontUtil.minusOne(this.font) }
+
+        generalSettingsPanel.add(
+            descriptionLabel,
+            baseGridConstraints(
+                row = 1,
+                column = 1,
+                colSpan = 3,
+                indent = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_HORIZONTAL,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+            ),
         )
 
         generalSettingsPanel.add(
             receiveTokenButton,
             baseGridConstraintsAnchorWest(
-                row = 0,
+                row = 2,
                 column = 1,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         val tokenLabel = JLabel("Token:")
         generalSettingsPanel.add(
             tokenLabel,
             baseGridConstraintsAnchorWest(
-                row = 1,
-                indent = 0
-            )
+                row = 3,
+                indent = 0,
+            ),
         )
 
         generalSettingsPanel.add(
             tokenTextField,
-            baseGridConstraints(
-                row = 1,
-                column = 1,
-                colSpan = 3,
-                anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0
-            )
-        )
-
-        val customEndpointLabel = JLabel("Custom endpoint:")
-        val customEndpointTooltip = "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
-        customEndpointLabel.toolTipText = customEndpointTooltip
-        customEndpointLabel.labelFor = customEndpointTextField
-        customEndpointTextField.toolTipText = customEndpointTooltip
-        generalSettingsPanel.add(
-            customEndpointLabel,
-            baseGridConstraintsAnchorWest(
-                row = 2,
-                indent = 0
-            )
-        )
-
-        generalSettingsPanel.add(
-            customEndpointTextField,
-            baseGridConstraints(
-                row = 2,
-                column = 1,
-                colSpan = 3,
-                anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0
-            )
-        )
-
-        ignoreUnknownCACheckBox.text = "Ignore unknown CA"
-        generalSettingsPanel.add(
-            ignoreUnknownCACheckBox,
             baseGridConstraints(
                 row = 3,
                 column = 1,
                 colSpan = 3,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0
-            )
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
+        )
+
+        val customEndpointLabel = JLabel("Custom endpoint:")
+        val customEndpointTooltip =
+            "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
+        customEndpointLabel.toolTipText = customEndpointTooltip
+        customEndpointLabel.labelFor = customEndpointTextField
+        customEndpointTextField.toolTipText = customEndpointTooltip
+        generalSettingsPanel.add(
+            customEndpointLabel,
+            baseGridConstraintsAnchorWest(
+                row = 4,
+                indent = 0,
+            ),
+        )
+
+        generalSettingsPanel.add(
+            customEndpointTextField,
+            baseGridConstraints(
+                row = 4,
+                column = 1,
+                colSpan = 3,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
+        )
+
+        ignoreUnknownCACheckBox.text = "Ignore unknown CA"
+        generalSettingsPanel.add(
+            ignoreUnknownCACheckBox,
+            baseGridConstraints(
+                row = 5,
+                column = 1,
+                colSpan = 3,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
         )
 
         val organizationLabel = JLabel("Organization:")
@@ -258,38 +329,39 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationLabel,
             baseGridConstraintsAnchorWest(
-                row = 4,
-                indent = 0
-            )
+                row = 6,
+                indent = 0,
+            ),
         )
 
         generalSettingsPanel.add(
             organizationTextField,
             baseGridConstraints(
-                row = 4,
+                row = 6,
                 column = 1,
                 colSpan = 2,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                indent = 0
-            )
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
         )
 
-        val organizationContextHelpLabel = ContextHelpLabel.createWithLink(
-            null,
-            SnykBundle.message("snyk.settings.organization.tooltip.description"),
-            SnykBundle.message("snyk.settings.organization.tooltip.linkText")
-        ) {
-            BrowserUtil.browse(SnykBundle.message("snyk.settings.organization.tooltip.link"))
-        }
+        val organizationContextHelpLabel =
+            ContextHelpLabel.createWithLink(
+                null,
+                SnykBundle.message("snyk.settings.organization.tooltip.description"),
+                SnykBundle.message("snyk.settings.organization.tooltip.linkText"),
+            ) {
+                BrowserUtil.browse(SnykBundle.message("snyk.settings.organization.tooltip.link"))
+            }
         generalSettingsPanel.add(
             organizationContextHelpLabel,
             baseGridConstraintsAnchorWest(
-                row = 4,
+                row = 6,
                 column = 3,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         /** Products and Severities selection ------------------ */
@@ -303,8 +375,8 @@ class SnykSettingsDialog(
                 issueViewLabel,
                 baseGridConstraintsAnchorWest(
                     row = 0,
-                    indent = 0
-                )
+                    indent = 0,
+                ),
             )
 
             rootPanel.add(
@@ -314,8 +386,8 @@ class SnykSettingsDialog(
                     anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                     fill = UIGridConstraints.FILL_HORIZONTAL,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    indent = 0
-                )
+                    indent = 0,
+                ),
             )
 
             issueViewPanel.add(
@@ -326,8 +398,8 @@ class SnykSettingsDialog(
                     fill = UIGridConstraints.FILL_NONE,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    indent = 0
-                )
+                    indent = 0,
+                ),
             )
         }
         val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(1, 2, JBUI.emptyInsets(), 30, -1))
@@ -339,8 +411,8 @@ class SnykSettingsDialog(
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         productAndSeveritiesPanel.add(
@@ -348,10 +420,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 0,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         val severitiesPanel = JPanel(UIGridLayoutManager(5, 4, JBUI.emptyInsets(), -1, -1))
@@ -363,10 +435,10 @@ class SnykSettingsDialog(
                 row = 0,
                 column = 1,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         severitiesPanel.add(
@@ -377,8 +449,8 @@ class SnykSettingsDialog(
                 fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         /** Project settings ------------------ */
@@ -393,8 +465,8 @@ class SnykSettingsDialog(
                     row = 3,
                     fill = UIGridConstraints.FILL_BOTH,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    indent = 0
-                )
+                    indent = 0,
+                ),
             )
 
             val additionalParametersLabel = JLabel("Additional parameters:")
@@ -402,8 +474,8 @@ class SnykSettingsDialog(
                 additionalParametersLabel,
                 baseGridConstraintsAnchorWest(
                     row = 0,
-                    indent = 0
-                )
+                    indent = 0,
+                ),
             )
 
             projectSettingsPanel.add(
@@ -414,8 +486,8 @@ class SnykSettingsDialog(
                     anchor = UIGridConstraints.ANCHOR_WEST,
                     fill = UIGridConstraints.FILL_HORIZONTAL,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                    indent = 0
-                )
+                    indent = 0,
+                ),
             )
 
             additionalParametersLabel.labelFor = additionalParametersTextField
@@ -428,8 +500,8 @@ class SnykSettingsDialog(
                     fill = UIGridConstraints.FILL_VERTICAL,
                     hSizePolicy = 1,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                    indent = 0
-                )
+                    indent = 0,
+                ),
             )
         }
 
@@ -447,8 +519,8 @@ class SnykSettingsDialog(
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         scanOnSaveCheckbox.text = "Scan automatically on start-up and save"
@@ -457,8 +529,8 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 0,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         usageAnalyticsCheckBox.text = "Send usage statistics to Snyk"
@@ -467,8 +539,8 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 1,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         crashReportingCheckBox.text = "Send error reports to Snyk"
@@ -477,8 +549,8 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 2,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         /** Spacer ------------------ */
@@ -487,17 +559,19 @@ class SnykSettingsDialog(
         rootPanel.add(
             generalSettingsSpacer,
             panelGridConstraints(
-                row = 5
-            )
+                row = 5,
+            ),
         )
     }
 
     private fun createExecutableSettingsPanel() {
         val executableSettingsPanel = JPanel(GridBagLayout())
         executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable settings")
-        val gb = GridBag().setDefaultWeightX(1.0)
-            .setDefaultAnchor(GridBagConstraints.LINE_START)
-            .setDefaultFill(GridBagConstraints.HORIZONTAL)
+        val gb =
+            GridBag()
+                .setDefaultWeightX(1.0)
+                .setDefaultAnchor(GridBagConstraints.LINE_START)
+                .setDefaultFill(GridBagConstraints.HORIZONTAL)
 
         rootPanel.add(
             executableSettingsPanel,
@@ -506,27 +580,30 @@ class SnykSettingsDialog(
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0
-            )
+                indent = 0,
+            ),
         )
 
         val introLabel =
-            JLabel("<html>These options allow you to customize the handling, where and how plugin dependencies are downloaded.<br/><br/></html>")
+            JLabel(
+                "<html>These options allow you to customize the handling, where and how plugin dependencies are downloaded.<br/><br/></html>",
+            )
 
         introLabel.font = FontUtil.minusOne(introLabel.font)
         executableSettingsPanel.add(
             introLabel,
-            gb.nextLine()
+            gb.nextLine(),
         )
 
         cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://static.snyk.io. " +
             "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://static.snyk.io/fips"
-        val cliBaseDownloadPanel = panel {
-            row {
-                label("Base URL to download the CLI: ")
-                cell(cliBaseDownloadUrlTextField).align(AlignX.FILL)
+        val cliBaseDownloadPanel =
+            panel {
+                row {
+                    label("Base URL to download the CLI: ")
+                    cell(cliBaseDownloadUrlTextField).align(AlignX.FILL)
+                }
             }
-        }
         executableSettingsPanel.add(cliBaseDownloadPanel, gb.nextLine())
 
         cliPathTextBoxWithFileBrowser.toolTipText = "The default path is ${getCliFile().canonicalPath}."
@@ -536,7 +613,7 @@ class SnykSettingsDialog(
             "Please choose the Snyk CLI you want to use:",
             null,
             descriptor,
-            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
+            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT,
         )
 
         executableSettingsPanel.add(
@@ -546,14 +623,15 @@ class SnykSettingsDialog(
                     cell(cliPathTextBoxWithFileBrowser).align(AlignX.FILL)
                 }
             },
-            gb.nextLine()
+            gb.nextLine(),
         )
 
         val descriptionLabelManageBinaries =
             JLabel(
                 "<html>" +
-                    "If <i>Automatically manage needed binaries</i> is checked, the plugin will try to download the CLI every 4 days to the given path,<br/>" +
-                    "or to the default path. If unchecked, please make sure to select a valid path to an existing Snyk CLI.<br/><br/></html>"
+                    "If <i>Automatically manage needed binaries</i> is checked, " +
+                    "the plugin will try to download the CLI every 4 days to the given path,<br/>" +
+                    "or to the default path. If unchecked, please make sure to select a valid path to an existing Snyk CLI.<br/><br/></html>",
             )
         descriptionLabelManageBinaries.font = FontUtil.minusOne(descriptionLabelManageBinaries.font)
 
@@ -565,7 +643,7 @@ class SnykSettingsDialog(
                 }
                 row { cell(descriptionLabelManageBinaries) }
             },
-            gb.nextLine()
+            gb.nextLine(),
         )
 
         val descriptionLabelReleaseChannel =
@@ -582,15 +660,16 @@ class SnykSettingsDialog(
                 }
                 row { cell(descriptionLabelReleaseChannel) }
             },
-            gb.nextLine()
+            gb.nextLine(),
         )
     }
 
-    fun getToken(): String = try {
-        tokenTextField.document.getText(0, tokenTextField.document.length)
-    } catch (exception: BadLocationException) {
-        ""
-    }
+    fun getToken(): String =
+        try {
+            tokenTextField.document.getText(0, tokenTextField.document.length)
+        } catch (exception: BadLocationException) {
+            ""
+        }
 
     fun getOrganization(): String = organizationTextField.text
 
@@ -619,48 +698,54 @@ class SnykSettingsDialog(
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 
     private fun initializeValidation() {
-        setupValidation(tokenTextField, "Invalid token", ::isTokenValid)
-        setupValidation(customEndpointTextField, "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io", ::isUrlValid)
-        setupValidation(additionalParametersTextField, "The -d option is not supported by the Snyk IntelliJ plugin", ::isAdditionalParametersValid)
+        setupValidation(
+            customEndpointTextField,
+            "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io",
+            ::isUrlValid,
+        )
+        setupValidation(
+            additionalParametersTextField,
+            "The -d option is not supported by the Snyk IntelliJ plugin",
+            ::isAdditionalParametersValid,
+        )
     }
 
-    private fun setupValidation(textField: JTextField, message: String, isValidText: (sourceStr: String?) -> Boolean) {
-        ComponentValidator(rootPanel).withValidator(
-            Supplier<ValidationInfo?> {
-                val validationInfo: ValidationInfo = if (!isValidText(textField.text)) {
-                    ValidationInfo(message, textField)
-                } else {
-                    ValidationInfo("")
+    private fun setupValidation(
+        textField: JTextField,
+        message: String,
+        isValidText: (sourceStr: String?) -> Boolean,
+    ) {
+        ComponentValidator(rootPanel)
+            .withValidator(
+                Supplier<ValidationInfo?> {
+                    val validationInfo: ValidationInfo =
+                        if (!isValidText(textField.text)) {
+                            ValidationInfo(message, textField)
+                        } else {
+                            ValidationInfo("")
+                        }
+                    validationInfo
+                },
+            ).installOn(textField)
+
+        textField.document.addDocumentListener(
+            object : DocumentAdapter() {
+                override fun textChanged(event: DocumentEvent) {
+                    ComponentValidator.getInstance(textField).ifPresent {
+                        it.revalidate()
+                    }
                 }
-                validationInfo
-            }
-        ).installOn(textField)
-
-        textField.document.addDocumentListener(object : DocumentAdapter() {
-            override fun textChanged(event: DocumentEvent) {
-                ComponentValidator.getInstance(textField).ifPresent {
-                    it.revalidate()
-                }
-            }
-        })
-    }
-
-    private fun isTokenValid(token: String?): Boolean {
-        if (token.isNullOrEmpty()) {
-            return true
-        }
-
-        return try {
-            UUID.fromString(token)
-
-            true
-        } catch (exception: IllegalArgumentException) {
-            false
-        }
+            },
+        )
     }
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
+
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
+
     fun getCliBaseDownloadURL(): String = cliBaseDownloadUrlTextField.text
+
     fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
+
+    fun getUseTokenAuthentication(): Boolean = useTokenAuthentication.selectedIndex == 1
 }

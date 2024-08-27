@@ -45,6 +45,7 @@ import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
@@ -559,108 +560,135 @@ class SnykToolWindowPanel(
         val settings = pluginSettings()
 
         val realError =
-            getSnykCachedResults(project)?.currentOssError != null &&
-                ossResultsCount != NODE_NOT_SUPPORTED_STATE
+            getSnykCachedResults(project)?.currentOssError != null && ossResultsCount != NODE_NOT_SUPPORTED_STATE
 
-        val newOssTreeNodeText =
-            when {
-                isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
-                realError -> "$OSS_ROOT_TEXT (error)"
-
-                else ->
-                    ossResultsCount?.let { count ->
-                        OSS_ROOT_TEXT +
-                            when {
-                                count == NODE_INITIAL_STATE -> ""
-                                count == 0 -> NO_ISSUES_FOUND_TEXT
-                                count > 0 -> ProductType.OSS.getCountText(count, isUniqueCount = true) + addHMLPostfix
-                                count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_PACKAGE_MANAGER_FOUND
-                                else -> throw IllegalStateException("ResultsCount is not meaningful")
-                            }
-                    }
-            }
+        val newOssTreeNodeText = getNewOssTreeNodeText(settings, realError, ossResultsCount, addHMLPostfix)
         newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
-        val newSecurityIssuesNodeText =
-            when {
-                getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
-                isSnykCodeRunning(project) &&
-                    settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
-
-                else ->
-                    securityIssuesCount?.let { count ->
-                        CODE_SECURITY_ROOT_TEXT +
-                            when {
-                                count == NODE_INITIAL_STATE -> ""
-                                count == 0 -> NO_ISSUES_FOUND_TEXT
-                                count > 0 -> ProductType.CODE_SECURITY.getCountText(count) + addHMLPostfix
-                                else -> throw IllegalStateException("ResultsCount is meaningful")
-                            }
-                    }
-            }
+        val newSecurityIssuesNodeText = getNewSecurityIssuesNodeText(settings, securityIssuesCount, addHMLPostfix)
         newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
 
-        val newQualityIssuesNodeText =
-            when {
-                getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_QUALITY_ROOT_TEXT (error)"
-                isSnykCodeRunning(
-                    project,
-                ) &&
-                    settings.snykCodeQualityIssuesScanEnable -> "$CODE_QUALITY_ROOT_TEXT (scanning...)"
-
-                else ->
-                    qualityIssuesCount?.let { count ->
-                        CODE_QUALITY_ROOT_TEXT +
-                            when {
-                                count == NODE_INITIAL_STATE -> ""
-                                count == 0 -> NO_ISSUES_FOUND_TEXT
-                                count > 0 -> ProductType.CODE_QUALITY.getCountText(count) + addHMLPostfix
-                                else -> throw IllegalStateException("ResultsCount is meaningful")
-                            }
-                    }
-            }
+        val newQualityIssuesNodeText = getNewQualityIssuesNodeText(settings, qualityIssuesCount, addHMLPostfix)
         newQualityIssuesNodeText?.let { rootQualityIssuesTreeNode.userObject = it }
 
-        val newIacTreeNodeText =
-            when {
-                getSnykCachedResults(project)?.currentIacError != null -> "$IAC_ROOT_TEXT (error)"
-                isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
-                else ->
-                    iacResultsCount?.let { count ->
-                        IAC_ROOT_TEXT +
-                            when {
-                                count == NODE_INITIAL_STATE -> ""
-                                count == 0 -> NO_ISSUES_FOUND_TEXT
-                                count > 0 -> ProductType.IAC.getCountText(count, isUniqueCount = true) + addHMLPostfix
-                                count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_IAC_FILES_FOUND
-                                else -> throw IllegalStateException("ResultsCount is meaningful")
-                            }
-                    }
-            }
+        val newIacTreeNodeText = getNewIacTreeNodeText(settings, iacResultsCount, addHMLPostfix)
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
 
-        val newContainerTreeNodeText =
-            when {
-                getSnykCachedResults(project)?.currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
-                isContainerRunning(project) && settings.containerScanEnabled -> "$CONTAINER_ROOT_TEXT (scanning...)"
-                else ->
-                    containerResultsCount?.let { count ->
-                        CONTAINER_ROOT_TEXT +
-                            when {
-                                count == NODE_INITIAL_STATE -> ""
-                                count == 0 -> NO_ISSUES_FOUND_TEXT
-                                count > 0 ->
-                                    ProductType.CONTAINER.getCountText(
-                                        count,
-                                        isUniqueCount = true,
-                                    ) + addHMLPostfix
+        val newContainerTreeNodeText = getNewContainerTreeNodeText(settings, containerResultsCount, addHMLPostfix)
+        newContainerTreeNodeText?.let { rootContainerIssuesTreeNode.userObject = it }
+    }
 
-                                count == NODE_NOT_SUPPORTED_STATE -> NO_CONTAINER_IMAGES_FOUND
-                                else -> throw IllegalStateException("ResultsCount is meaningful")
-                            }
+    private fun getNewContainerTreeNodeText(
+        settings: SnykApplicationSettingsStateService,
+        containerResultsCount: Int?,
+        addHMLPostfix: String
+    ) = when {
+        getSnykCachedResults(project)?.currentContainerError != null -> "$CONTAINER_ROOT_TEXT (error)"
+        isContainerRunning(project) && settings.containerScanEnabled -> "$CONTAINER_ROOT_TEXT (scanning...)"
+        else ->
+            containerResultsCount?.let { count ->
+                CONTAINER_ROOT_TEXT +
+                    when {
+                        count == NODE_INITIAL_STATE -> ""
+                        count == 0 -> NO_ISSUES_FOUND_TEXT
+                        count > 0 ->
+                            ProductType.CONTAINER.getCountText(
+                                count,
+                                isUniqueCount = true,
+                            ) + addHMLPostfix
+
+                        count == NODE_NOT_SUPPORTED_STATE -> NO_CONTAINER_IMAGES_FOUND
+                        else -> throw IllegalStateException("ResultsCount is meaningful")
                     }
             }
-        newContainerTreeNodeText?.let { rootContainerIssuesTreeNode.userObject = it }
+    }
+
+    private fun getNewIacTreeNodeText(
+        settings: SnykApplicationSettingsStateService,
+        iacResultsCount: Int?,
+        addHMLPostfix: String
+    ) = when {
+        getSnykCachedResults(project)?.currentIacError != null -> "$IAC_ROOT_TEXT (error)"
+        isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
+        else ->
+            iacResultsCount?.let { count ->
+                IAC_ROOT_TEXT +
+                    when {
+                        count == NODE_INITIAL_STATE -> ""
+                        count == 0 -> NO_ISSUES_FOUND_TEXT
+                        count > 0 -> ProductType.IAC.getCountText(count, isUniqueCount = true) + addHMLPostfix
+                        count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_IAC_FILES_FOUND
+                        else -> throw IllegalStateException("ResultsCount is meaningful")
+                    }
+            }
+    }
+
+    private fun getNewQualityIssuesNodeText(
+        settings: SnykApplicationSettingsStateService,
+        qualityIssuesCount: Int?,
+        addHMLPostfix: String
+    ) = when {
+        getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_QUALITY_ROOT_TEXT (error)"
+        isSnykCodeRunning(
+            project,
+        ) &&
+            settings.snykCodeQualityIssuesScanEnable -> "$CODE_QUALITY_ROOT_TEXT (scanning...)"
+
+        else ->
+            qualityIssuesCount?.let { count ->
+                CODE_QUALITY_ROOT_TEXT +
+                    when {
+                        count == NODE_INITIAL_STATE -> ""
+                        count == 0 -> NO_ISSUES_FOUND_TEXT
+                        count > 0 -> ProductType.CODE_QUALITY.getCountText(count) + addHMLPostfix
+                        else -> throw IllegalStateException("ResultsCount is meaningful")
+                    }
+            }
+    }
+
+    private fun getNewSecurityIssuesNodeText(
+        settings: SnykApplicationSettingsStateService,
+        securityIssuesCount: Int?,
+        addHMLPostfix: String
+    ) = when {
+        getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
+        isSnykCodeRunning(project) &&
+            settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
+
+        else ->
+            securityIssuesCount?.let { count ->
+                CODE_SECURITY_ROOT_TEXT +
+                    when {
+                        count == NODE_INITIAL_STATE -> ""
+                        count == 0 -> NO_ISSUES_FOUND_TEXT
+                        count > 0 -> ProductType.CODE_SECURITY.getCountText(count) + addHMLPostfix
+                        else -> throw IllegalStateException("ResultsCount is meaningful")
+                    }
+            }
+    }
+
+    private fun getNewOssTreeNodeText(
+        settings: SnykApplicationSettingsStateService,
+        realError: Boolean,
+        ossResultsCount: Int?,
+        addHMLPostfix: String
+    ) = when {
+        isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
+        realError -> "$OSS_ROOT_TEXT (error)"
+
+        else ->
+            ossResultsCount?.let { count ->
+                OSS_ROOT_TEXT +
+                    when {
+                        count == NODE_INITIAL_STATE -> ""
+                        count == 0 -> {
+                            NO_ISSUES_FOUND_TEXT
+                        }
+                        count > 0 -> ProductType.OSS.getCountText(count, isUniqueCount = true) + addHMLPostfix
+                        count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_PACKAGE_MANAGER_FOUND
+                        else -> throw IllegalStateException("ResultsCount is not meaningful")
+                    }
+            }
     }
 
     private fun displayNoVulnerabilitiesMessage() {
@@ -680,7 +708,7 @@ class SnykToolWindowPanel(
         revalidate()
     }
 
-    private fun displayScanningMessage() {
+    fun displayScanningMessage() {
         descriptionPanel.removeAll()
 
         val selectedTreeNode =

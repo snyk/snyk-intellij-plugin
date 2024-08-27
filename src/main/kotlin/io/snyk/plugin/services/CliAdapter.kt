@@ -15,6 +15,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.AUTH_FAILED_TEXT
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.errorHandler.SentryErrorReporter
 
 /**
@@ -35,11 +36,12 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
      */
     fun execute(commands: List<String>): R =
         try {
-            val cmds = buildCliCommandsList(commands)
-            val apiToken = pluginSettings().token ?: ""
-            val rawResultStr = consoleCommandRunner.execute(cmds, projectPath, apiToken, project)
+            val cmds = buildCliCommandsList(commands).toMutableList()
+            // remove first element = cli path as ls is adding it automatically
+            cmds.removeAt(0)
+            val rawResultStr = LanguageServerWrapper.getInstance().executeCLIScan(cmds, projectPath)
             convertRawCliStringToCliResult(rawResultStr)
-        } catch (exception: CliNotExistsException) {
+        } catch (exception: Exception) {
             getErrorResult(exception.message ?: "Snyk CLI not installed.")
         }
 
@@ -200,6 +202,6 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
         if (isCliInstalled()) getCliFile().absolutePath else throw CliNotExistsException()
 
     companion object {
-        const val CLI_PRODUCE_NO_OUTPUT = "CLI doesn't produce any output"
+        const val CLI_PRODUCE_NO_OUTPUT = "CLI didn't produce any output"
     }
 }

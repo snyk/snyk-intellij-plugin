@@ -18,7 +18,6 @@ import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.addAndGetCenteredPanel
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.boldLabel
@@ -46,8 +45,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
                     jButton.setText("Authenticating...")
-                    val token = getSnykCliAuthenticationService(project)?.authenticate() ?: ""
-                    pluginSettings().token = token
+                    getSnykCliAuthenticationService(project)?.authenticate() ?: ""
 
                     // explicitly add the project to workspace trusted paths, because
                     // scan can be auto-triggered depending on "settings.pluginFirstRun" value

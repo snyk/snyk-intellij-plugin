@@ -169,6 +169,7 @@ class ScanTypesPanel(
         }
     }
 
+    // TODO move to LS
     fun checkSastEnabled() {
         if (pluginSettings().token.isNullOrBlank()) {
             showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")

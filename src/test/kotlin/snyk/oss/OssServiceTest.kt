@@ -9,7 +9,6 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.cli.ConsoleCommandRunner
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getOssService
 import io.snyk.plugin.pluginSettings
@@ -17,10 +16,13 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
+import org.eclipse.lsp4j.services.LanguageServer
 import snyk.PluginInformation
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.errorHandler.SentryErrorReporter
 import snyk.oss.OssService.Companion.ALL_PROJECTS_PARAM
 import snyk.pluginInfo
+import java.util.concurrent.CompletableFuture
 
 class OssServiceTest : LightPlatformTestCase() {
 
@@ -44,6 +46,9 @@ class OssServiceTest : LightPlatformTestCase() {
 
         mockkStatic(GotoFileCellRenderer::class)
         every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.languageServer = lsMock
+        languageServerWrapper.isInitialized = true
     }
 
     override fun tearDown() {
@@ -53,6 +58,7 @@ class OssServiceTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
+    private val lsMock: LanguageServer = mockk()
     private val ossService: OssService
         get() = getOssService(project) ?: throw IllegalStateException("OSS service should be available")
 
@@ -149,21 +155,19 @@ class OssServiceTest : LightPlatformTestCase() {
     fun testScanWithErrorResult() {
         setupDummyCliFile()
 
-        val mockRunner = mockk<ConsoleCommandRunner>()
-
-        every {
-            mockRunner.execute(
-                listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"), project.basePath!!, project = project
-            )
-        } returns """
+        val expectedResult = mapOf(
+            Pair(
+                "stdOut", """
               {
                   "ok": false,
                   "error": "Missing node_modules folder: we can't test without dependencies.\nPlease run 'npm install' first.",
                   "path": "/Users/user/Desktop/example-npm-project"
               }
             """.trimIndent()
+            )
+        )
 
-        ossService.setConsoleCommandRunner(mockRunner)
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(expectedResult)
 
         val cliResult = ossService.scan()
 
@@ -178,15 +182,9 @@ class OssServiceTest : LightPlatformTestCase() {
     fun testScanWithSuccessfulCliResult() {
         setupDummyCliFile()
 
-        val mockRunner = mockk<ConsoleCommandRunner>()
+        val expectedResult = mapOf(Pair("stdOut", getResourceAsString("group-vulnerabilities-test.json")))
 
-        every {
-            mockRunner.execute(
-                listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"), project.basePath!!, project = project
-            )
-        } returns getResourceAsString("group-vulnerabilities-test.json")
-
-        ossService.setConsoleCommandRunner(mockRunner)
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(expectedResult)
 
         val cliResult = ossService.scan()
 
@@ -204,15 +202,13 @@ class OssServiceTest : LightPlatformTestCase() {
     fun testScanWithLicenseVulnerabilities() {
         setupDummyCliFile()
 
-        val mockRunner = mockk<ConsoleCommandRunner>()
-
-        every {
-            mockRunner.execute(
-                listOf(getCliFile().absolutePath, "test", "--json", "--all-projects"), project.basePath!!, project = project
+        val expectedResult = mapOf(
+            Pair(
+                "stdOut", getResourceAsString("licence-vulnerabilities.json")
             )
-        } returns getResourceAsString("licence-vulnerabilities.json")
+        )
 
-        ossService.setConsoleCommandRunner(mockRunner)
+        every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(expectedResult)
 
         val cliResult = ossService.scan()
 

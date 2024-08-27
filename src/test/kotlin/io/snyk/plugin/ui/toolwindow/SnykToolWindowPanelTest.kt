@@ -174,15 +174,17 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     @Test
     fun `should automatically enable all products on first run after Auth, with local engine enabled`() {
         val application = ApplicationManager.getApplication()
+        val settings = SnykApplicationSettingsStateService()
         application.replaceService(
             SnykApplicationSettingsStateService::class.java,
-            SnykApplicationSettingsStateService(),
+            settings,
             application
         )
-        pluginSettings().token = "test-token"
-        pluginSettings().pluginFirstRun = true
+        settings.token = "test-token"
+        settings.pluginFirstRun = true
+        settings.cliReleaseChannel = "preview"
 
-        assertTrue(LanguageServerWrapper.getInstance().isInitialized)
+        assertTrue(LanguageServerWrapper.getInstance().ensureLanguageServerInitialized())
 
         SnykToolWindowPanel(project)
 
