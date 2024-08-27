@@ -1,9 +1,9 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.editor.colors.ColorKey
+import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.EditorColorsScheme
-import com.intellij.openapi.editor.colors.FontPreferences
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -64,20 +64,13 @@ class ThemeBasedStylingGenerator {
                     val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
                     val dataFlowColor = toCssHex(baseColor)
                     val borderColor = toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground())
-                    val editorColor =
-                        toCssHex(UIUtil.getTextFieldBackground())
+                    val editorColor = toCssHex(UIUtil.getTextFieldBackground())
                     val labelColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
 
                     val globalScheme = EditorColorsManager.getInstance().globalScheme
-                    val tearLineColor =
-                        globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) // The closest color to target_rgb = (198, 198, 200)
-                    val tabItemHoverColor =
-                        globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
-
-                    val editorColorsManager = EditorColorsManager.getInstance()
-                    val editorColorsScheme: EditorColorsScheme = editorColorsManager.globalScheme
-                    val fontPreferences: FontPreferences = editorColorsScheme.fontPreferences
-                    val editorFont = fontPreferences.fontFamily
+                    val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) // The closest color to target_rgb = (198, 198, 200)
+                    val tabItemHoverColor = globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
+                    val codeTagBgColor = globalScheme.getColor(EditorColors.GUTTER_BACKGROUND)  ?: globalScheme.defaultBackground
 
                     val themeScript = """
                         (function(){
@@ -98,8 +91,8 @@ class ThemeBasedStylingGenerator {
                                 '--tabs-bottom-color': "${tearLineColor?.let { toCssHex(it) }}",
                                 '--border-color': "$borderColor",
                                 '--editor-color': "$editorColor",
-                                '--editor-font': "'$editorFont'",
                                 '--label-color': "'$labelColor'",
+                                '--vulnerability-overview-pre-background-color': "${toCssHex(codeTagBgColor)}",
                             };
                             for (let [property, value] of Object.entries(properties)) {
                                 document.documentElement.style.setProperty(property, value);
