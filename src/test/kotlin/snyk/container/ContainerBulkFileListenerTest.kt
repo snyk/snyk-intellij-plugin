@@ -14,12 +14,16 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
+import io.mockk.justRun
+import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
+import org.eclipse.lsp4j.services.LanguageServer
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ui.ContainerImageTreeNode
 import java.io.File
 import java.nio.file.Files
@@ -29,11 +33,15 @@ import java.util.concurrent.TimeUnit
 import kotlin.io.path.notExists
 
 class ContainerBulkFileListenerTest : BasePlatformTestCase() {
+    val lsMock = mockk<LanguageServer>()
 
     override fun setUp() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
+        LanguageServerWrapper.getInstance().languageServer = lsMock
+        LanguageServerWrapper.getInstance().isInitialized = true
+        justRun { lsMock.textDocumentService.didSave(any()) }
     }
 
     override fun tearDown() {
