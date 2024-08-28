@@ -47,6 +47,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         lsw.languageServer = lsMock
         lsw.languageClient = lsClientMock
         lsw.process = lsProcessMock
+        lsw.isInitialized = true
 
         every { lsProcessMock.info().startInstant().isPresent } returns true
         every { lsProcessMock.isAlive } returns true
@@ -174,8 +175,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         assertTrue(pluginSettings().containerScanEnabled)
     }
 
-    //TODO rewrite
-    @Ignore("change to language server")
     @Test
     fun `should automatically enable all products on first run after Auth, with local engine enabled`() {
         val application = ApplicationManager.getApplication()
