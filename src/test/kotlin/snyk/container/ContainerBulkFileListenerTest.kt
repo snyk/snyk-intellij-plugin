@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.io.path.notExists
 
 class ContainerBulkFileListenerTest : BasePlatformTestCase() {
-    val lsMock = mockk<LanguageServer>()
+    private val lsMock = mockk<LanguageServer>(relaxed = true)
 
     override fun setUp() {
         super.setUp()
@@ -41,7 +41,6 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         resetSettings(project)
         LanguageServerWrapper.getInstance().languageServer = lsMock
         LanguageServerWrapper.getInstance().isInitialized = true
-        justRun { lsMock.textDocumentService.didSave(any()) }
     }
 
     override fun tearDown() {
