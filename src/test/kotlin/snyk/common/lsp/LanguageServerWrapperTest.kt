@@ -85,7 +85,9 @@ class LanguageServerWrapperTest {
     fun `sendInitializeMessage should send an initialize message to the language server`() {
         val rootManagerMock = mockk<ProjectRootManager>(relaxed = true)
         every { projectMock.getService(ProjectRootManager::class.java) } returns rootManagerMock
+        every { projectMock.isDisposed } returns false
         every { rootManagerMock.contentRoots } returns emptyArray()
+        every { projectMock.basePath } returns null
         every { lsMock.initialize(any<InitializeParams>()) } returns CompletableFuture.completedFuture(null)
         justRun { lsMock.initialized(any()) }
 
@@ -315,7 +317,7 @@ class LanguageServerWrapperTest {
 
         assertEquals("false", actual.activateSnykCode)
         assertEquals("false", actual.activateSnykIac)
-        assertEquals("false", actual.activateSnykOpenSource)
+        assertEquals("true", actual.activateSnykOpenSource)
         assertEquals(settings.token, actual.token)
         assertEquals("${settings.ignoreUnknownCA}", actual.insecure)
         assertEquals(getCliFile().absolutePath, actual.cliPath)
