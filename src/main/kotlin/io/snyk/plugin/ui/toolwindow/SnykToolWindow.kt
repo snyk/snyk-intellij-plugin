@@ -20,7 +20,6 @@ import io.snyk.plugin.ui.expandTreeNodeRecursively
 import snyk.common.SnykError
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
-import snyk.oss.OssResult
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 

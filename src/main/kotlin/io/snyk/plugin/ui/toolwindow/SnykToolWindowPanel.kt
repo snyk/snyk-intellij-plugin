@@ -84,8 +84,6 @@ import snyk.iac.IacResult
 import snyk.iac.ignorableErrorCodes
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
-import snyk.oss.OssResult
-import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 import java.awt.BorderLayout
 import java.nio.file.InvalidPathException
@@ -187,14 +185,6 @@ class SnykToolWindowPanel(
                         }
                     }
 
-                    override fun scanningOssFinished(ossResult: OssResult) {
-                        ApplicationManager.getApplication().invokeLater {
-                            displayOssResults(ossResult)
-                            notifyAboutErrorsIfNeeded(ProductType.OSS, ossResult)
-                            refreshAnnotationsForOpenFiles(project)
-                        }
-                    }
-
                     override fun scanningIacFinished(iacResult: IacResult) {
                         ApplicationManager.getApplication().invokeLater {
                             displayIacResults(iacResult)
@@ -228,26 +218,6 @@ class SnykToolWindowPanel(
                                     snykToolWindow(project)?.show()
                                 },
                             )
-                        }
-                    }
-
-                    override fun scanningOssError(snykError: SnykError) {
-                        var ossResultsCount: Int? = null
-                        ApplicationManager.getApplication().invokeLater {
-                            if (snykError.message.contains(NO_OSS_FILES)) {
-                                rootOssTreeNode.originalCliErrorMessage = snykError.message
-                                ossResultsCount = NODE_NOT_SUPPORTED_STATE
-                            } else {
-                                rootOssTreeNode.originalCliErrorMessage = null
-                                SnykBalloonNotificationHelper.showError(snykError.message, project)
-                                if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
-                                    pluginSettings().token = null
-                                }
-                            }
-                            removeAllChildren(listOf(rootOssTreeNode))
-                            updateTreeRootNodesPresentation(ossResultsCount = ossResultsCount)
-                            chooseMainPanelToDisplay()
-                            refreshAnnotationsForOpenFiles(project)
                         }
                     }
 
@@ -300,18 +270,13 @@ class SnykToolWindowPanel(
                                 getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return@invokeLater
                             scanListenerLS.displaySnykCodeResults(codeResultsLS)
                         }
-                        if (!isSnykOSSLSEnabled()) {
-                            ApplicationManager.getApplication().invokeLater {
-                                val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
-                                snykCachedResults.currentOssResults?.let { displayOssResults(it) }
-                            }
-                        } else {
-                            ApplicationManager.getApplication().invokeLater {
-                                val ossResultsLS =
-                                    getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return@invokeLater
-                                scanListenerLS.displayOssResults(ossResultsLS)
-                            }
+
+                        ApplicationManager.getApplication().invokeLater {
+                            val ossResultsLS =
+                                getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return@invokeLater
+                            scanListenerLS.displayOssResults(ossResultsLS)
                         }
+
                         ApplicationManager.getApplication().invokeLater {
                             val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
                             snykCachedResults.currentIacResult?.let { displayIacResults(it) }
@@ -684,6 +649,7 @@ class SnykToolWindowPanel(
                         count == 0 -> {
                             NO_ISSUES_FOUND_TEXT
                         }
+
                         count > 0 -> ProductType.OSS.getCountText(count, isUniqueCount = true) + addHMLPostfix
                         count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_PACKAGE_MANAGER_FOUND
                         else -> throw IllegalStateException("ResultsCount is not meaningful")
@@ -741,95 +707,6 @@ class SnykToolWindowPanel(
         descriptionPanel.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
 
         revalidate()
-    }
-
-    private fun displayOssResults(ossResult: OssResult) {
-        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootOssTreeNode)
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-
-        rootOssTreeNode.removeAllChildren()
-
-        fun navigateToOssVulnerability(
-            filePath: String,
-            vulnerability: Vulnerability?,
-        ): () -> Unit =
-            {
-                runAsync {
-                    var virtualFile: VirtualFile? = null
-                    ReadAction.run<RuntimeException> {
-                        virtualFile = VirtualFileManager.getInstance().findFileByNioPath(Paths.get(filePath))
-                    }
-                    val vf = virtualFile
-                    if (vf == null || !vf.isValid) {
-                        return@runAsync
-                    }
-
-                    if (vulnerability == null) {
-                        navigateToSource(project, vf, 0)
-                    } else {
-                        ReadAction.run<RuntimeException> {
-                            val psiFile = PsiManager.getInstance(project).findFile(vf)
-                            val textRange =
-                                psiFile?.let { getOssTextRangeFinderService().findTextRange(it, vulnerability) }
-                            navigateToSource(
-                                project = project,
-                                virtualFile = vf,
-                                selectionStartOffset = textRange?.startOffset ?: 0,
-                                selectionEndOffset = textRange?.endOffset,
-                            )
-                        }
-                    }
-                }
-            }
-
-        val settings = pluginSettings()
-        if (settings.ossScanEnable && settings.treeFiltering.ossResults) {
-            ossResult.allCliIssues?.forEach { vulnsForFile ->
-                if (vulnsForFile.vulnerabilities.isNotEmpty()) {
-                    val ossGroupedResult = vulnsForFile.toGroupedResult()
-                    val fileTreeNode = FileTreeNode(vulnsForFile, project)
-                    rootOssTreeNode.add(fileTreeNode)
-
-                    ossGroupedResult.id2vulnerabilities.values
-                        .filter { settings.hasSeverityEnabledAndFiltered(it.head.getSeverity()) }
-                        .sortedByDescending { it.head.getSeverity() }
-                        .forEach {
-                            val navigateToSource =
-                                try {
-                                    val filePath = sanitizeNavigationalFilePath(vulnsForFile)
-                                    navigateToOssVulnerability(filePath, it.head)
-                                } catch (ignore: InvalidPathException) {
-                                    // empty navigation function for invalid path
-                                    {}
-                                }
-                            fileTreeNode.add(VulnerabilityTreeNode(it, project, navigateToSource))
-                        }
-                }
-            }
-            ossResult.errors.forEach { snykError ->
-                rootOssTreeNode.add(
-                    ErrorTreeNode(snykError, project, navigateToOssVulnerability(snykError.path, null)),
-                )
-            }
-        }
-        updateTreeRootNodesPresentation(
-            ossResultsCount = ossResult.issuesCount,
-            addHMLPostfix = buildHMLpostfix(ossResult),
-        )
-
-        smartReloadRootNode(rootOssTreeNode, userObjectsForExpandedChildren, selectedNodeUserObject)
-    }
-
-    fun sanitizeNavigationalFilePath(vulnsForFile: OssVulnerabilitiesForFile): String {
-        val dirPath = vulnsForFile.path
-        val targetFilePath = vulnsForFile.sanitizedTargetFile
-        val filePath =
-            if (Paths.get(targetFilePath).isAbsolute) {
-                targetFilePath
-            } else {
-                Paths.get(dirPath, targetFilePath).toString()
-            }
-        return filePath
     }
 
     fun displayIacResults(iacResult: IacResult) {
@@ -1057,15 +934,6 @@ class SnykToolWindowPanel(
             }
         }
     }
-
-    @Suppress("UNCHECKED_CAST")
-    fun selectNodeAndDisplayDescription(vulnerability: Vulnerability) =
-        selectAndDisplayNodeWithIssueDescription { treeNode ->
-            treeNode is VulnerabilityTreeNode &&
-                (treeNode.userObject as Collection<Vulnerability>).any {
-                    it == vulnerability
-                }
-        }
 
     fun selectNodeAndDisplayDescription(iacIssue: IacIssue) =
         selectAndDisplayNodeWithIssueDescription { treeNode ->

@@ -30,7 +30,6 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import snyk.PLUGIN_ID
 import snyk.errorHandler.SentryErrorReporter
-import snyk.oss.OssService
 import java.net.URLEncoder
 import java.util.Locale
 import java.util.UUID

@@ -9,7 +9,6 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
-import snyk.oss.OssResult
 
 @Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {

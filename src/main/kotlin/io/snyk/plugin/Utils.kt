@@ -54,8 +54,6 @@ import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
-import snyk.oss.OssService
-import snyk.oss.OssTextRangeFinder
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI

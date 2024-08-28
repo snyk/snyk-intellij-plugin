@@ -34,7 +34,6 @@ import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
-import snyk.oss.OssVulnerabilitiesForFile
 import snyk.oss.Vulnerability
 import java.util.Locale
 import javax.swing.Icon

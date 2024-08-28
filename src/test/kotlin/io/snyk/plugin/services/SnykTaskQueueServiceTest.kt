@@ -30,8 +30,6 @@ import org.awaitility.Awaitility.await
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
-import snyk.oss.OssResult
-import snyk.oss.OssService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 

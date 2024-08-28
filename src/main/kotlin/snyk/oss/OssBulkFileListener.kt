@@ -49,7 +49,6 @@ class OssBulkFileListener : SnykBulkFileListener() {
     override fun forwardEvents(events: MutableList<out VFileEvent>) {
         val languageServerWrapper = LanguageServerWrapper.getInstance()
 
-        if (!isSnykOSSLSEnabled()) return
         if (!languageServerWrapper.isInitialized) return
 
         val languageServer = languageServerWrapper.languageServer

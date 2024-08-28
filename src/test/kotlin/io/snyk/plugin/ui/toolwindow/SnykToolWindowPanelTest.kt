@@ -20,7 +20,6 @@ import org.junit.Test
 import snyk.UIComponentFinder
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykLanguageClient
-import snyk.oss.OssVulnerabilitiesForFile
 import java.awt.Container
 import java.io.File
 import java.util.concurrent.CompletableFuture

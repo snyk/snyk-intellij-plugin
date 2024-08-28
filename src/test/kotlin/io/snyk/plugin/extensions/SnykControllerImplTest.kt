@@ -20,8 +20,6 @@ import io.snyk.plugin.services.download.SnykCliDownloaderService
 import org.awaitility.Awaitility.await
 import org.junit.Ignore
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.oss.OssResult
-import snyk.oss.OssService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 
