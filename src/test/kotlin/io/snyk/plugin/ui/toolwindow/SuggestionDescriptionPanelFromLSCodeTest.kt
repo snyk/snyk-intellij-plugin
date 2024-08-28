@@ -162,7 +162,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
-        val actual = cut.getStyledHTML()
+        val actual = cut.getCustomCssAndScript()
         assertFalse(actual.contains("\${ideStyle}"))
         assertFalse(actual.contains("\${ideScript}"))
         assertFalse(actual.contains("\${nonce}"))

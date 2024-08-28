@@ -108,3 +108,16 @@ a,
 .high-contrast:not(.high-contrast-light) .light-only {
   display: none;
 }
+
+.sn-fix-wrapper {
+  background-color: var(--container-background-color);  // same variable used in snyk_oss_suggestion.scss
+}
+
+button.generate-ai-fix {
+  background-color: var(--generated-ai-fix-button-background-color);
+  color: white;
+}
+
+button.generate-ai-fix:hover {
+  opacity: 0.9; /* Slightly reduces opacity on hover */
+}

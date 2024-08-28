@@ -92,7 +92,8 @@ class ThemeBasedStylingGenerator {
                                 '--border-color': "$borderColor",
                                 '--editor-color': "$editorColor",
                                 '--label-color': "'$labelColor'",
-                                '--vulnerability-overview-pre-background-color': "${toCssHex(codeTagBgColor)}",
+                                '--container-background-color': "${toCssHex(codeTagBgColor)}",
+                                '--generated-ai-fix-button-background-color': "#3376CD", // TODO: From Figma. Find the correct JetBrains API to get this color
                             };
                             for (let [property, value] of Object.entries(properties)) {
                                 document.documentElement.style.setProperty(property, value);

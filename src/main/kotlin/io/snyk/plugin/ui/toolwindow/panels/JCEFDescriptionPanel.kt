@@ -60,7 +60,7 @@ class SuggestionDescriptionPanelFromLS(
                     openFileLoadHandlerGenerator.generate(it)
                 }
             }
-            val html = this.getStyledHTML()
+            val html = this.getCustomCssAndScript()
             val jbCefBrowserComponent =
                 JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
             if (jbCefBrowserComponent == null) {
@@ -140,8 +140,9 @@ class SuggestionDescriptionPanelFromLS(
         return Pair(panel, lastRowToAddSpacer)
     }
 
-    fun getStyledHTML(): String {
+    fun getCustomCssAndScript(): String {
         var html = issue.details()
+        val ideScript = getCustomScript()
         var ideStyle = ""
         if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
             issue.additionalData.getProductType() == ProductType.CODE_QUALITY
@@ -150,19 +151,22 @@ class SuggestionDescriptionPanelFromLS(
         } else if (issue.additionalData.getProductType() == ProductType.OSS) {
             ideStyle = SnykStylesheets.SnykOSSSuggestion
         }
+
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
         html = html.replace("\${headerEnd}", "")
-        html =
-            html.replace(
-                "\${ideScript}",
-                "<script nonce=\${nonce}>" +
-                    "    // Ensure the document is fully loaded before executing script to manipulate DOM.\n" +
-                    "    document.addEventListener('DOMContentLoaded', () => {\n" +
-                    "        document.getElementById(\"ai-fix-wrapper\").classList.add(\"hidden\");\n" +
-                    "        document.getElementById(\"no-ai-fix-wrapper\").classList.remove(\"hidden\");\n" +
-                    "    })" +
-                    "</script>",
-            )
+//        html = html.replace("\${ideScript}", ideScript)
+        html = html.replace("\${ideScript}" ,"<script nonce=\${nonce}>$ideScript</script>")
+//        html =
+//            html.replace(
+//                "\${ideScript}",
+//                "<script nonce=\${nonce}>" +
+//                    "    // Ensure the document is fully loaded before executing script to manipulate DOM.\n" +
+//                    "    document.addEventListener('DOMContentLoaded', () => {\n" +
+//                    "        document.getElementById(\"ai-fix-wrapper\").classList.add(\"hidden\");\n" +
+//                    "        document.getElementById(\"no-ai-fix-wrapper\").classList.remove(\"hidden\");\n" +
+//                    "    })" +
+//                    "</script>",
+//            )
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
@@ -175,6 +179,36 @@ class SuggestionDescriptionPanelFromLS(
         return (1..32)
             .map { allowedChars.random() }
             .joinToString("")
+    }
+
+    private fun getCustomScript(): String {
+        return """
+            (function () {
+              function toggleElement(element, toggle) {
+                if (!element) return;
+
+                if (toggle === 'show') {
+                  element.classList.remove('hidden');
+                } else if (toggle === 'hide') {
+                  element.classList.add('hidden');
+                } else {
+                  console.error('Unexpected toggle value', toggle);
+                }
+              }
+
+              const aiFixWrapperElem = document.getElementById('ai-fix-wrapper');
+              const generateAiFix = document.getElementById('generate-ai-fix');
+
+              // Basic toggle functionality
+              generateAiFix?.addEventListener('click', () => {
+                if (aiFixWrapperElem.classList.contains('hidden')) {
+                  toggleElement(aiFixWrapperElem, 'show');
+                } else {
+                  toggleElement(aiFixWrapperElem, 'hide');
+                }
+              });
+            })();
+        """.trimIndent()
     }
 }
 
