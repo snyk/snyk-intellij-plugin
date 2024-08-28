@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.ui.Messages
 import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.toVirtualFile
 import snyk.SnykBundle
 
 private val LOG = Logger.getInstance("snyk.trust.TrustedProjects")
@@ -22,7 +23,14 @@ private val LOG = Logger.getInstance("snyk.trust.TrustedProjects")
  */
 fun confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project: Project): Boolean {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return false
-    val paths = project.getContentRootPaths()
+    val paths = project.getContentRootPaths().toMutableSet()
+    val basePath = project.basePath
+
+    // fallback to project base path if no content roots (needed for rider)
+    if (paths.isEmpty() && basePath != null) {
+        paths.add(basePath.toVirtualFile().toNioPath())
+    }
+
     val trustService = service<WorkspaceTrustService>()
     for (path in paths) {
         val trustedState = trustService.isPathTrusted(path)
