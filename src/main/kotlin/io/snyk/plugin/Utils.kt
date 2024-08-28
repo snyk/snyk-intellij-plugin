@@ -230,7 +230,7 @@ fun isContainerEnabled(): Boolean = true
 
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
-fun isSnykOSSLSEnabled(): Boolean = Registry.`is`("snyk.preview.snyk.oss.ls.enabled", false)
+fun isSnykOSSLSEnabled(): Boolean = true // TODO: cleanup usage
 
 fun isSnykIaCLSEnabled(): Boolean = false
 
