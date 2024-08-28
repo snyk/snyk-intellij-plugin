@@ -3,13 +3,18 @@
 ## [2.9.0]
 ### Changed
 - Updated the language server protocol version to 14 to support new communication model.
-- All HTTP communications now goes through language server
+- All HTTP communications now go through language server
 - Removed Snyk Advisor
 - Removed Amplitude integration
-- Handle exception
-- Do not excessively spawn CLIs
 - Remove UI freezes caused by annotator
+- Use language server for OSS scans
+
+### Fixes
+- Handle exceptions
+- Do not excessively spawn CLIs
+- Use project base path as content roots, if none are defined (e.g. in Rider)
 - Limit navigation functions to only use UI thread when needed
+
 
 ## [2.8.11]
 ### Added

@@ -39,11 +39,6 @@
                  defaultValue="720000"
                  description="Snyk timeout (milliseconds) to wait for results during scan"/>
 
-    <registryKey key="snyk.preview.snyk.oss.ls.enabled"
-                 defaultValue="false"
-                 description="Preview: Use language server as source for Snyk OSS findings."
-                 restartRequired="true"/>
-
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
     <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider"/>

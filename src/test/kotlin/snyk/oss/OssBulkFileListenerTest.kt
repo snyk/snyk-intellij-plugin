@@ -6,20 +6,28 @@ import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.mockk.mockk
+import io.mockk.unmockkAll
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.resetSettings
+import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
 
-@Suppress("FunctionName")
 class OssBulkFileListenerTest : BasePlatformTestCase() {
-
+    private val lsMock = mockk<LanguageServer>(relaxed = true)
     override fun setUp() {
         super.setUp()
+        unmockkAll()
         resetSettings(project)
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.languageServer = lsMock
+        languageServerWrapper.isInitialized = true
     }
 
     override fun tearDown() {
         resetSettings(project)
+        unmockkAll()
         try {
             super.tearDown()
         } catch (ignore: Exception) {

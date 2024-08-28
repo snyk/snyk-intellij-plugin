@@ -19,6 +19,7 @@ import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -190,9 +191,7 @@ class LanguageServerWrapper(
     private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
         if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return mutableSetOf()
 
-        // the sort is to ensure that parent folders come first
-        // e.g. /a/b should come before /a/b/c
-        val contentRoots = project.getContentRootVirtualFiles().filterNotNull().sortedBy { it.path }
+        val contentRoots = project.getContentRootVirtualFiles()
         val trustService = service<WorkspaceTrustService>()
         val normalizedRoots = mutableSetOf<VirtualFile>()
 

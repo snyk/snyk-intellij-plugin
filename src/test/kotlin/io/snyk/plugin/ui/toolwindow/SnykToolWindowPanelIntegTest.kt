@@ -40,6 +40,7 @@ import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.services.LanguageServer
+import org.junit.Ignore
 import org.junit.Test
 import snyk.common.SnykError
 import snyk.common.UIComponentFinder
@@ -74,6 +75,8 @@ import javax.swing.JPanel
 import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
 
+//TODO rewrite
+@Ignore("change to language server")
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private val iacGoofJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")

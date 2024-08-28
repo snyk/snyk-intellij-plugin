@@ -18,6 +18,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
@@ -55,7 +56,6 @@ import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
 import snyk.oss.OssService
 import snyk.oss.OssTextRangeFinder
-import snyk.pluginInfo
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
@@ -230,7 +230,7 @@ fun isContainerEnabled(): Boolean = true
 
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
-fun isSnykOSSLSEnabled(): Boolean = Registry.`is`("snyk.preview.snyk.oss.ls.enabled", false)
+fun isSnykOSSLSEnabled(): Boolean = true // TODO: cleanup usage
 
 fun isSnykIaCLSEnabled(): Boolean = false
 
@@ -451,19 +451,17 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
         .toSortedSet()
 }
 
-fun Project.getContentRootVirtualFiles() = ProjectRootManager.getInstance(this).contentRoots
-    .filter { it.exists() && it.isDirectory }.toSet()
+fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
+    var contentRoots = ProjectRootManager.getInstance(this).contentRoots
+    if (contentRoots.isEmpty()) {
+        // this should cover for the case when no content roots are configured, e.g. in rider
+        contentRoots = ProjectManager.getInstance().openProjects
+            .mapNotNull { it.basePath?.toVirtualFile() }.toTypedArray()
+    }
 
-fun getUserAgentString(): String {
-//      $APPLICATION/$APPLICATION_VERSION ($GOOS;$GOARCH[;$BINARY_NAME]) [$SNYK_INTEGRATION_NAME/$SNYK_INTEGRATION_VERSION [($SNYK_INTEGRATION_ENVIRONMENT/$SNYK_INTEGRATION_ENVIRONMENT_VERSION)]]
-    val integrationName = pluginInfo.integrationName
-    val integrationVersion = pluginInfo.integrationVersion
-    val integrationEnvironment = pluginInfo.integrationEnvironment
-    val integrationEnvironmentVersion = pluginInfo.integrationEnvironmentVersion
-    val os = SystemUtils.OS_NAME
-    val arch = SystemUtils.OS_ARCH
-
-    return "$integrationEnvironment/$integrationEnvironmentVersion " +
-        "($os;$arch) $integrationName/$integrationVersion " +
-        "($integrationEnvironment/$integrationEnvironmentVersion)"
+    // the sort is to ensure that parent folders come first
+    // e.g. /a/b should come before /a/b/c
+    return contentRoots
+        .filter { it.exists() && it.isDirectory }
+        .sortedBy { it.path }.toSet()
 }

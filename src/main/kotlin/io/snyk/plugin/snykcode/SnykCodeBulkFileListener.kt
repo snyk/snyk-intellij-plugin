@@ -11,6 +11,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.readText
 import io.snyk.plugin.SnykBulkFileListener
+import io.snyk.plugin.getPsiFile
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.toSnykFileSet
@@ -59,9 +60,9 @@ class SnykCodeBulkFileListener : SnykBulkFileListener() {
                         virtualFile.readText()
                     )
                 languageServer.textDocumentService.didSave(param)
+                virtualFile.getPsiFile(project)?.let { DaemonCodeAnalyzer.getInstance(project).restart(it) }
             }
             VirtualFileManager.getInstance().asyncRefresh()
-            DaemonCodeAnalyzer.getInstance(project).restart()
         }
     }
 

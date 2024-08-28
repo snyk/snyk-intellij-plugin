@@ -7,20 +7,27 @@ import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.mockk.every
+import io.mockk.mockk
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.awaitility.Awaitility.await
+import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import java.util.concurrent.TimeUnit
 
-@Suppress("FunctionName")
 class IacBulkFileListenerTest : BasePlatformTestCase() {
+    private val lsMock = mockk<LanguageServer>(relaxed = true)
 
     override fun setUp() {
         super.setUp()
         resetSettings(project)
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.isInitialized = true
+        languageServerWrapper.languageServer = lsMock
     }
 
     override fun tearDown() {
