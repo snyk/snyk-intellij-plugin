@@ -218,13 +218,7 @@ fun controlExternalProcessWithProgressIndicator(
     checkCancelled.invoke()
 }
 
-fun isIacEnabled(): Boolean = true
-
-fun isContainerEnabled(): Boolean = true
-
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
-
-fun isSnykOSSLSEnabled(): Boolean = true // TODO: cleanup usage
 
 fun isSnykIaCLSEnabled(): Boolean = false
 

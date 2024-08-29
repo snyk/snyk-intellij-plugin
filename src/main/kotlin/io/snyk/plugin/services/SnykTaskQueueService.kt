@@ -22,12 +22,9 @@ import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
-import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykIaCLSEnabled
-import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -105,18 +102,16 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-                if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable || isSnykOSSLSEnabled()) {
-                    if (!isStartup) {
+                if (!isStartup) {
                         LanguageServerWrapper.getInstance().sendScanCommand(project)
-                    }
                 }
 
-                if (isIacEnabled() && settings.iacScanEnabled) {
+                if (settings.iacScanEnabled) {
                     if (!isSnykIaCLSEnabled()) {
                         scheduleIacScan()
                     }
                 }
-                if (isContainerEnabled() && settings.containerScanEnabled) {
+                if (settings.containerScanEnabled) {
                     scheduleContainerScan()
                 }
             }

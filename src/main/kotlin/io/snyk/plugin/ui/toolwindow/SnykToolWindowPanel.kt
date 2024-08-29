@@ -30,9 +30,7 @@ import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.head
 import io.snyk.plugin.isCliDownloading
-import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.isContainerRunning
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
@@ -105,8 +103,8 @@ class SnykToolWindowPanel(
         rootTreeNode.add(rootOssTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
-        if (isIacEnabled()) rootTreeNode.add(rootIacIssuesTreeNode)
-        if (isContainerEnabled()) rootTreeNode.add(rootContainerIssuesTreeNode)
+        rootTreeNode.add(rootIacIssuesTreeNode)
+        rootTreeNode.add(rootContainerIssuesTreeNode)
         Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -377,11 +375,9 @@ class SnykToolWindowPanel(
         getSnykCachedResults(project)?.cleanCaches()
         rootOssTreeNode.originalCliErrorMessage = null
 
-        if (isContainerEnabled()) {
-            getKubernetesImageCache(project)?.let {
-                it.clear()
-                it.cacheKubernetesFileFromProject()
-            }
+        getKubernetesImageCache(project)?.let {
+            it.clear()
+            it.cacheKubernetesFileFromProject()
         }
 
         ApplicationManager.getApplication().invokeLater {
