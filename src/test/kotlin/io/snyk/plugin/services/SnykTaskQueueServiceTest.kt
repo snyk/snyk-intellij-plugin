@@ -17,8 +17,6 @@ import io.snyk.plugin.getIacService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
-import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
@@ -155,7 +153,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val fakeIacResult = IacResult(emptyList())
 
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isIacEnabled() } returns true
         every { isCliInstalled() } returns true
         every { getIacService(project)?.scan() } returns fakeIacResult
 
@@ -167,7 +164,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
     fun testContainerScanTriggeredAndProduceResults() {
         mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isContainerEnabled() } returns true
         every { isCliInstalled() } returns true
         val fakeContainerResult = ContainerResult(emptyList())
         every { getContainerService(project)?.scan() } returns fakeContainerResult
