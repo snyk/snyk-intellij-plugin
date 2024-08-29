@@ -70,8 +70,6 @@ import javax.swing.JComponent
 
 private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
 
-fun getOssService(project: Project): OssService? = project.serviceIfNotDisposed()
-
 fun getIacService(project: Project): IacScanService? = project.serviceIfNotDisposed()
 
 fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.serviceIfNotDisposed()
@@ -107,8 +105,6 @@ fun getCliFile() = File(pluginSettings().cliPath)
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
-
-fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 

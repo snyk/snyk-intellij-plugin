@@ -20,7 +20,6 @@ import io.mockk.verify
 import io.sentry.protocol.SentryId
 import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
@@ -36,9 +35,6 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
-
-    private val ossService: OssService
-        get() = getOssService(project) ?: throw IllegalStateException("OSS service should be available")
 
     override fun setUp() {
         super.setUp()
@@ -302,7 +298,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
                     // CLINotExistsException should happen while CLI is not there,
                     // but downloading and any CLI command is invoked
                     try {
-                        val commands = ossService.buildCliCommandsList_TEST_ONLY(listOf("test"))
+                        val commands = listOf("test")
                         ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
                         fail("Should have thrown CliNotExistsException, as the CLI is still downloading.")
                     } catch (e: CliNotExistsException) {

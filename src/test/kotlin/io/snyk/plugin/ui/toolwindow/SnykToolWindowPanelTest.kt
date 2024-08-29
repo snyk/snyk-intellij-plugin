@@ -99,44 +99,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `sanitizeNavigationalFilePath should return a valid filepath when given abs path in displayTargetFile`() {
-        val tempFile = File.createTempFile("package", ".json")
-        tempFile.deleteOnExit()
-        val absPath = tempFile.toPath().toAbsolutePath()
-        val vulnsForFile =
-            OssVulnerabilitiesForFile(
-                displayTargetFile = absPath.toString(),
-                path = absPath.parent.toString(),
-                packageManager = "npm",
-                vulnerabilities = emptyList()
-            )
-        cut = SnykToolWindowPanel(project)
-
-        val filePath = cut.sanitizeNavigationalFilePath(vulnsForFile)
-
-        assertEquals(absPath.toString(), filePath)
-    }
-
-    @Test
-    fun `sanitizeNavigationalFilePath should return a valid filepath when given rel path in displayTargetFile`() {
-        val tempFile = File.createTempFile("package", ".json")
-        tempFile.deleteOnExit()
-        val absPath = tempFile.toPath().toAbsolutePath()
-        val vulnsForFile =
-            OssVulnerabilitiesForFile(
-                displayTargetFile = tempFile.name,
-                path = absPath.parent.toString(),
-                packageManager = "npm",
-                vulnerabilities = emptyList()
-            )
-        cut = SnykToolWindowPanel(project)
-
-        val filePath = cut.sanitizeNavigationalFilePath(vulnsForFile)
-
-        assertEquals(absPath.toString(), filePath)
-    }
-
-    @Test
     fun `should not display onboarding panel and run scan directly`() {
         every { settings.token } returns "test-token"
         every { settings.pluginFirstRun } returns true

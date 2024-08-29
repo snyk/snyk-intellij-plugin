@@ -16,7 +16,6 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
-import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -111,11 +110,7 @@ class SnykTaskQueueService(val project: Project) {
                         LanguageServerWrapper.getInstance().sendScanCommand(project)
                     }
                 }
-                if (settings.ossScanEnable) {
-                    if (!isSnykOSSLSEnabled()) {
-                        scheduleOssScan()
-                    }
-                }
+
                 if (isIacEnabled() && settings.iacScanEnabled) {
                     if (!isSnykIaCLSEnabled()) {
                         scheduleIacScan()
@@ -168,37 +163,6 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("Container scan completed")
-                invokeLater { refreshAnnotationsForOpenFiles(project) }
-            }
-        })
-    }
-
-    private fun scheduleOssScan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk Open Source is scanning", true) {
-            override fun run(indicator: ProgressIndicator) {
-                if (!isCliInstalled()) return
-                val snykCachedResults = getSnykCachedResults(project) ?: return
-                if (snykCachedResults.currentOssResults != null) return
-
-                ossScanProgressIndicator = indicator
-                scanPublisher?.scanningStarted()
-
-                val ossResult = try {
-                    getOssService(project)?.scan()
-                } finally {
-                    ossScanProgressIndicator = null
-                }
-                if (ossResult == null || project.isDisposed) return
-
-                if (indicator.isCanceled) {
-                    taskQueuePublisher?.stopped(wasOssRunning = true)
-                } else {
-                    if (ossResult.isSuccessful()) {
-                        scanPublisher?.scanningOssFinished(ossResult)
-                    } else {
-                        ossResult.getFirstError()?.let { scanPublisher?.scanningOssError(it) }
-                    }
-                }
                 invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })

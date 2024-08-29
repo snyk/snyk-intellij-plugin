@@ -14,7 +14,6 @@ import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
-import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
@@ -27,6 +26,7 @@ import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
 import org.awaitility.Awaitility.await
+import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
@@ -35,16 +35,13 @@ import java.util.concurrent.TimeUnit
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
-    private lateinit var ossServiceMock: OssService
     private lateinit var downloaderServiceMock: SnykCliDownloaderService
+    private val lsMock = mockk<LanguageServer>()
 
     override fun setUp() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
-
-        ossServiceMock = mockk(relaxed = true)
-        project.replaceService(OssService::class.java, ossServiceMock, project)
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic("snyk.trust.TrustedProjectsKt")
@@ -57,7 +54,10 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
 
         mockkObject(LanguageServerWrapper.Companion)
-        every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
+        val lswMock = mockk<LanguageServerWrapper>(relaxed = true)
+        every { LanguageServerWrapper.getInstance() } returns lswMock
+        every { lswMock.languageServer } returns lsMock
+        every { lswMock.isInitialized } returns true
     }
 
     override fun tearDown() {
@@ -109,8 +109,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     }
 
     private fun setupAppSettingsForDownloadTests(): SnykApplicationSettingsStateService {
-        every { getOssService(project)?.scan() } returns OssResult(null)
-
         val settings = pluginSettings()
         settings.ossScanEnable = true
         settings.snykCodeSecurityIssuesScanEnable = false
