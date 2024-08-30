@@ -118,7 +118,7 @@ class SnykSettingsDialog(
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
     private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
-    private val NewIssues = listOf("All issues", "New new issues").toArray(emptyArray())
+    private val NewIssues = listOf("All issues", "Net new issues").toArray(emptyArray())
     private val netNewIssuesDropDown = ComboBox(NewIssues).apply { this.isEditable = true }
     private val cliBaseDownloadUrlTextField = JBTextField()
     private val baseBranchInfoLabel = JBLabel("Base branch: ")
