@@ -27,7 +27,6 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.toVirtualFile
@@ -206,9 +205,6 @@ class SnykLanguageClient :
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
-        if (snykScan.product == "oss" && !isSnykOSSLSEnabled()) {
-            return
-        }
         try {
             getScanPublishersFor(snykScan.folderPath).forEach { (_, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher)

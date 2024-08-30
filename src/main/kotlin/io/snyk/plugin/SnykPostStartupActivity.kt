@@ -81,7 +81,7 @@ class SnykPostStartupActivity : ProjectActivity {
             settings.lastTimeFeedbackRequestShown = Date.from(Instant.now())
         }
 
-        if (isContainerEnabled()) {
+        if (settings.containerScanEnabled) {
             getKubernetesImageCache(project)?.cacheKubernetesFileFromProject()
         }
 

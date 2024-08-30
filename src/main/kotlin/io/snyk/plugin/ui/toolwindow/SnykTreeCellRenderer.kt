@@ -13,14 +13,12 @@ import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import io.snyk.plugin.ui.getDisabledIcon
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
@@ -34,8 +32,6 @@ import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
-import snyk.oss.OssVulnerabilitiesForFile
-import snyk.oss.Vulnerability
 import java.util.Locale
 import javax.swing.Icon
 import javax.swing.JTree
@@ -58,46 +54,6 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
         var text: String? = null
         var attributes = SimpleTextAttributes.REGULAR_ATTRIBUTES
         when (value) {
-            is VulnerabilityTreeNode -> {
-                val vulnerability = (value.userObject as Collection<Vulnerability>).first()
-                nodeIcon = SnykIcons.getSeverityIcon(vulnerability.getSeverity())
-                text = vulnerability.getPackageNameTitle()
-
-                val snykCachedResults = getSnykCachedResults(value.project)
-                if (snykCachedResults?.currentOssResults == null) {
-                    attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    nodeIcon = getDisabledIcon(nodeIcon)
-                }
-            }
-
-            is FileTreeNode -> {
-                val fileVulns = value.userObject as OssVulnerabilitiesForFile
-                nodeIcon = getIcon(fileVulns.packageManager.lowercase(Locale.getDefault()))
-                toolTipText =
-                    buildString {
-                        append(fileVulns.relativePath ?: "")
-                        append(fileVulns.sanitizedTargetFile)
-                        append(ProductType.OSS.getCountText(value.childCount))
-                    }
-                text =
-                    toolTipText.apply {
-                        if (toolTipText.length > MAX_FILE_TREE_NODE_LENGTH) {
-                            "..." +
-                                this.substring(
-                                    this.length - MAX_FILE_TREE_NODE_LENGTH,
-                                    this.length,
-                                )
-                        }
-                    }
-
-                val snykCachedResults = getSnykCachedResults(value.project)
-                if (snykCachedResults?.currentOssResults == null) {
-                    attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
-                    text += OBSOLETE_SUFFIX
-                    nodeIcon = getDisabledIcon(nodeIcon)
-                }
-            }
-
             is SuggestionTreeNode -> {
                 val issue = value.userObject as ScanIssue
                 nodeIcon = SnykIcons.getSeverityIcon(issue.getSeverityAsEnum())
