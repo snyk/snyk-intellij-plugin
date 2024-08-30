@@ -182,7 +182,7 @@ class SnykSettingsDialog(
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
 
-            baseBranchInfoLabel.text = service<FolderConfigSettings>().getFolderConfigs()
+            baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
                 .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
         }
     }

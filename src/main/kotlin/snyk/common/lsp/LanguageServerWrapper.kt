@@ -155,9 +155,6 @@ class LanguageServerWrapper(
             process.destroy()
             isInitialized = false
         }
-
-        // update feature flags
-        runAsync { pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled() }
     }
 
     fun shutdown(): Future<*> =
@@ -311,13 +308,20 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return
         DumbService.getInstance(project).runWhenSmart {
             getTrustedContentRoots(project).forEach {
+                refreshFeatureFlags()
                 sendFolderScanCommand(it.path, project)
             }
         }
     }
 
+    fun refreshFeatureFlags() {
+        runAsync {
+            pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
+        }
+    }
+
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
-        if (!ensureLanguageServerInitialized()) return false
+        if (!isInitialized) return false
         return getFeatureFlagStatusInternal(featureFlag)
     }
 
