@@ -42,6 +42,7 @@ data class LanguageServerSettings(
     @SerializedName("enableSnykOSSQuickFixCodeActions") val enableSnykOSSQuickFixCodeActions: String? = null,
     @SerializedName("requiredProtocolVersion") val requiredProtocolVersion: String =
         pluginSettings().requiredLsProtocolVersion.toString(),
+    @SerializedName("enableDeltaFindings") val enableDeltaFindings: String = (pluginSettings().netNewIssues == "Net new issues").toString()
 )
 
 data class SeverityFilter(

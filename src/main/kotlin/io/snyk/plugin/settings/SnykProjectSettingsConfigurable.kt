@@ -48,7 +48,7 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
-            snykSettingsDialog.getNetNewIssues() != settingsStateService.netNewIssues ||
+            snykSettingsDialog.isNetNewIssuesSelected() != settingsStateService.netNewIssues ||
 
             isAuthenticationMethodModified()
 
@@ -117,7 +117,7 @@ class SnykProjectSettingsConfigurable(
                 handleReleaseChannelChanged()
             }
 
-            if (snykSettingsDialog.getNetNewIssues().trim() != pluginSettings().netNewIssues) {
+            if (snykSettingsDialog.isNetNewIssuesSelected() != pluginSettings().netNewIssues) {
                 handleNetNewIssuesChanged()
             }
 
@@ -162,9 +162,8 @@ class SnykProjectSettingsConfigurable(
         )
     }
 
-    //todo handle the actual settings change!!
     private fun handleNetNewIssuesChanged() {
-        settingsStateService.netNewIssues = snykSettingsDialog.getNetNewIssues().trim()
+        settingsStateService.netNewIssues = snykSettingsDialog.isNetNewIssuesSelected()
     }
 
     private fun isTokenModified(): Boolean = snykSettingsDialog.getToken() != settingsStateService.token

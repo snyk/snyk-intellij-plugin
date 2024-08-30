@@ -119,7 +119,7 @@ class SnykSettingsDialog(
     private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
     private val newIssues = listOf("All issues", "Net new issues").toArray(emptyArray())
-    private val netNewIssuesDropDown = ComboBox(newIssues).apply { this.isEditable = true }
+    private val netNewIssuesDropDown = ComboBox(newIssues).apply { this.isEditable = false }
     private val cliBaseDownloadUrlTextField = JBTextField()
     private val baseBranchInfoLabel = JBLabel("Base branch: ")
 
@@ -839,7 +839,7 @@ class SnykSettingsDialog(
 
     fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
 
-    fun getNetNewIssues(): String = netNewIssuesDropDown.selectedItem as String
+    fun isNetNewIssuesSelected(): String = netNewIssuesDropDown.selectedItem as String
 
     fun getUseTokenAuthentication(): Boolean = useTokenAuthentication.selectedIndex == 1
 }

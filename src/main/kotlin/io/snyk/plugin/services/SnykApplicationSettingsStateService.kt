@@ -35,7 +35,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var cliBaseDownloadURL: String = "https://downloads.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
     var cliReleaseChannel = "stable"
-    var netNewIssues = "All issues"
+    var netNewIssues: String = "All issues"
     var manageBinariesAutomatically: Boolean = true
     var fileListenerEnabled: Boolean = true
     var token: String? = null

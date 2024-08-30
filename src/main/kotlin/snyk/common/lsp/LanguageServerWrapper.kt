@@ -405,6 +405,8 @@ class LanguageServerWrapper(
             integrationVersion = pluginInfo.integrationVersion,
             authenticationMethod = authMethod,
             enableSnykOSSQuickFixCodeActions = "true",
+            enableDeltaFindings = (ps.netNewIssues == "Net new issues").toString(),
+
         )
     }
 
