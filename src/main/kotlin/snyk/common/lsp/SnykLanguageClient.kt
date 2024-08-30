@@ -203,6 +203,13 @@ class SnykLanguageClient :
         return completedFuture
     }
 
+    @JsonNotification(value = "$/snyk.folderConfigs")
+    fun folderConfig(folderConfigParam: FolderConfigsParam) {
+        runAsync {
+            service<FolderConfigSettings>().addAll(folderConfigParam.folderConfigs)
+        }
+    }
+
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return

@@ -130,4 +130,6 @@ class SnykLanguageClientTest {
 
         verify { trustServiceMock.addTrustedPath(eq(Path(path))) }
     }
+
+
 }

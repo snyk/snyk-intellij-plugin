@@ -614,3 +614,13 @@ data class OssIdentifiers(
         return result
     }
 }
+
+data class FolderConfigsParam(
+    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>,
+)
+
+data class FolderConfig(
+    @SerializedName("folderPath") val folderPath: String,
+    @SerializedName("baseBranch") val baseBranch: String,
+    @SerializedName("localBranches") val localBranches: List<String> = emptyList()
+)

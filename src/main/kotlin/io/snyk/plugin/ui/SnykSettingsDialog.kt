@@ -3,6 +3,7 @@ package io.snyk.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.progress.runBackgroundableTask
@@ -17,6 +18,7 @@ import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
@@ -47,6 +49,7 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
+import snyk.common.lsp.FolderConfigSettings
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.io.File.separator
@@ -116,6 +119,7 @@ class SnykSettingsDialog(
     private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
     private val cliBaseDownloadUrlTextField = JBTextField()
+    val baseBranchInfoLabel = JBLabel("Base branch: ")
 
     private val logger = Logger.getInstance(this::class.java)
 
@@ -177,6 +181,9 @@ class SnykSettingsDialog(
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
+
+            baseBranchInfoLabel.text = service<FolderConfigSettings>().getFolderConfigs()
+                .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
         }
     }
 
@@ -495,11 +502,24 @@ class SnykSettingsDialog(
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
+            projectSettingsPanel.add(
+                baseBranchInfoLabel,
+                baseGridConstraints(
+                    1,
+                    0,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
+                    fill = UIGridConstraints.FILL_HORIZONTAL,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    colSpan = 2,
+                    indent = 0
+                )
+            )
+
             val projectSettingsSpacer = Spacer()
             projectSettingsPanel.add(
                 projectSettingsSpacer,
                 baseGridConstraints(
-                    row = 1,
+                    row = 2,
                     fill = UIGridConstraints.FILL_VERTICAL,
                     hSizePolicy = 1,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,

@@ -1,7 +1,6 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
-import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -20,7 +19,6 @@ import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -47,7 +45,6 @@ import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
-import org.jetbrains.kotlin.idea.gradleTooling.get
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
@@ -280,7 +277,7 @@ class LanguageServerWrapper(
                 val message =
                     "Snyk failed to initialize. This is an unexpected loop error, please contact " +
                         "Snyk support with the error message.\n\n" + RuntimeException().stackTraceToString()
-                SnykBalloonNotificationHelper.showError(message, ProjectUtil.getActiveProject())
+                logger.error(message)
                 return false
             }
 
