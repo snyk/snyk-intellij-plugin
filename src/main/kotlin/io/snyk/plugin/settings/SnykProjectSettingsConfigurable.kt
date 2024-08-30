@@ -67,6 +67,10 @@ class SnykProjectSettingsConfigurable(
     override fun apply() {
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
 
+        if (snykSettingsDialog.getCliPath().isEmpty()) {
+            snykSettingsDialog.setDefaultCliPath()
+        }
+
         if (!isUrlValid(customEndpoint)) {
             SnykBalloonNotificationHelper.showError("Invalid URL, Settings changes ignored.", project)
             return

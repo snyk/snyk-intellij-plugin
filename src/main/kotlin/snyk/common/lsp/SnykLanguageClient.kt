@@ -202,6 +202,13 @@ class SnykLanguageClient :
         return completedFuture
     }
 
+    @JsonNotification(value = "$/snyk.folderConfigs")
+    fun folderConfig(folderConfigParam: FolderConfigsParam) {
+        runAsync {
+            service<FolderConfigSettings>().addAll(folderConfigParam.folderConfigs)
+        }
+    }
+
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
@@ -300,7 +307,7 @@ class SnykLanguageClient :
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
             // retrieve global ignores feature flag status after auth
-            pluginSettings().isGlobalIgnoresFeatureEnabled = wrapper.isGlobalIgnoresFeatureEnabled()
+            LanguageServerWrapper.getInstance().refreshFeatureFlags()
 
             ProjectManager.getInstance().openProjects.forEach {
                 wrapper.sendScanCommand(it)

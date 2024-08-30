@@ -3,6 +3,7 @@ package io.snyk.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.progress.runBackgroundableTask
@@ -17,6 +18,7 @@ import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
@@ -30,8 +32,10 @@ import com.intellij.util.FontUtil
 import com.intellij.util.containers.toArray
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
+import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isAdditionalParametersValid
@@ -45,8 +49,10 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
+import snyk.common.lsp.FolderConfigSettings
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.io.File.separator
 import java.util.Objects.nonNull
 import java.util.function.Supplier
 import javax.swing.JButton
@@ -113,6 +119,7 @@ class SnykSettingsDialog(
     private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
     private val cliBaseDownloadUrlTextField = JBTextField()
+    val baseBranchInfoLabel = JBLabel("Base branch: ")
 
     private val logger = Logger.getInstance(this::class.java)
 
@@ -174,6 +181,9 @@ class SnykSettingsDialog(
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
+
+            baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
+                .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
         }
     }
 
@@ -492,11 +502,24 @@ class SnykSettingsDialog(
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
+            projectSettingsPanel.add(
+                baseBranchInfoLabel,
+                baseGridConstraints(
+                    1,
+                    0,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
+                    fill = UIGridConstraints.FILL_HORIZONTAL,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    colSpan = 2,
+                    indent = 0
+                )
+            )
+
             val projectSettingsSpacer = Spacer()
             projectSettingsPanel.add(
                 projectSettingsSpacer,
                 baseGridConstraints(
-                    row = 1,
+                    row = 2,
                     fill = UIGridConstraints.FILL_VERTICAL,
                     hSizePolicy = 1,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
@@ -703,11 +726,22 @@ class SnykSettingsDialog(
             "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io",
             ::isUrlValid,
         )
+
         setupValidation(
             additionalParametersTextField,
             "The -d option is not supported by the Snyk IntelliJ plugin",
             ::isAdditionalParametersValid,
         )
+
+        setupValidation(
+            cliBaseDownloadUrlTextField,
+            "The base URL cannot be empty",
+            ::isCliBaseDownloadUrlTextFieldValid,
+        )
+    }
+
+    private fun isCliBaseDownloadUrlTextFieldValid(params: String?): Boolean {
+        return !params.isNullOrEmpty()
     }
 
     private fun setupValidation(
@@ -740,6 +774,9 @@ class SnykSettingsDialog(
     }
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
+    fun setDefaultCliPath() {
+        cliPathTextBoxWithFileBrowser.text = getPluginPath() + separator + Platform.current().snykWrapperFileName
+    }
 
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
 

@@ -154,9 +154,6 @@ class LanguageServerWrapper(
             process.destroy()
             isInitialized = false
         }
-
-        // update feature flags
-        runAsync { pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled() }
     }
 
     fun shutdown(): Future<*> =
@@ -276,17 +273,26 @@ class LanguageServerWrapper(
 
     fun ensureLanguageServerInitialized(): Boolean {
         if (disposed) return false
-        isInitializing.lock()
-        assert(isInitializing.holdCount == 1)
-
-        if (!isInitialized) {
-            try {
-                initialize()
-            } catch (e: RuntimeException) {
-                throw (e)
+        try {
+            isInitializing.lock()
+            if (isInitializing.holdCount > 1) {
+                val message =
+                    "Snyk failed to initialize. This is an unexpected loop error, please contact " +
+                        "Snyk support with the error message.\n\n" + RuntimeException().stackTraceToString()
+                logger.error(message)
+                return false
             }
+
+            if (!isInitialized) {
+                try {
+                    initialize()
+                } catch (e: RuntimeException) {
+                    throw (e)
+                }
+            }
+        } finally {
+            isInitializing.unlock()
         }
-        isInitializing.unlock()
         return isInitialized
     }
 
@@ -307,13 +313,20 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return
         DumbService.getInstance(project).runWhenSmart {
             getTrustedContentRoots(project).forEach {
+                refreshFeatureFlags()
                 sendFolderScanCommand(it.path, project)
             }
         }
     }
 
+    fun refreshFeatureFlags() {
+        runAsync {
+            pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
+        }
+    }
+
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
-        if (!ensureLanguageServerInitialized()) return false
+        if (!isInitialized) return false
         return getFeatureFlagStatusInternal(featureFlag)
     }
 
