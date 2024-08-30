@@ -16,19 +16,15 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
-import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
-import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.isSnykIaCLSEnabled
-import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -69,29 +65,29 @@ class SnykTaskQueueService(val project: Project) {
     fun getTaskQueue() = taskQueue
 
     fun connectProjectToLanguageServer(project: Project) {
-            // subscribe to the settings changed topic
+        // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         getSnykToolWindowPanel(project)?.let {
-                project.messageBus.connect(it)
-                    .subscribe(
-                        SnykSettingsListener.SNYK_SETTINGS_TOPIC,
-                        object : SnykSettingsListener {
-                            override fun settingsChanged() {
-                                languageServerWrapper.updateConfiguration()
-                            }
+            project.messageBus.connect(it)
+                .subscribe(
+                    SnykSettingsListener.SNYK_SETTINGS_TOPIC,
+                    object : SnykSettingsListener {
+                        override fun settingsChanged() {
+                            languageServerWrapper.updateConfiguration()
                         }
-                    )
+                    }
+                )
+        }
+        // Try to connect project for up to 30s
+        for (tries in 1..300) {
+            if (!languageServerWrapper.isInitialized) {
+                Thread.sleep(100)
+                continue
             }
-            // Try to connect project for up to 30s
-            for (tries in 1..300) {
-                if (!languageServerWrapper.isInitialized) {
-                    Thread.sleep(100)
-                    continue
-                }
 
-                languageServerWrapper.addContentRoots(project)
-                break
-            }
+            languageServerWrapper.addContentRoots(project)
+            break
+        }
     }
 
     fun scan(isStartup: Boolean) {
@@ -106,22 +102,16 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-                if (settings.snykCodeSecurityIssuesScanEnable || settings.snykCodeQualityIssuesScanEnable || isSnykOSSLSEnabled()) {
-                    if (!isStartup) {
-                        LanguageServerWrapper.getInstance().sendScanCommand(project)
-                    }
+                if (!isStartup) {
+                    LanguageServerWrapper.getInstance().sendScanCommand(project)
                 }
-                if (settings.ossScanEnable) {
-                    if (!isSnykOSSLSEnabled()) {
-                        scheduleOssScan()
-                    }
-                }
-                if (isIacEnabled() && settings.iacScanEnabled) {
+
+                if (settings.iacScanEnabled) {
                     if (!isSnykIaCLSEnabled()) {
                         scheduleIacScan()
                     }
                 }
-                if (isContainerEnabled() && settings.containerScanEnabled) {
+                if (settings.containerScanEnabled) {
                     scheduleContainerScan()
                 }
             }
@@ -168,37 +158,6 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("Container scan completed")
-                invokeLater { refreshAnnotationsForOpenFiles(project) }
-            }
-        })
-    }
-
-    private fun scheduleOssScan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk Open Source is scanning", true) {
-            override fun run(indicator: ProgressIndicator) {
-                if (!isCliInstalled()) return
-                val snykCachedResults = getSnykCachedResults(project) ?: return
-                if (snykCachedResults.currentOssResults != null) return
-
-                ossScanProgressIndicator = indicator
-                scanPublisher?.scanningStarted()
-
-                val ossResult = try {
-                    getOssService(project)?.scan()
-                } finally {
-                    ossScanProgressIndicator = null
-                }
-                if (ossResult == null || project.isDisposed) return
-
-                if (indicator.isCanceled) {
-                    taskQueuePublisher?.stopped(wasOssRunning = true)
-                } else {
-                    if (ossResult.isSuccessful()) {
-                        scanPublisher?.scanningOssFinished(ossResult)
-                    } else {
-                        ossResult.getFirstError()?.let { scanPublisher?.scanningOssError(it) }
-                    }
-                }
                 invokeLater { refreshAnnotationsForOpenFiles(project) }
             }
         })

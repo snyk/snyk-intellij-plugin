@@ -54,8 +54,6 @@ import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
-import snyk.oss.OssService
-import snyk.oss.OssTextRangeFinder
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
@@ -71,8 +69,6 @@ import javax.net.ssl.X509TrustManager
 import javax.swing.JComponent
 
 private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
-
-fun getOssService(project: Project): OssService? = project.serviceIfNotDisposed()
 
 fun getIacService(project: Project): IacScanService? = project.serviceIfNotDisposed()
 
@@ -109,8 +105,6 @@ fun getCliFile() = File(pluginSettings().cliPath)
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
-
-fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
@@ -224,13 +218,7 @@ fun controlExternalProcessWithProgressIndicator(
     checkCancelled.invoke()
 }
 
-fun isIacEnabled(): Boolean = true
-
-fun isContainerEnabled(): Boolean = true
-
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
-
-fun isSnykOSSLSEnabled(): Boolean = true // TODO: cleanup usage
 
 fun isSnykIaCLSEnabled(): Boolean = false
 

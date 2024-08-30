@@ -19,7 +19,6 @@ import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
 import snyk.iac.IacResult
-import snyk.oss.OssResult
 
 @Service(Service.Level.PROJECT)
 class SnykCachedResults(
@@ -43,8 +42,6 @@ class SnykCachedResults(
 
     val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
     val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-    var currentOssResults: OssResult? = null
-        get() = if (field?.isExpired() == false) field else null
 
     val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
     var currentContainerResult: ContainerResult? = null
@@ -60,7 +57,6 @@ class SnykCachedResults(
     var currentSnykCodeError: SnykError? = null
 
     fun cleanCaches() {
-        currentOssResults = null
         currentContainerResult = null
         currentIacResult = null
         currentOssError = null
@@ -85,26 +81,12 @@ class SnykCachedResults(
                     currentContainerError = null
                 }
 
-                override fun scanningOssFinished(ossResult: OssResult) {
-                    currentOssResults = ossResult
-                }
-
                 override fun scanningIacFinished(iacResult: IacResult) {
                     currentIacResult = iacResult
                 }
 
                 override fun scanningContainerFinished(containerResult: ContainerResult) {
                     currentContainerResult = containerResult
-                }
-
-                override fun scanningOssError(snykError: SnykError) {
-                    currentOssResults = null
-                    currentOssError =
-                        when {
-                            snykError.message.startsWith(SnykToolWindowPanel.NO_OSS_FILES) -> null
-                            snykError.message.startsWith(SnykToolWindowPanel.AUTH_FAILED_TEXT) -> null
-                            else -> snykError
-                        }
                 }
 
                 override fun scanningIacError(snykError: SnykError) {
@@ -142,11 +124,9 @@ class SnykCachedResults(
                     currentContainerError = null
                 }
 
-                override fun scanningSnykCodeFinished() {
-                }
+                override fun scanningSnykCodeFinished() = Unit
 
-                override fun scanningOssFinished() {
-                }
+                override fun scanningOssFinished() = Unit
 
                 override fun scanningError(snykScan: SnykScanParams) {
                     when (snykScan.product) {

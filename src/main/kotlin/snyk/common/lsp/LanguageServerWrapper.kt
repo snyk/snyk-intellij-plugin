@@ -16,7 +16,6 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.isSnykIaCLSEnabled
-import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -159,7 +158,7 @@ class LanguageServerWrapper(
 
     fun shutdown(): Future<*> =
         executorService.submit {
-            if (process.isAlive) {
+            if (::process.isInitialized && process.isAlive) {
                 languageServer.shutdown().get(1, TimeUnit.SECONDS)
                 languageServer.exit()
                 if (process.isAlive) {
@@ -192,7 +191,13 @@ class LanguageServerWrapper(
         val normalizedRoots = mutableSetOf<VirtualFile>()
 
         for (root in contentRoots) {
-            val pathTrusted = trustService.isPathTrusted(root.toNioPath())
+            val pathTrusted = try {
+                trustService.isPathTrusted(root.toNioPath())
+            } catch (e: UnsupportedOperationException) {
+                // this must be temp filesystem so the path mapping doesn't work
+                continue
+            }
+
             if (!pathTrusted) {
                 logger.debug("Path not trusted: ${root.path}")
                 continue
@@ -378,7 +383,7 @@ class LanguageServerWrapper(
                 "oauth"
             }
         return LanguageServerSettings(
-            activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
+            activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
             activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
             activateSnykIac = isSnykIaCLSEnabled().toString(),

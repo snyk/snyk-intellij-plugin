@@ -9,7 +9,6 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
-import snyk.oss.OssResult
 
 @Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
@@ -45,18 +44,6 @@ class AnalyticsScanListener(val project: Project) {
             start = System.currentTimeMillis()
         }
 
-        override fun scanningOssFinished(ossResult: OssResult) {
-            val scanDoneEvent = getScanDoneEvent(
-                System.currentTimeMillis() - start,
-                "Snyk Open Source",
-                ossResult.criticalSeveritiesCount(),
-                ossResult.highSeveritiesCount(),
-                ossResult.mediumSeveritiesCount(),
-                ossResult.lowSeveritiesCount()
-            )
-            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
-        }
-
         override fun scanningIacFinished(iacResult: IacResult) {
             val scanDoneEvent = getScanDoneEvent(
                 System.currentTimeMillis() - start,
@@ -79,10 +66,6 @@ class AnalyticsScanListener(val project: Project) {
                 containerResult.lowSeveritiesCount()
             )
             LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
-        }
-
-        override fun scanningOssError(snykError: SnykError) {
-            // do nothing
         }
 
         override fun scanningIacError(snykError: SnykError) {

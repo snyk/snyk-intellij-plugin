@@ -7,8 +7,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.isContainerEnabled
-import io.snyk.plugin.isIacEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.showSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -36,8 +34,8 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
         createOssScanAction(),
         createSecurityIssuesScanAction(),
         createQualityIssuesScanAction(),
-        if (isIacEnabled()) createIacScanAction() else null,
-        if (isContainerEnabled()) createContainerScanAction() else null
+        createIacScanAction(),
+        createContainerScanAction()
     ).toTypedArray()
 
     private fun createScanFilteringAction(

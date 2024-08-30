@@ -13,14 +13,17 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.PopupHandler
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import snyk.common.SnykError
+import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
-import snyk.oss.OssResult
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -69,11 +72,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningStarted() = updateActionsPresentation()
 
-                override fun scanningOssFinished(ossResult: OssResult) = updateActionsPresentation()
-
                 override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
-
-                override fun scanningOssError(snykError: SnykError) = updateActionsPresentation()
 
                 override fun scanningIacError(snykError: SnykError) = updateActionsPresentation()
 
@@ -81,6 +80,25 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningContainerError(snykError: SnykError) = updateActionsPresentation()
             })
+
+        project.messageBus.connect(this)
+            .subscribe(SnykScanListenerLS.SNYK_SCAN_TOPIC, object : SnykScanListenerLS {
+                override fun scanningSnykCodeFinished() {
+                    updateActionsPresentation()
+                }
+
+                override fun scanningOssFinished() {
+                    updateActionsPresentation()
+                }
+
+                override fun scanningError(snykScan: SnykScanParams) {
+                    updateActionsPresentation()
+                }
+
+                override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) =
+                    Unit
+            })
+
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
