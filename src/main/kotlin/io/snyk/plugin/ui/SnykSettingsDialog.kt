@@ -30,8 +30,10 @@ import com.intellij.util.FontUtil
 import com.intellij.util.containers.toArray
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
+import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isAdditionalParametersValid
@@ -47,6 +49,7 @@ import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.io.File.separator
 import java.util.Objects.nonNull
 import java.util.function.Supplier
 import javax.swing.JButton
@@ -703,11 +706,22 @@ class SnykSettingsDialog(
             "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io",
             ::isUrlValid,
         )
+
         setupValidation(
             additionalParametersTextField,
             "The -d option is not supported by the Snyk IntelliJ plugin",
             ::isAdditionalParametersValid,
         )
+
+        setupValidation(
+            cliBaseDownloadUrlTextField,
+            "The base URL cannot be empty",
+            ::isCliBaseDownloadUrlTextFieldValid,
+        )
+    }
+
+    private fun isCliBaseDownloadUrlTextFieldValid(params: String?): Boolean {
+        return !params.isNullOrEmpty()
     }
 
     private fun setupValidation(
@@ -740,6 +754,9 @@ class SnykSettingsDialog(
     }
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
+    fun setDefaultCliPath() {
+        cliPathTextBoxWithFileBrowser.text = getPluginPath() + separator + Platform.current().snykWrapperFileName
+    }
 
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
 
