@@ -118,6 +118,8 @@ class SnykSettingsDialog(
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
     private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
+    private val NewIssues = listOf("All issues", "New new issues").toArray(emptyArray())
+    private val netNewIssuesDropDown = ComboBox(NewIssues).apply { this.isEditable = true }
     private val cliBaseDownloadUrlTextField = JBTextField()
     private val baseBranchInfoLabel = JBLabel("Base branch: ")
 
@@ -182,8 +184,9 @@ class SnykSettingsDialog(
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
 
-            baseBranchInfoLabel.text = "<html>"+service<FolderConfigSettings>().getAll()
-                .values.joinToString("<br/>") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }+"</html>"
+            baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
+                .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
+            netNewIssuesDropDown.selectedItem = applicationSettings.netNewIssues
         }
     }
 
@@ -202,7 +205,7 @@ class SnykSettingsDialog(
     }
 
     private fun initializeUiComponents() {
-        rootPanel.layout = UIGridLayoutManager(10, 1, JBUI.emptyInsets(), -1, -1)
+        rootPanel.layout = UIGridLayoutManager(11, 1, JBUI.emptyInsets(), -1, -1)
 
         /** General settings ------------------ */
 
@@ -463,6 +466,58 @@ class SnykSettingsDialog(
             ),
         )
 
+        val netNewIssuesPanel = JPanel(UIGridLayoutManager(2, 4, JBUI.emptyInsets(), -1, -1))
+        netNewIssuesPanel.border = IdeBorderFactory.createTitledBorder("Scan settings")
+
+        val netNewIssuesText =
+            JLabel(
+                "<html> Net new issues specifies whether to see only net new issues or all issues. <br/>" +
+                    "Only applies to Code Security and Code Quality.<br/>" +
+                    "Note: this is an experimental feature. ",
+            ).apply { font = FontUtil.minusOne(this.font) }
+
+        netNewIssuesPanel.add(
+            netNewIssuesText,
+            baseGridConstraints(
+                row = 0,
+                column = 0,
+                colSpan = 3,
+                indent = 0,
+            ),
+        )
+
+        //todo update strings here
+        val newNewIssuesLabel = JLabel("Net new issues:")
+        newNewIssuesLabel.labelFor = netNewIssuesDropDown
+        netNewIssuesPanel.add(
+            newNewIssuesLabel,
+            baseGridConstraintsAnchorWest(
+                row = 1,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+            ),
+        )
+
+        netNewIssuesPanel.add(
+            netNewIssuesDropDown,
+            baseGridConstraints(
+                row = 1,
+                column = 1,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
+        )
+
+        rootPanel.add(
+            netNewIssuesPanel,
+            baseGridConstraints(
+                row = 3,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                indent = 0,
+            ),
+        )
+
         /** Project settings ------------------ */
 
         if (isProjectSettingsAvailable(project)) {
@@ -472,7 +527,7 @@ class SnykSettingsDialog(
             rootPanel.add(
                 projectSettingsPanel,
                 baseGridConstraints(
-                    row = 3,
+                    row = 4,
                     fill = UIGridConstraints.FILL_BOTH,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                     indent = 0,
@@ -538,7 +593,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             userExperiencePanel,
             baseGridConstraints(
-                row = 5,
+                row = 7,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
@@ -582,7 +637,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             generalSettingsSpacer,
             panelGridConstraints(
-                row = 5,
+                row = 6,
             ),
         )
     }
@@ -599,7 +654,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             executableSettingsPanel,
             baseGridConstraints(
-                row = 4,
+                row = 5,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
@@ -783,6 +838,8 @@ class SnykSettingsDialog(
     fun getCliBaseDownloadURL(): String = cliBaseDownloadUrlTextField.text
 
     fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
+
+    fun getNetNewIssues(): String = netNewIssuesDropDown.selectedItem as String
 
     fun getUseTokenAuthentication(): Boolean = useTokenAuthentication.selectedIndex == 1
 }

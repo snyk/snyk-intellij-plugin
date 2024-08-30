@@ -27,8 +27,7 @@ class SnykProjectSettingsConfigurable(
     private val settingsStateService
         get() = pluginSettings()
 
-    var snykSettingsDialog: SnykSettingsDialog =
-        SnykSettingsDialog(project, settingsStateService, this)
+    var snykSettingsDialog: SnykSettingsDialog = SnykSettingsDialog(project, settingsStateService, this)
 
     override fun getId(): String = "io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
 
@@ -49,6 +48,8 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
+            snykSettingsDialog.getNetNewIssues() != settingsStateService.netNewIssues ||
+
             isAuthenticationMethodModified()
 
     private fun isAuthenticationMethodModified() =
@@ -116,6 +117,10 @@ class SnykProjectSettingsConfigurable(
                 handleReleaseChannelChanged()
             }
 
+            if (snykSettingsDialog.getNetNewIssues().trim() != pluginSettings().netNewIssues) {
+                handleNetNewIssuesChanged()
+            }
+
             LanguageServerWrapper.getInstance().updateConfiguration()
         }
 
@@ -135,27 +140,31 @@ class SnykProjectSettingsConfigurable(
     private fun handleReleaseChannelChanged() {
         settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
         var notification: Notification? = null
-        val downloadAction =
-            object : AnAction("Download") {
-                override fun actionPerformed(e: AnActionEvent) {
-                    getSnykTaskQueueService(project)?.downloadLatestRelease(true)
-                        ?: SnykBalloonNotificationHelper.showWarn("Could not download Snyk CLI", project)
-                    notification?.expire()
-                }
+        val downloadAction = object : AnAction("Download") {
+            override fun actionPerformed(e: AnActionEvent) {
+                getSnykTaskQueueService(project)?.downloadLatestRelease(true) ?: SnykBalloonNotificationHelper.showWarn(
+                    "Could not download Snyk CLI",
+                    project
+                )
+                notification?.expire()
             }
-        val noAction =
-            object : AnAction("Cancel") {
-                override fun actionPerformed(e: AnActionEvent) {
-                    notification?.expire()
-                }
+        }
+        val noAction = object : AnAction("Cancel") {
+            override fun actionPerformed(e: AnActionEvent) {
+                notification?.expire()
             }
-        notification =
-            SnykBalloonNotificationHelper.showInfo(
-                "You changed the release channel. Would you like to download a new Snyk CLI now?",
-                project,
-                downloadAction,
-                noAction,
-            )
+        }
+        notification = SnykBalloonNotificationHelper.showInfo(
+            "You changed the release channel. Would you like to download a new Snyk CLI now?",
+            project,
+            downloadAction,
+            noAction,
+        )
+    }
+
+    //todo handle the actual settings change!!
+    private fun handleNetNewIssuesChanged() {
+        settingsStateService.netNewIssues = snykSettingsDialog.getNetNewIssues().trim()
     }
 
     private fun isTokenModified(): Boolean = snykSettingsDialog.getToken() != settingsStateService.token
@@ -176,6 +185,7 @@ class SnykProjectSettingsConfigurable(
         snykSettingsDialog.isCrashReportingEnabled() != settingsStateService.crashReportingEnabled
 
     private fun isAdditionalParametersModified(): Boolean =
-        isProjectSettingsAvailable(project) &&
-            snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(project)?.additionalParameters
+        isProjectSettingsAvailable(project) && snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(
+            project
+        )?.additionalParameters
 }
