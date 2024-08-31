@@ -285,7 +285,8 @@ data class ScanIssue(
 
     fun hasAIFix(): Boolean {
         return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> false
+            ProductType.OSS ->
+                return this.additionalData.isUpgradable == true
             ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
                 return this.additionalData.hasAIFix
             }
@@ -443,7 +444,7 @@ data class IssueData(
     @SerializedName("from") val from: List<String>,
     @SerializedName("upgradePath") val upgradePath: List<Any>,
     @SerializedName("isPatchable") val isPatchable: Boolean,
-    @SerializedName("isUpgradable") val isUpgradable: Boolean?,
+    @SerializedName("isUpgradable") val isUpgradable: Boolean,
     @SerializedName("projectName") val projectName: String,
     @SerializedName("displayTargetFile") val displayTargetFile: String?,
     @SerializedName("matchingIssues") val matchingIssues: List<IssueData>,
