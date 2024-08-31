@@ -5,6 +5,7 @@ import com.intellij.codeInsight.codeVision.CodeVisionEntry
 import com.intellij.codeInsight.codeVision.CodeVisionProvider
 import com.intellij.codeInsight.codeVision.CodeVisionRelativeOrdering
 import com.intellij.codeInsight.codeVision.CodeVisionState
+import com.intellij.codeInsight.codeVision.settings.CodeVisionGroupSettingProvider
 import com.intellij.codeInsight.codeVision.ui.model.ClickableTextCodeVisionEntry
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.logger
@@ -29,11 +30,14 @@ import java.util.concurrent.TimeoutException
 private const val CODELENS_FETCH_TIMEOUT = 2L
 
 @Suppress("UnstableApiUsage")
-class LSCodeVisionProvider : CodeVisionProvider<Unit> {
+class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingProvider {
     private val logger = logger<LSCodeVisionProvider>()
     override val defaultAnchor: CodeVisionAnchorKind = CodeVisionAnchorKind.Default
     override val id = "snyk.common.lsp.LSCodeVisionProvider"
     override val name = "Snyk Language Server Code Vision Provider"
+    override val groupId: String = "Snyk"
+    override val groupName: String = groupId
+
     override val relativeOrderings: List<CodeVisionRelativeOrdering>
         get() = emptyList()
 
