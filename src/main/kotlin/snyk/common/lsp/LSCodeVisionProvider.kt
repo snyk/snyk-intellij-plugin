@@ -46,7 +46,6 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
         if (editor.project == null) return CodeVisionState.READY_EMPTY
         if (!LanguageServerWrapper.getInstance().isInitialized) return CodeVisionState.READY_EMPTY
-        if (isSnykCodeRunning(editor.project!!)) return CodeVisionState.READY_EMPTY
 
         return ReadAction.compute<CodeVisionState, RuntimeException> {
             val project = editor.project ?: return@compute CodeVisionState.READY_EMPTY
