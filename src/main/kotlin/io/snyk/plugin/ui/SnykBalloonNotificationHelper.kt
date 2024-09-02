@@ -46,10 +46,11 @@ object SnykBalloonNotificationHelper {
             NotificationType.ERROR, NotificationType.WARNING -> logger.warn(message)
             else -> logger.info(message)
         }
+        val msg = message.replace("\n","<br/>")
         val notification = if (actions.isEmpty()) {
-            Notification(groupAutoHide, title, message, type)
+            Notification(groupAutoHide, title, msg, type)
         } else {
-            notificationGroup.createNotification(title, message, type).apply {
+            notificationGroup.createNotification(title, msg, type).apply {
                 actions.forEach { this.addAction(it) }
             }
         }
