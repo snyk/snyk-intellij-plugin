@@ -205,7 +205,7 @@ class SnykSettingsDialog(
     }
 
     private fun initializeUiComponents() {
-        rootPanel.layout = UIGridLayoutManager(11, 1, JBUI.emptyInsets(), -1, -1)
+        rootPanel.layout = UIGridLayoutManager(10, 1, JBUI.emptyInsets(), -1, -1)
 
         /** General settings ------------------ */
 
@@ -574,9 +574,13 @@ class SnykSettingsDialog(
             newNewIssuesLabel.labelFor = netNewIssuesDropDown
             projectSettingsPanel.add(
                 newNewIssuesLabel,
-                baseGridConstraintsAnchorWest(
+                baseGridConstraints(
                     row = 5,
+                    column = 0,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                    colSpan = 1,
+                    indent = 0,
                 ),
             )
 
@@ -603,7 +607,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             userExperiencePanel,
             baseGridConstraints(
-                row = 7,
+                row = 6,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_HORIZONTAL,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
@@ -647,7 +651,7 @@ class SnykSettingsDialog(
         rootPanel.add(
             generalSettingsSpacer,
             panelGridConstraints(
-                row = 6,
+                row = 5,
             ),
         )
     }

@@ -17,6 +17,7 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -405,10 +406,12 @@ class LanguageServerWrapper(
             integrationVersion = pluginInfo.integrationVersion,
             authenticationMethod = authMethod,
             enableSnykOSSQuickFixCodeActions = "true",
-            enableDeltaFindings = (ps.netNewIssues == "Net new issues").toString(),
-
+            enableDeltaFindings = isDeltaFindingsEnabled(ps),
         )
     }
+
+    private fun isDeltaFindingsEnabled(ps: SnykApplicationSettingsStateService) =
+        (ps.netNewIssues == "Net new issues").toString()
 
     fun updateConfiguration() {
         if (!ensureLanguageServerInitialized()) return

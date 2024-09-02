@@ -21,7 +21,7 @@ import io.snyk.plugin.ui.SnykSettingsDialog
 import snyk.common.lsp.LanguageServerWrapper
 import javax.swing.JComponent
 
-class SnykProjectSettingsConfigurable(
+open class SnykProjectSettingsConfigurable(
     val project: Project,
 ) : SearchableConfigurable {
     private val settingsStateService
@@ -118,7 +118,7 @@ class SnykProjectSettingsConfigurable(
             }
 
             if (snykSettingsDialog.isNetNewIssuesSelected() != pluginSettings().netNewIssues) {
-                handleNetNewIssuesChanged()
+                settingsStateService.netNewIssues = snykSettingsDialog.isNetNewIssuesSelected()
             }
 
             LanguageServerWrapper.getInstance().updateConfiguration()
@@ -160,10 +160,6 @@ class SnykProjectSettingsConfigurable(
             downloadAction,
             noAction,
         )
-    }
-
-    private fun handleNetNewIssuesChanged() {
-        settingsStateService.netNewIssues = snykSettingsDialog.isNetNewIssuesSelected()
     }
 
     private fun isTokenModified(): Boolean = snykSettingsDialog.getToken() != settingsStateService.token
