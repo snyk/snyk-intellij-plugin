@@ -537,7 +537,7 @@ class SnykSettingsDialog(
                     "<html><br/> Snyk: <b>All issues vs Net new issues</b> <br/>" +
                         "Specifies whether to see only net new issues or all issues. " +
                         "Only applies to Code Security and Code Quality.<br/><br/>" +
-                        "Note: this is an experimental feature. Please reach out to <a href=\"mailto:support@snyk.io\">support@snyk.io</a> for more details:",
+                        "Note: this is an experimental feature. Please reach out to Snyk for more details:",
                 ).apply { font = FontUtil.minusOne(this.font) }
 
             projectSettingsPanel.add(
@@ -552,21 +552,39 @@ class SnykSettingsDialog(
                 ),
             )
 
-//            val newNewIssuesLabel = JLabel("Net new issues:")
-//            newNewIssuesLabel.labelFor = netNewIssuesDropDown
-//            projectSettingsPanel.add(
-//                newNewIssuesLabel,
-//                baseGridConstraintsAnchorWest(
-//                    row = 4,
-//                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
-//                ),
-//            )
+            val mailSnykSupportLabel =
+                HyperlinkLabel(
+                    "support@snyk.io",
+                ).apply { setHyperlinkTarget("mailto:support@snyk.io") }
+            mailSnykSupportLabel.font = FontUtil.minusOne(mailSnykSupportLabel.font)
+
+            projectSettingsPanel.add(
+                mailSnykSupportLabel,
+                baseGridConstraints(
+                    row = 4,
+                    column = 0,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                    colSpan = 2,
+                    indent = 0,
+                ),
+            )
+
+            val newNewIssuesLabel = JLabel("Net new issues:")
+            newNewIssuesLabel.labelFor = netNewIssuesDropDown
+            projectSettingsPanel.add(
+                newNewIssuesLabel,
+                baseGridConstraintsAnchorWest(
+                    row = 5,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                ),
+            )
 
             projectSettingsPanel.add(
                 netNewIssuesDropDown,
                 baseGridConstraints(
-                    row = 4,
-                    column = 0,
+                    row = 5,
+                    column = 1,
                     anchor = UIGridConstraints.ANCHOR_WEST,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                     colSpan = 2,
