@@ -119,7 +119,7 @@ class SnykSettingsDialog(
     private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
     private val cliBaseDownloadUrlTextField = JBTextField()
-    val baseBranchInfoLabel = JBLabel("Base branch: ")
+    private val baseBranchInfoLabel = JBLabel("Base branch: ")
 
     private val logger = Logger.getInstance(this::class.java)
 
@@ -182,8 +182,8 @@ class SnykSettingsDialog(
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
 
-            baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
-                .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
+            baseBranchInfoLabel.text = "<html>"+service<FolderConfigSettings>().getAll()
+                .values.joinToString("<br/>") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }+"</html>"
         }
     }
 
