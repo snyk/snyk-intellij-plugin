@@ -8,6 +8,7 @@
 - automatically propagate standard file path for CLI if empty on apply in settings
 - guard base branch setting against being empty
 - better error messaging when unexpected loop occurs during initialization
+- switch downloads to downloads.snyk.io
 
 ### Fixes
 - add name to code vision provider

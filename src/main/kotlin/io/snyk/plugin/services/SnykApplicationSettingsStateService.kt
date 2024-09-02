@@ -33,7 +33,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var currentLSProtocolVersion: Int? = 0
     var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
-    var cliBaseDownloadURL: String = "https://static.snyk.io"
+    var cliBaseDownloadURL: String = "https://downloads.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
     var cliReleaseChannel = "stable"
     var manageBinariesAutomatically: Boolean = true

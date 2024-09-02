@@ -618,8 +618,8 @@ class SnykSettingsDialog(
             gb.nextLine(),
         )
 
-        cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://static.snyk.io. " +
-            "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://static.snyk.io/fips"
+        cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://downloads.snyk.io. " +
+            "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://downloads.snyk.io/fips"
         val cliBaseDownloadPanel =
             panel {
                 row {
