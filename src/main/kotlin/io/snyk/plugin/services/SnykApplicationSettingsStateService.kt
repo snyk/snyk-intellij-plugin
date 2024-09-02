@@ -12,7 +12,6 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.isProjectSettingsAvailable
-import snyk.common.lsp.FolderConfig
 import java.io.File.separator
 import java.time.Instant
 import java.time.LocalDate
