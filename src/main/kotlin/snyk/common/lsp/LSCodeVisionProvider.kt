@@ -17,7 +17,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import icons.SnykIcons
-import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.CodeLens
 import org.eclipse.lsp4j.CodeLensParams
@@ -34,8 +33,8 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
     private val logger = logger<LSCodeVisionProvider>()
     override val defaultAnchor: CodeVisionAnchorKind = CodeVisionAnchorKind.Default
     override val id = "snyk.common.lsp.LSCodeVisionProvider"
-    override val name = "Snyk Language Server Code Vision Provider"
-    override val groupId: String = "Snyk"
+    override val name = "Snyk Security Language Server Code Vision Provider"
+    override val groupId: String = "Snyk Security"
     override val groupName: String = groupId
 
     override val relativeOrderings: List<CodeVisionRelativeOrdering>
