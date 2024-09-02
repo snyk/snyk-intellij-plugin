@@ -5,6 +5,7 @@ import com.intellij.codeInsight.codeVision.CodeVisionEntry
 import com.intellij.codeInsight.codeVision.CodeVisionProvider
 import com.intellij.codeInsight.codeVision.CodeVisionRelativeOrdering
 import com.intellij.codeInsight.codeVision.CodeVisionState
+import com.intellij.codeInsight.codeVision.settings.CodeVisionGroupSettingProvider
 import com.intellij.codeInsight.codeVision.ui.model.ClickableTextCodeVisionEntry
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.logger
@@ -16,7 +17,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import icons.SnykIcons
-import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.CodeLens
 import org.eclipse.lsp4j.CodeLensParams
@@ -29,11 +29,14 @@ import java.util.concurrent.TimeoutException
 private const val CODELENS_FETCH_TIMEOUT = 2L
 
 @Suppress("UnstableApiUsage")
-class LSCodeVisionProvider : CodeVisionProvider<Unit> {
+class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingProvider {
     private val logger = logger<LSCodeVisionProvider>()
     override val defaultAnchor: CodeVisionAnchorKind = CodeVisionAnchorKind.Default
     override val id = "snyk.common.lsp.LSCodeVisionProvider"
-    override val name = "Snyk Language Server Code Vision Provider"
+    override val name = "Snyk Security Language Server Code Vision Provider"
+    override val groupId: String = "Snyk Security"
+    override val groupName: String = groupId
+
     override val relativeOrderings: List<CodeVisionRelativeOrdering>
         get() = emptyList()
 
@@ -46,7 +49,6 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit> {
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
         if (editor.project == null) return CodeVisionState.READY_EMPTY
         if (!LanguageServerWrapper.getInstance().isInitialized) return CodeVisionState.READY_EMPTY
-        if (isSnykCodeRunning(editor.project!!)) return CodeVisionState.READY_EMPTY
 
         return ReadAction.compute<CodeVisionState, RuntimeException> {
             val project = editor.project ?: return@compute CodeVisionState.READY_EMPTY

@@ -12,7 +12,6 @@ import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.isProjectSettingsAvailable
-import snyk.common.lsp.FolderConfig
 import java.io.File.separator
 import java.time.Instant
 import java.time.LocalDate
@@ -33,7 +32,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var currentLSProtocolVersion: Int? = 0
     var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
-    var cliBaseDownloadURL: String = "https://static.snyk.io"
+    var cliBaseDownloadURL: String = "https://downloads.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
     var cliReleaseChannel = "stable"
     var manageBinariesAutomatically: Boolean = true

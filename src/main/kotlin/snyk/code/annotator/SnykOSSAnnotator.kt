@@ -8,7 +8,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.ProductType
 
-class SnykOSSAnnotatorLS : SnykAnnotator(product = ProductType.OSS) {
+class SnykOSSAnnotator : SnykAnnotator(product = ProductType.OSS) {
     init {
         Disposer.register(SnykPluginDisposable.getInstance(), this)
     }

@@ -41,10 +41,11 @@
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
-    <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider"/>
+    <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider" id="snyk.common.lsp.LSCodeVisionProvider"/>
+    <config.codeVisionGroupSettingProvider implementation="snyk.common.lsp.LSCodeVisionProvider" />
 
     <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
-    <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykOSSAnnotatorLS"/>
+    <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykOSSAnnotator"/>
   </extensions>
 
   <actions>

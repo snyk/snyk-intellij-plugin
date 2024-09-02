@@ -1,5 +1,21 @@
 # Snyk Security Changelog
 
+## [2.9.1]
+
+### Changed
+- save git folder config in settings
+- propagate Jetbrains determined runtime environment to language server
+- automatically propagate standard file path for CLI if empty on apply in settings
+- guard base branch setting against being empty
+- better error messaging when unexpected loop occurs during initialization
+- switch downloads to downloads.snyk.io
+
+### Fixes
+- add name to code vision provider
+- add flashes for auto-fixable Open Source Issues
+- show code vision for Open Source also, when Snyk Code is still analysing
+- clean-up old open source scan functionality
+
 ## [2.9.0]
 ### Changed
 - Updated the language server protocol version to 14 to support new communication model.

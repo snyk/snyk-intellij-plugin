@@ -76,7 +76,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val file = entry.key
 
                 val pair = updateTextTooltipAndIcon(file, productType, value, entry.value.first())
-                nodeIcon = pair.first
+                pair.first?.let { nodeIcon = pair.first }
                 text = pair.second
                 val cachedIssues =
                     getSnykCachedResultsForProduct(entry.key.project, productType)
@@ -295,7 +295,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 }
             }
 
-        val nodeIcon = firstIssue?.icon() ?: file.icon
+        val nodeIcon = firstIssue?.icon()
         return Pair(nodeIcon, text)
     }
 
