@@ -33,11 +33,12 @@ class GenerateAIFixHandler(private val project: Project) {
                         window.aiFixQuery = function(value) { ${aiFixQuery.inject("value")} };
 
                         const aiFixButton = document.getElementById('generate-ai-fix');
+                        const issueId = aiFixButton.getAttribute('issue-id');
+                        const folderPath = aiFixButton.getAttribute('folder-path');
+                        const filePath = aiFixButton.getAttribute('file-path');
+
                         aiFixButton.addEventListener('click', () => {
-                            const folderURI = "someFolderURI"; // These should be dynamically set
-                            const fileURI = "someFileURI";
-                            const issueID = "someIssueID";
-                            window.aiFixQuery(folderURI + ":" + fileURI + ":" + issueID);
+                            window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
                         });
                     })();
                     """

@@ -46,6 +46,7 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
+import snyk.common.lsp.commands.COMMAND_CODE_FIX_DIFFS
 import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.common.lsp.commands.COMMAND_GET_ACTIVE_USER
@@ -494,8 +495,20 @@ class LanguageServerWrapper(
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
-    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String) {
-        println("[[sendCodeFixDiffsCommand]]")
+    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): Boolean {
+        if (!ensureLanguageServerInitialized()) return false
+
+        try {
+            val param = ExecuteCommandParams()
+            param.command = COMMAND_CODE_FIX_DIFFS
+            param.arguments = listOf(folderURI, fileURI, issueID)
+            val result = languageServer.workspaceService.executeCommand(param).get(30, TimeUnit.SECONDS)
+            println(result)
+            return result as? Boolean ?: false
+        } catch (err: Exception) {
+            println("[[sendCodeFixDiffsCommand]]: $err")
+            return false
+        }
     }
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {
