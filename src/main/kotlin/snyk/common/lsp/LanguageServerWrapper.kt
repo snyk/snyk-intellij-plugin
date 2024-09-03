@@ -494,6 +494,10 @@ class LanguageServerWrapper(
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
+    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String) {
+        println("[[sendCodeFixDiffsCommand]]")
+    }
+
     private fun ensureLanguageServerProtocolVersion(project: Project) {
         val protocolVersion = initializeResult?.serverInfo?.version
         pluginSettings().currentLSProtocolVersion = protocolVersion?.toIntOrNull()

@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
+import GenerateAIFixHandler
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -59,6 +60,12 @@ class SuggestionDescriptionPanelFromLS(
                 loadHandlerGenerators += {
                     openFileLoadHandlerGenerator.generate(it)
                 }
+
+                val generateAIFixHandler = GenerateAIFixHandler(snykFile.project)
+                loadHandlerGenerators += {
+                    generateAIFixHandler.generateAIFixCommand(it)
+                }
+
             }
             val html = this.getCustomCssAndScript()
             val jbCefBrowserComponent =
@@ -154,19 +161,7 @@ class SuggestionDescriptionPanelFromLS(
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
         html = html.replace("\${headerEnd}", "")
-//        html = html.replace("\${ideScript}", ideScript)
         html = html.replace("\${ideScript}" ,"<script nonce=\${nonce}>$ideScript</script>")
-//        html =
-//            html.replace(
-//                "\${ideScript}",
-//                "<script nonce=\${nonce}>" +
-//                    "    // Ensure the document is fully loaded before executing script to manipulate DOM.\n" +
-//                    "    document.addEventListener('DOMContentLoaded', () => {\n" +
-//                    "        document.getElementById(\"ai-fix-wrapper\").classList.add(\"hidden\");\n" +
-//                    "        document.getElementById(\"no-ai-fix-wrapper\").classList.remove(\"hidden\");\n" +
-//                    "    })" +
-//                    "</script>",
-//            )
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
@@ -184,29 +179,26 @@ class SuggestionDescriptionPanelFromLS(
     private fun getCustomScript(): String {
         return """
             (function () {
-              function toggleElement(element, toggle) {
-                if (!element) return;
+                function toggleElement(element, toggle) {
+                    if (!element) return;
 
-                if (toggle === 'show') {
-                  element.classList.remove('hidden');
-                } else if (toggle === 'hide') {
-                  element.classList.add('hidden');
-                } else {
-                  console.error('Unexpected toggle value', toggle);
+                    if (toggle === 'show') {
+                        element.classList.remove('hidden');
+                    } else if (toggle === 'hide') {
+                        element.classList.add('hidden');
+                    } else {
+                        console.error('Unexpected toggle value', toggle);
+                    }
                 }
-              }
 
-              const aiFixWrapperElem = document.getElementById('ai-fix-wrapper');
-              const generateAiFix = document.getElementById('generate-ai-fix');
+                const generateAiFixBtn = document.getElementById('generate-ai-fix');
 
-              // Basic toggle functionality
-              generateAiFix?.addEventListener('click', () => {
-                if (aiFixWrapperElem.classList.contains('hidden')) {
-                  toggleElement(aiFixWrapperElem, 'show');
-                } else {
-                  toggleElement(aiFixWrapperElem, 'hide');
+                function generateAIFix() {
+                    toggleElement(generateAiFixBtn, 'hide');
+                    toggleElement(document.getElementById('fix-loading-indicator'), 'show');
                 }
-              });
+
+                generateAiFixBtn?.addEventListener('click', generateAIFix);
             })();
         """.trimIndent()
     }
