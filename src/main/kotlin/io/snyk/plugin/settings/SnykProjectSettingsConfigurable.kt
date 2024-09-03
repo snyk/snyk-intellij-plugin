@@ -21,7 +21,7 @@ import io.snyk.plugin.ui.SnykSettingsDialog
 import snyk.common.lsp.LanguageServerWrapper
 import javax.swing.JComponent
 
-open class SnykProjectSettingsConfigurable(
+class SnykProjectSettingsConfigurable(
     val project: Project,
 ) : SearchableConfigurable {
     private val settingsStateService
