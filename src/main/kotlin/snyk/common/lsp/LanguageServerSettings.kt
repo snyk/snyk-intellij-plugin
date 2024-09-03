@@ -3,6 +3,7 @@
 package snyk.common.lsp
 
 import com.google.gson.annotations.SerializedName
+import com.intellij.openapi.components.service
 import io.snyk.plugin.pluginSettings
 import org.apache.commons.lang3.SystemUtils
 import snyk.pluginInfo
@@ -42,6 +43,7 @@ data class LanguageServerSettings(
     @SerializedName("enableSnykOSSQuickFixCodeActions") val enableSnykOSSQuickFixCodeActions: String? = null,
     @SerializedName("requiredProtocolVersion") val requiredProtocolVersion: String =
         pluginSettings().requiredLsProtocolVersion.toString(),
+    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = service<FolderConfigSettings>().getAll().values.toList()
 )
 
 data class SeverityFilter(

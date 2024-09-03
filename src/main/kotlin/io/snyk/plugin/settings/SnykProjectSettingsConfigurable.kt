@@ -3,12 +3,14 @@ package io.snyk.plugin.settings
 import com.intellij.notification.Notification
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -18,6 +20,7 @@ import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
+import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.LanguageServerWrapper
 import javax.swing.JComponent
 
@@ -105,6 +108,14 @@ class SnykProjectSettingsConfigurable(
         if (isProjectSettingsAvailable(project)) {
             val snykProjectSettingsService = getSnykProjectSettingsService(project)
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
+            val fcs = service<FolderConfigSettings>()
+            project.getContentRootPaths().forEach {
+                val fc = fcs.getFolderConfig(it.toAbsolutePath().toString())
+                if (fc != null) {
+                    val newFC = fc.copy(additionalParameters = snykSettingsDialog.getAdditionalParameters().split(" "))
+                    fcs.addFolderConfig(newFC)
+                }
+            }
         }
 
         runBackgroundableTask("processing config changes", project, true) {

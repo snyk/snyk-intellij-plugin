@@ -140,7 +140,7 @@ class LanguageServerWrapper(
                 if (!disposed) {
                     try {
                         process.errorStream.bufferedReader().forEachLine { println(it) }
-                    } catch (ignored: RuntimeException) {
+                    } catch (ignored: Exception) {
                         // ignore
                     }
                 }
