@@ -617,7 +617,7 @@ data class OssIdentifiers(
 }
 
 data class FolderConfigsParam(
-    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>,
+    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>?,
 )
 
 data class FolderConfig(

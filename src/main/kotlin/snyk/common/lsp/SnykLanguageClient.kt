@@ -203,9 +203,10 @@ class SnykLanguageClient :
     }
 
     @JsonNotification(value = "$/snyk.folderConfigs")
-    fun folderConfig(folderConfigParam: FolderConfigsParam) {
+    fun folderConfig(folderConfigParam: FolderConfigsParam?) {
+        val folderConfigs = folderConfigParam?.folderConfigs ?: emptyList()
         runAsync {
-            service<FolderConfigSettings>().addAll(folderConfigParam.folderConfigs)
+            service<FolderConfigSettings>().addAll(folderConfigs)
         }
     }
 
