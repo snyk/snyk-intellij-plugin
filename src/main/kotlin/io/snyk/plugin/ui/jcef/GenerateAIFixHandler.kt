@@ -1,3 +1,5 @@
+package io.snyk.plugin.ui.jcef
+
 import com.google.gson.Gson
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
@@ -16,18 +18,13 @@ class GenerateAIFixHandler(private val project: Project) {
             val folderURI = params[0]
             val fileURI = params[1]
             val issueID = params[2]
+            JBCefJSQuery.Response("success")
 
-            println("Received folderURI: $folderURI, fileURI: $fileURI, issueID: $issueID")
-
-            val responseDiff: List<LanguageServerWrapper.Fix> = LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
-            println("Received responseDiff: $responseDiff")
-            responseDiff.forEach { fix ->
-                println("Fix: $fix")
-            }
-
+            val responseDiff: List<LanguageServerWrapper.Fix> =
+                LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
             val script = """
-                window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
-           """
+                    window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
+                """.trimIndent()
             jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
             JBCefJSQuery.Response("success")
         }

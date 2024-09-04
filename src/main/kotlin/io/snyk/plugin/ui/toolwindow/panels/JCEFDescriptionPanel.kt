@@ -1,6 +1,6 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
-import GenerateAIFixHandler
+import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -31,9 +31,9 @@ class SuggestionDescriptionPanelFromLS(
     snykFile: SnykFile,
     private val issue: ScanIssue,
 ) : IssueDescriptionPanelBase(
-        title = issue.title(),
-        severity = issue.getSeverityAsEnum(),
-    ) {
+    title = issue.title(),
+    severity = issue.getSeverityAsEnum(),
+) {
     val project = snykFile.project
     private val unexpectedErrorMessage =
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
@@ -161,7 +161,7 @@ class SuggestionDescriptionPanelFromLS(
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
         html = html.replace("\${headerEnd}", "")
-        html = html.replace("\${ideScript}" ,"<script nonce=\${nonce}>$ideScript</script>")
+        html = html.replace("\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
@@ -179,50 +179,119 @@ class SuggestionDescriptionPanelFromLS(
     private fun getCustomScript(): String {
         return """
             (function () {
-                function toggleElement(element, toggle) {
-                    if (!element) return;
+              function toggleElement(element, toggle) {
+                if (!element) return;
 
-                    if (toggle === 'show') {
-                        element.classList.remove('hidden');
-                    } else if (toggle === 'hide') {
-                        element.classList.add('hidden');
-                    } else {
-                        console.error('Unexpected toggle value', toggle);
+                if (toggle === "show") {
+                  element.classList.remove("hidden");
+                } else if (toggle === "hide") {
+                  element.classList.add("hidden");
+                } else {
+                  console.error("Unexpected toggle value", toggle);
+                }
+              }
+
+              let diffSelectedIndex = 0;
+
+              const generateAiFixBtn = document.getElementById("generate-ai-fix");
+              const loadingIndicator = document.getElementById("fix-loading-indicator");
+              const fixWrapperElem = document.getElementById("fix-wrapper");
+              const fixSectionElem = document.getElementById("fixes-section");
+
+              const diffSelectedIndexElem = document.getElementById("diff-counter");
+
+              const diffTopElem = document.getElementById("diff-top");
+              const diffElem = document.getElementById("diff");
+              const noDiffsElem = document.getElementById("info-no-diffs");
+
+              const diffNumElem = document.getElementById("diff-number");
+              const diffNum2Elem = document.getElementById("diff-number2");
+
+              function generateAIFix() {
+                toggleElement(generateAiFixBtn, "hide");
+                toggleElement(loadingIndicator, "show");
+              }
+
+              function generateDiffHtml(patch) {
+                const codeLines = patch.split("\n");
+
+                // the first two lines are the file names
+                codeLines.shift();
+                codeLines.shift();
+
+                const diffHtml = document.createElement("div");
+                let blockDiv = null;
+
+                for (const line of codeLines) {
+                  if (line.startsWith("@@ ")) {
+                    blockDiv = document.createElement("div");
+                    blockDiv.className = "example";
+
+                    if (blockDiv) {
+                      diffHtml.appendChild(blockDiv);
                     }
-                }
+                  } else {
+                    const lineDiv = document.createElement("div");
+                    lineDiv.className = "example-line";
 
-                const generateAiFixBtn = document.getElementById('generate-ai-fix');
-                const loadingIndicator = document.getElementById('fix-loading-indicator');
-                const fixesSection = document.getElementById('fixes-section');
-                const diffContainer = document.getElementById('diff');
-
-                function generateAIFix() {
-                    toggleElement(generateAiFixBtn, 'hide');
-                    toggleElement(document.getElementById('fix-loading-indicator'), 'show');
-                }
-
-                function showAIFixes(fixes) {
-                    toggleElement(loadingIndicator, 'hide');
-                    toggleElement(fixesSection, 'show');
-
-                    if (fixes.length > 0) {
-                        diffContainer.innerHTML = fixes.map(fix => `
-                            <div>
-                                <h3>Fix ID: ${'$'}{fix.fixId}</h3>
-                                <pre>${'$'}{fix.unifiedDiffsPerFile['/Users/cata/git/playground/project-with-vulns/lib/insecurity.ts']}</pre>
-                            </div>
-                        `).join('');
-                    } else {
-                        diffContainer.innerHTML = '<p>No fixes available.</p>';
+                    if (line.startsWith("+")) {
+                      lineDiv.classList.add("added");
+                    } else if (line.startsWith("-")) {
+                      lineDiv.classList.add("removed");
                     }
+
+                    const lineCode = document.createElement("code");
+                    // if line is empty, we need to fallback to ' '
+                    // to make sure it displays in the diff
+                    lineCode.innerText = line.slice(1, line.length) || " ";
+
+                    lineDiv.appendChild(lineCode);
+                    blockDiv?.appendChild(lineDiv);
+                  }
                 }
 
-                generateAiFixBtn?.addEventListener('click', generateAIFix);
+                return diffHtml;
+              }
 
-                // This function will be called once the response is received from the LS
-                window.receiveAIFixResponse = function(fixes) {
-                    showAIFixes(fixes);
-                };
+              function getFilePathFromFix(fix) {
+                return Object.keys(fix.unifiedDiffsPerFile)[0];
+              }
+
+              function showCurrentDiff(fixes) {
+                toggleElement(diffTopElem, "show");
+                toggleElement(diffElem, "show");
+                toggleElement(noDiffsElem, "hide");
+
+                diffNumElem.innerText = fixes.length.toString();
+                diffNum2Elem.innerText = fixes.length.toString();
+
+                diffSelectedIndexElem.innerText = (diffSelectedIndex + 1).toString();
+
+                const diffSuggestion = fixes[diffSelectedIndex];
+                const filePath = getFilePathFromFix(diffSuggestion);
+                const patch = diffSuggestion.unifiedDiffsPerFile[filePath];
+
+                // clear all elements
+                while (diffElem.firstChild) {
+                  diffElem.removeChild(diffElem.firstChild);
+                }
+                diffElem.appendChild(generateDiffHtml(patch));
+              }
+
+              function showAIFixes(fixes) {
+                toggleElement(fixSectionElem, "show");
+                toggleElement(loadingIndicator, "hide");
+                toggleElement(fixWrapperElem, "hide");
+
+                showCurrentDiff(fixes);
+              }
+
+              generateAiFixBtn?.addEventListener("click", generateAIFix);
+
+              // This function will be called once the response is received from the LS
+              window.receiveAIFixResponse = function (fixes) {
+                showAIFixes(fixes);
+              };
             })();
         """.trimIndent()
     }

@@ -497,9 +497,13 @@ class LanguageServerWrapper(
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
+    data class Fix(
+        @SerializedName("fixId") val fixId: String,
+        @SerializedName("unifiedDiffsPerFile") val unifiedDiffsPerFile: Map<String, String>
+    )
+
     @Suppress("UNCHECKED_CAST")
-    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix>  {
-        println(">> sendCodeFixDiffsCommand: $folderURI, $fileURI, $issueID")
+    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
         if (!ensureLanguageServerInitialized()) return emptyList()
 
         try {
@@ -507,11 +511,17 @@ class LanguageServerWrapper(
             param.command = COMMAND_CODE_FIX_DIFFS
             param.arguments = listOf(folderURI, fileURI, issueID)
             val result = languageServer.workspaceService.executeCommand(param).get(120, TimeUnit.SECONDS) as List<*>
-            val diffList : MutableList<Fix> = mutableListOf()
+            val diffList: MutableList<Fix> = mutableListOf()
+
             result.forEach {
                 val entry = it as Map<String, *>
-                val fix = Fix(entry["fixId"]!! as String, entry["unifiedDiffsPerFile"] as Map<String, String>)
-                diffList.add(fix)
+                val fixId = entry["fixId"] as? String
+                val unifiedDiffsPerFile = entry["unifiedDiffsPerFile"] as? Map<String, String>
+
+                if (fixId != null && unifiedDiffsPerFile != null) {
+                    val fix = Fix(fixId, unifiedDiffsPerFile)
+                    diffList.add(fix)
+                }
             }
             return diffList
         } catch (err: Exception) {
@@ -520,23 +530,6 @@ class LanguageServerWrapper(
         }
     }
 
-    data class Fix(
-        @SerializedName("fixId") val fixId: String,
-        @SerializedName("unifiedDiffsPerFile") val unifiedDiffsPerFile: Map<String, String>
-    )
-
-    private fun parseResponse(response: String): List<Fix> {
-        val gson = Gson()
-        val processedResponse = preprocessResponse(response)
-        val type = object : TypeToken<List<Fix>>() {}.type
-        return gson.fromJson(processedResponse, type)
-    }
-
-    private fun preprocessResponse(response: String): String {
-        val processed = response.replace("=", ":")
-        println("Processed response: $processed")
-        return processed
-    }
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {
         val protocolVersion = initializeResult?.serverInfo?.version
