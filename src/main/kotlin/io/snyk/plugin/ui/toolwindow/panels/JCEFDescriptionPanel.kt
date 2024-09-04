@@ -262,8 +262,30 @@ class SuggestionDescriptionPanelFromLS(
                 toggleElement(fixLoadingIndicatorElem, "show");
               }
 
+              function applyFix() {
+                console.log('Applying fix', fixes);
+                if (!fixes.length) return;
+
+                const currentFix = fixes[diffSelectedIndex];
+                const filePath = getFilePathFromFix(currentFix);
+                const patch = currentFix.unifiedDiffsPerFile[filePath];
+
+                // Following VSCode logic, the steps are:
+                // 1. Read the current file content.
+                // 2. Apply a patch to that content.
+                // 3. Edit the file in the workspace.
+                // 4. Highlight the added code.
+                // 5. Setup close or save events.
+                 console.log('Applying fix', patch);
+              }
+
               // DOM element references
               const generateAiFixBtn = document.getElementById("generate-ai-fix");
+              const applyFixBtn = document.getElementById('apply-fix')
+              const retryGenerateFixBtn = document.getElementById('retry-generate-fix')
+
+              console.log('applyFixBtn', applyFixBtn)
+
               const fixLoadingIndicatorElem = document.getElementById("fix-loading-indicator");
               const fixWrapperElem = document.getElementById("fix-wrapper");
               const fixSectionElem = document.getElementById("fixes-section");
@@ -277,12 +299,15 @@ class SuggestionDescriptionPanelFromLS(
               const diffNum2Elem = document.getElementById("diff-number2");
 
               let diffSelectedIndex = 0;
+              let fixes = [];
 
               // Event listener for Generate AI fix button
               generateAiFixBtn?.addEventListener("click", generateAIFix);
+              applyFixBtn?.addEventListener('click', applyFix);
 
               // This function will be called once the response is received from the Language Server
-              window.receiveAIFixResponse = function (fixes) {
+              window.receiveAIFixResponse = function (fixesResponse) {
+                fixes = [...fixesResponse];
                 showAIFixes(fixes);
               };
             })();
