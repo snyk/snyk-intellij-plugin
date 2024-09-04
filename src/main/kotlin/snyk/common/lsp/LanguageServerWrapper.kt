@@ -521,6 +521,11 @@ class LanguageServerWrapper(
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
+    data class Fix(
+        @SerializedName("fixId") val fixId: String,
+        @SerializedName("unifiedDiffsPerFile") val unifiedDiffsPerFile: Map<String, String>
+    )
+
     @Suppress("UNCHECKED_CAST")
     fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
         if (!ensureLanguageServerInitialized()) return emptyList()

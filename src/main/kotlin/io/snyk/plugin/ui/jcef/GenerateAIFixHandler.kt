@@ -21,6 +21,7 @@ class GenerateAIFixHandler() {
             val folderURI = params[0]
             val fileURI = params[1]
             val issueID = params[2]
+            JBCefJSQuery.Response("success")
 
 
             runAsync {
