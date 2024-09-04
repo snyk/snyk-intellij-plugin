@@ -137,7 +137,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     ) {
         if (disposed) return
         if (!LanguageServerWrapper.getInstance().isInitialized) return
-        annotationResult.forEach { annotation ->
+        annotationResult.sortedBy { it.annotationSeverity }.forEach { annotation ->
             if (!annotation.range.isEmpty) {
                 val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
                     .range(annotation.range)
