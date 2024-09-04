@@ -4,6 +4,10 @@ import com.google.gson.Gson
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
@@ -13,20 +17,32 @@ class GenerateAIFixHandler(private val project: Project) {
 
     fun generateAIFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
+
         aiFixQuery.addHandler { value ->
             val params = value.split(":")
             val folderURI = params[0]
             val fileURI = params[1]
             val issueID = params[2]
-            JBCefJSQuery.Response("success")
 
-            val responseDiff: List<LanguageServerWrapper.Fix> =
-                LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
-            val script = """
-                    window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
-                """.trimIndent()
-            jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
-            JBCefJSQuery.Response("success")
+            // Avoids blocking the UI thread
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val responseDiff: List<LanguageServerWrapper.Fix> =
+                        LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
+
+                    val script = """
+                        window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
+                    """.trimIndent()
+
+                    withContext(Dispatchers.Main) {
+                        jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+                        JBCefJSQuery.Response("success")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            return@addHandler JBCefJSQuery.Response("success")
         }
 
         return object : CefLoadHandlerAdapter() {
