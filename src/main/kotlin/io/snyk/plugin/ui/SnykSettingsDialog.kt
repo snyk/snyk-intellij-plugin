@@ -416,7 +416,7 @@ class SnykSettingsDialog(
             )
         }
 
-        val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(1, 2, JBUI.emptyInsets(), 30, -1))
+        val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(2, 2, JBUI.emptyInsets(), 30, -1))
 
         rootPanel.add(
             productAndSeveritiesPanel,
@@ -467,10 +467,65 @@ class SnykSettingsDialog(
             ),
         )
 
+        val netNewIssuesPanel = JPanel(UIGridLayoutManager(2, 4, JBUI.emptyInsets(), -1, -1))
+        //netNewIssuesPanel.border = IdeBorderFactory.createTitledBorder("All issues Vs Net new issues")
+
+        productAndSeveritiesPanel.add(
+            netNewIssuesPanel,
+            baseGridConstraints(
+                row = 1,
+                column = 0,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                indent = 0,
+            ),
+        )
+
+        val newNewIssuesLabel = JLabel("All Issues Vs Net New Issues:")
+        newNewIssuesLabel.labelFor = netNewIssuesDropDown
+        netNewIssuesPanel.add(
+            newNewIssuesLabel,
+            baseGridConstraintsAnchorWest(
+                row = 0,
+                indent = 0,
+            ),
+        )
+
+        netNewIssuesPanel.add(
+            netNewIssuesDropDown,
+            baseGridConstraints(
+                row = 0,
+                column = 1,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_HORIZONTAL,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                indent = 0,
+            ),
+        )
+
+        val netNewIssuesText =
+            JLabel(
+                "Specifies whether to see only net new issues or all issues. " +
+                    "Only applies to Code Security and Code Quality."
+            ).apply { font = FontUtil.minusOne(this.font) }
+
+        netNewIssuesPanel.add(
+            netNewIssuesText,
+            baseGridConstraints(
+                row = 1,
+                column = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                colSpan = 2,
+                indent = 0,
+            ),
+        )
+
         /** Project settings ------------------ */
 
         if (isProjectSettingsAvailable(project)) {
-            val projectSettingsPanel = JPanel(UIGridLayoutManager(7, 3, JBUI.emptyInsets(), -1, -1))
+            val projectSettingsPanel = JPanel(UIGridLayoutManager(3, 3, JBUI.emptyInsets(), -1, -1))
             projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
 
             rootPanel.add(
@@ -527,51 +582,6 @@ class SnykSettingsDialog(
                     fill = UIGridConstraints.FILL_VERTICAL,
                     hSizePolicy = 1,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
-                    colSpan = 2,
-                    indent = 0,
-                ),
-            )
-
-            val netNewIssuesText =
-                JLabel(
-                    "<html><br/> Snyk: <b>All issues vs Net new issues</b> <br/>" +
-                        "Specifies whether to see only net new issues or all issues. " +
-                        "Only applies to Code Security and Code Quality.<br/><br/>"
-                ).apply { font = FontUtil.minusOne(this.font) }
-
-            projectSettingsPanel.add(
-                netNewIssuesText,
-                baseGridConstraints(
-                    row = 3,
-                    column = 0,
-                    anchor = UIGridConstraints.ANCHOR_WEST,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
-                    colSpan = 2,
-                    indent = 0,
-                ),
-            )
-
-            val newNewIssuesLabel = JLabel("Net new issues:")
-            newNewIssuesLabel.labelFor = netNewIssuesDropDown
-            projectSettingsPanel.add(
-                newNewIssuesLabel,
-                baseGridConstraints(
-                    row = 5,
-                    column = 0,
-                    anchor = UIGridConstraints.ANCHOR_WEST,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
-                    colSpan = 1,
-                    indent = 0,
-                ),
-            )
-
-            projectSettingsPanel.add(
-                netNewIssuesDropDown,
-                baseGridConstraints(
-                    row = 5,
-                    column = 1,
-                    anchor = UIGridConstraints.ANCHOR_WEST,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                     colSpan = 2,
                     indent = 0,
                 ),
