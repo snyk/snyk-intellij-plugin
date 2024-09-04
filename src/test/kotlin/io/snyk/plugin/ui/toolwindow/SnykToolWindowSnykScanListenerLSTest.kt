@@ -164,7 +164,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1, 1)
+        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
         TestCase.assertEquals(3, rootTreeNode.childCount)
     }
 
@@ -192,7 +192,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1, 1)
+        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
         TestCase.assertEquals(5, rootTreeNode.childCount)
         TestCase.assertEquals(rootTreeNode.children().toList()[0].toString(), " Open Source")
         TestCase.assertEquals(rootTreeNode.children().toList()[1].toString(), " Code Security")
@@ -232,7 +232,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(true), 1, 1)
+        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(true), 1)
         TestCase.assertEquals(6, rootTreeNode.childCount)
     }
 
@@ -261,7 +261,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(false), 1, 1)
+        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(false), 1)
         TestCase.assertEquals(6, rootTreeNode.childCount)
     }
 }

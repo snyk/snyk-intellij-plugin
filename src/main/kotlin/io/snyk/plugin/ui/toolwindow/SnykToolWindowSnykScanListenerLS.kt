@@ -167,6 +167,7 @@ class SnykToolWindowSnykScanListenerLS(
             snykResults = snykResults,
             rootNode = this.rootOssIssuesTreeNode,
             ossResultsCount = snykResults.values.flatten().distinct().size,
+            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
         )
     }
 
@@ -204,7 +205,6 @@ class SnykToolWindowSnykScanListenerLS(
                 addInfoTreeNodes(
                     rootNode = rootNode,
                     issues = snykResults.values.flatten().distinct(),
-                    securityIssuesCount = securityIssuesCount,
                     fixableIssuesCount = fixableIssuesCount,
                 )
 
@@ -259,30 +259,20 @@ class SnykToolWindowSnykScanListenerLS(
     fun addInfoTreeNodes(
         rootNode: DefaultMutableTreeNode,
         issues: List<ScanIssue>,
-        securityIssuesCount: Int? = null,
         fixableIssuesCount: Int? = null,
     ) {
         if (disposed) return
 
-        // only add these info tree nodes to Snyk Code security vulnerabilities for now
-        if (securityIssuesCount == null) {
-            return
-        }
 
         val settings = pluginSettings()
-        // only add these when we enable the consistent ignores flow for now
-        if (!settings.isGlobalIgnoresFeatureEnabled) {
-            return
-        }
-
         var text = "✅ Congrats! No vulnerabilities found!"
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         if (issuesCount != 0) {
-            if (issuesCount == 1) {
-                text = "$issuesCount vulnerability found by Snyk"
+            text = if (issuesCount == 1) {
+                "$issuesCount vulnerability found by Snyk"
             } else {
-                text = "✋ $issuesCount vulnerabilities found by Snyk"
+                "✋ $issuesCount vulnerabilities found by Snyk"
             }
             text += ", $ignoredIssuesCount ignored"
         }
@@ -297,13 +287,13 @@ class SnykToolWindowSnykScanListenerLS(
             if (fixableIssuesCount > 0) {
                 rootNode.add(
                     InfoTreeNode(
-                        "⚡ $fixableIssuesCount vulnerabilities can be fixed by Snyk DeepCode AI",
+                        "⚡ $fixableIssuesCount vulnerabilities can be fixed automatically",
                         project,
                     ),
                 )
             } else {
                 rootNode.add(
-                    InfoTreeNode("There are no vulnerabilities fixable by Snyk DeepCode AI", project),
+                    InfoTreeNode("There are no vulnerabilities automatically fixable", project),
                 )
             }
         }
