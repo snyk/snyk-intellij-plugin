@@ -7,6 +7,7 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.snyk.plugin.getSnykCachedResultsForProduct
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeoutException
 private const val CODEACTION_TIMEOUT = 5000L
 
 abstract class SnykAnnotator(private val product: ProductType) :
-    ExternalAnnotator<Pair<PsiFile, List<ScanIssue>>, List<SnykAnnotation>>(), Disposable {
+    ExternalAnnotator<Pair<PsiFile, List<ScanIssue>>, List<SnykAnnotation>>(), Disposable, DumbAware {
     val logger = logger<SnykAnnotator>()
     protected var disposed = false
         get() {
