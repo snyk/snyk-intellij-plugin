@@ -17,7 +17,7 @@ data class LanguageServerSettings(
     @SerializedName("additionalParams") val additionalParams: String? = null,
     @SerializedName("additionalEnv") val additionalEnv: String? = null,
     @SerializedName("path") val path: String? = null,
-    @SerializedName("sendErrorReports") val sendErrorReports: String? = "false",
+    @SerializedName("sendErrorReports") val sendErrorReports: String? = "true",
     @SerializedName("organization") val organization: String? = null,
     @SerializedName("enableTelemetry") val enableTelemetry: String? = "false",
     @SerializedName("manageBinariesAutomatically") val manageBinariesAutomatically: String? = "false",

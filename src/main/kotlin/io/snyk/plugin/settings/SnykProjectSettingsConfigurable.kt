@@ -42,8 +42,6 @@ class SnykProjectSettingsConfigurable(
     override fun isModified(): Boolean =
         isCoreParamsModified() ||
             isIgnoreUnknownCAModified() ||
-            isSendUsageAnalyticsModified() ||
-            isCrashReportingModified() ||
             snykSettingsDialog.isScanTypeChanged() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
             snykSettingsDialog.isIssueOptionChanged() ||
@@ -91,9 +89,6 @@ class SnykProjectSettingsConfigurable(
         settingsStateService.useTokenAuthentication = snykSettingsDialog.getUseTokenAuthentication()
         settingsStateService.organization = snykSettingsDialog.getOrganization()
         settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
-
-        settingsStateService.usageAnalyticsEnabled = snykSettingsDialog.isUsageAnalyticsEnabled()
-        settingsStateService.crashReportingEnabled = snykSettingsDialog.isCrashReportingEnabled()
 
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
         settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
@@ -179,12 +174,6 @@ class SnykProjectSettingsConfigurable(
 
     private fun isIgnoreUnknownCAModified(): Boolean =
         snykSettingsDialog.isIgnoreUnknownCA() != settingsStateService.ignoreUnknownCA
-
-    private fun isSendUsageAnalyticsModified(): Boolean =
-        snykSettingsDialog.isUsageAnalyticsEnabled() != settingsStateService.usageAnalyticsEnabled
-
-    private fun isCrashReportingModified(): Boolean =
-        snykSettingsDialog.isCrashReportingEnabled() != settingsStateService.crashReportingEnabled
 
     private fun isAdditionalParametersModified(): Boolean =
         isProjectSettingsAvailable(project) &&
