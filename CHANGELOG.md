@@ -9,6 +9,7 @@
 - guard base branch setting against being empty
 - better error messaging when unexpected loop occurs during initialization
 - switch downloads to downloads.snyk.io
+- allow annotations during IntelliJ indexing
 
 ### Fixes
 - add name to code vision provider
