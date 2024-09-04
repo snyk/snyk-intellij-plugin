@@ -109,15 +109,30 @@ a,
   display: none;
 }
 
+.example { // AI fix suggestion
+  background-color: var(--container-background-color);
+}
+
+.sn-ai-fixes {
+  padding-top: 20px;
+}
+
 .sn-fix-wrapper {
   background-color: var(--container-background-color);  // same variable used in snyk_oss_suggestion.scss
 }
 
-button.generate-ai-fix {
+button.generate-ai-fix, button.sn-apply-fix {
   background-color: var(--generated-ai-fix-button-background-color);
   color: white;
 }
 
-button.generate-ai-fix:hover {
+button.generate-ai-fix:hover, button.sn-apply-fix:hover {
   opacity: 0.9; /* Slightly reduces opacity on hover */
+}
+
+button.sn-apply-fix {
+  border-radius: 3px;
+  border: 1px solid var(--dark-button-border-default, #4C708C); // TODO: define the variable in the ThemeBasedStylingGenerator class to be theme-based
+  background: var(--dark-button-default, #365880); // TODO: define the variable in the ThemeBasedStylingGenerator class to be theme-based
+  padding: 4px 12px;
 }
