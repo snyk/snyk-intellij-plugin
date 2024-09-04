@@ -152,7 +152,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
                 if (!annotation.range.isEmpty) {
                     val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
                         .range(annotation.range)
-                        .textAttributes(getTextAttributeKeyBySeverity(annotation.issue.getSeverityAsEnum())) // TODO add setting
+                        .textAttributes(getTextAttributeKeyBySeverity(annotation.issue.getSeverityAsEnum()))
                         .withFix(annotation.intention)
                     if (annotation.renderGutterIcon) {
                         annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
