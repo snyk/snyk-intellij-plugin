@@ -1,4 +1,4 @@
-package snyk.code.annotator
+package snyk.common.annotator
 
 import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.openapi.command.WriteCommandAction
@@ -20,14 +20,13 @@ import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
 import javax.swing.Icon
 
-private const val TIMEOUT = 120L
-
 class CodeActionIntention(
     private val issue: ScanIssue,
     private val codeAction: CodeAction,
     private val product: ProductType,
 ) :  SnykIntentionActionBase() {
     private var changes: Map<String, List<TextEdit>>? = null
+    private val timeout = 120L
 
     override fun getText(): String = codeAction.title
 
@@ -39,7 +38,7 @@ class CodeActionIntention(
                 if (codeAction.command == null && codeAction.edit == null) {
                     resolvedCodeAction =
                         languageServer.textDocumentService
-                            .resolveCodeAction(codeAction).get(TIMEOUT, TimeUnit.SECONDS)
+                            .resolveCodeAction(codeAction).get(timeout, TimeUnit.SECONDS)
 
                     val edit = resolvedCodeAction.edit
                     if (edit == null || edit.changes == null) return
@@ -49,7 +48,7 @@ class CodeActionIntention(
                     val executeCommandParams =
                         ExecuteCommandParams(codeActionCommand.command, codeActionCommand.arguments)
                     languageServer.workspaceService
-                        .executeCommand(executeCommandParams).get(TIMEOUT, TimeUnit.SECONDS)
+                        .executeCommand(executeCommandParams).get(timeout, TimeUnit.SECONDS)
                 }
             }
 

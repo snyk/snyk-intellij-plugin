@@ -21,7 +21,7 @@ import org.junit.Test
 import snyk.UIComponentFinder.getJBCEFBrowser
 import snyk.UIComponentFinder.getJLabelByText
 import snyk.UIComponentFinder.getJPanelByName
-import snyk.code.annotator.SnykCodeAnnotator
+import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.ProductType
 import snyk.common.lsp.CommitChangeLine
 import snyk.common.lsp.DataFlow

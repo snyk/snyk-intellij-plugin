@@ -19,7 +19,7 @@ import org.junit.Test
 import snyk.UIComponentFinder.getActionLinkByText
 import snyk.UIComponentFinder.getJLabelByText
 import snyk.UIComponentFinder.getJPanelByName
-import snyk.code.annotator.SnykCodeAnnotator
+import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.ProductType
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue

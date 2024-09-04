@@ -1,4 +1,4 @@
-package snyk.code.annotator
+package snyk.common.annotator
 
 import io.snyk.plugin.Severity
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel

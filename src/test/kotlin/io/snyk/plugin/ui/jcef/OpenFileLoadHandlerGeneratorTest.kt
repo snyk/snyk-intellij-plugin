@@ -9,7 +9,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.unmockkAll
 import io.snyk.plugin.resetSettings
 import org.junit.Test
-import snyk.code.annotator.SnykCodeAnnotator
+import snyk.common.annotator.SnykCodeAnnotator
 import java.nio.file.Paths
 import java.util.function.BooleanSupplier
 
