@@ -209,23 +209,32 @@ class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIcon
     }
 
     override fun getIcon(): Icon {
-        return SnykIcons.TOOL_WINDOW
+        return SnykIcons.getSeverityIcon(annotation.issue.getSeverityAsEnum())
     }
 
     override fun getClickAction(): AnAction? {
         if (annotation.intention !is ShowDetailsIntentionAction) return null
-        return object : AnAction() {
-            override fun actionPerformed(e: AnActionEvent) {
-                invokeLater {
-                    val virtualFile = annotation.intention.issue.virtualFile ?: return@invokeLater
-                    val project = guessProjectForFile(virtualFile) ?: return@invokeLater
-                    val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@invokeLater
+        return getShowDetailsNavigationAction(annotation.intention)
+    }
 
-                    annotation.intention.selectNodeAndDisplayDescription(toolWindowPanel)
-                }
+    private fun getShowDetailsNavigationAction(intention: ShowDetailsIntentionAction) = object : AnAction("Show details for "+annotation.annotationMessage) {
+        override fun actionPerformed(e: AnActionEvent) {
+            invokeLater {
+                val virtualFile = intention.issue.virtualFile ?: return@invokeLater
+                val project = guessProjectForFile(virtualFile) ?: return@invokeLater
+                val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@invokeLater
 
+                intention.selectNodeAndDisplayDescription(toolWindowPanel)
             }
         }
+    }
+
+    override fun getTooltipText(): String {
+        return annotation.annotationMessage
+    }
+
+    override fun getAccessibleName(): String {
+        return annotation.annotationMessage
     }
 
     override fun isNavigateAction(): Boolean {
