@@ -1,3 +1,4 @@
+import com.google.gson.Gson
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
@@ -18,7 +19,16 @@ class GenerateAIFixHandler(private val project: Project) {
 
             println("Received folderURI: $folderURI, fileURI: $fileURI, issueID: $issueID")
 
-            LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
+            val responseDiff: List<LanguageServerWrapper.Fix> = LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
+            println("Received responseDiff: $responseDiff")
+            responseDiff.forEach { fix ->
+                println("Fix: $fix")
+            }
+
+            val script = """
+                window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
+           """
+            jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
             JBCefJSQuery.Response("success")
         }
 
@@ -38,6 +48,7 @@ class GenerateAIFixHandler(private val project: Project) {
                         const filePath = aiFixButton.getAttribute('file-path');
 
                         aiFixButton.addEventListener('click', () => {
+                            console.log('Clicked AI Fix button. Path: ' + folderPath + ':' + filePath + ':' + issueId)
                             window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
                         });
                     })();

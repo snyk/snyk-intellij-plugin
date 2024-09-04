@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -495,20 +496,44 @@ class LanguageServerWrapper(
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
-    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): Boolean {
-        if (!ensureLanguageServerInitialized()) return false
+    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix>  {
+        println(">> sendCodeFixDiffsCommand: $folderURI, $fileURI, $issueID")
+        if (!ensureLanguageServerInitialized()) return emptyList()
 
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_CODE_FIX_DIFFS
             param.arguments = listOf(folderURI, fileURI, issueID)
-            val result = languageServer.workspaceService.executeCommand(param).get(30, TimeUnit.SECONDS)
-            println(result)
-            return result as? Boolean ?: false
+            val result = languageServer.workspaceService.executeCommand(param).get(120, TimeUnit.SECONDS) as Map<*, *>
+//            result["unifiedDiffsPerFile"]
+            val diff = result["unifiedDiffsPerFile"]
+            println(diff)
+            // and parse to an JSON object
+//            println(result)
+//            return parseResponse(result.toString())
+            return result as List<Fix>
         } catch (err: Exception) {
-            println("[[sendCodeFixDiffsCommand]]: $err")
-            return false
+            logger.warn("Error in sendCodeFixDiffsCommand", err)
+            return emptyList()
         }
+    }
+
+    data class Fix(
+        val fixId: String,
+        val unifiedDiffsPerFile: Map<String, String>
+    )
+
+    private fun parseResponse(response: String): List<Fix> {
+        val gson = Gson()
+        val processedResponse = preprocessResponse(response)
+        val type = object : TypeToken<List<Fix>>() {}.type
+        return gson.fromJson(processedResponse, type)
+    }
+
+    private fun preprocessResponse(response: String): String {
+        val processed = response.replace("=", ":")
+        println("Processed response: $processed")
+        return processed
     }
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {

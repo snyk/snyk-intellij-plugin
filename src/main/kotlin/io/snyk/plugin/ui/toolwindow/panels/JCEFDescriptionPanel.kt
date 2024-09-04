@@ -192,13 +192,37 @@ class SuggestionDescriptionPanelFromLS(
                 }
 
                 const generateAiFixBtn = document.getElementById('generate-ai-fix');
+                const loadingIndicator = document.getElementById('fix-loading-indicator');
+                const fixesSection = document.getElementById('fixes-section');
+                const diffContainer = document.getElementById('diff');
 
                 function generateAIFix() {
                     toggleElement(generateAiFixBtn, 'hide');
                     toggleElement(document.getElementById('fix-loading-indicator'), 'show');
                 }
 
+                function showAIFixes(fixes) {
+                    toggleElement(loadingIndicator, 'hide');
+                    toggleElement(fixesSection, 'show');
+
+                    if (fixes.length > 0) {
+                        diffContainer.innerHTML = fixes.map(fix => `
+                            <div>
+                                <h3>Fix ID: ${'$'}{fix.fixId}</h3>
+                                <pre>${'$'}{fix.unifiedDiffsPerFile['/Users/cata/git/playground/project-with-vulns/lib/insecurity.ts']}</pre>
+                            </div>
+                        `).join('');
+                    } else {
+                        diffContainer.innerHTML = '<p>No fixes available.</p>';
+                    }
+                }
+
                 generateAiFixBtn?.addEventListener('click', generateAIFix);
+
+                // This function will be called once the response is received from the LS
+                window.receiveAIFixResponse = function(fixes) {
+                    showAIFixes(fixes);
+                };
             })();
         """.trimIndent()
     }
