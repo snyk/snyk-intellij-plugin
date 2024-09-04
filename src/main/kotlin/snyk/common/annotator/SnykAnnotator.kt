@@ -25,6 +25,7 @@ import org.eclipse.lsp4j.CodeActionContext
 import org.eclipse.lsp4j.CodeActionParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentIdentifier
+import org.jetbrains.concurrency.runAsync
 import snyk.common.AnnotatorCommon
 import snyk.common.ProductType
 import snyk.common.annotator.SnykAnnotationAttributeKey.critical
@@ -163,7 +164,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     }
 
     private fun getTextAttributeKeyBySeverity(severity: Severity): TextAttributesKey {
-        return when(severity) {
+        return when (severity) {
             Severity.UNKNOWN -> unknown
             Severity.LOW -> low
             Severity.MEDIUM -> medium
@@ -239,11 +240,10 @@ class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIcon
     private fun getShowDetailsNavigationAction(intention: ShowDetailsIntentionAction) =
         object : AnAction() {
             override fun actionPerformed(e: AnActionEvent) {
-                invokeLater {
-                    val virtualFile = intention.issue.virtualFile ?: return@invokeLater
-                    val project = guessProjectForFile(virtualFile) ?: return@invokeLater
-                    val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@invokeLater
-
+                runAsync {
+                    val virtualFile = intention.issue.virtualFile ?: return@runAsync
+                    val project = guessProjectForFile(virtualFile) ?: return@runAsync
+                    val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@runAsync
                     intention.selectNodeAndDisplayDescription(toolWindowPanel)
                 }
             }

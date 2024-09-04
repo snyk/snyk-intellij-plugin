@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -910,12 +911,13 @@ class SnykToolWindowPanel(
     private fun selectAndDisplayNodeWithIssueDescription(selectCondition: (DefaultMutableTreeNode) -> Boolean) {
         val node = TreeUtil.findNode(rootTreeNode) { selectCondition(it) }
         if (node != null) {
-            navigateToSourceEnabled = false
-            try {
-                TreeUtil.selectNode(vulnerabilitiesTree, node)
-                // here TreeSelectionListener is invoked, so no needs for explicit updateDescriptionPanelBySelectedTreeNode()
-            } finally {
-                navigateToSourceEnabled = true
+            invokeLater {
+                try {
+                    navigateToSourceEnabled = false
+                    TreeUtil.selectNode(vulnerabilitiesTree, node)
+                } finally {
+                    navigateToSourceEnabled = true
+                }
             }
         }
     }
