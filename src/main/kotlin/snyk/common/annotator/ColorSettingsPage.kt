@@ -32,11 +32,11 @@ class SnykAnnotationColorSettingsPage : ColorSettingsPage {
     override fun getHighlighter(): SyntaxHighlighter = PlainSyntaxHighlighter()
 
     override fun getDemoText(): String =
-        "This is a demo of a <snyk_critical_issue>Snyk Critical Issue</snyk_critical_issue>\n" +
-            "This is a demo of a <snyk_high_issue>Snyk High Issue</snyk_high_issue>\n" +
-            "This is a demo of a <snyk_medium_issue>Snyk Medium Issue</snyk_medium_issue>\n" +
-            "This is a demo of a <snyk_low_issue>Snyk Low Issue</snyk_low_issue>\n" +
-            "This is a demo of a <snyk_unknown_issue>Unknown High Issue</snyk_unknown_issue>\n"
+        "This is a demo of a <snyk_critical_issue>Snyk Critical Severity Issue</snyk_critical_issue>\n" +
+            "This is a demo of a <snyk_high_issue>Snyk High Severity Issue</snyk_high_issue>\n" +
+            "This is a demo of a <snyk_medium_issue>Snyk Medium Severity Issue</snyk_medium_issue>\n" +
+            "This is a demo of a <snyk_low_issue>Snyk Low Severity Issue</snyk_low_issue>\n" +
+            "This is a demo of a <snyk_unknown_issue>Snyk Unknown Severity Issue</snyk_unknown_issue>\n"
 
     override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey> =
         mapOf(

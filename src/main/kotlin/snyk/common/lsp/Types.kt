@@ -286,11 +286,11 @@ data class ScanIssue(
     fun hasAIFix(): Boolean {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS ->
-                return this.additionalData.isUpgradable == true
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
-                return this.additionalData.hasAIFix
-            }
+                this.additionalData.isUpgradable
 
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
+                this.additionalData.hasAIFix
+            }
             else -> TODO()
         }
     }
