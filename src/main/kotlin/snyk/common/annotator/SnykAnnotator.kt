@@ -10,12 +10,14 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.toLanguageServerURL
@@ -25,7 +27,11 @@ import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import snyk.common.AnnotatorCommon
 import snyk.common.ProductType
-import snyk.common.annotator.SnykAnnotationAttributeKey.snykAnnotationKey
+import snyk.common.annotator.SnykAnnotationAttributeKey.critical
+import snyk.common.annotator.SnykAnnotationAttributeKey.high
+import snyk.common.annotator.SnykAnnotationAttributeKey.low
+import snyk.common.annotator.SnykAnnotationAttributeKey.medium
+import snyk.common.annotator.SnykAnnotationAttributeKey.unknown
 import snyk.common.annotator.SnykAnnotator.SnykAnnotation
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
@@ -146,7 +152,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
                 if (!annotation.range.isEmpty) {
                     val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
                         .range(annotation.range)
-                        .textAttributes(snykAnnotationKey)
+                        .textAttributes(getTextAttributeKeyBySeverity(annotation.issue.getSeverityAsEnum())) // TODO add setting
                         .withFix(annotation.intention)
                     if (annotation.renderGutterIcon) {
                         annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
@@ -154,6 +160,16 @@ abstract class SnykAnnotator(private val product: ProductType) :
                     annoBuilder.create()
                 }
             }
+    }
+
+    private fun getTextAttributeKeyBySeverity(severity: Severity): TextAttributesKey {
+        return when(severity) {
+            Severity.UNKNOWN -> unknown
+            Severity.LOW -> low
+            Severity.MEDIUM -> medium
+            Severity.HIGH -> high
+            Severity.CRITICAL -> critical
+        }
     }
 
     private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
