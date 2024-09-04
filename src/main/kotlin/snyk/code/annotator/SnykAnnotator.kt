@@ -1,6 +1,5 @@
 package snyk.code.annotator
 
-import com.intellij.codeInsight.inline.completion.InlineCompletionEventType
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
@@ -50,6 +49,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     }
 
     inner class SnykAnnotation(
+        val issue: ScanIssue,
         val annotationSeverity: HighlightSeverity,
         val annotationMessage: String,
         val range: TextRange,
@@ -71,8 +71,8 @@ abstract class SnykAnnotator(private val product: ProductType) :
         if (!LanguageServerWrapper.getInstance().isInitialized) return emptyList()
 
         val annotations = mutableListOf<SnykAnnotation>()
-        val gutterIcons : MutableSet<TextRange> = mutableSetOf()
-        initial.second.sortedBy { it.getSeverityAsEnum().getHighlightSeverity() }.forEach { issue ->
+        val gutterIcons: MutableSet<TextRange> = mutableSetOf()
+        initial.second.sortedByDescending { it.getSeverityAsEnum() }.forEach { issue ->
             val textRange = textRange(initial.first, issue.range)
             val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
             val annotationMessage = issue.annotationMessage()
@@ -82,6 +82,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
             }
             if (!textRange.isEmpty) {
                 val detailAnnotation = SnykAnnotation(
+                    issue,
                     highlightSeverity,
                     annotationMessage,
                     textRange,
@@ -117,6 +118,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
                         val codeAction = action.right
                         val title = codeAction.title
                         val codeActionAnnotation = SnykAnnotation(
+                            issue,
                             highlightSeverity,
                             title,
                             textRange,
@@ -137,17 +139,18 @@ abstract class SnykAnnotator(private val product: ProductType) :
     ) {
         if (disposed) return
         if (!LanguageServerWrapper.getInstance().isInitialized) return
-        annotationResult.sortedBy { it.annotationSeverity }.forEach { annotation ->
-            if (!annotation.range.isEmpty) {
-                val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
-                    .range(annotation.range)
-                    .withFix(annotation.intention)
-                if (annotation.renderGutterIcon) {
-                    annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
+        annotationResult.sortedByDescending { it.issue.getSeverityAsEnum() }
+            .forEach { annotation ->
+                if (!annotation.range.isEmpty) {
+                    val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
+                        .range(annotation.range)
+                        .withFix(annotation.intention)
+                    if (annotation.renderGutterIcon) {
+                        annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
+                    }
+                    annoBuilder.create()
                 }
-                annoBuilder.create()
             }
-        }
     }
 
     private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
@@ -211,7 +214,7 @@ class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIcon
 
     override fun getClickAction(): AnAction? {
         if (annotation.intention !is ShowDetailsIntentionAction) return null
-        return object: AnAction() {
+        return object : AnAction() {
             override fun actionPerformed(e: AnActionEvent) {
                 invokeLater {
                     val virtualFile = annotation.intention.issue.virtualFile ?: return@invokeLater
