@@ -179,27 +179,96 @@ class SuggestionDescriptionPanelFromLS(
     private fun getCustomScript(): String {
         return """
             (function () {
-              function toggleElement(element, toggle) {
+              // Utility function to show/hide an element based on a toggle value
+              function toggleElement(element, action) {
                 if (!element) return;
-
-                if (toggle === "show") {
-                  element.classList.remove("hidden");
-                } else if (toggle === "hide") {
-                  element.classList.add("hidden");
-                } else {
-                  console.error("Unexpected toggle value", toggle);
-                }
+                element.classList.toggle("hidden", action === "hide");
               }
 
-              let diffSelectedIndex = 0;
+              // Generate HTML for the code diff from a patch
+              function generateDiffHtml(patch) {
+                const codeLines = patch.split("\n");
+                codeLines.splice(0, 2); // Skip the first two lines (file paths)
 
+                const diffHtml = document.createElement("div");
+                let blockDiv = null;
+
+                codeLines.forEach(line => {
+                  if (line.startsWith("@@ ")) {
+                    // Start a new block for a diff hunk
+                    blockDiv = document.createElement("div");
+                    blockDiv.className = "example";
+                    diffHtml.appendChild(blockDiv);
+                  } else {
+                    // Generate a line div and apply the appropriate class based on addition/removal
+                    const lineDiv = document.createElement("div");
+                    lineDiv.className = "example-line";
+                    if (line.startsWith("+")) {
+                      lineDiv.classList.add("added");
+                    } else if (line.startsWith("-")) {
+                      lineDiv.classList.add("removed");
+                    }
+
+                    // Create a <code> block for the line content
+                    const lineCode = document.createElement("code");
+                    lineCode.innerText = line.slice(1) || " "; // Ensure empty lines display properly
+                    lineDiv.appendChild(lineCode);
+
+                    blockDiv?.appendChild(lineDiv); // Append the line to the current block
+                  }
+                });
+
+                return diffHtml;
+              }
+
+              // Extract the file path from the AI fix object
+              function getFilePathFromFix(fix) {
+                return Object.keys(fix.unifiedDiffsPerFile)[0];
+              }
+
+              // Show the diff for the currently selected AI fix
+              function showCurrentDiff(fixes) {
+                toggleElement(diffTopElem, "show");
+                toggleElement(diffElem, "show");
+                toggleElement(noDiffsElem, "hide");
+
+                const totalFixes = fixes.length;
+                const currentFix = fixes[diffSelectedIndex];
+                const filePath = getFilePathFromFix(currentFix);
+                const patch = currentFix.unifiedDiffsPerFile[filePath];
+
+                // Update diff counters
+                diffNumElem.innerText = totalFixes.toString();
+                diffNum2Elem.innerText = totalFixes.toString();
+                diffSelectedIndexElem.innerText = (diffSelectedIndex + 1).toString();
+
+                // Clear and update the diff container
+                diffElem.innerHTML = ''; // Clear previous diff
+                diffElem.appendChild(generateDiffHtml(patch));
+              }
+
+              // Show the AI fixes received from the Language Server
+              function showAIFixes(fixes) {
+                toggleElement(fixSectionElem, "show");
+                toggleElement(fixLoadingIndicatorElem, "hide");
+                toggleElement(fixWrapperElem, "hide");
+
+                showCurrentDiff(fixes);
+              }
+
+              // Handle AI fix generation button click
+              function generateAIFix() {
+                toggleElement(generateAiFixBtn, "hide");
+                toggleElement(fixLoadingIndicatorElem, "show");
+              }
+
+              // DOM element references
               const generateAiFixBtn = document.getElementById("generate-ai-fix");
-              const loadingIndicator = document.getElementById("fix-loading-indicator");
+              const fixLoadingIndicatorElem = document.getElementById("fix-loading-indicator");
               const fixWrapperElem = document.getElementById("fix-wrapper");
               const fixSectionElem = document.getElementById("fixes-section");
 
               const diffSelectedIndexElem = document.getElementById("diff-counter");
-
               const diffTopElem = document.getElementById("diff-top");
               const diffElem = document.getElementById("diff");
               const noDiffsElem = document.getElementById("info-no-diffs");
@@ -207,88 +276,12 @@ class SuggestionDescriptionPanelFromLS(
               const diffNumElem = document.getElementById("diff-number");
               const diffNum2Elem = document.getElementById("diff-number2");
 
-              function generateAIFix() {
-                toggleElement(generateAiFixBtn, "hide");
-                toggleElement(loadingIndicator, "show");
-              }
+              let diffSelectedIndex = 0;
 
-              function generateDiffHtml(patch) {
-                const codeLines = patch.split("\n");
-
-                // the first two lines are the file names
-                codeLines.shift();
-                codeLines.shift();
-
-                const diffHtml = document.createElement("div");
-                let blockDiv = null;
-
-                for (const line of codeLines) {
-                  if (line.startsWith("@@ ")) {
-                    blockDiv = document.createElement("div");
-                    blockDiv.className = "example";
-
-                    if (blockDiv) {
-                      diffHtml.appendChild(blockDiv);
-                    }
-                  } else {
-                    const lineDiv = document.createElement("div");
-                    lineDiv.className = "example-line";
-
-                    if (line.startsWith("+")) {
-                      lineDiv.classList.add("added");
-                    } else if (line.startsWith("-")) {
-                      lineDiv.classList.add("removed");
-                    }
-
-                    const lineCode = document.createElement("code");
-                    // if line is empty, we need to fallback to ' '
-                    // to make sure it displays in the diff
-                    lineCode.innerText = line.slice(1, line.length) || " ";
-
-                    lineDiv.appendChild(lineCode);
-                    blockDiv?.appendChild(lineDiv);
-                  }
-                }
-
-                return diffHtml;
-              }
-
-              function getFilePathFromFix(fix) {
-                return Object.keys(fix.unifiedDiffsPerFile)[0];
-              }
-
-              function showCurrentDiff(fixes) {
-                toggleElement(diffTopElem, "show");
-                toggleElement(diffElem, "show");
-                toggleElement(noDiffsElem, "hide");
-
-                diffNumElem.innerText = fixes.length.toString();
-                diffNum2Elem.innerText = fixes.length.toString();
-
-                diffSelectedIndexElem.innerText = (diffSelectedIndex + 1).toString();
-
-                const diffSuggestion = fixes[diffSelectedIndex];
-                const filePath = getFilePathFromFix(diffSuggestion);
-                const patch = diffSuggestion.unifiedDiffsPerFile[filePath];
-
-                // clear all elements
-                while (diffElem.firstChild) {
-                  diffElem.removeChild(diffElem.firstChild);
-                }
-                diffElem.appendChild(generateDiffHtml(patch));
-              }
-
-              function showAIFixes(fixes) {
-                toggleElement(fixSectionElem, "show");
-                toggleElement(loadingIndicator, "hide");
-                toggleElement(fixWrapperElem, "hide");
-
-                showCurrentDiff(fixes);
-              }
-
+              // Event listener for Generate AI fix button
               generateAiFixBtn?.addEventListener("click", generateAIFix);
 
-              // This function will be called once the response is received from the LS
+              // This function will be called once the response is received from the Language Server
               window.receiveAIFixResponse = function (fixes) {
                 showAIFixes(fixes);
               };
