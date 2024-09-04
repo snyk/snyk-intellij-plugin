@@ -30,14 +30,14 @@ class SnykAnnotationColorSettingsPage : ColorSettingsPage {
         AttributesDescriptor("Snyk Issue", SnykAnnotationAttributeKey.snykAnnotationKey)
     )
 
-    override fun getIcon(): Icon? = SnykIcons.TOOL_WINDOW
+    override fun getIcon(): Icon = SnykIcons.TOOL_WINDOW
 
     override fun getHighlighter(): SyntaxHighlighter = PlainSyntaxHighlighter()
 
     override fun getDemoText(): String =
         "This is a demo of <snyk_issue>a Snyk Issue</snyk_issue>"
 
-    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? =
+    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey> =
         mapOf("snyk_issue" to SnykAnnotationAttributeKey.snykAnnotationKey)
 
     override fun getAttributeDescriptors(): Array<AttributesDescriptor> = attributesDescriptors
