@@ -536,32 +536,13 @@ class SnykSettingsDialog(
                 JLabel(
                     "<html><br/> Snyk: <b>All issues vs Net new issues</b> <br/>" +
                         "Specifies whether to see only net new issues or all issues. " +
-                        "Only applies to Code Security and Code Quality.<br/><br/>" +
-                        "Note: this is an experimental feature. Please reach out to Snyk for more details:",
+                        "Only applies to Code Security and Code Quality.<br/><br/>"
                 ).apply { font = FontUtil.minusOne(this.font) }
 
             projectSettingsPanel.add(
                 netNewIssuesText,
                 baseGridConstraints(
                     row = 3,
-                    column = 0,
-                    anchor = UIGridConstraints.ANCHOR_WEST,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
-                    colSpan = 2,
-                    indent = 0,
-                ),
-            )
-
-            val mailSnykSupportLabel =
-                HyperlinkLabel(
-                    "support@snyk.io",
-                ).apply { setHyperlinkTarget("mailto:support@snyk.io") }
-            mailSnykSupportLabel.font = FontUtil.minusOne(mailSnykSupportLabel.font)
-
-            projectSettingsPanel.add(
-                mailSnykSupportLabel,
-                baseGridConstraints(
-                    row = 4,
                     column = 0,
                     anchor = UIGridConstraints.ANCHOR_WEST,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
