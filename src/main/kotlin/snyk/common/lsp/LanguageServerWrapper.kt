@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -496,6 +497,7 @@ class LanguageServerWrapper(
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix>  {
         println(">> sendCodeFixDiffsCommand: $folderURI, $fileURI, $issueID")
         if (!ensureLanguageServerInitialized()) return emptyList()
@@ -504,14 +506,14 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_CODE_FIX_DIFFS
             param.arguments = listOf(folderURI, fileURI, issueID)
-            val result = languageServer.workspaceService.executeCommand(param).get(120, TimeUnit.SECONDS) as Map<*, *>
-//            result["unifiedDiffsPerFile"]
-            val diff = result["unifiedDiffsPerFile"]
-            println(diff)
-            // and parse to an JSON object
-//            println(result)
-//            return parseResponse(result.toString())
-            return result as List<Fix>
+            val result = languageServer.workspaceService.executeCommand(param).get(120, TimeUnit.SECONDS) as List<*>
+            val diffList : MutableList<Fix> = mutableListOf()
+            result.forEach {
+                val entry = it as Map<String, *>
+                val fix = Fix(entry["fixId"]!! as String, entry["unifiedDiffsPerFile"] as Map<String, String>)
+                diffList.add(fix)
+            }
+            return diffList
         } catch (err: Exception) {
             logger.warn("Error in sendCodeFixDiffsCommand", err)
             return emptyList()
@@ -519,8 +521,8 @@ class LanguageServerWrapper(
     }
 
     data class Fix(
-        val fixId: String,
-        val unifiedDiffsPerFile: Map<String, String>
+        @SerializedName("fixId") val fixId: String,
+        @SerializedName("unifiedDiffsPerFile") val unifiedDiffsPerFile: Map<String, String>
     )
 
     private fun parseResponse(response: String): List<Fix> {
