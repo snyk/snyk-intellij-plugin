@@ -21,7 +21,7 @@ class FolderConfigSettings : SimplePersistentStateComponent<FolderConfigSettings
         var configs by map<String, String>()
     }
 
-    private fun addFolderConfig(folderConfig: FolderConfig) {
+    fun addFolderConfig(folderConfig: FolderConfig) {
         state.configs[folderConfig.folderPath] = gson.toJson(folderConfig)
     }
 

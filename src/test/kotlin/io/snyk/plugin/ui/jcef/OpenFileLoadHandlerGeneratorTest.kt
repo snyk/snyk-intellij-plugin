@@ -8,8 +8,7 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.unmockkAll
 import io.snyk.plugin.resetSettings
-import org.junit.Test
-import snyk.code.annotator.SnykCodeAnnotator
+import snyk.common.annotator.SnykCodeAnnotator
 import java.nio.file.Paths
 import java.util.function.BooleanSupplier
 
@@ -39,7 +38,6 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
         generator = OpenFileLoadHandlerGenerator(psiFile.project, virtualFiles)
     }
 
-    @Test
     fun `test openFile should navigate to source`() {
         generator.openFile("$fileName:1:2:3:4")
         val matcher = BooleanSupplier { FileEditorManager.getInstance(project).isFileOpen(psiFile.virtualFile) }

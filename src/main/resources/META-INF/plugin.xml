@@ -19,6 +19,7 @@
   <depends optional="true" config-file="optional/withXML.xml">com.intellij.modules.xml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
+    <colorSettingsPage implementation="snyk.common.annotator.SnykAnnotationColorSettingsPage"/>
     <toolWindow id="Snyk"
                 anchor="bottom"
                 icon="SnykIcons.TOOL_WINDOW"
@@ -44,8 +45,8 @@
     <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider" id="snyk.common.lsp.LSCodeVisionProvider"/>
     <config.codeVisionGroupSettingProvider implementation="snyk.common.lsp.LSCodeVisionProvider" />
 
-    <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykCodeAnnotator"/>
-    <externalAnnotator language="" implementationClass="snyk.code.annotator.SnykOSSAnnotator"/>
+    <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykCodeAnnotator"/>
+    <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykOSSAnnotator"/>
   </extensions>
 
   <actions>

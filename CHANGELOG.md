@@ -11,6 +11,7 @@
 - switch downloads to downloads.snyk.io
 - allow annotations during IntelliJ indexing
 - add gutter icons for Snyk issues
+- add color and highlighting setting for Snyk issues
 
 ### Fixes
 - add name to code vision provider

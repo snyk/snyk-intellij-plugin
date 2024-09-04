@@ -1,6 +1,5 @@
-package snyk.code.annotator
+package snyk.common.annotator
 
-import com.intellij.codeInsight.inline.completion.InlineCompletionEventType
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
@@ -11,12 +10,14 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
+import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.toLanguageServerURL
@@ -24,9 +25,14 @@ import org.eclipse.lsp4j.CodeActionContext
 import org.eclipse.lsp4j.CodeActionParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentIdentifier
-import snyk.code.annotator.SnykAnnotator.SnykAnnotation
 import snyk.common.AnnotatorCommon
 import snyk.common.ProductType
+import snyk.common.annotator.SnykAnnotationAttributeKey.critical
+import snyk.common.annotator.SnykAnnotationAttributeKey.high
+import snyk.common.annotator.SnykAnnotationAttributeKey.low
+import snyk.common.annotator.SnykAnnotationAttributeKey.medium
+import snyk.common.annotator.SnykAnnotationAttributeKey.unknown
+import snyk.common.annotator.SnykAnnotator.SnykAnnotation
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
@@ -37,6 +43,7 @@ private const val CODEACTION_TIMEOUT = 5000L
 
 abstract class SnykAnnotator(private val product: ProductType) :
     ExternalAnnotator<Pair<PsiFile, List<ScanIssue>>, List<SnykAnnotation>>(), Disposable, DumbAware {
+
     val logger = logger<SnykAnnotator>()
     protected var disposed = false
         get() {
@@ -50,6 +57,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     }
 
     inner class SnykAnnotation(
+        val issue: ScanIssue,
         val annotationSeverity: HighlightSeverity,
         val annotationMessage: String,
         val range: TextRange,
@@ -71,8 +79,8 @@ abstract class SnykAnnotator(private val product: ProductType) :
         if (!LanguageServerWrapper.getInstance().isInitialized) return emptyList()
 
         val annotations = mutableListOf<SnykAnnotation>()
-        val gutterIcons : MutableSet<TextRange> = mutableSetOf()
-        initial.second.sortedBy { it.getSeverityAsEnum().getHighlightSeverity() }.forEach { issue ->
+        val gutterIcons: MutableSet<TextRange> = mutableSetOf()
+        initial.second.sortedByDescending { it.getSeverityAsEnum() }.forEach { issue ->
             val textRange = textRange(initial.first, issue.range)
             val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
             val annotationMessage = issue.annotationMessage()
@@ -82,6 +90,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
             }
             if (!textRange.isEmpty) {
                 val detailAnnotation = SnykAnnotation(
+                    issue,
                     highlightSeverity,
                     annotationMessage,
                     textRange,
@@ -117,6 +126,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
                         val codeAction = action.right
                         val title = codeAction.title
                         val codeActionAnnotation = SnykAnnotation(
+                            issue,
                             highlightSeverity,
                             title,
                             textRange,
@@ -137,16 +147,28 @@ abstract class SnykAnnotator(private val product: ProductType) :
     ) {
         if (disposed) return
         if (!LanguageServerWrapper.getInstance().isInitialized) return
-        annotationResult.sortedBy { it.annotationSeverity }.forEach { annotation ->
-            if (!annotation.range.isEmpty) {
-                val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
-                    .range(annotation.range)
-                    .withFix(annotation.intention)
-                if (annotation.renderGutterIcon) {
-                    annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
+        annotationResult.sortedByDescending { it.issue.getSeverityAsEnum() }
+            .forEach { annotation ->
+                if (!annotation.range.isEmpty) {
+                    val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
+                        .range(annotation.range)
+                        .textAttributes(getTextAttributeKeyBySeverity(annotation.issue.getSeverityAsEnum()))
+                        .withFix(annotation.intention)
+                    if (annotation.renderGutterIcon) {
+                        annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
+                    }
+                    annoBuilder.create()
                 }
-                annoBuilder.create()
             }
+    }
+
+    private fun getTextAttributeKeyBySeverity(severity: Severity): TextAttributesKey {
+        return when(severity) {
+            Severity.UNKNOWN -> unknown
+            Severity.LOW -> low
+            Severity.MEDIUM -> medium
+            Severity.HIGH -> high
+            Severity.CRITICAL -> critical
         }
     }
 
@@ -206,23 +228,33 @@ class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIcon
     }
 
     override fun getIcon(): Icon {
-        return SnykIcons.TOOL_WINDOW
+        return SnykIcons.getSeverityIcon(annotation.issue.getSeverityAsEnum())
     }
 
     override fun getClickAction(): AnAction? {
         if (annotation.intention !is ShowDetailsIntentionAction) return null
-        return object: AnAction() {
+        return getShowDetailsNavigationAction(annotation.intention)
+    }
+
+    private fun getShowDetailsNavigationAction(intention: ShowDetailsIntentionAction) =
+        object : AnAction() {
             override fun actionPerformed(e: AnActionEvent) {
                 invokeLater {
-                    val virtualFile = annotation.intention.issue.virtualFile ?: return@invokeLater
+                    val virtualFile = intention.issue.virtualFile ?: return@invokeLater
                     val project = guessProjectForFile(virtualFile) ?: return@invokeLater
                     val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@invokeLater
 
-                    annotation.intention.selectNodeAndDisplayDescription(toolWindowPanel)
+                    intention.selectNodeAndDisplayDescription(toolWindowPanel)
                 }
-
             }
         }
+
+    override fun getTooltipText(): String {
+        return annotation.annotationMessage
+    }
+
+    override fun getAccessibleName(): String {
+        return annotation.annotationMessage
     }
 
     override fun isNavigateAction(): Boolean {
