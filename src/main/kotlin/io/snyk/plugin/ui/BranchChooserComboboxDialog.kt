@@ -19,7 +19,7 @@ import javax.swing.JPanel
 
 
 class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
-    private val comboBoxes : MutableList<ComboBox<String>> = mutableListOf()
+    var comboBoxes: MutableList<ComboBox<String>> = mutableListOf()
 
     init {
         init()
@@ -47,11 +47,19 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
     }
 
     override fun doOKAction() {
+        execute()
+        super.doOKAction()
+    }
+
+    fun execute() {
         val folderConfigSettings = service<FolderConfigSettings>()
         comboBoxes.forEach {
-            val folderConfig : FolderConfig? = folderConfigSettings.getFolderConfig(it.name)
+            val folderConfig: FolderConfig? = folderConfigSettings.getFolderConfig(it.name)
             if (folderConfig == null) {
-                SnykBalloonNotificationHelper.showError("Unexpectedly cannot retrieve folder config for ${it.name} for base branch updating.", project)
+                SnykBalloonNotificationHelper.showError(
+                    "Unexpectedly cannot retrieve folder config for ${it.name} for base branch updating.",
+                    project
+                )
                 return@forEach
             }
 
@@ -62,7 +70,6 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
             LanguageServerWrapper.getInstance().updateConfiguration()
             LanguageServerWrapper.getInstance().sendScanCommand(project)
         }
-        super.doOKAction()
     }
 
     override fun doValidate(): ValidationInfo? {
