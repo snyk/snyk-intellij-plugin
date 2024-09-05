@@ -17,7 +17,6 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import junit.framework.TestCase
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
-import org.jetbrains.kotlin.idea.gradleTooling.get
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.FolderConfig
