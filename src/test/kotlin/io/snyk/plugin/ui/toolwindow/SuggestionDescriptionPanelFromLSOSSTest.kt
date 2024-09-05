@@ -15,12 +15,11 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import org.junit.Test
 import snyk.UIComponentFinder.getActionLinkByText
 import snyk.UIComponentFinder.getJLabelByText
 import snyk.UIComponentFinder.getJPanelByName
-import snyk.code.annotator.SnykCodeAnnotator
 import snyk.common.ProductType
+import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
@@ -79,7 +78,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         } returns emptyList()
     }
 
-    @Test
     fun `test createUI should build the right panels for Snyk OSS if HTML not allowed`() {
         every { issue.canLoadSuggestionPanelFromHTML() } returns false
 
@@ -113,7 +111,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         assertNotNull(ossOverviewPanel)
     }
 
-    @Test
     fun `test createUI should build panel with HTML from details if allowed`() {
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
         mockkObject(JCEFUtils)
@@ -132,7 +129,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         assertNotNull(actualBrowser)
     }
 
-    @Test
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
         every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true

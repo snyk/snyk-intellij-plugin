@@ -99,9 +99,7 @@ class SnykSettingsDialog(
         }
     private val ignoreUnknownCACheckBox: JCheckBox =
         JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
-    private val usageAnalyticsCheckBox: JCheckBox =
-        JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
-    private val crashReportingCheckBox = JCheckBox().apply { toolTipText = "If enabled, send error reports to Sentry" }
+
     private val scanOnSaveCheckbox =
         JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
     private val additionalParametersTextField: JTextField =
@@ -174,8 +172,6 @@ class SnykSettingsDialog(
             customEndpointTextField.text = applicationSettings.customEndpointUrl
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
-            usageAnalyticsCheckBox.isSelected = applicationSettings.usageAnalyticsEnabled
-            crashReportingCheckBox.isSelected = applicationSettings.crashReportingEnabled
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
 
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
@@ -616,26 +612,6 @@ class SnykSettingsDialog(
             ),
         )
 
-        usageAnalyticsCheckBox.text = "Send usage statistics to Snyk"
-        userExperiencePanel.add(
-            usageAnalyticsCheckBox,
-            baseGridConstraints(
-                row = 1,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 0,
-            ),
-        )
-
-        crashReportingCheckBox.text = "Send error reports to Snyk"
-        userExperiencePanel.add(
-            crashReportingCheckBox,
-            baseGridConstraints(
-                row = 2,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 0,
-            ),
-        )
-
         /** Spacer ------------------ */
 
         val generalSettingsSpacer = Spacer()
@@ -760,11 +736,7 @@ class SnykSettingsDialog(
 
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
 
-    fun isUsageAnalyticsEnabled(): Boolean = usageAnalyticsCheckBox.isSelected
-
     fun isScanOnSaveEnabled(): Boolean = scanOnSaveCheckbox.isSelected
-
-    fun isCrashReportingEnabled(): Boolean = crashReportingCheckBox.isSelected
 
     fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
 

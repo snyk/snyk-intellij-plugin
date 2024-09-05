@@ -9,6 +9,9 @@
 - better error messaging when unexpected loop occurs during initialization
 - switch downloads to downloads.snyk.io
 - Added support for Net new scans in settings
+- allow annotations during IntelliJ indexing
+- add gutter icons for Snyk issues
+- add color and highlighting setting for Snyk issues
 
 ### Fixes
 - add name to code vision provider
