@@ -345,6 +345,9 @@ class SuggestionDescriptionPanelFromLS(
               nextDiffElem?.addEventListener("click", nextDiff);
               previousDiffElem?.addEventListener("click", previousDiff);
 
+              nextDiffElem?.addEventListener("click", nextDiff);
+              previousDiffElem?.addEventListener("click", previousDiff);
+
               // This function will be called once the response is received from the Language Server
               window.receiveAIFixResponse = function (fixesResponse) {
                 fixes = [...fixesResponse];
