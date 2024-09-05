@@ -406,12 +406,9 @@ class LanguageServerWrapper(
             integrationVersion = pluginInfo.integrationVersion,
             authenticationMethod = authMethod,
             enableSnykOSSQuickFixCodeActions = "true",
-            enableDeltaFindings = isDeltaFindingsEnabled(ps),
+            enableDeltaFindings = ps.isDeltaFindingsEnabled(),
         )
     }
-
-    private fun isDeltaFindingsEnabled(ps: SnykApplicationSettingsStateService) =
-        (ps.netNewIssues == "Net new issues").toString()
 
     fun updateConfiguration() {
         if (!ensureLanguageServerInitialized()) return

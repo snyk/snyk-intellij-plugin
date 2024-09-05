@@ -100,6 +100,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         }
     }
 
+    fun isDeltaFindingsEnabled(): String =
+        (netNewIssues == "Net new issues").toString()
+
     fun getAdditionalParameters(project: Project? = null): String? =
         if (isProjectSettingsAvailable(project)) {
             getSnykProjectSettingsService(project!!)?.additionalParameters
