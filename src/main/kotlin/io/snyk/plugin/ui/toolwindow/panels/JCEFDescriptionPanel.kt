@@ -10,6 +10,7 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
+import io.snyk.plugin.ui.jcef.ApplyFixHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
@@ -66,6 +67,10 @@ class SuggestionDescriptionPanelFromLS(
                     generateAIFixHandler.generateAIFixCommand(it)
                 }
 
+                val applyFixHandler = ApplyFixHandler(snykFile.project)
+                loadHandlerGenerators += {
+                    applyFixHandler.generateApplyFixCommand(it)
+                }
             }
             val html = this.getCustomCssAndScript()
             val jbCefBrowserComponent =
@@ -291,6 +296,8 @@ class SuggestionDescriptionPanelFromLS(
                 const filePath = getFilePathFromFix(currentFix);
                 const patch = currentFix.unifiedDiffsPerFile[filePath];
 
+                window.applyFixQuery(filePath + ':' + patch);
+
                 // Following VSCode logic, the steps are:
                 // 1. Read the current file content.
                 // 2. Apply a patch to that content.
@@ -340,6 +347,17 @@ class SuggestionDescriptionPanelFromLS(
                   return;
                 }
                 showAIFixes(fixes);
+              };
+
+              window.receiveApplyFixResponse = function (success) {
+              console.log('[[receiveApplyFixResponse]]', success);
+                if (success) {
+                    applyFixBtn.disabled = true;
+                    console.log('Fix applied', success);
+                    document.getElementById('apply-fix').disabled = true;
+                } else {
+                    console.error('Failed to apply fix', success);
+                }
               };
             })();
         """.trimIndent()
