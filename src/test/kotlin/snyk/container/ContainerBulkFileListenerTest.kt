@@ -14,7 +14,6 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
@@ -72,11 +71,14 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         val path = createNewFileInProjectRoot().toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
         VirtualFileManager.getInstance().syncRefresh()
-        val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
-        require(virtualFile != null)
+        var virtualFile: VirtualFile? = null
+        await().atMost(2, TimeUnit.SECONDS).until {
+            virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
+            virtualFile?.isValid ?: false
+        }
 
         ApplicationManager.getApplication().runWriteAction {
-            val file = PsiManager.getInstance(project).findFile(virtualFile)
+            val file = PsiManager.getInstance(project).findFile(virtualFile!!)
             require(file != null)
             PsiDocumentManager.getInstance(project).getDocument(file)
                 ?.setText(TestYamls.podYaml())
@@ -93,7 +95,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         assertEquals(1, kubernetesWorkloadImages.size)
         assertEquals(path, kubernetesWorkloadImages.first().virtualFile.toNioPath())
         assertEquals("nginx:1.16.0", kubernetesWorkloadImages.first().image)
-        virtualFile.toNioPath().delete(true)
+        virtualFile!!.toNioPath().delete(true)
     }
 
     fun `test Container should delete images from cache when yaml file is deleted`() {

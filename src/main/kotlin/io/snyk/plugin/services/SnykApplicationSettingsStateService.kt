@@ -37,6 +37,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var cliReleaseChannel = "stable"
     var manageBinariesAutomatically: Boolean = true
     var fileListenerEnabled: Boolean = true
+    // TODO migrate to https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
     var token: String? = null
     var customEndpointUrl: String? = null
     var organization: String? = null

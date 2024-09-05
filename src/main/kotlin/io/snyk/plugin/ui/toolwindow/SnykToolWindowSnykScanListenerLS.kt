@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
@@ -19,16 +20,19 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NODE_NOT_SUPPORTED_STATE
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NO_OSS_FILES
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.OSS_ROOT_TEXT
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.SCANNING_TEXT
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
+import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -70,11 +74,11 @@ class SnykToolWindowSnykScanListenerLS(
         ApplicationManager.getApplication().invokeLater {
             this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
             this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning finished)"
-            this.snykToolWindowPanel.navigateToSourceEnabled = false
+            this.snykToolWindowPanel.triggerSelectionListeners = false
             val snykCachedResults = getSnykCachedResults(project)
             displaySnykCodeResults(snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap())
             refreshAnnotationsForOpenFiles(project)
-            this.snykToolWindowPanel.navigateToSourceEnabled = true
+            this.snykToolWindowPanel.triggerSelectionListeners = true
         }
     }
 
@@ -83,11 +87,11 @@ class SnykToolWindowSnykScanListenerLS(
         ApplicationManager.getApplication().invokeLater {
             cancelOssIndicator(project)
             this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
-            this.snykToolWindowPanel.navigateToSourceEnabled = false
+            this.snykToolWindowPanel.triggerSelectionListeners = false
             val snykCachedResults = getSnykCachedResults(project)
             displayOssResults(snykCachedResults?.currentOSSResultsLS ?: emptyMap())
             refreshAnnotationsForOpenFiles(project)
-            this.snykToolWindowPanel.navigateToSourceEnabled = true
+            this.snykToolWindowPanel.triggerSelectionListeners = true
         }
     }
 
@@ -167,6 +171,7 @@ class SnykToolWindowSnykScanListenerLS(
             snykResults = snykResults,
             rootNode = this.rootOssIssuesTreeNode,
             ossResultsCount = snykResults.values.flatten().distinct().size,
+            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
         )
     }
 
@@ -204,7 +209,6 @@ class SnykToolWindowSnykScanListenerLS(
                 addInfoTreeNodes(
                     rootNode = rootNode,
                     issues = snykResults.values.flatten().distinct(),
-                    securityIssuesCount = securityIssuesCount,
                     fixableIssuesCount = fixableIssuesCount,
                 )
 
@@ -259,32 +263,39 @@ class SnykToolWindowSnykScanListenerLS(
     fun addInfoTreeNodes(
         rootNode: DefaultMutableTreeNode,
         issues: List<ScanIssue>,
-        securityIssuesCount: Int? = null,
         fixableIssuesCount: Int? = null,
     ) {
         if (disposed) return
-
-        // only add these info tree nodes to Snyk Code security vulnerabilities for now
-        if (securityIssuesCount == null) {
+        if (rootNode.userObject == SCANNING_TEXT) {
             return
         }
 
         val settings = pluginSettings()
-        // only add these when we enable the consistent ignores flow for now
-        if (!settings.isGlobalIgnoresFeatureEnabled) {
-            return
+        // TODO: check for delta findings
+        val deltaFindingsEnabled = true
+        if (deltaFindingsEnabled) {
+            // we need one choose branch node for each content root. sigh.
+            service<FolderConfigSettings>().getAllForProject(project).forEach {
+                val branchChooserTreeNode = ChooseBranchNode(
+                    project = project,
+                    info = "Click to choose base branch for ${it.folderPath} [ current: ${it.baseBranch} ]"
+                )
+                rootNode.add(branchChooserTreeNode)
+            }
         }
 
         var text = "✅ Congrats! No vulnerabilities found!"
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         if (issuesCount != 0) {
-            if (issuesCount == 1) {
-                text = "$issuesCount vulnerability found by Snyk"
+            text = if (issuesCount == 1) {
+                "$issuesCount vulnerability found by Snyk"
             } else {
-                text = "✋ $issuesCount vulnerabilities found by Snyk"
+                "✋ $issuesCount vulnerabilities found by Snyk"
             }
-            text += ", $ignoredIssuesCount ignored"
+            if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
+                text += ", $ignoredIssuesCount ignored"
+            }
         }
         rootNode.add(
             InfoTreeNode(
@@ -297,31 +308,32 @@ class SnykToolWindowSnykScanListenerLS(
             if (fixableIssuesCount > 0) {
                 rootNode.add(
                     InfoTreeNode(
-                        "⚡ $fixableIssuesCount vulnerabilities can be fixed by Snyk DeepCode AI",
+                        "⚡ $fixableIssuesCount vulnerabilities can be fixed automatically",
                         project,
                     ),
                 )
             } else {
                 rootNode.add(
-                    InfoTreeNode("There are no vulnerabilities fixable by Snyk DeepCode AI", project),
+                    InfoTreeNode("There are no vulnerabilities automatically fixable", project),
                 )
             }
         }
-
-        if (ignoredIssuesCount == issuesCount && !settings.ignoredIssuesEnabled) {
-            rootNode.add(
-                InfoTreeNode(
-                    "Adjust your Issue View Options to see ignored issues.",
-                    project,
-                ),
-            )
-        } else if (ignoredIssuesCount == 0 && !settings.openIssuesEnabled) {
-            rootNode.add(
-                InfoTreeNode(
-                    "Adjust your Issue View Options to open issues.",
-                    project,
-                ),
-            )
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            if (ignoredIssuesCount == issuesCount && !settings.ignoredIssuesEnabled) {
+                rootNode.add(
+                    InfoTreeNode(
+                        "Adjust your Issue View Options to see ignored issues.",
+                        project,
+                    ),
+                )
+            } else if (ignoredIssuesCount == 0 && !settings.openIssuesEnabled) {
+                rootNode.add(
+                    InfoTreeNode(
+                        "Adjust your Issue View Options to open issues.",
+                        project,
+                    ),
+                )
+            }
         }
     }
 

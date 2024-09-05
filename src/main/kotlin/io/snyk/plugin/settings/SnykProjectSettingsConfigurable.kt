@@ -10,7 +10,6 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -104,13 +103,9 @@ class SnykProjectSettingsConfigurable(
             val snykProjectSettingsService = getSnykProjectSettingsService(project)
             snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
             val fcs = service<FolderConfigSettings>()
-            project.getContentRootPaths().forEach {
-                val fc = fcs.getFolderConfig(it.toAbsolutePath().toString())
-                if (fc != null) {
-                    val newFC = fc.copy(additionalParameters = snykSettingsDialog.getAdditionalParameters().split(" "))
-                    fcs.addFolderConfig(newFC)
-                }
-            }
+            fcs.getAllForProject(project)
+                .map { it.copy(additionalParameters = snykSettingsDialog.getAdditionalParameters().split(" ")) }
+                .forEach { fcs.addFolderConfig(it) }
         }
 
         runBackgroundableTask("processing config changes", project, true) {

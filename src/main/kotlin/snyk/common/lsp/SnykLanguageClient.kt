@@ -19,6 +19,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.roots.ui.configuration.ProjectSettingsService
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
@@ -304,6 +305,7 @@ class SnykLanguageClient :
         if (disposed) return
         if (pluginSettings().token == param.token) return
         pluginSettings().token = param.token
+        ApplicationManager.getApplication().saveSettings()
 
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()

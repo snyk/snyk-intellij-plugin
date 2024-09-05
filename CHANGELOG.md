@@ -12,6 +12,8 @@
 - allow annotations during IntelliJ indexing
 - add gutter icons for Snyk issues
 - add color and highlighting setting for Snyk issues
+- add dialog to choose reference branch when delta scanning
+- always display info nodes
 
 ### Fixes
 - add name to code vision provider
