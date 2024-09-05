@@ -185,6 +185,20 @@ class SuggestionDescriptionPanelFromLS(
                 element.classList.toggle("hidden", action === "hide");
               }
 
+              function nextDiff() {
+                  console.log('nextDiff')
+                  if (!fixes || diffSelectedIndex >= fixes.length - 1) return;
+                  ++diffSelectedIndex;
+                  showCurrentDiff(fixes);
+              }
+
+              function previousDiff() {
+                  console.log('previousDiff')
+                  if (!fixes || diffSelectedIndex <= 0) return;
+                  --diffSelectedIndex;
+                  showCurrentDiff(fixes)
+              }
+
               // Generate HTML for the code diff from a patch
               function generateDiffHtml(patch) {
                 const codeLines = patch.split("\n");
@@ -290,6 +304,8 @@ class SuggestionDescriptionPanelFromLS(
               const fixWrapperElem = document.getElementById("fix-wrapper");
               const fixSectionElem = document.getElementById("fixes-section");
 
+              const nextDiffElem = document.getElementById('next-diff');
+              const previousDiffElem = document.getElementById('previous-diff');
               const diffSelectedIndexElem = document.getElementById("diff-counter");
               const diffTopElem = document.getElementById("diff-top");
               const diffElem = document.getElementById("diff");
@@ -304,6 +320,9 @@ class SuggestionDescriptionPanelFromLS(
               // Event listener for Generate AI fix button
               generateAiFixBtn?.addEventListener("click", generateAIFix);
               applyFixBtn?.addEventListener('click', applyFix);
+
+              nextDiffElem?.addEventListener("click", nextDiff);
+              previousDiffElem?.addEventListener("click", previousDiff);
 
               // This function will be called once the response is received from the Language Server
               window.receiveAIFixResponse = function (fixesResponse) {
