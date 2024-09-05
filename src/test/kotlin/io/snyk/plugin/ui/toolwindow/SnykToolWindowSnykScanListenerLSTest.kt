@@ -53,7 +53,12 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
 
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
-
+        service<FolderConfigSettings>()
+            .addFolderConfig(
+                FolderConfig(
+                    project.getContentRootPaths().first().toAbsolutePath().toString(), "main"
+                )
+            )
         snykToolWindowPanel = SnykToolWindowPanel(project)
         rootOssIssuesTreeNode = RootOssTreeNode(project)
         rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
@@ -137,16 +142,16 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
-        TestCase.assertEquals(5, rootTreeNode.childCount)
+        TestCase.assertEquals(6, rootTreeNode.childCount)
         TestCase.assertEquals(rootTreeNode.children().toList()[0].toString(), " Open Source")
         TestCase.assertEquals(rootTreeNode.children().toList()[1].toString(), " Code Security")
         TestCase.assertEquals(rootTreeNode.children().toList()[2].toString(), " Code Quality")
         TestCase.assertEquals(
-            rootTreeNode.children().toList()[3].toString(),
+            rootTreeNode.children().toList()[4].toString(),
             "1 vulnerability found by Snyk, 0 ignored",
         )
         TestCase.assertEquals(
-            rootTreeNode.children().toList()[4].toString(),
+            rootTreeNode.children().toList()[5].toString(),
             "⚡ 1 vulnerabilities can be fixed automatically",
         )
     }
@@ -173,12 +178,6 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
-        service<FolderConfigSettings>()
-            .addFolderConfig(
-                FolderConfig(
-                    project.getContentRootPaths().first().toAbsolutePath().toString(), "main"
-                )
-            )
 
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
 
@@ -221,7 +220,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(true), 1)
-        TestCase.assertEquals(6, rootTreeNode.childCount)
+        TestCase.assertEquals(7, rootTreeNode.childCount)
     }
 
     fun `testAddInfoTreeNodes adds new tree nodes for code security if all open issues are hidden`() {
@@ -248,6 +247,6 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(false), 1)
-        TestCase.assertEquals(6, rootTreeNode.childCount)
+        TestCase.assertEquals(7, rootTreeNode.childCount)
     }
 }
