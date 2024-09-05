@@ -18,6 +18,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
@@ -137,6 +138,11 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val snykError = value.userObject as SnykError
                 text = snykError.path + " - " + snykError.message
                 nodeIcon = AllIcons.General.Error
+            }
+
+            is ChooseBranchNode -> {
+                text = value.info
+                nodeIcon = value.icon
             }
 
             is InfoTreeNode -> {

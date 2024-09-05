@@ -41,6 +41,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
+import io.snyk.plugin.ui.BranchChooserComboBoxDialog
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
@@ -53,7 +54,9 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootTreeNodeBase
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
@@ -117,7 +120,7 @@ class SnykToolWindowPanel(
      *  */
     private var smartReloadMode = false
 
-    var navigateToSourceEnabled = true
+    var triggerSelectionListeners = true
 
     private val treeNodeStub =
         object : RootTreeNodeBase("", project) {
@@ -329,13 +332,18 @@ class SnykToolWindowPanel(
 
     private fun updateDescriptionPanelBySelectedTreeNode() {
         val capturedSmartReloadMode = smartReloadMode
-        val capturedNavigateToSourceEnabled = navigateToSourceEnabled
+        val capturedNavigateToSourceEnabled = triggerSelectionListeners
 
         ApplicationManager.getApplication().invokeLater {
             descriptionPanel.removeAll()
             val selectionPath = vulnerabilitiesTree.selectionPath
             if (nonNull(selectionPath)) {
                 val lastPathComponent = selectionPath!!.lastPathComponent
+
+                if (lastPathComponent is ChooseBranchNode && capturedNavigateToSourceEnabled && !capturedSmartReloadMode) {
+                    BranchChooserComboBoxDialog(project).show()
+                }
+
                 if (!capturedSmartReloadMode &&
                     capturedNavigateToSourceEnabled &&
                     lastPathComponent is NavigatableToSourceTreeNode
@@ -884,6 +892,7 @@ class SnykToolWindowPanel(
         selectedNodeUserObject: Any?,
     ) {
         val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
+        if (selectedNode is InfoTreeNode) return
 
         displayEmptyDescription()
         (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
@@ -913,10 +922,10 @@ class SnykToolWindowPanel(
         if (node != null) {
             invokeLater {
                 try {
-                    navigateToSourceEnabled = false
+                    triggerSelectionListeners = false
                     TreeUtil.selectNode(vulnerabilitiesTree, node)
                 } finally {
-                    navigateToSourceEnabled = true
+                    triggerSelectionListeners = true
                 }
             }
         }
