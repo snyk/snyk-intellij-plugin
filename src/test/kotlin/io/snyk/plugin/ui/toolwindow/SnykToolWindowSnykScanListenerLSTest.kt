@@ -1,12 +1,14 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.treeStructure.Tree
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
@@ -15,8 +17,11 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import junit.framework.TestCase
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
+import org.jetbrains.kotlin.idea.gradleTooling.get
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.DataFlow
+import snyk.common.lsp.FolderConfig
+import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
 import java.nio.file.Paths
@@ -143,6 +148,52 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         )
         TestCase.assertEquals(
             rootTreeNode.children().toList()[4].toString(),
+            "⚡ 1 vulnerabilities can be fixed automatically",
+        )
+    }
+
+    fun `testAddInfoTreeNodes adds new branch selection tree nodes`() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+
+        // setup the rootTreeNode from scratch
+        rootTreeNode = DefaultMutableTreeNode("")
+        rootTreeNode.add(rootOssIssuesTreeNode)
+        rootTreeNode.add(rootSecurityIssuesTreeNode)
+        rootTreeNode.add(rootQualityIssuesTreeNode)
+        vulnerabilitiesTree = Tree(rootTreeNode).apply {
+            this.isRootVisible = false
+        }
+
+        cut = SnykToolWindowSnykScanListenerLS(
+            project,
+            snykToolWindowPanel,
+            vulnerabilitiesTree,
+            rootSecurityIssuesTreeNode,
+            rootQualityIssuesTreeNode,
+            rootOssIssuesTreeNode,
+        )
+
+        TestCase.assertEquals(3, rootTreeNode.childCount)
+        service<FolderConfigSettings>()
+            .addFolderConfig(
+                FolderConfig(
+                    project.getContentRootPaths().first().toAbsolutePath().toString(), "main"
+                )
+            )
+
+        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
+
+        TestCase.assertEquals(6, rootTreeNode.childCount)
+        TestCase.assertEquals(rootTreeNode.children().toList()[0].toString(), " Open Source")
+        TestCase.assertEquals(rootTreeNode.children().toList()[1].toString(), " Code Security")
+        TestCase.assertEquals(rootTreeNode.children().toList()[2].toString(), " Code Quality")
+        TestCase.assertTrue(rootTreeNode.children().toList()[3].toString().contains("Click to choose base branch for"))
+        TestCase.assertEquals(
+            rootTreeNode.children().toList()[4].toString(),
+            "1 vulnerability found by Snyk, 0 ignored",
+        )
+        TestCase.assertEquals(
+            rootTreeNode.children().toList()[5].toString(),
             "⚡ 1 vulnerabilities can be fixed automatically",
         )
     }
