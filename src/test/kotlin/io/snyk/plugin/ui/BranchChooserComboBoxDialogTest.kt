@@ -2,12 +2,14 @@ package io.snyk.plugin.ui
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import okio.Path.Companion.toPath
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
@@ -15,6 +17,7 @@ import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.LanguageServerSettings
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.trust.WorkspaceTrustService
 
 
 class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
@@ -25,8 +28,9 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
     override fun setUp(): Unit {
         super.setUp()
         unmockkAll()
-        folderConfig= FolderConfig(project.basePath.toString(), "testBranch")
+        folderConfig = FolderConfig(project.basePath.toString(), "testBranch")
         service<FolderConfigSettings>().addFolderConfig(folderConfig)
+        project.basePath?.let { service<WorkspaceTrustService>().addTrustedPath(it.toNioPathOrNull()!!) }
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
@@ -55,7 +59,6 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
         val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
         verify { lsMock.workspaceService.didChangeConfiguration(capture(capturedParam)) }
         val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
-
         // we expect the selected item
         assertEquals("main", transmittedSettings.folderConfigs[0].baseBranch)
     }
@@ -74,7 +77,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
 
         val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
         // we need the config update before the scan
-        verify (exactly = 1, timeout = 2000) {
+        verify(exactly = 1, timeout = 2000) {
             lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))
         }
 
@@ -99,7 +102,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
         val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
 
         // we need the config update before the scan
-        verify (exactly = 0) {
+        verify(exactly = 0) {
             lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))
         }
     }

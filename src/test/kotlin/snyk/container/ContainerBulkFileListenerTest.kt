@@ -14,14 +14,12 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
-import org.awaitility.Awaitility
 import org.awaitility.Awaitility.await
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.lsp.LanguageServerWrapper
