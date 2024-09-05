@@ -276,6 +276,13 @@ class SuggestionDescriptionPanelFromLS(
                 toggleElement(fixLoadingIndicatorElem, "show");
               }
 
+              function showGenerateAIFixError() {
+                toggleElement(fixLoadingIndicatorElem, "hide");
+                toggleElement(fixWrapperElem, "hide");
+                toggleElement(fixSectionElem, "hide");
+                toggleElement(fixErrorSectionElem, "show");
+              }
+
               function applyFix() {
                 console.log('Applying fix', fixes);
                 if (!fixes.length) return;
@@ -303,6 +310,7 @@ class SuggestionDescriptionPanelFromLS(
               const fixLoadingIndicatorElem = document.getElementById("fix-loading-indicator");
               const fixWrapperElem = document.getElementById("fix-wrapper");
               const fixSectionElem = document.getElementById("fixes-section");
+              const fixErrorSectionElem = document.getElementById("fixes-error-section");
 
               const nextDiffElem = document.getElementById('next-diff');
               const previousDiffElem = document.getElementById('previous-diff');
@@ -327,6 +335,10 @@ class SuggestionDescriptionPanelFromLS(
               // This function will be called once the response is received from the Language Server
               window.receiveAIFixResponse = function (fixesResponse) {
                 fixes = [...fixesResponse];
+                if (!fixes.length) {
+                  showGenerateAIFixError();
+                  return;
+                }
                 showAIFixes(fixes);
               };
             })();
