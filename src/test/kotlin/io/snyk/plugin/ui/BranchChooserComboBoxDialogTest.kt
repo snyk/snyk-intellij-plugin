@@ -4,16 +4,12 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.PlatformTestUtil
-import com.intellij.testFramework.TestFrameworkUtil
-import com.intellij.ui.charts.times
 import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.mockk.verifyOrder
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.services.LanguageServer
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.junit.Test
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.FolderConfigSettings
