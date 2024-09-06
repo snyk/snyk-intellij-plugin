@@ -58,7 +58,10 @@ class GenerateAIFixHandler() {
                         const filePath = aiFixButton.getAttribute('file-path');
 
                         aiFixButton.addEventListener('click', () => {
-                            console.log('Clicked AI Fix button. Path: ' + folderPath + ':' + filePath + ':' + issueId)
+                            window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
+                        });
+
+                        retryFixButton.addEventListener('click', () => {
                             window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
                         });
 
