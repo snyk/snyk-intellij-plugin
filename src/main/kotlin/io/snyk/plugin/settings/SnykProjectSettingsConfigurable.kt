@@ -49,7 +49,7 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
-            snykSettingsDialog.isNetNewIssuesSelected() != settingsStateService.netNewIssues ||
+            snykSettingsDialog.getNetNewIssuesSelected() != settingsStateService.netNewIssues ||
 
             isAuthenticationMethodModified()
 
@@ -123,8 +123,8 @@ class SnykProjectSettingsConfigurable(
                 handleReleaseChannelChanged()
             }
 
-            if (snykSettingsDialog.isNetNewIssuesSelected() != pluginSettings().netNewIssues) {
-                settingsStateService.netNewIssues = snykSettingsDialog.isNetNewIssuesSelected()
+            if (snykSettingsDialog.getNetNewIssuesSelected() != pluginSettings().netNewIssues) {
+                settingsStateService.netNewIssues = snykSettingsDialog.getNetNewIssuesSelected()
             }
 
             LanguageServerWrapper.getInstance().updateConfiguration()

@@ -464,7 +464,6 @@ class SnykSettingsDialog(
         )
 
         val netNewIssuesPanel = JPanel(UIGridLayoutManager(2, 4, JBUI.emptyInsets(), -1, -1))
-        //netNewIssuesPanel.border = IdeBorderFactory.createTitledBorder("All issues Vs Net new issues")
 
         productAndSeveritiesPanel.add(
             netNewIssuesPanel,
@@ -816,7 +815,7 @@ class SnykSettingsDialog(
 
     fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
 
-    fun isNetNewIssuesSelected(): String = netNewIssuesDropDown.selectedItem as String
+    fun getNetNewIssuesSelected(): String = netNewIssuesDropDown.selectedItem as String
 
     fun getUseTokenAuthentication(): Boolean = useTokenAuthentication.selectedIndex == 1
 }
