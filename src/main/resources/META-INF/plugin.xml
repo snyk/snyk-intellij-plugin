@@ -19,6 +19,9 @@
   <depends optional="true" config-file="optional/withXML.xml">com.intellij.modules.xml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
+      <codeInsight.lineMarkerProvider
+        language=""
+        implementationClass="snyk.common.annotator.SnykLineMarkerProvider"/>
     <colorSettingsPage implementation="snyk.common.annotator.SnykAnnotationColorSettingsPage"/>
     <toolWindow id="Snyk"
                 anchor="bottom"
