@@ -271,9 +271,7 @@ class SnykToolWindowSnykScanListenerLS(
         }
 
         val settings = pluginSettings()
-        // TODO: check for delta findings
-        val deltaFindingsEnabled = true
-        if (deltaFindingsEnabled) {
+        if (settings.isDeltaFindingsEnabled()) {
             // we need one choose branch node for each content root. sigh.
             service<FolderConfigSettings>().getAllForProject(project).forEach {
                 val branchChooserTreeNode = ChooseBranchNode(

@@ -252,32 +252,41 @@ fun getX509TrustManager(): X509TrustManager {
     return trustManagers[0] as X509TrustManager
 }
 
-fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): PsiFile? =
-    if (!virtualFile.isValid || project.isDisposed) {
+fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): PsiFile? {
+    return if (!virtualFile.isValid || project.isDisposed) {
         null
     } else {
         try {
-            PsiManager.getInstance(project).findFile(virtualFile)
+            var psiFile : PsiFile? = null
+            ReadAction.run<RuntimeException> {
+                psiFile = PsiManager.getInstance(project).findFile(virtualFile)
+            }
+            return psiFile
         } catch (ignored: Throwable) {
             null
         }
     }
+}
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
-    VirtualFileManager.getInstance().asyncRefresh()
+    runAsync {
+        VirtualFileManager.getInstance().asyncRefresh()
 
-    val openFiles = FileEditorManager.getInstance(project).openFiles
+        val openFiles = FileEditorManager.getInstance(project).openFiles
 
-    ApplicationManager.getApplication().invokeLater {
-        if (!project.isDisposed) {
-            project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+        ApplicationManager.getApplication().invokeLater {
+            if (!project.isDisposed) {
+                project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+            }
         }
-    }
-    openFiles.forEach {
-        val psiFile = findPsiFileIgnoringExceptions(it, project)
-        if (psiFile != null) {
-            DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+        openFiles.forEach {
+            val psiFile = findPsiFileIgnoringExceptions(it, project)
+            if (psiFile != null) {
+                invokeLater {
+                    DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+                }
+            }
         }
     }
 }

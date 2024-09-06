@@ -24,7 +24,6 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.util.minimumWidth
 import com.intellij.ui.util.preferredWidth
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
@@ -87,8 +86,6 @@ class SnykSettingsDialog(
     private val useTokenAuthentication =
         ComboBox(arrayOf("OAuth2 authentication", "Token authentication")).apply {
             this.isEditable = false
-            this.preferredWidth = 200
-            this.minimumWidth = 200
         }
 
     private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
@@ -205,7 +202,7 @@ class SnykSettingsDialog(
 
         /** General settings ------------------ */
 
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(7, 4, JBUI.emptyInsets(), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(7, 3, JBUI.emptyInsets(), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -224,6 +221,7 @@ class SnykSettingsDialog(
             authenticationMethodLabel,
             baseGridConstraints(
                 row = 0,
+                column = 0,
                 indent = 0,
                 anchor = UIGridConstraints.ANCHOR_WEST
             ),
@@ -234,10 +232,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 0,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 indent = 0,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
             ),
         )
@@ -253,10 +251,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 1,
                 column = 1,
-                colSpan = 3,
+                colSpan = 2,
                 indent = 0,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
             ),
         )
@@ -284,10 +282,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 3,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
         )
@@ -311,10 +309,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 4,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
         )
@@ -325,7 +323,7 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 5,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
@@ -348,10 +346,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 6,
                 column = 1,
-                colSpan = 2,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
         )
@@ -368,8 +366,10 @@ class SnykSettingsDialog(
             organizationContextHelpLabel,
             baseGridConstraintsAnchorWest(
                 row = 6,
-                column = 3,
+                column = 2,
                 indent = 0,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
             ),
         )
 
@@ -419,8 +419,8 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 2,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -429,14 +429,15 @@ class SnykSettingsDialog(
             scanTypesPanel,
             baseGridConstraints(
                 row = 0,
+                column = 0,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
 
-        val severitiesPanel = JPanel(UIGridLayoutManager(5, 4, JBUI.emptyInsets(), -1, -1))
+        val severitiesPanel = JPanel(UIGridLayoutManager(1, 1, JBUI.emptyInsets(), -1, -1))
         severitiesPanel.border = IdeBorderFactory.createTitledBorder("Severity selection")
 
         productAndSeveritiesPanel.add(
@@ -446,7 +447,7 @@ class SnykSettingsDialog(
                 column = 1,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -457,22 +458,23 @@ class SnykSettingsDialog(
                 row = 0,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
 
-        val netNewIssuesPanel = JPanel(UIGridLayoutManager(2, 4, JBUI.emptyInsets(), -1, -1))
+        val netNewIssuesPanel = JPanel(UIGridLayoutManager(2, 2, JBUI.emptyInsets(), -1, -1))
 
         productAndSeveritiesPanel.add(
             netNewIssuesPanel,
             baseGridConstraints(
                 row = 1,
                 column = 0,
+                colSpan = 2,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -493,8 +495,8 @@ class SnykSettingsDialog(
                 row = 0,
                 column = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -528,7 +530,7 @@ class SnykSettingsDialog(
                 baseGridConstraints(
                     row = 3,
                     fill = UIGridConstraints.FILL_BOTH,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                     indent = 0,
                 ),
             )
@@ -547,27 +549,15 @@ class SnykSettingsDialog(
                 baseGridConstraints(
                     row = 0,
                     column = 1,
+                    colSpan = 2,
                     anchor = UIGridConstraints.ANCHOR_WEST,
-                    fill = UIGridConstraints.FILL_HORIZONTAL,
+                    fill = UIGridConstraints.FILL_NONE,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
                     indent = 0,
                 ),
             )
 
             additionalParametersLabel.labelFor = additionalParametersTextField
-
-            projectSettingsPanel.add(
-                baseBranchInfoLabel,
-                baseGridConstraints(
-                    1,
-                    0,
-                    anchor = UIGridConstraints.ANCHOR_WEST,
-                    fill = UIGridConstraints.FILL_HORIZONTAL,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    colSpan = 2,
-                    indent = 0
-                )
-            )
 
             val projectSettingsSpacer = Spacer()
             projectSettingsPanel.add(
@@ -595,7 +585,7 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 6,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
@@ -636,7 +626,7 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 5,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
