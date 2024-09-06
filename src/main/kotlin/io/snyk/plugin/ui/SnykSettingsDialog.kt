@@ -640,7 +640,7 @@ class SnykSettingsDialog(
         introLabel.font = FontUtil.minusOne(introLabel.font)
         executableSettingsPanel.add(
             introLabel,
-            gb.nextLine(),
+            gb.nextLine()
         )
 
         cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://downloads.snyk.io. " +
