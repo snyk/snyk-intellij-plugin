@@ -176,6 +176,10 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         treeFiltering.iacResults = iacScanEnabled
         treeFiltering.containerResults = containerScanEnabled
     }
+
+    fun setDeltaEnabled() {
+        netNewIssues = "Net new issues"
+    }
 }
 
 class TreeFiltering {

@@ -63,6 +63,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootOssIssuesTreeNode = RootOssTreeNode(project)
         rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
         rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
+        pluginSettings().setDeltaEnabled()
     }
 
     private fun mockScanIssues(
