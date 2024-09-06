@@ -1,7 +1,6 @@
 # Snyk Security Changelog
 
 ## [2.9.1]
-
 ### Changed
 - save git folder config in settings
 - propagate Jetbrains determined runtime environment to language server
@@ -9,6 +8,7 @@
 - guard base branch setting against being empty
 - better error messaging when unexpected loop occurs during initialization
 - switch downloads to downloads.snyk.io
+- Added support for Net new scans in settings
 - allow annotations during IntelliJ indexing
 - add gutter icons for Snyk issues
 - add option to switch gutter icons on/off

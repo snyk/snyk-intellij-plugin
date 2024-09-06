@@ -35,6 +35,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var cliBaseDownloadURL: String = "https://downloads.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
     var cliReleaseChannel = "stable"
+    var netNewIssues: String = "All issues"
     var manageBinariesAutomatically: Boolean = true
     var fileListenerEnabled: Boolean = true
     // TODO migrate to https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
@@ -99,6 +100,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
             cliScanEnable = true // drop prev state
         }
     }
+
+    fun isDeltaFindingsEnabled(): String =
+        (netNewIssues == "Net new issues").toString()
 
     fun getAdditionalParameters(project: Project? = null): String? =
         if (isProjectSettingsAvailable(project)) {
