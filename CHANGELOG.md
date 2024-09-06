@@ -11,6 +11,7 @@
 - switch downloads to downloads.snyk.io
 - allow annotations during IntelliJ indexing
 - add gutter icons for Snyk issues
+- add option to switch gutter icons on/off in Snyk Settings (the IntelliJ setting only works for parsed languages)
 - add color and highlighting setting for Snyk issues
 - add dialog to choose reference branch when delta scanning
 - always display info nodes
