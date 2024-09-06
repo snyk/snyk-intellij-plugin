@@ -56,12 +56,16 @@ class GenerateAIFixHandler(private val project: Project) {
                         window.aiFixQuery = function(value) { ${aiFixQuery.inject("value")} };
 
                         const aiFixButton = document.getElementById('generate-ai-fix');
+                        const retryFixButton = document.getElementById('retry-generate-fix');
                         const issueId = aiFixButton.getAttribute('issue-id');
                         const folderPath = aiFixButton.getAttribute('folder-path');
                         const filePath = aiFixButton.getAttribute('file-path');
 
                         aiFixButton.addEventListener('click', () => {
-                            console.log('Clicked AI Fix button. Path: ' + folderPath + ':' + filePath + ':' + issueId)
+                            window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
+                        });
+
+                        retryFixButton.addEventListener('click', () => {
                             window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
                         });
                     })();

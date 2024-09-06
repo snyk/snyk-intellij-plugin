@@ -191,14 +191,12 @@ class SuggestionDescriptionPanelFromLS(
               }
 
               function nextDiff() {
-                  console.log('nextDiff')
                   if (!fixes || diffSelectedIndex >= fixes.length - 1) return;
                   ++diffSelectedIndex;
                   showCurrentDiff(fixes);
               }
 
               function previousDiff() {
-                  console.log('previousDiff')
                   if (!fixes || diffSelectedIndex <= 0) return;
                   --diffSelectedIndex;
                   showCurrentDiff(fixes)
@@ -281,6 +279,14 @@ class SuggestionDescriptionPanelFromLS(
                 toggleElement(fixLoadingIndicatorElem, "show");
               }
 
+              // Handle AI fix re-generation button click
+              function reGenerateAIFix() {
+                toggleElement(fixErrorSectionElem, "hide");
+                toggleElement(fixWrapperElem, "show");
+
+                generateAIFix()
+              }
+
               function showGenerateAIFixError() {
                 toggleElement(fixLoadingIndicatorElem, "hide");
                 toggleElement(fixWrapperElem, "hide");
@@ -312,8 +318,6 @@ class SuggestionDescriptionPanelFromLS(
               const applyFixBtn = document.getElementById('apply-fix')
               const retryGenerateFixBtn = document.getElementById('retry-generate-fix')
 
-              console.log('applyFixBtn', applyFixBtn)
-
               const fixLoadingIndicatorElem = document.getElementById("fix-loading-indicator");
               const fixWrapperElem = document.getElementById("fix-wrapper");
               const fixSectionElem = document.getElementById("fixes-section");
@@ -335,6 +339,7 @@ class SuggestionDescriptionPanelFromLS(
               // Event listener for Generate AI fix button
               generateAiFixBtn?.addEventListener("click", generateAIFix);
               applyFixBtn?.addEventListener('click', applyFix);
+              retryGenerateFixBtn?.addEventListener('click', reGenerateAIFix);
 
               nextDiffElem?.addEventListener("click", nextDiff);
               previousDiffElem?.addEventListener("click", previousDiff);
