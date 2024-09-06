@@ -73,8 +73,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     override fun collectInformation(file: PsiFile): Pair<PsiFile, List<ScanIssue>> {
         return Pair(file, getIssuesForFile(file)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
-            .distinctBy { it.id }
-            .sortedBy { it.title })
+            .distinctBy { it.id })
     }
 
     override fun doAnnotate(initialInfo: Pair<PsiFile, List<ScanIssue>>): List<SnykAnnotation> {
@@ -106,7 +105,8 @@ abstract class SnykAnnotator(private val product: ProductType) :
                 )
 
                 val gutterIconRenderer =
-                    if (!gutterIcons.contains(textRange) && gutterIconEnabled) {
+                    if (gutterIconEnabled && !gutterIcons.contains(textRange)) {
+                        gutterIcons.add(textRange)
                         SnykShowDetailsGutterRenderer(detailAnnotation)
                     } else {
                         null
@@ -114,7 +114,6 @@ abstract class SnykAnnotator(private val product: ProductType) :
 
                 detailAnnotation.gutterIconRenderer = gutterIconRenderer
                 annotations.add(detailAnnotation)
-                gutterIcons.add(textRange)
 
                 annotations.addAll(
                     getAnnotationsForCodeActions(
@@ -136,7 +135,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     ) {
         if (disposed) return
         if (!LanguageServerWrapper.getInstance().isInitialized) return
-        annotationResult.sortedByDescending { it.issue.getSeverityAsEnum() }
+        annotationResult
             .forEach { annotation ->
                 if (!annotation.range.isEmpty) {
                     val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
@@ -306,6 +305,4 @@ class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIcon
     override fun isDumbAware(): Boolean {
         return true
     }
-
-
 }
