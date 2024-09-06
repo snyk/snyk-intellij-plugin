@@ -17,6 +17,26 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 
+data class DiffPatch(
+    val originalFile: String,
+    val fixedFile: String,
+    val hunks: List<Hunk>
+)
+
+data class Hunk(
+    val startLineOriginal: Int,
+    val numLinesOriginal: Int,
+    val startLineFixed: Int,
+    val numLinesFixed: Int,
+    val changes: List<Change>
+)
+
+sealed class Change {
+    data class Addition(val line: String) : Change()
+    data class Deletion(val line: String) : Change()
+    data class Context(val line: String) : Change()  // Unchanged line for context
+}
+
 class ApplyFixHandler(private val project: Project) {
 
     val logger = Logger.getInstance(this::class.java).apply {
@@ -34,6 +54,10 @@ class ApplyFixHandler(private val project: Project) {
             val params = value.split("|@", limit = 2)
             val filePath = params[0]  // Path to the file that needs to be patched
             val patch = params[1]      // The patch we received from LS
+
+            println("[applyFixHandler] Received request to apply fix on file: $filePath")
+            println("[applyFixHandler] Patch to apply: $patch")
+
 
             // Avoid blocking the UI thread
             runAsync {
