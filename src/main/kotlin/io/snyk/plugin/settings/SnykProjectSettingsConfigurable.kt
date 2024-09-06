@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -120,6 +121,10 @@ class SnykProjectSettingsConfigurable(
 
             if (snykSettingsDialog.getNetNewIssuesSelected() != pluginSettings().netNewIssues) {
                 settingsStateService.netNewIssues = snykSettingsDialog.getNetNewIssuesSelected()
+                val cache = getSnykCachedResults(project)
+                cache?.currentOSSResultsLS?.clear()
+                cache?.currentSnykCodeResultsLS?.clear()
+                // TODO when we enable iac add cache cleaning here, when we have container, we can use cleanCaches()
             }
 
             LanguageServerWrapper.getInstance().updateConfiguration()
