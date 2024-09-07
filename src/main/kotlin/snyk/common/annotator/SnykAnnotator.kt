@@ -65,7 +65,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
         val annotationSeverity: HighlightSeverity,
         val annotationMessage: String,
         val range: TextRange,
-        val intention: IntentionAction,
+        val intentionActions: MutableList<IntentionAction> = mutableListOf(),
         var gutterIconRenderer: GutterIconRenderer? = null
     )
 
@@ -101,7 +101,6 @@ abstract class SnykAnnotator(private val product: ProductType) :
                     highlightSeverity,
                     annotationMessage,
                     textRange,
-                    ShowDetailsIntentionAction(annotationMessage, issue)
                 )
 
                 val gutterIconRenderer =
@@ -115,14 +114,8 @@ abstract class SnykAnnotator(private val product: ProductType) :
                 detailAnnotation.gutterIconRenderer = gutterIconRenderer
                 annotations.add(detailAnnotation)
 
-                annotations.addAll(
-                    getAnnotationsForCodeActions(
-                        initialInfo,
-                        issue,
-                        highlightSeverity,
-                        textRange
-                    )
-                )
+                detailAnnotation.intentionActions.add(ShowDetailsIntentionAction(annotationMessage, issue))
+                detailAnnotation.intentionActions.addAll(getCodeActionsAsIntentionActions(initialInfo, issue))
             }
         }
         return annotations
@@ -141,7 +134,11 @@ abstract class SnykAnnotator(private val product: ProductType) :
                     val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
                         .range(annotation.range)
                         .textAttributes(getTextAttributeKeyBySeverity(annotation.issue.getSeverityAsEnum()))
-                        .withFix(annotation.intention)
+
+                    annotation.intentionActions.forEach {
+                        annoBuilder.withFix(it)
+                    }
+
                     if (annotation.gutterIconRenderer != null) {
                         annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
                     }
@@ -150,13 +147,11 @@ abstract class SnykAnnotator(private val product: ProductType) :
             }
     }
 
-    private fun getAnnotationsForCodeActions(
+    private fun getCodeActionsAsIntentionActions(
         initial: Pair<PsiFile, List<ScanIssue>>,
         issue: ScanIssue,
-        highlightSeverity: HighlightSeverity,
-        textRange: TextRange,
-    ): MutableList<SnykAnnotation> {
-        val addedAnnotationsList = mutableListOf<SnykAnnotation>()
+    ): MutableList<IntentionAction> {
+        val addedIntentionActions = mutableListOf<IntentionAction>()
         val params =
             CodeActionParams(
                 TextDocumentIdentifier(initial.first.virtualFile.toLanguageServerURL()),
@@ -181,17 +176,9 @@ abstract class SnykAnnotator(private val product: ProductType) :
             }
             .sortedBy { it.right.title }.forEach { action ->
                 val codeAction = action.right
-                val title = codeAction.title
-                val codeActionAnnotation = SnykAnnotation(
-                    issue,
-                    highlightSeverity,
-                    title,
-                    textRange,
-                    CodeActionIntention(issue, codeAction, product)
-                )
-                addedAnnotationsList.add(codeActionAnnotation)
+                addedIntentionActions.add(CodeActionIntention(issue, codeAction, product))
             }
-        return addedAnnotationsList
+        return addedIntentionActions
     }
 
     private fun getLineMarkerProvider(): SnykLineMarkerProvider {
@@ -274,8 +261,9 @@ class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIcon
     }
 
     override fun getClickAction(): AnAction? {
-        if (annotation.intention !is ShowDetailsIntentionAction) return null
-        return getShowDetailsNavigationAction(annotation.intention)
+        val intention =
+            annotation.intentionActions.firstOrNull { it is ShowDetailsIntentionAction } ?: return null
+        return getShowDetailsNavigationAction(intention as ShowDetailsIntentionAction)
     }
 
     private fun getShowDetailsNavigationAction(intention: ShowDetailsIntentionAction) =
