@@ -72,15 +72,6 @@ enum class Severity {
         private const val SEVERITY_MEDIUM = "medium"
         private const val SEVERITY_LOW = "low"
 
-        fun getFromIndex(index: Int): Severity =
-            when (index) {
-                4 -> CRITICAL
-                3 -> HIGH
-                2 -> MEDIUM
-                1 -> LOW
-                else -> UNKNOWN
-            }
-
         fun getFromName(name: String): Severity =
             when (name) {
                 SEVERITY_CRITICAL -> CRITICAL

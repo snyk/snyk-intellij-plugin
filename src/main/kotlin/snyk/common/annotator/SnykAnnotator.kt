@@ -17,16 +17,20 @@ import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.toLanguageServerURL
+import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
 import org.eclipse.lsp4j.CodeActionParams
+import org.eclipse.lsp4j.Command
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentIdentifier
+import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.jetbrains.concurrency.runAsync
 import snyk.common.AnnotatorCommon
 import snyk.common.ProductType
@@ -46,7 +50,8 @@ import javax.swing.Icon
 private const val CODEACTION_TIMEOUT = 5000L
 
 abstract class SnykAnnotator(private val product: ProductType) :
-    ExternalAnnotator<Pair<PsiFile, List<ScanIssue>>, List<SnykAnnotation>>(), Disposable, DumbAware {
+    ExternalAnnotator<Pair<PsiFile, Map<Range, List<ScanIssue>>>, List<SnykAnnotation>>(), Disposable, DumbAware {
+    private val lineMarkerProviderDescriptor: SnykLineMarkerProvider = getLineMarkerProvider()
 
     val logger = logger<SnykAnnotator>()
     protected var disposed = false
@@ -70,53 +75,77 @@ abstract class SnykAnnotator(private val product: ProductType) :
     )
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
-    override fun collectInformation(file: PsiFile): Pair<PsiFile, List<ScanIssue>> {
-        return Pair(file, getIssuesForFile(file)
+    override fun collectInformation(file: PsiFile): Pair<PsiFile, Map<Range, List<ScanIssue>>>? {
+        val map = getIssuesForFile(file)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
-            .distinctBy { it.id })
+            .sortedByDescending { it.getSeverityAsEnum() }
+            .groupBy { it.range }
+            .toMap()
+
+        return Pair(file, map)
     }
 
-    override fun doAnnotate(initialInfo: Pair<PsiFile, List<ScanIssue>>): List<SnykAnnotation> {
+    override fun doAnnotate(initialInfo: Pair<PsiFile, Map<Range, List<ScanIssue>>>): List<SnykAnnotation> {
         if (disposed) return emptyList()
         AnnotatorCommon.prepareAnnotate(initialInfo.first)
         if (!LanguageServerWrapper.getInstance().isInitialized) return emptyList()
-
-        val lineMarkerProviderDescriptor: SnykLineMarkerProvider = getLineMarkerProvider()
         val gutterIconEnabled = LineMarkerSettings.getSettings().isEnabled(lineMarkerProviderDescriptor)
 
-        val annotations = mutableListOf<SnykAnnotation>()
-        val gutterIcons: MutableSet<TextRange> = mutableSetOf()
+        val codeActions = initialInfo.second
+            .map { entry ->
+                entry.key to getCodeActions(initialInfo.first.virtualFile, entry.key).map { it.right }
+                    .sortedBy { it.title }
+            }.toMap()
 
-        initialInfo.second.sortedByDescending { it.getSeverityAsEnum() }.forEach { issue ->
-            val textRange = textRange(initialInfo.first, issue.range)
-            val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
-            val annotationMessage = issue.annotationMessage()
-            if (textRange == null) {
-                logger.warn("Invalid range for issue: $issue")
+        val annotations = mutableListOf<SnykAnnotation>()
+        initialInfo.second.forEach { entry ->
+            val textRange = textRange(initialInfo.first, entry.key)
+            if (textRange == null || textRange.isEmpty) {
+                logger.warn("Invalid range for range: $textRange")
                 return@forEach
             }
-            if (!textRange.isEmpty) {
-                val detailAnnotation = SnykAnnotation(
-                    issue,
-                    highlightSeverity,
-                    annotationMessage,
-                    textRange,
-                )
+            annotations.addAll(
+                doAnnotateIssue(entry, textRange, gutterIconEnabled, codeActions)
+            )
+        }
+        return annotations.sortedByDescending { it.issue.getSeverityAsEnum() }
+    }
 
-                val gutterIconRenderer =
-                    if (gutterIconEnabled && !gutterIcons.contains(textRange)) {
-                        gutterIcons.add(textRange)
-                        SnykShowDetailsGutterRenderer(detailAnnotation)
-                    } else {
-                        null
-                    }
+    private fun doAnnotateIssue(
+        entry: Map.Entry<Range, List<ScanIssue>>,
+        textRange: TextRange,
+        gutterIconEnabled: Boolean,
+        codeActions: Map<Range, List<CodeAction>>,
+    ): List<SnykAnnotation> {
+        val gutterIcons: MutableSet<TextRange> = mutableSetOf()
+        val annotations = mutableListOf<SnykAnnotation>()
+        entry.value.forEach { issue ->
+            val highlightSeverity = issue.getSeverityAsEnum().getHighlightSeverity()
+            val annotationMessage = issue.annotationMessage()
 
-                detailAnnotation.gutterIconRenderer = gutterIconRenderer
-                annotations.add(detailAnnotation)
+            val detailAnnotation = SnykAnnotation(
+                issue,
+                highlightSeverity,
+                annotationMessage,
+                textRange,
+            )
 
-                detailAnnotation.intentionActions.add(ShowDetailsIntentionAction(annotationMessage, issue))
-                detailAnnotation.intentionActions.addAll(getCodeActionsAsIntentionActions(initialInfo, issue))
-            }
+            val gutterIconRenderer =
+                if (gutterIconEnabled && !gutterIcons.contains(textRange)) {
+                    gutterIcons.add(textRange)
+                    SnykShowDetailsGutterRenderer(detailAnnotation)
+                } else {
+                    null
+                }
+
+            val languageServerIntentionActions = codeActions[entry.key]?.let { range ->
+                getCodeActionsAsIntentionActions(issue, range)
+            } ?: emptyList()
+
+            detailAnnotation.gutterIconRenderer = gutterIconRenderer
+            detailAnnotation.intentionActions.add(ShowDetailsIntentionAction(annotationMessage, issue))
+            detailAnnotation.intentionActions.addAll(languageServerIntentionActions)
+            annotations.add(detailAnnotation)
         }
         return annotations
     }
@@ -129,9 +158,11 @@ abstract class SnykAnnotator(private val product: ProductType) :
         if (disposed) return
         if (!LanguageServerWrapper.getInstance().isInitialized) return
         annotationResult
+            .sortedByDescending { it.issue.getSeverityAsEnum() }
             .forEach { annotation ->
                 if (!annotation.range.isEmpty) {
-                    val annoBuilder = holder.newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
+                    val annoBuilder = holder
+                        .newAnnotation(annotation.annotationSeverity, annotation.annotationMessage)
                         .range(annotation.range)
                         .textAttributes(getTextAttributeKeyBySeverity(annotation.issue.getSeverityAsEnum()))
 
@@ -142,20 +173,39 @@ abstract class SnykAnnotator(private val product: ProductType) :
                     if (annotation.gutterIconRenderer != null) {
                         annoBuilder.gutterIconRenderer(SnykShowDetailsGutterRenderer(annotation))
                     }
+
                     annoBuilder.create()
                 }
             }
     }
 
     private fun getCodeActionsAsIntentionActions(
-        initial: Pair<PsiFile, List<ScanIssue>>,
         issue: ScanIssue,
+        codeActions: List<CodeAction>
     ): MutableList<IntentionAction> {
         val addedIntentionActions = mutableListOf<IntentionAction>()
+
+        codeActions
+            .filter { action ->
+                val diagnosticCode = action.diagnostics?.get(0)?.code?.left
+                val ruleId = issue.ruleId()
+                diagnosticCode == ruleId
+            }
+            .forEach { action ->
+                addedIntentionActions.add(CodeActionIntention(issue, action, product))
+            }
+
+        return addedIntentionActions
+    }
+
+    private fun getCodeActions(
+        file: VirtualFile,
+        range: Range
+    ): List<Either<Command, CodeAction>> {
         val params =
             CodeActionParams(
-                TextDocumentIdentifier(initial.first.virtualFile.toLanguageServerURL()),
-                issue.range,
+                TextDocumentIdentifier(file.toLanguageServerURL()),
+                range,
                 CodeActionContext(emptyList()),
             )
         val languageServer = LanguageServerWrapper.getInstance().languageServer
@@ -164,21 +214,10 @@ abstract class SnykAnnotator(private val product: ProductType) :
                 languageServer.textDocumentService
                     .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.MILLISECONDS) ?: emptyList()
             } catch (ignored: TimeoutException) {
-                logger.info("Timeout fetching code actions for issue: $issue")
+                logger.info("Timeout fetching code actions for range: $range")
                 emptyList()
             }
-
-        codeActions
-            .filter { a ->
-                val diagnosticCode = a.right.diagnostics?.get(0)?.code?.left
-                val ruleId = issue.ruleId()
-                diagnosticCode == ruleId
-            }
-            .sortedBy { it.right.title }.forEach { action ->
-                val codeAction = action.right
-                addedIntentionActions.add(CodeActionIntention(issue, codeAction, product))
-            }
-        return addedIntentionActions
+        return codeActions
     }
 
     private fun getLineMarkerProvider(): SnykLineMarkerProvider {
