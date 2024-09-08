@@ -49,14 +49,15 @@ class IacBulkFileListener : SnykBulkFileListener() {
             }
             .forEach(::markObsolete)
 
-        val changed = iacRelatedVFsAffected.isNotEmpty() // for new/deleted/renamed files we also need to "dirty" the cache, too
+        val changed =
+            iacRelatedVFsAffected.isNotEmpty() // for new/deleted/renamed files we also need to "dirty" the cache, too
         if (changed) {
             log.debug("update IaC cache for $iacRelatedVFsAffected")
             currentIacResult.iacScanNeeded = true
             ApplicationManager.getApplication().invokeLater {
                 getSnykToolWindowPanel(project)?.displayIacResults(currentIacResult)
-                refreshAnnotationsForOpenFiles(project)
             }
+            refreshAnnotationsForOpenFiles(project)
         }
     }
 

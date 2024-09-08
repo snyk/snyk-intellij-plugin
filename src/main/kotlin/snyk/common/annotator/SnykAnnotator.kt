@@ -41,6 +41,7 @@ import snyk.common.annotator.SnykAnnotationAttributeKey.medium
 import snyk.common.annotator.SnykAnnotationAttributeKey.unknown
 import snyk.common.annotator.SnykAnnotator.SnykAnnotation
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.RangeConverter
 import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -49,8 +50,11 @@ import javax.swing.Icon
 
 private const val CODEACTION_TIMEOUT = 5000L
 
+typealias SnykAnnotationInput = Pair<PsiFile, Map<Range, List<ScanIssue>>>
+typealias SnykAnnotationList = List<SnykAnnotation>
+
 abstract class SnykAnnotator(private val product: ProductType) :
-    ExternalAnnotator<Pair<PsiFile, Map<Range, List<ScanIssue>>>, List<SnykAnnotation>>(), Disposable, DumbAware {
+    ExternalAnnotator<SnykAnnotationInput, SnykAnnotationList>(), Disposable, DumbAware {
     private val lineMarkerProviderDescriptor: SnykLineMarkerProvider = getLineMarkerProvider()
 
     val logger = logger<SnykAnnotator>()
@@ -75,7 +79,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     )
 
     // overrides needed for the Annotator to invoke apply(). We don't do anything here
-    override fun collectInformation(file: PsiFile): Pair<PsiFile, Map<Range, List<ScanIssue>>>? {
+    override fun collectInformation(file: PsiFile): SnykAnnotationInput? {
         val map = getIssuesForFile(file)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
             .sortedByDescending { it.getSeverityAsEnum() }
@@ -85,21 +89,24 @@ abstract class SnykAnnotator(private val product: ProductType) :
         return Pair(file, map)
     }
 
-    override fun doAnnotate(initialInfo: Pair<PsiFile, Map<Range, List<ScanIssue>>>): List<SnykAnnotation> {
+    override fun doAnnotate(initialInfo: SnykAnnotationInput): SnykAnnotationList {
         if (disposed) return emptyList()
-        AnnotatorCommon.prepareAnnotate(initialInfo.first)
         if (!LanguageServerWrapper.getInstance().isInitialized) return emptyList()
+
+        val psiFile = initialInfo.first
         val gutterIconEnabled = LineMarkerSettings.getSettings().isEnabled(lineMarkerProviderDescriptor)
+
+        AnnotatorCommon.prepareAnnotate(psiFile)
 
         val codeActions = initialInfo.second
             .map { entry ->
-                entry.key to getCodeActions(initialInfo.first.virtualFile, entry.key).map { it.right }
+                entry.key to getCodeActions(psiFile.virtualFile, entry.key).map { it.right }
                     .sortedBy { it.title }
             }.toMap()
 
         val annotations = mutableListOf<SnykAnnotation>()
         initialInfo.second.forEach { entry ->
-            val textRange = textRange(initialInfo.first, entry.key)
+            val textRange = RangeConverter.convertToTextRange(psiFile, entry.key)
             if (textRange == null || textRange.isEmpty) {
                 logger.warn("Invalid range for range: $textRange")
                 return@forEach
@@ -152,13 +159,12 @@ abstract class SnykAnnotator(private val product: ProductType) :
 
     override fun apply(
         psiFile: PsiFile,
-        annotationResult: List<SnykAnnotation>,
+        annotationResult: SnykAnnotationList,
         holder: AnnotationHolder,
     ) {
         if (disposed) return
         if (!LanguageServerWrapper.getInstance().isInitialized) return
         annotationResult
-            .sortedByDescending { it.issue.getSeverityAsEnum() }
             .forEach { annotation ->
                 if (!annotation.range.isEmpty) {
                     val annoBuilder = holder
@@ -248,88 +254,51 @@ abstract class SnykAnnotator(private val product: ProductType) :
             ?.toSet()
             ?: emptySet()
 
-    /** Public for Tests only */
-    fun textRange(
-        psiFile: PsiFile,
-        range: Range,
-    ): TextRange? {
-        try {
-            val document =
-                psiFile.viewProvider.document ?: throw IllegalArgumentException("No document found for $psiFile")
-            val startRow = range.start.line
-            val endRow = range.end.line
-            val startCol = range.start.character
-            val endCol = range.end.character
-
-            if (startRow < 0 || startRow > document.lineCount - 1) {
-                return null
-            }
-            if (endRow < 0 || endRow > document.lineCount - 1 || endRow < startRow) {
-                return null
-            }
-
-            val lineOffSet = document.getLineStartOffset(startRow) + startCol
-            val lineOffSetEnd = document.getLineStartOffset(endRow) + endCol
-
-            if (lineOffSet < 0 || lineOffSet > document.textLength - 1) {
-                return null
-            }
-            if (lineOffSetEnd < 0 || lineOffSetEnd < lineOffSet || lineOffSetEnd > document.textLength - 1) {
-                return null
-            }
-
-            return TextRange.create(lineOffSet, lineOffSetEnd)
-        } catch (e: IllegalArgumentException) {
-            logger.warn(e)
-            return TextRange.EMPTY_RANGE
+    class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIconRenderer() {
+        override fun equals(other: Any?): Boolean {
+            return annotation == other
         }
-    }
-}
 
-class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIconRenderer() {
-    override fun equals(other: Any?): Boolean {
-        return annotation == other
-    }
+        override fun hashCode(): Int {
+            return annotation.hashCode()
+        }
 
-    override fun hashCode(): Int {
-        return annotation.hashCode()
-    }
+        override fun getIcon(): Icon {
+            return SnykIcons.getSeverityIcon(annotation.issue.getSeverityAsEnum())
+        }
 
-    override fun getIcon(): Icon {
-        return SnykIcons.getSeverityIcon(annotation.issue.getSeverityAsEnum())
-    }
+        override fun getClickAction(): AnAction? {
+            val intention =
+                annotation.intentionActions.firstOrNull { it is ShowDetailsIntentionAction } ?: return null
+            return getShowDetailsNavigationAction(intention as ShowDetailsIntentionAction)
+        }
 
-    override fun getClickAction(): AnAction? {
-        val intention =
-            annotation.intentionActions.firstOrNull { it is ShowDetailsIntentionAction } ?: return null
-        return getShowDetailsNavigationAction(intention as ShowDetailsIntentionAction)
-    }
-
-    private fun getShowDetailsNavigationAction(intention: ShowDetailsIntentionAction) =
-        object : AnAction() {
-            override fun actionPerformed(e: AnActionEvent) {
-                runAsync {
-                    val virtualFile = intention.issue.virtualFile ?: return@runAsync
-                    val project = guessProjectForFile(virtualFile) ?: return@runAsync
-                    val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@runAsync
-                    intention.selectNodeAndDisplayDescription(toolWindowPanel)
+        private fun getShowDetailsNavigationAction(intention: ShowDetailsIntentionAction) =
+            object : AnAction() {
+                override fun actionPerformed(e: AnActionEvent) {
+                    runAsync {
+                        val virtualFile = intention.issue.virtualFile ?: return@runAsync
+                        val project = guessProjectForFile(virtualFile) ?: return@runAsync
+                        val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@runAsync
+                        intention.selectNodeAndDisplayDescription(toolWindowPanel)
+                    }
                 }
             }
+
+        override fun getTooltipText(): String {
+            return annotation.annotationMessage
         }
 
-    override fun getTooltipText(): String {
-        return annotation.annotationMessage
-    }
+        override fun getAccessibleName(): String {
+            return annotation.annotationMessage
+        }
 
-    override fun getAccessibleName(): String {
-        return annotation.annotationMessage
-    }
+        override fun isNavigateAction(): Boolean {
+            return true
+        }
 
-    override fun isNavigateAction(): Boolean {
-        return true
-    }
-
-    override fun isDumbAware(): Boolean {
-        return true
+        override fun isDumbAware(): Boolean {
+            return true
+        }
     }
 }
