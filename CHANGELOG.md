@@ -15,6 +15,7 @@
 - add color and highlighting setting for Snyk issues
 - add dialog to choose reference branch when net new scanning
 - always display info nodes
+- add option in IntelliJ registry to display tooltips with issue information
 
 ### Fixes
 - add name to code vision provider
