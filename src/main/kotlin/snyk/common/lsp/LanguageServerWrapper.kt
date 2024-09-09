@@ -561,19 +561,19 @@ class LanguageServerWrapper(
         return ""
     }
 
-    companion object {
+    override fun dispose() {
+        disposed = true
+        shutdown()
+    }
 
+
+    companion object {
         private var instance: LanguageServerWrapper? = null
         fun getInstance() =
             instance ?: LanguageServerWrapper().also {
                 Disposer.register(SnykPluginDisposable.getInstance(), it)
                 instance = it
             }
-    }
-
-    override fun dispose() {
-        disposed = true
-        shutdown()
     }
 
 }
