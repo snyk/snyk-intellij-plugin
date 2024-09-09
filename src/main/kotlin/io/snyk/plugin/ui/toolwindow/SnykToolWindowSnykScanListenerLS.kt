@@ -77,22 +77,22 @@ class SnykToolWindowSnykScanListenerLS(
             this.snykToolWindowPanel.triggerSelectionListeners = false
             val snykCachedResults = getSnykCachedResults(project)
             displaySnykCodeResults(snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap())
-            refreshAnnotationsForOpenFiles(project)
             this.snykToolWindowPanel.triggerSelectionListeners = true
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
     override fun scanningOssFinished() {
         if (disposed) return
+        cancelOssIndicator(project)
         ApplicationManager.getApplication().invokeLater {
-            cancelOssIndicator(project)
             this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
             val snykCachedResults = getSnykCachedResults(project)
             displayOssResults(snykCachedResults?.currentOSSResultsLS ?: emptyMap())
-            refreshAnnotationsForOpenFiles(project)
             this.snykToolWindowPanel.triggerSelectionListeners = true
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
     override fun scanningError(snykScan: SnykScanParams) {

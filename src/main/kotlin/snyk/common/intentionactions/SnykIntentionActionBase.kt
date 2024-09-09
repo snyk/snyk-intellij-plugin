@@ -7,7 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Iconable
 import com.intellij.psi.PsiFile
 
-abstract class SnykIntentionActionBase() : IntentionAction, Iconable, PriorityAction {
+abstract class SnykIntentionActionBase : IntentionAction, Iconable, PriorityAction {
 
     override fun startInWriteAction(): Boolean = true
 

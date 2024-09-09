@@ -19,11 +19,9 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.roots.ui.configuration.ProjectSettingsService
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
-import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
@@ -187,19 +185,17 @@ class SnykLanguageClient :
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (disposed) return completedFuture
-
-        ProjectManager
-            .getInstance()
-            .openProjects
-            .filter { !it.isDisposed }
-            .forEach { project ->
-                runAsync {
+        runAsync {
+            ProjectManager
+                .getInstance()
+                .openProjects
+                .filter { !it.isDisposed }
+                .forEach { project ->
                     ReadAction.run<RuntimeException> {
                         if (!project.isDisposed) refreshAnnotationsForOpenFiles(project)
                     }
                 }
-            }
-        VirtualFileManager.getInstance().asyncRefresh()
+        }
         return completedFuture
     }
 

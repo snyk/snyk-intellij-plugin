@@ -76,8 +76,8 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
         snykCachedResults.currentContainerResult = newContainerCache
         ApplicationManager.getApplication().invokeLater {
             getSnykToolWindowPanel(project)?.displayContainerResults(newContainerCache)
-            refreshAnnotationsForOpenFiles(project)
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
     private fun makeObsolete(containerIssuesForImage: ContainerIssuesForImage): ContainerIssuesForImage =
