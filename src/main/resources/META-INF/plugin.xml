@@ -19,9 +19,9 @@
   <depends optional="true" config-file="optional/withXML.xml">com.intellij.modules.xml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-      <codeInsight.lineMarkerProvider
-        language=""
-        implementationClass="snyk.common.annotator.SnykLineMarkerProvider"/>
+    <codeInsight.lineMarkerProvider
+      language=""
+      implementationClass="snyk.common.annotator.SnykLineMarkerProvider"/>
     <colorSettingsPage implementation="snyk.common.annotator.SnykAnnotationColorSettingsPage"/>
     <toolWindow id="Snyk"
                 anchor="bottom"
@@ -42,12 +42,18 @@
     <registryKey key="snyk.timeout.results.waiting"
                  defaultValue="720000"
                  description="Snyk timeout (milliseconds) to wait for results during scan"/>
+    <registryKey key="snyk.isDocumentationHoverEnabled"
+                 defaultValue="false"
+                 description="Show Snyk issue details additionally as documentation popup (hover)"
+                 restartRequired="false"
+    />
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
-    <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider" id="snyk.common.lsp.LSCodeVisionProvider"/>
-    <config.codeVisionGroupSettingProvider implementation="snyk.common.lsp.LSCodeVisionProvider" />
-
+    <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider"
+                                    id="snyk.common.lsp.LSCodeVisionProvider"/>
+    <config.codeVisionGroupSettingProvider implementation="snyk.common.lsp.LSCodeVisionProvider"/>
+    <platform.backend.documentation.targetProvider implementation="snyk.common.lsp.LSDocumentationTargetProvider" />
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykOSSAnnotator"/>
   </extensions>

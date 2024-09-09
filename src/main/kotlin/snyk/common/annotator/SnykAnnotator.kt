@@ -48,7 +48,7 @@ import java.util.concurrent.TimeoutException
 import javax.swing.Icon
 
 
-private const val CODEACTION_TIMEOUT = 5000L
+private const val CODEACTION_TIMEOUT = 10L
 
 typealias SnykAnnotationInput = Pair<PsiFile, Map<Range, List<ScanIssue>>>
 typealias SnykAnnotationList = List<SnykAnnotation>
@@ -78,8 +78,9 @@ abstract class SnykAnnotator(private val product: ProductType) :
         var gutterIconRenderer: GutterIconRenderer? = null
     )
 
-    // overrides needed for the Annotator to invoke apply(). We don't do anything here
     override fun collectInformation(file: PsiFile): SnykAnnotationInput? {
+        if (disposed) return null
+        if (!LanguageServerWrapper.getInstance().isInitialized) return null
         val map = getIssuesForFile(file)
             .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
             .sortedByDescending { it.getSeverityAsEnum() }
@@ -111,9 +112,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
                 logger.warn("Invalid range for range: $textRange")
                 return@forEach
             }
-            annotations.addAll(
-                doAnnotateIssue(entry, textRange, gutterIconEnabled, codeActions)
-            )
+            annotations.addAll(doAnnotateIssue(entry, textRange, gutterIconEnabled, codeActions))
         }
         return annotations.sortedByDescending { it.issue.getSeverityAsEnum() }
     }
@@ -218,7 +217,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
         val codeActions =
             try {
                 languageServer.textDocumentService
-                    .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.MILLISECONDS) ?: emptyList()
+                    .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
             } catch (ignored: TimeoutException) {
                 logger.info("Timeout fetching code actions for range: $range")
                 emptyList()

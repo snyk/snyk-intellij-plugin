@@ -15,14 +15,25 @@ import java.util.concurrent.TimeUnit
  */
 @Service(Service.Level.APP, Service.Level.PROJECT)
 class SnykPluginDisposable : Disposable, AppLifecycleListener {
+    private var disposed = false
+        get() {
+            return ApplicationManager.getApplication().isDisposed || field
+        }
+
+    fun isDisposed() = disposed
+
+    override fun dispose() {
+        disposed = true
+    }
+
     companion object {
         @NotNull
-        fun getInstance(): Disposable {
+        fun getInstance(): SnykPluginDisposable {
             return ApplicationManager.getApplication().getService(SnykPluginDisposable::class.java)
         }
 
         @NotNull
-        fun getInstance(@NotNull project: Project): Disposable {
+        fun getInstance(@NotNull project: Project): SnykPluginDisposable {
             return project.getService(SnykPluginDisposable::class.java)
         }
     }
@@ -46,7 +57,4 @@ class SnykPluginDisposable : Disposable, AppLifecycleListener {
             // do nothing
         }
     }
-
-    override fun dispose() = Unit
-
 }
