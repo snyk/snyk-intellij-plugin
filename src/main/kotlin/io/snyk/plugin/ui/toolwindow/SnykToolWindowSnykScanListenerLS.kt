@@ -117,10 +117,10 @@ class SnykToolWindowSnykScanListenerLS(
                 // TODO implement
             }
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
-    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
-    }
+    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {}
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return

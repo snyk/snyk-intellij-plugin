@@ -48,13 +48,24 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
         )
         val hover =
             languageServerWrapper.languageServer.textDocumentService.hover(hoverParams).get(2000, TimeUnit.MILLISECONDS)
-
+        if (hover == null || hover.contents.right.value.isEmpty()) return mutableListOf()
         return mutableListOf(SnykDocumentationTarget(hover))
     }
 
     inner class SnykDocumentationTarget(private val hover: Hover) : DocumentationTarget {
+        override fun computeDocumentationHint(): String? {
+            val htmlText = convertMarkdownToHtml(hover.contents.right.value)
+            if (htmlText.isEmpty()) {
+                return null
+            }
+            return htmlText.split("\n")[0]
+        }
+
         override fun computeDocumentation(): DocumentationResult? {
             val htmlText = convertMarkdownToHtml(hover.contents.right.value)
+            if (htmlText.isEmpty()) {
+                return null
+            }
             return DocumentationResult.documentation(htmlText)
         }
 
