@@ -175,7 +175,7 @@ tasks {
         untilBuild.set(properties("pluginUntilBuild"))
 
         val content = File("$projectDir/README.md").readText()
-        val startIndex = content.indexOf("# JetBrains plugins")
+        val startIndex = content.indexOf("# JetBrains plugin")
         val descriptionFromReadme = content.substring(startIndex).lines().joinToString("\n").run { markdownToHTML(this) }
         pluginDescription.set(descriptionFromReadme)
 
