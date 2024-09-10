@@ -53,16 +53,8 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
     }
 
     inner class SnykDocumentationTarget(private val hover: Hover) : DocumentationTarget {
-        override fun computeDocumentationHint(): String? {
-            val htmlText = convertMarkdownToHtml(hover.contents.right.value)
-            if (htmlText.isEmpty()) {
-                return null
-            }
-            return htmlText.split("\n")[0]
-        }
-
         override fun computeDocumentation(): DocumentationResult? {
-            val htmlText = convertMarkdownToHtml(hover.contents.right.value)
+            val htmlText = hover.contents.right.value
             if (htmlText.isEmpty()) {
                 return null
             }
