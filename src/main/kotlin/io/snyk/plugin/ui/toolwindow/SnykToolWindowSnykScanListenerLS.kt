@@ -286,11 +286,12 @@ class SnykToolWindowSnykScanListenerLS(
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         if (issuesCount != 0) {
-            text = if (issuesCount == 1) {
-                "$issuesCount vulnerability found by Snyk"
+            val plural = if (issuesCount == 1) {
+                "y"
             } else {
-                "✋ $issuesCount vulnerabilities found by Snyk"
+                "ies"
             }
+                text = "✋ $issuesCount vulnerabilit$plural found by Snyk"
             if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 text += ", $ignoredIssuesCount ignored"
             }
