@@ -16,6 +16,7 @@
 - add dialog to choose reference branch when net new scanning
 - always display info nodes
 - add option in IntelliJ registry to display tooltips with issue information
+- display documentation info when hovering over issue
 
 ### Fixes
 - add name to code vision provider
