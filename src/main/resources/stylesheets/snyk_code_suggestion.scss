@@ -136,7 +136,7 @@ button.generate-ai-fix:hover, button.sn-apply-fix:hover {
 
 button.sn-apply-fix {
   border-radius: 3px;
-  border: 1px solid var(--dark-button-border-default, #4C708C); // TODO: define the variable in the ThemeBasedStylingGenerator class to be theme-based
-  background: var(--dark-button-default, #365880); // TODO: define the variable in the ThemeBasedStylingGenerator class to be theme-based
+  border: 1px solid var(--dark-button-border-default);
+  background: var(--dark-button-default);
   padding: 4px 12px;
 }

@@ -3,8 +3,10 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.PlatformColors
 import com.intellij.util.ui.UIUtil
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
@@ -63,8 +65,8 @@ class ThemeBasedStylingGenerator {
                     val textColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
                     val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
                     val dataFlowColor = toCssHex(baseColor)
+                    val editorColor = toCssHex(baseColor)
                     val borderColor = toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground())
-                    val editorColor = toCssHex(UIUtil.getTextFieldBackground())
                     val labelColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
 
                     val globalScheme = EditorColorsManager.getInstance().globalScheme
@@ -93,7 +95,10 @@ class ThemeBasedStylingGenerator {
                                 '--editor-color': "$editorColor",
                                 '--label-color': "'$labelColor'",
                                 '--container-background-color': "${toCssHex(codeTagBgColor)}",
-                                '--generated-ai-fix-button-background-color': "#3376CD", // TODO: From Figma. Find the correct JetBrains API to get this color
+                                '--generated-ai-fix-button-background-color': "$linkColor",
+                                '--dark-button-border-default': "$borderColor",
+                                '--dark-button-default': "$linkColor",
+
                             };
                             for (let [property, value] of Object.entries(properties)) {
                                 document.documentElement.style.setProperty(property, value);
