@@ -43,7 +43,7 @@
                  defaultValue="720000"
                  description="Snyk timeout (milliseconds) to wait for results during scan"/>
     <registryKey key="snyk.isDocumentationHoverEnabled"
-                 defaultValue="false"
+                 defaultValue="true"
                  description="Show Snyk issue details additionally as documentation popup (hover)"
                  restartRequired="false"
     />
