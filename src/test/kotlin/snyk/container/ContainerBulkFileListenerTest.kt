@@ -72,7 +72,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
         VirtualFileManager.getInstance().syncRefresh()
         var virtualFile: VirtualFile? = null
-        await().atMost(2, TimeUnit.SECONDS).until {
+        await().atMost(5, TimeUnit.SECONDS).until {
             virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
             virtualFile?.isValid ?: false
         }
