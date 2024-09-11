@@ -3,12 +3,15 @@ package io.snyk.plugin.ui
 import com.intellij.openapi.components.service
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.VirtualFileSystem
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.toVirtualFile
 import okio.Path.Companion.toPath
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.services.LanguageServer
@@ -30,10 +33,10 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
         unmockkAll()
         folderConfig = FolderConfig(project.basePath.toString(), "testBranch")
         service<FolderConfigSettings>().addFolderConfig(folderConfig)
-        project.basePath?.let { service<WorkspaceTrustService>().addTrustedPath(it.toNioPathOrNull()!!) }
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
+        project.basePath?.let { service<WorkspaceTrustService>().addTrustedPath(it.toPath().parent!!.toNioPath()) }
         cut = BranchChooserComboBoxDialog(project)
     }
 
