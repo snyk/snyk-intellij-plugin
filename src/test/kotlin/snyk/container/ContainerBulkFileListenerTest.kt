@@ -1,6 +1,9 @@
 package snyk.container
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.VirtualFile
@@ -28,6 +31,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.notExists
 
@@ -70,12 +74,14 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         setUpContainerTest()
         val path = createNewFileInProjectRoot().toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
-        VirtualFileManager.getInstance().syncRefresh()
         var virtualFile: VirtualFile? = null
-        await().atMost(2, TimeUnit.SECONDS).until {
+        invokeLater {
+            VirtualFileManager.getInstance().syncRefresh()
             virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
-            virtualFile?.isValid ?: false
         }
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        await().timeout(5, TimeUnit.SECONDS).until { virtualFile?.isValid ?: false }
+
 
         ApplicationManager.getApplication().runWriteAction {
             val file = PsiManager.getInstance(project).findFile(virtualFile!!)
