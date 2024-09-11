@@ -1,7 +1,12 @@
 # Snyk Security Changelog
 
-## [2.9.1]
 
+## [2.9.2]
+### Changed
+- Generate fix using Snyk DeepCode AI, Apply fix, Retry generating AI fixes
+
+
+## [2.9.1]
 ### Changed
 - save git folder config in settings
 - propagate Jetbrains determined runtime environment to language server
