@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
+import com.intellij.openapi.diagnostic.Logger
 
 data class DiffPatch(
     val originalFile: String,
@@ -37,6 +38,7 @@ sealed class Change {
 }
 
 class ApplyFixHandler(private val project: Project) {
+    private val logger = Logger.getInstance(this::class.java)
 
     fun generateApplyFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
@@ -45,10 +47,6 @@ class ApplyFixHandler(private val project: Project) {
             val params = value.split(":")
             val filePath = params[0]  // Path to the file that needs to be patched
             val patch = params[1]      // The patch we received from LS
-
-            println("[applyFixHandler] Received request to apply fix on file: $filePath")
-            println("[applyFixHandler] Patch to apply: $patch")
-
 
             // Avoid blocking the UI thread
             CoroutineScope(Dispatchers.IO).launch {
@@ -88,26 +86,20 @@ class ApplyFixHandler(private val project: Project) {
 
     private fun applyPatchAndSave(project: Project, filePath: String, patch: String): Boolean {
         val virtualFile = findVirtualFile(filePath) ?: run {
-            println("[applyPatchAndSave] Virtual file not found for path: $filePath")
+            logger.debug("[applyPatchAndSave] Virtual file not found for path: $filePath")
             return false
         }
-
-        println("[applyPatchAndSave] Found virtual file: $virtualFile")
 
         val fileContent = ApplicationManager.getApplication().runReadAction<String?> {
             val document = FileDocumentManager.getInstance().getDocument(virtualFile)
             document?.text
         } ?: run {
-            println("[applyPatchAndSave] Document not found or is null for virtual file: $filePath")
+            logger.debug("[applyPatchAndSave] Document not found or is null for virtual file: $filePath")
             return false
         }
 
-        println("[applyPatchAndSave] Initial file content: $fileContent")
-
         val diffPatch = parseDiff(patch)
         val patchedContent = applyPatch(fileContent, diffPatch)
-
-        println("[applyPatchAndSave] Patched content that will be written: $patchedContent")
 
         // Apply the patch inside a WriteCommandAction
         WriteCommandAction.runWriteCommandAction(project) {
@@ -115,12 +107,9 @@ class ApplyFixHandler(private val project: Project) {
             document?.let {
                 it.setText(patchedContent)
 
-                println("[applyPatchAndSave] Content after applying patch: ${it.text}")
-
                 FileDocumentManager.getInstance().saveDocument(it)
-                println("[applyPatchAndSave] Patch applied successfully!")
             } ?: run {
-                println("[applyPatchAndSave] Failed to find document for saving patched content.")
+                logger.debug("[applyPatchAndSave] Failed to find document for saving patched content.\"")
             }
         }
 
