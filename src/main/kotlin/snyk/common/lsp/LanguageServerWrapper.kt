@@ -131,7 +131,7 @@ class LanguageServerWrapper(
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
-            pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
+            EnvironmentHelper.updateEnvironment(processBuilder.environment(), pluginSettings().token ?: "")
 
             process = processBuilder.start()
             launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
