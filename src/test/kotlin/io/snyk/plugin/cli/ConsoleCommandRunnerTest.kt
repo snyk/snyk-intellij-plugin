@@ -20,7 +20,6 @@ import io.mockk.verify
 import io.sentry.protocol.SentryId
 import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getOssService
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
@@ -28,18 +27,15 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
+import org.junit.Ignore
 import snyk.PLUGIN_ID
 import snyk.errorHandler.SentryErrorReporter
-import snyk.oss.OssService
 import java.net.URLEncoder
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
-
-    private val ossService: OssService
-        get() = getOssService(project) ?: throw IllegalStateException("OSS service should be available")
 
     override fun setUp() {
         super.setUp()
@@ -264,65 +260,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         assertEquals(snykPluginVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
         assertEquals("INTELLIJ IDEA IC", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"])
         assertEquals("2023.1".length, generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"]?.length)
-    }
-
-    @Suppress("SwallowedException")
-    fun testCommandExecutionRequestWhileCliIsDownloading() {
-        val cliFile = getCliFile()
-        cliFile.delete()
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns false
-
-        val progressManager = ProgressManager.getInstance() as CoreProgressManager
-        val snykCliDownloaderService = service<SnykCliDownloaderService>()
-        var downloadIndicator: ProgressIndicator? = null
-
-        assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
-        progressManager.runProcessWithProgressAsynchronously(
-            object : Task.Backgroundable(project, "Test CLI download", true) {
-                override fun run(indicator: ProgressIndicator) {
-                    assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
-                    downloadIndicator = indicator
-                    snykCliDownloaderService.downloadLatestRelease(indicator, project)
-                }
-            },
-            EmptyProgressIndicator()
-        )
-
-        assertFalse("CLI binary should NOT exist at this stage", cliFile.exists())
-        val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
-            object : Task.Backgroundable(project, "Test CLI command invocation", true) {
-                override fun run(indicator: ProgressIndicator) {
-                    while (!snykCliDownloaderService.isCliDownloading()) {
-                        Thread.sleep(10) // lets wait till actual download begin
-                    }
-                    assertTrue(
-                        "Downloading of CLI should be in progress at this stage.",
-                        snykCliDownloaderService.isCliDownloading()
-                    )
-                    // CLINotExistsException should happen while CLI is not there,
-                    // but downloading and any CLI command is invoked
-                    try {
-                        val commands = ossService.buildCliCommandsList_TEST_ONLY(listOf("test"))
-                        ConsoleCommandRunner().execute(commands, getPluginPath(), "", project)
-                        fail("Should have thrown CliNotExistsException, as the CLI is still downloading.")
-                    } catch (e: CliNotExistsException) {
-                        // this is expected and actually desired
-                    }
-                }
-            },
-            EmptyProgressIndicator(),
-            null
-        )
-
-        testRunFuture.get(30000, TimeUnit.MILLISECONDS)
-        // we have to stop CLI download process otherwise partially downloaded CLI file will be visible in other tests
-        downloadIndicator?.cancel()
-        while (snykCliDownloaderService.isCliDownloading()) {
-            Thread.sleep(10) // lets wait till download actually stopped
-        }
-        assertFalse(cliFile.exists())
-        verify(exactly = 0) { SentryErrorReporter.captureException(any()) }
     }
 
     fun testErrorReportedWhenExecutionTimeoutExpire() {

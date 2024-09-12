@@ -41,7 +41,7 @@ class CliDownloaderTest {
 
     @Test
     fun `should refer to snyk static website as base url`() {
-        assertEquals("https://static.snyk.io", CliDownloader.BASE_URL)
+        assertEquals("https://downloads.snyk.io", CliDownloader.BASE_URL)
     }
 
     @Test

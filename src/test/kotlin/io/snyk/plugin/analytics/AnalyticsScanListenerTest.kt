@@ -108,13 +108,6 @@ class AnalyticsScanListenerTest {
     }
 
     @Test
-    fun `testScanListener scanningOssFinished should call language server to report analytics`() {
-        cut.snykScanListener.scanningOssFinished(mockk(relaxed = true))
-
-        verify { languageServerWrapper.sendReportAnalyticsCommand(any()) }
-    }
-
-    @Test
     fun `testScanListener scanningContainerFinished should call language server to report analytics`() {
         cut.snykScanListener.scanningContainerFinished(mockk(relaxed = true))
 

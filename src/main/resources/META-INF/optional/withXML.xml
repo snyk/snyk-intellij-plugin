@@ -1,6 +1,5 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
-    <externalAnnotator language="XML" implementationClass="snyk.oss.annotator.OSSMavenAnnotator"/>
-    <externalAnnotator language="DTD" implementationClass="snyk.oss.annotator.OSSGoModAnnotator"/>
+
   </extensions>
 </idea-plugin>

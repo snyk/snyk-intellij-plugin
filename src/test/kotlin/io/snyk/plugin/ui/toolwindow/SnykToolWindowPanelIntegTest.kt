@@ -19,10 +19,10 @@ import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getIacService
 import io.snyk.plugin.getKubernetesImageCache
-import io.snyk.plugin.getOssService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isOssRunning
@@ -33,18 +33,15 @@ import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
-import io.snyk.plugin.ui.toolwindow.nodes.leaf.VulnerabilityTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.FileTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
-import io.snyk.plugin.ui.toolwindow.panels.VulnerabilityDescriptionPanel
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Ignore
-import org.junit.Test
 import snyk.common.SnykError
 import snyk.common.UIComponentFinder
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
@@ -65,7 +62,6 @@ import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.iac.IgnoreButtonActionListener
 import snyk.iac.ui.toolwindow.IacFileTreeNode
 import snyk.iac.ui.toolwindow.IacIssueTreeNode
-import snyk.oss.Vulnerability
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.CompletableFuture
 import javax.swing.JButton
@@ -90,6 +86,9 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     private lateinit var toolWindowPanel: SnykToolWindowPanel
     private val scanPublisher
         get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)!!
+
+    private val scanPublisherLS
+        get() = getSyncPublisher(project, SnykScanListenerLS.SNYK_SCAN_TOPIC)!!
 
     private val fakeApiToken = "fake_token"
     private val lsMock = mockk<LanguageServer>(relaxed = true)
@@ -158,8 +157,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         every { lsMock.workspaceService.executeCommand(param) } returns
             CompletableFuture.completedFuture(mapOf(Pair("stdOut", ossGoofJson)))
 
-        val ossResult = getOssService(project)?.scan()!!
-        scanPublisher.scanningOssFinished(ossResult)
+        LanguageServerWrapper.getInstance().sendScanCommand(project)
+
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
@@ -252,11 +251,12 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test when no OSS supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError = SnykError(SnykToolWindowPanel.NO_OSS_FILES, project.basePath.toString())
-        val snykErrorControl = SnykError("control", project.basePath.toString())
+        val snykError =
+            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), SnykToolWindowPanel.NO_OSS_FILES)
+        val snykErrorControl = SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
 
-        scanPublisher.scanningOssError(snykErrorControl)
-        scanPublisher.scanningOssError(snykError)
+        scanPublisherLS.scanningError(snykErrorControl)
+        scanPublisherLS.scanningError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         val rootOssTreeNode = toolWindowPanel.getRootOssIssuesTreeNode()
@@ -265,7 +265,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             SnykBalloonNotificationHelper.showError(any(), project)
         }
         assertTrue(getSnykCachedResults(project)?.currentOssError == null)
-        assertTrue(getSnykCachedResults(project)?.currentOssResults == null)
+        assertTrue(getSnykCachedResults(project)?.currentOSSResultsLS?.isEmpty() ?: false)
         val cliErrorMessage = rootOssTreeNode.originalCliErrorMessage
         assertTrue(cliErrorMessage != null && cliErrorMessage.startsWith(SnykToolWindowPanel.NO_OSS_FILES))
         // node check
@@ -285,7 +285,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_OSS_FILES))
     }
 
-    @Test
     fun `test when no IAC supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
@@ -322,7 +321,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_IAC_FILES))
     }
 
-    @Test
     fun `test should ignore IaC failures in IaC scan results (no issues found)`() {
         mockkObject(SnykBalloonNotificationHelper)
         val jsonError = SnykError("Failed to parse JSON file", project.basePath.toString(), 1021)
@@ -439,18 +437,27 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     fun `test OSS scan should redirect to Auth panel if token is invalid`() {
         mockkObject(SnykBalloonNotificationHelper)
-        val snykErrorControl = SnykError("control", project.basePath.toString())
-        val snykError = SnykError("Authentication failed. Please check the API token on ", project.basePath.toString())
 
-        scanPublisher.scanningOssError(snykErrorControl)
-        scanPublisher.scanningOssError(snykError)
+        val snykError =
+            SnykScanParams(
+                "failed",
+                "oss",
+                project.basePath!!,
+                emptyList(),
+                "Authentication failed. Please check the API token on "
+            )
+        val snykErrorControl = SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
+
+        scanPublisherLS.scanningError(snykErrorControl)
+        scanPublisherLS.scanningError(snykError)
+
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(snykErrorControl.message, project)
+            SnykBalloonNotificationHelper.showError(snykErrorControl.errorMessage!!, project)
         }
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(snykError.message, project)
+            SnykBalloonNotificationHelper.showError(snykError.errorMessage!!, project)
         }
         assertTrue(getSnykCachedResults(project)?.currentOssError == null)
         assertEquals(
@@ -505,12 +512,20 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     fun `test should display '(error)' in OSS root tree node when result is empty and error occurs`() {
-        val snykError = SnykError("an error", project.basePath.toString())
-        scanPublisher.scanningOssError(snykError)
+        val snykError =
+            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "an error")
+
+        scanPublisherLS.scanningError(snykError)
+
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        assertTrue(getSnykCachedResults(project)?.currentOssError == snykError)
-        assertTrue(getSnykCachedResults(project)?.currentOssResults == null)
+        assertTrue(
+            getSnykCachedResults(project)?.currentOssError == SnykError(
+                snykError.errorMessage!!,
+                project.basePath!!
+            )
+        )
+        assertTrue(getSnykCachedResults(project)?.currentOSSResultsLS?.isEmpty() ?: false)
         assertEquals(
             SnykToolWindowPanel.OSS_ROOT_TEXT + " (error)",
             toolWindowPanel.getRootOssIssuesTreeNode().userObject
@@ -523,7 +538,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         toolWindowPanel.updateTreeRootNodesPresentation(null, 0, 0, 0)
-        assertTrue(getSnykCachedResults(project)?.currentOssResults == null)
+        assertTrue(getSnykCachedResults(project)?.currentOSSResultsLS?.isEmpty() ?: false)
         assertEquals(
             SnykToolWindowPanel.OSS_ROOT_TEXT + " (scanning...)",
             toolWindowPanel.getRootOssIssuesTreeNode().userObject
@@ -843,9 +858,19 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             setOf("ignored_image_name")
         val containerService = ContainerService(project)
 
-        val param = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "container", "test", "ignored_image_name", "--json"))
+        val param = ExecuteCommandParams(
+            COMMAND_EXECUTE_CLI,
+            listOf(project.basePath, "container", "test", "ignored_image_name", "--json")
+        )
 
-        every { lsMock.workspaceService.executeCommand(param) } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut", containerResultJson)))
+        every { lsMock.workspaceService.executeCommand(param) } returns CompletableFuture.completedFuture(
+            mapOf(
+                Pair(
+                    "stdOut",
+                    containerResultJson
+                )
+            )
+        )
 
         val containerResult = containerService.scan()
         setUpContainerTest(containerResult)
@@ -899,31 +924,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
                 "IacSuggestionDescriptionPanel"
             )
         assertNotNull("IacSuggestionDescriptionPanel should not be null", iacDescriptionPanel)
-    }
-
-    fun `test OSS node selected and Description shown on external request`() {
-        prepareTreeWithFakeOssResults()
-
-        val rootOssIssuesTreeNode = toolWindowPanel.getRootOssIssuesTreeNode()
-        val firstOssFileNode = rootOssIssuesTreeNode.firstChild as FileTreeNode
-        val firstOssIssueNode = firstOssFileNode.firstChild as VulnerabilityTreeNode
-        val groupedVulns = firstOssIssueNode.userObject as Collection<Vulnerability>
-        val vulnerability = groupedVulns.first()
-
-        // actual test run
-        toolWindowPanel.selectNodeAndDisplayDescription(vulnerability)
-        waitWhileTreeBusy()
-
-        // Assertions
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
-        assertEquals(groupedVulns, selectedNodeUserObject)
-
-        val vulnerabilityDescriptionPanel =
-            UIComponentFinder.getComponentByName(
-                toolWindowPanel.getDescriptionPanel(),
-                VulnerabilityDescriptionPanel::class
-            )
-        assertNotNull("VulnerabilityDescriptionPanel should not be null", vulnerabilityDescriptionPanel)
     }
 
     fun `test Container node selected and Description shown on external request`() {

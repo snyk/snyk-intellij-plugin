@@ -1,4 +1,4 @@
-package snyk.code.annotator
+package snyk.common.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.util.Disposer

@@ -4,7 +4,6 @@ import com.intellij.util.messages.Topic
 import snyk.common.SnykError
 import snyk.container.ContainerResult
 import snyk.iac.IacResult
-import snyk.oss.OssResult
 
 interface SnykScanListener {
     companion object {
@@ -14,11 +13,7 @@ interface SnykScanListener {
 
     fun scanningStarted()
 
-    fun scanningOssFinished(ossResult: OssResult)
-
     fun scanningIacFinished(iacResult: IacResult)
-
-    fun scanningOssError(snykError: SnykError)
 
     fun scanningIacError(snykError: SnykError)
 

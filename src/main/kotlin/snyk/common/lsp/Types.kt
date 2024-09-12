@@ -285,11 +285,12 @@ data class ScanIssue(
 
     fun hasAIFix(): Boolean {
         return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> false
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
-                return this.additionalData.hasAIFix
-            }
+            ProductType.OSS ->
+                this.additionalData.isUpgradable
 
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
+                this.additionalData.hasAIFix
+            }
             else -> TODO()
         }
     }
@@ -443,7 +444,7 @@ data class IssueData(
     @SerializedName("from") val from: List<String>,
     @SerializedName("upgradePath") val upgradePath: List<Any>,
     @SerializedName("isPatchable") val isPatchable: Boolean,
-    @SerializedName("isUpgradable") val isUpgradable: Boolean?,
+    @SerializedName("isUpgradable") val isUpgradable: Boolean,
     @SerializedName("projectName") val projectName: String,
     @SerializedName("displayTargetFile") val displayTargetFile: String?,
     @SerializedName("matchingIssues") val matchingIssues: List<IssueData>,
@@ -614,3 +615,14 @@ data class OssIdentifiers(
         return result
     }
 }
+
+data class FolderConfigsParam(
+    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>?,
+)
+
+data class FolderConfig(
+    @SerializedName("folderPath") val folderPath: String,
+    @SerializedName("baseBranch") val baseBranch: String,
+    @SerializedName("localBranches") val localBranches: List<String> = emptyList(),
+    @SerializedName("additionalParameters") val additionalParameters: List<String> = emptyList()
+)

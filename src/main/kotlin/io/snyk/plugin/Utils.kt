@@ -54,25 +54,16 @@ import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
 import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
-import snyk.oss.OssService
-import snyk.oss.OssTextRangeFinder
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Path
-import java.security.KeyStore
 import java.util.Objects.nonNull
 import java.util.SortedSet
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
 import javax.swing.JComponent
 
 private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
-
-fun getOssService(project: Project): OssService? = project.serviceIfNotDisposed()
 
 fun getIacService(project: Project): IacScanService? = project.serviceIfNotDisposed()
 
@@ -109,8 +100,6 @@ fun getCliFile() = File(pluginSettings().cliPath)
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
 fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
-
-fun getOssTextRangeFinderService(): OssTextRangeFinder = getApplicationService()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
@@ -224,16 +213,12 @@ fun controlExternalProcessWithProgressIndicator(
     checkCancelled.invoke()
 }
 
-fun isIacEnabled(): Boolean = true
-
-fun isContainerEnabled(): Boolean = true
-
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
-
-fun isSnykOSSLSEnabled(): Boolean = true // TODO: cleanup usage
 
 fun isSnykIaCLSEnabled(): Boolean = false
 
+
+fun isDocumentationHoverEnabled(): Boolean = Registry.get("snyk.isDocumentationHoverEnabled").asBoolean()
 
 fun getWaitForResultsTimeout(): Long =
     Registry.intValue(
@@ -245,51 +230,41 @@ const val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MIN = 12L
 val DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS =
     TimeUnit.MILLISECONDS.convert(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MIN, TimeUnit.MINUTES).toInt()
 
-fun getSSLContext(): SSLContext {
-    val trustManager = getX509TrustManager()
-    val sslContext = SSLContext.getInstance("TLSv1.2")
-    sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
-    return sslContext
-}
-
-fun getX509TrustManager(): X509TrustManager {
-    val trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(
-        TrustManagerFactory.getDefaultAlgorithm()
-    )
-    trustManagerFactory.init(null as KeyStore?)
-    val trustManagers: Array<TrustManager> = trustManagerFactory.trustManagers
-    check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
-        ("Unexpected default trust managers:${trustManagers.contentToString()}")
-    }
-    return trustManagers[0] as X509TrustManager
-}
-
-fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): PsiFile? =
-    if (!virtualFile.isValid || project.isDisposed) {
+fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): PsiFile? {
+    return if (!virtualFile.isValid || project.isDisposed) {
         null
     } else {
         try {
-            PsiManager.getInstance(project).findFile(virtualFile)
+            var psiFile : PsiFile? = null
+            ReadAction.run<RuntimeException> {
+                psiFile = PsiManager.getInstance(project).findFile(virtualFile)
+            }
+            return psiFile
         } catch (ignored: Throwable) {
             null
         }
     }
+}
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
-    VirtualFileManager.getInstance().asyncRefresh()
+    runAsync {
+        VirtualFileManager.getInstance().asyncRefresh()
 
-    val openFiles = FileEditorManager.getInstance(project).openFiles
+        val openFiles = FileEditorManager.getInstance(project).openFiles
 
-    ApplicationManager.getApplication().invokeLater {
-        if (!project.isDisposed) {
-            project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+        ApplicationManager.getApplication().invokeLater {
+            if (!project.isDisposed) {
+                project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+            }
         }
-    }
-    openFiles.forEach {
-        val psiFile = findPsiFileIgnoringExceptions(it, project)
-        if (psiFile != null) {
-            DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+        openFiles.forEach {
+            val psiFile = findPsiFileIgnoringExceptions(it, project)
+            if (psiFile != null) {
+                invokeLater {
+                    DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+                }
+            }
         }
     }
 }

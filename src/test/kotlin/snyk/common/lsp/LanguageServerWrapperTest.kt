@@ -34,6 +34,7 @@ import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
+    private val folderConfigSettingsMock: FolderConfigSettings = mockk(relaxed = true)
     private val applicationMock: Application = mockk()
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
@@ -56,6 +57,7 @@ class LanguageServerWrapperTest {
         val projectManagerMock = mockk<ProjectManager>()
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
         every { applicationMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable
+        every { applicationMock.getService(FolderConfigSettings::class.java) } returns folderConfigSettingsMock
         every { applicationMock.isDisposed } returns false
 
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
@@ -95,6 +97,7 @@ class LanguageServerWrapperTest {
 
         verify { lsMock.initialize(any<InitializeParams>()) }
         verify { lsMock.initialized(any()) }
+        verify { folderConfigSettingsMock.getAll() }
     }
 
     @Test

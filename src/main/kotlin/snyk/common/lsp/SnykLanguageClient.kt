@@ -22,12 +22,10 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
-import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.toVirtualFile
@@ -187,28 +185,31 @@ class SnykLanguageClient :
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (disposed) return completedFuture
-
-        ProjectManager
-            .getInstance()
-            .openProjects
-            .filter { !it.isDisposed }
-            .forEach { project ->
-                runAsync {
+        runAsync {
+            ProjectManager
+                .getInstance()
+                .openProjects
+                .filter { !it.isDisposed }
+                .forEach { project ->
                     ReadAction.run<RuntimeException> {
                         if (!project.isDisposed) refreshAnnotationsForOpenFiles(project)
                     }
                 }
-            }
-        VirtualFileManager.getInstance().asyncRefresh()
+        }
         return completedFuture
+    }
+
+    @JsonNotification(value = "$/snyk.folderConfigs")
+    fun folderConfig(folderConfigParam: FolderConfigsParam?) {
+        val folderConfigs = folderConfigParam?.folderConfigs ?: emptyList()
+        runAsync {
+            service<FolderConfigSettings>().addAll(folderConfigs)
+        }
     }
 
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
-        if (snykScan.product == "oss" && !isSnykOSSLSEnabled()) {
-            return
-        }
         try {
             getScanPublishersFor(snykScan.folderPath).forEach { (_, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher)
@@ -300,11 +301,12 @@ class SnykLanguageClient :
         if (disposed) return
         if (pluginSettings().token == param.token) return
         pluginSettings().token = param.token
+        ApplicationManager.getApplication().saveSettings()
 
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
             // retrieve global ignores feature flag status after auth
-            pluginSettings().isGlobalIgnoresFeatureEnabled = wrapper.isGlobalIgnoresFeatureEnabled()
+            LanguageServerWrapper.getInstance().refreshFeatureFlags()
 
             ProjectManager.getInstance().openProjects.forEach {
                 wrapper.sendScanCommand(it)

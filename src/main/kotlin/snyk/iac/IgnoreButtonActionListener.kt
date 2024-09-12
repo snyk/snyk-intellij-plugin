@@ -1,6 +1,5 @@
 package snyk.iac
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -51,9 +50,7 @@ class IgnoreButtonActionListener(
                     isEnabled = false
                     text = IGNORED_ISSUE_BUTTON_TEXT
                 }
-                ApplicationManager.getApplication().invokeLater {
-                    refreshAnnotationsForOpenFiles(project)
-                }
+                refreshAnnotationsForOpenFiles(project)
             } catch (e: IgnoreException) {
                 SnykBalloonNotificationHelper.showError(
                     "Ignoring did not succeed. Error message: ${e.message})", project

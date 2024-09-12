@@ -16,8 +16,8 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.isSnykIaCLSEnabled
-import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -141,7 +141,7 @@ class LanguageServerWrapper(
                 if (!disposed) {
                     try {
                         process.errorStream.bufferedReader().forEachLine { println(it) }
-                    } catch (ignored: RuntimeException) {
+                    } catch (ignored: Exception) {
                         // ignore
                     }
                 }
@@ -155,14 +155,11 @@ class LanguageServerWrapper(
             process.destroy()
             isInitialized = false
         }
-
-        // update feature flags
-        runAsync { pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled() }
     }
 
     fun shutdown(): Future<*> =
         executorService.submit {
-            if (process.isAlive) {
+            if (::process.isInitialized && process.isAlive) {
                 languageServer.shutdown().get(1, TimeUnit.SECONDS)
                 languageServer.exit()
                 if (process.isAlive) {
@@ -195,7 +192,13 @@ class LanguageServerWrapper(
         val normalizedRoots = mutableSetOf<VirtualFile>()
 
         for (root in contentRoots) {
-            val pathTrusted = trustService.isPathTrusted(root.toNioPath())
+            val pathTrusted = try {
+                trustService.isPathTrusted(root.toNioPath())
+            } catch (e: UnsupportedOperationException) {
+                // this must be temp filesystem so the path mapping doesn't work
+                continue
+            }
+
             if (!pathTrusted) {
                 logger.debug("Path not trusted: ${root.path}")
                 continue
@@ -271,17 +274,26 @@ class LanguageServerWrapper(
 
     fun ensureLanguageServerInitialized(): Boolean {
         if (disposed) return false
-        isInitializing.lock()
-        assert(isInitializing.holdCount == 1)
-
-        if (!isInitialized) {
-            try {
-                initialize()
-            } catch (e: RuntimeException) {
-                throw (e)
+        try {
+            isInitializing.lock()
+            if (isInitializing.holdCount > 1) {
+                val message =
+                    "Snyk failed to initialize. This is an unexpected loop error, please contact " +
+                        "Snyk support with the error message.\n\n" + RuntimeException().stackTraceToString()
+                logger.error(message)
+                return false
             }
+
+            if (!isInitialized) {
+                try {
+                    initialize()
+                } catch (e: RuntimeException) {
+                    throw (e)
+                }
+            }
+        } finally {
+            isInitializing.unlock()
         }
-        isInitializing.unlock()
         return isInitialized
     }
 
@@ -302,13 +314,20 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return
         DumbService.getInstance(project).runWhenSmart {
             getTrustedContentRoots(project).forEach {
+                refreshFeatureFlags()
                 sendFolderScanCommand(it.path, project)
             }
         }
     }
 
+    fun refreshFeatureFlags() {
+        runAsync {
+            pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
+        }
+    }
+
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
-        if (!ensureLanguageServerInitialized()) return false
+        if (!isInitialized) return false
         return getFeatureFlagStatusInternal(featureFlag)
     }
 
@@ -365,7 +384,7 @@ class LanguageServerWrapper(
                 "oauth"
             }
         return LanguageServerSettings(
-            activateSnykOpenSource = (isSnykOSSLSEnabled() && ps.ossScanEnable).toString(),
+            activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
             activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
             activateSnykIac = isSnykIaCLSEnabled().toString(),
@@ -542,19 +561,19 @@ class LanguageServerWrapper(
         return ""
     }
 
-    companion object {
+    override fun dispose() {
+        disposed = true
+        shutdown()
+    }
 
+
+    companion object {
         private var instance: LanguageServerWrapper? = null
         fun getInstance() =
             instance ?: LanguageServerWrapper().also {
                 Disposer.register(SnykPluginDisposable.getInstance(), it)
                 instance = it
             }
-    }
-
-    override fun dispose() {
-        disposed = true
-        shutdown()
     }
 
 }

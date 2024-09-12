@@ -9,7 +9,6 @@ import io.snyk.plugin.findPsiFileIgnoringExceptions
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.isContainerEnabled
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 
 class ContainerBulkFileListener : SnykBulkFileListener() {
@@ -19,36 +18,32 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
     override fun before(project: Project, virtualFilesAffected: Set<VirtualFile>) {
         if (virtualFilesAffected.isEmpty()) return
         // clean Container cached results for Container related deleted/moved/renamed files
-        if (isContainerEnabled()) {
-            val imageCache = getKubernetesImageCache(project)
-            val kubernetesWorkloadFilesFromCache = imageCache?.getKubernetesWorkloadFilesFromCache() ?: emptySet()
-            val containerRelatedVirtualFilesAffected = virtualFilesAffected.filter {
-                kubernetesWorkloadFilesFromCache.contains(it)
-            }
-            imageCache?.cleanCache(virtualFilesAffected)
-            updateContainerCache(containerRelatedVirtualFilesAffected, project)
+        val imageCache = getKubernetesImageCache(project)
+        val kubernetesWorkloadFilesFromCache = imageCache?.getKubernetesWorkloadFilesFromCache() ?: emptySet()
+        val containerRelatedVirtualFilesAffected = virtualFilesAffected.filter {
+            kubernetesWorkloadFilesFromCache.contains(it)
         }
+        imageCache?.cleanCache(virtualFilesAffected)
+        updateContainerCache(containerRelatedVirtualFilesAffected, project)
     }
 
     override fun after(project: Project, virtualFilesAffected: Set<VirtualFile>) {
         if (virtualFilesAffected.isEmpty()) return
         // update Container cached results for Container related files
-        if (isContainerEnabled()) {
-            getKubernetesImageCache(project)?.updateCache(virtualFilesAffected)
-            val containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
-                val knownContainerIssues: List<ContainerIssuesForImage> =
-                    getSnykCachedResults(project)?.currentContainerResult?.allCliIssues ?: emptyList()
-                val containerFilesCached = knownContainerIssues
-                    .flatMap { it.workloadImages }
-                    .map { it.virtualFile }
-                // if file was cached before - we should update cache even if it's none k8s file anymore
-                if (containerFilesCached.contains(virtualFile) || isDotSnykFile(virtualFile)) return@filter true
+        getKubernetesImageCache(project)?.updateCache(virtualFilesAffected)
+        val containerRelatedVirtualFilesAffected = virtualFilesAffected.filter { virtualFile ->
+            val knownContainerIssues: List<ContainerIssuesForImage> =
+                getSnykCachedResults(project)?.currentContainerResult?.allCliIssues ?: emptyList()
+            val containerFilesCached = knownContainerIssues
+                .flatMap { it.workloadImages }
+                .map { it.virtualFile }
+            // if file was cached before - we should update cache even if it's none k8s file anymore
+            if (containerFilesCached.contains(virtualFile) || isDotSnykFile(virtualFile)) return@filter true
 
-                val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
-                YAMLImageExtractor.isKubernetes(psiFile)
-            }
-            updateContainerCache(containerRelatedVirtualFilesAffected, project)
+            val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@filter false
+            YAMLImageExtractor.isKubernetes(psiFile)
         }
+        updateContainerCache(containerRelatedVirtualFilesAffected, project)
     }
 
     private fun isDotSnykFile(virtualFile: VirtualFile) = virtualFile.name.endsWith(".snyk")
@@ -81,8 +76,8 @@ class ContainerBulkFileListener : SnykBulkFileListener() {
         snykCachedResults.currentContainerResult = newContainerCache
         ApplicationManager.getApplication().invokeLater {
             getSnykToolWindowPanel(project)?.displayContainerResults(newContainerCache)
-            refreshAnnotationsForOpenFiles(project)
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
     private fun makeObsolete(containerIssuesForImage: ContainerIssuesForImage): ContainerIssuesForImage =

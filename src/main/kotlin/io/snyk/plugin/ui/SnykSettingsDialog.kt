@@ -3,6 +3,7 @@ package io.snyk.plugin.ui
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.progress.runBackgroundableTask
@@ -17,12 +18,12 @@ import com.intellij.ui.ContextHelpLabel
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.util.minimumWidth
 import com.intellij.ui.util.preferredWidth
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
@@ -30,8 +31,10 @@ import com.intellij.util.FontUtil
 import com.intellij.util.containers.toArray
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
+import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isAdditionalParametersValid
@@ -45,8 +48,11 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
+import snyk.common.lsp.FolderConfigSettings
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.Insets
+import java.io.File.separator
 import java.util.Objects.nonNull
 import java.util.function.Supplier
 import javax.swing.JButton
@@ -81,8 +87,6 @@ class SnykSettingsDialog(
     private val useTokenAuthentication =
         ComboBox(arrayOf("OAuth2 authentication", "Token authentication")).apply {
             this.isEditable = false
-            this.preferredWidth = 200
-            this.minimumWidth = 200
         }
 
     private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
@@ -93,9 +97,7 @@ class SnykSettingsDialog(
         }
     private val ignoreUnknownCACheckBox: JCheckBox =
         JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
-    private val usageAnalyticsCheckBox: JCheckBox =
-        JCheckBox().apply { toolTipText = "If enabled, send analytics to Amplitude" }
-    private val crashReportingCheckBox = JCheckBox().apply { toolTipText = "If enabled, send error reports to Sentry" }
+
     private val scanOnSaveCheckbox =
         JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
     private val additionalParametersTextField: JTextField =
@@ -112,7 +114,10 @@ class SnykSettingsDialog(
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
     private val channels = listOf("stable", "rc", "preview").toArray(emptyArray())
     private val cliReleaseChannelDropDown = ComboBox(channels).apply { this.isEditable = true }
+    private val newIssues = listOf("All issues", "Net new issues").toArray(emptyArray())
+    private val netNewIssuesDropDown = ComboBox(newIssues).apply { this.isEditable = false }
     private val cliBaseDownloadUrlTextField = JBTextField()
+    private val baseBranchInfoLabel = JBLabel("Base branch: ")
 
     private val logger = Logger.getInstance(this::class.java)
 
@@ -165,8 +170,6 @@ class SnykSettingsDialog(
             customEndpointTextField.text = applicationSettings.customEndpointUrl
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
-            usageAnalyticsCheckBox.isSelected = applicationSettings.usageAnalyticsEnabled
-            crashReportingCheckBox.isSelected = applicationSettings.crashReportingEnabled
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
 
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
@@ -174,6 +177,10 @@ class SnykSettingsDialog(
             additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
+
+            baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
+                .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
+            netNewIssuesDropDown.selectedItem = applicationSettings.netNewIssues
         }
     }
 
@@ -196,7 +203,7 @@ class SnykSettingsDialog(
 
         /** General settings ------------------ */
 
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(7, 4, JBUI.emptyInsets(), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(7, 3, JBUI.emptyInsets(), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -215,6 +222,7 @@ class SnykSettingsDialog(
             authenticationMethodLabel,
             baseGridConstraints(
                 row = 0,
+                column = 0,
                 indent = 0,
                 anchor = UIGridConstraints.ANCHOR_WEST
             ),
@@ -225,10 +233,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 0,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 indent = 0,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
             ),
         )
@@ -244,10 +252,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 1,
                 column = 1,
-                colSpan = 3,
+                colSpan = 2,
                 indent = 0,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
             ),
         )
@@ -275,10 +283,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 3,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
         )
@@ -302,10 +310,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 4,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
         )
@@ -316,7 +324,7 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 5,
                 column = 1,
-                colSpan = 3,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
@@ -339,10 +347,10 @@ class SnykSettingsDialog(
             baseGridConstraints(
                 row = 6,
                 column = 1,
-                colSpan = 2,
+                colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
         )
@@ -359,8 +367,10 @@ class SnykSettingsDialog(
             organizationContextHelpLabel,
             baseGridConstraintsAnchorWest(
                 row = 6,
-                column = 3,
+                column = 2,
                 indent = 0,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
             ),
         )
 
@@ -402,15 +412,16 @@ class SnykSettingsDialog(
                 ),
             )
         }
-        val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(1, 2, JBUI.emptyInsets(), 30, -1))
+
+        val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(2, 2, JBUI.emptyInsets(), 30, -1))
 
         rootPanel.add(
             productAndSeveritiesPanel,
             baseGridConstraints(
                 row = 2,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -419,14 +430,15 @@ class SnykSettingsDialog(
             scanTypesPanel,
             baseGridConstraints(
                 row = 0,
+                column = 0,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
 
-        val severitiesPanel = JPanel(UIGridLayoutManager(5, 4, JBUI.emptyInsets(), -1, -1))
+        val severitiesPanel = JPanel(UIGridLayoutManager(1, 1, JBUI.emptyInsets(), -1, -1))
         severitiesPanel.border = IdeBorderFactory.createTitledBorder("Severity selection")
 
         productAndSeveritiesPanel.add(
@@ -436,7 +448,7 @@ class SnykSettingsDialog(
                 column = 1,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
@@ -447,11 +459,13 @@ class SnykSettingsDialog(
                 row = 0,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                 indent = 0,
             ),
         )
+
+        createNetNewPanel(productAndSeveritiesPanel)
 
         /** Project settings ------------------ */
 
@@ -464,7 +478,7 @@ class SnykSettingsDialog(
                 baseGridConstraints(
                     row = 3,
                     fill = UIGridConstraints.FILL_BOTH,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                     indent = 0,
                 ),
             )
@@ -483,8 +497,9 @@ class SnykSettingsDialog(
                 baseGridConstraints(
                     row = 0,
                     column = 1,
+                    colSpan = 2,
                     anchor = UIGridConstraints.ANCHOR_WEST,
-                    fill = UIGridConstraints.FILL_HORIZONTAL,
+                    fill = UIGridConstraints.FILL_NONE,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
                     indent = 0,
                 ),
@@ -496,10 +511,11 @@ class SnykSettingsDialog(
             projectSettingsPanel.add(
                 projectSettingsSpacer,
                 baseGridConstraints(
-                    row = 1,
+                    row = 2,
                     fill = UIGridConstraints.FILL_VERTICAL,
                     hSizePolicy = 1,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                    colSpan = 2,
                     indent = 0,
                 ),
             )
@@ -515,9 +531,9 @@ class SnykSettingsDialog(
         rootPanel.add(
             userExperiencePanel,
             baseGridConstraints(
-                row = 5,
+                row = 6,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
@@ -528,26 +544,6 @@ class SnykSettingsDialog(
             scanOnSaveCheckbox,
             baseGridConstraints(
                 row = 0,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 0,
-            ),
-        )
-
-        usageAnalyticsCheckBox.text = "Send usage statistics to Snyk"
-        userExperiencePanel.add(
-            usageAnalyticsCheckBox,
-            baseGridConstraints(
-                row = 1,
-                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                indent = 0,
-            ),
-        )
-
-        crashReportingCheckBox.text = "Send error reports to Snyk"
-        userExperiencePanel.add(
-            crashReportingCheckBox,
-            baseGridConstraints(
-                row = 2,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
                 indent = 0,
             ),
@@ -564,6 +560,68 @@ class SnykSettingsDialog(
         )
     }
 
+    private fun createNetNewPanel(productAndSeveritiesPanel: JPanel) {
+        val netNewIssuesPanel = JPanel(UIGridLayoutManager(2, 2, JBUI.insets(Insets(5, 0, 20, 0)), -1, -1))
+
+        productAndSeveritiesPanel.add(
+            netNewIssuesPanel,
+            baseGridConstraints(
+                row = 1,
+                column = 0,
+                colSpan = 2,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
+        )
+
+        val newNewIssuesLabel = JLabel("All Issues Vs Net New Issues:")
+        newNewIssuesLabel.labelFor = netNewIssuesDropDown
+        netNewIssuesPanel.add(
+            newNewIssuesLabel,
+            baseGridConstraints(
+                row = 0,
+                column = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
+        )
+
+        netNewIssuesPanel.add(
+            netNewIssuesDropDown,
+            baseGridConstraints(
+                row = 0,
+                column = 1,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                indent = 0,
+            ),
+        )
+
+        val netNewIssuesText =
+            JLabel(
+                "Specifies whether to see only net new issues or all issues. " +
+                        "Only applies to Code Security and Code Quality."
+            ).apply { font = FontUtil.minusOne(this.font) }
+
+        netNewIssuesPanel.add(
+            netNewIssuesText,
+            baseGridConstraints(
+                row = 1,
+                column = 0,
+                colSpan = 2,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                indent = 0,
+            ),
+        )
+    }
+
     private fun createExecutableSettingsPanel() {
         val executableSettingsPanel = JPanel(GridBagLayout())
         executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable settings")
@@ -576,9 +634,9 @@ class SnykSettingsDialog(
         rootPanel.add(
             executableSettingsPanel,
             baseGridConstraints(
-                row = 4,
+                row = 5,
                 anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                fill = UIGridConstraints.FILL_HORIZONTAL,
+                fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
             ),
@@ -592,11 +650,11 @@ class SnykSettingsDialog(
         introLabel.font = FontUtil.minusOne(introLabel.font)
         executableSettingsPanel.add(
             introLabel,
-            gb.nextLine(),
+            gb.nextLine()
         )
 
-        cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://static.snyk.io. " +
-            "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://static.snyk.io/fips"
+        cliBaseDownloadUrlTextField.toolTipText = "The default URL is https://downloads.snyk.io. " +
+            "for FIPS-enabled CLIs (only available for Windows and Linux), please use https://downloads.snyk.io/fips"
         val cliBaseDownloadPanel =
             panel {
                 row {
@@ -677,11 +735,7 @@ class SnykSettingsDialog(
 
     fun isIgnoreUnknownCA(): Boolean = ignoreUnknownCACheckBox.isSelected
 
-    fun isUsageAnalyticsEnabled(): Boolean = usageAnalyticsCheckBox.isSelected
-
     fun isScanOnSaveEnabled(): Boolean = scanOnSaveCheckbox.isSelected
-
-    fun isCrashReportingEnabled(): Boolean = crashReportingCheckBox.isSelected
 
     fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
 
@@ -703,11 +757,22 @@ class SnykSettingsDialog(
             "Invalid custom endpoint URL, please use https://api.xxx.snyk[gov].io",
             ::isUrlValid,
         )
+
         setupValidation(
             additionalParametersTextField,
             "The -d option is not supported by the Snyk IntelliJ plugin",
             ::isAdditionalParametersValid,
         )
+
+        setupValidation(
+            cliBaseDownloadUrlTextField,
+            "The base URL cannot be empty",
+            ::isCliBaseDownloadUrlTextFieldValid,
+        )
+    }
+
+    private fun isCliBaseDownloadUrlTextFieldValid(params: String?): Boolean {
+        return !params.isNullOrEmpty()
     }
 
     private fun setupValidation(
@@ -740,12 +805,17 @@ class SnykSettingsDialog(
     }
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
+    fun setDefaultCliPath() {
+        cliPathTextBoxWithFileBrowser.text = getPluginPath() + separator + Platform.current().snykWrapperFileName
+    }
 
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected
 
     fun getCliBaseDownloadURL(): String = cliBaseDownloadUrlTextField.text
 
     fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
+
+    fun getNetNewIssuesSelected(): String = netNewIssuesDropDown.selectedItem as String
 
     fun getUseTokenAuthentication(): Boolean = useTokenAuthentication.selectedIndex == 1
 }
