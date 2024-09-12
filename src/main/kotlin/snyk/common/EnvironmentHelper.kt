@@ -1,5 +1,6 @@
 package snyk.common
 
+import com.intellij.util.EnvironmentUtil
 import com.intellij.util.net.HttpConfigurable
 import io.snyk.plugin.pluginSettings
 import snyk.pluginInfo
@@ -11,6 +12,8 @@ object EnvironmentHelper {
         environment: MutableMap<String, String>,
         apiToken: String,
     ) {
+        // first of all, use IntelliJ environment tool, to spice up env
+        environment.putAll(EnvironmentUtil.getEnvironmentMap())
         val endpoint = getEndpointUrl()
 
         val oauthEnabledEnvVar = "INTERNAL_SNYK_OAUTH_ENABLED"

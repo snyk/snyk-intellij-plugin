@@ -19,7 +19,6 @@ import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.isSnykOSSLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
-import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -132,7 +131,7 @@ class LanguageServerWrapper(
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
 
             val processBuilder = ProcessBuilder(cmd)
-            pluginSettings().token?.let { EnvironmentHelper.updateEnvironment(processBuilder.environment(), it) }
+            EnvironmentHelper.updateEnvironment(processBuilder.environment(), pluginSettings().token ?: "")
 
             process = processBuilder.start()
             launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
