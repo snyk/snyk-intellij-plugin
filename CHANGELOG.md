@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.9.1]
+### Fixed
+- propagate IntelliJ environment to language server. This should mitigate the issue of not finding package managers during scans.
+
 ## [2.9.0]
 ### Changed
 - Updated the language server protocol version to 14 to support new communication model.
