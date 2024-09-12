@@ -38,6 +38,7 @@ sealed class Change {
 }
 
 class ApplyFixHandler(private val project: Project) {
+    private val logger = Logger.getInstance(this::class.java)
 
     val logger = Logger.getInstance(this::class.java).apply {
         // tie log level to language server log level
@@ -54,10 +55,6 @@ class ApplyFixHandler(private val project: Project) {
             val params = value.split("|@", limit = 2)
             val filePath = params[0]  // Path to the file that needs to be patched
             val patch = params[1]      // The patch we received from LS
-
-            println("[applyFixHandler] Received request to apply fix on file: $filePath")
-            println("[applyFixHandler] Patch to apply: $patch")
-
 
             // Avoid blocking the UI thread
             runAsync {
