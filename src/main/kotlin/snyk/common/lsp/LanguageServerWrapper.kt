@@ -17,7 +17,6 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -42,6 +41,7 @@ import org.eclipse.lsp4j.WorkspaceEditCapabilities
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
+import org.eclipse.lsp4j.jsonrpc.RemoteEndpoint
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
@@ -62,10 +62,10 @@ import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
+import java.util.logging.Logger.*
 import kotlin.io.path.exists
 
 private const val INITIALIZATION_TIMEOUT = 20L
@@ -134,22 +134,32 @@ class LanguageServerWrapper(
             EnvironmentHelper.updateEnvironment(processBuilder.environment(), pluginSettings().token ?: "")
 
             process = processBuilder.start()
-            launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
-            languageServer = launcher.remoteProxy
-
             GlobalScope.launch {
                 if (!disposed) {
                     try {
-                        process.errorStream.bufferedReader().forEachLine { println(it) }
+                        process.errorStream.bufferedReader().forEachLine { logger.debug(it) }
                     } catch (ignored: Exception) {
                         // ignore
                     }
                 }
             }
 
-            launcher.startListening()
-            sendInitializeMessage()
-            isInitialized = true
+            launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
+            languageServer = launcher.remoteProxy
+
+            val listenerFuture = launcher.startListening()
+
+            runAsync {
+                listenerFuture.get()
+                isInitialized = false
+            }
+
+            if (!listenerFuture.isDone) {
+                sendInitializeMessage()
+                isInitialized = true
+            } else {
+                logger.warn("Language Server initialization did not succeed")
+            }
         } catch (e: Exception) {
             logger.warn(e)
             process.destroy()
@@ -158,21 +168,25 @@ class LanguageServerWrapper(
     }
 
     fun shutdown() {
+        // LSP4j logs errors and rethrows - this is bad practice, and we don't need that log here, so we shut it up.
+        val lsp4jLogger = getLogger(RemoteEndpoint::class.java.name)
+        val previousLSP4jLogLevel = lsp4jLogger.level
+        lsp4jLogger.level = java.util.logging.Level.OFF
         try {
             val shouldShutdown = lsIsAlive()
             executorService.submit { if (shouldShutdown) languageServer.shutdown().get(1, TimeUnit.SECONDS) }
-        } catch (ignored: TimeoutException) {
+        } catch (ignored: Exception) {
             // we don't care
         } finally {
             try {
-                languageServer.exit()
+                if (lsIsAlive()) languageServer.exit()
             } catch (ignore: Exception) {
                 // do nothing
             } finally {
                if (lsIsAlive()) process.destroyForcibly()
             }
+            lsp4jLogger.level = previousLSP4jLogLevel
         }
-
     }
 
     private fun lsIsAlive() = ::process.isInitialized && process.isAlive

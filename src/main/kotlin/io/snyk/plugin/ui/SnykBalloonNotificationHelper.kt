@@ -30,10 +30,10 @@ object SnykBalloonNotificationHelper {
         showNotification(message, project, NotificationType.ERROR, *actions)
     }
 
-    fun showInfo(message: String, project: Project, vararg actions: AnAction) =
+    fun showInfo(message: String, project: Project?, vararg actions: AnAction) =
         showNotification(message, project, NotificationType.INFORMATION, *actions)
 
-    fun showWarn(message: String, project: Project, vararg actions: AnAction) =
+    fun showWarn(message: String, project: Project?, vararg actions: AnAction) =
         showNotification(message, project, NotificationType.WARNING, *actions)
 
     private fun showNotification(

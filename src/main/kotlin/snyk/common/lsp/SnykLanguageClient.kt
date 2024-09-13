@@ -460,12 +460,10 @@ class SnykLanguageClient :
     override fun showMessage(messageParams: MessageParams?) {
         if (disposed) return
         val project = ProjectUtil.getActiveProject()
-        if (project == null) {
-            logger.info(messageParams?.message)
-            return
-        }
         when (messageParams?.type) {
-            MessageType.Error -> SnykBalloonNotificationHelper.showError(messageParams.message, project)
+            MessageType.Error -> {
+                SnykBalloonNotificationHelper.showError(messageParams.message, project)
+            }
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
