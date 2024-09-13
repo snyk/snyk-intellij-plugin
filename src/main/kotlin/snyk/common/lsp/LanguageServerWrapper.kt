@@ -157,16 +157,25 @@ class LanguageServerWrapper(
         }
     }
 
-    fun shutdown(): Future<*> =
-        executorService.submit {
-            if (::process.isInitialized && process.isAlive) {
-                languageServer.shutdown().get(1, TimeUnit.SECONDS)
+    fun shutdown() {
+        try {
+            val shouldShutdown = lsIsAlive()
+            executorService.submit { if (shouldShutdown) languageServer.shutdown().get(1, TimeUnit.SECONDS) }
+        } catch (ignored: TimeoutException) {
+            // we don't care
+        } finally {
+            try {
                 languageServer.exit()
-                if (process.isAlive) {
-                    process.destroyForcibly()
-                }
+            } catch (ignore: Exception) {
+                // do nothing
+            } finally {
+               if (lsIsAlive()) process.destroyForcibly()
             }
         }
+
+    }
+
+    private fun lsIsAlive() = ::process.isInitialized && process.isAlive
 
     private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
         val workspaceFolders = mutableSetOf<WorkspaceFolder>()

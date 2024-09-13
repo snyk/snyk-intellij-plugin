@@ -449,7 +449,7 @@ class SnykToolWindowPanel(
     }
 
     private fun triggerScan() {
-        getSnykTaskQueueService(project)?.scan(false)
+        getSnykTaskQueueService(project)?.scan()
     }
 
     fun displayAuthPanel() {

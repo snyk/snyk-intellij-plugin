@@ -44,7 +44,7 @@ class SnykPluginDisposable : Disposable, AppLifecycleListener {
 
     override fun appClosing() {
         try {
-            LanguageServerWrapper.getInstance().shutdown().get(2, TimeUnit.SECONDS)
+            LanguageServerWrapper.getInstance().shutdown()
         } catch (ignored: Exception) {
             // do nothing
         }
@@ -52,7 +52,7 @@ class SnykPluginDisposable : Disposable, AppLifecycleListener {
 
     override fun appWillBeClosed(isRestart: Boolean) {
         try {
-            LanguageServerWrapper.getInstance().shutdown().get(2, TimeUnit.SECONDS)
+            LanguageServerWrapper.getInstance().shutdown()
         } catch (ignored: Exception) {
             // do nothing
         }

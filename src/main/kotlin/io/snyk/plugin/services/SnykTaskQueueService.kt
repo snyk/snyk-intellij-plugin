@@ -89,7 +89,7 @@ class SnykTaskQueueService(val project: Project) {
         }
     }
 
-    fun scan(isStartup: Boolean) {
+    fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return
@@ -101,9 +101,7 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-                if (!isStartup) {
-                    LanguageServerWrapper.getInstance().sendScanCommand(project)
-                }
+                LanguageServerWrapper.getInstance().sendScanCommand(project)
 
                 if (settings.iacScanEnabled) {
                     if (!isSnykIaCLSEnabled()) {
