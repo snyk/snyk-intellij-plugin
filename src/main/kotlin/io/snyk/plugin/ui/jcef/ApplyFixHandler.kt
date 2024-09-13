@@ -2,20 +2,17 @@ package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
-import com.intellij.openapi.diagnostic.Logger
+import org.jetbrains.concurrency.runAsync
+import io.snyk.plugin.toVirtualFile
+
 
 data class DiffPatch(
     val originalFile: String,
@@ -38,10 +35,17 @@ sealed class Change {
 }
 
 class ApplyFixHandler(private val project: Project) {
+
+    private val enableDebug = Logger.getInstance("Snyk Language Server").isDebugEnabled
+    private val enableTrace = Logger.getInstance("Snyk Language Server").isTraceEnabled
     private val logger = Logger.getInstance(this::class.java)
+
 
     fun generateApplyFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
+
+        //temporary logs
+        logger.info("[generateApplyFixCommand] calling applyPatchAndSave")
 
         applyFixQuery.addHandler { value ->
             val params = value.split(":")
@@ -49,19 +53,18 @@ class ApplyFixHandler(private val project: Project) {
             val patch = params[1]      // The patch we received from LS
 
             // Avoid blocking the UI thread
-            CoroutineScope(Dispatchers.IO).launch {
+            runAsync {
                 try {
                     val success = applyPatchAndSave(project, filePath, patch)
+
 
                     val script = """
                         window.receiveApplyFixResponse($success);
                     """.trimIndent()
 
-                    withContext(Dispatchers.Main) {
-                        jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
-                    }
+                    jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    log("Error applying fix: ${e.message}")
                 }
             }
             return@addHandler JBCefJSQuery.Response("success")
@@ -85,35 +88,40 @@ class ApplyFixHandler(private val project: Project) {
     }
 
     private fun applyPatchAndSave(project: Project, filePath: String, patch: String): Boolean {
-        val virtualFile = findVirtualFile(filePath) ?: run {
-            logger.debug("[applyPatchAndSave] Virtual file not found for path: $filePath")
-            return false
-        }
+        val virtualFile = filePath.toVirtualFile()
 
         val fileContent = ApplicationManager.getApplication().runReadAction<String?> {
             val document = FileDocumentManager.getInstance().getDocument(virtualFile)
             document?.text
         } ?: run {
-            logger.debug("[applyPatchAndSave] Document not found or is null for virtual file: $filePath")
+            log("[applyPatchAndSave] Document not found or is null for virtual file: $filePath")
             return false
         }
 
         val diffPatch = parseDiff(patch)
         val patchedContent = applyPatch(fileContent, diffPatch)
+        var result = false
 
         // Apply the patch inside a WriteCommandAction
-        WriteCommandAction.runWriteCommandAction(project) {
-            val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-            document?.let {
-                it.setText(patchedContent)
+        result = try {
+            WriteCommandAction.runWriteCommandAction(project) {
+                val document = FileDocumentManager.getInstance().getDocument(virtualFile)
+                if (document != null) {
+                    document.setText(patchedContent)
 
-                FileDocumentManager.getInstance().saveDocument(it)
-            } ?: run {
-                logger.debug("[applyPatchAndSave] Failed to find document for saving patched content.\"")
+                    //temporary logs
+                    logger.info("[applyPatchAndSave] Content after applying patch:${document.text}")
+                } else {
+                    log("[applyPatchAndSave] Failed to find document for saving patched content.")
+                }
             }
+            true // Success
+        } catch (e: Exception) {
+            log("[applyPatchAndSave] Error applying patch: ${e.message}")
+            false // Failure
         }
 
-        return true
+        return result
     }
 
     fun applyPatch(fileContent: String, diffPatch: DiffPatch): String {
@@ -128,11 +136,13 @@ class ApplyFixHandler(private val project: Project) {
                         lines.add(originalLineIndex, change.line)
                         originalLineIndex++
                     }
+
                     is Change.Deletion -> {
                         if (originalLineIndex < lines.size && lines[originalLineIndex].trim() == change.line) {
                             lines.removeAt(originalLineIndex)
                         }
                     }
+
                     is Change.Context -> {
                         originalLineIndex++  // Move past unchanged context lines
                     }
@@ -176,10 +186,12 @@ class ApplyFixHandler(private val project: Project) {
                         changes = emptyList()
                     )
                 }
+
                 line.startsWith("---") || line.startsWith("+++") -> {
                     // Skip file metadata lines (--- and +++)
                     continue
                 }
+
                 line.startsWith("-") -> changes.add(Change.Deletion(line.substring(1).trim()))
                 line.startsWith("+") -> changes.add(Change.Addition(line.substring(1).trim()))
                 else -> changes.add(Change.Context(line.trim()))
@@ -198,7 +210,11 @@ class ApplyFixHandler(private val project: Project) {
         )
     }
 
-    private fun findVirtualFile(filePath: String): VirtualFile? {
-        return LocalFileSystem.getInstance().findFileByPath(filePath)
+    private fun log(logMessage: String) {
+        when {
+            enableDebug -> logger.debug(logMessage)
+            enableTrace -> logger.trace(logMessage)
+            else -> logger.error(logMessage)
+        }
     }
 }

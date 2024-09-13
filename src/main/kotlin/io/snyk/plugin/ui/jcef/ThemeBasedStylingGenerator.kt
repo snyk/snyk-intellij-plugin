@@ -62,10 +62,11 @@ class ThemeBasedStylingGenerator {
                     val baseColor = UIUtil.getTextFieldBackground()
                     val (addedColor, removedColor) = getCodeDiffColors(baseColor, isHighContrast)
 
-                    val textColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
-                    val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
                     val dataFlowColor = toCssHex(baseColor)
                     val editorColor = toCssHex(baseColor)
+
+                    val textColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
+                    val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
                     val borderColor = toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground())
                     val labelColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
 
