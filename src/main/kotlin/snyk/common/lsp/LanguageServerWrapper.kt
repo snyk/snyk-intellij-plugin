@@ -65,7 +65,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
-import java.util.logging.Logger.*
+import java.util.logging.Logger.getLogger
 import kotlin.io.path.exists
 
 private const val INITIALIZATION_TIMEOUT = 20L
