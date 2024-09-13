@@ -38,6 +38,9 @@ sealed class Change {
 }
 
 class ApplyFixHandler(private val project: Project) {
+
+    private val enableDebug = Logger.getInstance("Snyk Language Server").isDebugEnabled
+    private val enableTrace = Logger.getInstance("Snyk Language Server").isTraceEnabled
     private val logger = Logger.getInstance(this::class.java)
 
     val logger = Logger.getInstance(this::class.java).apply {
@@ -50,6 +53,9 @@ class ApplyFixHandler(private val project: Project) {
 
     fun generateApplyFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
+
+        //temporary logs
+        logger.info("[generateApplyFixCommand] calling applyPatchAndSave")
 
         applyFixQuery.addHandler { value ->
             val params = value.split("|@", limit = 2)
@@ -123,6 +129,10 @@ class ApplyFixHandler(private val project: Project) {
                 SnykBalloonNotificationHelper.showError(errorMessage, project)
                 return@runWriteCommandAction
             }
+            true // Success
+        } catch (e: Exception) {
+            log("[applyPatchAndSave] Error applying patch: ${e.message}")
+            false // Failure
         }
         return Result.success(Unit)
     }
