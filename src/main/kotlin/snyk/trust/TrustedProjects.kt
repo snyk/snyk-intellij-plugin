@@ -4,6 +4,7 @@ package snyk.trust
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -58,7 +59,7 @@ private fun confirmScanningUntrustedProject(project: Project): ScanUntrustedProj
 
     var choice = ScanUntrustedProjectChoice.CANCEL
 
-    invokeAndWaitIfNeeded {
+    runInEdt {
         val result = MessageDialogBuilder
             .yesNo(title, message)
             .icon(Messages.getWarningIcon())

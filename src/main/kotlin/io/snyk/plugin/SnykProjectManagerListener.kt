@@ -28,8 +28,10 @@ class SnykProjectManagerListener : ProjectManagerListener {
                             ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFolders(project))
                         }
                     }.get(TIMEOUT, TimeUnit.SECONDS)
-                } catch (ignored: RuntimeException) {
-                    logger<SnykProjectManagerListener>().info("Project closing clean up took too long", ignored)
+                } catch (ignored: Exception) {
+                    val logger = logger<SnykProjectManagerListener>()
+                    logger.warn("Project closing clean up took longer than $TIMEOUT seconds")
+                    logger.debug(ignored)
                 }
             }
         }
