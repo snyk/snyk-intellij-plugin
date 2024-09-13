@@ -21,7 +21,6 @@ import snyk.UIComponentFinder
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykLanguageClient
 import java.awt.Container
-import java.io.File
 import java.util.concurrent.CompletableFuture
 
 class SnykToolWindowPanelTest : LightPlatform4TestCase() {
@@ -102,7 +101,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     fun `should not display onboarding panel and run scan directly`() {
         every { settings.token } returns "test-token"
         every { settings.pluginFirstRun } returns true
-        justRun { taskQueueService.scan(false) }
+        justRun { taskQueueService.scan() }
 
         cut = SnykToolWindowPanel(project)
 
@@ -111,7 +110,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         assertNotNull(descriptionPanel)
         assertEquals(findOnePixelSplitter(vulnerabilityTree), descriptionPanel!!.parent)
 
-        verify(exactly = 1) { taskQueueService.scan(false) }
+        verify(exactly = 1) { taskQueueService.scan() }
     }
 
     //TODO rewrite

@@ -1,12 +1,14 @@
 package snyk.container
 
 import com.google.gson.Gson
+import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatform4TestCase
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -16,9 +18,10 @@ import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.container.TestYamls.podYaml
+import snyk.trust.WorkspaceTrustSettings
 import java.util.concurrent.CompletableFuture
+import kotlin.io.path.absolutePathString
 
-@Suppress("FunctionName")
 class ContainerServiceIntegTest : LightPlatform4TestCase() {
     private lateinit var cut: ContainerService
     private val containerResultWithRemediationJson = javaClass.classLoader
@@ -51,6 +54,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         super.setUp()
         unmockkAll()
         setupDummyCliFile()
+        project.getContentRootPaths().forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
         cut = ContainerService(project)
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.languageServer = lsMock

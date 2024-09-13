@@ -3,7 +3,6 @@ package io.snyk.plugin.services
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
-import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -69,7 +68,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         setupDummyCliFile()
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
-        snykTaskQueueService.scan(false)
+        snykTaskQueueService.scan()
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
@@ -85,7 +84,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { isCliInstalled() } returns true
 
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        snykTaskQueueService.scan(false)
+        snykTaskQueueService.scan()
 
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
@@ -99,7 +98,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val snykTaskQueueService = project.service<SnykTaskQueueService>()
         every { isCliInstalled() } returns true
 
-        snykTaskQueueService.scan(false)
+        snykTaskQueueService.scan()
 
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
@@ -156,7 +155,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         every { isCliInstalled() } returns true
         every { getIacService(project)?.scan() } returns fakeIacResult
 
-        snykTaskQueueService.scan(false)
+        snykTaskQueueService.scan()
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertEquals(fakeIacResult, getSnykCachedResults(project)?.currentIacResult)
@@ -178,7 +177,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         getSnykCachedResults(project)?.currentContainerResult = null
 
-        snykTaskQueueService.scan(false)
+        snykTaskQueueService.scan()
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         await().atMost(2, TimeUnit.SECONDS).until {

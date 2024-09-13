@@ -28,7 +28,7 @@ class IssueViewOptionsPanel(
             .actionListener{ _, it ->
                 if (canBeChanged(it, it.isSelected)) {
                     currentOpenIssuesEnabled = it.isSelected
-                    getSnykTaskQueueService(project)?.scan(false)
+                    getSnykTaskQueueService(project)?.scan()
                 }
             }
             // bindSelected is needed to trigger apply() on the settings dialog that this panel is rendered in
@@ -44,7 +44,7 @@ class IssueViewOptionsPanel(
                 .actionListener{ _, it ->
                     if (canBeChanged(it, it.isSelected)) {
                         currentIgnoredIssuesEnabled = it.isSelected
-                        getSnykTaskQueueService(project)?.scan(false)
+                        getSnykTaskQueueService(project)?.scan()
                     }
                 }
                 .bindSelected(settings::ignoredIssuesEnabled)

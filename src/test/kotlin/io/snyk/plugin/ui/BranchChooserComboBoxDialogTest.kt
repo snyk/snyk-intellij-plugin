@@ -11,6 +11,7 @@ import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.toVirtualFile
 import okio.Path.Companion.toPath
 import org.eclipse.lsp4j.DidChangeConfigurationParams
@@ -21,11 +22,13 @@ import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.LanguageServerSettings
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.WorkspaceTrustService
+import snyk.trust.WorkspaceTrustSettings
+import kotlin.io.path.absolutePathString
 
 
 class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
     private val lsMock: LanguageServer = mockk(relaxed = true)
-    lateinit var folderConfig: FolderConfig
+    private lateinit var folderConfig: FolderConfig
     lateinit var cut: BranchChooserComboBoxDialog
 
     override fun setUp(): Unit {
@@ -33,6 +36,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
         unmockkAll()
         folderConfig = FolderConfig(project.basePath.toString(), "testBranch")
         service<FolderConfigSettings>().addFolderConfig(folderConfig)
+        project.getContentRootPaths().forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
