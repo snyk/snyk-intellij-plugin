@@ -22,7 +22,6 @@ import snyk.trust.WorkspaceTrustSettings
 import java.util.concurrent.CompletableFuture
 import kotlin.io.path.absolutePathString
 
-@Suppress("FunctionName")
 class ContainerServiceIntegTest : LightPlatform4TestCase() {
     private lateinit var cut: ContainerService
     private val containerResultWithRemediationJson = javaClass.classLoader
