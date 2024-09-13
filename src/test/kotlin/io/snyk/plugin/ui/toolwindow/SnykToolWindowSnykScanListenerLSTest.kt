@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.ide.impl.TrustedPathsSettings
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.vfs.VirtualFile
@@ -11,10 +12,12 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import junit.framework.TestCase
+import okio.Path.Companion.toPath
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import snyk.common.annotator.SnykCodeAnnotator
@@ -23,9 +26,12 @@ import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
+import snyk.trust.WorkspaceTrustService
+import snyk.trust.WorkspaceTrustSettings
 import java.nio.file.Paths
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
+import kotlin.io.path.absolutePathString
 
 class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
     private lateinit var cut: SnykToolWindowSnykScanListenerLS
@@ -53,10 +59,11 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
 
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }
+        val contentRootPaths = project.getContentRootPaths()
         service<FolderConfigSettings>()
             .addFolderConfig(
                 FolderConfig(
-                    project.getContentRootPaths().first().toAbsolutePath().toString(), "main"
+                    contentRootPaths.first().toAbsolutePath().toString(), "main"
                 )
             )
         snykToolWindowPanel = SnykToolWindowPanel(project)
@@ -64,6 +71,12 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
         rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
         pluginSettings().setDeltaEnabled()
+        contentRootPaths.forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
+    }
+
+    override fun tearDown() {
+        super.tearDown()
+        unmockkAll()
     }
 
     private fun mockScanIssues(
