@@ -23,6 +23,10 @@
 - add flashes for auto-fixable Open Source Issues
 - show code vision for Open Source also, when Snyk Code is still analysing
 - clean-up old open source scan functionality
+- don't print out exceptions during shutdown of the app/plugin
+- if the language server listener is shut down, set initialized to false
+- log error stream of language server to idea.log
+- show error / warn messages if the project is null (e.g. for offline handling)
 
 ## [2.9.1]
 ### Fixed
