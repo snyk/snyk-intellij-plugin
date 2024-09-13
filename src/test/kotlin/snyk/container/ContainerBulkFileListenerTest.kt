@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.VirtualFile
@@ -75,8 +76,8 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         val path = createNewFileInProjectRoot().toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
         var virtualFile: VirtualFile? = null
-        invokeLater {
-            VirtualFileManager.getInstance().syncRefresh()
+        VirtualFileManager.getInstance().syncRefresh()
+        runInEdt {
             virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
         }
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
