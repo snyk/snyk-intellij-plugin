@@ -263,7 +263,9 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
             val psiFile = findPsiFileIgnoringExceptions(it, project)
             if (psiFile != null) {
                 invokeLater {
-                    DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+                    if (!psiFile.project.isDisposed) {
+                        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+                    }
                 }
             }
         }
