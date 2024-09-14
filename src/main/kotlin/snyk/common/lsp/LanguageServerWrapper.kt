@@ -402,6 +402,7 @@ class LanguageServerWrapper(
             languageServer.workspaceService.executeCommand(param)
         } catch (ignored: Exception) {
             // do nothing to not break UX for analytics
+            // TODO review
         }
     }
 
