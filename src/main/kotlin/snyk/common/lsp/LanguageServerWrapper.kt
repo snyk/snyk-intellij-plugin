@@ -188,7 +188,7 @@ class LanguageServerWrapper(
             } catch (ignore: Exception) {
                 // do nothing
             } finally {
-               if (lsIsAlive()) process.destroyForcibly()
+                if (lsIsAlive()) process.destroyForcibly()
             }
             lsp4jLogger.level = previousLSP4jLogLevel
             messageProducerLogger.level = previousMessageProducerLevel
@@ -342,8 +342,8 @@ class LanguageServerWrapper(
     fun sendScanCommand(project: Project) {
         if (!ensureLanguageServerInitialized()) return
         DumbService.getInstance(project).runWhenSmart {
+            refreshFeatureFlags()
             getTrustedContentRoots(project).forEach {
-                refreshFeatureFlags()
                 sendFolderScanCommand(it.path, project)
             }
         }
