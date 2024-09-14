@@ -42,6 +42,7 @@ import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.jsonrpc.RemoteEndpoint
+import org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
@@ -66,6 +67,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
+import java.util.logging.Level
 import java.util.logging.Logger.getLogger
 import kotlin.io.path.exists
 
@@ -171,8 +173,11 @@ class LanguageServerWrapper(
     fun shutdown() {
         // LSP4j logs errors and rethrows - this is bad practice, and we don't need that log here, so we shut it up.
         val lsp4jLogger = getLogger(RemoteEndpoint::class.java.name)
+        val messageProducerLogger = getLogger(StreamMessageProducer::class.java.name)
+        val previousMessageProducerLevel = messageProducerLogger.level
         val previousLSP4jLogLevel = lsp4jLogger.level
-        lsp4jLogger.level = java.util.logging.Level.OFF
+        lsp4jLogger.level = Level.OFF
+        messageProducerLogger.level = Level.OFF
         try {
             val shouldShutdown = lsIsAlive()
             executorService.submit { if (shouldShutdown) languageServer.shutdown().get(1, TimeUnit.SECONDS) }
@@ -187,6 +192,7 @@ class LanguageServerWrapper(
                if (lsIsAlive()) process.destroyForcibly()
             }
             lsp4jLogger.level = previousLSP4jLogLevel
+            messageProducerLogger.level = previousMessageProducerLevel
         }
     }
 
