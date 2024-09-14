@@ -133,7 +133,7 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
                 // ignore error
                 ""
             }
-            return mutableListOf(LineExtensionInfo("\t\t$text", attributes))
+            return mutableListOf(LineExtensionInfo("\t$text", attributes))
         }
 
     }
