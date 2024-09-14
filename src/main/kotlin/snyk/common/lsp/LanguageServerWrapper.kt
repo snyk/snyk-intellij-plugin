@@ -369,7 +369,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(10, TimeUnit.SECONDS)
+            val result = languageServer.workspaceService.executeCommand(param).get(20, TimeUnit.SECONDS)
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
