@@ -56,6 +56,7 @@
     <platform.backend.documentation.targetProvider implementation="snyk.common.lsp.LSDocumentationTargetProvider" />
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykOSSAnnotator"/>
+    <editorFactoryListener implementation="snyk.common.editor.LineEndingEditorFactoryListener" id="snyk" />
   </extensions>
 
   <actions>

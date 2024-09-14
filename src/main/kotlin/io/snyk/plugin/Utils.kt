@@ -1,4 +1,5 @@
 @file:JvmName("UtilsKt")
+@file:Suppress("unused")
 
 package io.snyk.plugin
 
@@ -427,6 +428,7 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
 }
 
 fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
+    if (this.isDisposed) return emptySet()
     var contentRoots = ProjectRootManager.getInstance(this).contentRoots
     if (contentRoots.isEmpty()) {
         // this should cover for the case when no content roots are configured, e.g. in rider
