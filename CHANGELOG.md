@@ -17,6 +17,7 @@
 - always display info nodes
 - add option in IntelliJ registry to display tooltips with issue information
 - display documentation info when hovering over issue
+- add inline value support for display of vulnerability count
 
 ### Fixes
 - add name to code vision provider
