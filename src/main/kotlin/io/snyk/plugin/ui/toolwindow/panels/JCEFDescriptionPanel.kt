@@ -4,6 +4,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -166,6 +167,8 @@ class SuggestionDescriptionPanelFromLS(
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
+        val fontUpdate = "--default-font: \"${UIUtil.getLabelFont().fontName}\", "
+        html = html.replace("--default-font:", fontUpdate)
 
         return html
     }
