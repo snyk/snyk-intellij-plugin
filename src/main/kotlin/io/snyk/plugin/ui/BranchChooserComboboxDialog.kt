@@ -68,7 +68,6 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
         }
         runAsync {
             LanguageServerWrapper.getInstance().updateConfiguration()
-            LanguageServerWrapper.getInstance().sendScanCommand(project)
         }
     }
 
