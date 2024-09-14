@@ -14,9 +14,9 @@ import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiCompiledElement
 import com.intellij.psi.PsiDocumentManager
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -59,7 +59,8 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
         }
 
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
-        if (psiFile == null || psiFile.virtualFile == null || psiFile is PsiCompiledElement) {
+        val virtualFile = psiFile?.virtualFile
+        if (psiFile == null || virtualFile == null || psiFile is PsiCompiledElement) {
             return
         }
 
@@ -67,13 +68,15 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
             return
         }
 
-        editor.registerLineExtensionPainter(EditorLineEndingProvider(editor, psiFile.virtualFile)::getLineExtension)
+        val snykFile = SnykFile(project, virtualFile)
+
+        editor.registerLineExtensionPainter(EditorLineEndingProvider(editor, snykFile)::getLineExtension)
     }
 
 
-    class EditorLineEndingProvider(val editor: Editor, val virtualFile: VirtualFile) : Disposable {
+    class EditorLineEndingProvider(val editor: Editor, val snykFile: SnykFile) : Disposable {
         companion object {
-            private val attributeKey: TextAttributesKey = DefaultLanguageHighlighterColors.LINE_COMMENT
+            private val attributeKey: TextAttributesKey = DefaultLanguageHighlighterColors.INLAY_TEXT_WITHOUT_BACKGROUND
             val attributes: TextAttributes = EditorColorsManager.getInstance().globalScheme.getAttributes(attributeKey)
             val ctx = InlineValueContext(0, Range())
         }
@@ -105,7 +108,7 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
 
         fun getLineExtension(line: Int): MutableCollection<out LineExtensionInfo> {
             // only OSS has inline values right now
-            val hasResults = snykCachedResults?.currentOSSResultsLS?.isNotEmpty() ?: false
+            val hasResults = snykCachedResults?.currentOSSResultsLS?.get(snykFile)?.isNotEmpty() ?: false
             if (disposed
                 || !languageServerWrapper.isInitialized
                 || !hasResults
@@ -114,7 +117,7 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
             val lineEndOffset = document.getLineEndOffset(line)
             val lineStartOffset = document.getLineStartOffset(line)
             val range = Range(Position(line, 0), Position(line, lineEndOffset - lineStartOffset))
-            val params = InlineValueParams(TextDocumentIdentifier(virtualFile.toLanguageServerURL()), range, ctx)
+            val params = InlineValueParams(TextDocumentIdentifier(snykFile.virtualFile.toLanguageServerURL()), range, ctx)
             val inlineValue = languageServerWrapper.languageServer.textDocumentService.inlineValue(params)
             val text = try {
                 val result = inlineValue.get(5, TimeUnit.MILLISECONDS)
