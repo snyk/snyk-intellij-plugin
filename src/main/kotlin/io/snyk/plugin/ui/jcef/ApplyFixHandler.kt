@@ -44,9 +44,6 @@ class ApplyFixHandler(private val project: Project) {
     fun generateApplyFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
-        //temporary logs
-        logger.info("[generateApplyFixCommand] calling applyPatchAndSave")
-
         applyFixQuery.addHandler { value ->
             val params = value.split("|@", limit = 2)
             val filePath = params[0]  // Path to the file that needs to be patched
@@ -54,19 +51,14 @@ class ApplyFixHandler(private val project: Project) {
 
             // Avoid blocking the UI thread
             runAsync {
-                try {
-                    val success = applyPatchAndSave(project, filePath, patch)
+                val success = applyPatchAndSave(project, filePath, patch)
 
-
-                    val script = """
+                val script = """
                         window.receiveApplyFixResponse($success);
                     """.trimIndent()
 
-                    jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
-                    JBCefJSQuery.Response("success")
-                } catch (e: Exception) {
-                    log("Error applying fix: ${e.message}")
-                }
+                jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+                JBCefJSQuery.Response("success")
             }
             return@addHandler JBCefJSQuery.Response("success")
         }

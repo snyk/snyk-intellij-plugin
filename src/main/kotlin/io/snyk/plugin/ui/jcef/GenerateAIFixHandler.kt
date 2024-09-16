@@ -23,21 +23,15 @@ class GenerateAIFixHandler(private val project: Project) {
 
 
             runAsync {
-                try {
-                    val responseDiff: List<LanguageServerWrapper.Fix> =
-                        LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
+                val responseDiff: List<LanguageServerWrapper.Fix> =
+                    LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
 
-                    //What happens when sendCodeFixDiffsCommand fails or is empty?
-
-                    val script = """
+                val script = """
                         window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
                     """.trimIndent()
 
-                    jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
-                    JBCefJSQuery.Response("success")
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+                JBCefJSQuery.Response("success")
             }
             return@addHandler JBCefJSQuery.Response("success")
         }
