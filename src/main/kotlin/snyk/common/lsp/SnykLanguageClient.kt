@@ -22,7 +22,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
-import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
@@ -186,19 +185,17 @@ class SnykLanguageClient :
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (disposed) return completedFuture
-
-        ProjectManager
-            .getInstance()
-            .openProjects
-            .filter { !it.isDisposed }
-            .forEach { project ->
-                runAsync {
+        runAsync {
+            ProjectManager
+                .getInstance()
+                .openProjects
+                .filter { !it.isDisposed }
+                .forEach { project ->
                     ReadAction.run<RuntimeException> {
                         if (!project.isDisposed) refreshAnnotationsForOpenFiles(project)
                     }
                 }
-            }
-        VirtualFileManager.getInstance().asyncRefresh()
+        }
         return completedFuture
     }
 
@@ -304,6 +301,7 @@ class SnykLanguageClient :
         if (disposed) return
         if (pluginSettings().token == param.token) return
         pluginSettings().token = param.token
+        ApplicationManager.getApplication().saveSettings()
 
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
@@ -462,12 +460,10 @@ class SnykLanguageClient :
     override fun showMessage(messageParams: MessageParams?) {
         if (disposed) return
         val project = ProjectUtil.getActiveProject()
-        if (project == null) {
-            logger.info(messageParams?.message)
-            return
-        }
         when (messageParams?.type) {
-            MessageType.Error -> SnykBalloonNotificationHelper.showError(messageParams.message, project)
+            MessageType.Error -> {
+                SnykBalloonNotificationHelper.showError(messageParams.message, project)
+            }
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)

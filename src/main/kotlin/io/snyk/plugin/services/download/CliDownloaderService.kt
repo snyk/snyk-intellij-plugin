@@ -73,7 +73,7 @@ class SnykCliDownloaderService {
             try {
                 if (languageServerWrapper.isInitialized) {
                     try {
-                        languageServerWrapper.shutdown().get(2, TimeUnit.SECONDS)
+                        languageServerWrapper.shutdown()
                     } catch (e: RuntimeException) {
                         logger<SnykCliDownloaderService>()
                             .warn("Language server shutdown for download took too long, couldn't shutdown", e)

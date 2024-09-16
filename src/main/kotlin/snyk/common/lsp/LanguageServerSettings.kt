@@ -3,6 +3,7 @@
 package snyk.common.lsp
 
 import com.google.gson.annotations.SerializedName
+import com.intellij.openapi.components.service
 import io.snyk.plugin.pluginSettings
 import org.apache.commons.lang3.SystemUtils
 import snyk.pluginInfo
@@ -16,7 +17,7 @@ data class LanguageServerSettings(
     @SerializedName("additionalParams") val additionalParams: String? = null,
     @SerializedName("additionalEnv") val additionalEnv: String? = null,
     @SerializedName("path") val path: String? = null,
-    @SerializedName("sendErrorReports") val sendErrorReports: String? = "false",
+    @SerializedName("sendErrorReports") val sendErrorReports: String? = "true",
     @SerializedName("organization") val organization: String? = null,
     @SerializedName("enableTelemetry") val enableTelemetry: String? = "false",
     @SerializedName("manageBinariesAutomatically") val manageBinariesAutomatically: String? = "false",
@@ -42,6 +43,10 @@ data class LanguageServerSettings(
     @SerializedName("enableSnykOSSQuickFixCodeActions") val enableSnykOSSQuickFixCodeActions: String? = null,
     @SerializedName("requiredProtocolVersion") val requiredProtocolVersion: String =
         pluginSettings().requiredLsProtocolVersion.toString(),
+    @SerializedName("hoverVerbosity") val hoverVerbosity: Int = 1,
+    @SerializedName("outputFormat") val outputFormat: String = "html",
+    @SerializedName("enableDeltaFindings") val enableDeltaFindings: String = pluginSettings().isDeltaFindingsEnabled().toString(),
+    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = service<FolderConfigSettings>().getAll().values.toList()
 )
 
 data class SeverityFilter(

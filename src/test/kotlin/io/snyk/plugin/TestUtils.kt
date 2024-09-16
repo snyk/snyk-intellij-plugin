@@ -43,7 +43,11 @@ fun resetSettings(project: Project?) {
         SnykProjectSettingsStateService(),
         project
     )
-    LanguageServerWrapper.getInstance().shutdown()
+    try {
+        LanguageServerWrapper.getInstance().shutdown()
+    } catch (ignore: Exception) {
+        // ignore
+    }
 }
 
 /** low level avoiding download the CLI file */

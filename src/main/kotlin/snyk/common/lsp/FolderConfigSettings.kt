@@ -7,7 +7,10 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.SimplePersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.annotations.MapAnnotation
+import io.snyk.plugin.getContentRootPaths
+import java.util.stream.Collectors
 
 @Service
 @State(
@@ -21,15 +24,27 @@ class FolderConfigSettings : SimplePersistentStateComponent<FolderConfigSettings
         var configs by map<String, String>()
     }
 
-    private fun addFolderConfig(folderConfig: FolderConfig) {
+    fun addFolderConfig(folderConfig: FolderConfig) {
         state.configs[folderConfig.folderPath] = gson.toJson(folderConfig)
     }
 
-    fun getFolderConfig(folderPath: String): FolderConfig? {
-        return gson.fromJson(state.configs[folderPath], FolderConfig::class.java)
+    @Suppress("USELESS_ELVIS", "SENSELESS_COMPARISON") // gson doesn't care about kotlin not null stuff
+    internal fun getFolderConfig(folderPath: String): FolderConfig? {
+        val fromJson = gson.fromJson(state.configs[folderPath], FolderConfig::class.java) ?: return null
+        if (fromJson.additionalParameters == null) {
+            val copy = fromJson.copy(
+                baseBranch = fromJson.baseBranch,
+                folderPath = fromJson.folderPath,
+                localBranches = fromJson.localBranches ?: emptyList(),
+                additionalParameters = fromJson.additionalParameters ?: emptyList(),
+            )
+            addFolderConfig(copy)
+            return copy
+        }
+        return fromJson
     }
 
-    fun getAll() : Map<String, FolderConfig> {
+    fun getAll(): Map<String, FolderConfig> {
         return state.configs.map {
             it.key to gson.fromJson(it.value, FolderConfig::class.java)
         }.toMap()
@@ -38,4 +53,11 @@ class FolderConfigSettings : SimplePersistentStateComponent<FolderConfigSettings
     fun clear() = state.configs.clear()
 
     fun addAll(folderConfigs: List<FolderConfig>) = folderConfigs.forEach { addFolderConfig(it) }
+
+    fun getAllForProject(project: Project): List<FolderConfig> =
+        project.getContentRootPaths()
+            .mapNotNull { getFolderConfig(it.toAbsolutePath().toString()) }
+            .stream()
+            .sorted()
+            .collect(Collectors.toList()).toList()
 }

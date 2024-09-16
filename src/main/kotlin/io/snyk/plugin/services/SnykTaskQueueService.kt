@@ -1,7 +1,6 @@
 package io.snyk.plugin.services
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -90,7 +89,7 @@ class SnykTaskQueueService(val project: Project) {
         }
     }
 
-    fun scan(isStartup: Boolean) {
+    fun scan() {
         taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return
@@ -102,9 +101,7 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-                if (!isStartup) {
-                    LanguageServerWrapper.getInstance().sendScanCommand(project)
-                }
+                LanguageServerWrapper.getInstance().sendScanCommand(project)
 
                 if (settings.iacScanEnabled) {
                     if (!isSnykIaCLSEnabled()) {
@@ -158,7 +155,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("Container scan completed")
-                invokeLater { refreshAnnotationsForOpenFiles(project) }
+                refreshAnnotationsForOpenFiles(project)
             }
         })
     }
@@ -201,7 +198,7 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("IaC scan completed")
-                invokeLater { refreshAnnotationsForOpenFiles(project) }
+                refreshAnnotationsForOpenFiles(project)
             }
         })
     }

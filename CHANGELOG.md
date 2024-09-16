@@ -1,12 +1,6 @@
 # Snyk Security Changelog
 
-
-## [2.9.2]
-### Changed
-- Generate fix using Snyk DeepCode AI, Apply fix, Retry generating AI fixes
-
-
-## [2.9.1]
+## [2.10.0]
 ### Changed
 - save git folder config in settings
 - propagate Jetbrains determined runtime environment to language server
@@ -14,12 +8,30 @@
 - guard base branch setting against being empty
 - better error messaging when unexpected loop occurs during initialization
 - switch downloads to downloads.snyk.io
+- added support for net new scans
+- allow annotations during IntelliJ indexing
+- add gutter icons for Snyk issues
+- add option to switch gutter icons on/off
+- add color and highlighting setting for Snyk issues
+- add dialog to choose reference branch when net new scanning
+- always display info nodes
+- add option in IntelliJ registry to display tooltips with issue information
+- display documentation info when hovering over issue
+- Generate fix using Snyk DeepCode AI, Apply fix, Retry generating AI fixes
 
 ### Fixes
 - add name to code vision provider
 - add flashes for auto-fixable Open Source Issues
 - show code vision for Open Source also, when Snyk Code is still analysing
 - clean-up old open source scan functionality
+- don't print out exceptions during shutdown of the app/plugin
+- if the language server listener is shut down, set initialized to false
+- log error stream of language server to idea.log
+- show error / warn messages if the project is null (e.g. for offline handling)
+
+## [2.9.1]
+### Fixed
+- propagate IntelliJ environment to language server. This should mitigate the issue of not finding package managers during scans.
 
 ## [2.9.0]
 ### Changed

@@ -1,7 +1,6 @@
 package snyk.common
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
@@ -37,7 +36,7 @@ object AnnotatorCommon {
                 SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC,
                 object : SnykProductsOrSeverityListener {
                     override fun enablementChanged() {
-                        invokeLater { refreshAnnotationsForOpenFiles(project) }
+                        refreshAnnotationsForOpenFiles(project)
                     }
                 }
             )
@@ -46,7 +45,7 @@ object AnnotatorCommon {
                 SnykSettingsListener.SNYK_SETTINGS_TOPIC,
                 object : SnykSettingsListener {
                     override fun settingsChanged() {
-                        invokeLater { refreshAnnotationsForOpenFiles(project) }
+                        refreshAnnotationsForOpenFiles(project)
                     }
                 }
             )

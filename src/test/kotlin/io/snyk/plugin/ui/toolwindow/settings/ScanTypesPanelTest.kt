@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.toolwindow.settings
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.ui.components.JBCheckBox
@@ -10,6 +11,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
@@ -19,6 +21,8 @@ import snyk.common.ProductType
 import snyk.common.UIComponentFinder.getComponentByName
 import snyk.common.isSnykCodeAvailable
 import snyk.container.KubernetesImageCache
+import snyk.trust.WorkspaceTrustSettings
+import kotlin.io.path.absolutePathString
 
 class ScanTypesPanelTest : LightPlatform4TestCase() {
     private lateinit var disposable: Disposable
@@ -26,6 +30,7 @@ class ScanTypesPanelTest : LightPlatform4TestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
+        project.getContentRootPaths().forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
         resetSettings(project)
         disposable = Disposer.newDisposable()
     }

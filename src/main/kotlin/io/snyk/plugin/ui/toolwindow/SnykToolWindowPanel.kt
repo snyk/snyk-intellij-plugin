@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -40,6 +41,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
+import io.snyk.plugin.ui.BranchChooserComboBoxDialog
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
@@ -52,7 +54,9 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootTreeNodeBase
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
@@ -116,7 +120,7 @@ class SnykToolWindowPanel(
      *  */
     private var smartReloadMode = false
 
-    var navigateToSourceEnabled = true
+    var triggerSelectionListeners = true
 
     private val treeNodeStub =
         object : RootTreeNodeBase("", project) {
@@ -175,19 +179,19 @@ class SnykToolWindowPanel(
                     override fun scanningIacFinished(iacResult: IacResult) {
                         ApplicationManager.getApplication().invokeLater {
                             displayIacResults(iacResult)
-                            if (iacResult.getVisibleErrors().isNotEmpty()) {
-                                notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
-                            }
-                            refreshAnnotationsForOpenFiles(project)
                         }
+                        if (iacResult.getVisibleErrors().isNotEmpty()) {
+                            notifyAboutErrorsIfNeeded(ProductType.IAC, iacResult)
+                        }
+                        refreshAnnotationsForOpenFiles(project)
                     }
 
                     override fun scanningContainerFinished(containerResult: ContainerResult) {
                         ApplicationManager.getApplication().invokeLater {
                             displayContainerResults(containerResult)
-                            notifyAboutErrorsIfNeeded(ProductType.CONTAINER, containerResult)
-                            refreshAnnotationsForOpenFiles(project)
                         }
+                        notifyAboutErrorsIfNeeded(ProductType.CONTAINER, containerResult)
+                        refreshAnnotationsForOpenFiles(project)
                     }
 
                     private fun notifyAboutErrorsIfNeeded(
@@ -210,38 +214,38 @@ class SnykToolWindowPanel(
 
                     override fun scanningIacError(snykError: SnykError) {
                         var iacResultsCount: Int? = null
-                        ApplicationManager.getApplication().invokeLater {
-                            if (snykError.code != null && ignorableErrorCodes.contains(snykError.code)) {
-                                iacResultsCount = NODE_NOT_SUPPORTED_STATE
-                            } else {
-                                SnykBalloonNotificationHelper.showError(snykError.message, project)
-                                if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
-                                    pluginSettings().token = null
-                                }
+                        if (snykError.code != null && ignorableErrorCodes.contains(snykError.code)) {
+                            iacResultsCount = NODE_NOT_SUPPORTED_STATE
+                        } else {
+                            SnykBalloonNotificationHelper.showError(snykError.message, project)
+                            if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
+                                pluginSettings().token = null
                             }
+                        }
+                        ApplicationManager.getApplication().invokeLater {
                             removeAllChildren(listOf(rootIacIssuesTreeNode))
                             updateTreeRootNodesPresentation(iacResultsCount = iacResultsCount)
                             chooseMainPanelToDisplay()
-                            refreshAnnotationsForOpenFiles(project)
                         }
+                        refreshAnnotationsForOpenFiles(project)
                     }
 
                     override fun scanningContainerError(snykError: SnykError) {
                         var containerResultsCount: Int? = null
-                        ApplicationManager.getApplication().invokeLater {
-                            if (snykError == ContainerService.NO_IMAGES_TO_SCAN_ERROR) {
-                                containerResultsCount = NODE_NOT_SUPPORTED_STATE
-                            } else {
-                                SnykBalloonNotificationHelper.showError(snykError.message, project)
-                                if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
-                                    pluginSettings().token = null
-                                }
+                        if (snykError == ContainerService.NO_IMAGES_TO_SCAN_ERROR) {
+                            containerResultsCount = NODE_NOT_SUPPORTED_STATE
+                        } else {
+                            SnykBalloonNotificationHelper.showError(snykError.message, project)
+                            if (snykError.message.startsWith(AUTH_FAILED_TEXT)) {
+                                pluginSettings().token = null
                             }
+                        }
+                        ApplicationManager.getApplication().invokeLater {
                             removeAllChildren(listOf(rootContainerIssuesTreeNode))
                             updateTreeRootNodesPresentation(containerResultsCount = containerResultsCount)
                             chooseMainPanelToDisplay()
-                            refreshAnnotationsForOpenFiles(project)
                         }
+                        refreshAnnotationsForOpenFiles(project)
                     }
                 },
             )
@@ -252,20 +256,20 @@ class SnykToolWindowPanel(
                 SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
                 object : SnykResultsFilteringListener {
                     override fun filtersChanged() {
+                        val codeResultsLS =
+                            getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return
                         ApplicationManager.getApplication().invokeLater {
-                            val codeResultsLS =
-                                getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return@invokeLater
                             scanListenerLS.displaySnykCodeResults(codeResultsLS)
                         }
 
+                        val ossResultsLS =
+                            getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return
                         ApplicationManager.getApplication().invokeLater {
-                            val ossResultsLS =
-                                getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return@invokeLater
                             scanListenerLS.displayOssResults(ossResultsLS)
                         }
 
+                        val snykCachedResults = getSnykCachedResults(project) ?: return
                         ApplicationManager.getApplication().invokeLater {
-                            val snykCachedResults = getSnykCachedResults(project) ?: return@invokeLater
                             snykCachedResults.currentIacResult?.let { displayIacResults(it) }
                             snykCachedResults.currentContainerResult?.let { displayContainerResults(it) }
                         }
@@ -328,13 +332,18 @@ class SnykToolWindowPanel(
 
     private fun updateDescriptionPanelBySelectedTreeNode() {
         val capturedSmartReloadMode = smartReloadMode
-        val capturedNavigateToSourceEnabled = navigateToSourceEnabled
+        val capturedNavigateToSourceEnabled = triggerSelectionListeners
 
         ApplicationManager.getApplication().invokeLater {
             descriptionPanel.removeAll()
             val selectionPath = vulnerabilitiesTree.selectionPath
             if (nonNull(selectionPath)) {
                 val lastPathComponent = selectionPath!!.lastPathComponent
+
+                if (lastPathComponent is ChooseBranchNode && capturedNavigateToSourceEnabled && !capturedSmartReloadMode) {
+                    BranchChooserComboBoxDialog(project).show()
+                }
+
                 if (!capturedSmartReloadMode &&
                     capturedNavigateToSourceEnabled &&
                     lastPathComponent is NavigatableToSourceTreeNode
@@ -382,8 +391,8 @@ class SnykToolWindowPanel(
 
         ApplicationManager.getApplication().invokeLater {
             doCleanUi(true)
-            refreshAnnotationsForOpenFiles(project)
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
     private fun doCleanUi(reDisplayDescription: Boolean) {
@@ -440,7 +449,7 @@ class SnykToolWindowPanel(
     }
 
     private fun triggerScan() {
-        getSnykTaskQueueService(project)?.scan(false)
+        getSnykTaskQueueService(project)?.scan()
     }
 
     fun displayAuthPanel() {
@@ -883,6 +892,7 @@ class SnykToolWindowPanel(
         selectedNodeUserObject: Any?,
     ) {
         val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
+        if (selectedNode is InfoTreeNode) return
 
         displayEmptyDescription()
         (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
@@ -910,12 +920,13 @@ class SnykToolWindowPanel(
     private fun selectAndDisplayNodeWithIssueDescription(selectCondition: (DefaultMutableTreeNode) -> Boolean) {
         val node = TreeUtil.findNode(rootTreeNode) { selectCondition(it) }
         if (node != null) {
-            navigateToSourceEnabled = false
-            try {
-                TreeUtil.selectNode(vulnerabilitiesTree, node)
-                // here TreeSelectionListener is invoked, so no needs for explicit updateDescriptionPanelBySelectedTreeNode()
-            } finally {
-                navigateToSourceEnabled = true
+            invokeLater {
+                try {
+                    triggerSelectionListeners = false
+                    TreeUtil.selectNode(vulnerabilitiesTree, node)
+                } finally {
+                    triggerSelectionListeners = true
+                }
             }
         }
     }

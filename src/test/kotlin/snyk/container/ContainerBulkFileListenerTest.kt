@@ -1,6 +1,10 @@
 package snyk.container
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.VirtualFile
@@ -14,7 +18,6 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.createDirectories
 import com.intellij.util.io.delete
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.snyk.plugin.getKubernetesImageCache
@@ -29,6 +32,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.notExists
 
@@ -71,12 +75,17 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         setUpContainerTest()
         val path = createNewFileInProjectRoot().toPath()
         Files.write(path, "\n".toByteArray(Charsets.UTF_8))
+        var virtualFile: VirtualFile? = null
         VirtualFileManager.getInstance().syncRefresh()
-        val virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
-        require(virtualFile != null)
+        runInEdt {
+            virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
+        }
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        await().timeout(5, TimeUnit.SECONDS).until { virtualFile?.isValid ?: false }
+
 
         ApplicationManager.getApplication().runWriteAction {
-            val file = PsiManager.getInstance(project).findFile(virtualFile)
+            val file = PsiManager.getInstance(project).findFile(virtualFile!!)
             require(file != null)
             PsiDocumentManager.getInstance(project).getDocument(file)
                 ?.setText(TestYamls.podYaml())
@@ -93,7 +102,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         assertEquals(1, kubernetesWorkloadImages.size)
         assertEquals(path, kubernetesWorkloadImages.first().virtualFile.toNioPath())
         assertEquals("nginx:1.16.0", kubernetesWorkloadImages.first().image)
-        virtualFile.toNioPath().delete(true)
+        virtualFile!!.toNioPath().delete(true)
     }
 
     fun `test Container should delete images from cache when yaml file is deleted`() {

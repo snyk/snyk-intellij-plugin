@@ -13,7 +13,7 @@ class SnykControllerImpl(val project: Project) : SnykController {
      * scan enqueues a scan of the project for vulnerabilities.
      */
     override fun scan() {
-        getSnykTaskQueueService(project)?.scan(false)
+        getSnykTaskQueueService(project)?.scan()
     }
 
     /**

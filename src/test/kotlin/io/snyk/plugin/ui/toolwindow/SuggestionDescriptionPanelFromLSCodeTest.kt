@@ -17,12 +17,11 @@ import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
-import org.junit.Test
 import snyk.UIComponentFinder.getJBCEFBrowser
 import snyk.UIComponentFinder.getJLabelByText
 import snyk.UIComponentFinder.getJPanelByName
-import snyk.code.annotator.SnykCodeAnnotator
 import snyk.common.ProductType
+import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.CommitChangeLine
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.ExampleCommitFix
@@ -80,7 +79,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         } returns listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), ""))
     }
 
-    @Test
     fun `test createUI should build the right panels for Snyk Code if HTML is not allowed`() {
         every { issue.canLoadSuggestionPanelFromHTML() } returns false
 
@@ -108,7 +106,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         assertNull(ossOverviewPanel)
     }
 
-    @Test
     fun `test createUI should build panel with issue message as overview label if HTML is not allowed`() {
         every { issue.canLoadSuggestionPanelFromHTML() } returns false
 
@@ -121,7 +118,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         assertNull(actualBrowser)
     }
 
-    @Test
     fun `test createUI should show nothing if HTML is allowed but JCEF is not supported`() {
         mockkObject(JCEFUtils)
         every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null
@@ -137,7 +133,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         assertNull(actualBrowser)
     }
 
-    @Test
     fun `test createUI should build panel with HTML from details if allowed`() {
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
         mockkObject(JCEFUtils)
@@ -156,7 +151,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         assertNotNull(actualBrowser)
     }
 
-    @Test
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
         every { issue.details() } returns "<html><head>\${ideStyle}</head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true

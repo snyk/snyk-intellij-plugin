@@ -53,8 +53,8 @@ class SnykControllerImplTest : LightPlatformTestCase() {
         val controller = SnykControllerImpl(project)
         controller.scan()
 
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        verify { languageServerWrapper.sendScanCommand(project) }
+        verify (timeout = 5000){ languageServerWrapper.sendScanCommand(project) }
     }
 }

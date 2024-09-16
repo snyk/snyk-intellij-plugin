@@ -86,7 +86,7 @@ class SnykPostStartupActivity : ProjectActivity {
         }
 
         if (!settings.token.isNullOrBlank() && settings.scanOnSave) {
-            getSnykTaskQueueService(project)?.scan(true)
+            getSnykTaskQueueService(project)?.scan()
         }
 
         ExtensionPointsUtil.controllerManager.extensionList.forEach {
