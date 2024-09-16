@@ -129,7 +129,7 @@ class ApplyFixHandler(private val project: Project) {
                 SnykBalloonNotificationHelper.showError(errorMessage, project)
                 return@runWriteCommandAction
             }
-            true // Success
+            appliedPatchSuccessfully
         } catch (e: Exception) {
             log("[applyPatchAndSave] Error applying patch: ${e.message}")
             false // Failure
