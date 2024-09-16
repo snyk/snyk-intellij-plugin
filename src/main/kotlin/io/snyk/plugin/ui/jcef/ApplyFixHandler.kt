@@ -48,7 +48,7 @@ class ApplyFixHandler(private val project: Project) {
         logger.info("[generateApplyFixCommand] calling applyPatchAndSave")
 
         applyFixQuery.addHandler { value ->
-            val params = value.split(":")
+            val params = value.split("|@", limit = 2)
             val filePath = params[0]  // Path to the file that needs to be patched
             val patch = params[1]      // The patch we received from LS
 
@@ -63,6 +63,7 @@ class ApplyFixHandler(private val project: Project) {
                     """.trimIndent()
 
                     jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+                    JBCefJSQuery.Response("success")
                 } catch (e: Exception) {
                     log("Error applying fix: ${e.message}")
                 }
@@ -100,22 +101,24 @@ class ApplyFixHandler(private val project: Project) {
 
         val diffPatch = parseDiff(patch)
         val patchedContent = applyPatch(fileContent, diffPatch)
-        var result = false
 
         // Apply the patch inside a WriteCommandAction
-        result = try {
+        val result = try {
+            var appliedPatchSuccessfully = true
             WriteCommandAction.runWriteCommandAction(project) {
                 val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                if (document != null) {
+                if (document != null && fileContent != patchedContent) {
                     document.setText(patchedContent)
 
                     //temporary logs
                     logger.info("[applyPatchAndSave] Content after applying patch:${document.text}")
+                    appliedPatchSuccessfully = true
                 } else {
                     log("[applyPatchAndSave] Failed to find document for saving patched content.")
+                    appliedPatchSuccessfully = false
                 }
             }
-            true // Success
+            appliedPatchSuccessfully
         } catch (e: Exception) {
             log("[applyPatchAndSave] Error applying patch: ${e.message}")
             false // Failure

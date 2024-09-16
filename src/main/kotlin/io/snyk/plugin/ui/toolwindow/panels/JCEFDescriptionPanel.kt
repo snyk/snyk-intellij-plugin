@@ -302,7 +302,8 @@ class SuggestionDescriptionPanelFromLS(
                 const filePath = getFilePathFromFix(currentFix);
                 const patch = currentFix.unifiedDiffsPerFile[filePath];
 
-                window.applyFixQuery(filePath + ':' + patch);
+
+                window.applyFixQuery(filePath + '|@' + patch);
 
                 // Following VSCode logic, the steps are:
                 // 1. Read the current file content.
