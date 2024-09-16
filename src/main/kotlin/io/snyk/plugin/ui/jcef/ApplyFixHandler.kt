@@ -12,6 +12,8 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import org.jetbrains.concurrency.runAsync
 import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import java.io.IOException
 
 
 data class DiffPatch(
@@ -51,14 +53,32 @@ class ApplyFixHandler(private val project: Project) {
 
             // Avoid blocking the UI thread
             runAsync {
-                val success = applyPatchAndSave(project, filePath, patch)
+                //var success = true
+                val result = try {
+                    applyPatchAndSave(project, filePath, patch)
+                } catch (e: IOException) { // Catch specific file-related exceptions
+                    log("Error applying patch to file: $filePath. e:$e")
+                    Result.failure(e)
+                } catch (e: Exception) {
+                    log("Unexpected error applying patch. e:$e")
+                    Result.failure(e)
+                }
 
-                val script = """
-                        window.receiveApplyFixResponse($success);
-                    """.trimIndent()
-
-                jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
-                JBCefJSQuery.Response("success")
+                ApplicationManager.getApplication().invokeLater {
+                    if (result.isSuccess) {
+                        val script = """
+                            window.receiveApplyFixResponse(true);
+                        """.trimIndent()
+                        jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+                    } else {
+                        val errorMessage = "Error applying fix: ${result.exceptionOrNull()?.message}"
+                        SnykBalloonNotificationHelper.showError(errorMessage, project)
+                        val errorScript = """
+                            window.receiveApplyFixResponse(false, "$errorMessage");
+                        """.trimIndent()
+                        jbCefBrowser.cefBrowser.executeJavaScript(errorScript, jbCefBrowser.cefBrowser.url, 0)
+                    }
+                }
             }
             return@addHandler JBCefJSQuery.Response("success")
         }
@@ -80,44 +100,32 @@ class ApplyFixHandler(private val project: Project) {
         }
     }
 
-    private fun applyPatchAndSave(project: Project, filePath: String, patch: String): Boolean {
+    private fun applyPatchAndSave(project: Project, filePath: String, patch: String): Result<Unit> {
         val virtualFile = filePath.toVirtualFile()
 
-        val fileContent = ApplicationManager.getApplication().runReadAction<String?> {
-            val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-            document?.text
-        } ?: run {
-            log("[applyPatchAndSave] Document not found or is null for virtual file: $filePath")
-            return false
-        }
-
-        val diffPatch = parseDiff(patch)
-        val patchedContent = applyPatch(fileContent, diffPatch)
-
-        // Apply the patch inside a WriteCommandAction
-        val result = try {
-            var appliedPatchSuccessfully = true
+        return try {
             WriteCommandAction.runWriteCommandAction(project) {
                 val document = FileDocumentManager.getInstance().getDocument(virtualFile)
-                if (document != null && fileContent != patchedContent) {
-                    document.setText(patchedContent)
-
-                    //temporary logs
-                    logger.info("[applyPatchAndSave] Content after applying patch:${document.text}")
-                    appliedPatchSuccessfully = true
+                if (document != null) {
+                    val originalContent = document.text
+                    val patchedContent = applyPatch(originalContent, parseDiff(patch))
+                    if (originalContent != patchedContent) {
+                        document.setText(patchedContent)
+                    } else {
+                        log("[applyPatchAndSave] Patch did not modify content: $filePath")
+                    }
                 } else {
-                    log("[applyPatchAndSave] Failed to find document for saving patched content.")
-                    appliedPatchSuccessfully = false
+                    log("[applyPatchAndSave] Failed to find document for: $filePath")
+                    return@runWriteCommandAction
                 }
             }
-            appliedPatchSuccessfully
+            Result.success(Unit)
         } catch (e: Exception) {
-            log("[applyPatchAndSave] Error applying patch: ${e.message}")
-            false // Failure
+            log("[applyPatchAndSave] Error applying patch to: $filePath. e: $e")
+            Result.failure(e)
         }
-
-        return result
     }
+
 
     fun applyPatch(fileContent: String, diffPatch: DiffPatch): String {
         val lines = fileContent.lines().toMutableList()
