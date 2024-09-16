@@ -3,10 +3,9 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.PlatformColors
+import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
@@ -59,21 +58,21 @@ class ThemeBasedStylingGenerator {
                 httpStatusCode: Int,
             ) {
                 if (frame.isMain) {
-                    val baseColor = UIUtil.getTextFieldBackground()
-                    val (addedColor, removedColor) = getCodeDiffColors(baseColor, isHighContrast)
-
+                    val baseColor = UIUtil.getTextFieldBackground() //TODO Replace with JBUI.CurrentTheme colors
+                    val (addedColor, removedColor) = getCodeDiffColors(baseColor, isHighContrast) //TODO Replace with JBUI.CurrentTheme colors
                     val dataFlowColor = toCssHex(baseColor)
                     val editorColor = toCssHex(baseColor)
 
-                    val textColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
+                    val textColor = toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND)
                     val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
+                    val buttonColor = toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart())
                     val borderColor = toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground())
                     val labelColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
 
                     val globalScheme = EditorColorsManager.getInstance().globalScheme
-                    val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) // The closest color to target_rgb = (198, 198, 200)
-                    val tabItemHoverColor = globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) // The closest color to target_rgb = RGB (235, 236, 240)
-                    val codeTagBgColor = globalScheme.getColor(EditorColors.GUTTER_BACKGROUND)  ?: globalScheme.defaultBackground
+                    val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) //TODO Replace with JBUI.CurrentTheme colors
+                    val tabItemHoverColor = globalScheme.getColor(ColorKey.find("INDENT_GUIDE")) //TODO Replace with JBUI.CurrentTheme colors
+                    val codeTagBgColor = globalScheme.getColor(EditorColors.GUTTER_BACKGROUND)  ?: globalScheme.defaultBackground //TODO Replace with JBUI.CurrentTheme colors
 
                     val themeScript = """
                         (function(){
@@ -96,9 +95,9 @@ class ThemeBasedStylingGenerator {
                                 '--editor-color': "$editorColor",
                                 '--label-color': "'$labelColor'",
                                 '--container-background-color': "${toCssHex(codeTagBgColor)}",
-                                '--generated-ai-fix-button-background-color': "$linkColor",
+                                '--generated-ai-fix-button-background-color': "$buttonColor",
                                 '--dark-button-border-default': "$borderColor",
-                                '--dark-button-default': "$linkColor",
+                                '--dark-button-default': "$buttonColor",
 
                             };
                             for (let [property, value] of Object.entries(properties)) {
