@@ -1,9 +1,9 @@
-package io.snyk.plugin.ui.jcef
+package io.snyk.plugin
 
 import org.junit.Test
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import org.junit.Assert.assertEquals
 
-class DiffPatchTest : BasePlatformTestCase(){
+class DiffPatcherTest (){
     private  val originalFileContent = """
         /*
          * Copyright (c) 2014-2023 Bjoern Kimminich & the OWASP Juice Shop contributors.
@@ -46,10 +46,10 @@ class DiffPatchTest : BasePlatformTestCase(){
 
     @Test
     fun `test applying patch`() {
-        val applyFixHandler = ApplyFixHandler(project)
+        val diffPatcher = DiffPatcher()
 
-        val diffPatch = applyFixHandler.parseDiff(responseDiff)
-        val patchedContent = applyFixHandler.applyPatch(originalFileContent, diffPatch)
+        val diffPatch = diffPatcher.parseDiff(responseDiff)
+        val patchedContent = diffPatcher.applyPatch(originalFileContent, diffPatch)
 
         val expectedPatchedContent = """
             /*

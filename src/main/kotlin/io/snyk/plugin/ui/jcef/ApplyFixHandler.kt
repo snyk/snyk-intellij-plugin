@@ -7,11 +7,12 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import io.snyk.plugin.DiffPatcher
+import io.snyk.plugin.toVirtualFile
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import org.jetbrains.concurrency.runAsync
-import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
 
@@ -102,13 +103,14 @@ class ApplyFixHandler(private val project: Project) {
 
     private fun applyPatchAndSave(project: Project, filePath: String, patch: String): Result<Unit> {
         val virtualFile = filePath.toVirtualFile()
+        val patcher = DiffPatcher()
 
         return try {
             WriteCommandAction.runWriteCommandAction(project) {
                 val document = FileDocumentManager.getInstance().getDocument(virtualFile)
                 if (document != null) {
                     val originalContent = document.text
-                    val patchedContent = applyPatch(originalContent, parseDiff(patch))
+                    val patchedContent = patcher.applyPatch(originalContent, patcher.parseDiff(patch))
                     if (originalContent != patchedContent) {
                         document.setText(patchedContent)
                     } else {
@@ -126,92 +128,6 @@ class ApplyFixHandler(private val project: Project) {
         }
     }
 
-
-    fun applyPatch(fileContent: String, diffPatch: DiffPatch): String {
-        val lines = fileContent.lines().toMutableList()
-
-        for (hunk in diffPatch.hunks) {
-            var originalLineIndex = hunk.startLineOriginal - 1  // Convert to 0-based index
-
-            for (change in hunk.changes) {
-                when (change) {
-                    is Change.Addition -> {
-                        lines.add(originalLineIndex, change.line)
-                        originalLineIndex++
-                    }
-
-                    is Change.Deletion -> {
-                        if (originalLineIndex < lines.size && lines[originalLineIndex].trim() == change.line) {
-                            lines.removeAt(originalLineIndex)
-                        }
-                    }
-
-                    is Change.Context -> {
-                        originalLineIndex++  // Move past unchanged context lines
-                    }
-                }
-            }
-        }
-        return lines.joinToString("\n")
-    }
-
-    fun parseDiff(diff: String): DiffPatch {
-        val lines = diff.lines()
-        val originalFile = lines.first { it.startsWith("---") }.substringAfter("--- ")
-        val fixedFile = lines.first { it.startsWith("+++") }.substringAfter("+++ ")
-
-        val hunks = mutableListOf<Hunk>()
-        var currentHunk: Hunk? = null
-        val changes = mutableListOf<Change>()
-
-        for (line in lines) {
-            when {
-                line.startsWith("@@") -> {
-                    // Parse hunk header (e.g., @@ -4,9 +4,14 @@)
-                    val hunkHeader = line.substringAfter("@@ ").substringBefore(" @@").split(" ")
-                    val original = hunkHeader[0].substring(1).split(",")
-                    val fixed = hunkHeader[1].substring(1).split(",")
-
-                    val startLineOriginal = original[0].toInt()
-                    val numLinesOriginal = original.getOrNull(1)?.toInt() ?: 1
-                    val startLineFixed = fixed[0].toInt()
-                    val numLinesFixed = fixed.getOrNull(1)?.toInt() ?: 1
-
-                    if (currentHunk != null) {
-                        hunks.add(currentHunk.copy(changes = changes.toList()))
-                        changes.clear()
-                    }
-                    currentHunk = Hunk(
-                        startLineOriginal = startLineOriginal,
-                        numLinesOriginal = numLinesOriginal,
-                        startLineFixed = startLineFixed,
-                        numLinesFixed = numLinesFixed,
-                        changes = emptyList()
-                    )
-                }
-
-                line.startsWith("---") || line.startsWith("+++") -> {
-                    // Skip file metadata lines (--- and +++)
-                    continue
-                }
-
-                line.startsWith("-") -> changes.add(Change.Deletion(line.substring(1).trim()))
-                line.startsWith("+") -> changes.add(Change.Addition(line.substring(1).trim()))
-                else -> changes.add(Change.Context(line.trim()))
-            }
-        }
-
-        // Add the last hunk
-        if (currentHunk != null) {
-            hunks.add(currentHunk.copy(changes = changes.toList()))
-        }
-
-        return DiffPatch(
-            originalFile = originalFile,
-            fixedFile = fixedFile,
-            hunks = hunks
-        )
-    }
 
     private fun log(logMessage: String) {
         when {
