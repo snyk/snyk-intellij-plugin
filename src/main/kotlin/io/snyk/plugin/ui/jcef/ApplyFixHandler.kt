@@ -54,9 +54,6 @@ class ApplyFixHandler(private val project: Project) {
     fun generateApplyFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
-        //temporary logs
-        logger.info("[generateApplyFixCommand] calling applyPatchAndSave")
-
         applyFixQuery.addHandler { value ->
             val params = value.split("|@", limit = 2)
             val filePath = params[0]  // Path to the file that needs to be patched
