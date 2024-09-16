@@ -62,7 +62,7 @@ class SuggestionDescriptionPanelFromLS(
                     openFileLoadHandlerGenerator.generate(it)
                 }
 
-                val generateAIFixHandler = GenerateAIFixHandler(snykFile.project)
+                val generateAIFixHandler = GenerateAIFixHandler()
                 loadHandlerGenerators += {
                     generateAIFixHandler.generateAIFixCommand(it)
                 }

@@ -128,7 +128,6 @@ class ApplyFixHandler(private val project: Project) {
         }
     }
 
-
     private fun log(logMessage: String) {
         when {
             enableDebug -> logger.debug(logMessage)

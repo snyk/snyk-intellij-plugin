@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.Gson
-import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import org.cef.browser.CefBrowser
@@ -10,7 +9,7 @@ import org.cef.handler.CefLoadHandlerAdapter
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 
-class GenerateAIFixHandler(private val project: Project) {
+class GenerateAIFixHandler() {
 
     fun generateAIFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
