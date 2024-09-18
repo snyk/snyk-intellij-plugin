@@ -55,9 +55,10 @@ class ApplyFixHandler(private val project: Project) {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         applyFixQuery.addHandler { value ->
-            val params = value.split("|@", limit = 2)
-            val filePath = params[0]  // Path to the file that needs to be patched
-            val patch = params[1]      // The patch we received from LS
+            val params = value.split("|@", limit = 3)
+            val fixId = params[0]  // Path to the file that needs to be patched
+            val filePath = params[1]  // Path to the file that needs to be patched
+            val patch = params[2]      // The patch we received from LS
 
             // Avoid blocking the UI thread
             runAsync {
@@ -86,6 +87,7 @@ class ApplyFixHandler(private val project: Project) {
                 }
 
             }
+
             return@addHandler JBCefJSQuery.Response("success")
         }
 
