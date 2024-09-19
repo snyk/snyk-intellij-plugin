@@ -8,6 +8,8 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.Fix
+
 
 class GenerateAIFixHandler() {
 
@@ -22,7 +24,7 @@ class GenerateAIFixHandler() {
 
 
             runAsync {
-                val responseDiff: List<LanguageServerWrapper.Fix> =
+                val responseDiff: List<Fix> =
                     LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
 
                 val script = """

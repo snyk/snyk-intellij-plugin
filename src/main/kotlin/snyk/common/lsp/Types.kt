@@ -337,6 +337,11 @@ data class ExampleCommitFix(
     @SerializedName("lines") val lines: List<CommitChangeLine>,
 )
 
+data class Fix(
+    @SerializedName("fixId") val fixId: String,
+    @SerializedName("unifiedDiffsPerFile") val unifiedDiffsPerFile: Map<String, String>
+)
+
 data class CommitChangeLine(
     @SerializedName("line") val line: String,
     @SerializedName("lineNumber") val lineNumber: Int,

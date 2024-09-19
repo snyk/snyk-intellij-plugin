@@ -1,8 +1,24 @@
 package io.snyk.plugin
 
-import io.snyk.plugin.ui.jcef.Change
-import io.snyk.plugin.ui.jcef.DiffPatch
-import io.snyk.plugin.ui.jcef.Hunk
+data class DiffPatch(
+    val originalFile: String,
+    val fixedFile: String,
+    val hunks: List<Hunk>
+)
+
+data class Hunk(
+    val startLineOriginal: Int,
+    val numLinesOriginal: Int,
+    val startLineFixed: Int,
+    val numLinesFixed: Int,
+    val changes: List<Change>
+)
+
+sealed class Change {
+    data class Addition(val line: String) : Change()
+    data class Deletion(val line: String) : Change()
+    data class Context(val line: String) : Change()  // Unchanged line for context
+}
 
 class DiffPatcher {
 

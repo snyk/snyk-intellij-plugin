@@ -1,8 +1,6 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
-import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -496,11 +494,6 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return false
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
-
-    data class Fix(
-        @SerializedName("fixId") val fixId: String,
-        @SerializedName("unifiedDiffsPerFile") val unifiedDiffsPerFile: Map<String, String>
-    )
 
     @Suppress("UNCHECKED_CAST")
     fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
