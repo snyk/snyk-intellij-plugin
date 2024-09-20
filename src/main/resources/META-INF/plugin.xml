@@ -50,9 +50,9 @@
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
-    <codeInsight.codeVisionProvider implementation="snyk.common.lsp.LSCodeVisionProvider"
-                                    id="snyk.common.lsp.LSCodeVisionProvider"/>
-    <config.codeVisionGroupSettingProvider implementation="snyk.common.lsp.LSCodeVisionProvider"/>
+    <codeInsight.codeVisionProvider implementation="snyk.common.codevision.LSCodeVisionProvider"
+                                    id="snyk.common.codevision.LSCodeVisionProvider"/>
+    <config.codeVisionGroupSettingProvider implementation="snyk.common.codevision.LSCodeVisionProvider"/>
     <platform.backend.documentation.targetProvider implementation="snyk.common.lsp.LSDocumentationTargetProvider" />
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykOSSAnnotator"/>

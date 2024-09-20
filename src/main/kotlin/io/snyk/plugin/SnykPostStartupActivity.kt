@@ -5,7 +5,6 @@ import com.intellij.ide.plugins.PluginInstaller
 import com.intellij.ide.plugins.PluginStateListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -22,8 +21,6 @@ import snyk.oss.OssBulkFileListener
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
-
-private val LOG = logger<SnykPostStartupActivity>()
 
 private const val EXTENSION_POINT_CONTROLLER_MANAGER = "io.snyk.snyk-intellij-plugin.controllerManager"
 

@@ -155,6 +155,7 @@ class SnykToolWindowPanel(
                         rootSecurityIssuesTreeNode,
                         rootQualityIssuesTreeNode,
                         rootOssTreeNode,
+                        rootIacIssuesTreeNode
                     )
                 project.messageBus.connect(this).subscribe(
                     SnykScanListenerLS.SNYK_SCAN_TOPIC,

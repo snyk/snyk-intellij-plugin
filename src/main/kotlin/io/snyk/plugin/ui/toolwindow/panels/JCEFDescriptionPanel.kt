@@ -20,6 +20,7 @@ import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import snyk.common.ProductType
+import snyk.common.lsp.FilterableIssueType
 import snyk.common.lsp.ScanIssue
 import stylesheets.SnykStylesheets
 import java.awt.BorderLayout
@@ -49,8 +50,8 @@ class SuggestionDescriptionPanelFromLS(
                 ThemeBasedStylingGenerator().generate(it)
             }
 
-            if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
-                issue.additionalData.getProductType() == ProductType.CODE_QUALITY
+            if (issue.filterableIssueType == FilterableIssueType.CodeQuality ||
+                issue.filterableIssueType == FilterableIssueType.CodeSecurity
             ) {
                 val virtualFiles = LinkedHashMap<String, VirtualFile?>()
                 for (dataFlow in issue.additionalData.dataFlow) {
@@ -118,8 +119,8 @@ class SuggestionDescriptionPanelFromLS(
             JPanel(
                 GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
             ).apply {
-                if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
-                    issue.additionalData.getProductType() == ProductType.CODE_QUALITY
+                if (issue.filterableIssueType == FilterableIssueType.CodeSecurity ||
+                    issue.filterableIssueType == FilterableIssueType.CodeQuality
                 ) {
                     this.add(
                         SnykCodeOverviewPanel(issue.additionalData),
@@ -133,7 +134,7 @@ class SuggestionDescriptionPanelFromLS(
                         SnykCodeExampleFixesPanel(issue.additionalData),
                         panelGridConstraints(4),
                     )
-                } else if (issue.additionalData.getProductType() == ProductType.OSS) {
+                } else if (issue.filterableIssueType == FilterableIssueType.OpenSource) {
                     this.add(
                         SnykOSSIntroducedThroughPanel(issue.additionalData),
                         baseGridConstraintsAnchorWest(1, indent = 0),
@@ -147,7 +148,7 @@ class SuggestionDescriptionPanelFromLS(
                         panelGridConstraints(3),
                     )
                 } else {
-                    TODO()
+                    // do nothing
                 }
             }
         return Pair(panel, lastRowToAddSpacer)
@@ -156,13 +157,12 @@ class SuggestionDescriptionPanelFromLS(
     fun getCustomCssAndScript(): String {
         var html = issue.details()
         val ideScript = getCustomScript()
-        var ideStyle = ""
-        if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
-            issue.additionalData.getProductType() == ProductType.CODE_QUALITY
+        val ideStyle: String = if (issue.filterableIssueType == FilterableIssueType.CodeSecurity ||
+            issue.filterableIssueType == FilterableIssueType.CodeQuality
         ) {
-            ideStyle = SnykStylesheets.SnykCodeSuggestion
-        } else if (issue.additionalData.getProductType() == ProductType.OSS) {
-            ideStyle = SnykStylesheets.SnykOSSSuggestion
+            SnykStylesheets.SnykCodeSuggestion
+        } else {
+            SnykStylesheets.SnykOSSSuggestion
         }
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")

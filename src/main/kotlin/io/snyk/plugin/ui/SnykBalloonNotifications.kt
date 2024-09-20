@@ -12,7 +12,8 @@ import io.snyk.plugin.snykToolWindow
 object SnykBalloonNotifications {
     private val logger = logger<SnykBalloonNotifications>()
 
-    private val notificationGroup = NotificationGroupManager.getInstance().getNotificationGroup("Snyk")
+    private val notificationGroup
+        get() = NotificationGroupManager.getInstance().getNotificationGroup("Snyk")
 
     fun showWelcomeNotification(project: Project) {
         val welcomeMessage = "Welcome to Snyk! Check out our tool window to start analyzing your code"

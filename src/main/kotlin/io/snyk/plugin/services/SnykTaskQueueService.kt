@@ -23,7 +23,6 @@ import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isSnykCodeRunning
-import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -103,11 +102,6 @@ class SnykTaskQueueService(val project: Project) {
 
                 LanguageServerWrapper.getInstance().sendScanCommand(project)
 
-                if (settings.iacScanEnabled) {
-                    if (!isSnykIaCLSEnabled()) {
-                        scheduleIacScan()
-                    }
-                }
                 if (settings.containerScanEnabled) {
                     scheduleContainerScan()
                 }

@@ -52,6 +52,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
+import snyk.common.editor.DocumentChanger
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
@@ -122,6 +123,7 @@ class SnykLanguageClient :
         if (firstDiagnostic == null) {
             scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
             scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics("iac", snykFile, emptyList())
             return
         }
 
@@ -144,7 +146,7 @@ class SnykLanguageClient :
             }
 
             LsProductConstants.InfrastructureAsCode.value -> {
-                // TODO implement
+                scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
             }
 
             LsProductConstants.Container.value -> {
@@ -227,6 +229,7 @@ class SnykLanguageClient :
             when (snykScan.product) {
                 "code" -> ProductType.CODE_SECURITY
                 "oss" -> ProductType.OSS
+                "iac" -> ProductType.IAC
                 else -> return
             }
         val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
@@ -266,7 +269,7 @@ class SnykLanguageClient :
             }
 
             "iac" -> {
-                // TODO implement
+                scanPublisher.scanningIacFinished()
             }
 
             "container" -> {

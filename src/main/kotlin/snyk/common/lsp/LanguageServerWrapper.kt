@@ -15,7 +15,6 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
-import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -418,7 +417,7 @@ class LanguageServerWrapper(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
             activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
-            activateSnykIac = isSnykIaCLSEnabled().toString(),
+            activateSnykIac = ps.iacScanEnabled.toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),
             endpoint = getEndpointUrl(),

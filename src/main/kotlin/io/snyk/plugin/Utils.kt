@@ -172,6 +172,11 @@ fun cancelOssIndicator(project: Project) {
     indicator?.cancel()
 }
 
+fun cancelIacIndicator(project: Project) {
+    val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator
+    indicator?.cancel()
+}
+
 fun isSnykCodeRunning(project: Project): Boolean {
     val lsRunning = project.getContentRootVirtualFiles().any { vf ->
         val key = ScanInProgressKey(vf, ProductType.CODE_SECURITY)
@@ -215,9 +220,6 @@ fun controlExternalProcessWithProgressIndicator(
 }
 
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
-
-fun isSnykIaCLSEnabled(): Boolean = false
-
 
 fun isDocumentationHoverEnabled(): Boolean = Registry.get("snyk.isDocumentationHoverEnabled").asBoolean()
 

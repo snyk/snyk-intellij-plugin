@@ -17,6 +17,8 @@ interface SnykScanListenerLS {
 
     fun scanningOssFinished()
 
+    fun scanningIacFinished()
+
     fun scanningError(snykScan: SnykScanParams)
 
     fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>)

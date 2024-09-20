@@ -41,6 +41,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
     private lateinit var rootOssIssuesTreeNode: DefaultMutableTreeNode
     private lateinit var rootSecurityIssuesTreeNode: DefaultMutableTreeNode
     private lateinit var rootQualityIssuesTreeNode: DefaultMutableTreeNode
+    private lateinit var rootIacIssuesTreeNode: DefaultMutableTreeNode
 
     private val fileName = "app.js"
     private lateinit var file: VirtualFile
@@ -152,6 +153,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             rootSecurityIssuesTreeNode,
             rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
         )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
@@ -189,6 +191,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             rootSecurityIssuesTreeNode,
             rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
         )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
@@ -230,6 +233,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             rootSecurityIssuesTreeNode,
             rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
         )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)
@@ -257,6 +261,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             rootSecurityIssuesTreeNode,
             rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
         )
 
         TestCase.assertEquals(3, rootTreeNode.childCount)

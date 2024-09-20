@@ -10,6 +10,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.cancelIacIndicator
 import io.snyk.plugin.cancelOssIndicator
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
@@ -17,6 +18,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.IAC_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NODE_NOT_SUPPORTED_STATE
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NO_OSS_FILES
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.OSS_ROOT_TEXT
@@ -45,6 +47,7 @@ class SnykToolWindowSnykScanListenerLS(
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
+    private val rootIacIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListenerLS, Disposable {
     private var disposed = false
         get() {
@@ -95,6 +98,19 @@ class SnykToolWindowSnykScanListenerLS(
         refreshAnnotationsForOpenFiles(project)
     }
 
+    override fun scanningIacFinished() {
+        if (disposed) return
+        cancelIacIndicator(project)
+        ApplicationManager.getApplication().invokeLater {
+            this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
+            this.snykToolWindowPanel.triggerSelectionListeners = false
+            val snykCachedResults = getSnykCachedResults(project)
+            displayIacResults(snykCachedResults?.currentIacResultsLS ?: emptyMap())
+            this.snykToolWindowPanel.triggerSelectionListeners = true
+        }
+        refreshAnnotationsForOpenFiles(project)
+    }
+
     override fun scanningError(snykScan: SnykScanParams) {
         when (snykScan.product) {
             "oss" -> {
@@ -110,7 +126,8 @@ class SnykToolWindowSnykScanListenerLS(
             }
 
             "iac" -> {
-                // TODO implement
+                this.rootIacIssuesTreeNode.removeAllChildren()
+                this.rootOssIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
             "container" -> {
@@ -171,6 +188,22 @@ class SnykToolWindowSnykScanListenerLS(
             snykResults = snykResults,
             rootNode = this.rootOssIssuesTreeNode,
             ossResultsCount = snykResults.values.flatten().distinct().size,
+            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
+        )
+    }
+
+    fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (disposed) return
+        if (getSnykCachedResults(project)?.currentIacError != null) return
+
+        val settings = pluginSettings()
+
+        displayIssues(
+            enabledInSettings = settings.iacScanEnabled,
+            filterTree = settings.treeFiltering.iacResults,
+            snykResults = snykResults,
+            rootNode = this.rootIacIssuesTreeNode,
+            iacResultsCount = snykResults.values.flatten().distinct().size,
             fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
         )
     }

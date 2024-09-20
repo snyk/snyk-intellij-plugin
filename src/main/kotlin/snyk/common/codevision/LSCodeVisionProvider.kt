@@ -1,10 +1,6 @@
-package snyk.common.lsp
+package snyk.common.codevision
 
-import com.intellij.codeInsight.codeVision.CodeVisionAnchorKind
-import com.intellij.codeInsight.codeVision.CodeVisionEntry
-import com.intellij.codeInsight.codeVision.CodeVisionProvider
-import com.intellij.codeInsight.codeVision.CodeVisionRelativeOrdering
-import com.intellij.codeInsight.codeVision.CodeVisionState
+import com.intellij.codeInsight.codeVision.*
 import com.intellij.codeInsight.codeVision.settings.CodeVisionGroupSettingProvider
 import com.intellij.codeInsight.codeVision.ui.model.ClickableTextCodeVisionEntry
 import com.intellij.openapi.application.ReadAction
@@ -12,7 +8,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task.Backgroundable
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
@@ -23,15 +19,15 @@ import org.eclipse.lsp4j.CodeLens
 import org.eclipse.lsp4j.CodeLensParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
+import snyk.common.lsp.LanguageServerWrapper
 import java.awt.event.MouseEvent
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-private const val CODELENS_FETCH_TIMEOUT = 10L
-
 @Suppress("UnstableApiUsage")
 class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingProvider {
     private val logger = logger<LSCodeVisionProvider>()
+    private val timeout = 10L
     override val defaultAnchor: CodeVisionAnchorKind = CodeVisionAnchorKind.Default
     override val id = "snyk.common.lsp.LSCodeVisionProvider"
     override val name = "Snyk Security Language Server Code Vision Provider"
@@ -62,7 +58,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
         val codeLenses = try {
             LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)
-                .get(CODELENS_FETCH_TIMEOUT, TimeUnit.SECONDS) ?: return CodeVisionState.READY_EMPTY
+                .get(timeout, TimeUnit.SECONDS) ?: return CodeVisionState.READY_EMPTY
         } catch (ignored: TimeoutException) {
             logger.info("Timeout fetching code lenses for : $file")
             return CodeVisionState.READY_EMPTY
@@ -91,7 +87,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         override fun invoke(event: MouseEvent?, editor: Editor) {
             event ?: return
 
-            val task = object : Backgroundable(editor.project, "Executing ${codeLens.command.title}", false) {
+            val task = object : Task.Backgroundable(editor.project, "Executing ${codeLens.command.title}", false) {
                 override fun run(indicator: ProgressIndicator) {
                     val params = ExecuteCommandParams(codeLens.command.command, codeLens.command.arguments)
                     try {

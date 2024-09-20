@@ -1,4 +1,4 @@
-package snyk.common.lsp
+package snyk.common.editor
 
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.getDocument

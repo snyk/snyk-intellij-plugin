@@ -125,8 +125,8 @@ class SnykCachedResults(
                 }
 
                 override fun scanningSnykCodeFinished() = Unit
-
                 override fun scanningOssFinished() = Unit
+                override fun scanningIacFinished() = Unit
 
                 override fun scanningError(snykScan: SnykScanParams) {
                     when (snykScan.product) {
@@ -196,7 +196,7 @@ class SnykCachedResults(
                         }
 
                         LsProductConstants.InfrastructureAsCode.value -> {
-
+                            currentIacResultsLS[snykFile] = issueList
                         }
 
                         LsProductConstants.Container.value -> {

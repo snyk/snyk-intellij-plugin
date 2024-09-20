@@ -14,7 +14,7 @@ import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.TextEdit
 import snyk.common.ProductType
 import snyk.common.intentionactions.SnykIntentionActionBase
-import snyk.common.lsp.DocumentChanger
+import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit

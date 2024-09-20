@@ -91,6 +91,10 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
                     updateActionsPresentation()
                 }
 
+                override fun scanningIacFinished() {
+                    updateActionsPresentation()
+                }
+
                 override fun scanningError(snykScan: SnykScanParams) {
                     updateActionsPresentation()
                 }
