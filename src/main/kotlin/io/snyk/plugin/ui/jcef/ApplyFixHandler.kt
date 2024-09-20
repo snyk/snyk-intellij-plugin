@@ -98,6 +98,8 @@ class ApplyFixHandler(private val project: Project) {
                 }
             } else {
                 logger.error("[applyPatchAndSave] Failed to find document for: $filePath")
+                val errorMessage = "Failed to find document for: $filePath"
+                SnykBalloonNotificationHelper.showError(errorMessage, project)
                 return@runWriteCommandAction
             }
         }
