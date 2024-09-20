@@ -17,31 +17,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 
-data class DiffPatch(
-    val originalFile: String,
-    val fixedFile: String,
-    val hunks: List<Hunk>
-)
-
-data class Hunk(
-    val startLineOriginal: Int,
-    val numLinesOriginal: Int,
-    val startLineFixed: Int,
-    val numLinesFixed: Int,
-    val changes: List<Change>
-)
-
-sealed class Change {
-    data class Addition(val line: String) : Change()
-    data class Deletion(val line: String) : Change()
-    data class Context(val line: String) : Change()  // Unchanged line for context
-}
-
 class ApplyFixHandler(private val project: Project) {
-
-    private val enableDebug = Logger.getInstance("Snyk Language Server").isDebugEnabled
-    private val enableTrace = Logger.getInstance("Snyk Language Server").isTraceEnabled
-    private val logger = Logger.getInstance(this::class.java)
 
     val logger = Logger.getInstance(this::class.java).apply {
         // tie log level to language server log level
@@ -49,7 +25,6 @@ class ApplyFixHandler(private val project: Project) {
         if (languageServerWrapper.logger.isDebugEnabled) this.setLevel(LogLevel.DEBUG)
         if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
     }
-
 
     fun generateApplyFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
@@ -77,6 +52,7 @@ class ApplyFixHandler(private val project: Project) {
                             window.receiveApplyFixResponse(true);
                         """.trimIndent()
                     jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+                    LanguageServerWrapper.getInstance().submitAutofixFeedbackCommand(fixId, "FIX_APPLIED")
                 } else {
                     val errorMessage = "Error applying fix: ${result.exceptionOrNull()?.message}"
                     SnykBalloonNotificationHelper.showError(errorMessage, project)
@@ -85,7 +61,6 @@ class ApplyFixHandler(private val project: Project) {
                         """.trimIndent()
                     jbCefBrowser.cefBrowser.executeJavaScript(errorScript, jbCefBrowser.cefBrowser.url, 0)
                 }
-
             }
 
             return@addHandler JBCefJSQuery.Response("success")
@@ -128,11 +103,8 @@ class ApplyFixHandler(private val project: Project) {
                 SnykBalloonNotificationHelper.showError(errorMessage, project)
                 return@runWriteCommandAction
             }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            log("[applyPatchAndSave] Error applying patch to: $filePath. e: $e")
-            Result.failure(e)
         }
+
         return Result.success(Unit)
     }
 }
