@@ -50,8 +50,8 @@ class SuggestionDescriptionPanelFromLS(
                 ThemeBasedStylingGenerator().generate(it)
             }
 
-            if (issue.filterableIssueType == FilterableIssueType.CodeQuality ||
-                issue.filterableIssueType == FilterableIssueType.CodeSecurity
+            if (issue.filterableIssueType == ScanIssue.CODE_QUALITY ||
+                issue.filterableIssueType == ScanIssue.CODE_SECURITY
             ) {
                 val virtualFiles = LinkedHashMap<String, VirtualFile?>()
                 for (dataFlow in issue.additionalData.dataFlow) {
@@ -119,8 +119,8 @@ class SuggestionDescriptionPanelFromLS(
             JPanel(
                 GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
             ).apply {
-                if (issue.filterableIssueType == FilterableIssueType.CodeSecurity ||
-                    issue.filterableIssueType == FilterableIssueType.CodeQuality
+                if (issue.filterableIssueType == ScanIssue.CODE_SECURITY ||
+                    issue.filterableIssueType == ScanIssue.CODE_QUALITY
                 ) {
                     this.add(
                         SnykCodeOverviewPanel(issue.additionalData),
@@ -134,7 +134,7 @@ class SuggestionDescriptionPanelFromLS(
                         SnykCodeExampleFixesPanel(issue.additionalData),
                         panelGridConstraints(4),
                     )
-                } else if (issue.filterableIssueType == FilterableIssueType.OpenSource) {
+                } else if (issue.filterableIssueType == ScanIssue.OPEN_SOURCE) {
                     this.add(
                         SnykOSSIntroducedThroughPanel(issue.additionalData),
                         baseGridConstraintsAnchorWest(1, indent = 0),
@@ -157,8 +157,8 @@ class SuggestionDescriptionPanelFromLS(
     fun getCustomCssAndScript(): String {
         var html = issue.details()
         val ideScript = getCustomScript()
-        val ideStyle: String = if (issue.filterableIssueType == FilterableIssueType.CodeSecurity ||
-            issue.filterableIssueType == FilterableIssueType.CodeQuality
+        val ideStyle: String = if (issue.filterableIssueType == ScanIssue.CODE_SECURITY ||
+            issue.filterableIssueType == ScanIssue.CODE_QUALITY
         ) {
             SnykStylesheets.SnykCodeSuggestion
         } else {

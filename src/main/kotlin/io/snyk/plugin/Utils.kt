@@ -158,13 +158,24 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
+    return isProductScanRunning(project, ProductType.OSS, getSnykTaskQueueService(project)?.ossScanProgressIndicator)
+}
+
+private fun isProductScanRunning(project: Project, productType: ProductType): Boolean {
+    return isProductScanRunning(project, productType, null)
+}
+
+private fun isProductScanRunning(
+    project: Project,
+    productType: ProductType,
+    progressIndicator: ProgressIndicator?
+): Boolean {
     val lsRunning = project.getContentRootVirtualFiles().any { vf ->
-        val key = ScanInProgressKey(vf, ProductType.OSS)
+        val key = ScanInProgressKey(vf, productType)
         ScanState.scanInProgress[key] == true
     }
-    val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
     return lsRunning ||
-        (indicator != null && indicator.isRunning && !indicator.isCanceled)
+        (progressIndicator != null && progressIndicator.isRunning && !progressIndicator.isCanceled)
 }
 
 fun cancelOssIndicator(project: Project) {
@@ -178,22 +189,22 @@ fun cancelIacIndicator(project: Project) {
 }
 
 fun isSnykCodeRunning(project: Project): Boolean {
-    val lsRunning = project.getContentRootVirtualFiles().any { vf ->
-        val key = ScanInProgressKey(vf, ProductType.CODE_SECURITY)
-        ScanState.scanInProgress[key] == true
-    }
-
-    return lsRunning
+    return isProductScanRunning(project, ProductType.CODE_SECURITY) || isProductScanRunning(
+        project,
+        ProductType.CODE_QUALITY
+    )
 }
 
 fun isIacRunning(project: Project): Boolean {
-    val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator
-    return indicator != null && indicator.isRunning && !indicator.isCanceled
+    return isProductScanRunning(project, ProductType.IAC, getSnykTaskQueueService(project)?.iacScanProgressIndicator)
 }
 
 fun isContainerRunning(project: Project): Boolean {
-    val indicator = getSnykTaskQueueService(project)?.containerScanProgressIndicator
-    return indicator != null && indicator.isRunning && !indicator.isCanceled
+    return isProductScanRunning(
+        project,
+        ProductType.CONTAINER,
+        getSnykTaskQueueService(project)?.containerScanProgressIndicator
+    )
 }
 
 fun isScanRunning(project: Project): Boolean =
@@ -238,7 +249,7 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
         null
     } else {
         try {
-            var psiFile : PsiFile? = null
+            var psiFile: PsiFile? = null
             ReadAction.run<RuntimeException> {
                 psiFile = PsiManager.getInstance(project).findFile(virtualFile)
             }

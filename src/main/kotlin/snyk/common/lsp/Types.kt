@@ -8,22 +8,17 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
-import snyk.common.ProductType
 import java.util.Date
 import java.util.Locale
 import javax.swing.Icon
 
-// type CliOutput struct {
-//	Code         int    `json:"code,omitempty"`
-//	ErrorMessage string `json:"error,omitempty"`
-//	Path         string `json:"path,omitempty"`
-//	Command      string `json:"command,omitempty"`
-//}
-data class CliError (
+
+typealias FilterableIssueType = String
+
+data class CliError(
     val code: Int? = 0,
     val error: String? = null,
     val path: String? = null,
@@ -57,15 +52,6 @@ enum class LsProductConstants(val value: String) {
     }
 }
 
-enum class FilterableIssueType(val value: String) {
-    OpenSource("Open Source"),
-    CodeQuality("Code Quality"),
-    CodeSecurity("Code Security"),
-    InfrastructureAsCode("Infrastructure As Code"),
-    Container("Container")
-}
-
-
 // Define the ScanIssue data class
 data class ScanIssue(
     val id: String, // Unique key identifying an issue in the whole result set. Not the same as the Snyk issue ID.
@@ -79,6 +65,15 @@ data class ScanIssue(
     var filterableIssueType: FilterableIssueType,
     var ignoreDetails: IgnoreDetails?,
 ) : Comparable<ScanIssue> {
+
+    companion object {
+        const val OPEN_SOURCE: FilterableIssueType = "Open Source"
+        const val CODE_SECURITY: FilterableIssueType = "Code Security"
+        const val CODE_QUALITY: FilterableIssueType = "Code Quality"
+        const val INFRASTRUCTURE_AS_CODE: FilterableIssueType = "Infrastructure As Code"
+        const val CONTAINER: FilterableIssueType = "Container"
+    }
+
     var textRange: TextRange? = null
         get() {
             return if (startOffset == null || endOffset == null) {
@@ -137,12 +132,12 @@ data class ScanIssue(
 
     fun title(): String {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource, FilterableIssueType.InfrastructureAsCode -> this.title
-            FilterableIssueType.CodeQuality -> {
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> this.title
+            CODE_QUALITY -> {
                 this.additionalData.message.split('.').firstOrNull() ?: "Unknown issue"
             }
 
-            FilterableIssueType.CodeSecurity -> {
+            CODE_SECURITY -> {
                 this.title.split(":").firstOrNull() ?: "Unknown issue"
             }
 
@@ -152,11 +147,11 @@ data class ScanIssue(
 
     fun longTitle(): String {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> {
+            OPEN_SOURCE -> {
                 "${this.additionalData.packageName}@${this.additionalData.version}: ${this.title()}"
             }
 
-            FilterableIssueType.CodeQuality, FilterableIssueType.CodeSecurity, FilterableIssueType.InfrastructureAsCode -> {
+            CODE_QUALITY, CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> {
                 return "${this.title()} [${this.range.start.line + 1},${this.range.start.character}]"
             }
 
@@ -166,7 +161,7 @@ data class ScanIssue(
 
     fun priority(): Int {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource, FilterableIssueType.InfrastructureAsCode -> {
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> {
                 return when (this.getSeverityAsEnum()) {
                     Severity.CRITICAL -> 4
                     Severity.HIGH -> 3
@@ -176,14 +171,14 @@ data class ScanIssue(
                 }
             }
 
-            FilterableIssueType.CodeQuality, FilterableIssueType.CodeSecurity -> this.additionalData.priorityScore
+            CODE_QUALITY, CODE_SECURITY -> this.additionalData.priorityScore
             else -> TODO()
         }
     }
 
     fun issueNaming(): String {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> {
+            OPEN_SOURCE -> {
                 if (this.additionalData.license != null) {
                     "License"
                 } else {
@@ -191,20 +186,20 @@ data class ScanIssue(
                 }
             }
 
-            FilterableIssueType.CodeSecurity -> "Security Issue"
-            FilterableIssueType.CodeQuality -> "Quality Issue"
-            FilterableIssueType.InfrastructureAsCode -> "Configuration Issue"
+            CODE_SECURITY -> "Security Issue"
+            CODE_QUALITY -> "Quality Issue"
+            INFRASTRUCTURE_AS_CODE -> "Configuration Issue"
             else -> TODO()
         }
     }
 
     fun cwes(): List<String> {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource, FilterableIssueType.InfrastructureAsCode -> {
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> {
                 this.additionalData.identifiers?.CWE ?: emptyList()
             }
 
-            FilterableIssueType.CodeQuality, FilterableIssueType.CodeSecurity -> {
+            CODE_QUALITY, CODE_SECURITY -> {
                 this.additionalData.cwe ?: emptyList()
             }
 
@@ -214,32 +209,32 @@ data class ScanIssue(
 
     fun cves(): List<String> {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> {
+            OPEN_SOURCE -> {
                 this.additionalData.identifiers?.CVE ?: emptyList()
             }
 
-            FilterableIssueType.CodeQuality, FilterableIssueType.CodeSecurity, FilterableIssueType.InfrastructureAsCode -> emptyList()
+            CODE_QUALITY, CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> emptyList()
             else -> TODO()
         }
     }
 
     fun cvssScore(): String? {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> this.additionalData.cvssScore
+            OPEN_SOURCE -> this.additionalData.cvssScore
             else -> null
         }
     }
 
     fun cvssV3(): String? {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> this.additionalData.CVSSv3
+            OPEN_SOURCE -> this.additionalData.CVSSv3
             else -> null
         }
     }
 
     fun id(): String? {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource, FilterableIssueType.InfrastructureAsCode -> this.additionalData.ruleId
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> this.additionalData.ruleId
             else -> null
         }
     }
@@ -250,21 +245,21 @@ data class ScanIssue(
 
     fun icon(): Icon? {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> getIcon(this.additionalData.packageManager.lowercase(Locale.getDefault()))
+            OPEN_SOURCE -> getIcon(this.additionalData.packageManager.lowercase(Locale.getDefault()))
             else -> null
         }
     }
 
     fun details(): String {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> this.additionalData.details ?: ""
+            OPEN_SOURCE -> this.additionalData.details ?: ""
             else -> this.additionalData.details ?: ""
         }
     }
 
     fun annotationMessage(): String {
         return when (this.filterableIssueType) {
-            FilterableIssueType.OpenSource -> this.title + " in " + this.additionalData.packageName + " id: " + this.ruleId()
+            OPEN_SOURCE -> this.title + " in " + this.additionalData.packageName + " id: " + this.ruleId()
             else ->
                 this.title.ifBlank {
                     this.additionalData.message.let {
@@ -278,7 +273,7 @@ data class ScanIssue(
     fun canLoadSuggestionPanelFromHTML(): Boolean = true
 
     fun hasAIFix(): Boolean {
-        return this.additionalData.isUpgradable || this.hasAIFix()
+        return this.additionalData.isUpgradable || this.additionalData.hasAIFix
     }
 
     fun isIgnored(): Boolean = this.isIgnored == true
