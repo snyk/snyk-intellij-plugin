@@ -276,8 +276,7 @@ data class ScanIssue(
     fun canLoadSuggestionPanelFromHTML(): Boolean {
         return when (this.additionalData.getProductType()) {
             ProductType.OSS -> true
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY ->
-                pluginSettings().isGlobalIgnoresFeatureEnabled && this.additionalData.details != null
+            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.details != null
 
             else -> TODO()
         }
@@ -336,6 +335,11 @@ data class ScanIssue(
 data class ExampleCommitFix(
     @SerializedName("commitURL") val commitURL: String,
     @SerializedName("lines") val lines: List<CommitChangeLine>,
+)
+
+data class Fix(
+    @SerializedName("fixId") val fixId: String,
+    @SerializedName("unifiedDiffsPerFile") val unifiedDiffsPerFile: Map<String, String>
 )
 
 data class CommitChangeLine(

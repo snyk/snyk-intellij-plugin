@@ -64,6 +64,6 @@ a,
 }
 
 .vulnerability-overview pre {
-  background-color: var(--vulnerability-overview-pre-background-color); // VSCode does this styling by default
+  background-color: var(--container-background-color); // same variable as in snyk_code_suggestion.scss
   border: 1px solid transparent;
 }

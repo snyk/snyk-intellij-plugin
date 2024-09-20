@@ -47,6 +47,7 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
+import snyk.common.lsp.commands.COMMAND_CODE_FIX_DIFFS
 import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.common.lsp.commands.COMMAND_GET_ACTIVE_USER
@@ -517,6 +518,35 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return false
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
+
+    @Suppress("UNCHECKED_CAST")
+    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
+        if (!ensureLanguageServerInitialized()) return emptyList()
+
+        try {
+            val param = ExecuteCommandParams()
+            param.command = COMMAND_CODE_FIX_DIFFS
+            param.arguments = listOf(folderURI, fileURI, issueID)
+            val result = languageServer.workspaceService.executeCommand(param).get(120, TimeUnit.SECONDS) as List<*>
+            val diffList: MutableList<Fix> = mutableListOf()
+
+            result.forEach {
+                val entry = it as Map<String, *>
+                val fixId = entry["fixId"] as? String
+                val unifiedDiffsPerFile = entry["unifiedDiffsPerFile"] as? Map<String, String>
+
+                if (fixId != null && unifiedDiffsPerFile != null) {
+                    val fix = Fix(fixId, unifiedDiffsPerFile)
+                    diffList.add(fix)
+                }
+            }
+            return diffList
+        } catch (err: Exception) {
+            logger.warn("Error in sendCodeFixDiffsCommand", err)
+            return emptyList()
+        }
+    }
+
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {
         val protocolVersion = initializeResult?.serverInfo?.version

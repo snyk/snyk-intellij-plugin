@@ -134,7 +134,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
 
-        val actual = cut.getStyledHTML()
+        val actual = cut.getCustomCssAndScript()
 
         // we don't apply any custom style for oss
         assertFalse(actual.contains("\${ideStyle}"))
