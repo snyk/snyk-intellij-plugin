@@ -5,6 +5,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -66,6 +67,7 @@ import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerIssuesForImage
@@ -94,9 +96,9 @@ class SnykToolWindowPanel(
     val project: Project,
 ) : JPanel(),
     Disposable {
-    internal val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
+    private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
     private val logger = Logger.getInstance(this::class.java)
-    private val rootTreeNode = DefaultMutableTreeNode("")
+    private val rootTreeNode =  ChooseBranchNode(project = project)
     private val rootOssTreeNode = RootOssTreeNode(project)
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
@@ -110,9 +112,13 @@ class SnykToolWindowPanel(
         rootTreeNode.add(rootIacIssuesTreeNode)
         rootTreeNode.add(rootContainerIssuesTreeNode)
         Tree(rootTreeNode).apply {
-            this.isRootVisible = false
+            this.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
         }
     }
+
+    private fun getRootNodeText(folderPath: String, baseBranch: String) =
+        "Click to choose base branch for $folderPath [ current: $baseBranch ]"
+
 
     /** Flag used to recognize not-user-initiated Description panel reload cases for purposes like:
      *  - disable Itly logging
@@ -127,7 +133,13 @@ class SnykToolWindowPanel(
             override fun getSnykError(): SnykError? = null
         }
 
+
+
     init {
+        val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
+        val rootNodeText = folderConfig?.let { getRootNodeText(it.folderPath, it.baseBranch) } ?: "Choose branch on ${project.basePath}"
+        rootTreeNode.info = rootNodeText
+
         vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
         layout = BorderLayout()
 
@@ -437,8 +449,6 @@ class SnykToolWindowPanel(
                 try {
                     enableCodeScanAccordingToServerSetting()
                     displayEmptyDescription()
-                    // don't trigger scan for Default project i.e. no project opened state
-                    if (project.basePath != null) triggerScan()
                 } catch (e: Exception) {
                     displaySnykError(SnykError(e.message ?: "Exception while initializing plugin {${e.message}", ""))
                     logger.error("Failed to apply Snyk settings", e)

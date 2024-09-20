@@ -396,9 +396,8 @@ data class DataFlow(
     @SerializedName("content") val content: String,
 )
 
+@Suppress("PropertyName")
 data class IssueData(
-    // all
-    @SerializedName("key") val key: String,
     // Code
     @SerializedName("message") val message: String,
     @SerializedName("leadURL") val leadURL: String?,
@@ -435,7 +434,19 @@ data class IssueData(
     @SerializedName("displayTargetFile") val displayTargetFile: String?,
     @SerializedName("matchingIssues") val matchingIssues: List<IssueData>,
     @SerializedName("lesson") val lesson: String?,
-    // Code and OSS
+    // IAC
+    @SerializedName("publicId") val publicId: String,
+    @SerializedName("documentation") val documentation: String,
+    @SerializedName("lineNumber") val lineNumber: String,
+    @SerializedName("issue") val issue: String,
+    @SerializedName("impact") val impact: String,
+    @SerializedName("resolve") val resolve: String,
+    @SerializedName("path") val path: List<String>,
+    @SerializedName("references") val references: List<String>,
+    @SerializedName("customUIContent") val customUIContent: String,
+
+    // all
+    @SerializedName("key") val key: String,
     @SerializedName("ruleId") val ruleId: String,
     @SerializedName("details") val details: String?,
 ) {

@@ -34,6 +34,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
+import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -304,17 +305,6 @@ class SnykToolWindowSnykScanListenerLS(
         }
 
         val settings = pluginSettings()
-        if (settings.isDeltaFindingsEnabled()) {
-            // we need one choose branch node for each content root. sigh.
-            service<FolderConfigSettings>().getAllForProject(project).forEach {
-                val branchChooserTreeNode = ChooseBranchNode(
-                    project = project,
-                    info = "Click to choose base branch for ${it.folderPath} [ current: ${it.baseBranch} ]"
-                )
-                rootNode.add(branchChooserTreeNode)
-            }
-        }
-
         var text = "✅ Congrats! No vulnerabilities found!"
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }

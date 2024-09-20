@@ -5,16 +5,19 @@ import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.util.ui.JBUI
-import com.intellij.ui.JBColor
 import com.intellij.util.ui.UIUtil
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
 
+fun Color.toHex() = ThemeBasedStylingGenerator.toCssHex(this)
+
 class ThemeBasedStylingGenerator {
-    fun toCssHex(color: Color): String {
-        return "#%02x%02x%02x".format(color.red, color.green, color.blue)
+    companion object {
+        fun toCssHex(color: Color): String {
+            return "#%02x%02x%02x".format(color.red, color.green, color.blue)
+        }
     }
 
     fun shift(

@@ -50,7 +50,7 @@ abstract class IssueDescriptionPanelBase(
         add(mainBodyPanel, BorderLayout.CENTER)
     }
 
-    fun titlePanel(insets: Insets = JBUI.insets(20, 10, 20, 20), indent: Int = 1): JPanel {
+    private fun titlePanel(insets: Insets = JBUI.insets(20, 10, 20, 20), indent: Int = 1): JPanel {
         val titlePanel = JPanel()
         titlePanel.layout = GridLayoutManager(2, 2, insets, -1, 5)
         val titleLabel = JLabel().apply {

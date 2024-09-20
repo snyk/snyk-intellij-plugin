@@ -247,7 +247,9 @@ abstract class SnykAnnotator(private val product: ProductType) :
 
     private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
         getSnykCachedResultsForProduct(psiFile.project, product)
-            ?.filter { it.key.virtualFile == psiFile.virtualFile }
+            ?.filter {
+                it.key.virtualFile == psiFile.virtualFile
+            }
             ?.map { it.value }
             ?.flatten()
             ?.toSet()
