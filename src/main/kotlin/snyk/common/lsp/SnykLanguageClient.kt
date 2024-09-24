@@ -1,8 +1,5 @@
 package snyk.common.lsp
 
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
-import com.github.benmanes.caffeine.cache.RemovalListener
 import com.google.gson.Gson
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
@@ -13,9 +10,6 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
@@ -40,14 +34,7 @@ import org.eclipse.lsp4j.MessageType
 import org.eclipse.lsp4j.ProgressParams
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.ShowMessageRequestParams
-import org.eclipse.lsp4j.WorkDoneProgressBegin
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams
-import org.eclipse.lsp4j.WorkDoneProgressEnd
-import org.eclipse.lsp4j.WorkDoneProgressKind.begin
-import org.eclipse.lsp4j.WorkDoneProgressKind.end
-import org.eclipse.lsp4j.WorkDoneProgressKind.report
-import org.eclipse.lsp4j.WorkDoneProgressNotification
-import org.eclipse.lsp4j.WorkDoneProgressReport
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.concurrency.runAsync
@@ -66,6 +53,7 @@ class SnykLanguageClient :
     Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     val gson = Gson()
+    private val progressManager = LSPProgressManager()
 
     private var disposed = false
         get() {
@@ -74,23 +62,12 @@ class SnykLanguageClient :
 
     fun isDisposed() = disposed
 
-    private val progresses: Cache<String, ProgressIndicator> =
-        Caffeine
-            .newBuilder()
-            .expireAfterAccess(10, TimeUnit.SECONDS)
-            .removalListener(
-                RemovalListener<String, ProgressIndicator> { _, indicator, _ ->
-                    indicator?.cancel()
-                },
-            ).build()
-    private val progressReportMsgCache: Cache<String, MutableList<WorkDoneProgressReport>> =
-        Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
-    private val progressEndMsgCache: Cache<String, WorkDoneProgressEnd> =
-        Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build()
-
-
     override fun telemetryEvent(`object`: Any?) {
         // do nothing
+    }
+
+    override fun notifyProgress(params: ProgressParams) {
+        progressManager.notifyProgress(params)
     }
 
     override fun publishDiagnostics(diagnosticsParams: PublishDiagnosticsParams?) {
@@ -324,135 +301,8 @@ class SnykLanguageClient :
         param.trustedFolders.forEach { it.toNioPathOrNull()?.let { path -> trustService.addTrustedPath(path) } }
     }
 
-    override fun createProgress(params: WorkDoneProgressCreateParams?): CompletableFuture<Void> =
-        CompletableFuture.completedFuture(null)
-
-    private fun createProgressInternal(
-        token: String,
-        begin: WorkDoneProgressBegin,
-    ) {
-        ProgressManager
-            .getInstance()
-            .run(
-                object : Task.Backgroundable(ProjectUtil.getActiveProject(), "Snyk: ${begin.title}", true) {
-                    override fun run(indicator: ProgressIndicator) {
-                        logger.debug(
-                            "Creating progress indicator for: $token, title: ${begin.title}, message: ${begin.message}",
-                        )
-                        indicator.isIndeterminate = false
-                        indicator.text = begin.title
-                        indicator.text2 = begin.message
-                        indicator.fraction = 0.1
-                        progresses.put(token, indicator)
-                        while (!indicator.isCanceled && !disposed) {
-                            Thread.sleep(1000)
-                        }
-                        logger.debug("Progress indicator canceled for token: $token")
-                    }
-                },
-            )
-    }
-
-    override fun notifyProgress(params: ProgressParams) {
-        if (disposed) return
-        // first: check if progress has begun
-        runAsync {
-            val token = params.token?.left ?: return@runAsync
-            if (progresses.getIfPresent(token) != null) {
-                processProgress(params)
-            } else {
-                when (val progressNotification = params.value.left) {
-                    is WorkDoneProgressEnd -> {
-                        progressEndMsgCache.put(token, progressNotification)
-                    }
-
-                    is WorkDoneProgressReport -> {
-                        val list = progressReportMsgCache.get(token) { mutableListOf() }
-                        list.add(progressNotification)
-                    }
-
-                    else -> {
-                        processProgress(params)
-                    }
-                }
-                return@runAsync
-            }
-        }
-    }
-
-    private fun processProgress(params: ProgressParams?) {
-        val token = params?.token?.left ?: return
-        val workDoneProgressNotification = params.value.left ?: return
-        when (workDoneProgressNotification.kind) {
-            begin -> {
-                val begin: WorkDoneProgressBegin = workDoneProgressNotification as WorkDoneProgressBegin
-                createProgressInternal(token, begin)
-                // wait until the progress indicator is created in the background thread
-                while (progresses.getIfPresent(token) == null) {
-                    Thread.sleep(100)
-                }
-
-                // process previously reported progress and end messages for token
-                processCachedProgressReports(token)
-                processCachedEndReport(token)
-            }
-
-            report -> {
-                progressReport(token, workDoneProgressNotification)
-            }
-
-            end -> {
-                progressEnd(token, workDoneProgressNotification)
-            }
-
-            null -> {}
-        }
-    }
-
-    private fun processCachedEndReport(token: String) {
-        val endReport = progressEndMsgCache.getIfPresent(token)
-        if (endReport != null) {
-            progressEnd(token, endReport)
-        }
-        progressEndMsgCache.invalidate(token)
-    }
-
-    private fun processCachedProgressReports(token: String) {
-        val reportParams = progressReportMsgCache.getIfPresent(token)
-        if (reportParams != null) {
-            reportParams.forEach { report ->
-                progressReport(token, report)
-            }
-            progressReportMsgCache.invalidate(token)
-        }
-    }
-
-    private fun progressReport(
-        token: String,
-        workDoneProgressNotification: WorkDoneProgressNotification,
-    ) {
-        logger.debug("Received progress report notification for token: $token")
-        progresses.getIfPresent(token)?.let {
-            val report: WorkDoneProgressReport = workDoneProgressNotification as WorkDoneProgressReport
-            logger.debug("Token: $token, progress: ${report.percentage}%, message: ${report.message}")
-            it.text = report.message
-            it.isIndeterminate = false
-            it.fraction = report.percentage / 100.0
-        }
-        return
-    }
-
-    private fun progressEnd(
-        token: String,
-        workDoneProgressNotification: WorkDoneProgressNotification,
-    ) {
-        logger.debug("Received progress end notification for token: $token")
-        progresses.getIfPresent(token)?.let {
-            val workDoneProgressEnd = workDoneProgressNotification as WorkDoneProgressEnd
-            it.text = workDoneProgressEnd.message
-            progresses.invalidate(token)
-        }
-        return
+    override fun createProgress(params: WorkDoneProgressCreateParams): CompletableFuture<Void> {
+        return progressManager.createProgress(params)
     }
 
     override fun logTrace(params: LogTraceParams?) {
@@ -467,6 +317,7 @@ class SnykLanguageClient :
             MessageType.Error -> {
                 SnykBalloonNotificationHelper.showError(messageParams.message, project)
             }
+
             MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)

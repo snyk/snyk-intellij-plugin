@@ -43,6 +43,7 @@ import snyk.common.annotator.SnykAnnotator.SnykAnnotation
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.RangeConverter
 import snyk.common.lsp.ScanIssue
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import javax.swing.Icon

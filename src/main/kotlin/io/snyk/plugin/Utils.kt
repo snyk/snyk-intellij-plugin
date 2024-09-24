@@ -61,6 +61,8 @@ import java.net.URI
 import java.nio.file.Path
 import java.util.Objects.nonNull
 import java.util.SortedSet
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.TimeUnit
 import javax.swing.JComponent
 

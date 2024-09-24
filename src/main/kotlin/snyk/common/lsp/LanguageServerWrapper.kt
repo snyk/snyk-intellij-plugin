@@ -258,6 +258,7 @@ class LanguageServerWrapper(
 
         initializeResult = languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
         languageServer.initialized(InitializedParams())
+        refreshFeatureFlags()
     }
 
     private fun getCapabilities(): ClientCapabilities =
@@ -351,6 +352,7 @@ class LanguageServerWrapper(
 
     fun refreshFeatureFlags() {
         runAsync {
+            if (!ensureLanguageServerInitialized()) return@runAsync
             pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
         }
     }
@@ -361,7 +363,7 @@ class LanguageServerWrapper(
     }
 
     private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
-        if (pluginSettings().token.isNullOrBlank()) {
+        if (disposed || !isInitialized || pluginSettings().token.isNullOrBlank()) {
             return false
         }
 
@@ -369,7 +371,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(20, TimeUnit.SECONDS)
+            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false

@@ -6,6 +6,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import io.ktor.util.collections.ConcurrentMap
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
@@ -19,6 +20,7 @@ import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
 import snyk.iac.IacResult
+import java.util.concurrent.ConcurrentHashMap
 
 @Service(Service.Level.PROJECT)
 class SnykCachedResults(
@@ -40,14 +42,14 @@ class SnykCachedResults(
 
     fun isDisposed() = disposed
 
-    val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-    val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
+    val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
+    val currentOSSResultsLS: ConcurrentMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
 
-    val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
+    val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
     var currentContainerResult: ContainerResult? = null
         get() = if (field?.isExpired() == false) field else null
 
-    val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
+    val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
     var currentIacResult: IacResult? = null
         get() = if (field?.isExpired() == false) field else null
 

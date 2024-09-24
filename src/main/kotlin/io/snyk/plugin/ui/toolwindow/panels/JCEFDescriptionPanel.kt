@@ -181,7 +181,7 @@ class SuggestionDescriptionPanelFromLS(
 
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
-        html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().fontName}\", ")
+        html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
         html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
         html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
         html =
