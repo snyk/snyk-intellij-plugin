@@ -20,7 +20,7 @@ import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
-import snyk.common.lsp.FolderConfigSettings
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.LanguageServerWrapper
 import javax.swing.JComponent
 

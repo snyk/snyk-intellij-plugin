@@ -1,8 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
-package snyk.common.lsp
+package snyk.common.lsp.hovers
 
-import com.intellij.markdown.utils.convertMarkdownToHtml
 import com.intellij.model.Pointer
 import com.intellij.openapi.Disposable
 import com.intellij.platform.backend.documentation.DocumentationResult
@@ -18,6 +17,7 @@ import org.eclipse.lsp4j.Hover
 import org.eclipse.lsp4j.HoverParams
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.TextDocumentIdentifier
+import snyk.common.lsp.LanguageServerWrapper
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 

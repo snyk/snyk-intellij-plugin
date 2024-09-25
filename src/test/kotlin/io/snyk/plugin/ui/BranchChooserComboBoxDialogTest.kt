@@ -2,9 +2,6 @@ package io.snyk.plugin.ui
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.openapi.util.io.toNioPathOrNull
-import com.intellij.openapi.vfs.VirtualFileManager
-import com.intellij.openapi.vfs.VirtualFileSystem
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.CapturingSlot
@@ -12,14 +9,13 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.toVirtualFile
 import okio.Path.Companion.toPath
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
 import snyk.common.lsp.FolderConfig
-import snyk.common.lsp.FolderConfigSettings
-import snyk.common.lsp.LanguageServerSettings
+import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.WorkspaceTrustSettings
@@ -31,7 +27,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
     private lateinit var folderConfig: FolderConfig
     lateinit var cut: BranchChooserComboBoxDialog
 
-    override fun setUp(): Unit {
+    override fun setUp() {
         super.setUp()
         unmockkAll()
         folderConfig = FolderConfig(project.basePath.toString(), "testBranch")

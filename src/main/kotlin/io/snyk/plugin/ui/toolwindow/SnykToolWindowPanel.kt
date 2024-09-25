@@ -67,7 +67,7 @@ import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
 import snyk.common.ProductType
 import snyk.common.SnykError
-import snyk.common.lsp.FolderConfigSettings
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import snyk.container.ContainerIssuesForImage

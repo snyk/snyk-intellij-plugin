@@ -29,6 +29,7 @@ import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.CompletableFuture

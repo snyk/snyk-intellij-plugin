@@ -48,7 +48,7 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
-import snyk.common.lsp.FolderConfigSettings
+import snyk.common.lsp.settings.FolderConfigSettings
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets

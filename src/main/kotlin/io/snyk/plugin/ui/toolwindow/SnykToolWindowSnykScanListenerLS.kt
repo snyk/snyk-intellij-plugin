@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
@@ -29,13 +28,10 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
-import snyk.common.lsp.FolderConfig
-import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree

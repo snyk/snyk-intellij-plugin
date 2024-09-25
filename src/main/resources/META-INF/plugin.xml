@@ -55,7 +55,7 @@
                                     id="snyk.common.codevision.LSCodeVisionProvider"/>
 
     <config.codeVisionGroupSettingProvider implementation="snyk.common.codevision.LSCodeVisionProvider"/>
-    <platform.backend.documentation.targetProvider implementation="snyk.common.lsp.LSDocumentationTargetProvider" />
+    <platform.backend.documentation.targetProvider implementation="snyk.common.lsp.hovers.LSDocumentationTargetProvider" />
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykOSSAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykIaCAnnotator"/>

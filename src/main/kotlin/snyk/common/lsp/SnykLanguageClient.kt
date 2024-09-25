@@ -40,6 +40,8 @@ import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.editor.DocumentChanger
+import snyk.common.lsp.progress.ProgressManager
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
@@ -53,7 +55,7 @@ class SnykLanguageClient :
     Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     val gson = Gson()
-    private val progressManager = LSPProgressManager()
+    private val progressManager = ProgressManager()
 
     private var disposed = false
         get() {

@@ -20,9 +20,9 @@ import org.eclipse.lsp4j.Range
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.FolderConfig
-import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.trust.WorkspaceTrustSettings
 import java.nio.file.Paths
 import javax.swing.JTree
@@ -123,9 +123,21 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
                 lesson = null,
                 details = "",
                 ruleId = "",
+                publicId = "",
+                documentation = "",
+                lineNumber = "",
+                issue = "",
+                impact = "",
+                resolve = "",
+                path = emptyList(),
+                references = emptyList(),
+                customUIContent = "",
+                key = "",
             ),
             isIgnored = isIgnored,
             ignoreDetails = null,
+            isNew = false,
+            filterableIssueType = ScanIssue.OPEN_SOURCE,
         )
         return listOf(issue)
     }

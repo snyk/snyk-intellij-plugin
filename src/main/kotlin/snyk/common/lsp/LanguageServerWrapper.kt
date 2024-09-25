@@ -58,6 +58,8 @@ import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.lsp.settings.LanguageServerSettings
+import snyk.common.lsp.settings.SeverityFilter
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded

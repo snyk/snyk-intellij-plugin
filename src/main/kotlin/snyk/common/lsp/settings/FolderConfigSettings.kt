@@ -1,4 +1,4 @@
-package snyk.common.lsp
+package snyk.common.lsp.settings
 
 import com.google.gson.Gson
 import com.intellij.openapi.components.BaseState
@@ -10,6 +10,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.annotations.MapAnnotation
 import io.snyk.plugin.getContentRootPaths
+import snyk.common.lsp.FolderConfig
 import java.util.stream.Collectors
 
 @Service
