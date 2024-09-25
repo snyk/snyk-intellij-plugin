@@ -20,6 +20,7 @@
   <depends optional="true" config-file="optional/withXML.xml">com.intellij.modules.xml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
+    <checkinHandlerFactory implementation="snyk.common.PreCommitHookHandler" />
     <codeInsight.lineMarkerProvider
       language=""
       implementationClass="snyk.common.annotator.SnykLineMarkerProvider"/>
@@ -43,6 +44,9 @@
     <registryKey key="snyk.timeout.results.waiting"
                  defaultValue="720000"
                  description="Snyk timeout (milliseconds) to wait for results during scan"/>
+    <registryKey key="snyk.issuesBlockCommit"
+                 defaultValue="false"
+                 description="Block commits with a pre-commit hook, if Snyk has issues. This is best combined with Net-New findings."/>
     <registryKey key="snyk.isDocumentationHoverEnabled"
                  defaultValue="true"
                  description="Show Snyk issue details additionally as documentation popup (hover)"
@@ -55,11 +59,12 @@
                                     id="snyk.common.codevision.LSCodeVisionProvider"/>
 
     <config.codeVisionGroupSettingProvider implementation="snyk.common.codevision.LSCodeVisionProvider"/>
-    <platform.backend.documentation.targetProvider implementation="snyk.common.lsp.hovers.LSDocumentationTargetProvider" />
+    <platform.backend.documentation.targetProvider
+      implementation="snyk.common.lsp.hovers.LSDocumentationTargetProvider"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykOSSAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykIaCAnnotator"/>
-    <editorFactoryListener implementation="snyk.common.editor.LineEndingEditorFactoryListener" id="snyk" />
+    <editorFactoryListener implementation="snyk.common.editor.LineEndingEditorFactoryListener" id="snyk"/>
   </extensions>
 
   <actions>
