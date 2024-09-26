@@ -1,5 +1,11 @@
 # Snyk Security Changelog
 
+
+## [2.11.0]
+### Changed
+- added ai fix feedback support
+
+
 ## [2.10.0]
 ### Changed
 - save git folder config in settings
