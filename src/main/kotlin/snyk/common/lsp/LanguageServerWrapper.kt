@@ -558,8 +558,8 @@ class LanguageServerWrapper(
             param.command = COMMAND_CODE_SUBMIT_FIX_FEEDBACK
             param.arguments = listOf(fixId, feedback)
             languageServer.workspaceService.executeCommand(param)
-        } catch (ignored: Exception) {
-            // do nothing to not break UX for analytics
+        } catch (err: Exception) {
+            logger.warn("Error in submitAutofixFeedbackCommand", err)
         }
     }
 

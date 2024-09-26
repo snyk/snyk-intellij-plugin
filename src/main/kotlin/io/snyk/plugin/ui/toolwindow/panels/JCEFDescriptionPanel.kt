@@ -300,7 +300,6 @@ class SuggestionDescriptionPanelFromLS(
 
                 const currentFix = fixes[diffSelectedIndex];
                 const fixId = currentFix.fixId;
-                console.log('currentFix', currentFix);
                 const filePath = getFilePathFromFix(currentFix);
                 const patch = currentFix.unifiedDiffsPerFile[filePath];
 
