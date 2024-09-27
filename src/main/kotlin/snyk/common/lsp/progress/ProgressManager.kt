@@ -22,6 +22,7 @@ import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.util.Disposer
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ProgressParams
 import org.eclipse.lsp4j.WorkDoneProgressBegin
@@ -37,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Function
 
 
-class ProgressManager() : Disposable {
+class ProgressManager : Disposable {
     private val progresses: MutableMap<String, Progress> = ConcurrentHashMap<String, Progress>()
     private var disposed = false
         get() {
@@ -45,6 +46,10 @@ class ProgressManager() : Disposable {
         }
 
     fun isDisposed() = disposed
+
+    init {
+        Disposer.register(SnykPluginDisposable.getInstance(), this)
+    }
 
     fun createProgress(params: WorkDoneProgressCreateParams): CompletableFuture<Void> {
         if (!disposed) {
@@ -109,6 +114,7 @@ class ProgressManager() : Disposable {
                     }
                 }
             } finally {
+                indicator.cancel()
                 progresses.remove(token)
             }
         }
