@@ -160,6 +160,7 @@ class ProgressManager : Disposable {
             progressIndicator.text = message
         }
         if (percentage != null) {
+            progressIndicator.isIndeterminate = false
             progressIndicator.fraction = percentage.toDouble() / 100
         }
     }
