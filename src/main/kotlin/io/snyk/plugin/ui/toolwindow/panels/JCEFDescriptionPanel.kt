@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
@@ -14,6 +13,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.jcef.ApplyFixHandler
+import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
