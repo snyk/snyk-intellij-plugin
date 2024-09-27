@@ -55,7 +55,7 @@ class SnykLanguageClient :
     Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     val gson = Gson()
-    private val progressManager = ProgressManager()
+    val progressManager = ProgressManager()
 
     private var disposed = false
         get() {

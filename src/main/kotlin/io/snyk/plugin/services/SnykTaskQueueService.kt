@@ -1,5 +1,6 @@
 package io.snyk.plugin.services
 
+import ai.grazie.nlp.langs.Language
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
@@ -21,6 +22,8 @@ import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
+import io.snyk.plugin.isContainerRunning
+import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
@@ -29,6 +32,8 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.SnykLanguageClient
+import snyk.common.lsp.progress.ProgressManager
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 @Service(Service.Level.PROJECT)
@@ -230,13 +235,14 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun stopScan() {
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
         val wasOssRunning = isOssRunning(project)
-        cancelOssIndicator(project)
-
         val wasSnykCodeRunning = isSnykCodeRunning(project)
+        val wasIacRunning = isIacRunning(project)
 
-        val wasIacRunning = iacScanProgressIndicator?.isRunning == true
-        iacScanProgressIndicator?.cancel()
+        if (languageServerWrapper.isInitialized) {
+            languageServerWrapper.languageClient.progressManager.cancelProgresses()
+        }
 
         val wasContainerRunning = containerScanProgressIndicator?.isRunning == true
         containerScanProgressIndicator?.cancel()

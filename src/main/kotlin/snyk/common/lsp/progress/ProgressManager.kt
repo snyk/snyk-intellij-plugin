@@ -164,6 +164,12 @@ class ProgressManager : Disposable {
         }
     }
 
+    fun cancelProgresses() {
+        if (disposed) return
+
+        progresses.values.forEach(Progress::cancel)
+    }
+
     fun notifyProgress(params: ProgressParams) {
         if (params.value == null || params.token == null || disposed) {
             return
