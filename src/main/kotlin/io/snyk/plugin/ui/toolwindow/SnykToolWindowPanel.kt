@@ -269,16 +269,28 @@ class SnykToolWindowPanel(
                 SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
                 object : SnykResultsFilteringListener {
                     override fun filtersChanged() {
-                        val codeResultsLS =
+                        val codeSecurityResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return
                         ApplicationManager.getApplication().invokeLater {
-                            scanListenerLS.displaySnykCodeResults(codeResultsLS)
+                            scanListenerLS.displaySnykCodeResults(codeSecurityResultsLS)
+                        }
+
+                        val codeQualityResultsLS =
+                            getSnykCachedResultsForProduct(project, ProductType.CODE_QUALITY) ?: return
+                        ApplicationManager.getApplication().invokeLater {
+                            scanListenerLS.displaySnykCodeResults(codeQualityResultsLS)
                         }
 
                         val ossResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return
                         ApplicationManager.getApplication().invokeLater {
                             scanListenerLS.displayOssResults(ossResultsLS)
+                        }
+
+                        val iacResultsLS =
+                            getSnykCachedResultsForProduct(project, ProductType.IAC) ?: return
+                        ApplicationManager.getApplication().invokeLater {
+                            scanListenerLS.displayIacResults(iacResultsLS)
                         }
 
                         val snykCachedResults = getSnykCachedResults(project) ?: return
@@ -324,18 +336,13 @@ class SnykToolWindowPanel(
             .subscribe(
                 SnykTaskQueueListener.TASK_QUEUE_TOPIC,
                 object : SnykTaskQueueListener {
-                    override fun stopped(
-                        wasOssRunning: Boolean,
-                        wasSnykCodeRunning: Boolean,
-                        wasIacRunning: Boolean,
-                        wasContainerRunning: Boolean,
-                    ) = ApplicationManager.getApplication().invokeLater {
+                    override fun stopped() = ApplicationManager.getApplication().invokeLater {
                         updateTreeRootNodesPresentation(
-                            ossResultsCount = if (wasOssRunning) NODE_INITIAL_STATE else null,
-                            securityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
-                            qualityIssuesCount = if (wasSnykCodeRunning) NODE_INITIAL_STATE else null,
-                            iacResultsCount = if (wasIacRunning) NODE_INITIAL_STATE else null,
-                            containerResultsCount = if (wasContainerRunning) NODE_INITIAL_STATE else null,
+                            ossResultsCount = NODE_INITIAL_STATE,
+                            securityIssuesCount = NODE_INITIAL_STATE,
+                            qualityIssuesCount = NODE_INITIAL_STATE,
+                            iacResultsCount = NODE_INITIAL_STATE,
+                            containerResultsCount = NODE_INITIAL_STATE,
                         )
                         displayEmptyDescription()
                     }

@@ -9,8 +9,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.cancelIacIndicator
-import io.snyk.plugin.cancelOssIndicator
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
@@ -84,7 +82,6 @@ class SnykToolWindowSnykScanListenerLS(
 
     override fun scanningOssFinished() {
         if (disposed) return
-        cancelOssIndicator(project)
         ApplicationManager.getApplication().invokeLater {
             this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
@@ -97,7 +94,6 @@ class SnykToolWindowSnykScanListenerLS(
 
     override fun scanningIacFinished() {
         if (disposed) return
-        cancelIacIndicator(project)
         ApplicationManager.getApplication().invokeLater {
             this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
@@ -173,20 +169,27 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
+    private fun displayResults(snykResults: Map<SnykFile, List<ScanIssue>>, enabledInSettings: Boolean, filterTree: Boolean, rootNode: DefaultMutableTreeNode) {
+        if (disposed) return
+        if (getSnykCachedResults(project)?.currentIacError != null) return
+
+        displayIssues(
+            enabledInSettings = enabledInSettings,
+            filterTree = filterTree,
+            snykResults = snykResults,
+            rootNode = rootNode,
+            iacResultsCount = snykResults.values.flatten().distinct().size,
+            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
+        )
+    }
+
     fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
         if (getSnykCachedResults(project)?.currentOssError != null) return
 
         val settings = pluginSettings()
 
-        displayIssues(
-            enabledInSettings = settings.ossScanEnable,
-            filterTree = settings.treeFiltering.ossResults,
-            snykResults = snykResults,
-            rootNode = this.rootOssIssuesTreeNode,
-            ossResultsCount = snykResults.values.flatten().distinct().size,
-            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
-        )
+        displayResults(snykResults, settings.ossScanEnable, settings.treeFiltering.ossResults, this.rootOssIssuesTreeNode)
     }
 
     fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
@@ -194,15 +197,7 @@ class SnykToolWindowSnykScanListenerLS(
         if (getSnykCachedResults(project)?.currentIacError != null) return
 
         val settings = pluginSettings()
-
-        displayIssues(
-            enabledInSettings = settings.iacScanEnabled,
-            filterTree = settings.treeFiltering.iacResults,
-            snykResults = snykResults,
-            rootNode = this.rootIacIssuesTreeNode,
-            iacResultsCount = snykResults.values.flatten().distinct().size,
-            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
-        )
+        displayResults(snykResults, settings.iacScanEnabled, settings.treeFiltering.iacResults, this.rootIacIssuesTreeNode)
     }
 
     private fun displayIssues(

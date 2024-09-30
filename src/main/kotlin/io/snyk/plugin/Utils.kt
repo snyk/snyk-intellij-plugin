@@ -158,7 +158,7 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
-    return isProductScanRunning(project, ProductType.OSS, getSnykTaskQueueService(project)?.ossScanProgressIndicator)
+    return isProductScanRunning(project, ProductType.OSS)
 }
 
 private fun isProductScanRunning(project: Project, productType: ProductType): Boolean {
@@ -178,16 +178,6 @@ private fun isProductScanRunning(
         (progressIndicator != null && progressIndicator.isRunning && !progressIndicator.isCanceled)
 }
 
-fun cancelOssIndicator(project: Project) {
-    val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
-    indicator?.cancel()
-}
-
-fun cancelIacIndicator(project: Project) {
-    val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator
-    indicator?.cancel()
-}
-
 fun isSnykCodeRunning(project: Project): Boolean {
     return isProductScanRunning(project, ProductType.CODE_SECURITY) || isProductScanRunning(
         project,
@@ -196,7 +186,7 @@ fun isSnykCodeRunning(project: Project): Boolean {
 }
 
 fun isIacRunning(project: Project): Boolean {
-    return isProductScanRunning(project, ProductType.IAC, getSnykTaskQueueService(project)?.iacScanProgressIndicator)
+    return isProductScanRunning(project, ProductType.IAC)
 }
 
 fun isContainerRunning(project: Project): Boolean {

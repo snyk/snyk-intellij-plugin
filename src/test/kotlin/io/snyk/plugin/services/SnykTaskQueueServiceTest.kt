@@ -77,7 +77,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
-        assertNull(snykTaskQueueService.ossScanProgressIndicator)
     }
     fun testCliDownloadBeforeScanIfNeeded() {
         setupAppSettingsForDownloadTests()

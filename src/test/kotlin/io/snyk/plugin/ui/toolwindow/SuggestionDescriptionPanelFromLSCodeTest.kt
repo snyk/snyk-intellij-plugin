@@ -62,7 +62,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every { issue.cvssV3() } returns null
         every { issue.cvssScore() } returns null
         every { issue.id() } returns "id"
-        every { issue.additionalData.getProductType() } returns ProductType.CODE_SECURITY
+        every { issue.filterableIssueType } returns ScanIssue.CODE_SECURITY
         every { issue.additionalData.message } returns "Test message"
         every { issue.additionalData.repoDatasetSize } returns 1
         every { issue.additionalData.exampleCommitFixes } returns

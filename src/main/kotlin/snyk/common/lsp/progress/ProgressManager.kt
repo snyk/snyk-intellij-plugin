@@ -76,46 +76,49 @@ class ProgressManager : Disposable {
         cancellable: Boolean,
         progress: Progress,
         token: String
-    ) = object : Task.Backgroundable(ProjectUtil.getActiveProject(), title, cancellable) {
-        override fun run(indicator: ProgressIndicator) {
-            try {
-                while (!isDone(progress)) {
-                    if (indicator.isCanceled) {
-                        progresses.remove(token)
-                        val workDoneProgressCancelParams = WorkDoneProgressCancelParams()
-                        workDoneProgressCancelParams.setToken(token)
-                        val languageServerWrapper = LanguageServerWrapper.getInstance()
-                        if (languageServerWrapper.isInitialized) {
-                            val languageServer = languageServerWrapper.languageServer
-                            languageServer.cancelProgress(workDoneProgressCancelParams)
+    ): Task.Backgroundable {
+        val project = ProjectUtil.getActiveProject()
+        return object : Task.Backgroundable(project, title, cancellable) {
+            override fun run(indicator: ProgressIndicator) {
+                try {
+                    while (!isDone(progress)) {
+                        if (indicator.isCanceled) {
+                            progresses.remove(token)
+                            val workDoneProgressCancelParams = WorkDoneProgressCancelParams()
+                            workDoneProgressCancelParams.setToken(token)
+                            val languageServerWrapper = LanguageServerWrapper.getInstance()
+                            if (languageServerWrapper.isInitialized) {
+                                val languageServer = languageServerWrapper.languageServer
+                                languageServer.cancelProgress(workDoneProgressCancelParams)
+                            }
+                            throw ProcessCanceledException()
                         }
-                        throw ProcessCanceledException()
-                    }
 
-                    var progressNotification: WorkDoneProgressNotification?
-                    try {
-                        progressNotification = progress.nextProgressNotification
-                    } catch (e: InterruptedException) {
-                        progresses.remove(token)
-                        Thread.currentThread().interrupt()
-                        throw ProcessCanceledException(e)
-                    }
-                    if (progressNotification != null) {
-                        val kind = progressNotification.kind ?: return
-                        when (kind) {
-                            WorkDoneProgressKind.begin ->  // 'begin' has been notified
-                                begin(progressNotification as WorkDoneProgressBegin, indicator)
+                        var progressNotification: WorkDoneProgressNotification?
+                        try {
+                            progressNotification = progress.nextProgressNotification
+                        } catch (e: InterruptedException) {
+                            progresses.remove(token)
+                            Thread.currentThread().interrupt()
+                            throw ProcessCanceledException(e)
+                        }
+                        if (progressNotification != null) {
+                            val kind = progressNotification.kind ?: return
+                            when (kind) {
+                                WorkDoneProgressKind.begin ->  // 'begin' has been notified
+                                    begin(progressNotification as WorkDoneProgressBegin, indicator)
 
-                            WorkDoneProgressKind.report ->  // 'report' has been notified
-                                report(progressNotification as WorkDoneProgressReport, indicator)
+                                WorkDoneProgressKind.report ->  // 'report' has been notified
+                                    report(progressNotification as WorkDoneProgressReport, indicator)
 
-                            WorkDoneProgressKind.end -> Unit
+                                WorkDoneProgressKind.end -> Unit
+                            }
                         }
                     }
+                } finally {
+                    indicator.cancel()
+                    progresses.remove(token)
                 }
-            } finally {
-                indicator.cancel()
-                progresses.remove(token)
             }
         }
     }

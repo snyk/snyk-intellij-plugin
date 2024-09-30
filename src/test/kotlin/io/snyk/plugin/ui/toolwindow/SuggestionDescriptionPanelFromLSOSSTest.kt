@@ -50,7 +50,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         snykFile = SnykFile(psiFile.project, psiFile.virtualFile)
 
         val matchingIssue = mockk<IssueData>()
-        every { matchingIssue.getProductType() } returns ProductType.OSS
         every { matchingIssue.name } returns "Another test name"
         every { matchingIssue.from } returns listOf("from")
         every { matchingIssue.upgradePath } returns listOf("upgradePath")
@@ -67,7 +66,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.cvssScore() } returns "cvssScore"
         every { issue.id() } returns "id"
         every { issue.ruleId() } returns "ruleId"
-        every { issue.additionalData.getProductType() } returns ProductType.OSS
+        every { issue.filterableIssueType } returns ScanIssue.OPEN_SOURCE
         every { issue.additionalData.name } returns "Test name"
         every { issue.additionalData.matchingIssues } returns matchingIssues
         every { issue.additionalData.fixedIn } returns listOf("fixedIn")
