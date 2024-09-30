@@ -60,6 +60,10 @@ class GenerateAIFixHandler() {
                         retryFixButton.addEventListener('click', () => {
                             window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
                         });
+
+                        retryFixButton.addEventListener('click', () => {
+                            window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
+                        });
                     })();
                     """
                     browser.executeJavaScript(script, browser.url, 0)

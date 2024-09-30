@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -48,6 +49,7 @@ import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
 import snyk.common.lsp.commands.COMMAND_CODE_FIX_DIFFS
+import snyk.common.lsp.commands.COMMAND_CODE_SUBMIT_FIX_FEEDBACK
 import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.common.lsp.commands.COMMAND_GET_ACTIVE_USER
@@ -554,6 +556,20 @@ class LanguageServerWrapper(
         } catch (err: Exception) {
             logger.warn("Error in sendCodeFixDiffsCommand", err)
             return emptyList()
+        }
+    }
+
+
+    fun submitAutofixFeedbackCommand(fixId: String, feedback: String) {
+        if (!ensureLanguageServerInitialized()) return
+
+        try {
+            val param = ExecuteCommandParams()
+            param.command = COMMAND_CODE_SUBMIT_FIX_FEEDBACK
+            param.arguments = listOf(fixId, feedback)
+            languageServer.workspaceService.executeCommand(param)
+        } catch (err: Exception) {
+            logger.warn("Error in submitAutofixFeedbackCommand", err)
         }
     }
 
