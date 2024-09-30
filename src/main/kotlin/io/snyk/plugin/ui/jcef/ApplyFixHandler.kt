@@ -26,14 +26,14 @@ class ApplyFixHandler(private val project: Project) {
         if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
     }
 
-
     fun generateApplyFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         applyFixQuery.addHandler { value ->
-            val params = value.split("|@", limit = 2)
-            val filePath = params[0]  // Path to the file that needs to be patched
-            val patch = params[1]      // The patch we received from LS
+            val params = value.split("|@", limit = 3)
+            val fixId = params[0]  // Path to the file that needs to be patched
+            val filePath = params[1]  // Path to the file that needs to be patched
+            val patch = params[2]      // The patch we received from LS
 
             // Avoid blocking the UI thread
             runAsync {
@@ -52,6 +52,7 @@ class ApplyFixHandler(private val project: Project) {
                             window.receiveApplyFixResponse(true);
                         """.trimIndent()
                     jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+                    LanguageServerWrapper.getInstance().submitAutofixFeedbackCommand(fixId, "FIX_APPLIED")
                 } else {
                     val errorMessage = "Error applying fix: ${result.exceptionOrNull()?.message}"
                     SnykBalloonNotificationHelper.showError(errorMessage, project)
@@ -60,8 +61,8 @@ class ApplyFixHandler(private val project: Project) {
                         """.trimIndent()
                     jbCefBrowser.cefBrowser.executeJavaScript(errorScript, jbCefBrowser.cefBrowser.url, 0)
                 }
-
             }
+
             return@addHandler JBCefJSQuery.Response("success")
         }
 
@@ -103,6 +104,7 @@ class ApplyFixHandler(private val project: Project) {
                 return@runWriteCommandAction
             }
         }
+
         return Result.success(Unit)
     }
 }

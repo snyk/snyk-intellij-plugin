@@ -1,5 +1,6 @@
 # Snyk Security Changelog
 
+
 ## [2.10.0]
 ### Changed
 - save git folder config in settings
@@ -17,6 +18,7 @@
 - always display info nodes
 - add option in IntelliJ registry to display tooltips with issue information
 - display documentation info when hovering over issue
+- added ai fix feedback support
 
 ### Fixes
 - add name to code vision provider
