@@ -78,10 +78,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
         }
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        await().timeout(300, TimeUnit.SECONDS).until {
-            println(System.currentTimeMillis())
-            virtualFile?.isValid ?: false
-        }
+        await().timeout(5, TimeUnit.SECONDS).until { virtualFile?.isValid ?: false }
 
 
         ApplicationManager.getApplication().runWriteAction {
