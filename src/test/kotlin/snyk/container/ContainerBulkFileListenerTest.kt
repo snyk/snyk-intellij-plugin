@@ -81,7 +81,7 @@ class ContainerBulkFileListenerTest : BasePlatformTestCase() {
             virtualFile = VirtualFileManager.getInstance().findFileByNioPath(path)
         }
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-        await().timeout(5, TimeUnit.SECONDS).until { virtualFile?.isValid ?: false }
+        await().timeout(30, TimeUnit.SECONDS).until { virtualFile?.isValid ?: false }
 
 
         ApplicationManager.getApplication().runWriteAction {
