@@ -30,7 +30,6 @@ class ThemeBasedStylingGenerator {
                 if (frame.isMain) {
                     val textColor = toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND)
                     val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
-
                     val borderColor = toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground())
                     val labelColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
                     val background = toCssHex(JBUI.CurrentTheme.Tree.BACKGROUND)
@@ -38,7 +37,7 @@ class ThemeBasedStylingGenerator {
                     val tabUnderline = toCssHex(JBUI.CurrentTheme.DefaultTabs.underlineColor())
                     val redCodeBlock = toCssHex(JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR)
                     val greenCodeBlock = toCssHex(JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR)
-                    val aiCodeBg = UIUtil.getTextFieldBackground()
+                    val aiCodeBg = toCssHex(UIUtil.getTextFieldBackground())
                     val codeBlockText = toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND)
                     val buttonColor = toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart())
 
@@ -60,12 +59,12 @@ class ThemeBasedStylingGenerator {
                                 '--example-line-removed-color': "$redCodeBlock",
                                 '--tab-item-github-icon-color': "$textColor",
                                 '--tab-item-hover-color': "$tabUnderline",
-                                '--scrollbar-thumb-color': "${tearLineColor?.let { toCssHex(it) }}",
+                                '--scrollbar-thumb-color': "$tearLineColor",
                                 '--tabs-bottom-color': "$issuePanelBackground",
                                 '--border-color': "$borderColor",
-                                '--editor-color': "${toCssHex(aiCodeBg)}",
+                                '--editor-color': "$aiCodeBg",
                                 '--label-color': "'$labelColor'",
-                                '--container-background-color': "${toCssHex(aiCodeBg)}",
+                                '--container-background-color': "$aiCodeBg",
                                 '--generated-ai-fix-button-background-color': "$buttonColor",
                                 '--dark-button-border-default': "$borderColor",
                                 '--dark-button-default': "$buttonColor",
