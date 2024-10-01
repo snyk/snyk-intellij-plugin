@@ -83,14 +83,7 @@ class ProgressManager : Disposable {
                 try {
                     while (!isDone(progress)) {
                         if (indicator.isCanceled) {
-                            progresses.remove(token)
-                            val workDoneProgressCancelParams = WorkDoneProgressCancelParams()
-                            workDoneProgressCancelParams.setToken(token)
-                            val languageServerWrapper = LanguageServerWrapper.getInstance()
-                            if (languageServerWrapper.isInitialized) {
-                                val languageServer = languageServerWrapper.languageServer
-                                languageServer.cancelProgress(workDoneProgressCancelParams)
-                            }
+                            cancelProgress(token)
                             throw ProcessCanceledException()
                         }
 
@@ -120,6 +113,14 @@ class ProgressManager : Disposable {
                     progresses.remove(token)
                 }
             }
+        }
+    }
+
+    private fun cancelProgress(token: String) {
+        try {
+            progresses[token]?.cancel()
+        } finally {
+            progresses.remove(token)
         }
     }
 
