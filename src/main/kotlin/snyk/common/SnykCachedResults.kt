@@ -50,8 +50,6 @@ class SnykCachedResults(
         get() = if (field?.isExpired() == false) field else null
 
     val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
-    var currentIacResult: IacResult? = null
-        get() = if (field?.isExpired() == false) field else null
 
     var currentOssError: SnykError? = null
     var currentContainerError: SnykError? = null
@@ -60,7 +58,6 @@ class SnykCachedResults(
 
     fun cleanCaches() {
         currentContainerResult = null
-        currentIacResult = null
         currentOssError = null
         currentContainerError = null
         currentIacError = null
@@ -83,22 +80,8 @@ class SnykCachedResults(
                     currentContainerError = null
                 }
 
-                override fun scanningIacFinished(iacResult: IacResult) {
-                    currentIacResult = iacResult
-                }
-
                 override fun scanningContainerFinished(containerResult: ContainerResult) {
                     currentContainerResult = containerResult
-                }
-
-                override fun scanningIacError(snykError: SnykError) {
-                    currentIacResult = null
-                    currentIacError =
-                        when {
-                            snykError.message.startsWith(SnykToolWindowPanel.NO_IAC_FILES) -> null
-                            snykError.message.startsWith(SnykToolWindowPanel.AUTH_FAILED_TEXT) -> null
-                            else -> snykError
-                        }
                 }
 
                 override fun scanningContainerError(snykError: SnykError) {

@@ -29,11 +29,6 @@ import snyk.container.ContainerIssue
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueTreeNode
-import snyk.iac.IacIssue
-import snyk.iac.IacIssuesForFile
-import snyk.iac.ui.toolwindow.IacFileTreeNode
-import snyk.iac.ui.toolwindow.IacIssueTreeNode
-import java.util.Locale
 import javax.swing.Icon
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode

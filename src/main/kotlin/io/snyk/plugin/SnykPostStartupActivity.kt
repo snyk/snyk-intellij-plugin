@@ -12,12 +12,10 @@ import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFileManager
 import io.snyk.plugin.extensions.SnykControllerImpl
 import io.snyk.plugin.extensions.SnykControllerManager
-import io.snyk.plugin.snykcode.SnykCodeBulkFileListener
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.common.AnnotatorCommon
+import snyk.common.lsp.LanguageServerBulkFileListener
 import snyk.container.ContainerBulkFileListener
-import snyk.iac.IacBulkFileListener
-import snyk.oss.OssBulkFileListener
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
@@ -43,9 +41,7 @@ class SnykPostStartupActivity : ProjectActivity {
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
             // TODO: add subscription for language server messages
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, OssBulkFileListener())
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, SnykCodeBulkFileListener())
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, IacBulkFileListener())
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, LanguageServerBulkFileListener())
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ContainerBulkFileListener())
             messageBusConnection.subscribe(ProjectManager.TOPIC, SnykProjectManagerListener())
             listenersActivated = true

@@ -253,7 +253,7 @@ fun descriptionHeaderPanel(
         2 + // CVSS
         2 + // Snyk description
         customLabels.size * 2 // Labels with `|`
-    panel.layout = GridLayoutManager(1, columnCount, Insets(0, 0, 0, 0), 5, 0)
+    panel.layout = GridLayoutManager(1, columnCount, JBUI.emptyInsets(), 5, 0)
 
     panel.add(
         JLabel(issueNaming).apply { font = font14 },

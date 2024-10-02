@@ -3,11 +3,11 @@ package io.snyk.plugin.ui.toolwindow.panels
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
@@ -26,7 +26,6 @@ import snyk.common.lsp.ScanIssue
 import stylesheets.SnykStylesheets
 import java.awt.BorderLayout
 import java.awt.Font
-import java.nio.file.Paths
 import javax.swing.JLabel
 import javax.swing.JPanel
 import kotlin.collections.set
@@ -43,65 +42,60 @@ class SuggestionDescriptionPanelFromLS(
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
     init {
-        if (issue.canLoadSuggestionPanelFromHTML()) {
-            val loadHandlerGenerators: MutableList<LoadHandlerGenerator> =
-                emptyList<LoadHandlerGenerator>().toMutableList()
+        val loadHandlerGenerators: MutableList<LoadHandlerGenerator> =
+            emptyList<LoadHandlerGenerator>().toMutableList()
 
-            // TODO: replace directly in HTML instead of JS
-            loadHandlerGenerators += {
-                ThemeBasedStylingGenerator().generate(it)
-            }
+        // TODO: replace directly in HTML instead of JS
+        loadHandlerGenerators += {
+            ThemeBasedStylingGenerator().generate(it)
+        }
 
-            when (issue.filterableIssueType) {
-                ScanIssue.CODE_QUALITY, ScanIssue.CODE_SECURITY -> {
-                    val virtualFiles = LinkedHashMap<String, VirtualFile?>()
-                    for (dataFlow in issue.additionalData.dataFlow) {
-                        virtualFiles[dataFlow.filePath] =
-                            VirtualFileManager.getInstance().findFileByNioPath(Paths.get(dataFlow.filePath))
-                    }
+        when (issue.filterableIssueType) {
+            ScanIssue.CODE_QUALITY, ScanIssue.CODE_SECURITY -> {
+                val virtualFiles = LinkedHashMap<String, VirtualFile?>()
+                for (dataFlow in issue.additionalData.dataFlow) {
+                    virtualFiles[dataFlow.filePath] = dataFlow.filePath.toVirtualFile()
+                }
 
-                    val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile.project, virtualFiles)
-                    loadHandlerGenerators += {
-                        openFileLoadHandlerGenerator.generate(it)
-                    }
+                val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile.project, virtualFiles)
+                loadHandlerGenerators += {
+                    openFileLoadHandlerGenerator.generate(it)
+                }
 
-                    val generateAIFixHandler = GenerateAIFixHandler()
-                    loadHandlerGenerators += {
-                        generateAIFixHandler.generateAIFixCommand(it)
-                    }
+                val generateAIFixHandler = GenerateAIFixHandler()
+                loadHandlerGenerators += {
+                    generateAIFixHandler.generateAIFixCommand(it)
+                }
 
-                    val applyFixHandler = ApplyFixHandler(snykFile.project)
-                    loadHandlerGenerators += {
-                        applyFixHandler.generateApplyFixCommand(it)
-                    }
+                val applyFixHandler = ApplyFixHandler(snykFile.project)
+                loadHandlerGenerators += {
+                    applyFixHandler.generateApplyFixCommand(it)
                 }
             }
-            val html = this.getCustomCssAndScript()
-            val jbCefBrowserComponent =
-                JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
-            if (jbCefBrowserComponent == null) {
-                val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
-                this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
-                SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
-            } else {
-                val lastRowToAddSpacer = 5
-                val panel =
-                    JPanel(
-                        GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
-                    ).apply {
-                        this.add(
-                            jbCefBrowserComponent,
-                            panelGridConstraints(1),
-                        )
-                    }
-                this.add(
-                    wrapWithScrollPane(panel),
-                    BorderLayout.CENTER,
-                )
-                this.add(panel)
-            }
+        }
+        val html = this.getCustomCssAndScript()
+        val jbCefBrowserComponent =
+            JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
+        if (jbCefBrowserComponent == null) {
+            val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
+            this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
+            SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
         } else {
-            createUI()
+            val lastRowToAddSpacer = 5
+            val panel =
+                JPanel(
+                    GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
+                ).apply {
+                    this.add(
+                        jbCefBrowserComponent,
+                        panelGridConstraints(1),
+                    )
+                }
+            this.add(
+                wrapWithScrollPane(panel),
+                BorderLayout.CENTER,
+            )
+            this.add(panel)
         }
     }
 

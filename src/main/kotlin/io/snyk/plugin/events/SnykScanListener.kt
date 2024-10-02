@@ -13,10 +13,6 @@ interface SnykScanListener {
 
     fun scanningStarted()
 
-    fun scanningIacFinished(iacResult: IacResult)
-
-    fun scanningIacError(snykError: SnykError)
-
     fun scanningContainerFinished(containerResult: ContainerResult)
 
     fun scanningContainerError(snykError: SnykError)
