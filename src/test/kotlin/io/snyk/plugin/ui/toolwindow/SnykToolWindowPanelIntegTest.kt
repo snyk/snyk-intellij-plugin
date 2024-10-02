@@ -4,11 +4,9 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.ide.util.gotoByName.GotoFileCellRenderer
 import com.intellij.mock.MockVirtualFile
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
-import com.intellij.testFramework.TestActionEvent
 import com.intellij.util.ui.tree.TreeUtil
 import io.mockk.every
 import io.mockk.mockk
@@ -16,7 +14,6 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
@@ -32,7 +29,6 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import org.eclipse.lsp4j.ExecuteCommandParams
@@ -53,15 +49,9 @@ import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueDetailPanel
 import snyk.container.ui.ContainerIssueTreeNode
-import snyk.iac.IacError
-import snyk.iac.IacIssue
-import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
-import snyk.iac.IacScanService
-import snyk.iac.IgnoreButtonActionListener
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.CompletableFuture
-import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel

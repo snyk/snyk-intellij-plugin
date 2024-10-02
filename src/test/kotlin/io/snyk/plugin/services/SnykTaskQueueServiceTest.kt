@@ -12,7 +12,6 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
-import io.snyk.plugin.getIacService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
@@ -26,7 +25,6 @@ import org.awaitility.Awaitility.await
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ContainerResult
-import snyk.iac.IacResult
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 

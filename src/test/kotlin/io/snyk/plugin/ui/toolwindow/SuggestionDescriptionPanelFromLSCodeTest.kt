@@ -19,8 +19,6 @@ import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import snyk.UIComponentFinder.getJBCEFBrowser
 import snyk.UIComponentFinder.getJLabelByText
-import snyk.UIComponentFinder.getJPanelByName
-import snyk.common.ProductType
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.CommitChangeLine
 import snyk.common.lsp.DataFlow

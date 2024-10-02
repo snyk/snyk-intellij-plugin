@@ -15,10 +15,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import snyk.UIComponentFinder.getActionLinkByText
 import snyk.UIComponentFinder.getJLabelByText
-import snyk.UIComponentFinder.getJPanelByName
-import snyk.common.ProductType
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
