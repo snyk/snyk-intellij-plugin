@@ -151,8 +151,8 @@ class SnykLanguageClientTest {
 
         // Assert the returned list contains parsed ScanIssues
         assertEquals(2, result.size)
-        assertEquals("Some Issue", result.get(0).title)
-        assertEquals("Another Issue", result.get(1).title)
+        assertEquals("Some Issue", result[0].title)
+        assertEquals("Another Issue", result[1].title)
     }
 
     private fun createMockDiagnostic(range: Range, message: String): Diagnostic {
