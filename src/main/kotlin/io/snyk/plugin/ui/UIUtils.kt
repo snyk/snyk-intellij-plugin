@@ -21,7 +21,6 @@ import java.awt.Color
 import java.awt.Container
 import java.awt.Dimension
 import java.awt.Font
-import java.awt.Insets
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import javax.swing.Icon
