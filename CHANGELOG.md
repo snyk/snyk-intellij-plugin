@@ -19,6 +19,7 @@
 - display documentation info when hovering over issue
 - add inline value support for display of vulnerability count
 - added ai fix feedback support
+- enable for IntelliJ 2024.3 platform
 
 ### Fixes
 - add name to code vision provider
