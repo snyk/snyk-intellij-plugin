@@ -2,6 +2,7 @@ package snyk.common.lsp
 
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.impl.AnyModalityState
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -36,7 +37,7 @@ import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
     private val folderConfigSettingsMock: FolderConfigSettings = mockk(relaxed = true)
-    private val applicationMock: Application = mockk()
+    private val applicationMock: Application = mockk(relaxed = true)
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
     private val settings = SnykApplicationSettingsStateService()
@@ -319,13 +320,15 @@ class LanguageServerWrapperTest {
 
         val actual = cut.getSettings()
 
-        assertEquals("false", actual.activateSnykCode)
-        assertEquals("false", actual.activateSnykIac)
-        assertEquals("true", actual.activateSnykOpenSource)
+        assertEquals(settings.snykCodeQualityIssuesScanEnable.toString(), actual.activateSnykCodeQuality)
+        assertEquals(settings.snykCodeSecurityIssuesScanEnable.toString(), actual.activateSnykCodeSecurity)
+        assertEquals(settings.iacScanEnabled.toString(), actual.activateSnykIac)
+        assertEquals(settings.ossScanEnable.toString(), actual.activateSnykOpenSource)
         assertEquals(settings.token, actual.token)
         assertEquals("${settings.ignoreUnknownCA}", actual.insecure)
         assertEquals(getCliFile().absolutePath, actual.cliPath)
         assertEquals(settings.organization, actual.organization)
+        assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
     }
 
     @Ignore // somehow it doesn't work in the pipeline

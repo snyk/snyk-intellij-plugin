@@ -139,27 +139,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         assertNull(settings.localCodeEngineEnabled)
     }
 
-    fun testIacScanTriggeredAndProduceResults() {
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = pluginSettings()
-        settings.ossScanEnable = false
-        settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
-        settings.iacScanEnabled = true
-        getSnykCachedResults(project)?.currentIacResult = null
-
-        val fakeIacResult = IacResult(emptyList())
-
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns true
-        every { getIacService(project)?.scan() } returns fakeIacResult
-
-        snykTaskQueueService.scan()
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        assertEquals(fakeIacResult, getSnykCachedResults(project)?.currentIacResult)
-    }
-
     fun testContainerScanTriggeredAndProduceResults() {
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isCliInstalled() } returns true

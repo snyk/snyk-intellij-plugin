@@ -17,11 +17,16 @@ import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.toSnykFileSet
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
+import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
+import org.jetbrains.kotlin.idea.util.application.isUnitTestMode
 import java.io.File
 import java.time.Duration
 
-open class LanguageServerBulkFileListener : SnykBulkFileListener() {
+class LanguageServerBulkFileListener : SnykBulkFileListener() {
+    @TestOnly
+    var disabled = isUnitTestMode()
+
     override fun before(
         project: Project,
         virtualFilesAffected: Set<VirtualFile>,
@@ -31,6 +36,7 @@ open class LanguageServerBulkFileListener : SnykBulkFileListener() {
         project: Project,
         virtualFilesAffected: Set<VirtualFile>,
     ) {
+        if (disabled) return
         if (virtualFilesAffected.isEmpty()) return
 
         runAsync {

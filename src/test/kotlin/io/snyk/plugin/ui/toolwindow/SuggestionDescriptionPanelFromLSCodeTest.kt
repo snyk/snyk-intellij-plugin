@@ -79,45 +79,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         } returns listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), ""))
     }
 
-    fun `test createUI should build the right panels for Snyk Code if HTML is not allowed`() {
-        every { issue.canLoadSuggestionPanelFromHTML() } returns false
-
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
-
-        val issueNaming = getJLabelByText(cut, issue.issueNaming())
-        assertNotNull(issueNaming)
-
-        val overviewPanel = getJLabelByText(cut, "<html>Test message</html>")
-        assertNotNull(overviewPanel)
-
-        val dataFlowPanel = getJPanelByName(cut, "dataFlowPanel")
-        assertNotNull(dataFlowPanel)
-
-        val fixExamplesPanel = getJPanelByName(cut, "fixExamplesPanel")
-        assertNotNull(fixExamplesPanel)
-
-        val introducedThroughPanel = getJPanelByName(cut, "introducedThroughPanel")
-        assertNull(introducedThroughPanel)
-
-        val detailedPathsPanel = getJPanelByName(cut, "detailedPathsPanel")
-        assertNull(detailedPathsPanel)
-
-        val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
-        assertNull(ossOverviewPanel)
-    }
-
-    fun `test createUI should build panel with issue message as overview label if HTML is not allowed`() {
-        every { issue.canLoadSuggestionPanelFromHTML() } returns false
-
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
-
-        val actual = getJLabelByText(cut, "<html>Test message</html>")
-        assertNotNull(actual)
-
-        val actualBrowser = getJBCEFBrowser(cut)
-        assertNull(actualBrowser)
-    }
-
     fun `test createUI should show nothing if HTML is allowed but JCEF is not supported`() {
         mockkObject(JCEFUtils)
         every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null

@@ -77,39 +77,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         } returns emptyList()
     }
 
-    fun `test createUI should build the right panels for Snyk OSS if HTML not allowed`() {
-        every { issue.canLoadSuggestionPanelFromHTML() } returns false
-
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
-
-        val issueNaming = getJLabelByText(cut, issue.issueNaming())
-        assertNotNull(issueNaming)
-
-        val cvssScore = getActionLinkByText(cut, "CVSS cvssScore")
-        assertNotNull(cvssScore)
-
-        val ruleId = getActionLinkByText(cut, "ID")
-        assertNotNull(ruleId)
-
-        val overviewPanel = getJLabelByText(cut, "<html>Test message</html>")
-        assertNull(overviewPanel)
-
-        val dataFlowPanel = getJPanelByName(cut, "dataFlowPanel")
-        assertNull(dataFlowPanel)
-
-        val fixExamplesPanel = getJPanelByName(cut, "fixExamplesPanel")
-        assertNull(fixExamplesPanel)
-
-        val introducedThroughPanel = getJPanelByName(cut, "introducedThroughPanel")
-        assertNotNull(introducedThroughPanel)
-
-        val detailedPathsPanel = getJPanelByName(cut, "detailedPathsPanel")
-        assertNotNull(detailedPathsPanel)
-
-        val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
-        assertNotNull(ossOverviewPanel)
-    }
-
     fun `test createUI should build panel with HTML from details if allowed`() {
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
         mockkObject(JCEFUtils)

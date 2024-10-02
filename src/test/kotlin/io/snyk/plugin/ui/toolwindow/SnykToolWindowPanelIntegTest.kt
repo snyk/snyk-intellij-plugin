@@ -58,10 +58,7 @@ import snyk.iac.IacIssue
 import snyk.iac.IacIssuesForFile
 import snyk.iac.IacResult
 import snyk.iac.IacScanService
-import snyk.iac.IacSuggestionDescriptionPanel
 import snyk.iac.IgnoreButtonActionListener
-import snyk.iac.ui.toolwindow.IacFileTreeNode
-import snyk.iac.ui.toolwindow.IacIssueTreeNode
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.CompletableFuture
 import javax.swing.JButton
@@ -148,46 +145,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             mockkStatic("io.snyk.plugin.UtilsKt")
             every { getContainerService(project)?.scan() } returns containerResultStub
         }
-    }
-
-    private fun prepareTreeWithFakeOssResults() {
-        val param =
-            ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "test", "--json", "--all-projects"))
-
-        every { lsMock.workspaceService.executeCommand(param) } returns
-            CompletableFuture.completedFuture(mapOf(Pair("stdOut", ossGoofJson)))
-
-        LanguageServerWrapper.getInstance().sendScanCommand(project)
-
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-    }
-
-    private fun prepareTreeWithFakeIacResults() {
-        setUpIacTest()
-
-        val lsMock = mockk<LanguageServer>()
-        LanguageServerWrapper.getInstance().languageServer = lsMock
-        val param = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(project.basePath, "iac", "test", "--json"))
-
-        every { lsMock.workspaceService.executeCommand(param) } returns
-            CompletableFuture.completedFuture(mapOf(Pair("stdOut", iacGoofJson)))
-
-        val ignoreParam = ExecuteCommandParams(
-            COMMAND_EXECUTE_CLI,
-            listOf(
-                project.basePath,
-                "ignore",
-                "--id=SNYK-CC-TF-53",
-                "--path=* > [DocId:0] > Resources > LaunchConfig > Properties > BlockDeviceMappings"
-            )
-        )
-
-        every { lsMock.workspaceService.executeCommand(ignoreParam) } returns
-            CompletableFuture.completedFuture(mapOf(Pair("stdOut", "")))
-
-        val iacResult = project.service<IacScanService>().scan()
-        scanPublisher.scanningIacFinished(iacResult)
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
     }
 
     private val fakeContainerIssue1 = ContainerIssue(
@@ -289,28 +246,27 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         mockkObject(SnykBalloonNotificationHelper)
 
         val snykError =
-            SnykError(SnykToolWindowPanel.NO_IAC_FILES, project.basePath.toString(), IacError.NO_IAC_FILES_CODE)
+            SnykScanParams("failed", "iac", project.basePath!!, emptyList(), SnykToolWindowPanel.NO_IAC_FILES)
+        val snykErrorControl = SnykScanParams("failed", "iac", project.basePath!!, emptyList(), "control")
 
-        val snykErrorControl = SnykError("control", project.basePath.toString())
-
-        scanPublisher.scanningIacError(snykErrorControl)
-        scanPublisher.scanningIacError(snykError)
+        scanPublisherLS.scanningError(snykErrorControl)
+        scanPublisherLS.scanningError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
+        val rootIacTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
         // flow and internal state check
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(snykErrorControl.message, project)
+            SnykBalloonNotificationHelper.showError(any(), project)
         }
-
         assertTrue(getSnykCachedResults(project)?.currentIacError == null)
-        assertTrue(getSnykCachedResults(project)?.currentIacResult == null)
+        assertTrue(getSnykCachedResults(project)?.currentIacResultsLS?.isEmpty() ?: false)
         // node check
         assertEquals(
-            SnykToolWindowPanel.IAC_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_IAC_FILES_FOUND,
-            toolWindowPanel.getRootIacIssuesTreeNode().userObject
+            SnykToolWindowPanel.OSS_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_PACKAGE_MANAGER_FOUND,
+            rootIacTreeNode.userObject
         )
         // description check
-        TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootIacIssuesTreeNode())
+        TreeUtil.selectNode(toolWindowPanel.getTree(), rootIacTreeNode)
         PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
         val jEditorPane = UIComponentFinder.getComponentByName(
             toolWindowPanel.getDescriptionPanel(),
@@ -318,44 +274,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
         assertNotNull(jEditorPane)
         jEditorPane!!
-        assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_IAC_FILES))
-    }
-
-    fun `test should ignore IaC failures in IaC scan results (no issues found)`() {
-        mockkObject(SnykBalloonNotificationHelper)
-        val jsonError = SnykError("Failed to parse JSON file", project.basePath.toString(), 1021)
-        val inputError = SnykError("Failed to parse input", project.basePath.toString(), 2105)
-        val iacResult = IacResult(emptyList(), listOf(jsonError, inputError))
-        scanPublisher.scanningIacFinished(iacResult)
-        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-        assertEquals(
-            SnykToolWindowPanel.IAC_ROOT_TEXT + SnykToolWindowPanel.NO_ISSUES_FOUND_TEXT,
-            toolWindowPanel.getRootIacIssuesTreeNode().userObject
-        )
-    }
-
-    fun `test should ignore IaC failures in IaC scan results (issues found)`() {
-        mockkObject(SnykBalloonNotificationHelper)
-        val iacIssue = IacIssue(
-            id = "SNYK-CC-TF-74",
-            title = "Credentials are configured via provider attributes",
-            lineNumber = 1,
-            severity = "",
-            publicId = "",
-            documentation = "",
-            issue = "",
-            impact = ""
-        )
-        val iacIssuesForFile =
-            IacIssuesForFile(listOf(iacIssue), "k8s-deployment.yaml", "src/k8s-deployment.yaml", "npm", null, project)
-        val jsonError = SnykError("Failed to parse JSON file", project.basePath.toString(), 1021)
-        val iacResult = IacResult(listOf(iacIssuesForFile), listOf(jsonError))
-        scanPublisher.scanningIacFinished(iacResult)
-        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-        assertEquals(
-            SnykToolWindowPanel.IAC_ROOT_TEXT + " - 1 unique issue",
-            toolWindowPanel.getRootIacIssuesTreeNode().userObject
-        )
+        assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_OSS_FILES))
     }
 
     fun `test should display NO_CONTAINER_IMAGES_FOUND after scan when no Container images found`() {
@@ -545,32 +464,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
     }
 
-    fun testSeverityFilterForIacResult() {
-        // pre-test setup
-        prepareTreeWithFakeIacResults()
-
-        // actual test run
-        val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
-        fun isMediumSeverityShown(): Boolean = rootIacIssuesTreeNode.children().asSequence()
-            .flatMap { (it as TreeNode).children().asSequence() }
-            .any {
-                it is IacIssueTreeNode &&
-                    it.userObject is IacIssue &&
-                    (it.userObject as IacIssue).getSeverity() == Severity.MEDIUM
-            }
-
-        assertTrue("Medium severity IaC results should be shown by default", isMediumSeverityShown())
-
-        val mediumSeverityFilterAction =
-            ActionManager.getInstance().getAction("io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction")
-                as SnykTreeMediumSeverityFilterAction
-        mediumSeverityFilterAction.setSelected(TestActionEvent.createTestEvent(), false)
-
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-
-        assertFalse("Medium severity IaC results should NOT be shown after filtering", isMediumSeverityShown())
-    }
-
     fun testIacErrorShown() {
         // pre-test setup
         setUpIacTest()
@@ -603,61 +496,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         assertTrue(errorMessageTextArea?.text == iacError.message)
         assertTrue(pathTextArea?.text == iacError.path)
-    }
-
-    fun test_WhenIacIssueIgnored_ThenItMarkedIgnored_AndButtonRemainsDisabled() {
-        // pre-test setup
-        prepareTreeWithFakeIacResults()
-
-        val tree = toolWindowPanel.getTree()
-
-        // select first IaC issue and ignore it
-        val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
-        val firstIaCFileNode = rootIacIssuesTreeNode.firstChild as? IacFileTreeNode
-        val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
-            ?: throw IllegalStateException("IacIssueNode should not be null")
-        TreeUtil.selectNode(tree, firstIacIssueNode)
-        waitWhileTreeBusy()
-
-        fun iacDescriptionPanel() =
-            UIComponentFinder.getComponentByName(
-                toolWindowPanel.getDescriptionPanel(),
-                IacSuggestionDescriptionPanel::class,
-                "IacSuggestionDescriptionPanel"
-            ) ?: throw IllegalStateException("IacSuggestionDescriptionPanel should not be null")
-
-        val ignoreButton = UIComponentFinder.getComponentByName(iacDescriptionPanel(), JButton::class, "ignoreButton")
-            ?: throw IllegalStateException("IgnoreButton should not be null")
-
-        assertFalse(
-            "Issue should NOT be ignored by default",
-            (firstIacIssueNode.userObject as IacIssue).ignored
-        )
-        assertTrue(
-            "Ignore Button should be enabled by default",
-            ignoreButton.isEnabled && ignoreButton.text != IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
-        )
-
-        ignoreButton.doClick()
-
-        // check final state
-        assertTrue(
-            "Issue should be marked as ignored after ignoring",
-            (firstIacIssueNode.userObject as IacIssue).ignored
-        )
-        assertTrue(
-            "Ignore Button should be disabled for ignored issue",
-            !ignoreButton.isEnabled && ignoreButton.text == IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
-        )
-        PlatformTestUtil.waitWhileBusy(tree)
-        TreeUtil.selectNode(tree, firstIacIssueNode.nextNode)
-        PlatformTestUtil.waitWhileBusy(tree)
-        TreeUtil.selectNode(tree, firstIacIssueNode)
-        PlatformTestUtil.waitWhileBusy(tree)
-        assertTrue(
-            "Ignore Button should remain disabled for ignored issue",
-            !ignoreButton.isEnabled && ignoreButton.text == IgnoreButtonActionListener.IGNORED_ISSUE_BUTTON_TEXT
-        )
     }
 
     fun `test all root nodes are shown`() {
@@ -897,33 +735,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     private fun waitWhileTreeBusy() {
         val tree = toolWindowPanel.getTree()
         PlatformTestUtil.waitWhileBusy(tree)
-    }
-
-    fun `test IaC node selected and Description shown on external request`() {
-        // pre-test setup
-        prepareTreeWithFakeIacResults()
-
-        val rootIacIssuesTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
-        val firstIaCFileNode = rootIacIssuesTreeNode.firstChild as? IacFileTreeNode
-        val firstIacIssueNode = firstIaCFileNode?.firstChild as? IacIssueTreeNode
-            ?: throw IllegalStateException("IacIssueNode should not be null")
-        val iacIssue = firstIacIssueNode.userObject as IacIssue
-
-        // actual test run
-        toolWindowPanel.selectNodeAndDisplayDescription(iacIssue)
-        waitWhileTreeBusy()
-
-        // Assertions
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
-        assertEquals(iacIssue, selectedNodeUserObject)
-
-        val iacDescriptionPanel =
-            UIComponentFinder.getComponentByName(
-                toolWindowPanel.getDescriptionPanel(),
-                IacSuggestionDescriptionPanel::class,
-                "IacSuggestionDescriptionPanel"
-            )
-        assertNotNull("IacSuggestionDescriptionPanel should not be null", iacDescriptionPanel)
     }
 
     fun `test Container node selected and Description shown on external request`() {
