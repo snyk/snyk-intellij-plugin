@@ -13,13 +13,19 @@ import io.mockk.verify
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
+import org.eclipse.lsp4j.Diagnostic
+import org.eclipse.lsp4j.Position
+import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import kotlin.io.path.Path
+import org.eclipse.lsp4j.Range
+
 
 class SnykLanguageClientTest {
     private lateinit var cut: SnykLanguageClient
@@ -100,11 +106,11 @@ class SnykLanguageClientTest {
         cut.snykScan(param)
 
         // you cannot display / forward the issues without mapping them to open projects
-        verify (exactly = 0) { projectManagerMock.openProjects }
+        verify(exactly = 0) { projectManagerMock.openProjects }
     }
 
     @Test
-    fun `hasAuthenticated does not run when disposed`(){
+    fun `hasAuthenticated does not run when disposed`() {
         every { applicationMock.isDisposed } returns true
 
         val unexpected = "abc"
@@ -120,7 +126,7 @@ class SnykLanguageClientTest {
         val unexpected = "abc"
         cut.addTrustedPaths(SnykTrustedFoldersParams(listOf(unexpected)))
 
-        verify (exactly = 0){ applicationMock.getService(WorkspaceTrustService::class.java) }
+        verify(exactly = 0) { applicationMock.getService(WorkspaceTrustService::class.java) }
     }
 
     @Test
@@ -131,5 +137,31 @@ class SnykLanguageClientTest {
         verify { trustServiceMock.addTrustedPath(eq(Path(path))) }
     }
 
+    @Test
+    fun testGetScanIssues_validDiagnostics() {
+        val range = Range(Position(0, 0), Position(0, 1))
+        // Create mock PublishDiagnosticsParams with diagnostics list
+        val diagnostics: MutableList<Diagnostic> = ArrayList()
+        diagnostics.add(createMockDiagnostic(range, "Some Issue"))
+        diagnostics.add(createMockDiagnostic(range, "Another Issue"))
+        val diagnosticsParams = PublishDiagnosticsParams("test", diagnostics)
+
+        // Call scanIssues function
+        val result: List<ScanIssue> = cut.getScanIssues(diagnosticsParams)
+
+        // Assert the returned list contains parsed ScanIssues
+        assertEquals(2, result.size)
+        assertEquals("Some Issue", result.get(0).title)
+        assertEquals("Another Issue", result.get(1).title)
+    }
+
+    private fun createMockDiagnostic(range: Range, message: String): Diagnostic {
+        val jsonString = """{"id": 12345, "title": "$message"}"""
+
+        val mockDiagnostic = Diagnostic()
+        mockDiagnostic.range = range
+        mockDiagnostic.data = jsonString
+        return mockDiagnostic
+    }
 
 }
