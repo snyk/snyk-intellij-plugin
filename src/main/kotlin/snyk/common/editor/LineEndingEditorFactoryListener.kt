@@ -98,7 +98,7 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
 
         val project = editor.project
         val document = editor.document
-        val snykCachedResults = project?.let { getSnykCachedResults(it) }
+        private val snykCachedResults = project?.let { getSnykCachedResults(it) }
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         val logger = Logger.getInstance(this::class.java).apply {
             // tie log level to language server log level

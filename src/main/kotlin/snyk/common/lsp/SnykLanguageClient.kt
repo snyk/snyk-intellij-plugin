@@ -114,7 +114,7 @@ class SnykLanguageClient :
         return
     }
 
-    private fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): List<ScanIssue> {
+    fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): List<ScanIssue> {
         val issueList = diagnosticsParams.diagnostics.stream().map {
             val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
             // load textrange for issue so it doesn't happen in UI thread
