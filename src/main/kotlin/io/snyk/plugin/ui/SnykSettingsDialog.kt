@@ -48,7 +48,7 @@ import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.SnykBundle
-import snyk.common.lsp.FolderConfigSettings
+import snyk.common.lsp.settings.FolderConfigSettings
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
@@ -180,7 +180,7 @@ class SnykSettingsDialog(
 
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
                 .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
-            netNewIssuesDropDown.selectedItem = applicationSettings.netNewIssues
+            netNewIssuesDropDown.selectedItem = applicationSettings.displayAllIssues
         }
     }
 
@@ -815,7 +815,7 @@ class SnykSettingsDialog(
 
     fun getCliReleaseChannel(): String = cliReleaseChannelDropDown.selectedItem as String
 
-    fun getNetNewIssuesSelected(): String = netNewIssuesDropDown.selectedItem as String
+    fun getDisplayIssuesSelection(): String = netNewIssuesDropDown.selectedItem as String
 
     fun getUseTokenAuthentication(): Boolean = useTokenAuthentication.selectedIndex == 1
 }

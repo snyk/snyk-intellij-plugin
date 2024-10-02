@@ -16,7 +16,6 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
-import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -43,6 +42,7 @@ import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.jsonrpc.RemoteEndpoint
+import org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer
 import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
@@ -60,6 +60,8 @@ import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.lsp.settings.LanguageServerSettings
+import snyk.common.lsp.settings.SeverityFilter
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
@@ -68,6 +70,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
+import java.util.logging.Level
 import java.util.logging.Logger.getLogger
 import kotlin.io.path.exists
 
@@ -173,8 +176,11 @@ class LanguageServerWrapper(
     fun shutdown() {
         // LSP4j logs errors and rethrows - this is bad practice, and we don't need that log here, so we shut it up.
         val lsp4jLogger = getLogger(RemoteEndpoint::class.java.name)
+        val messageProducerLogger = getLogger(StreamMessageProducer::class.java.name)
+        val previousMessageProducerLevel = messageProducerLogger.level
         val previousLSP4jLogLevel = lsp4jLogger.level
-        lsp4jLogger.level = java.util.logging.Level.OFF
+        lsp4jLogger.level = Level.OFF
+        messageProducerLogger.level = Level.OFF
         try {
             val shouldShutdown = lsIsAlive()
             executorService.submit { if (shouldShutdown) languageServer.shutdown().get(1, TimeUnit.SECONDS) }
@@ -186,9 +192,10 @@ class LanguageServerWrapper(
             } catch (ignore: Exception) {
                 // do nothing
             } finally {
-               if (lsIsAlive()) process.destroyForcibly()
+                if (lsIsAlive()) process.destroyForcibly()
             }
             lsp4jLogger.level = previousLSP4jLogLevel
+            messageProducerLogger.level = previousMessageProducerLevel
         }
     }
 
@@ -255,6 +262,7 @@ class LanguageServerWrapper(
 
         initializeResult = languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
         languageServer.initialized(InitializedParams())
+        refreshFeatureFlags()
     }
 
     private fun getCapabilities(): ClientCapabilities =
@@ -339,8 +347,8 @@ class LanguageServerWrapper(
     fun sendScanCommand(project: Project) {
         if (!ensureLanguageServerInitialized()) return
         DumbService.getInstance(project).runWhenSmart {
+            refreshFeatureFlags()
             getTrustedContentRoots(project).forEach {
-                refreshFeatureFlags()
                 sendFolderScanCommand(it.path, project)
             }
         }
@@ -348,6 +356,7 @@ class LanguageServerWrapper(
 
     fun refreshFeatureFlags() {
         runAsync {
+            if (!ensureLanguageServerInitialized()) return@runAsync
             pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
         }
     }
@@ -358,7 +367,7 @@ class LanguageServerWrapper(
     }
 
     private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
-        if (pluginSettings().token.isNullOrBlank()) {
+        if (disposed || !isInitialized || pluginSettings().token.isNullOrBlank()) {
             return false
         }
 
@@ -366,7 +375,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(10, TimeUnit.SECONDS)
+            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
@@ -398,6 +407,7 @@ class LanguageServerWrapper(
             languageServer.workspaceService.executeCommand(param)
         } catch (ignored: Exception) {
             // do nothing to not break UX for analytics
+            // TODO review
         }
     }
 
@@ -413,7 +423,7 @@ class LanguageServerWrapper(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
             activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
-            activateSnykIac = isSnykIaCLSEnabled().toString(),
+            activateSnykIac = ps.iacScanEnabled.toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),
             endpoint = getEndpointUrl(),

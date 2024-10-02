@@ -1,6 +1,5 @@
 package io.snyk.plugin.ui.toolwindow
 
-import com.intellij.ide.impl.TrustedPathsSettings
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.vfs.VirtualFile
@@ -12,21 +11,19 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import junit.framework.TestCase
-import okio.Path.Companion.toPath
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.DataFlow
 import snyk.common.lsp.FolderConfig
-import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
-import snyk.trust.WorkspaceTrustService
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.trust.WorkspaceTrustSettings
 import java.nio.file.Paths
 import javax.swing.JTree
@@ -41,6 +38,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
     private lateinit var rootOssIssuesTreeNode: DefaultMutableTreeNode
     private lateinit var rootSecurityIssuesTreeNode: DefaultMutableTreeNode
     private lateinit var rootQualityIssuesTreeNode: DefaultMutableTreeNode
+    private lateinit var rootIacIssuesTreeNode: DefaultMutableTreeNode
 
     private val fileName = "app.js"
     private lateinit var file: VirtualFile
@@ -70,6 +68,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootOssIssuesTreeNode = RootOssTreeNode(project)
         rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
         rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
+        rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
         pluginSettings().setDeltaEnabled()
         contentRootPaths.forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
     }
@@ -126,9 +125,21 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
                 lesson = null,
                 details = "",
                 ruleId = "",
+                publicId = "",
+                documentation = "",
+                lineNumber = "",
+                issue = "",
+                impact = "",
+                resolve = "",
+                path = emptyList(),
+                references = emptyList(),
+                customUIContent = "",
+                key = "",
             ),
             isIgnored = isIgnored,
             ignoreDetails = null,
+            isNew = false,
+            filterableIssueType = ScanIssue.OPEN_SOURCE,
         )
         return listOf(issue)
     }
@@ -141,6 +152,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootTreeNode.add(rootOssIssuesTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
+        rootTreeNode.add(rootIacIssuesTreeNode)
         vulnerabilitiesTree = Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -152,9 +164,10 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             rootSecurityIssuesTreeNode,
             rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
         )
 
-        TestCase.assertEquals(3, rootTreeNode.childCount)
+        TestCase.assertEquals(4, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
         TestCase.assertEquals(6, rootTreeNode.childCount)
         TestCase.assertEquals(rootTreeNode.children().toList()[0].toString(), " Open Source")
@@ -167,46 +180,6 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         TestCase.assertEquals(
             rootTreeNode.children().toList()[5].toString(),
             "⚡ 1 vulnerabilities can be fixed automatically",
-        )
-    }
-
-    fun `testAddInfoTreeNodes adds new branch selection tree nodes`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
-
-        // setup the rootTreeNode from scratch
-        rootTreeNode = DefaultMutableTreeNode("")
-        rootTreeNode.add(rootOssIssuesTreeNode)
-        rootTreeNode.add(rootSecurityIssuesTreeNode)
-        rootTreeNode.add(rootQualityIssuesTreeNode)
-        vulnerabilitiesTree = Tree(rootTreeNode).apply {
-            this.isRootVisible = false
-        }
-
-        cut = SnykToolWindowSnykScanListenerLS(
-            project,
-            snykToolWindowPanel,
-            vulnerabilitiesTree,
-            rootSecurityIssuesTreeNode,
-            rootQualityIssuesTreeNode,
-            rootOssIssuesTreeNode,
-        )
-
-        TestCase.assertEquals(3, rootTreeNode.childCount)
-
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
-
-        TestCase.assertEquals(6, rootTreeNode.childCount)
-        TestCase.assertEquals(rootTreeNode.children().toList()[0].toString(), " Open Source")
-        TestCase.assertEquals(rootTreeNode.children().toList()[1].toString(), " Code Security")
-        TestCase.assertEquals(rootTreeNode.children().toList()[2].toString(), " Code Quality")
-        TestCase.assertTrue(rootTreeNode.children().toList()[3].toString().contains("Click to choose base branch for"))
-        TestCase.assertEquals(
-            "✋ 1 vulnerability found by Snyk, 0 ignored",
-            rootTreeNode.children().toList()[4].toString(),
-        )
-        TestCase.assertEquals(
-            "⚡ 1 vulnerabilities can be fixed automatically",
-            rootTreeNode.children().toList()[5].toString(),
         )
     }
 
@@ -219,6 +192,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootTreeNode.add(rootOssIssuesTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
+        rootTreeNode.add(rootIacIssuesTreeNode)
         vulnerabilitiesTree = Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -230,9 +204,10 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             rootSecurityIssuesTreeNode,
             rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
         )
 
-        TestCase.assertEquals(3, rootTreeNode.childCount)
+        TestCase.assertEquals(4, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(true), 1)
         TestCase.assertEquals(7, rootTreeNode.childCount)
     }
@@ -246,6 +221,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootTreeNode.add(rootOssIssuesTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
         rootTreeNode.add(rootQualityIssuesTreeNode)
+        rootTreeNode.add(rootIacIssuesTreeNode)
         vulnerabilitiesTree = Tree(rootTreeNode).apply {
             this.isRootVisible = false
         }
@@ -257,9 +233,10 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             rootSecurityIssuesTreeNode,
             rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
         )
 
-        TestCase.assertEquals(3, rootTreeNode.childCount)
+        TestCase.assertEquals(4, rootTreeNode.childCount)
         cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(false), 1)
         TestCase.assertEquals(7, rootTreeNode.childCount)
     }

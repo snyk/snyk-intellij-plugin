@@ -21,7 +21,6 @@ import java.awt.Color
 import java.awt.Container
 import java.awt.Dimension
 import java.awt.Font
-import java.awt.Insets
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import javax.swing.Icon
@@ -155,7 +154,7 @@ fun getReadOnlyClickableHtmlJEditorPaneFixedSize(
 }
 
 fun getStandardLayout(rowCount: Int = 2, columnCount: Int = 2) =
-    GridLayoutManager(rowCount, columnCount, Insets(5, 5, 5, 5), -1, -1)
+    GridLayoutManager(rowCount, columnCount, JBUI.insets(5), -1, -1)
 
 fun getPanelWithColumns(rowCount: Int, columnCount: Int): JPanel =
     JPanel().apply { layout = getStandardLayout(rowCount, columnCount) }
@@ -253,7 +252,7 @@ fun descriptionHeaderPanel(
         2 + // CVSS
         2 + // Snyk description
         customLabels.size * 2 // Labels with `|`
-    panel.layout = GridLayoutManager(1, columnCount, Insets(0, 0, 0, 0), 5, 0)
+    panel.layout = GridLayoutManager(1, columnCount, JBUI.emptyInsets(), 5, 0)
 
     panel.add(
         JLabel(issueNaming).apply { font = font14 },

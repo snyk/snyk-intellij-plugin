@@ -9,6 +9,6 @@ open class InfoTreeNode(
     open val project: Project,
 ) : DefaultMutableTreeNode(info)
 
-class ChooseBranchNode(override val info: String = "Choose base branch", override val project: Project) : InfoTreeNode(info, project) {
+class ChooseBranchNode(override var info: String = "Choose base branch", override var project: Project) : InfoTreeNode(info, project) {
     val icon = AllIcons.Vcs.BranchNode
 }

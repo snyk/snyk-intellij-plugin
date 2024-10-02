@@ -44,18 +44,6 @@ class AnalyticsScanListener(val project: Project) {
             start = System.currentTimeMillis()
         }
 
-        override fun scanningIacFinished(iacResult: IacResult) {
-            val scanDoneEvent = getScanDoneEvent(
-                System.currentTimeMillis() - start,
-                "Snyk IaC",
-                iacResult.criticalSeveritiesCount(),
-                iacResult.highSeveritiesCount(),
-                iacResult.mediumSeveritiesCount(),
-                iacResult.lowSeveritiesCount()
-            )
-            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
-        }
-
         override fun scanningContainerFinished(containerResult: ContainerResult) {
             val scanDoneEvent = getScanDoneEvent(
                 System.currentTimeMillis() - start,
@@ -66,10 +54,6 @@ class AnalyticsScanListener(val project: Project) {
                 containerResult.lowSeveritiesCount()
             )
             LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
-        }
-
-        override fun scanningIacError(snykError: SnykError) {
-            // do nothing
         }
 
         override fun scanningContainerError(snykError: SnykError) {

@@ -29,13 +29,14 @@ import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
     private val folderConfigSettingsMock: FolderConfigSettings = mockk(relaxed = true)
-    private val applicationMock: Application = mockk()
+    private val applicationMock: Application = mockk(relaxed = true)
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
     private val settings = SnykApplicationSettingsStateService()
@@ -318,13 +319,15 @@ class LanguageServerWrapperTest {
 
         val actual = cut.getSettings()
 
-        assertEquals("false", actual.activateSnykCode)
-        assertEquals("false", actual.activateSnykIac)
-        assertEquals("true", actual.activateSnykOpenSource)
+        assertEquals(settings.snykCodeQualityIssuesScanEnable.toString(), actual.activateSnykCodeQuality)
+        assertEquals(settings.snykCodeSecurityIssuesScanEnable.toString(), actual.activateSnykCodeSecurity)
+        assertEquals(settings.iacScanEnabled.toString(), actual.activateSnykIac)
+        assertEquals(settings.ossScanEnable.toString(), actual.activateSnykOpenSource)
         assertEquals(settings.token, actual.token)
         assertEquals("${settings.ignoreUnknownCA}", actual.insecure)
         assertEquals(getCliFile().absolutePath, actual.cliPath)
         assertEquals(settings.organization, actual.organization)
+        assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
     }
 
     @Ignore // somehow it doesn't work in the pipeline

@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
@@ -10,13 +9,13 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.cancelOssIndicator
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.IAC_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NODE_NOT_SUPPORTED_STATE
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NO_OSS_FILES
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.OSS_ROOT_TEXT
@@ -27,12 +26,10 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
-import snyk.common.lsp.FolderConfigSettings
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -45,6 +42,7 @@ class SnykToolWindowSnykScanListenerLS(
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
+    private val rootIacIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListenerLS, Disposable {
     private var disposed = false
         get() {
@@ -84,12 +82,23 @@ class SnykToolWindowSnykScanListenerLS(
 
     override fun scanningOssFinished() {
         if (disposed) return
-        cancelOssIndicator(project)
         ApplicationManager.getApplication().invokeLater {
             this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
             val snykCachedResults = getSnykCachedResults(project)
             displayOssResults(snykCachedResults?.currentOSSResultsLS ?: emptyMap())
+            this.snykToolWindowPanel.triggerSelectionListeners = true
+        }
+        refreshAnnotationsForOpenFiles(project)
+    }
+
+    override fun scanningIacFinished() {
+        if (disposed) return
+        ApplicationManager.getApplication().invokeLater {
+            this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
+            this.snykToolWindowPanel.triggerSelectionListeners = false
+            val snykCachedResults = getSnykCachedResults(project)
+            displayIacResults(snykCachedResults?.currentIacResultsLS ?: emptyMap())
             this.snykToolWindowPanel.triggerSelectionListeners = true
         }
         refreshAnnotationsForOpenFiles(project)
@@ -110,7 +119,8 @@ class SnykToolWindowSnykScanListenerLS(
             }
 
             "iac" -> {
-                // TODO implement
+                this.rootIacIssuesTreeNode.removeAllChildren()
+                this.rootOssIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
             "container" -> {
@@ -159,20 +169,35 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
+    private fun displayResults(snykResults: Map<SnykFile, List<ScanIssue>>, enabledInSettings: Boolean, filterTree: Boolean, rootNode: DefaultMutableTreeNode) {
+        if (disposed) return
+        if (getSnykCachedResults(project)?.currentIacError != null) return
+
+        displayIssues(
+            enabledInSettings = enabledInSettings,
+            filterTree = filterTree,
+            snykResults = snykResults,
+            rootNode = rootNode,
+            iacResultsCount = snykResults.values.flatten().distinct().size,
+            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
+        )
+    }
+
     fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
         if (getSnykCachedResults(project)?.currentOssError != null) return
 
         val settings = pluginSettings()
 
-        displayIssues(
-            enabledInSettings = settings.ossScanEnable,
-            filterTree = settings.treeFiltering.ossResults,
-            snykResults = snykResults,
-            rootNode = this.rootOssIssuesTreeNode,
-            ossResultsCount = snykResults.values.flatten().distinct().size,
-            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
-        )
+        displayResults(snykResults, settings.ossScanEnable, settings.treeFiltering.ossResults, this.rootOssIssuesTreeNode)
+    }
+
+    fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+        if (disposed) return
+        if (getSnykCachedResults(project)?.currentIacError != null) return
+
+        val settings = pluginSettings()
+        displayResults(snykResults, settings.iacScanEnabled, settings.treeFiltering.iacResults, this.rootIacIssuesTreeNode)
     }
 
     private fun displayIssues(
@@ -271,17 +296,6 @@ class SnykToolWindowSnykScanListenerLS(
         }
 
         val settings = pluginSettings()
-        if (settings.isDeltaFindingsEnabled()) {
-            // we need one choose branch node for each content root. sigh.
-            service<FolderConfigSettings>().getAllForProject(project).forEach {
-                val branchChooserTreeNode = ChooseBranchNode(
-                    project = project,
-                    info = "Click to choose base branch for ${it.folderPath} [ current: ${it.baseBranch} ]"
-                )
-                rootNode.add(branchChooserTreeNode)
-            }
-        }
-
         var text = "✅ Congrats! No vulnerabilities found!"
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }

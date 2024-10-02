@@ -15,10 +15,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
-import snyk.UIComponentFinder.getActionLinkByText
 import snyk.UIComponentFinder.getJLabelByText
-import snyk.UIComponentFinder.getJPanelByName
-import snyk.common.ProductType
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
@@ -50,7 +47,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         snykFile = SnykFile(psiFile.project, psiFile.virtualFile)
 
         val matchingIssue = mockk<IssueData>()
-        every { matchingIssue.getProductType() } returns ProductType.OSS
         every { matchingIssue.name } returns "Another test name"
         every { matchingIssue.from } returns listOf("from")
         every { matchingIssue.upgradePath } returns listOf("upgradePath")
@@ -67,7 +63,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.cvssScore() } returns "cvssScore"
         every { issue.id() } returns "id"
         every { issue.ruleId() } returns "ruleId"
-        every { issue.additionalData.getProductType() } returns ProductType.OSS
+        every { issue.filterableIssueType } returns ScanIssue.OPEN_SOURCE
         every { issue.additionalData.name } returns "Test name"
         every { issue.additionalData.matchingIssues } returns matchingIssues
         every { issue.additionalData.fixedIn } returns listOf("fixedIn")
@@ -76,39 +72,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every {
             issue.additionalData.dataFlow
         } returns emptyList()
-    }
-
-    fun `test createUI should build the right panels for Snyk OSS if HTML not allowed`() {
-        every { issue.canLoadSuggestionPanelFromHTML() } returns false
-
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
-
-        val issueNaming = getJLabelByText(cut, issue.issueNaming())
-        assertNotNull(issueNaming)
-
-        val cvssScore = getActionLinkByText(cut, "CVSS cvssScore")
-        assertNotNull(cvssScore)
-
-        val ruleId = getActionLinkByText(cut, "ID")
-        assertNotNull(ruleId)
-
-        val overviewPanel = getJLabelByText(cut, "<html>Test message</html>")
-        assertNull(overviewPanel)
-
-        val dataFlowPanel = getJPanelByName(cut, "dataFlowPanel")
-        assertNull(dataFlowPanel)
-
-        val fixExamplesPanel = getJPanelByName(cut, "fixExamplesPanel")
-        assertNull(fixExamplesPanel)
-
-        val introducedThroughPanel = getJPanelByName(cut, "introducedThroughPanel")
-        assertNotNull(introducedThroughPanel)
-
-        val detailedPathsPanel = getJPanelByName(cut, "detailedPathsPanel")
-        assertNotNull(detailedPathsPanel)
-
-        val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
-        assertNotNull(ossOverviewPanel)
     }
 
     fun `test createUI should build panel with HTML from details if allowed`() {

@@ -1,8 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
-package snyk.common.lsp
+package snyk.common.lsp.hovers
 
-import com.intellij.markdown.utils.convertMarkdownToHtml
 import com.intellij.model.Pointer
 import com.intellij.openapi.Disposable
 import com.intellij.platform.backend.documentation.DocumentationResult
@@ -18,7 +17,9 @@ import org.eclipse.lsp4j.Hover
 import org.eclipse.lsp4j.HoverParams
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.TextDocumentIdentifier
+import snyk.common.lsp.LanguageServerWrapper
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 class SnykDocumentationTargetPointer(private val documentationTarget: DocumentationTarget) :
     Pointer<DocumentationTarget> {
@@ -46,10 +47,14 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
             TextDocumentIdentifier(file.virtualFile.toLanguageServerURL()),
             Position(lineNumber, offset - lineStartOffset)
         )
-        val hover =
-            languageServerWrapper.languageServer.textDocumentService.hover(hoverParams).get(2000, TimeUnit.MILLISECONDS)
-        if (hover == null || hover.contents.right.value.isEmpty()) return mutableListOf()
-        return mutableListOf(SnykDocumentationTarget(hover))
+        try {
+            val hover =
+                languageServerWrapper.languageServer.textDocumentService.hover(hoverParams).get(5, TimeUnit.SECONDS)
+            if (hover == null || hover.contents.right.value.isEmpty()) return mutableListOf()
+            return mutableListOf(SnykDocumentationTarget(hover))
+        } catch (ignored: TimeoutException) {
+            return mutableListOf()
+        }
     }
 
     inner class SnykDocumentationTarget(private val hover: Hover) : DocumentationTarget {

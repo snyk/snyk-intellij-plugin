@@ -8,35 +8,29 @@ import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.cancelOssIndicator
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
-import io.snyk.plugin.getIacService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
-import io.snyk.plugin.isOssRunning
-import io.snyk.plugin.isSnykCodeRunning
-import io.snyk.plugin.isSnykIaCLSEnabled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.TestOnly
-import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.ScanState
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 @Service(Service.Level.PROJECT)
 class SnykTaskQueueService(val project: Project) {
     private val logger = logger<SnykTaskQueueService>()
     private val taskQueue = BackgroundTaskQueue(project, "Snyk")
-    private val taskQueueIac = BackgroundTaskQueue(project, "Snyk: Iac")
     private val taskQueueContainer = BackgroundTaskQueue(project, "Snyk: Container")
 
     private val settings
@@ -51,12 +45,6 @@ class SnykTaskQueueService(val project: Project) {
     private val taskQueuePublisher
         get() = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
 
-    var ossScanProgressIndicator: ProgressIndicator? = null
-        private set
-
-    var iacScanProgressIndicator: ProgressIndicator? = null
-        private set
-
     var containerScanProgressIndicator: ProgressIndicator? = null
         private set
 
@@ -66,6 +54,8 @@ class SnykTaskQueueService(val project: Project) {
     fun connectProjectToLanguageServer(project: Project) {
         // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.ensureLanguageServerInitialized()
+
         getSnykToolWindowPanel(project)?.let {
             project.messageBus.connect(it)
                 .subscribe(
@@ -77,20 +67,12 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 )
         }
-        // Try to connect project for up to 30s
-        for (tries in 1..300) {
-            if (!languageServerWrapper.isInitialized) {
-                Thread.sleep(100)
-                continue
-            }
 
-            languageServerWrapper.addContentRoots(project)
-            break
-        }
+        languageServerWrapper.addContentRoots(project)
     }
 
     fun scan() {
-        taskQueue.run(object : Task.Backgroundable(project, "Snyk: initializing...", true) {
+        taskQueue.run(object : Task.Backgroundable(project, "Snyk: triggering scan", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return
 
@@ -103,11 +85,6 @@ class SnykTaskQueueService(val project: Project) {
 
                 LanguageServerWrapper.getInstance().sendScanCommand(project)
 
-                if (settings.iacScanEnabled) {
-                    if (!isSnykIaCLSEnabled()) {
-                        scheduleIacScan()
-                    }
-                }
                 if (settings.containerScanEnabled) {
                     scheduleContainerScan()
                 }
@@ -142,7 +119,7 @@ class SnykTaskQueueService(val project: Project) {
 
                 if (indicator.isCanceled) {
                     logger.debug("cancel container scan")
-                    taskQueuePublisher?.stopped(wasContainerRunning = true)
+                    taskQueuePublisher?.stopped()
                 } else {
                     if (containerResult.isSuccessful()) {
                         logger.debug("Container result: ->")
@@ -155,49 +132,6 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 }
                 logger.debug("Container scan completed")
-                refreshAnnotationsForOpenFiles(project)
-            }
-        })
-    }
-
-    private fun scheduleIacScan() {
-        taskQueueIac.run(object : Task.Backgroundable(project, "Snyk Infrastructure as Code is scanning", true) {
-            override fun run(indicator: ProgressIndicator) {
-                if (!isCliInstalled()) return
-                val snykCachedResults = getSnykCachedResults(project) ?: return
-                if (snykCachedResults.currentIacResult?.iacScanNeeded == false) return
-                logger.debug("Starting IaC scan")
-                iacScanProgressIndicator = indicator
-                scanPublisher?.scanningStarted()
-
-                snykCachedResults.currentIacResult = null
-                val iacResult = try {
-                    getIacService(project)?.scan()
-                } finally {
-                    iacScanProgressIndicator = null
-                }
-                if (iacResult == null || project.isDisposed) return
-
-                if (indicator.isCanceled) {
-                    logger.debug("cancel IaC scan")
-                    taskQueuePublisher?.stopped(wasIacRunning = true)
-                } else {
-                    if (iacResult.isSuccessful()) {
-                        logger.debug("IaC result: ->")
-                        iacResult.allCliIssues?.forEach {
-                            logger.debug("  ${it.targetFile}, ${it.infrastructureAsCodeIssues.size} issues")
-                        }
-                        scanPublisher?.scanningIacFinished(iacResult)
-                    } else {
-                        val error = iacResult.getFirstError()
-                        if (error == null) {
-                            SnykError("unknown IaC error", project.basePath ?: "")
-                        } else {
-                            scanPublisher?.scanningIacError(error)
-                        }
-                    }
-                }
-                logger.debug("IaC scan completed")
                 refreshAnnotationsForOpenFiles(project)
             }
         })
@@ -236,18 +170,15 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun stopScan() {
-        val wasOssRunning = isOssRunning(project)
-        cancelOssIndicator(project)
+        val languageServerWrapper = LanguageServerWrapper.getInstance()
 
-        val wasSnykCodeRunning = isSnykCodeRunning(project)
+        if (languageServerWrapper.isInitialized) {
+            languageServerWrapper.languageClient.progressManager.cancelProgresses()
+            ScanState.scanInProgress.clear()
+        }
 
-        val wasIacRunning = iacScanProgressIndicator?.isRunning == true
-        iacScanProgressIndicator?.cancel()
-
-        val wasContainerRunning = containerScanProgressIndicator?.isRunning == true
         containerScanProgressIndicator?.cancel()
-
-        taskQueuePublisher?.stopped(wasOssRunning, wasSnykCodeRunning, wasIacRunning, wasContainerRunning)
+        taskQueuePublisher?.stopped()
     }
 
     companion object {

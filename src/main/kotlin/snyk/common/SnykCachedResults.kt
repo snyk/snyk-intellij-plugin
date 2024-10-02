@@ -6,6 +6,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import io.ktor.util.collections.ConcurrentMap
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
@@ -18,7 +19,6 @@ import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
 import snyk.container.ContainerService
-import snyk.iac.IacResult
 
 @Service(Service.Level.PROJECT)
 class SnykCachedResults(
@@ -40,16 +40,14 @@ class SnykCachedResults(
 
     fun isDisposed() = disposed
 
-    val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-    val currentOSSResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
+    val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
+    val currentOSSResultsLS: ConcurrentMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
 
-    val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
+    val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
     var currentContainerResult: ContainerResult? = null
         get() = if (field?.isExpired() == false) field else null
 
-    val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = mutableMapOf()
-    var currentIacResult: IacResult? = null
-        get() = if (field?.isExpired() == false) field else null
+    val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
 
     var currentOssError: SnykError? = null
     var currentContainerError: SnykError? = null
@@ -58,7 +56,6 @@ class SnykCachedResults(
 
     fun cleanCaches() {
         currentContainerResult = null
-        currentIacResult = null
         currentOssError = null
         currentContainerError = null
         currentIacError = null
@@ -81,22 +78,8 @@ class SnykCachedResults(
                     currentContainerError = null
                 }
 
-                override fun scanningIacFinished(iacResult: IacResult) {
-                    currentIacResult = iacResult
-                }
-
                 override fun scanningContainerFinished(containerResult: ContainerResult) {
                     currentContainerResult = containerResult
-                }
-
-                override fun scanningIacError(snykError: SnykError) {
-                    currentIacResult = null
-                    currentIacError =
-                        when {
-                            snykError.message.startsWith(SnykToolWindowPanel.NO_IAC_FILES) -> null
-                            snykError.message.startsWith(SnykToolWindowPanel.AUTH_FAILED_TEXT) -> null
-                            else -> snykError
-                        }
                 }
 
                 override fun scanningContainerError(snykError: SnykError) {
@@ -125,8 +108,8 @@ class SnykCachedResults(
                 }
 
                 override fun scanningSnykCodeFinished() = Unit
-
                 override fun scanningOssFinished() = Unit
+                override fun scanningIacFinished() = Unit
 
                 override fun scanningError(snykScan: SnykScanParams) {
                     when (snykScan.product) {
@@ -185,7 +168,7 @@ class SnykCachedResults(
                     snykFile: SnykFile,
                     issueList: List<ScanIssue>
                 ) {
-
+                    if (!snykFile.isInContent()) return
                     when (product) {
                         LsProductConstants.OpenSource.value -> {
                             currentOSSResultsLS[snykFile] = issueList
@@ -196,7 +179,7 @@ class SnykCachedResults(
                         }
 
                         LsProductConstants.InfrastructureAsCode.value -> {
-
+                            currentIacResultsLS[snykFile] = issueList
                         }
 
                         LsProductConstants.Container.value -> {

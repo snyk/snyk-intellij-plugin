@@ -12,7 +12,6 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContainerService
-import io.snyk.plugin.getIacService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
@@ -26,7 +25,6 @@ import org.awaitility.Awaitility.await
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.container.ContainerResult
-import snyk.iac.IacResult
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.util.concurrent.TimeUnit
 
@@ -77,7 +75,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
 
         assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
-        assertNull(snykTaskQueueService.ossScanProgressIndicator)
     }
     fun testCliDownloadBeforeScanIfNeeded() {
         setupAppSettingsForDownloadTests()
@@ -138,27 +135,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val settings = pluginSettings()
 
         assertNull(settings.localCodeEngineEnabled)
-    }
-
-    fun testIacScanTriggeredAndProduceResults() {
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = pluginSettings()
-        settings.ossScanEnable = false
-        settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
-        settings.iacScanEnabled = true
-        getSnykCachedResults(project)?.currentIacResult = null
-
-        val fakeIacResult = IacResult(emptyList())
-
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns true
-        every { getIacService(project)?.scan() } returns fakeIacResult
-
-        snykTaskQueueService.scan()
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        assertEquals(fakeIacResult, getSnykCachedResults(project)?.currentIacResult)
     }
 
     fun testContainerScanTriggeredAndProduceResults() {

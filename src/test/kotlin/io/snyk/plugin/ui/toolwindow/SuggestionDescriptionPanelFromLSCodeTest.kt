@@ -19,8 +19,6 @@ import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import snyk.UIComponentFinder.getJBCEFBrowser
 import snyk.UIComponentFinder.getJLabelByText
-import snyk.UIComponentFinder.getJPanelByName
-import snyk.common.ProductType
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.CommitChangeLine
 import snyk.common.lsp.DataFlow
@@ -62,7 +60,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every { issue.cvssV3() } returns null
         every { issue.cvssScore() } returns null
         every { issue.id() } returns "id"
-        every { issue.additionalData.getProductType() } returns ProductType.CODE_SECURITY
+        every { issue.filterableIssueType } returns ScanIssue.CODE_SECURITY
         every { issue.additionalData.message } returns "Test message"
         every { issue.additionalData.repoDatasetSize } returns 1
         every { issue.additionalData.exampleCommitFixes } returns
@@ -77,45 +75,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every {
             issue.additionalData.dataFlow
         } returns listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), ""))
-    }
-
-    fun `test createUI should build the right panels for Snyk Code if HTML is not allowed`() {
-        every { issue.canLoadSuggestionPanelFromHTML() } returns false
-
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
-
-        val issueNaming = getJLabelByText(cut, issue.issueNaming())
-        assertNotNull(issueNaming)
-
-        val overviewPanel = getJLabelByText(cut, "<html>Test message</html>")
-        assertNotNull(overviewPanel)
-
-        val dataFlowPanel = getJPanelByName(cut, "dataFlowPanel")
-        assertNotNull(dataFlowPanel)
-
-        val fixExamplesPanel = getJPanelByName(cut, "fixExamplesPanel")
-        assertNotNull(fixExamplesPanel)
-
-        val introducedThroughPanel = getJPanelByName(cut, "introducedThroughPanel")
-        assertNull(introducedThroughPanel)
-
-        val detailedPathsPanel = getJPanelByName(cut, "detailedPathsPanel")
-        assertNull(detailedPathsPanel)
-
-        val ossOverviewPanel = getJPanelByName(cut, "overviewPanel")
-        assertNull(ossOverviewPanel)
-    }
-
-    fun `test createUI should build panel with issue message as overview label if HTML is not allowed`() {
-        every { issue.canLoadSuggestionPanelFromHTML() } returns false
-
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
-
-        val actual = getJLabelByText(cut, "<html>Test message</html>")
-        assertNotNull(actual)
-
-        val actualBrowser = getJBCEFBrowser(cut)
-        assertNull(actualBrowser)
     }
 
     fun `test createUI should show nothing if HTML is allowed but JCEF is not supported`() {

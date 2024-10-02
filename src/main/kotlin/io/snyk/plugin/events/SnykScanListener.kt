@@ -3,7 +3,6 @@ package io.snyk.plugin.events
 import com.intellij.util.messages.Topic
 import snyk.common.SnykError
 import snyk.container.ContainerResult
-import snyk.iac.IacResult
 
 interface SnykScanListener {
     companion object {
@@ -12,10 +11,6 @@ interface SnykScanListener {
     }
 
     fun scanningStarted()
-
-    fun scanningIacFinished(iacResult: IacResult)
-
-    fun scanningIacError(snykError: SnykError)
 
     fun scanningContainerFinished(containerResult: ContainerResult)
 

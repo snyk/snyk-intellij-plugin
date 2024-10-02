@@ -1,11 +1,12 @@
 @file:Suppress("unused")
 
-package snyk.common.lsp
+package snyk.common.lsp.settings
 
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.components.service
 import io.snyk.plugin.pluginSettings
 import org.apache.commons.lang3.SystemUtils
+import snyk.common.lsp.FolderConfig
 import snyk.pluginInfo
 
 data class LanguageServerSettings(

@@ -72,10 +72,6 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningStarted() = updateActionsPresentation()
 
-                override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
-
-                override fun scanningIacError(snykError: SnykError) = updateActionsPresentation()
-
                 override fun scanningContainerFinished(containerResult: ContainerResult) = updateActionsPresentation()
 
                 override fun scanningContainerError(snykError: SnykError) = updateActionsPresentation()
@@ -91,6 +87,10 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
                     updateActionsPresentation()
                 }
 
+                override fun scanningIacFinished() {
+                    updateActionsPresentation()
+                }
+
                 override fun scanningError(snykScan: SnykScanParams) {
                     updateActionsPresentation()
                 }
@@ -102,12 +102,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
         project.messageBus.connect(this)
             .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped(
-                    wasOssRunning: Boolean,
-                    wasSnykCodeRunning: Boolean,
-                    wasIacRunning: Boolean,
-                    wasContainerRunning: Boolean
-                ) = updateActionsPresentation()
+                override fun stopped() = updateActionsPresentation()
             })
     }
 

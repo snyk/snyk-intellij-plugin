@@ -22,7 +22,6 @@ class SnykProjectManagerListener : ProjectManagerListener {
                 // limit clean up to TIMEOUT
                 try {
                     threadPool.submit {
-                        // lets all running ProgressIndicators release MUTEX first
                         val ls = LanguageServerWrapper.getInstance()
                         if (ls.isInitialized) {
                             ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFolders(project))

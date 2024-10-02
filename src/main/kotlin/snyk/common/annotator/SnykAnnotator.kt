@@ -23,6 +23,7 @@ import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.isInContent
 import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
@@ -247,7 +248,10 @@ abstract class SnykAnnotator(private val product: ProductType) :
 
     private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
         getSnykCachedResultsForProduct(psiFile.project, product)
-            ?.filter { it.key.virtualFile == psiFile.virtualFile }
+            ?.filter {
+                val virtualFile = it.key.virtualFile
+                virtualFile == psiFile.virtualFile && virtualFile.isInContent(psiFile.project)
+            }
             ?.map { it.value }
             ?.flatten()
             ?.toSet()

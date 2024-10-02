@@ -1,4 +1,5 @@
 @file:JvmName("UtilsKt")
+@file:Suppress("unused")
 
 package io.snyk.plugin
 
@@ -19,6 +20,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
@@ -157,37 +159,43 @@ fun isUrlValid(url: String?): Boolean {
 }
 
 fun isOssRunning(project: Project): Boolean {
-    val lsRunning = project.getContentRootVirtualFiles().any { vf ->
-        val key = ScanInProgressKey(vf, ProductType.OSS)
-        ScanState.scanInProgress[key] == true
-    }
-    val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
-    return lsRunning ||
-        (indicator != null && indicator.isRunning && !indicator.isCanceled)
+    return isProductScanRunning(project, ProductType.OSS)
 }
 
-fun cancelOssIndicator(project: Project) {
-    val indicator = getSnykTaskQueueService(project)?.ossScanProgressIndicator
-    indicator?.cancel()
+private fun isProductScanRunning(project: Project, productType: ProductType): Boolean {
+    return isProductScanRunning(project, productType, null)
+}
+
+private fun isProductScanRunning(
+    project: Project,
+    productType: ProductType,
+    progressIndicator: ProgressIndicator?
+): Boolean {
+    val lsRunning = project.getContentRootVirtualFiles().any { vf ->
+        val key = ScanInProgressKey(vf, productType)
+        ScanState.scanInProgress[key] == true
+    }
+    return lsRunning ||
+        (progressIndicator != null && progressIndicator.isRunning && !progressIndicator.isCanceled)
 }
 
 fun isSnykCodeRunning(project: Project): Boolean {
-    val lsRunning = project.getContentRootVirtualFiles().any { vf ->
-        val key = ScanInProgressKey(vf, ProductType.CODE_SECURITY)
-        ScanState.scanInProgress[key] == true
-    }
-
-    return lsRunning
+    return isProductScanRunning(project, ProductType.CODE_SECURITY) || isProductScanRunning(
+        project,
+        ProductType.CODE_QUALITY
+    )
 }
 
 fun isIacRunning(project: Project): Boolean {
-    val indicator = getSnykTaskQueueService(project)?.iacScanProgressIndicator
-    return indicator != null && indicator.isRunning && !indicator.isCanceled
+    return isProductScanRunning(project, ProductType.IAC)
 }
 
 fun isContainerRunning(project: Project): Boolean {
-    val indicator = getSnykTaskQueueService(project)?.containerScanProgressIndicator
-    return indicator != null && indicator.isRunning && !indicator.isCanceled
+    return isProductScanRunning(
+        project,
+        ProductType.CONTAINER,
+        getSnykTaskQueueService(project)?.containerScanProgressIndicator
+    )
 }
 
 fun isScanRunning(project: Project): Boolean =
@@ -215,10 +223,9 @@ fun controlExternalProcessWithProgressIndicator(
 
 fun isFileListenerEnabled(): Boolean = pluginSettings().fileListenerEnabled
 
-fun isSnykIaCLSEnabled(): Boolean = false
-
-
 fun isDocumentationHoverEnabled(): Boolean = Registry.get("snyk.isDocumentationHoverEnabled").asBoolean()
+
+fun isPreCommitCheckEnabled(): Boolean = Registry.get("snyk.issuesBlockCommit").asBoolean()
 
 fun getWaitForResultsTimeout(): Long =
     Registry.intValue(
@@ -235,7 +242,7 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
         null
     } else {
         try {
-            var psiFile : PsiFile? = null
+            var psiFile: PsiFile? = null
             ReadAction.run<RuntimeException> {
                 psiFile = PsiManager.getInstance(project).findFile(virtualFile)
             }
@@ -262,7 +269,9 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
             val psiFile = findPsiFileIgnoringExceptions(it, project)
             if (psiFile != null) {
                 invokeLater {
-                    DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+                    if (!psiFile.project.isDisposed) {
+                        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+                    }
                 }
             }
         }
@@ -427,6 +436,7 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
 }
 
 fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
+    if (this.isDisposed) return emptySet()
     var contentRoots = ProjectRootManager.getInstance(this).contentRoots
     if (contentRoots.isEmpty()) {
         // this should cover for the case when no content roots are configured, e.g. in rider
@@ -439,4 +449,9 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     return contentRoots
         .filter { it.exists() && it.isDirectory }
         .sortedBy { it.path }.toSet()
+}
+
+fun VirtualFile.isInContent(project: Project): Boolean {
+    val vf = this
+    return ReadAction.compute<Boolean, RuntimeException> { ProjectFileIndex.getInstance(project).isInContent(vf) }
 }

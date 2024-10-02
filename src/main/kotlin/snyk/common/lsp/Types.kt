@@ -1,4 +1,4 @@
-@file:Suppress("unused", "SENSELESS_COMPARISON", "UNNECESSARY_SAFE_CALL", "USELESS_ELVIS", "DuplicatedCode")
+@file:Suppress("unused", "DuplicatedCode")
 
 package snyk.common.lsp
 
@@ -8,22 +8,17 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
-import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
-import snyk.common.ProductType
 import java.util.Date
 import java.util.Locale
 import javax.swing.Icon
 
-// type CliOutput struct {
-//	Code         int    `json:"code,omitempty"`
-//	ErrorMessage string `json:"error,omitempty"`
-//	Path         string `json:"path,omitempty"`
-//	Command      string `json:"command,omitempty"`
-//}
-data class CliError (
+
+typealias FilterableIssueType = String
+
+data class CliError(
     val code: Int? = 0,
     val error: String? = null,
     val path: String? = null,
@@ -57,7 +52,6 @@ enum class LsProductConstants(val value: String) {
     }
 }
 
-
 // Define the ScanIssue data class
 data class ScanIssue(
     val id: String, // Unique key identifying an issue in the whole result set. Not the same as the Snyk issue ID.
@@ -67,8 +61,19 @@ data class ScanIssue(
     val range: Range,
     val additionalData: IssueData,
     var isIgnored: Boolean?,
+    var isNew: Boolean?,
+    var filterableIssueType: FilterableIssueType,
     var ignoreDetails: IgnoreDetails?,
 ) : Comparable<ScanIssue> {
+
+    companion object {
+        const val OPEN_SOURCE: FilterableIssueType = "Open Source"
+        const val CODE_SECURITY: FilterableIssueType = "Code Security"
+        const val CODE_QUALITY: FilterableIssueType = "Code Quality"
+        const val INFRASTRUCTURE_AS_CODE: FilterableIssueType = "Infrastructure As Code"
+        const val CONTAINER: FilterableIssueType = "Container"
+    }
+
     var textRange: TextRange? = null
         get() {
             return if (startOffset == null || endOffset == null) {
@@ -126,13 +131,13 @@ data class ScanIssue(
     }
 
     fun title(): String {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> this.title
-            ProductType.CODE_QUALITY -> {
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> this.title
+            CODE_QUALITY -> {
                 this.additionalData.message.split('.').firstOrNull() ?: "Unknown issue"
             }
 
-            ProductType.CODE_SECURITY -> {
+            CODE_SECURITY -> {
                 this.title.split(":").firstOrNull() ?: "Unknown issue"
             }
 
@@ -141,12 +146,12 @@ data class ScanIssue(
     }
 
     fun longTitle(): String {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> {
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> {
                 "${this.additionalData.packageName}@${this.additionalData.version}: ${this.title()}"
             }
 
-            ProductType.CODE_QUALITY, ProductType.CODE_SECURITY -> {
+            CODE_QUALITY, CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> {
                 return "${this.title()} [${this.range.start.line + 1},${this.range.start.character}]"
             }
 
@@ -155,8 +160,8 @@ data class ScanIssue(
     }
 
     fun priority(): Int {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> {
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> {
                 return when (this.getSeverityAsEnum()) {
                     Severity.CRITICAL -> 4
                     Severity.HIGH -> 3
@@ -166,34 +171,35 @@ data class ScanIssue(
                 }
             }
 
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.priorityScore
+            CODE_QUALITY, CODE_SECURITY -> this.additionalData.priorityScore
             else -> TODO()
         }
     }
 
     fun issueNaming(): String {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> {
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> {
                 if (this.additionalData.license != null) {
                     "License"
                 } else {
-                    "Vulnerability"
+                    "Issue"
                 }
             }
 
-            ProductType.CODE_SECURITY -> "Vulnerability"
-            ProductType.CODE_QUALITY -> "Quality Issue"
+            CODE_SECURITY -> "Security Issue"
+            CODE_QUALITY -> "Quality Issue"
+            INFRASTRUCTURE_AS_CODE -> "Configuration Issue"
             else -> TODO()
         }
     }
 
     fun cwes(): List<String> {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> {
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> {
                 this.additionalData.identifiers?.CWE ?: emptyList()
             }
 
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
+            CODE_QUALITY, CODE_SECURITY -> {
                 this.additionalData.cwe ?: emptyList()
             }
 
@@ -202,101 +208,75 @@ data class ScanIssue(
     }
 
     fun cves(): List<String> {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> {
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> {
                 this.additionalData.identifiers?.CVE ?: emptyList()
             }
 
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> emptyList()
+            CODE_QUALITY, CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> emptyList()
             else -> TODO()
         }
     }
 
     fun cvssScore(): String? {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> this.additionalData.cvssScore
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
-            else -> TODO()
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> this.additionalData.cvssScore
+            else -> null
         }
     }
 
     fun cvssV3(): String? {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> this.additionalData.CVSSv3
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
-            else -> TODO()
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> this.additionalData.CVSSv3
+            else -> null
         }
     }
 
     fun id(): String? {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> this.additionalData.ruleId
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
-            else -> TODO()
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> this.additionalData.ruleId
+            else -> null
         }
     }
 
     fun ruleId(): String {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS, ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.ruleId
-            else -> TODO()
-        }
+        return this.additionalData.ruleId
     }
 
     fun icon(): Icon? {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> getIcon(this.additionalData.packageManager.lowercase(Locale.getDefault()))
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> null
-            else -> TODO()
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> getIcon(this.additionalData.packageManager.lowercase(Locale.getDefault()))
+            else -> null
         }
     }
 
     fun details(): String {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> this.additionalData.details ?: ""
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.details ?: ""
-            else -> TODO()
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> this.additionalData.details ?: ""
+            else -> this.additionalData.details ?: ""
         }
     }
 
     fun annotationMessage(): String {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> this.title + " in " + this.additionalData.packageName + " id: " + this.ruleId()
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY ->
+        return when (this.filterableIssueType) {
+            OPEN_SOURCE -> this.title + " in " + this.additionalData.packageName + " id: " + this.ruleId()
+            else ->
                 this.title.ifBlank {
                     this.additionalData.message.let {
                         if (it.length < 70) it else "${it.take(70)}..."
                     } + " (Snyk)"
                 }
 
-            else -> TODO()
         }
     }
 
-    fun canLoadSuggestionPanelFromHTML(): Boolean {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS -> true
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> this.additionalData.details != null
-
-            else -> TODO()
-        }
-    }
+    fun canLoadSuggestionPanelFromHTML(): Boolean = true
 
     fun hasAIFix(): Boolean {
-        return when (this.additionalData.getProductType()) {
-            ProductType.OSS ->
-                this.additionalData.isUpgradable
-
-            ProductType.CODE_SECURITY, ProductType.CODE_QUALITY -> {
-                this.additionalData.hasAIFix
-            }
-            else -> TODO()
-        }
+        return this.additionalData.isUpgradable || this.additionalData.hasAIFix
     }
 
-    fun isIgnored(): Boolean {
-        return pluginSettings().isGlobalIgnoresFeatureEnabled && this.isIgnored == true
-    }
+    fun isIgnored(): Boolean = this.isIgnored == true
 
     fun getSeverityAsEnum(): Severity {
         return when (severity) {
@@ -416,6 +396,7 @@ data class DataFlow(
     @SerializedName("content") val content: String,
 )
 
+@Suppress("PropertyName")
 data class IssueData(
     // Code
     @SerializedName("message") val message: String,
@@ -453,131 +434,33 @@ data class IssueData(
     @SerializedName("displayTargetFile") val displayTargetFile: String?,
     @SerializedName("matchingIssues") val matchingIssues: List<IssueData>,
     @SerializedName("lesson") val lesson: String?,
-    // Code and OSS
+    // IAC
+    @SerializedName("publicId") val publicId: String,
+    @SerializedName("documentation") val documentation: String,
+    @SerializedName("lineNumber") val lineNumber: String,
+    @SerializedName("issue") val issue: String,
+    @SerializedName("impact") val impact: String,
+    @SerializedName("resolve") val resolve: String,
+    @SerializedName("path") val path: List<String>,
+    @SerializedName("references") val references: List<String>,
+    @SerializedName("customUIContent") val customUIContent: String,
+
+    // all
+    @SerializedName("key") val key: String,
     @SerializedName("ruleId") val ruleId: String,
     @SerializedName("details") val details: String?,
 ) {
-    fun getProductType(): ProductType {
-        // TODO: how else to differentiate?
-        if (this.packageManager != null) {
-            return ProductType.OSS
-        }
-        if (this.message != null) {
-            return if (this.isSecurityType) {
-                ProductType.CODE_SECURITY
-            } else {
-                ProductType.CODE_QUALITY
-            }
-        }
-        throw IllegalStateException("Not defined type of IssueData")
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
         other as IssueData
 
-        if (this.getProductType() == ProductType.OSS) {
-            if (ruleId != other.ruleId) return false
-            if (license != other.license) return false
-            if (identifiers != other.identifiers) return false
-            if (description != other.description) return false
-            if (language != other.language) return false
-            if (packageManager != other.packageManager) return false
-            if (packageName != other.packageName) return false
-            if (name != other.name) return false
-            if (version != other.version) return false
-            if (exploit != other.exploit) return false
-            if (CVSSv3 != other.CVSSv3) return false
-            if (cvssScore != other.cvssScore) return false
-            if (fixedIn != other.fixedIn) return false
-            if (from != other.from) return false
-            if (upgradePath != other.upgradePath) return false
-            if (isPatchable != other.isPatchable) return false
-            if (isUpgradable != other.isUpgradable) return false
-            if (projectName != other.projectName) return false
-            if (displayTargetFile != other.displayTargetFile) return false
-            if (matchingIssues != other.matchingIssues) return false
-            if (lesson != other.lesson) return false
-            if (details != other.details) return false
-
-            return true
-        }
-
-        if (message != other.message) return false
-        if (leadURL != other.leadURL) return false
-        if (rule != other.rule) return false
-        if (ruleId != other.ruleId) return false
-        if (repoDatasetSize != other.repoDatasetSize) return false
-        if (exampleCommitFixes != other.exampleCommitFixes) return false
-        if (cwe != other.cwe) return false
-        if (text != other.text) return false
-        if (markers != other.markers) return false
-        if (cols != null) {
-            if (other.cols == null) return false
-            if (!cols.contentEquals(other.cols)) return false
-        } else if (other.cols != null) {
-            return false
-        }
-        if (rows != null) {
-            if (other.rows == null) return false
-            if (!rows.contentEquals(other.rows)) return false
-        } else if (other.rows != null) {
-            return false
-        }
-        if (isSecurityType != other.isSecurityType) return false
-        if (priorityScore != other.priorityScore) return false
-        if (hasAIFix != other.hasAIFix) return false
-        if (dataFlow != other.dataFlow) return false
-        if (details != other.details) return false
-
-        return true
+        return this.key == other.key
     }
 
     override fun hashCode(): Int {
-        if (this.getProductType() == ProductType.OSS) {
-            var result = ruleId.hashCode()
-            result = 31 * result + description.hashCode()
-            result = 31 * result + (license?.hashCode() ?: 0)
-            result = 31 * result + (identifiers?.hashCode() ?: 0)
-            result = 31 * result + language.hashCode()
-            result = 31 * result + packageManager.hashCode()
-            result = 31 * result + packageName.hashCode()
-            result = 31 * result + name.hashCode()
-            result = 31 * result + version.hashCode()
-            result = 31 * result + (exploit?.hashCode() ?: 0)
-            result = 31 * result + (CVSSv3?.hashCode() ?: 0)
-            result = 31 * result + (cvssScore?.hashCode() ?: 0)
-            result = 31 * result + (fixedIn?.hashCode() ?: 0)
-            result = 31 * result + from.hashCode()
-            result = 31 * result + upgradePath.hashCode()
-            result = 31 * result + isPatchable.hashCode()
-            result = 31 * result + (isUpgradable?.hashCode() ?: 0)
-            result = 31 * result + displayTargetFile.hashCode()
-            result = 31 * result + (details?.hashCode() ?: 0)
-            result = 31 * result + (matchingIssues?.hashCode() ?: 0)
-            result = 31 * result + (lesson?.hashCode() ?: 0)
-            return result
-        }
-
-        var result = message.hashCode()
-        result = 31 * result + (leadURL?.hashCode() ?: 0)
-        result = 31 * result + rule.hashCode()
-        result = 31 * result + ruleId.hashCode()
-        result = 31 * result + repoDatasetSize
-        result = 31 * result + exampleCommitFixes.hashCode()
-        result = 31 * result + (cwe?.hashCode() ?: 0)
-        result = 31 * result + text.hashCode()
-        result = 31 * result + (markers?.hashCode() ?: 0)
-        result = 31 * result + (cols?.contentHashCode() ?: 0)
-        result = 31 * result + (rows?.contentHashCode() ?: 0)
-        result = 31 * result + isSecurityType.hashCode()
-        result = 31 * result + priorityScore
-        result = 31 * result + hasAIFix.hashCode()
-        result = 31 * result + dataFlow.hashCode()
-        result = 31 * result + details.hashCode()
-        return result
+        return this.key.hashCode()
     }
 }
 
@@ -597,6 +480,7 @@ data class IgnoreDetails(
     @SerializedName("ignoredBy") val ignoredBy: String,
 )
 
+@Suppress("PropertyName")
 data class OssIdentifiers(
     @SerializedName("CWE") val CWE: List<String>?,
     @SerializedName("CVE") val CVE: List<String>?,

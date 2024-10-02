@@ -9,7 +9,7 @@ import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.FolderConfig
-import snyk.common.lsp.FolderConfigSettings
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -68,7 +68,6 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
         }
         runAsync {
             LanguageServerWrapper.getInstance().updateConfiguration()
-            LanguageServerWrapper.getInstance().sendScanCommand(project)
         }
     }
 

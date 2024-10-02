@@ -1,29 +1,31 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
-import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
+import com.intellij.openapi.editor.colors.EditorColors
+import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.jcef.ApplyFixHandler
+import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
+import io.snyk.plugin.ui.jcef.toHex
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
-import snyk.common.ProductType
 import snyk.common.lsp.ScanIssue
 import stylesheets.SnykStylesheets
 import java.awt.BorderLayout
 import java.awt.Font
-import java.nio.file.Paths
 import javax.swing.JLabel
 import javax.swing.JPanel
 import kotlin.collections.set
@@ -40,21 +42,19 @@ class SuggestionDescriptionPanelFromLS(
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
     init {
-        if (issue.canLoadSuggestionPanelFromHTML()) {
-            val loadHandlerGenerators: MutableList<LoadHandlerGenerator> =
-                emptyList<LoadHandlerGenerator>().toMutableList()
+        val loadHandlerGenerators: MutableList<LoadHandlerGenerator> =
+            emptyList<LoadHandlerGenerator>().toMutableList()
 
-            loadHandlerGenerators += {
-                ThemeBasedStylingGenerator().generate(it)
-            }
+        // TODO: replace directly in HTML instead of JS
+        loadHandlerGenerators += {
+            ThemeBasedStylingGenerator().generate(it)
+        }
 
-            if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
-                issue.additionalData.getProductType() == ProductType.CODE_QUALITY
-            ) {
+        when (issue.filterableIssueType) {
+            ScanIssue.CODE_QUALITY, ScanIssue.CODE_SECURITY -> {
                 val virtualFiles = LinkedHashMap<String, VirtualFile?>()
                 for (dataFlow in issue.additionalData.dataFlow) {
-                    virtualFiles[dataFlow.filePath] =
-                        VirtualFileManager.getInstance().findFileByNioPath(Paths.get(dataFlow.filePath))
+                    virtualFiles[dataFlow.filePath] = dataFlow.filePath.toVirtualFile()
                 }
 
                 val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile.project, virtualFiles)
@@ -72,32 +72,30 @@ class SuggestionDescriptionPanelFromLS(
                     applyFixHandler.generateApplyFixCommand(it)
                 }
             }
-            val html = this.getCustomCssAndScript()
-            val jbCefBrowserComponent =
-                JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
-            if (jbCefBrowserComponent == null) {
-                val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
-                this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
-                SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
-            } else {
-                val lastRowToAddSpacer = 5
-                val panel =
-                    JPanel(
-                        GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
-                    ).apply {
-                        this.add(
-                            jbCefBrowserComponent,
-                            panelGridConstraints(1),
-                        )
-                    }
-                this.add(
-                    wrapWithScrollPane(panel),
-                    BorderLayout.CENTER,
-                )
-                this.add(panel)
-            }
+        }
+        val html = this.getCustomCssAndScript()
+        val jbCefBrowserComponent =
+            JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
+        if (jbCefBrowserComponent == null) {
+            val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
+            this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
+            SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
         } else {
-            createUI()
+            val lastRowToAddSpacer = 5
+            val panel =
+                JPanel(
+                    GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
+                ).apply {
+                    this.add(
+                        jbCefBrowserComponent,
+                        panelGridConstraints(1),
+                    )
+                }
+            this.add(
+                wrapWithScrollPane(panel),
+                BorderLayout.CENTER,
+            )
+            this.add(panel)
         }
     }
 
@@ -117,60 +115,80 @@ class SuggestionDescriptionPanelFromLS(
             JPanel(
                 GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
             ).apply {
-                if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
-                    issue.additionalData.getProductType() == ProductType.CODE_QUALITY
-                ) {
-                    this.add(
-                        SnykCodeOverviewPanel(issue.additionalData),
-                        panelGridConstraints(2),
-                    )
-                    this.add(
-                        SnykCodeDataflowPanel(project, issue.additionalData),
-                        panelGridConstraints(3),
-                    )
-                    this.add(
-                        SnykCodeExampleFixesPanel(issue.additionalData),
-                        panelGridConstraints(4),
-                    )
-                } else if (issue.additionalData.getProductType() == ProductType.OSS) {
-                    this.add(
-                        SnykOSSIntroducedThroughPanel(issue.additionalData),
-                        baseGridConstraintsAnchorWest(1, indent = 0),
-                    )
-                    this.add(
-                        SnykOSSDetailedPathsPanel(issue.additionalData),
-                        panelGridConstraints(2),
-                    )
-                    this.add(
-                        SnykOSSOverviewPanel(issue.additionalData),
-                        panelGridConstraints(3),
-                    )
-                } else {
-                    TODO()
+                when (issue.filterableIssueType) {
+                    ScanIssue.CODE_SECURITY, ScanIssue.CODE_QUALITY -> {
+                        this.add(
+                            SnykCodeOverviewPanel(issue.additionalData),
+                            panelGridConstraints(2),
+                        )
+                        this.add(
+                            SnykCodeDataflowPanel(project, issue.additionalData),
+                            panelGridConstraints(3),
+                        )
+                        this.add(
+                            SnykCodeExampleFixesPanel(issue.additionalData),
+                            panelGridConstraints(4),
+                        )
+                    }
+
+                    ScanIssue.OPEN_SOURCE -> {
+                        this.add(
+                            SnykOSSIntroducedThroughPanel(issue.additionalData),
+                            baseGridConstraintsAnchorWest(1, indent = 0),
+                        )
+                        this.add(
+                            SnykOSSDetailedPathsPanel(issue.additionalData),
+                            panelGridConstraints(2),
+                        )
+                        this.add(
+                            SnykOSSOverviewPanel(issue.additionalData),
+                            panelGridConstraints(3),
+                        )
+                    }
+
+                    else -> {
+                        // do nothing
+                    }
                 }
             }
         return Pair(panel, lastRowToAddSpacer)
     }
 
     fun getCustomCssAndScript(): String {
-        var html = issue.details()
+        var html = issue.details().ifBlank { issue.additionalData.customUIContent }
         val ideScript = getCustomScript()
-        var ideStyle = ""
-        if (issue.additionalData.getProductType() == ProductType.CODE_SECURITY ||
-            issue.additionalData.getProductType() == ProductType.CODE_QUALITY
-        ) {
-            ideStyle = SnykStylesheets.SnykCodeSuggestion
-        } else if (issue.additionalData.getProductType() == ProductType.OSS) {
-            ideStyle = SnykStylesheets.SnykOSSSuggestion
+
+        // TODO: remove custom stylesheets, deliver variables from LS, replace variables with colors
+        val ideStyle: String = when (issue.filterableIssueType) {
+            ScanIssue.CODE_SECURITY, ScanIssue.CODE_QUALITY -> SnykStylesheets.SnykCodeSuggestion
+            ScanIssue.OPEN_SOURCE -> SnykStylesheets.SnykOSSSuggestion
+            else -> ""
         }
+
+        val editorColorsManager = EditorColorsManager.getInstance()
+        val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
         html = html.replace("\${headerEnd}", "")
         html = html.replace("\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
 
+
         val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
-
+        html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
+        html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
+        html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
+        html =
+            html.replace("var(--border-color)", JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex())
+        html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())
+        html = html.replace(
+            "var(--horizontal-border-color)",
+            JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
+        )
+        html = html.replace(
+            "var(--code-background-color)",
+            editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
+        )
         return html
     }
 

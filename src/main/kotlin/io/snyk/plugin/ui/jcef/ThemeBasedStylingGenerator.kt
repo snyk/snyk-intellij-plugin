@@ -10,9 +10,13 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
 
+fun Color.toHex() = ThemeBasedStylingGenerator.toCssHex(this)
+
 class ThemeBasedStylingGenerator {
-    fun toCssHex(color: Color): String {
-        return "#%02x%02x%02x".format(color.red, color.green, color.blue)
+    companion object {
+        fun toCssHex(color: Color): String {
+            return "#%02x%02x%02x".format(color.red, color.green, color.blue)
+        }
     }
 
     @Suppress("UNUSED_PARAMETER")

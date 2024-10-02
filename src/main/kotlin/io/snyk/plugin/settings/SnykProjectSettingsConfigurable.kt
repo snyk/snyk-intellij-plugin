@@ -20,7 +20,7 @@ import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
-import snyk.common.lsp.FolderConfigSettings
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.LanguageServerWrapper
 import javax.swing.JComponent
 
@@ -49,7 +49,7 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
-            snykSettingsDialog.getNetNewIssuesSelected() != settingsStateService.netNewIssues ||
+            snykSettingsDialog.getDisplayIssuesSelection() != settingsStateService.displayAllIssues ||
 
             isAuthenticationMethodModified()
 
@@ -119,12 +119,13 @@ class SnykProjectSettingsConfigurable(
                 handleReleaseChannelChanged()
             }
 
-            if (snykSettingsDialog.getNetNewIssuesSelected() != pluginSettings().netNewIssues) {
-                settingsStateService.netNewIssues = snykSettingsDialog.getNetNewIssuesSelected()
+            if (snykSettingsDialog.getDisplayIssuesSelection() != pluginSettings().displayAllIssues) {
+                settingsStateService.displayAllIssues = snykSettingsDialog.getDisplayIssuesSelection()
                 val cache = getSnykCachedResults(project)
                 cache?.currentOSSResultsLS?.clear()
                 cache?.currentSnykCodeResultsLS?.clear()
-                // TODO when we enable iac add cache cleaning here, when we have container, we can use cleanCaches()
+                cache?.currentIacResultsLS?.clear()
+                getSnykToolWindowPanel(project)?.getTree()?.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
             }
 
             LanguageServerWrapper.getInstance().updateConfiguration()

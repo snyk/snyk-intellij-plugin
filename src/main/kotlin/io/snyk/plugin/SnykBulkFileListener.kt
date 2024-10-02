@@ -49,7 +49,6 @@ import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
  *  - addressed at `before` state, old file processed to _clean_ caches
  */
 abstract class SnykBulkFileListener : BulkFileListener {
-
     /****************************** Before **************************/
 
     override fun before(events: List<VFileEvent>) {
