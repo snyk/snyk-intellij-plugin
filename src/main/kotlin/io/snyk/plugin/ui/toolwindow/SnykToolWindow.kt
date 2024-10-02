@@ -72,10 +72,6 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
 
                 override fun scanningStarted() = updateActionsPresentation()
 
-                override fun scanningIacFinished(iacResult: IacResult) = updateActionsPresentation()
-
-                override fun scanningIacError(snykError: SnykError) = updateActionsPresentation()
-
                 override fun scanningContainerFinished(containerResult: ContainerResult) = updateActionsPresentation()
 
                 override fun scanningContainerError(snykError: SnykError) = updateActionsPresentation()
