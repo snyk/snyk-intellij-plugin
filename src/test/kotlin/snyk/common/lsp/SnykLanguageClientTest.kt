@@ -30,7 +30,8 @@ import org.junit.Test
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.nio.file.Files
-import kotlin.io.path.Path
+import java.nio.file.Path
+import java.nio.file.Paths
 
 
 class SnykLanguageClientTest {
@@ -142,7 +143,7 @@ class SnykLanguageClientTest {
         val path = "abc"
         cut.addTrustedPaths(SnykTrustedFoldersParams(listOf(path)))
 
-        verify { trustServiceMock.addTrustedPath(eq(Path(path))) }
+        verify { trustServiceMock.addTrustedPath(Paths.get(path)) }
     }
 
     @Test
