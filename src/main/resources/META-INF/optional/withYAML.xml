@@ -1,6 +1,5 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
-    <externalAnnotator language="yaml" implementationClass="snyk.iac.annotator.IacYamlAnnotator"/>
     <externalAnnotator language="yaml" implementationClass="snyk.container.annotator.ContainerYamlAnnotator"/>
   </extensions>
 </idea-plugin>
