@@ -30,7 +30,6 @@ import org.junit.Test
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 
 
