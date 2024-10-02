@@ -155,7 +155,7 @@ fun getReadOnlyClickableHtmlJEditorPaneFixedSize(
 }
 
 fun getStandardLayout(rowCount: Int = 2, columnCount: Int = 2) =
-    GridLayoutManager(rowCount, columnCount, Insets(5, 5, 5, 5), -1, -1)
+    GridLayoutManager(rowCount, columnCount, JBUI.insets(5), -1, -1)
 
 fun getPanelWithColumns(rowCount: Int, columnCount: Int): JPanel =
     JPanel().apply { layout = getStandardLayout(rowCount, columnCount) }

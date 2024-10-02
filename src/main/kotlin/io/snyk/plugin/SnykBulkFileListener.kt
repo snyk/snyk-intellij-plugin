@@ -2,7 +2,6 @@ package io.snyk.plugin
 
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.isFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
