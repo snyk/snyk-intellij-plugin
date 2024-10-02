@@ -1,21 +1,27 @@
 package snyk.common.lsp
 
+import com.google.gson.Gson
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.vfs.VirtualFile
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.PublishDiagnosticsParams
+import org.eclipse.lsp4j.Range
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -23,13 +29,13 @@ import org.junit.Before
 import org.junit.Test
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
+import java.nio.file.Files
 import kotlin.io.path.Path
-import org.eclipse.lsp4j.Range
 
 
 class SnykLanguageClientTest {
     private lateinit var cut: SnykLanguageClient
-    private var snykPluginDisposable = SnykPluginDisposable()
+    private var snykPluginDisposable: SnykPluginDisposable? = null
 
     private val applicationMock: Application = mockk()
     private val projectMock: Project = mockk()
@@ -48,9 +54,11 @@ class SnykLanguageClientTest {
         every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
 
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
-        every { applicationMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable
         every { applicationMock.isDisposed } returns false
         every { applicationMock.messageBus } returns mockk(relaxed = true)
+
+        snykPluginDisposable = SnykPluginDisposable()
+        every { applicationMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable!!
 
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
         every { projectMock.isDisposed } returns false
@@ -58,6 +66,7 @@ class SnykLanguageClientTest {
         every { dumbServiceMock.isDumb } returns false
 
         every { pluginSettings() } returns settings
+
         mockkStatic("snyk.PluginInformationKt")
         every { pluginInfo } returns mockk(relaxed = true)
         every { pluginInfo.integrationName } returns "Snyk Intellij Plugin"
@@ -65,7 +74,6 @@ class SnykLanguageClientTest {
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
-        snykPluginDisposable = SnykPluginDisposable()
 
         cut = SnykLanguageClient()
     }
@@ -139,12 +147,21 @@ class SnykLanguageClientTest {
 
     @Test
     fun testGetScanIssues_validDiagnostics() {
+        val tempFile = Files.createTempFile("testGetScanIssues", ".java")
+        val filePath = tempFile.fileName.toString()
+        val vf = mockk<VirtualFile>(relaxed = true)
+        every { filePath.toVirtualFile() } returns vf
+        val document = mockk<Document>(relaxed = true)
+        every { vf.getDocument() } returns document
+        every { document.getLineStartOffset(any())} returns 0
+
+        val uri = tempFile.toUri().toString()
         val range = Range(Position(0, 0), Position(0, 1))
         // Create mock PublishDiagnosticsParams with diagnostics list
         val diagnostics: MutableList<Diagnostic> = ArrayList()
-        diagnostics.add(createMockDiagnostic(range, "Some Issue"))
-        diagnostics.add(createMockDiagnostic(range, "Another Issue"))
-        val diagnosticsParams = PublishDiagnosticsParams("test", diagnostics)
+        diagnostics.add(createMockDiagnostic(range, "Some Issue", filePath))
+        diagnostics.add(createMockDiagnostic(range, "Another Issue", filePath))
+        val diagnosticsParams = PublishDiagnosticsParams(uri, diagnostics)
 
         // Call scanIssues function
         val result: List<ScanIssue> = cut.getScanIssues(diagnosticsParams)
@@ -155,9 +172,9 @@ class SnykLanguageClientTest {
         assertEquals("Another Issue", result[1].title)
     }
 
-    private fun createMockDiagnostic(range: Range, message: String): Diagnostic {
-        val jsonString = """{"id": 12345, "title": "$message"}"""
-
+    private fun createMockDiagnostic(range: Range, message: String, filePath: String): Diagnostic {
+        val rangeString = Gson().toJson(range)
+        val jsonString = """{"id": 12345, "title": "$message", "filePath": "$filePath", "range": $rangeString}"""
         val mockDiagnostic = Diagnostic()
         mockDiagnostic.range = range
         mockDiagnostic.data = jsonString

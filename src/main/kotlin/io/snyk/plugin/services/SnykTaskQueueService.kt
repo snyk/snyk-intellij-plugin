@@ -54,6 +54,8 @@ class SnykTaskQueueService(val project: Project) {
     fun connectProjectToLanguageServer(project: Project) {
         // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()
+        languageServerWrapper.ensureLanguageServerInitialized()
+
         getSnykToolWindowPanel(project)?.let {
             project.messageBus.connect(it)
                 .subscribe(
@@ -65,16 +67,8 @@ class SnykTaskQueueService(val project: Project) {
                     }
                 )
         }
-        // Try to connect project for up to 30s
-        for (tries in 1..300) {
-            if (!languageServerWrapper.isInitialized) {
-                Thread.sleep(100)
-                continue
-            }
 
-            languageServerWrapper.addContentRoots(project)
-            break
-        }
+        languageServerWrapper.addContentRoots(project)
     }
 
     fun scan() {

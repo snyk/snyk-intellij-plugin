@@ -450,7 +450,6 @@ data class IssueData(
     @SerializedName("ruleId") val ruleId: String,
     @SerializedName("details") val details: String?,
 ) {
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
