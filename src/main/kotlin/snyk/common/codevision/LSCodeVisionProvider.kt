@@ -14,6 +14,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
+import io.snyk.plugin.isInContent
 import io.snyk.plugin.toLanguageServerURL
 import org.eclipse.lsp4j.CodeLens
 import org.eclipse.lsp4j.CodeLensParams
@@ -47,12 +48,14 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         if (LanguageServerWrapper.getInstance().isDisposed()) return CodeVisionState.READY_EMPTY
         if (!LanguageServerWrapper.getInstance().isInitialized) return CodeVisionState.READY_EMPTY
         val project = editor.project ?: return CodeVisionState.READY_EMPTY
+        if (!editor.virtualFile.isInContent(project)) return CodeVisionState.READY_EMPTY
 
         val document = editor.document
 
         val file = ReadAction.compute<PsiFile, RuntimeException> {
             PsiDocumentManager.getInstance(project).getPsiFile(document)
         } ?: return CodeVisionState.READY_EMPTY
+
 
         val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.toLanguageServerURL()))
         val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()

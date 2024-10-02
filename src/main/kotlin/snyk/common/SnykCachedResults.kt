@@ -168,7 +168,7 @@ class SnykCachedResults(
                     snykFile: SnykFile,
                     issueList: List<ScanIssue>
                 ) {
-
+                    if (!snykFile.isInContent()) return
                     when (product) {
                         LsProductConstants.OpenSource.value -> {
                             currentOSSResultsLS[snykFile] = issueList

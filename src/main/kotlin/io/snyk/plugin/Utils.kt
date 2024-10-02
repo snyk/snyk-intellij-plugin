@@ -5,6 +5,7 @@ package io.snyk.plugin
 
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.icons.ExpUiIcons.Run
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
@@ -20,6 +21,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
@@ -32,6 +34,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
+import com.jetbrains.rd.generator.nova.PredefinedType
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
@@ -448,4 +451,9 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     return contentRoots
         .filter { it.exists() && it.isDirectory }
         .sortedBy { it.path }.toSet()
+}
+
+fun VirtualFile.isInContent(project: Project): Boolean {
+    val vf = this
+    return ReadAction.compute<Boolean, RuntimeException> { ProjectFileIndex.getInstance(project).isInContent(vf) }
 }
