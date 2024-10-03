@@ -47,7 +47,9 @@ import io.snyk.plugin.ui.settings.IssueViewOptionsPanel
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
+import org.jetbrains.concurrency.runAsync
 import snyk.SnykBundle
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -376,41 +378,47 @@ class SnykSettingsDialog(
 
         /** Products and Severities selection ------------------ */
 
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
-            val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, JBUI.emptyInsets(), 30, -1))
-            issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
+        val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, JBUI.emptyInsets(), 30, -1))
+        issueViewPanel.isVisible = true
+        issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
 
-            val issueViewLabel = JLabel("Show the following issues:")
-            issueViewPanel.add(
-                issueViewLabel,
-                baseGridConstraintsAnchorWest(
-                    row = 0,
-                    indent = 0,
-                ),
-            )
+        val issueViewLabel = JLabel("Show the following issues:")
+        issueViewPanel.add(
+            issueViewLabel,
+            baseGridConstraintsAnchorWest(
+                row = 0,
+                indent = 0,
+            ),
+        )
 
-            rootPanel.add(
-                issueViewPanel,
-                baseGridConstraints(
-                    row = 1,
-                    anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                    fill = UIGridConstraints.FILL_HORIZONTAL,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    indent = 0,
-                ),
-            )
+        rootPanel.add(
+            issueViewPanel,
+            baseGridConstraints(
+                row = 1,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                fill = UIGridConstraints.FILL_HORIZONTAL,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                indent = 0,
+            ),
+        )
 
-            issueViewPanel.add(
-                this.issueViewOptionsPanel,
-                baseGridConstraints(
-                    row = 1,
-                    anchor = UIGridConstraints.ANCHOR_NORTHWEST,
-                    fill = UIGridConstraints.FILL_NONE,
-                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                    indent = 0,
-                ),
-            )
+        issueViewPanel.add(
+            this.issueViewOptionsPanel,
+            baseGridConstraints(
+                row = 1,
+                anchor = UIGridConstraints.ANCHOR_NORTHWEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                vSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                indent = 0,
+            ),
+        )
+
+        runAsync {
+            if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+                LanguageServerWrapper.getInstance().refreshFeatureFlags()
+            }
+            issueViewPanel.isVisible = pluginSettings().isGlobalIgnoresFeatureEnabled
         }
 
         val productAndSeveritiesPanel = JPanel(UIGridLayoutManager(2, 2, JBUI.emptyInsets(), 30, -1))
@@ -605,7 +613,7 @@ class SnykSettingsDialog(
         val netNewIssuesText =
             JLabel(
                 "Specifies whether to see only net new issues or all issues. " +
-                        "Only applies to Code Security and Code Quality."
+                    "Only applies to Code Security and Code Quality."
             ).apply { font = FontUtil.minusOne(this.font) }
 
         netNewIssuesPanel.add(

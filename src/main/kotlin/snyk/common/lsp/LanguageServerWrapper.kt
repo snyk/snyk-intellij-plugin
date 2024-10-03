@@ -261,7 +261,6 @@ class LanguageServerWrapper(
 
         initializeResult = languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
         languageServer.initialized(InitializedParams())
-        refreshFeatureFlags()
     }
 
     private fun getCapabilities(): ClientCapabilities =
@@ -346,6 +345,7 @@ class LanguageServerWrapper(
     fun sendScanCommand(project: Project) {
         if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
+            refreshFeatureFlags()
             getTrustedContentRoots(project).forEach {
                 sendFolderScanCommand(it.path, project)
             }
@@ -398,9 +398,17 @@ class LanguageServerWrapper(
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
-        } catch (ignored: Exception) {
-            // do nothing to not break UX for analytics
-            // TODO review
+        } catch (e: Exception) {
+            logger.error("error calling scan command from language server. re-initializing", e)
+            restart()
+        }
+    }
+
+    private fun restart() {
+        runAsync {
+            shutdown()
+            Thread.sleep(1000)
+            ensureLanguageServerInitialized()
         }
     }
 
