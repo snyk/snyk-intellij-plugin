@@ -200,16 +200,6 @@ class LanguageServerWrapper(
 
     private fun lsIsAlive() = ::process.isInitialized && process.isAlive
 
-    private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
-        val workspaceFolders = mutableSetOf<WorkspaceFolder>()
-        ProjectManager.getInstance().openProjects.forEach { project ->
-            if (!project.isDisposed) {
-                workspaceFolders.addAll(getWorkspaceFolders(project))
-            }
-        }
-        return workspaceFolders.toList()
-    }
-
     fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
         if (disposed || project.isDisposed) return emptySet()
         val normalizedRoots = getTrustedContentRoots(project)

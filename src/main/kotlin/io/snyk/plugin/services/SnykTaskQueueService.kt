@@ -10,12 +10,10 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
-import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
