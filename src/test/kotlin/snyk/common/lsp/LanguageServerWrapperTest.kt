@@ -26,7 +26,6 @@ import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.common.lsp.settings.FolderConfigSettings
@@ -77,6 +76,7 @@ class LanguageServerWrapperTest {
         cut = LanguageServerWrapper("dummy")
         cut.languageServer = lsMock
         cut.isInitialized = true
+        settings.token = "testToken"
     }
 
     @After
