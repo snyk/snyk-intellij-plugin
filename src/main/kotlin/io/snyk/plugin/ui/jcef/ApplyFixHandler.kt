@@ -10,11 +10,10 @@ import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.DiffPatcher
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
-import org.jetbrains.concurrency.runAsync
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 

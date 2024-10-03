@@ -7,9 +7,8 @@ import io.snyk.plugin.runInBackground
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
-import org.jetbrains.concurrency.runAsync
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.Fix
+import snyk.common.lsp.LanguageServerWrapper
 
 
 class GenerateAIFixHandler() {
