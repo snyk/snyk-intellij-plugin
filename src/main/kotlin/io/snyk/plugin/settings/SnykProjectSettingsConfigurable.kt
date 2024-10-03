@@ -111,9 +111,7 @@ class SnykProjectSettingsConfigurable(
         }
 
         runBackgroundableTask("processing config changes", project, true) {
-            LanguageServerWrapper.getInstance().refreshFeatureFlags()
-
-
+            val languageServerWrapper = LanguageServerWrapper.getInstance()
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
             }
@@ -127,7 +125,8 @@ class SnykProjectSettingsConfigurable(
                 getSnykToolWindowPanel(project)?.getTree()?.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
             }
 
-            LanguageServerWrapper.getInstance().updateConfiguration()
+            languageServerWrapper.refreshFeatureFlags()
+            languageServerWrapper.updateConfiguration()
         }
 
         if (rescanNeeded) {

@@ -1,10 +1,14 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -16,6 +20,7 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -341,11 +346,11 @@ class LanguageServerWrapper(
     }
 
     fun refreshFeatureFlags() {
-        runAsync {
+        runInBackground("Snyk: refreshing feature flags...") {
             // this check should be async, as refresh is called from initialization and notAuthenticated is triggering
             // initialization. So, to make it wait patiently for its turn, it needs to be checked and executed in a
             // different thread.
-            if (notAuthenticated()) return@runAsync
+            if (notAuthenticated()) return@runInBackground
             pluginSettings().isGlobalIgnoresFeatureEnabled = getFeatureFlagStatus("snykCodeConsistentIgnores")
         }
     }
@@ -356,7 +361,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
+            val result = executeCommand(param)
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
@@ -374,6 +379,9 @@ class LanguageServerWrapper(
             return false
         }
     }
+
+    private fun executeCommand(param: ExecuteCommandParams): Any? =
+        languageServer.workspaceService.executeCommand(param).get()
 
     fun sendFolderScanCommand(
         folder: String,
@@ -393,7 +401,7 @@ class LanguageServerWrapper(
     }
 
     private fun restart() {
-        runAsync {
+        runInBackground("Snyk: restarting language server...") {
             shutdown()
             Thread.sleep(1000)
             ensureLanguageServerInitialized()

@@ -186,8 +186,6 @@ class SnykLanguageClient :
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
         try {
-            // retrieve global ignores feature flag status after auth
-            LanguageServerWrapper.getInstance().refreshFeatureFlags()
             getScanPublishersFor(snykScan.folderPath).forEach { (_, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher)
             }
@@ -236,7 +234,10 @@ class SnykLanguageClient :
 
         when (snykScan.product) {
             "oss" -> scanPublisher.scanningOssFinished()
-            "code" -> scanPublisher.scanningSnykCodeFinished()
+            "code" -> {
+                LanguageServerWrapper.getInstance().refreshFeatureFlags()
+                scanPublisher.scanningSnykCodeFinished()
+            }
             "iac" -> scanPublisher.scanningIacFinished()
             "container" -> TODO()
         }
@@ -272,9 +273,6 @@ class SnykLanguageClient :
 
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
-            // retrieve global ignores feature flag status after auth
-            LanguageServerWrapper.getInstance().refreshFeatureFlags()
-
             ProjectManager.getInstance().openProjects.forEach {
                 wrapper.sendScanCommand(it)
             }

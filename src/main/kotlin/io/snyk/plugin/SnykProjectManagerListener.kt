@@ -17,7 +17,7 @@ class SnykProjectManagerListener : ProjectManagerListener {
     val threadPool: ExecutorService = Executors.newWorkStealingPool()
 
     override fun projectClosing(project: Project) {
-        val closingTask = object : Backgroundable(project, "Project closing ${project.name}") {
+        val closingTask = object : Backgroundable(project, "Snyk: Project closing ${project.name}") {
             override fun run(indicator: ProgressIndicator) {
                 // limit clean up to TIMEOUT
                 try {

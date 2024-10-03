@@ -18,10 +18,13 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.NlsContexts
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.StandardFileSystems
@@ -454,4 +457,12 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
 fun VirtualFile.isInContent(project: Project): Boolean {
     val vf = this
     return ReadAction.compute<Boolean, RuntimeException> { ProjectFileIndex.getInstance(project).isInContent(vf) }
+}
+
+inline fun runInBackground(title: String, project: Project? = null, cancellable: Boolean = true, crossinline task: (indicator: ProgressIndicator) -> Unit) {
+    ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, cancellable) {
+        override fun run(indicator: ProgressIndicator) {
+            task(indicator)
+        }
+    })
 }
