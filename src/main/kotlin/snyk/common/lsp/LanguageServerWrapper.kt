@@ -353,13 +353,16 @@ class LanguageServerWrapper(
     }
 
     fun refreshFeatureFlags() {
-        if (notAuthenticated()) return
         runAsync {
-            pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
+            // this check should be async, as refresh is called from initialization and notAuthenticated is triggering
+            // initialization. So, to make it wait patiently for its turn, it needs to be checked and executed in a
+            // different thread.
+            if (notAuthenticated()) return@runAsync
+            pluginSettings().isGlobalIgnoresFeatureEnabled = getFeatureFlagStatus("snykCodeConsistentIgnores")
         }
     }
 
-    fun getFeatureFlagStatus(featureFlag: String): Boolean {
+    private fun getFeatureFlagStatus(featureFlag: String): Boolean {
         if (notAuthenticated()) return false
         try {
             val param = ExecuteCommandParams()
@@ -514,11 +517,6 @@ class LanguageServerWrapper(
         ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
-    }
-
-    fun isGlobalIgnoresFeatureEnabled(): Boolean {
-        if (notAuthenticated()) return false
-        return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
     @Suppress("UNCHECKED_CAST")
