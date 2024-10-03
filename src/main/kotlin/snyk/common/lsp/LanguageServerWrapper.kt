@@ -250,13 +250,11 @@ class LanguageServerWrapper(
 
     fun sendInitializeMessage() {
         if (disposed) return
-        val workspaceFolders = determineWorkspaceFolders()
 
         val params = InitializeParams()
         params.processId = ProcessHandle.current().pid().toInt()
         params.clientInfo = ClientInfo(pluginInfo.integrationEnvironment, pluginInfo.integrationEnvironmentVersion)
         params.initializationOptions = getSettings()
-        params.workspaceFolders = workspaceFolders
         params.capabilities = getCapabilities()
 
         initializeResult = languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)

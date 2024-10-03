@@ -55,19 +55,6 @@ class SnykTaskQueueService(val project: Project) {
         // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.ensureLanguageServerInitialized()
-
-        getSnykToolWindowPanel(project)?.let {
-            project.messageBus.connect(it)
-                .subscribe(
-                    SnykSettingsListener.SNYK_SETTINGS_TOPIC,
-                    object : SnykSettingsListener {
-                        override fun settingsChanged() {
-                            languageServerWrapper.updateConfiguration()
-                        }
-                    }
-                )
-        }
-
         languageServerWrapper.addContentRoots(project)
     }
 
