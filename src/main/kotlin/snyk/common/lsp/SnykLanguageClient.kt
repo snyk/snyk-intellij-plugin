@@ -119,6 +119,10 @@ class SnykLanguageClient :
             val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
             // load textrange for issue so it doesn't happen in UI thread
             issue.textRange
+            if (issue.isIgnored() && !pluginSettings().isGlobalIgnoresFeatureEnabled) {
+                // apparently the server has consistent ignores activated
+                pluginSettings().isGlobalIgnoresFeatureEnabled = true
+            }
             issue
         }.toList()
 
@@ -182,6 +186,8 @@ class SnykLanguageClient :
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
         try {
+            // retrieve global ignores feature flag status after auth
+            LanguageServerWrapper.getInstance().refreshFeatureFlags()
             getScanPublishersFor(snykScan.folderPath).forEach { (_, scanPublisher) ->
                 processSnykScan(snykScan, scanPublisher)
             }
@@ -229,21 +235,10 @@ class SnykLanguageClient :
         logger.info("Scan completed")
 
         when (snykScan.product) {
-            "oss" -> {
-                scanPublisher.scanningOssFinished()
-            }
-
-            "code" -> {
-                scanPublisher.scanningSnykCodeFinished()
-            }
-
-            "iac" -> {
-                scanPublisher.scanningIacFinished()
-            }
-
-            "container" -> {
-                // TODO implement
-            }
+            "oss" -> scanPublisher.scanningOssFinished()
+            "code" -> scanPublisher.scanningSnykCodeFinished()
+            "iac" -> scanPublisher.scanningIacFinished()
+            "container" -> TODO()
         }
     }
 
