@@ -111,8 +111,7 @@ class SnykProjectSettingsConfigurable(
         }
 
         runBackgroundableTask("processing config changes", project, true) {
-            settingsStateService.isGlobalIgnoresFeatureEnabled =
-                LanguageServerWrapper.getInstance().isGlobalIgnoresFeatureEnabled()
+            LanguageServerWrapper.getInstance().refreshFeatureFlags()
 
 
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {

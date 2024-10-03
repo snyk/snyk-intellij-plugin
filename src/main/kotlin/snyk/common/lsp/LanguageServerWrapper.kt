@@ -353,18 +353,14 @@ class LanguageServerWrapper(
     }
 
     fun refreshFeatureFlags() {
+        if (notAuthenticated()) return
         runAsync {
-            if (!ensureLanguageServerInitialized()) return@runAsync
             pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
         }
     }
 
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
         if (notAuthenticated()) return false
-        return getFeatureFlagStatusInternal(featureFlag)
-    }
-
-    private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
