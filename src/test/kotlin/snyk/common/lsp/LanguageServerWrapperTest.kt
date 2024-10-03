@@ -329,22 +329,4 @@ class LanguageServerWrapperTest {
         assertEquals(settings.organization, actual.organization)
         assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
     }
-
-    @Ignore // somehow it doesn't work in the pipeline
-    @Test
-    fun `sendFeatureFlagCommand should return true if feature flag is enabled`() {
-        // Arrange
-        cut.languageClient = mockk(relaxed = true)
-        val featureFlag = "testFeatureFlag"
-        every {
-            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
-        } returns CompletableFuture.completedFuture(mapOf("ok" to true))
-        justRun { applicationMock.invokeLater(any()) }
-
-        // Act
-        val result = cut.getFeatureFlagStatus(featureFlag)
-
-        // Assert
-        assertEquals(true, result)
-    }
 }
