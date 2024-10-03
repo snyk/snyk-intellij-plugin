@@ -85,9 +85,7 @@ class SnykTaskQueueService(val project: Project) {
 
                 LanguageServerWrapper.getInstance().sendScanCommand(project)
 
-                if (settings.containerScanEnabled) {
-                    scheduleContainerScan()
-                }
+                scheduleContainerScan()
             }
         })
     }
@@ -99,7 +97,8 @@ class SnykTaskQueueService(val project: Project) {
         } while (isCliDownloading())
     }
 
-    private fun scheduleContainerScan() {
+    fun scheduleContainerScan() {
+        if (!settings.containerScanEnabled) return
         taskQueueContainer.run(object : Task.Backgroundable(project, "Snyk Container is scanning...", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return

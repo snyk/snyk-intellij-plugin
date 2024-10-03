@@ -1,7 +1,6 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -332,7 +331,7 @@ class LanguageServerWrapper(
     }
 
     fun sendReportAnalyticsCommand(scanDoneEvent: ScanDoneEvent) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
         try {
             val eventString = gson.toJson(scanDoneEvent)
             val param = ExecuteCommandParams()
@@ -345,9 +344,8 @@ class LanguageServerWrapper(
     }
 
     fun sendScanCommand(project: Project) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
-            refreshFeatureFlags()
             getTrustedContentRoots(project).forEach {
                 sendFolderScanCommand(it.path, project)
             }
@@ -362,15 +360,11 @@ class LanguageServerWrapper(
     }
 
     fun getFeatureFlagStatus(featureFlag: String): Boolean {
-        if (!isInitialized) return false
+        if (notAuthenticated()) return false
         return getFeatureFlagStatusInternal(featureFlag)
     }
 
     private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
-        if (disposed || !isInitialized || pluginSettings().token.isNullOrBlank()) {
-            return false
-        }
-
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
@@ -398,7 +392,7 @@ class LanguageServerWrapper(
         folder: String,
         project: Project,
     ) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
         if (DumbService.getInstance(project).isDumb) return
         try {
             val param = ExecuteCommandParams()
@@ -527,13 +521,13 @@ class LanguageServerWrapper(
     }
 
     fun isGlobalIgnoresFeatureEnabled(): Boolean {
-        if (!ensureLanguageServerInitialized()) return false
+        if (notAuthenticated()) return false
         return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
     }
 
     @Suppress("UNCHECKED_CAST")
     fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
-        if (!ensureLanguageServerInitialized()) return emptyList()
+        if (notAuthenticated()) return emptyList()
 
         try {
             val param = ExecuteCommandParams()
@@ -561,7 +555,7 @@ class LanguageServerWrapper(
 
 
     fun submitAutofixFeedbackCommand(fixId: String, feedback: String) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
 
         try {
             val param = ExecuteCommandParams()
@@ -572,6 +566,8 @@ class LanguageServerWrapper(
             logger.warn("Error in submitAutofixFeedbackCommand", err)
         }
     }
+
+    private fun notAuthenticated() = !ensureLanguageServerInitialized() || pluginSettings().token.isNullOrBlank()
 
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {
