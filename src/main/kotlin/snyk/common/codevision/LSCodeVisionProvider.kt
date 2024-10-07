@@ -48,14 +48,14 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         if (LanguageServerWrapper.getInstance().isDisposed()) return CodeVisionState.READY_EMPTY
         if (!LanguageServerWrapper.getInstance().isInitialized) return CodeVisionState.READY_EMPTY
         val project = editor.project ?: return CodeVisionState.READY_EMPTY
-        if (!editor.virtualFile.isInContent(project)) return CodeVisionState.READY_EMPTY
-
         val document = editor.document
 
         val file = ReadAction.compute<PsiFile, RuntimeException> {
             PsiDocumentManager.getInstance(project).getPsiFile(document)
         } ?: return CodeVisionState.READY_EMPTY
 
+        val virtualFile = file.virtualFile
+        if (!virtualFile.isInContent(project)) return CodeVisionState.READY_EMPTY
 
         val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.toLanguageServerURL()))
         val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()

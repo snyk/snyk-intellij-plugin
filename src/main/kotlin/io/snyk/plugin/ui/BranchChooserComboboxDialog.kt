@@ -7,10 +7,10 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
-import org.jetbrains.concurrency.runAsync
+import io.snyk.plugin.runInBackground
 import snyk.common.lsp.FolderConfig
-import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.settings.FolderConfigSettings
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.JComponent
@@ -66,7 +66,7 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
             val baseBranch = it.selectedItem!!.toString() // validation makes sure it is not null and not empty
             folderConfigSettings.addFolderConfig(folderConfig.copy(baseBranch = baseBranch))
         }
-        runAsync {
+        runInBackground("Snyk: updating configuration") {
             LanguageServerWrapper.getInstance().updateConfiguration()
         }
     }

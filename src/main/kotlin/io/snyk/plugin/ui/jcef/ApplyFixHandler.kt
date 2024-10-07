@@ -8,12 +8,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.DiffPatcher
+import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
-import org.jetbrains.concurrency.runAsync
-import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 
@@ -36,7 +36,7 @@ class ApplyFixHandler(private val project: Project) {
             val patch = params[2]      // The patch we received from LS
 
             // Avoid blocking the UI thread
-            runAsync {
+            runInBackground("Snyk: applying fix...") {
                 val result = try {
                     applyPatchAndSave(project, filePath, patch)
                 } catch (e: IOException) { // Catch specific file-related exceptions

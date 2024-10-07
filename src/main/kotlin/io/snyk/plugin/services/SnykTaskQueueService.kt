@@ -7,15 +7,14 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
-import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
-import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
@@ -52,23 +51,13 @@ class SnykTaskQueueService(val project: Project) {
     fun getTaskQueue() = taskQueue
 
     fun connectProjectToLanguageServer(project: Project) {
-        // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.ensureLanguageServerInitialized()
 
-        getSnykToolWindowPanel(project)?.let {
-            project.messageBus.connect(it)
-                .subscribe(
-                    SnykSettingsListener.SNYK_SETTINGS_TOPIC,
-                    object : SnykSettingsListener {
-                        override fun settingsChanged() {
-                            languageServerWrapper.updateConfiguration()
-                        }
-                    }
-                )
+        // wait for modules to be loaded and indexed so we can add all relevant content roots
+        DumbService.getInstance(project).runWhenSmart {
+            languageServerWrapper.addContentRoots(project)
         }
-
-        languageServerWrapper.addContentRoots(project)
     }
 
     fun scan() {
@@ -85,9 +74,7 @@ class SnykTaskQueueService(val project: Project) {
 
                 LanguageServerWrapper.getInstance().sendScanCommand(project)
 
-                if (settings.containerScanEnabled) {
-                    scheduleContainerScan()
-                }
+                scheduleContainerScan()
             }
         })
     }
@@ -99,7 +86,8 @@ class SnykTaskQueueService(val project: Project) {
         } while (isCliDownloading())
     }
 
-    private fun scheduleContainerScan() {
+    fun scheduleContainerScan() {
+        if (!settings.containerScanEnabled) return
         taskQueueContainer.run(object : Task.Backgroundable(project, "Snyk Container is scanning...", true) {
             override fun run(indicator: ProgressIndicator) {
                 if (!isCliInstalled()) return

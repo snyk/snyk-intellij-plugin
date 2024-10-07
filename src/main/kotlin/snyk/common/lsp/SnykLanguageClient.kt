@@ -119,6 +119,10 @@ class SnykLanguageClient :
             val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
             // load textrange for issue so it doesn't happen in UI thread
             issue.textRange
+            if (issue.isIgnored() && !pluginSettings().isGlobalIgnoresFeatureEnabled) {
+                // apparently the server has consistent ignores activated
+                pluginSettings().isGlobalIgnoresFeatureEnabled = true
+            }
             issue
         }.toList()
 
@@ -221,7 +225,6 @@ class SnykLanguageClient :
         }
     }
 
-
     private fun processSuccessfulScan(
         snykScan: SnykScanParams,
         scanPublisher: SnykScanListenerLS,
@@ -229,21 +232,13 @@ class SnykLanguageClient :
         logger.info("Scan completed")
 
         when (snykScan.product) {
-            "oss" -> {
-                scanPublisher.scanningOssFinished()
-            }
-
+            "oss" -> scanPublisher.scanningOssFinished()
             "code" -> {
+                LanguageServerWrapper.getInstance().refreshFeatureFlags()
                 scanPublisher.scanningSnykCodeFinished()
             }
-
-            "iac" -> {
-                scanPublisher.scanningIacFinished()
-            }
-
-            "container" -> {
-                // TODO implement
-            }
+            "iac" -> scanPublisher.scanningIacFinished()
+            "container" -> TODO()
         }
     }
 
@@ -277,9 +272,6 @@ class SnykLanguageClient :
 
         if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
-            // retrieve global ignores feature flag status after auth
-            LanguageServerWrapper.getInstance().refreshFeatureFlags()
-
             ProjectManager.getInstance().openProjects.forEach {
                 wrapper.sendScanCommand(it)
             }
@@ -358,6 +350,16 @@ class SnykLanguageClient :
             }
         }
     }
+
+    /**
+     * We don't need this custom notification, as LSP4j already supports LSP 3.17.
+     * This custom notification is sent from the server to give clients that only support
+     * lower LSP protocol versions the chance to retrieve the <pre>data</pre> field of
+     * the diagnostic that contains the issue detail data by implementing a custom
+     * notification listener (e.g. Visual Studio)
+     */
+    @JsonNotification("\$/snyk.publishDiagnostics316")
+    fun publishDiagnostics316(ignored: PublishDiagnosticsParams?) = Unit
 
     companion object {
         // we only allow one message request at a time

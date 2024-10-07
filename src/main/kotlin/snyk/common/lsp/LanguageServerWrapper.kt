@@ -1,7 +1,6 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -17,6 +16,7 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -125,6 +125,7 @@ class LanguageServerWrapper(
             logger.warn(message)
             return
         }
+
         try {
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
@@ -135,7 +136,6 @@ class LanguageServerWrapper(
                     else -> "info"
                 }
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
-
             val processBuilder = ProcessBuilder(cmd)
             EnvironmentHelper.updateEnvironment(processBuilder.environment(), pluginSettings().token ?: "")
 
@@ -201,16 +201,6 @@ class LanguageServerWrapper(
 
     private fun lsIsAlive() = ::process.isInitialized && process.isAlive
 
-    private fun determineWorkspaceFolders(): List<WorkspaceFolder> {
-        val workspaceFolders = mutableSetOf<WorkspaceFolder>()
-        ProjectManager.getInstance().openProjects.forEach { project ->
-            if (!project.isDisposed) {
-                workspaceFolders.addAll(getWorkspaceFolders(project))
-            }
-        }
-        return workspaceFolders.toList()
-    }
-
     fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
         if (disposed || project.isDisposed) return emptySet()
         val normalizedRoots = getTrustedContentRoots(project)
@@ -251,18 +241,15 @@ class LanguageServerWrapper(
 
     fun sendInitializeMessage() {
         if (disposed) return
-        val workspaceFolders = determineWorkspaceFolders()
 
         val params = InitializeParams()
         params.processId = ProcessHandle.current().pid().toInt()
         params.clientInfo = ClientInfo(pluginInfo.integrationEnvironment, pluginInfo.integrationEnvironmentVersion)
         params.initializationOptions = getSettings()
-        params.workspaceFolders = workspaceFolders
         params.capabilities = getCapabilities()
 
         initializeResult = languageServer.initialize(params).get(INITIALIZATION_TIMEOUT, TimeUnit.SECONDS)
         languageServer.initialized(InitializedParams())
-        refreshFeatureFlags()
     }
 
     private fun getCapabilities(): ClientCapabilities =
@@ -332,7 +319,7 @@ class LanguageServerWrapper(
     }
 
     fun sendReportAnalyticsCommand(scanDoneEvent: ScanDoneEvent) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
         try {
             val eventString = gson.toJson(scanDoneEvent)
             val param = ExecuteCommandParams()
@@ -345,7 +332,7 @@ class LanguageServerWrapper(
     }
 
     fun sendScanCommand(project: Project) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
             refreshFeatureFlags()
             getTrustedContentRoots(project).forEach {
@@ -355,27 +342,28 @@ class LanguageServerWrapper(
     }
 
     fun refreshFeatureFlags() {
-        runAsync {
-            if (!ensureLanguageServerInitialized()) return@runAsync
-            pluginSettings().isGlobalIgnoresFeatureEnabled = isGlobalIgnoresFeatureEnabled()
+        runInBackground("Snyk: refreshing feature flags...") {
+            // this check should be async, as refresh is called from initialization and notAuthenticated is triggering
+            // initialization. So, to make it wait patiently for its turn, it needs to be checked and executed in a
+            // different thread.
+            if (notAuthenticated()) return@runInBackground
+            pluginSettings().isGlobalIgnoresFeatureEnabled = getFeatureFlagStatus("snykCodeConsistentIgnores")
         }
     }
 
-    fun getFeatureFlagStatus(featureFlag: String): Boolean {
-        if (!isInitialized) return false
-        return getFeatureFlagStatusInternal(featureFlag)
-    }
-
-    private fun getFeatureFlagStatusInternal(featureFlag: String): Boolean {
-        if (disposed || !isInitialized || pluginSettings().token.isNullOrBlank()) {
-            return false
-        }
-
+    private fun getFeatureFlagStatus(featureFlag: String): Boolean {
+        if (notAuthenticated()) return false
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
-            val result = languageServer.workspaceService.executeCommand(param).get(5, TimeUnit.SECONDS)
+            val result = try {
+                executeCommand(param)
+            } catch (e: TimeoutException) {
+                // retry with 30s timeout
+                Thread.sleep(5000)
+                executeCommand(param, 30000)
+            }
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
@@ -388,26 +376,40 @@ class LanguageServerWrapper(
                 logger.info("Feature flag $featureFlag is disabled. Message: $userMessage")
                 return false
             }
+        } catch (t: TimeoutException) {
+            logger.warn("Timeout while retrieving feature flag: ${t.message}")
+            return false
         } catch (e: Exception) {
             logger.warn("Error while checking feature flag: ${e.message}", e)
             return false
         }
     }
 
+    private fun executeCommand(param: ExecuteCommandParams, timeoutMillis: Long = 5000): Any? =
+        languageServer.workspaceService.executeCommand(param).get(timeoutMillis, TimeUnit.MILLISECONDS)
+
     fun sendFolderScanCommand(
         folder: String,
         project: Project,
     ) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
         if (DumbService.getInstance(project).isDumb) return
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
-        } catch (ignored: Exception) {
-            // do nothing to not break UX for analytics
-            // TODO review
+        } catch (e: Exception) {
+            logger.error("error calling scan command from language server. re-initializing", e)
+            restart()
+        }
+    }
+
+    private fun restart() {
+        runInBackground("Snyk: restarting language server...") {
+            shutdown()
+            Thread.sleep(1000)
+            ensureLanguageServerInitialized()
         }
     }
 
@@ -526,14 +528,9 @@ class LanguageServerWrapper(
         updateWorkspaceFolders(added, emptySet())
     }
 
-    fun isGlobalIgnoresFeatureEnabled(): Boolean {
-        if (!ensureLanguageServerInitialized()) return false
-        return this.getFeatureFlagStatus("snykCodeConsistentIgnores")
-    }
-
     @Suppress("UNCHECKED_CAST")
     fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
-        if (!ensureLanguageServerInitialized()) return emptyList()
+        if (notAuthenticated()) return emptyList()
 
         try {
             val param = ExecuteCommandParams()
@@ -561,7 +558,7 @@ class LanguageServerWrapper(
 
 
     fun submitAutofixFeedbackCommand(fixId: String, feedback: String) {
-        if (!ensureLanguageServerInitialized()) return
+        if (notAuthenticated()) return
 
         try {
             val param = ExecuteCommandParams()
@@ -572,6 +569,8 @@ class LanguageServerWrapper(
             logger.warn("Error in submitAutofixFeedbackCommand", err)
         }
     }
+
+    private fun notAuthenticated() = !ensureLanguageServerInitialized() || pluginSettings().token.isNullOrBlank()
 
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {

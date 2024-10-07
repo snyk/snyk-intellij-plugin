@@ -3,12 +3,12 @@ package io.snyk.plugin.ui.jcef
 import com.google.gson.Gson
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import io.snyk.plugin.runInBackground
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
-import org.jetbrains.concurrency.runAsync
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.Fix
+import snyk.common.lsp.LanguageServerWrapper
 
 
 class GenerateAIFixHandler() {
@@ -23,7 +23,7 @@ class GenerateAIFixHandler() {
             val issueID = params[2]
 
 
-            runAsync {
+            runInBackground("Snyk: getting AI fix proposals...") {
                 val responseDiff: List<Fix> =
                     LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
 

@@ -26,7 +26,6 @@ import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.common.lsp.settings.FolderConfigSettings
@@ -77,6 +76,7 @@ class LanguageServerWrapperTest {
         cut = LanguageServerWrapper("dummy")
         cut.languageServer = lsMock
         cut.isInitialized = true
+        settings.token = "testToken"
     }
 
     @After
@@ -328,23 +328,5 @@ class LanguageServerWrapperTest {
         assertEquals(getCliFile().absolutePath, actual.cliPath)
         assertEquals(settings.organization, actual.organization)
         assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
-    }
-
-    @Ignore // somehow it doesn't work in the pipeline
-    @Test
-    fun `sendFeatureFlagCommand should return true if feature flag is enabled`() {
-        // Arrange
-        cut.languageClient = mockk(relaxed = true)
-        val featureFlag = "testFeatureFlag"
-        every {
-            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
-        } returns CompletableFuture.completedFuture(mapOf("ok" to true))
-        justRun { applicationMock.invokeLater(any()) }
-
-        // Act
-        val result = cut.getFeatureFlagStatus(featureFlag)
-
-        // Assert
-        assertEquals(true, result)
     }
 }
