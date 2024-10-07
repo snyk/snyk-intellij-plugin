@@ -125,6 +125,7 @@ class LanguageServerWrapper(
             logger.warn(message)
             return
         }
+
         try {
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
@@ -135,7 +136,6 @@ class LanguageServerWrapper(
                     else -> "info"
                 }
             val cmd = listOf(lsPath, "language-server", "-l", logLevel)
-
             val processBuilder = ProcessBuilder(cmd)
             EnvironmentHelper.updateEnvironment(processBuilder.environment(), pluginSettings().token ?: "")
 
@@ -357,7 +357,13 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_GET_FEATURE_FLAG_STATUS
             param.arguments = listOf(featureFlag)
-            val result = executeCommand(param)
+            val result = try {
+                executeCommand(param)
+            } catch (e: TimeoutException) {
+                // retry with 30s timeout
+                Thread.sleep(5000)
+                executeCommand(param, 30000)
+            }
 
             val resultMap = result as? Map<*, *>
             val ok = resultMap?.get("ok") as? Boolean ?: false
@@ -370,14 +376,17 @@ class LanguageServerWrapper(
                 logger.info("Feature flag $featureFlag is disabled. Message: $userMessage")
                 return false
             }
+        } catch (t: TimeoutException) {
+            logger.warn("Timeout while retrieving feature flag: ${t.message}")
+            return false
         } catch (e: Exception) {
             logger.warn("Error while checking feature flag: ${e.message}", e)
             return false
         }
     }
 
-    private fun executeCommand(param: ExecuteCommandParams): Any? =
-        languageServer.workspaceService.executeCommand(param).get()
+    private fun executeCommand(param: ExecuteCommandParams, timeoutMillis: Long = 5000): Any? =
+        languageServer.workspaceService.executeCommand(param).get(timeoutMillis, TimeUnit.MILLISECONDS)
 
     fun sendFolderScanCommand(
         folder: String,

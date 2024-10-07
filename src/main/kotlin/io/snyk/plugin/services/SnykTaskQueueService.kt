@@ -7,6 +7,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.BackgroundTaskQueue
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykScanListener
@@ -50,10 +51,13 @@ class SnykTaskQueueService(val project: Project) {
     fun getTaskQueue() = taskQueue
 
     fun connectProjectToLanguageServer(project: Project) {
-        // subscribe to the settings changed topic
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.ensureLanguageServerInitialized()
-        languageServerWrapper.addContentRoots(project)
+
+        // wait for modules to be loaded and indexed so we can add all relevant content roots
+        DumbService.getInstance(project).runWhenSmart {
+            languageServerWrapper.addContentRoots(project)
+        }
     }
 
     fun scan() {

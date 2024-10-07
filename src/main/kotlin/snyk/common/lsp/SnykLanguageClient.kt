@@ -225,7 +225,6 @@ class SnykLanguageClient :
         }
     }
 
-
     private fun processSuccessfulScan(
         snykScan: SnykScanParams,
         scanPublisher: SnykScanListenerLS,
@@ -351,6 +350,16 @@ class SnykLanguageClient :
             }
         }
     }
+
+    /**
+     * We don't need this custom notification, as LSP4j already supports LSP 3.17.
+     * This custom notification is sent from the server to give clients that only support
+     * lower LSP protocol versions the chance to retrieve the <pre>data</pre> field of
+     * the diagnostic that contains the issue detail data by implementing a custom
+     * notification listener (e.g. Visual Studio)
+     */
+    @JsonNotification("\$/snyk.publishDiagnostics316")
+    fun publishDiagnostics316(ignored: PublishDiagnosticsParams?) = Unit
 
     companion object {
         // we only allow one message request at a time
