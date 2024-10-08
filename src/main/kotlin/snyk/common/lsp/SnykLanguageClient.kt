@@ -299,20 +299,33 @@ class SnykLanguageClient :
         val project = ProjectUtil.getActiveProject()
         when (messageParams?.type) {
             MessageType.Error -> {
-                SnykBalloonNotificationHelper.showError(messageParams.message, project)
+                val m = cutMessage(messageParams)
+                SnykBalloonNotificationHelper.showError(m, project)
             }
 
-            MessageType.Warning -> SnykBalloonNotificationHelper.showWarn(messageParams.message, project)
+            MessageType.Warning -> {
+                val m = cutMessage(messageParams)
+                SnykBalloonNotificationHelper.showWarn(m, project)
+            }
+
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
                 ApplicationManager.getApplication().executeOnPooledThread {
-                    Thread.sleep(10000)
+                    Thread.sleep(30000)
                     notification.expire()
                 }
             }
 
             MessageType.Log -> logger.info(messageParams.message)
             null -> {}
+        }
+    }
+
+    private fun cutMessage(messageParams: MessageParams) : String {
+        return if (messageParams.message.length > 500) {
+            messageParams.message.substring(0, 500) + "..."
+        } else {
+            messageParams.message
         }
     }
 
