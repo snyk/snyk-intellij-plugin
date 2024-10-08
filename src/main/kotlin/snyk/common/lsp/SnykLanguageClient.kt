@@ -282,10 +282,10 @@ class SnykLanguageClient :
         }
     }
 
-    @JsonRequest(value = "$/snyk.getSDKs")
-    fun getSdks(workspaceFolder: WorkspaceFolder) : List<LsSdk> {
-        val project = guessProjectForFile(workspaceFolder.uri.toVirtualFile()) ?: return emptyList()
-        return SdkHelper.getSdks(project)
+    @JsonRequest(value = "workspace/snyk.sdks")
+    fun getSdks(workspaceFolder: WorkspaceFolder) : CompletableFuture<List<LsSdk>> {
+        val project = guessProjectForFile(workspaceFolder.uri.toVirtualFile()) ?: return CompletableFuture.completedFuture(emptyList())
+        return CompletableFuture.completedFuture(SdkHelper.getSdks(project))
     }
 
 

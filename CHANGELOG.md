@@ -21,7 +21,7 @@
 - added ai fix feedback support
 - enable for IntelliJ 2024.3 platform
 - require LS protocol version 16
-- transmit project sdks to language server
+- transmit project sdks to language server when requested by a scan
 
 ### Fixes
 - add name to code vision provider
