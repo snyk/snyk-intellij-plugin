@@ -5,10 +5,14 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.getCliFile
@@ -397,13 +401,34 @@ class LanguageServerWrapper(
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN
-            param.arguments = listOf(folder)
+            param.arguments = listOf(folder, getSdks(project))
+            logger.warn(Gson().toJson(param))
             languageServer.workspaceService.executeCommand(param)
         } catch (e: Exception) {
             logger.error("error calling scan command from language server. re-initializing", e)
             restart()
         }
     }
+
+    private fun getSdks(project: Project): List<LsSdk> {
+        val list: MutableList<LsSdk> = mutableListOf()
+        val modules = ModuleManager.getInstance(project).modules
+        for (module in modules) {
+            val moduleSdk = ModuleRootManager.getInstance(module).sdk
+            addSdkToList(moduleSdk, list)
+        }
+        return list.toList()
+    }
+
+    private fun addSdkToList(
+        sdk: Sdk?,
+        list: MutableList<LsSdk>
+    ) {
+        if (sdk != null && sdk.homeDirectory != null) {
+            list.add(LsSdk(sdk.sdkType.name, FileUtil.toSystemDependentName(sdk.homeDirectory!!.path)))
+        }
+    }
+
 
     private fun restart() {
         runInBackground("Snyk: restarting language server...") {

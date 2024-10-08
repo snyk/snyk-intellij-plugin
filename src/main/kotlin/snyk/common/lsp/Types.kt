@@ -18,6 +18,8 @@ import javax.swing.Icon
 
 typealias FilterableIssueType = String
 
+data class LsSdk(val type: String, val path: String)
+
 data class CliError(
     val code: Int? = 0,
     val error: String? = null,
