@@ -15,6 +15,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.toSnykFileSet
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.jetbrains.annotations.TestOnly
@@ -122,6 +123,7 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
 
         VirtualFileManager.getInstance().asyncRefresh()
         invokeLater {
+            if (SnykPluginDisposable.getInstance(project).isDisposed() || project.isDisposed) return@invokeLater
             DaemonCodeAnalyzer.getInstance(project).restart()
         }
     }
