@@ -2,7 +2,6 @@ package io.snyk.plugin.cli
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.ide.plugins.PluginManagerCore
-import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProgressIndicator
@@ -14,20 +13,15 @@ import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.util.net.HttpConfigurable
 import io.mockk.every
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.sentry.protocol.SentryId
 import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
-import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.setupDummyCliFile
-import org.junit.Ignore
 import snyk.PLUGIN_ID
 import snyk.errorHandler.SentryErrorReporter
 import java.net.URLEncoder
@@ -161,10 +155,12 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val originalProxyHost = httpConfigurable.PROXY_HOST
         val originalProxyPort = httpConfigurable.PROXY_PORT
         val originalUseProxy = httpConfigurable.USE_HTTP_PROXY
+        val originalProxyExceptions = httpConfigurable.PROXY_EXCEPTIONS
         try {
             httpConfigurable.PROXY_PORT = 3128
             httpConfigurable.PROXY_HOST = "testProxy"
             httpConfigurable.USE_HTTP_PROXY = true
+            httpConfigurable.PROXY_EXCEPTIONS = "testExceptions"
 
             val generalCommandLine = GeneralCommandLine("")
             val expectedProxy = "http://testProxy:3128"
@@ -176,6 +172,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             httpConfigurable.USE_HTTP_PROXY = originalUseProxy
             httpConfigurable.PROXY_HOST = originalProxyHost
             httpConfigurable.PROXY_PORT = originalProxyPort
+            httpConfigurable.PROXY_EXCEPTIONS = originalProxyExceptions
         }
     }
 
@@ -187,6 +184,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val originalProxyAuthentication = httpConfigurable.PROXY_AUTHENTICATION
         val originalLogin = httpConfigurable.proxyLogin
         val originalPassword = httpConfigurable.plainProxyPassword
+        val originalProxyExceptions = httpConfigurable.PROXY_EXCEPTIONS
         try {
             httpConfigurable.PROXY_PORT = 3128
             httpConfigurable.PROXY_HOST = "testProxy"
@@ -194,6 +192,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             httpConfigurable.PROXY_AUTHENTICATION = true
             httpConfigurable.proxyLogin = "testLogin"
             httpConfigurable.plainProxyPassword = "test%!@Password"
+            httpConfigurable.PROXY_EXCEPTIONS = "testExceptions"
             val encodedLogin = URLEncoder.encode(httpConfigurable.proxyLogin, "UTF-8")
             val encodedPassword = URLEncoder.encode(httpConfigurable.plainProxyPassword, "UTF-8")
 
@@ -212,6 +211,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             httpConfigurable.PROXY_AUTHENTICATION = originalProxyAuthentication
             httpConfigurable.proxyLogin = originalLogin
             httpConfigurable.plainProxyPassword = originalPassword
+            httpConfigurable.PROXY_EXCEPTIONS = originalProxyExceptions
         }
     }
 
@@ -224,12 +224,14 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val originalAuthenticationCancelled = httpConfigurable.AUTHENTICATION_CANCELLED
         val originalLogin = httpConfigurable.proxyLogin
         val originalPassword = httpConfigurable.plainProxyPassword
+        val originalProxyExceptions = httpConfigurable.PROXY_EXCEPTIONS
         try {
             httpConfigurable.PROXY_PORT = 3128
             httpConfigurable.PROXY_HOST = "testProxy"
             httpConfigurable.USE_HTTP_PROXY = true
             httpConfigurable.PROXY_AUTHENTICATION = true
             httpConfigurable.AUTHENTICATION_CANCELLED = true
+            httpConfigurable.PROXY_EXCEPTIONS = "testExceptions"
 
             val generalCommandLine = GeneralCommandLine("")
             val expectedProxy =
@@ -238,6 +240,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
             assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
+            assertEquals(httpConfigurable.PROXY_EXCEPTIONS, generalCommandLine.environment["no_proxy"])
         } finally {
             httpConfigurable.USE_HTTP_PROXY = originalUseProxy
             httpConfigurable.PROXY_HOST = originalProxyHost
@@ -246,6 +249,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             httpConfigurable.AUTHENTICATION_CANCELLED = originalAuthenticationCancelled
             httpConfigurable.proxyLogin = originalLogin
             httpConfigurable.plainProxyPassword = originalPassword
+            httpConfigurable.PROXY_EXCEPTIONS = originalProxyExceptions
         }
     }
 

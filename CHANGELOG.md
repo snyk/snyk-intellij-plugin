@@ -30,6 +30,7 @@
 - if the language server listener is shut down, set initialized to false
 - log error stream of language server to idea.log
 - show error / warn messages if the project is null (e.g. for offline handling)
+- add no_proxy environment variable, if proxy exceptions are defined
 
 ## [2.9.1]
 ### Fixed
