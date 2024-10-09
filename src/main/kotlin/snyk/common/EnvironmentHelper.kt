@@ -67,6 +67,7 @@ object EnvironmentHelper {
                 }
             environment["http_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
             environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
+            environment["no_proxy"] = proxySettings.PROXY_EXCEPTIONS
         }
     }
 
