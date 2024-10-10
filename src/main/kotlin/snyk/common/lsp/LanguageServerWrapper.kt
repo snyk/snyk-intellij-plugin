@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -60,6 +61,7 @@ import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
 import snyk.pluginInfo
@@ -163,6 +165,8 @@ class LanguageServerWrapper(
             if (!listenerFuture.isDone) {
                 sendInitializeMessage()
                 isInitialized = true
+                // listen for downloads / restarts
+                LanguageServerRestartListener.getInstance()
             } else {
                 logger.warn("Language Server initialization did not succeed")
             }
@@ -183,7 +187,17 @@ class LanguageServerWrapper(
         messageProducerLogger.level = Level.OFF
         try {
             val shouldShutdown = lsIsAlive()
-            executorService.submit { if (shouldShutdown) languageServer.shutdown().get(1, TimeUnit.SECONDS) }
+            executorService.submit {
+                if (shouldShutdown) {
+                    val project = ProjectUtil.getActiveProject()
+                    if (project != null) {
+                        getSnykTaskQueueService(project)?.stopScan()
+                    }
+                    // cancel all progresses, as we can have more progresses than just scans
+                    ProgressManager.getInstance().cancelProgresses()
+                    languageServer.shutdown().get(1, TimeUnit.SECONDS)
+                }
+            }
         } catch (ignored: Exception) {
             // we don't care
         } finally {
@@ -405,11 +419,12 @@ class LanguageServerWrapper(
         }
     }
 
-    private fun restart() {
+    fun restart() {
         runInBackground("Snyk: restarting language server...") {
             shutdown()
             Thread.sleep(1000)
             ensureLanguageServerInitialized()
+            ProjectManager.getInstance().openProjects.forEach { project -> addContentRoots(project) }
         }
     }
 

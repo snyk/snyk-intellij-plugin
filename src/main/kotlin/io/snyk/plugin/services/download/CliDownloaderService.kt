@@ -15,7 +15,6 @@ import java.io.IOException
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
-import java.util.concurrent.TimeUnit
 
 @Service
 class SnykCliDownloaderService {
@@ -71,14 +70,6 @@ class SnykCliDownloaderService {
 
             val languageServerWrapper = LanguageServerWrapper.getInstance()
             try {
-                if (languageServerWrapper.isInitialized) {
-                    try {
-                        languageServerWrapper.shutdown()
-                    } catch (e: RuntimeException) {
-                        logger<SnykCliDownloaderService>()
-                            .warn("Language server shutdown for download took too long, couldn't shutdown", e)
-                    }
-                }
                 downloader.downloadFile(cliFile, latestRelease, indicator)
                 pluginSettings().cliVersion = latestRelease
                 pluginSettings().lastCheckDate = Date()

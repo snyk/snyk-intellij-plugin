@@ -157,6 +157,7 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
+    // FIXME this is currently not project, but app specific
     fun stopScan() {
         val languageServerWrapper = LanguageServerWrapper.getInstance()
 

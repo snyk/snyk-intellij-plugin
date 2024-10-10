@@ -51,12 +51,12 @@ import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
+import snyk.common.lsp.LanguageServerRestartListener
 import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
 import snyk.container.ContainerService
 import snyk.container.KubernetesImageCache
-import snyk.errorHandler.SentryErrorReporter
 import snyk.iac.IacScanService
 import java.io.File
 import java.io.FileNotFoundException
@@ -74,6 +74,7 @@ fun getIacService(project: Project): IacScanService? = project.serviceIfNotDispo
 fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.serviceIfNotDisposed()
 
 fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.serviceIfNotDisposed()
+fun getLanguageServerRestartListener(): LanguageServerRestartListener = ApplicationManager.getApplication().service()
 
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
 
@@ -95,7 +96,7 @@ fun getContainerService(project: Project): ContainerService? = project.serviceIf
 
 fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationService? = project?.serviceIfNotDisposed()
 
-fun getSnykCliDownloaderService(): SnykCliDownloaderService = getApplicationService()
+fun getSnykCliDownloaderService(): SnykCliDownloaderService = ApplicationManager.getApplication().service()
 
 fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? = project.serviceIfNotDisposed()
 
@@ -103,7 +104,7 @@ fun getCliFile() = File(pluginSettings().cliPath)
 
 fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
 
-fun pluginSettings(): SnykApplicationSettingsStateService = getApplicationService()
+fun pluginSettings(): SnykApplicationSettingsStateService = ApplicationManager.getApplication().service()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
 
@@ -119,18 +120,8 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
     return try {
         getService(T::class.java)
     } catch (t: Throwable) {
-        SentryErrorReporter.captureException(t)
         null
     }
-}
-
-/**
- * Copy of [com.intellij.openapi.components.service] to make code compilable with jvm 11 bytecode (Idea 2022.1)
- */
-private inline fun <reified T : Any> getApplicationService(): T {
-    val serviceClass = T::class.java
-    return ApplicationManager.getApplication()?.getService(serviceClass)
-        ?: throw RuntimeException("Cannot find service ${serviceClass.name} (classloader=${serviceClass.classLoader})")
 }
 
 fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {

@@ -18,6 +18,8 @@ package snyk.common.lsp.progress
 
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -35,7 +37,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Function
 
-
+@Service
 class ProgressManager : Disposable {
     private val progresses: MutableMap<String, Progress> = ConcurrentHashMap<String, Progress>()
     private var disposed = false
@@ -231,5 +233,8 @@ class ProgressManager : Disposable {
                 Function.identity()
             ) { obj: Int -> obj.toString() }
         }
+
+        @JvmStatic
+        fun getInstance(): snyk.common.lsp.progress.ProgressManager = service()
     }
 }
