@@ -72,7 +72,8 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
     /**
      * Should be THE ONLY test where we actually do download the CLI
-     * !!! Do __MOCK__ cli download in ANY other test to reduce testing time needed !!!
+     * 🚨 Do __MOCK__ cli download in ANY other test to reduce testing time needed !!!
+     * 🚨 This test fails when the preview release is not available yet
      */
     fun testDownloadLatestCliRelease() {
         ensureCliFileExistent()
