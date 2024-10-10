@@ -522,7 +522,7 @@ class LanguageServerWrapper(
 
     fun addContentRoots(project: Project) {
         if (disposed || project.isDisposed) return
-        assert(isInitialized)
+        ensureLanguageServerInitialized()
         ensureLanguageServerProtocolVersion(project)
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
