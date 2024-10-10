@@ -13,6 +13,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectLocator
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
@@ -35,13 +36,16 @@ import org.eclipse.lsp4j.ProgressParams
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams
+import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.services.LanguageClient
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
@@ -277,6 +281,13 @@ class SnykLanguageClient :
             }
         }
     }
+
+    @JsonRequest(value = "workspace/snyk.sdks")
+    fun getSdks(workspaceFolder: WorkspaceFolder) : CompletableFuture<List<LsSdk>> {
+        val project = guessProjectForFile(workspaceFolder.uri.toVirtualFile()) ?: return CompletableFuture.completedFuture(emptyList())
+        return CompletableFuture.completedFuture(SdkHelper.getSdks(project))
+    }
+
 
     @JsonNotification(value = "$/snyk.addTrustedFolders")
     fun addTrustedPaths(param: SnykTrustedFoldersParams) {

@@ -26,7 +26,7 @@ import java.util.UUID
     storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],
 )
 class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplicationSettingsStateService> {
-    val requiredLsProtocolVersion = 15
+    val requiredLsProtocolVersion = 16
 
     var useTokenAuthentication = false
     var currentLSProtocolVersion: Int? = 0
