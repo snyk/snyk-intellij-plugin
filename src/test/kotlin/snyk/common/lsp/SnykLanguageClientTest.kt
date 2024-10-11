@@ -27,6 +27,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
+import snyk.common.lsp.progress.ProgressManager
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.nio.file.Files
@@ -54,6 +55,7 @@ class SnykLanguageClientTest {
         every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
 
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
+        every { applicationMock.getService(ProgressManager::class.java) } returns mockk(relaxed = true)
         every { applicationMock.isDisposed } returns false
         every { applicationMock.messageBus } returns mockk(relaxed = true)
 
@@ -84,8 +86,7 @@ class SnykLanguageClientTest {
     }
 
     @Test
-    fun applyEdit() {
-    }
+    fun applyEdit() {}
 
     @Test
     fun `refreshCodeLenses does not run when disposed`() {
