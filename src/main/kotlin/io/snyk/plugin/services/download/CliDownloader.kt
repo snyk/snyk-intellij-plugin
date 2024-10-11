@@ -4,6 +4,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
+import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
@@ -62,7 +63,12 @@ class CliDownloader {
             if (cliFile.exists()) {
                 cliFile.delete()
             }
+            val languageServerWrapper = LanguageServerWrapper.getInstance()
+            // prevent spawning of language server until files are moved
+            languageServerWrapper.isInitializing.lock()
             try {
+                // shutdown, so the binary can be updated
+                languageServerWrapper.shutdown()
                 Files.move(
                     downloadFile.toPath(),
                     cliFile.toPath(),
@@ -72,6 +78,8 @@ class CliDownloader {
             } catch (ignored: AtomicMoveNotSupportedException) {
                 // fallback to renameTo because of e
                 downloadFile.renameTo(cliFile)
+            } finally {
+                languageServerWrapper.isInitializing.unlock()
             }
             cliFile.setExecutable(true)
             return cliFile
