@@ -1,9 +1,11 @@
 package io.snyk.plugin.services.download
 
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.io.IOException
@@ -77,7 +79,12 @@ class CliDownloader {
                 )
             } catch (ignored: AtomicMoveNotSupportedException) {
                 // fallback to renameTo because of e
-                downloadFile.renameTo(cliFile)
+                val success = downloadFile.renameTo(cliFile)
+                if (!success) {
+                    val message =
+                        "CLI could not be updated. Please check if another process is using the CLI binary at ${pluginSettings().cliPath}"
+                    SnykBalloonNotificationHelper.showWarn(message, ProjectUtil.getActiveProject())
+                }
             } finally {
                 languageServerWrapper.isInitializing.unlock()
             }
