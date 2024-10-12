@@ -169,18 +169,46 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
-    private fun displayResults(snykResults: Map<SnykFile, List<ScanIssue>>, enabledInSettings: Boolean, filterTree: Boolean, rootNode: DefaultMutableTreeNode) {
+    private fun displayResults(
+        snykResults: Map<SnykFile, List<ScanIssue>>,
+        enabledInSettings: Boolean,
+        filterTree: Boolean,
+        rootNode: DefaultMutableTreeNode,
+        issueType: String
+    ) {
         if (disposed) return
         if (getSnykCachedResults(project)?.currentIacError != null) return
 
-        displayIssues(
-            enabledInSettings = enabledInSettings,
-            filterTree = filterTree,
-            snykResults = snykResults,
-            rootNode = rootNode,
-            iacResultsCount = snykResults.values.flatten().distinct().size,
-            fixableIssuesCount = snykResults.values.flatten().count { it.additionalData.isUpgradable }
-        )
+        val flattenedResults = snykResults.values.flatten()
+
+        when (issueType) {
+            ScanIssue.OPEN_SOURCE -> {
+                val ossResultsCount =
+                    flattenedResults.filter { it.filterableIssueType == ScanIssue.OPEN_SOURCE }.distinct().size
+                displayIssues(
+                    enabledInSettings = enabledInSettings,
+                    filterTree = filterTree,
+                    snykResults = snykResults,
+                    rootNode = rootNode,
+                    ossResultsCount = ossResultsCount,
+                    fixableIssuesCount = flattenedResults.count { it.additionalData.isUpgradable }
+                )
+            }
+
+            ScanIssue.INFRASTRUCTURE_AS_CODE -> {
+                val iacResultsCount =
+                    flattenedResults.filter { it.filterableIssueType == ScanIssue.INFRASTRUCTURE_AS_CODE }
+                        .distinct().size
+                displayIssues(
+                    enabledInSettings = enabledInSettings,
+                    filterTree = filterTree,
+                    snykResults = snykResults,
+                    rootNode = rootNode,
+                    iacResultsCount = iacResultsCount,
+                    fixableIssuesCount = flattenedResults.count { it.additionalData.isUpgradable }
+                )
+            }
+        }
     }
 
     fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
@@ -189,7 +217,13 @@ class SnykToolWindowSnykScanListenerLS(
 
         val settings = pluginSettings()
 
-        displayResults(snykResults, settings.ossScanEnable, settings.treeFiltering.ossResults, this.rootOssIssuesTreeNode)
+        displayResults(
+            snykResults,
+            settings.ossScanEnable,
+            settings.treeFiltering.ossResults,
+            this.rootOssIssuesTreeNode,
+            ScanIssue.OPEN_SOURCE
+        )
     }
 
     fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
@@ -197,7 +231,13 @@ class SnykToolWindowSnykScanListenerLS(
         if (getSnykCachedResults(project)?.currentIacError != null) return
 
         val settings = pluginSettings()
-        displayResults(snykResults, settings.iacScanEnabled, settings.treeFiltering.iacResults, this.rootIacIssuesTreeNode)
+        displayResults(
+            snykResults,
+            settings.iacScanEnabled,
+            settings.treeFiltering.iacResults,
+            this.rootIacIssuesTreeNode,
+            ScanIssue.INFRASTRUCTURE_AS_CODE,
+        )
     }
 
     private fun displayIssues(
@@ -305,7 +345,7 @@ class SnykToolWindowSnykScanListenerLS(
             } else {
                 "ies"
             }
-                text = "✋ $issuesCount vulnerabilit$plural found by Snyk"
+            text = "✋ $issuesCount vulnerabilit$plural found by Snyk"
             if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 text += ", $ignoredIssuesCount ignored"
             }
