@@ -348,7 +348,6 @@ class LanguageServerWrapper(
     fun sendScanCommand(project: Project) {
         if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
-            refreshFeatureFlags()
             getTrustedContentRoots(project).forEach {
                 sendFolderScanCommand(it.path, project)
             }
@@ -356,11 +355,11 @@ class LanguageServerWrapper(
     }
 
     fun refreshFeatureFlags() {
-        runInBackground("Snyk: refreshing feature flags...") {
+        runAsync {
             // this check should be async, as refresh is called from initialization and notAuthenticated is triggering
             // initialization. So, to make it wait patiently for its turn, it needs to be checked and executed in a
             // different thread.
-            if (notAuthenticated()) return@runInBackground
+            if (notAuthenticated()) return@runAsync
             pluginSettings().isGlobalIgnoresFeatureEnabled = getFeatureFlagStatus("snykCodeConsistentIgnores")
         }
     }
