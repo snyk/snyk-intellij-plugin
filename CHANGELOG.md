@@ -35,6 +35,7 @@
 - limit warn / error messages to 500 characters
 - use dumb aware to limit scans during startup
 - add no_proxy environment variable, if proxy exceptions are defined
+- be able to process findings in folder and file names that contain URL encoding
 
 ## [2.9.1]
 ### Fixed
