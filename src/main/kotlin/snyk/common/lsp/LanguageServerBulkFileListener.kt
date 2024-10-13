@@ -123,7 +123,7 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
 
         VirtualFileManager.getInstance().asyncRefresh()
         invokeLater {
-            if (SnykPluginDisposable.getInstance(project).isDisposed() || project.isDisposed) return@invokeLater
+            if (project.isDisposed || SnykPluginDisposable.getInstance(project).isDisposed()) return@invokeLater
             DaemonCodeAnalyzer.getInstance(project).restart()
         }
     }

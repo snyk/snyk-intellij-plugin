@@ -62,6 +62,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.Objects.nonNull
 import java.util.SortedSet
 import java.util.concurrent.TimeUnit
@@ -390,7 +391,7 @@ fun String.toVirtualFile(): VirtualFile {
     return if (!this.startsWith("file://")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        VirtualFileManager.getInstance().refreshAndFindFileByUrl(this.toVirtualFileURL())
+        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(convertUriToPath(this.toVirtualFileURL()))
             ?: throw FileNotFoundException(this)
     }
 }
@@ -409,6 +410,12 @@ fun String.toVirtualFileURL(): String {
         return this.replaceFirst("/", "")
     }
     return this
+}
+
+fun convertUriToPath(encodedUri: String): Path {
+    val uri = URI(encodedUri)
+    val path = Paths.get(uri)
+    return path
 }
 
 fun String.isWindowsURI() = SystemUtils.IS_OS_WINDOWS && this.startsWith("file://")
