@@ -9,6 +9,9 @@ data class SnykFile(val project: Project, val virtualFile: VirtualFile) {
     val relativePath = runAsync { RelativePathHelper().getRelativePath(virtualFile, project) }
 
     fun isInContent(): Boolean {
+        if (project.isDisposed) {
+            return false
+        }
         return this.virtualFile.isInContent(project)
     }
 }
