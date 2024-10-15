@@ -60,6 +60,7 @@ import snyk.common.lsp.commands.COMMAND_LOGIN
 import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
+import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.LanguageServerSettings
@@ -520,6 +521,22 @@ class LanguageServerWrapper(
             return url
         } catch (e: TimeoutException) {
             logger.warn("could not login", e)
+            return null
+        }
+    }
+
+    fun generateIssueDescription(issueID: String): String? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(issueID))
+            val result =
+                languageServer.workspaceService
+                    .executeCommand(generateIssueCommand)
+                    .get(2, TimeUnit.SECONDS)
+                    .toString()
+            return result
+        } catch (e: TimeoutException) {
+            logger.warn("could not generate html description", e)
             return null
         }
     }

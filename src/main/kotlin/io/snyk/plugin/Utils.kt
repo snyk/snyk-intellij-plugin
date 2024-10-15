@@ -391,7 +391,7 @@ fun String.toVirtualFile(): VirtualFile {
     return if (!this.startsWith("file://")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(convertUriToPath(this.toVirtualFileURL()))
+        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(convertUriToPath(this))
             ?: throw FileNotFoundException(this)
     }
 }
