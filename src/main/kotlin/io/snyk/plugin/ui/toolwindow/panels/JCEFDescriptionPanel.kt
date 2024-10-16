@@ -155,7 +155,7 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     fun getCustomCssAndScript(): String {
-        var html = issue.details().ifBlank { issue.additionalData.customUIContent }
+        var html = issue.details()
         val ideScript = getCustomScript()
 
         // TODO: remove custom stylesheets, deliver variables from LS, replace variables with colors

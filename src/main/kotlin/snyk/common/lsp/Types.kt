@@ -254,9 +254,17 @@ data class ScanIssue(
 
     fun details(): String {
         return when (this.filterableIssueType) {
-            OPEN_SOURCE -> this.additionalData.details ?: ""
-            else -> this.additionalData.details ?: ""
+            OPEN_SOURCE, CODE_SECURITY, CODE_QUALITY -> getHtml(this.additionalData.details)
+            INFRASTRUCTURE_AS_CODE -> getHtml(this.additionalData.customUIContent)
+            else -> ""
         }
+    }
+
+    private fun getHtml(details: String?): String {
+        if (details.isNullOrEmpty()) {
+            return LanguageServerWrapper.getInstance().generateIssueDescription(this.id) ?: ""
+        }
+        return details
     }
 
     fun annotationMessage(): String {
@@ -445,7 +453,7 @@ data class IssueData(
     @SerializedName("resolve") val resolve: String,
     @SerializedName("path") val path: List<String>,
     @SerializedName("references") val references: List<String>,
-    @SerializedName("customUIContent") val customUIContent: String,
+    @SerializedName("customUIContent") val customUIContent: String?,
 
     // all
     @SerializedName("key") val key: String,
