@@ -161,7 +161,6 @@ class SuggestionDescriptionPanelFromLS(
         // TODO: remove custom stylesheets, deliver variables from LS, replace variables with colors
         val ideStyle: String = when (issue.filterableIssueType) {
             ScanIssue.CODE_SECURITY, ScanIssue.CODE_QUALITY -> SnykStylesheets.SnykCodeSuggestion
-            ScanIssue.OPEN_SOURCE -> SnykStylesheets.SnykOSSSuggestion
             else -> ""
         }
 
