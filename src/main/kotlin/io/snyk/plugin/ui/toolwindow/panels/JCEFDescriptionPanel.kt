@@ -177,17 +177,22 @@ class SuggestionDescriptionPanelFromLS(
         html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
         html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
         html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
-        html =
-            html.replace("var(--border-color)", JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex())
+        val borderColor = JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
+        html = html.replace("var(--border-color)", borderColor)
+        html = html.replace("var(--horizontal-border-color)", borderColor)
         html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())
-        html = html.replace(
-            "var(--horizontal-border-color)",
-            JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
-        )
+
+        val editorBackground =
+            editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
         html = html.replace(
             "var(--code-background-color)",
-            editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
+            editorBackground
         )
+        html = html.replace(
+            "var(--container-background-color)",
+            editorBackground
+        )
+
         return html
     }
 

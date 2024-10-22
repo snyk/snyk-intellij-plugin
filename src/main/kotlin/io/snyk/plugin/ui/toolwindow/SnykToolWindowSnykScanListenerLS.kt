@@ -336,16 +336,16 @@ class SnykToolWindowSnykScanListenerLS(
         }
 
         val settings = pluginSettings()
-        var text = "✅ Congrats! No vulnerabilities found!"
+        var text = "✅ Congrats! No issues found!"
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         if (issuesCount != 0) {
-            val plural = if (issuesCount == 1) {
-                "y"
+            val plural = if (issuesCount > 1) {
+                "s"
             } else {
-                "ies"
+                ""
             }
-            text = "✋ $issuesCount vulnerabilit$plural found by Snyk"
+            text = "✋ $issuesCount issue$plural found by Snyk"
             if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 text += ", $ignoredIssuesCount ignored"
             }
@@ -361,13 +361,13 @@ class SnykToolWindowSnykScanListenerLS(
             if (fixableIssuesCount > 0) {
                 rootNode.add(
                     InfoTreeNode(
-                        "⚡ $fixableIssuesCount vulnerabilities can be fixed automatically",
+                        "⚡ $fixableIssuesCount issues can be fixed automatically",
                         project,
                     ),
                 )
             } else {
                 rootNode.add(
-                    InfoTreeNode("There are no vulnerabilities automatically fixable", project),
+                    InfoTreeNode("There are no issues automatically fixable", project),
                 )
             }
         }

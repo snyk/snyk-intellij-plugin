@@ -17,7 +17,7 @@ class GenerateAIFixHandler() {
         val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         aiFixQuery.addHandler { value ->
-            val params = value.split(":")
+            val params = value.split("@|@")
             val folderURI = params[0]
             val fileURI = params[1]
             val issueID = params[2]
@@ -54,15 +54,15 @@ class GenerateAIFixHandler() {
                         const filePath = aiFixButton.getAttribute('file-path');
 
                         aiFixButton.addEventListener('click', () => {
-                            window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
+                            window.aiFixQuery(folderPath + "@|@" + filePath + "@|@" + issueId);
                         });
 
                         retryFixButton.addEventListener('click', () => {
-                            window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
+                            window.aiFixQuery(folderPath + "@|@" + filePath + "@|@" + issueId);
                         });
 
                         retryFixButton.addEventListener('click', () => {
-                            window.aiFixQuery(folderPath + ":" + filePath + ":" + issueId);
+                            window.aiFixQuery(folderPath + "@|@" + filePath + "@|@" + issueId);
                         });
                     })();
                     """
