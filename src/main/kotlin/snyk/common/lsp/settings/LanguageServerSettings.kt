@@ -44,7 +44,7 @@ data class LanguageServerSettings(
     @SerializedName("enableSnykOSSQuickFixCodeActions") val enableSnykOSSQuickFixCodeActions: String? = null,
     @SerializedName("requiredProtocolVersion") val requiredProtocolVersion: String =
         pluginSettings().requiredLsProtocolVersion.toString(),
-    @SerializedName("hoverVerbosity") val hoverVerbosity: Int = 1,
+    @SerializedName("hoverVerbosity") val hoverVerbosity: Int = 0,
     @SerializedName("outputFormat") val outputFormat: String = "html",
     @SerializedName("enableDeltaFindings") val enableDeltaFindings: String = pluginSettings().isDeltaFindingsEnabled().toString(),
     @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = service<FolderConfigSettings>().getAll().values.toList()
