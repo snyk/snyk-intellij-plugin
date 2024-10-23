@@ -400,7 +400,7 @@ class SnykToolWindowPanel(
     }
 
     fun cleanUiAndCaches() {
-        getSnykCachedResults(project)?.cleanCaches()
+        getSnykCachedResults(project)?.clearCaches()
         rootOssTreeNode.originalCliErrorMessage = null
 
         getKubernetesImageCache(project)?.let {

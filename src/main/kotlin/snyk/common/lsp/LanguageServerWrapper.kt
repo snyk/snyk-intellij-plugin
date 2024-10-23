@@ -39,6 +39,7 @@ import org.eclipse.lsp4j.WorkspaceEditCapabilities
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent
 import org.eclipse.lsp4j.jsonrpc.Launcher
+import org.eclipse.lsp4j.jsonrpc.MessageConsumer
 import org.eclipse.lsp4j.jsonrpc.RemoteEndpoint
 import org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer
 import org.eclipse.lsp4j.launch.LSPLauncher
@@ -79,7 +80,7 @@ private const val INITIALIZATION_TIMEOUT = 20L
 @Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(
     private val lsPath: String = getCliFile().absolutePath,
-    private val executorService: ExecutorService = Executors.newCachedThreadPool(),
+    private val executorService: ExecutorService = Executors.newCachedThreadPool()
 ) : Disposable {
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
@@ -150,7 +151,22 @@ class LanguageServerWrapper(
                 }
             }
 
-            launcher = LSPLauncher.createClientLauncher(languageClient, process.inputStream, process.outputStream)
+            // enable message logging
+            val wrapper = fun(wrapped: MessageConsumer): MessageConsumer {
+                return MessageConsumer { message ->
+                    logger.trace(message.toString())
+                    wrapped.consume(message)
+                }
+            }
+
+            launcher = LSPLauncher.createClientLauncher(
+                snykLanguageClient,
+                process.inputStream,
+                process.outputStream,
+                executorService,
+                wrapper
+            )
+
             languageServer = launcher.remoteProxy
 
             val listenerFuture = launcher.startListening()
@@ -530,15 +546,20 @@ class LanguageServerWrapper(
         if (key.isBlank()) throw RuntimeException("Issue ID is required")
         val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(key))
         return try {
-            logger.info("########### calling generateIssueDescription")
-            executeCommand(generateIssueCommand, 10000).toString()
+            executeCommand(generateIssueCommand, Long.MAX_VALUE).toString()
         } catch (e: TimeoutException) {
             val exceptionMessage = "generate issue description failed"
             logger.warn(exceptionMessage, e)
             null
         } catch (e: Exception) {
-            logger.error("generate issue description failed", e)
-            null
+            if (e.message?.contains("failed to find issue") == true) {
+                val msg = "The issue is not in the server cache anymore, please wait for any running scans to finish"
+                logger.debug(msg)
+                return msg
+            } else {
+                logger.error("generate issue description failed", e)
+                null
+            }
         }
     }
 
@@ -686,4 +707,3 @@ class LanguageServerWrapper(
     }
 
 }
-

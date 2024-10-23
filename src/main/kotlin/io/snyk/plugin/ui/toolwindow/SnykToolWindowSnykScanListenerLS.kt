@@ -63,6 +63,7 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningStarted(snykScan: SnykScanParams) {
         if (disposed) return
         ApplicationManager.getApplication().invokeLater {
+            this.snykToolWindowPanel.cleanUiAndCaches()
             this.snykToolWindowPanel.updateTreeRootNodesPresentation()
             this.snykToolWindowPanel.displayScanningMessage()
         }
