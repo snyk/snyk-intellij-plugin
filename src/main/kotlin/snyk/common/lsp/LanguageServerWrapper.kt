@@ -20,9 +20,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
 import org.eclipse.lsp4j.CodeActionCapabilities
@@ -120,7 +117,6 @@ class LanguageServerWrapper(
 
     var isInitialized: Boolean = false
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun initialize() {
         if (disposed) return
         if (lsPath.toNioPathOrNull()?.exists() == false) {
@@ -143,7 +139,8 @@ class LanguageServerWrapper(
             EnvironmentHelper.updateEnvironment(processBuilder.environment(), pluginSettings().token ?: "")
 
             process = processBuilder.start()
-            GlobalScope.launch {
+
+            runAsync {
                 if (!disposed) {
                     try {
                         process.errorStream.bufferedReader().forEachLine { logger.debug(it) }
@@ -160,14 +157,16 @@ class LanguageServerWrapper(
 
             runAsync {
                 listenerFuture.get()
+                logger.info("Snyk Language Server was terminated, listener has ended.")
                 isInitialized = false
             }
 
-            if (!listenerFuture.isDone) {
+            if (!(listenerFuture.isDone || listenerFuture.isCancelled)) {
                 sendInitializeMessage()
                 isInitialized = true
                 // listen for downloads / restarts
                 LanguageServerRestartListener.getInstance()
+                refreshFeatureFlags()
             } else {
                 logger.warn("Language Server initialization did not succeed")
             }
@@ -525,19 +524,21 @@ class LanguageServerWrapper(
         }
     }
 
-    fun generateIssueDescription(issueID: String): String? {
+    fun generateIssueDescription(issue: ScanIssue): String? {
         if (!ensureLanguageServerInitialized()) return null
-        try {
-            val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(issueID))
-            val result =
-                languageServer.workspaceService
-                    .executeCommand(generateIssueCommand)
-                    .get(2, TimeUnit.SECONDS)
-                    .toString()
-            return result
+        val key = issue.additionalData.key
+        if (key.isBlank()) throw RuntimeException("Issue ID is required")
+        val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(key))
+        return try {
+            logger.info("########### calling generateIssueDescription")
+            executeCommand(generateIssueCommand, 10000).toString()
         } catch (e: TimeoutException) {
-            logger.warn("could not generate html description", e)
-            return null
+            val exceptionMessage = "generate issue description failed"
+            logger.warn(exceptionMessage, e)
+            null
+        } catch (e: Exception) {
+            logger.error("generate issue description failed", e)
+            null
         }
     }
 
@@ -545,7 +546,7 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return
         val cmd = ExecuteCommandParams(COMMAND_LOGOUT, emptyList())
         try {
-            languageServer.workspaceService.executeCommand(cmd).get(5, TimeUnit.SECONDS)
+            executeCommand(cmd)
         } catch (e: TimeoutException) {
             logger.warn("could not logout", e)
         }
@@ -567,7 +568,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_CODE_FIX_DIFFS
             param.arguments = listOf(folderURI, fileURI, issueID)
-            val result = languageServer.workspaceService.executeCommand(param).get(120, TimeUnit.SECONDS) as List<*>
+            val result = executeCommand(param, 120000) as List<*>
             val diffList: MutableList<Fix> = mutableListOf()
 
             result.forEach {
@@ -595,7 +596,7 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_CODE_SUBMIT_FIX_FEEDBACK
             param.arguments = listOf(fixId, feedback)
-            languageServer.workspaceService.executeCommand(param)
+            executeCommand(param)
         } catch (err: Exception) {
             logger.warn("Error in submitAutofixFeedbackCommand", err)
         }
@@ -631,8 +632,7 @@ class LanguageServerWrapper(
         if (!ensureLanguageServerInitialized()) return null
         try {
             val executeCommandParams = ExecuteCommandParams(COMMAND_GET_SETTINGS_SAST_ENABLED, emptyList())
-            val response =
-                languageServer.workspaceService.executeCommand(executeCommandParams).get(10, TimeUnit.SECONDS)
+            val response = executeCommand(executeCommandParams, 10000)
             if (response is Map<*, *>) {
                 val localCodeEngineMap: Map<String, *> = response["localCodeEngine"] as Map<String, *>
                 return SastSettings(

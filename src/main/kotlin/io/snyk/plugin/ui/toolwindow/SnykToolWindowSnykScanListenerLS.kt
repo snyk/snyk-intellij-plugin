@@ -13,6 +13,7 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.IAC_ROOT_TEXT
@@ -422,12 +423,14 @@ class SnykToolWindowSnykScanListenerLS(
                     .forEach { issue ->
                         fileTreeNode.add(
                             SuggestionTreeNode(
+                                project,
                                 issue,
                                 navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0)),
                             ),
                         )
                     }
             }
+        expandTreeNodeRecursively(snykToolWindowPanel.vulnerabilitiesTree, rootNode)
     }
 
     private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {

@@ -261,10 +261,11 @@ data class ScanIssue(
     }
 
     private fun getHtml(details: String?): String {
-        if (details.isNullOrEmpty()) {
-            return LanguageServerWrapper.getInstance().generateIssueDescription(this.id) ?: ""
+        return if (details.isNullOrEmpty() && this.id.isNotBlank()) {
+            LanguageServerWrapper.getInstance().generateIssueDescription(this) ?: ""
+        } else {
+            ""
         }
-        return details
     }
 
     fun annotationMessage(): String {

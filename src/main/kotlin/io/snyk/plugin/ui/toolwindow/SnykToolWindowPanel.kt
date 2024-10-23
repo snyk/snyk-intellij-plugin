@@ -65,6 +65,7 @@ import io.snyk.plugin.ui.toolwindow.panels.StatePanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
+import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
@@ -79,6 +80,7 @@ import java.awt.BorderLayout
 import java.util.Objects.nonNull
 import javax.swing.JPanel
 import javax.swing.JScrollPane
+import javax.swing.event.TreeSelectionEvent
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreePath
@@ -93,7 +95,7 @@ class SnykToolWindowPanel(
     Disposable {
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
     private val logger = Logger.getInstance(this::class.java)
-    private val rootTreeNode =  ChooseBranchNode(project = project)
+    private val rootTreeNode = ChooseBranchNode(project = project)
     private val rootOssTreeNode = RootOssTreeNode(project)
     private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     private val rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
@@ -129,10 +131,10 @@ class SnykToolWindowPanel(
         }
 
 
-
     init {
         val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
-        val rootNodeText = folderConfig?.let { getRootNodeText(it.folderPath, it.baseBranch) } ?: "Choose branch on ${project.basePath}"
+        val rootNodeText = folderConfig?.let { getRootNodeText(it.folderPath, it.baseBranch) }
+            ?: "Choose branch on ${project.basePath}"
         rootTreeNode.info = rootNodeText
 
         vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
@@ -148,8 +150,10 @@ class SnykToolWindowPanel(
         createTreeAndDescriptionPanel()
         chooseMainPanelToDisplay()
 
-        vulnerabilitiesTree.selectionModel.addTreeSelectionListener {
-            updateDescriptionPanelBySelectedTreeNode()
+        vulnerabilitiesTree.selectionModel.addTreeSelectionListener { treeSelectionEvent ->
+            runAsync {
+                updateDescriptionPanelBySelectedTreeNode(treeSelectionEvent)
+            }
         }
 
         val scanListenerLS =
@@ -316,45 +320,74 @@ class SnykToolWindowPanel(
             )
     }
 
-    private fun updateDescriptionPanelBySelectedTreeNode() {
+    private fun updateDescriptionPanelBySelectedTreeNode(treeSelectionEvent: TreeSelectionEvent) {
         val capturedSmartReloadMode = smartReloadMode
         val capturedNavigateToSourceEnabled = triggerSelectionListeners
 
-        ApplicationManager.getApplication().invokeLater {
-            descriptionPanel.removeAll()
-            val selectionPath = vulnerabilitiesTree.selectionPath
-            if (nonNull(selectionPath)) {
-                val lastPathComponent = selectionPath!!.lastPathComponent
+        val selectionPath = treeSelectionEvent.path
+        if (nonNull(selectionPath) && treeSelectionEvent.isAddedPath) {
+            val lastPathComponent = selectionPath.lastPathComponent
 
-                if (lastPathComponent is ChooseBranchNode && capturedNavigateToSourceEnabled && !capturedSmartReloadMode) {
+            if (lastPathComponent is ChooseBranchNode && capturedNavigateToSourceEnabled && !capturedSmartReloadMode) {
+                invokeLater {
                     BranchChooserComboBoxDialog(project).show()
                 }
+            }
 
-                if (!capturedSmartReloadMode &&
-                    capturedNavigateToSourceEnabled &&
-                    lastPathComponent is NavigatableToSourceTreeNode
-                ) {
-                    lastPathComponent.navigateToSource()
-                }
-                when (val selectedNode: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
-                    is DescriptionHolderTreeNode -> {
+            if (!capturedSmartReloadMode &&
+                capturedNavigateToSourceEnabled &&
+                lastPathComponent is NavigatableToSourceTreeNode
+            ) {
+                lastPathComponent.navigateToSource()
+            }
+            when (val selectedNode: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
+                is DescriptionHolderTreeNode -> {
+                    if (selectedNode is SuggestionTreeNode) {
+                        val cache = getSnykCachedResults(project) ?: return
+                        val issue = selectedNode.issue
+                        val productIssues = when (issue.filterableIssueType) {
+                            ScanIssue.CODE_SECURITY, ScanIssue.CODE_QUALITY -> cache.currentSnykCodeResultsLS
+                            ScanIssue.OPEN_SOURCE -> cache.currentOSSResultsLS
+                            ScanIssue.INFRASTRUCTURE_AS_CODE -> cache.currentIacResultsLS
+                            ScanIssue.CONTAINER -> cache.currentContainerResultsLS
+                            else -> {
+                                emptyMap()
+                            }
+                        }
+                        productIssues.values.flatten().filter { issue.id == it.id }.forEach { _ ->
+                            val newDescriptionPanel = selectedNode.getDescriptionPanel()
+                            descriptionPanel.removeAll()
+                            descriptionPanel.add(
+                                newDescriptionPanel,
+                                BorderLayout.CENTER,
+                            )
+                        }
+                    } else {
+                        descriptionPanel.removeAll()
                         descriptionPanel.add(
                             selectedNode.getDescriptionPanel(),
                             BorderLayout.CENTER,
                         )
                     }
 
-                    is ErrorHolderTreeNode -> {
-                        selectedNode.getSnykError()?.let {
-                            displaySnykError(it)
-                        } ?: displayEmptyDescription()
-                    }
-
-                    else -> displayEmptyDescription()
                 }
-            } else {
-                displayEmptyDescription()
+
+                is ErrorHolderTreeNode -> {
+                    descriptionPanel.removeAll()
+                    selectedNode.getSnykError()?.let {
+                        displaySnykError(it)
+                    } ?: displayEmptyDescription()
+                }
+
+                else -> {
+                    descriptionPanel.removeAll()
+                    displayEmptyDescription()
+                }
             }
+        } else {
+            displayEmptyDescription()
+        }
+        invokeLater {
             descriptionPanel.revalidate()
             descriptionPanel.repaint()
         }
@@ -842,9 +875,6 @@ class SnykToolWindowPanel(
         smartReloadMode = true
         try {
             selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
-            // for some reason TreeSelectionListener is not initiated here on node selection
-            // also we need to update Description panel in case if no selection was made before
-            updateDescriptionPanelBySelectedTreeNode()
         } finally {
             smartReloadMode = false
         }
