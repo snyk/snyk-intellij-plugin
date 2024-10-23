@@ -364,7 +364,7 @@ class LanguageServerWrapper(
         }
     }
 
-    private fun getFeatureFlagStatus(featureFlag: String): Boolean {
+    private fun getFeatureFlagStatus(@Suppress("SameParameterValue") featureFlag: String): Boolean {
         if (notAuthenticated()) return false
         try {
             val param = ExecuteCommandParams()

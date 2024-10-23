@@ -14,7 +14,6 @@ class SuggestionTreeNode(
     override val navigateToSource: () -> Unit
 ) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
-    @Suppress("UNCHECKED_CAST")
     override fun getDescriptionPanel(): IssueDescriptionPanelBase {
         return SuggestionDescriptionPanelFromLS(project, issue)
     }
