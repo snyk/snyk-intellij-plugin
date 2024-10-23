@@ -13,6 +13,7 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.IAC_ROOT_TEXT
@@ -62,6 +63,7 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningStarted(snykScan: SnykScanParams) {
         if (disposed) return
         ApplicationManager.getApplication().invokeLater {
+            this.snykToolWindowPanel.cleanUiAndCaches()
             this.snykToolWindowPanel.updateTreeRootNodesPresentation()
             this.snykToolWindowPanel.displayScanningMessage()
         }
@@ -336,16 +338,12 @@ class SnykToolWindowSnykScanListenerLS(
         }
 
         val settings = pluginSettings()
-        var text = "✅ Congrats! No vulnerabilities found!"
+        var text = "✅ Congrats! No issues found!"
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         if (issuesCount != 0) {
-            val plural = if (issuesCount == 1) {
-                "y"
-            } else {
-                "ies"
-            }
-            text = "✋ $issuesCount vulnerabilit$plural found by Snyk"
+            val plural = getPlural(issuesCount)
+            text = "✋ $issuesCount issue$plural found by Snyk"
             if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 text += ", $ignoredIssuesCount ignored"
             }
@@ -359,15 +357,16 @@ class SnykToolWindowSnykScanListenerLS(
 
         if (fixableIssuesCount != null) {
             if (fixableIssuesCount > 0) {
+                val plural = getPlural(fixableIssuesCount)
                 rootNode.add(
                     InfoTreeNode(
-                        "⚡ $fixableIssuesCount vulnerabilities can be fixed automatically",
+                        "⚡ $fixableIssuesCount issue$plural can be fixed automatically",
                         project,
                     ),
                 )
             } else {
                 rootNode.add(
-                    InfoTreeNode("There are no vulnerabilities automatically fixable", project),
+                    InfoTreeNode("There are no issues automatically fixable", project),
                 )
             }
         }
@@ -388,6 +387,12 @@ class SnykToolWindowSnykScanListenerLS(
                 )
             }
         }
+    }
+
+    private fun getPlural(issuesCount: Int) = if (issuesCount > 1) {
+        "s"
+    } else {
+        ""
     }
 
     private fun displayResultsForRootTreeNode(
@@ -422,12 +427,14 @@ class SnykToolWindowSnykScanListenerLS(
                     .forEach { issue ->
                         fileTreeNode.add(
                             SuggestionTreeNode(
+                                project,
                                 issue,
                                 navigateToSource(entry.key.virtualFile, issue.textRange ?: TextRange(0, 0)),
                             ),
                         )
                     }
             }
+        expandTreeNodeRecursively(snykToolWindowPanel.vulnerabilitiesTree, rootNode)
     }
 
     private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {

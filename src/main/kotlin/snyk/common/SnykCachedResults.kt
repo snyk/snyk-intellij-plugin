@@ -35,7 +35,7 @@ class SnykCachedResults(
 
     override fun dispose() {
         disposed = true
-        cleanCaches()
+        clearCaches()
     }
 
     fun isDisposed() = disposed
@@ -54,7 +54,7 @@ class SnykCachedResults(
     var currentIacError: SnykError? = null
     var currentSnykCodeError: SnykError? = null
 
-    fun cleanCaches() {
+    fun clearCaches() {
         currentContainerResult = null
         currentOssError = null
         currentContainerError = null

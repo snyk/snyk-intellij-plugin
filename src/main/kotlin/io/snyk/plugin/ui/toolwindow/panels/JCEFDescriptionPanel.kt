@@ -2,11 +2,11 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import io.snyk.plugin.SnykFile
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -31,13 +31,12 @@ import javax.swing.JPanel
 import kotlin.collections.set
 
 class SuggestionDescriptionPanelFromLS(
-    snykFile: SnykFile,
+    val project: Project,
     private val issue: ScanIssue,
 ) : IssueDescriptionPanelBase(
     title = issue.title(),
     severity = issue.getSeverityAsEnum(),
 ) {
-    val project = snykFile.project
     private val unexpectedErrorMessage =
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
@@ -57,7 +56,7 @@ class SuggestionDescriptionPanelFromLS(
                     virtualFiles[dataFlow.filePath] = dataFlow.filePath.toVirtualFile()
                 }
 
-                val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(snykFile.project, virtualFiles)
+                val openFileLoadHandlerGenerator = OpenFileLoadHandlerGenerator(project, virtualFiles)
                 loadHandlerGenerators += {
                     openFileLoadHandlerGenerator.generate(it)
                 }
@@ -67,7 +66,7 @@ class SuggestionDescriptionPanelFromLS(
                     generateAIFixHandler.generateAIFixCommand(it)
                 }
 
-                val applyFixHandler = ApplyFixHandler(snykFile.project)
+                val applyFixHandler = ApplyFixHandler(project)
                 loadHandlerGenerators += {
                     applyFixHandler.generateApplyFixCommand(it)
                 }
@@ -161,7 +160,6 @@ class SuggestionDescriptionPanelFromLS(
         // TODO: remove custom stylesheets, deliver variables from LS, replace variables with colors
         val ideStyle: String = when (issue.filterableIssueType) {
             ScanIssue.CODE_SECURITY, ScanIssue.CODE_QUALITY -> SnykStylesheets.SnykCodeSuggestion
-            ScanIssue.OPEN_SOURCE -> SnykStylesheets.SnykOSSSuggestion
             else -> ""
         }
 
@@ -178,17 +176,27 @@ class SuggestionDescriptionPanelFromLS(
         html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
         html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
         html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
-        html =
-            html.replace("var(--border-color)", JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex())
+        val borderColor = JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
+        html = html.replace("var(--border-color)", borderColor)
+        html = html.replace("var(--horizontal-border-color)", borderColor)
         html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())
-        html = html.replace(
-            "var(--horizontal-border-color)",
-            JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
-        )
+
+        val editorBackground =
+            editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
         html = html.replace(
             "var(--code-background-color)",
-            editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
+            editorBackground
         )
+        html = html.replace(
+            "var(--container-background-color)",
+            editorBackground
+        )
+
+        html = html.replace(
+            "var(--editor-color)",
+            editorBackground
+        )
+
         return html
     }
 

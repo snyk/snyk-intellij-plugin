@@ -238,7 +238,6 @@ class SnykLanguageClient :
         when (snykScan.product) {
             "oss" -> scanPublisher.scanningOssFinished()
             "code" -> {
-                LanguageServerWrapper.getInstance().refreshFeatureFlags()
                 scanPublisher.scanningSnykCodeFinished()
             }
             "iac" -> scanPublisher.scanningIacFinished()
@@ -270,11 +269,12 @@ class SnykLanguageClient :
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {
         if (disposed) return
-        if (pluginSettings().token == param.token) return
+        val oldToken = pluginSettings().token
+        if (oldToken == param.token) return
         pluginSettings().token = param.token
         ApplicationManager.getApplication().saveSettings()
 
-        if (pluginSettings().token?.isNotEmpty() == true && pluginSettings().scanOnSave) {
+        if (oldToken.isNullOrBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
             ProjectManager.getInstance().openProjects.forEach {
                 wrapper.sendScanCommand(it)

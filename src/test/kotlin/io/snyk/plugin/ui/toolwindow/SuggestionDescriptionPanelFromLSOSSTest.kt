@@ -83,7 +83,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(project, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -95,7 +95,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
         every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(project, issue)
 
         val actual = cut.getCustomCssAndScript()
 

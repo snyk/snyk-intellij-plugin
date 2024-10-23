@@ -8,7 +8,6 @@
 
 html, body {
   height: 100%;
-  font-size: 16px;
   display: flex;
   flex-direction: column;
   margin: 0;
@@ -18,7 +17,6 @@ html, body {
 body {
   color: var(--text-color);
   font-weight: 400;
-  font-size: 0.875rem;
 }
 
 a,
@@ -52,11 +50,9 @@ a,
 .ai-fix-header,
 .example-fixes-header,
 .overview-text > h2 {
-  font-size: 0.85rem;
 }
 
 .severity-type-container {
-  font-size: 0.85rem;
 }
 
 .data-flow-clickable-row {
@@ -68,7 +64,6 @@ a,
 }
 
 .tab-item {
-  font-size: 0.85rem;
 }
 
 .tab-item-icon path {
@@ -81,10 +76,6 @@ a,
 
 .tab-item.is-selected {
   border-bottom: 3px solid #3474f0;
-}
-
-.example-line {
-  background-color: var(--editor-color);
 }
 
 .example-line.added {

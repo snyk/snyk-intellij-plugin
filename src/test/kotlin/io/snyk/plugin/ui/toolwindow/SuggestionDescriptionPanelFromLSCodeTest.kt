@@ -83,7 +83,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(project, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -101,7 +101,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(project, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -113,7 +113,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
         every { issue.details() } returns "<html><head>\${ideStyle}</head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(snykFile, issue)
+        cut = SuggestionDescriptionPanelFromLS(project, issue)
 
         val actual = cut.getCustomCssAndScript()
         assertFalse(actual.contains("\${ideStyle}"))

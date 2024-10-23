@@ -32,7 +32,7 @@ repositories {
 dependencies {
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
     implementation(platform("com.squareup.retrofit2:retrofit-bom:2.11.0"))
-    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.22.0")
+    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.23.1")
 
     implementation("org.commonmark:commonmark:0.21.0")
     implementation("com.google.code.gson:gson:2.10.1")
