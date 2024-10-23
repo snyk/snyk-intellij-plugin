@@ -589,9 +589,10 @@ class LanguageServerWrapper(
             val param = ExecuteCommandParams()
             param.command = COMMAND_CODE_FIX_DIFFS
             param.arguments = listOf(folderURI, fileURI, issueID)
-            val result = executeCommand(param, 120000) as List<*>
-            val diffList: MutableList<Fix> = mutableListOf()
+            val executeCommandResult = executeCommand(param, 120000) ?: return emptyList()
 
+            val diffList: MutableList<Fix> = mutableListOf()
+            val result = executeCommandResult as List<*>
             result.forEach {
                 val entry = it as Map<String, *>
                 val fixId = entry["fixId"] as? String
