@@ -179,7 +179,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         )
         TestCase.assertEquals(
             rootTreeNode.children().toList()[5].toString(),
-            "⚡ 1 issues can be fixed automatically",
+            "⚡ 1 issue can be fixed automatically",
         )
     }
 

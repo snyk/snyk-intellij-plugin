@@ -341,11 +341,7 @@ class SnykToolWindowSnykScanListenerLS(
         val issuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         if (issuesCount != 0) {
-            val plural = if (issuesCount > 1) {
-                "s"
-            } else {
-                ""
-            }
+            val plural = getPlural(issuesCount)
             text = "✋ $issuesCount issue$plural found by Snyk"
             if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 text += ", $ignoredIssuesCount ignored"
@@ -360,9 +356,10 @@ class SnykToolWindowSnykScanListenerLS(
 
         if (fixableIssuesCount != null) {
             if (fixableIssuesCount > 0) {
+                val plural = getPlural(fixableIssuesCount)
                 rootNode.add(
                     InfoTreeNode(
-                        "⚡ $fixableIssuesCount issues can be fixed automatically",
+                        "⚡ $fixableIssuesCount issue$plural can be fixed automatically",
                         project,
                     ),
                 )
@@ -389,6 +386,12 @@ class SnykToolWindowSnykScanListenerLS(
                 )
             }
         }
+    }
+
+    private fun getPlural(issuesCount: Int) = if (issuesCount > 1) {
+        "s"
+    } else {
+        ""
     }
 
     private fun displayResultsForRootTreeNode(
