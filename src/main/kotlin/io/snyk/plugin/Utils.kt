@@ -453,7 +453,10 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
 
 fun VirtualFile.isInContent(project: Project): Boolean {
     val vf = this
-    return ReadAction.compute<Boolean, RuntimeException> { ProjectFileIndex.getInstance(project).isInContent(vf) }
+    return ReadAction.compute<Boolean, RuntimeException> {
+        if (project.isDisposed) return@compute false
+        ProjectFileIndex.getInstance(project).isInContent(vf)
+    }
 }
 
 inline fun runInBackground(title: String, project: Project? = null, cancellable: Boolean = true, crossinline task: (indicator: ProgressIndicator) -> Unit) {
