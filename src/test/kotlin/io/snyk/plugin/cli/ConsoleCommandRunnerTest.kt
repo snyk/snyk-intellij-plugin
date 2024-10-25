@@ -52,7 +52,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://customerTestEndpoint/v1"
+            val expectedEndpoint = "https://customerTestEndpoint"
             pluginSettings().customEndpointUrl = expectedEndpoint
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
@@ -82,7 +82,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://api.xxx.snykgov.io/v1"
+            val expectedEndpoint = "https://api.xxx.snykgov.io"
             generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
 
             pluginSettings().customEndpointUrl = expectedEndpoint
@@ -104,7 +104,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://api.snyk.io/v1"
+            val expectedEndpoint = "https://api.snyk.io"
             generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = "{}"
 
             pluginSettings().customEndpointUrl = expectedEndpoint
@@ -126,7 +126,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
             val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://customerTestEndpoint/v1"
+            val expectedEndpoint = "https://customerTestEndpoint"
             pluginSettings().customEndpointUrl = expectedEndpoint
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")

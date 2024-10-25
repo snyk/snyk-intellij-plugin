@@ -272,8 +272,12 @@ class SnykLanguageClient :
         val oldToken = pluginSettings().token
         val oldApiUrl = pluginSettings().customEndpointUrl
         if (oldToken == param.token && oldApiUrl == param.apiUrl) return
+
+        if (!param.apiUrl.isNullOrBlank()){
+            pluginSettings().customEndpointUrl = param.apiUrl
+        }
+
         pluginSettings().token = param.token
-        pluginSettings().customEndpointUrl = param.apiUrl
 
         ApplicationManager.getApplication().saveSettings()
 

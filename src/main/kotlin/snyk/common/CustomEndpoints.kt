@@ -76,7 +76,7 @@ fun getEndpointUrl(): String {
     }
     val customEndpointUrl = resolveCustomEndpoint(endpointUrl)
     // we need to set v1 here, to make the sast-enabled calls work in LS
-    return customEndpointUrl.removeTrailingSlashesIfPresent().suffixIfNot("/v1")
+    return customEndpointUrl.removeTrailingSlashesIfPresent()
 }
 
 fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
@@ -113,17 +113,6 @@ fun URI.isSnykTenant() =
         || isDev())
 
 fun URI.isSnykApi() = isSnykDomain() && (host.lowercase().startsWith("api.") || path.lowercase().endsWith("/api"))
-
-fun URI.toSnykAPIv1(): URI {
-    val host = host.lowercase()
-        .replaceFirst("app.", "api.")
-        .replaceFirst("deeproxy.", "api.")
-        .prefixIfNot(
-            "api."
-        )
-
-    return URI(scheme, host, "/v1/", null)
-}
 
 fun URI.isSnykDomain() = host != null &&
     (

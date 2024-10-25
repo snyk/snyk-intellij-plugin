@@ -123,7 +123,8 @@ class SnykLanguageClientTest {
         every { applicationMock.isDisposed } returns true
 
         val unexpected = "abc"
-        cut.hasAuthenticated(HasAuthenticatedParam(unexpected))
+        val url = "https://snyk.api.io"
+        cut.hasAuthenticated(HasAuthenticatedParam(unexpected, url))
 
         assertNotEquals(unexpected, settings.token)
     }
