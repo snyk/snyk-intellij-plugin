@@ -1,8 +1,5 @@
 package io.snyk.plugin
 
-import com.intellij.ide.plugins.IdeaPluginDescriptor
-import com.intellij.ide.plugins.PluginInstaller
-import com.intellij.ide.plugins.PluginStateListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.ExtensionPointName
@@ -36,8 +33,6 @@ class SnykPostStartupActivity : ProjectActivity {
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun execute(project: Project) {
-        PluginInstaller.addStateListener(UninstallListener())
-
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
             // TODO: add subscription for language server messages
@@ -86,12 +81,4 @@ class SnykPostStartupActivity : ProjectActivity {
             it.register(SnykControllerImpl(project))
         }
     }
-}
-
-private class UninstallListener : PluginStateListener {
-    @Suppress("EmptyFunctionBlock")
-    override fun install(descriptor: IdeaPluginDescriptor) {
-    }
-
-    override fun uninstall(descriptor: IdeaPluginDescriptor) {}
 }

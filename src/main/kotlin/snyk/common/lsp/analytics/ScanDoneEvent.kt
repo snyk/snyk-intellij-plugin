@@ -1,4 +1,4 @@
-package snyk.common.lsp.commands
+package snyk.common.lsp.analytics
 
 import com.google.gson.annotations.SerializedName
 import io.snyk.plugin.getArch
@@ -9,7 +9,7 @@ import java.time.ZonedDateTime
 
 data class ScanDoneEvent(
     @SerializedName("data") val data: Data
-) {
+) : AbstractAnalyticsEvent {
     data class Data(
         @SerializedName("type") val type: String = "analytics",
         @SerializedName("attributes") val attributes: Attributes
