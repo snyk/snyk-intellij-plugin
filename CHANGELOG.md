@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.11.0]
+### Changed
+- If $/snyk.hasAuthenticated transmits an API URL, this is saved in the settings.
+
 ## [2.10.0]
 ### Changed
 - save git folder config in settings
