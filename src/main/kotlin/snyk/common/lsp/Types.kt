@@ -477,6 +477,7 @@ data class IssueData(
 
 data class HasAuthenticatedParam(
     @SerializedName("token") val token: String?,
+    @SerializedName("apiUrl") val apiUrl: String?,
 )
 
 data class SnykTrustedFoldersParams(

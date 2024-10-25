@@ -270,8 +270,11 @@ class SnykLanguageClient :
     fun hasAuthenticated(param: HasAuthenticatedParam) {
         if (disposed) return
         val oldToken = pluginSettings().token
-        if (oldToken == param.token) return
+        val oldApiUrl = pluginSettings().customEndpointUrl
+        if (oldToken == param.token && oldApiUrl == param.apiUrl) return
         pluginSettings().token = param.token
+        pluginSettings().customEndpointUrl = param.apiUrl
+
         ApplicationManager.getApplication().saveSettings()
 
         if (oldToken.isNullOrBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
@@ -287,7 +290,6 @@ class SnykLanguageClient :
         val project = guessProjectForFile(workspaceFolder.uri.toVirtualFile()) ?: return CompletableFuture.completedFuture(emptyList())
         return CompletableFuture.completedFuture(SdkHelper.getSdks(project))
     }
-
 
     @JsonNotification(value = "$/snyk.addTrustedFolders")
     fun addTrustedPaths(param: SnykTrustedFoldersParams) {
