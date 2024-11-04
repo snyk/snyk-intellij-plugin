@@ -16,6 +16,7 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
 
+@Suppress("MemberVisibilityCanBePrivate")
 @Service
 class SnykCliDownloaderService {
 
@@ -129,13 +130,13 @@ class SnykCliDownloaderService {
         return pluginSettings().currentLSProtocolVersion == pluginSettings().requiredLsProtocolVersion
     }
 
-    private fun isFourDaysPassedSinceLastCheck(): Boolean {
+    fun isFourDaysPassedSinceLastCheck(): Boolean {
         val previousDate = pluginSettings().getLastCheckDate() ?: return true
 
         return ChronoUnit.DAYS.between(previousDate, LocalDate.now()) >= NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK
     }
 
-    private fun isNewVersionAvailable(currentCliVersion: String?, newCliVersion: String?): Boolean {
+    fun isNewVersionAvailable(currentCliVersion: String?, newCliVersion: String?): Boolean {
         val cliVersionsNullOrEmpty =
             currentCliVersion == null || newCliVersion == null ||
                 currentCliVersion.isEmpty() || newCliVersion.isEmpty()
