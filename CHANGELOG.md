@@ -3,6 +3,7 @@
 ## [2.11.0]
 ### Changed
 - If $/snyk.hasAuthenticated transmits an API URL, this is saved in the settings.
+- Added a description of custom endpoints to settings dialog.
 
 ## [2.10.0]
 ### Changed

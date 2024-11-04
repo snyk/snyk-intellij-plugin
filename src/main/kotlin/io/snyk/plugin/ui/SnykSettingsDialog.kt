@@ -205,7 +205,7 @@ class SnykSettingsDialog(
 
         /** General settings ------------------ */
 
-        val generalSettingsPanel = JPanel(UIGridLayoutManager(7, 3, JBUI.emptyInsets(), -1, -1))
+        val generalSettingsPanel = JPanel(UIGridLayoutManager(8, 3, JBUI.emptyInsets(), -1, -1))
         generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
 
         rootPanel.add(
@@ -293,6 +293,25 @@ class SnykSettingsDialog(
             ),
         )
 
+        val endpointDescriptionLabel =
+            JLabel(
+                "<html>Sets API endpoint to use for Snyk requests. Useful for custom Snyk setups. <br/>" +
+                    "E.g. `https://api.eu.snyk.io`.</html>",
+            ).apply { font = FontUtil.minusOne(this.font) }
+
+        generalSettingsPanel.add(
+            endpointDescriptionLabel,
+            baseGridConstraints(
+                row = 4,
+                column = 1,
+                colSpan = 2,
+                indent = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+            ),
+        )
+
         val customEndpointLabel = JLabel("Custom endpoint:")
         val customEndpointTooltip =
             "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
@@ -302,7 +321,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             customEndpointLabel,
             baseGridConstraintsAnchorWest(
-                row = 4,
+                row = 5,
                 indent = 0,
             ),
         )
@@ -310,7 +329,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             customEndpointTextField,
             baseGridConstraints(
-                row = 4,
+                row = 5,
                 column = 1,
                 colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
@@ -324,7 +343,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             ignoreUnknownCACheckBox,
             baseGridConstraints(
-                row = 5,
+                row = 6,
                 column = 1,
                 colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
@@ -339,7 +358,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationLabel,
             baseGridConstraintsAnchorWest(
-                row = 6,
+                row = 7,
                 indent = 0,
             ),
         )
@@ -347,7 +366,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationTextField,
             baseGridConstraints(
-                row = 6,
+                row = 7,
                 column = 1,
                 colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
@@ -368,7 +387,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             organizationContextHelpLabel,
             baseGridConstraintsAnchorWest(
-                row = 6,
+                row = 7,
                 column = 2,
                 indent = 0,
                 fill = UIGridConstraints.FILL_NONE,
