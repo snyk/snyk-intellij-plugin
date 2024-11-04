@@ -129,13 +129,13 @@ class SnykCliDownloaderService {
         return pluginSettings().currentLSProtocolVersion == pluginSettings().requiredLsProtocolVersion
     }
 
-    fun isFourDaysPassedSinceLastCheck(): Boolean {
+    private fun isFourDaysPassedSinceLastCheck(): Boolean {
         val previousDate = pluginSettings().getLastCheckDate() ?: return true
 
         return ChronoUnit.DAYS.between(previousDate, LocalDate.now()) >= NUMBER_OF_DAYS_BETWEEN_RELEASE_CHECK
     }
 
-    fun isNewVersionAvailable(currentCliVersion: String?, newCliVersion: String?): Boolean {
+    private fun isNewVersionAvailable(currentCliVersion: String?, newCliVersion: String?): Boolean {
         val cliVersionsNullOrEmpty =
             currentCliVersion == null || newCliVersion == null ||
                 currentCliVersion.isEmpty() || newCliVersion.isEmpty()
