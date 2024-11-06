@@ -27,7 +27,7 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.lsp.analytics.ScanDoneEvent
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService

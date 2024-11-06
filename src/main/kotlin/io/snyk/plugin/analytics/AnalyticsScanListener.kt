@@ -3,12 +3,12 @@ package io.snyk.plugin.analytics
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toVirtualFile
 import snyk.common.SnykError
-import snyk.common.lsp.LanguageServerWrapper
-import snyk.common.lsp.commands.ScanDoneEvent
+import snyk.common.lsp.analytics.AnalyticsEvent
+import snyk.common.lsp.analytics.ScanDoneEvent
 import snyk.container.ContainerResult
-import snyk.iac.IacResult
 
 @Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
@@ -53,7 +53,7 @@ class AnalyticsScanListener(val project: Project) {
                 containerResult.mediumSeveritiesCount(),
                 containerResult.lowSeveritiesCount()
             )
-            LanguageServerWrapper.getInstance().sendReportAnalyticsCommand(scanDoneEvent)
+            AnalyticsSender.getInstance().logEvent(scanDoneEvent)
         }
 
         override fun scanningContainerError(snykError: SnykError) {
@@ -66,5 +66,11 @@ class AnalyticsScanListener(val project: Project) {
             SnykScanListener.SNYK_SCAN_TOPIC,
             snykScanListener,
         )
+        if (!pluginSettings().pluginInstalledSent) {
+            val event = AnalyticsEvent("plugin installed", listOf("install"))
+            AnalyticsSender.getInstance().logEvent(event) {
+                pluginSettings().pluginInstalledSent = true
+            }
+        }
     }
 }

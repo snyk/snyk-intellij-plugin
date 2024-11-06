@@ -47,6 +47,7 @@ import org.eclipse.lsp4j.services.LanguageServer
 import org.jetbrains.concurrency.runAsync
 import snyk.common.EnvironmentHelper
 import snyk.common.getEndpointUrl
+import snyk.common.lsp.analytics.AbstractAnalyticsEvent
 import snyk.common.lsp.commands.COMMAND_CODE_FIX_DIFFS
 import snyk.common.lsp.commands.COMMAND_CODE_SUBMIT_FIX_FEEDBACK
 import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
@@ -59,7 +60,6 @@ import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
-import snyk.common.lsp.commands.ScanDoneEvent
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
@@ -348,10 +348,10 @@ class LanguageServerWrapper(
         return isInitialized
     }
 
-    fun sendReportAnalyticsCommand(scanDoneEvent: ScanDoneEvent) {
+    fun sendReportAnalyticsCommand(event: AbstractAnalyticsEvent) {
         if (notAuthenticated()) return
         try {
-            val eventString = gson.toJson(scanDoneEvent)
+            val eventString = gson.toJson(event)
             val param = ExecuteCommandParams()
             param.command = COMMAND_REPORT_ANALYTICS
             param.arguments = listOf(eventString)
@@ -488,8 +488,7 @@ class LanguageServerWrapper(
     }
 
     fun getAuthenticatedUser(): String? {
-        if (pluginSettings().token.isNullOrBlank()) return null
-        if (!ensureLanguageServerInitialized()) return null
+        if (notAuthenticated()) return null
 
         if (!this.authenticatedUser.isNullOrEmpty()) return authenticatedUser!!["username"]
         val cmd = ExecuteCommandParams(COMMAND_GET_ACTIVE_USER, emptyList())
@@ -541,7 +540,7 @@ class LanguageServerWrapper(
     }
 
     fun generateIssueDescription(issue: ScanIssue): String? {
-        if (!ensureLanguageServerInitialized()) return null
+        if (notAuthenticated()) return null
         val key = issue.additionalData.key
         if (key.isBlank()) throw RuntimeException("Issue ID is required")
         val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(key))
@@ -624,7 +623,7 @@ class LanguageServerWrapper(
         }
     }
 
-    private fun notAuthenticated() = !ensureLanguageServerInitialized() || pluginSettings().token.isNullOrBlank()
+    fun notAuthenticated() = !ensureLanguageServerInitialized() || pluginSettings().token.isNullOrBlank()
 
 
     private fun ensureLanguageServerProtocolVersion(project: Project) {

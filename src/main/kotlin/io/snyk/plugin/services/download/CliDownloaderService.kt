@@ -16,6 +16,7 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
 
+@Suppress("MemberVisibilityCanBePrivate")
 @Service
 class SnykCliDownloaderService {
 

@@ -1,5 +1,7 @@
 package io.snyk.plugin.analytics
 
+import com.intellij.openapi.application.Application
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import io.mockk.every
@@ -14,6 +16,7 @@ import io.snyk.plugin.getOS
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import org.junit.After
@@ -29,16 +32,22 @@ class AnalyticsScanListenerTest {
     private val projectMock: Project = mockk()
     private val settings = SnykApplicationSettingsStateService()
     private val languageServerWrapper: LanguageServerWrapper = mockk()
+    private val applicationMock: Application = mockk(relaxed = true)
 
     @Before
     fun setUp() {
         unmockkAll()
+
+        mockkStatic(ApplicationManager::class)
+        every { ApplicationManager.getApplication() } returns applicationMock
+        every { applicationMock.getService(SnykPluginDisposable::class.java) } returns mockk(relaxed = true)
 
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { pluginSettings() } returns settings
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance() } returns languageServerWrapper
+        every { languageServerWrapper.notAuthenticated() } returns false
         justRun { languageServerWrapper.sendReportAnalyticsCommand(any()) }
 
         mockkStatic("snyk.PluginInformationKt")
@@ -104,6 +113,6 @@ class AnalyticsScanListenerTest {
     fun `testScanListener scanningContainerFinished should call language server to report analytics`() {
         cut.snykScanListener.scanningContainerFinished(mockk(relaxed = true))
 
-        verify { languageServerWrapper.sendReportAnalyticsCommand(any()) }
+        verify(timeout = 3000) { languageServerWrapper.sendReportAnalyticsCommand(any()) }
     }
 }
