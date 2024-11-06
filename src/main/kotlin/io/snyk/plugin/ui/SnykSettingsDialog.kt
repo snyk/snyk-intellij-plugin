@@ -293,25 +293,6 @@ class SnykSettingsDialog(
             ),
         )
 
-        val endpointDescriptionLabel =
-            JLabel(
-                "<html>Sets API endpoint to use for Snyk requests. Useful for custom Snyk setups. <br/>" +
-                    "E.g. `https://api.eu.snyk.io`.</html>",
-            ).apply { font = FontUtil.minusOne(this.font) }
-
-        generalSettingsPanel.add(
-            endpointDescriptionLabel,
-            baseGridConstraints(
-                row = 4,
-                column = 1,
-                colSpan = 2,
-                indent = 0,
-                anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-            ),
-        )
-
         val customEndpointLabel = JLabel("Custom endpoint:")
         val customEndpointTooltip =
             "The correct endpoint format is https://api.xxx.snyk[gov].io, e.g. https://api.eu.snyk.io"
@@ -321,7 +302,7 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             customEndpointLabel,
             baseGridConstraintsAnchorWest(
-                row = 5,
+                row = 4,
                 indent = 0,
             ),
         )
@@ -329,13 +310,32 @@ class SnykSettingsDialog(
         generalSettingsPanel.add(
             customEndpointTextField,
             baseGridConstraints(
-                row = 5,
+                row = 4,
                 column = 1,
                 colSpan = 1,
                 anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
                 hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
                 indent = 0,
+            ),
+        )
+
+        val endpointDescriptionLabel =
+            JLabel(
+                "<html>Sets API endpoint to use for Snyk requests. Useful for custom Snyk setups. <br/>" +
+                    "E.g. <code>https://api.eu.snyk.io</code>.</html>",
+            ).apply { font = FontUtil.minusOne(this.font) }
+
+        generalSettingsPanel.add(
+            endpointDescriptionLabel,
+            baseGridConstraints(
+                row = 5,
+                column = 1,
+                colSpan = 2,
+                indent = 0,
+                anchor = UIGridConstraints.ANCHOR_WEST,
+                fill = UIGridConstraints.FILL_NONE,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
             ),
         )
 
