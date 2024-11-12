@@ -89,5 +89,6 @@ open class ConsoleCommandRunner {
 
     companion object {
         const val PROCESS_CANCELLED_BY_USER = "PROCESS_CANCELLED_BY_USER"
+        const val SAVING_POLICY_FILE = "Saving .snyk policy file...\n"
     }
 }
