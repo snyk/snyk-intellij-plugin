@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.cef.browser.CefBrowser
@@ -33,7 +34,7 @@ class IgnoreInFileHandler(
             val issueId = params[0] // ID of issue that needs to be ignored
             val filePath = params[1]
             // Computed path that will be used in the snyk ignore command for the --path arg
-            val computedPath = filePath.removePrefix("${project.basePath}${File.separator}")
+            val computedPath = filePath.removePrefix("${project.getContentRootPaths().firstOrNull()}${File.separator}")
             // Avoid blocking the UI thread
             runInBackground("Snyk: applying ignore...") {
                 val result = try {
