@@ -6,6 +6,9 @@
 - Add "plugin installed" analytics event (sent after authentication)
 - Added a description of custom endpoints to settings dialog.
 
+### Fixed
+- folder-specific configs are availabe on opening projects, not only on restart of the IDE
+
 ## [2.10.0]
 ### Changed
 - save git folder config in settings

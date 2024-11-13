@@ -631,8 +631,7 @@ class SnykSettingsDialog(
 
         val netNewIssuesText =
             JLabel(
-                "Specifies whether to see only net new issues or all issues. " +
-                    "Only applies to Code Security and Code Quality."
+                "Specifies whether to see only net new issues or all issues. This setting does not apply for Snyk Container."
             ).apply { font = FontUtil.minusOne(this.font) }
 
         netNewIssuesPanel.add(
