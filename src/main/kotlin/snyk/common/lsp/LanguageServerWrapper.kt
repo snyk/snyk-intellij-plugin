@@ -576,6 +576,7 @@ class LanguageServerWrapper(
         if (disposed || project.isDisposed) return
         ensureLanguageServerInitialized()
         ensureLanguageServerProtocolVersion(project)
+        updateConfiguration()
         val added = getWorkspaceFolders(project)
         updateWorkspaceFolders(added, emptySet())
     }
