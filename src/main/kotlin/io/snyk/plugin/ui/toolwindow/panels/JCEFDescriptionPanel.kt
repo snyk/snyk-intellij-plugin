@@ -175,10 +175,10 @@ class SuggestionDescriptionPanelFromLS(
 
         val editorColorsManager = EditorColorsManager.getInstance()
         val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
-        val lsNonce = extractLsNonceIfPresent(html);
+        val lsNonce = extractLsNonceIfPresent(html)
         var nonce = getNonce()
         if (lsNonce != "") {
-            nonce = lsNonce;
+            nonce = lsNonce
         }
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
@@ -216,13 +216,13 @@ class SuggestionDescriptionPanelFromLS(
     private fun extractLsNonceIfPresent(html: String): String{
         // When the nonce is injected by the IDE, it is of format nonce-${nonce}
         if (!html.contains("\${nonce}") && html.contains("nonce-")){
-            val nonceStartPosition = html.indexOf("nonce-");
+            val nonceStartPosition = html.indexOf("nonce-")
             // Length of LS nonce
-            val startIndex = nonceStartPosition + "nonce-".length;
-            val endIndex = startIndex + 24;
-            return html.substring(startIndex, endIndex ).trim();
+            val startIndex = nonceStartPosition + "nonce-".length
+            val endIndex = startIndex + 24
+            return html.substring(startIndex, endIndex ).trim()
         }
-        return "";
+        return ""
     }
     private fun getNonce(): String {
         val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
@@ -369,7 +369,7 @@ class SuggestionDescriptionPanelFromLS(
                 console.log('Applying ignore', issue);
                 if (!issue) return;
 
-                window.applyIgnoreInFileQuery(issue + '|@' + filePath + ' > ' + path);
+                window.applyIgnoreInFileQuery(issue + '|@' + filePath + ' > ' + resourcePath);
                 toggleElement(ignoreInFileBtn, "hide");
                 console.log('Applying ignore');
               }
@@ -399,7 +399,7 @@ class SuggestionDescriptionPanelFromLS(
               let diffSelectedIndex = 0;
               let fixes = [];
               let issue = ignoreInFileBtn.getAttribute('issue')
-              let path =  ignoreInFileBtn.getAttribute('path')
+              let resourcePath =  ignoreInFileBtn.getAttribute('resourcePath')
               let filePath =  ignoreInFileBtn.getAttribute('filePath')
               // Event listener for Generate AI fix button
               generateAiFixBtn?.addEventListener("click", generateAIFix);
