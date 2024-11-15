@@ -384,6 +384,8 @@ class SuggestionDescriptionPanelFromLS(
 
               const diffNumElem = document.getElementById("diff-number");
               const diffNum2Elem = document.getElementById("diff-number2");
+              const ignoreContainer = document.getElementById("ignore-container");
+
 
               let diffSelectedIndex = 0;
               let fixes = [];
@@ -394,6 +396,8 @@ class SuggestionDescriptionPanelFromLS(
 
               nextDiffElem?.addEventListener("click", nextDiff);
               previousDiffElem?.addEventListener("click", previousDiff);
+
+              toggleElement(ignoreContainer, "show");
 
               // This function will be called once the response is received from the Language Server
               window.receiveAIFixResponse = function (fixesResponse) {
