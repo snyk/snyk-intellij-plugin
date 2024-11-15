@@ -183,7 +183,7 @@ class SuggestionDescriptionPanelFromLS(
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
         html = html.replace("\${headerEnd}", "")
-        html = html.replace("\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
+        html = html.replace("\${ideScript}", ideScript)
 
 
         html = html.replace("\${nonce}", nonce)
@@ -233,7 +233,6 @@ class SuggestionDescriptionPanelFromLS(
 
     private fun getCustomScript(): String {
         return """
-            (function () {
               // Utility function to show/hide an element based on a toggle value
               function toggleElement(element, action) {
                 if (!element) return;
@@ -365,20 +364,10 @@ class SuggestionDescriptionPanelFromLS(
                  console.log('Applying fix', patch);
               }
 
-              function applyIgnoreInFile() {
-                console.log('Applying ignore', issue);
-                if (!issue) return;
-
-                window.applyIgnoreInFileQuery(issue + '|@' + filePath + ' > ' + resourcePath);
-                toggleElement(ignoreInFileBtn, "hide");
-                console.log('Applying ignore');
-              }
 
               // DOM element references
               const generateAiFixBtn = document.getElementById("generate-ai-fix");
               const applyFixBtn = document.getElementById('apply-fix')
-              const ignoreContainer = document.getElementById("ignore-container");
-              const ignoreInFileBtn = document.getElementById('ignore-file-issue')
               const retryGenerateFixBtn = document.getElementById('retry-generate-fix')
 
               const fixLoadingIndicatorElem = document.getElementById("fix-loading-indicator");
@@ -398,19 +387,14 @@ class SuggestionDescriptionPanelFromLS(
 
               let diffSelectedIndex = 0;
               let fixes = [];
-              let issue = ignoreInFileBtn.getAttribute('issue')
-              let resourcePath =  ignoreInFileBtn.getAttribute('resourcePath')
-              let filePath =  ignoreInFileBtn.getAttribute('filePath')
               // Event listener for Generate AI fix button
               generateAiFixBtn?.addEventListener("click", generateAIFix);
               applyFixBtn?.addEventListener('click', applyFix);
               retryGenerateFixBtn?.addEventListener('click', reGenerateAIFix);
 
-              ignoreInFileBtn?.addEventListener("click", applyIgnoreInFile);
               nextDiffElem?.addEventListener("click", nextDiff);
               previousDiffElem?.addEventListener("click", previousDiff);
 
-              toggleElement(ignoreContainer, "show");
               // This function will be called once the response is received from the Language Server
               window.receiveAIFixResponse = function (fixesResponse) {
                 fixes = [...fixesResponse];
@@ -421,17 +405,6 @@ class SuggestionDescriptionPanelFromLS(
                 showAIFixes(fixes);
               };
 
-              window.receiveIgnoreInFileResponse = function (success){
-                console.log('[[receiveIgnoreInFileResponse]]', success);
-                if(success){
-                    ignoreInFileBtn.disabled = true;
-                    console.log('Ignored in file', success);
-                    document.getElementById('ignore-file-issue').disabled = true;
-                }else{
-                    toggleElement(ignoreInFileBtn, "show");
-                    console.error('Failed to apply fix', success);
-                }
-              }
               window.receiveApplyFixResponse = function (success) {
               console.log('[[receiveApplyFixResponse]]', success);
                 if (success) {
@@ -442,7 +415,6 @@ class SuggestionDescriptionPanelFromLS(
                     console.error('Failed to apply fix', success);
                 }
               };
-            })();
         """.trimIndent()
     }
 }
