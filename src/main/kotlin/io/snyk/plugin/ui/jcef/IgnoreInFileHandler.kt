@@ -13,8 +13,9 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.IgnoreService
 import snyk.common.lsp.LanguageServerWrapper
-import java.io.File
 import java.io.IOException
+import kotlin.io.path.Path
+import kotlin.io.path.relativeTo
 
 class IgnoreInFileHandler(
     private val project: Project,
@@ -34,7 +35,7 @@ class IgnoreInFileHandler(
             val issueId = params[0] // ID of issue that needs to be ignored
             val filePath = params[1]
             // Computed path that will be used in the snyk ignore command for the --path arg
-            val computedPath = filePath.removePrefix("${project.getContentRootPaths().firstOrNull()}${File.separator}")
+            val computedPath = Path(filePath).relativeTo(project.getContentRootPaths().firstOrNull()!!).toString();
             // Avoid blocking the UI thread
             runInBackground("Snyk: applying ignore...") {
                 val result = try {
@@ -83,7 +84,7 @@ class IgnoreInFileHandler(
     }
 
     fun applyIgnoreInFileAndSave(issueId: String, filePath: String): Result<Unit> {
-        val ignoreService = IgnoreService(project);
+        val ignoreService = IgnoreService(project)
         if (issueId != "" && filePath != "") {
             ignoreService.ignoreInstance(issueId, filePath)
         } else {
