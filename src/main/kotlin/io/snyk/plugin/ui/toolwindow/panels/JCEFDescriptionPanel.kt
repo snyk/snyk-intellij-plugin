@@ -183,7 +183,7 @@ class SuggestionDescriptionPanelFromLS(
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
         html = html.replace("\${headerEnd}", "")
-        html = html.replace("\${ideScript}", ideScript)
+        html = html.replace("\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
 
 
         html = html.replace("\${nonce}", nonce)
