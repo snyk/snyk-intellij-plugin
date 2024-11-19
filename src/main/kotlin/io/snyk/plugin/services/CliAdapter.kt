@@ -73,6 +73,9 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             rawStr == ConsoleCommandRunner.PROCESS_CANCELLED_BY_USER -> {
                 getProductResult(null)
             }
+            rawStr == ConsoleCommandRunner.SAVING_POLICY_FILE -> {
+                getProductResult(null)
+            }
             rawStr.isEmpty() -> {
                 getErrorResult(CLI_PRODUCE_NO_OUTPUT)
             }

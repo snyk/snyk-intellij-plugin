@@ -14,6 +14,7 @@ import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.jcef.ApplyFixHandler
 import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
+import io.snyk.plugin.ui.jcef.IgnoreInFileHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
@@ -70,7 +71,16 @@ class SuggestionDescriptionPanelFromLS(
                 loadHandlerGenerators += {
                     applyFixHandler.generateApplyFixCommand(it)
                 }
+
             }
+            ScanIssue.INFRASTRUCTURE_AS_CODE ->
+            {
+                val applyIgnoreInFileHandler = IgnoreInFileHandler(project)
+                loadHandlerGenerators +={
+                    applyIgnoreInFileHandler.generateIgnoreInFileCommand(it)
+                }
+            }
+
         }
         val html = this.getCustomCssAndScript()
         val jbCefBrowserComponent =
@@ -165,13 +175,17 @@ class SuggestionDescriptionPanelFromLS(
 
         val editorColorsManager = EditorColorsManager.getInstance()
         val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
+        val lsNonce = extractLsNonceIfPresent(html)
+        var nonce = getNonce()
+        if (lsNonce != "") {
+            nonce = lsNonce
+        }
 
         html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
         html = html.replace("\${headerEnd}", "")
         html = html.replace("\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
 
 
-        val nonce = getNonce()
         html = html.replace("\${nonce}", nonce)
         html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
         html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
@@ -199,7 +213,17 @@ class SuggestionDescriptionPanelFromLS(
 
         return html
     }
-
+    private fun extractLsNonceIfPresent(html: String): String{
+        // When the nonce is injected by the IDE, it is of format nonce-${nonce}
+        if (!html.contains("\${nonce}") && html.contains("nonce-")){
+            val nonceStartPosition = html.indexOf("nonce-")
+            // Length of LS nonce
+            val startIndex = nonceStartPosition + "nonce-".length
+            val endIndex = startIndex + 24
+            return html.substring(startIndex, endIndex ).trim()
+        }
+        return ""
+    }
     private fun getNonce(): String {
         val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
         return (1..32)
@@ -209,7 +233,6 @@ class SuggestionDescriptionPanelFromLS(
 
     private fun getCustomScript(): String {
         return """
-            (function () {
               // Utility function to show/hide an element based on a toggle value
               function toggleElement(element, action) {
                 if (!element) return;
@@ -341,6 +364,7 @@ class SuggestionDescriptionPanelFromLS(
                  console.log('Applying fix', patch);
               }
 
+
               // DOM element references
               const generateAiFixBtn = document.getElementById("generate-ai-fix");
               const applyFixBtn = document.getElementById('apply-fix')
@@ -360,10 +384,11 @@ class SuggestionDescriptionPanelFromLS(
 
               const diffNumElem = document.getElementById("diff-number");
               const diffNum2Elem = document.getElementById("diff-number2");
+              const ignoreContainer = document.getElementById("ignore-container");
+
 
               let diffSelectedIndex = 0;
               let fixes = [];
-
               // Event listener for Generate AI fix button
               generateAiFixBtn?.addEventListener("click", generateAIFix);
               applyFixBtn?.addEventListener('click', applyFix);
@@ -371,6 +396,8 @@ class SuggestionDescriptionPanelFromLS(
 
               nextDiffElem?.addEventListener("click", nextDiff);
               previousDiffElem?.addEventListener("click", previousDiff);
+
+              toggleElement(ignoreContainer, "show");
 
               // This function will be called once the response is received from the Language Server
               window.receiveAIFixResponse = function (fixesResponse) {
@@ -392,7 +419,6 @@ class SuggestionDescriptionPanelFromLS(
                     console.error('Failed to apply fix', success);
                 }
               };
-            })();
         """.trimIndent()
     }
 }

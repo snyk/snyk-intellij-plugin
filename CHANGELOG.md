@@ -5,10 +5,9 @@
 - If $/snyk.hasAuthenticated transmits an API URL, this is saved in the settings.
 - Add "plugin installed" analytics event (sent after authentication)
 - Added a description of custom endpoints to settings dialog.
-
+- Add option to ignore IaC issues
 ### Fixed
 - folder-specific configs are availabe on opening projects, not only on restart of the IDE
-
 ## [2.10.0]
 ### Changed
 - save git folder config in settings
