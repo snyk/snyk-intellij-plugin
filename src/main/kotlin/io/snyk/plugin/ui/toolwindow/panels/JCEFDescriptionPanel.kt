@@ -46,9 +46,6 @@ class SuggestionDescriptionPanelFromLS(
             emptyList<LoadHandlerGenerator>().toMutableList()
 
         // TODO: replace directly in HTML instead of JS
-        loadHandlerGenerators += {
-            ThemeBasedStylingGenerator().generate(it)
-        }
 
         when (issue.filterableIssueType) {
             ScanIssue.CODE_QUALITY, ScanIssue.CODE_SECURITY -> {
@@ -167,50 +164,20 @@ class SuggestionDescriptionPanelFromLS(
         var html = issue.details()
         val ideScript = getCustomScript()
 
-        // TODO: remove custom stylesheets, deliver variables from LS, replace variables with colors
-        val ideStyle: String = when (issue.filterableIssueType) {
-            ScanIssue.CODE_SECURITY, ScanIssue.CODE_QUALITY -> SnykStylesheets.SnykCodeSuggestion
-            else -> ""
-        }
 
-        val editorColorsManager = EditorColorsManager.getInstance()
-        val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
         val lsNonce = extractLsNonceIfPresent(html)
         var nonce = getNonce()
         if (lsNonce != "") {
             nonce = lsNonce
         }
 
-        html = html.replace("\${ideStyle}", "<style nonce=\${nonce}>$ideStyle</style>")
+        html = html.replace("\${ideStyle}", "<style nonce=\${nonce}></style>")
         html = html.replace("\${headerEnd}", "")
         html = html.replace("\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
 
 
         html = html.replace("\${nonce}", nonce)
-        html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
-        html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
-        html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
-        val borderColor = JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
-        html = html.replace("var(--border-color)", borderColor)
-        html = html.replace("var(--horizontal-border-color)", borderColor)
-        html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())
-
-        val editorBackground =
-            editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
-        html = html.replace(
-            "var(--code-background-color)",
-            editorBackground
-        )
-        html = html.replace(
-            "var(--container-background-color)",
-            editorBackground
-        )
-
-        html = html.replace(
-            "var(--editor-color)",
-            editorBackground
-        )
-
+        html = ThemeBasedStylingGenerator.replaceWithCustomStyles(html)
         return html
     }
     private fun extractLsNonceIfPresent(html: String): String{

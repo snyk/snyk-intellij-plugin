@@ -14,7 +14,6 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.23"
     id("io.gitlab.arturbosch.detekt") version ("1.23.6")
     id("pl.allegro.tech.build.axion-release") version "1.17.0"
-    id("io.miret.etienne.sass") version "1.5.0"
 }
 
 version = scmVersion.version
@@ -89,19 +88,6 @@ detekt {
 }
 
 tasks {
-    // plugin from https://github.com/EtienneMiret/sass-gradle-plugin
-    compileSass {
-        sourceDir = project.file("${projectDir}/src/main/resources/stylesheets")
-        outputDir = project.file("${projectDir}/src/main/resources/stylesheets")
-    }
-
-    processResources{
-        dependsOn(compileSass)
-    }
-    compileKotlin{
-        dependsOn(processResources)
-    }
-
     withType<KotlinCompile> {
         kotlinOptions.jvmTarget = jdk
         kotlinOptions.languageVersion = "1.9"

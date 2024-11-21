@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.editor.colors.ColorKey
+import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.util.ui.JBUI
@@ -17,76 +18,63 @@ class ThemeBasedStylingGenerator {
         fun toCssHex(color: Color): String {
             return "#%02x%02x%02x".format(color.red, color.green, color.blue)
         }
-    }
+        fun replaceWithCustomStyles(htmlToReplace: String):String {
+            var html = htmlToReplace;
+            val editorColorsManager = EditorColorsManager.getInstance()
+            val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
+            val borderColor = JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
+            val editorBackground =
+                editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
+            val globalScheme = EditorColorsManager.getInstance().globalScheme
+            val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) //TODO Replace with JBUI.CurrentTheme colors
+            val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
+            val isHighContrast =
+                EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
 
-    @Suppress("UNUSED_PARAMETER")
-    fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
-        val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
-        val isHighContrast =
-            EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
+            html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
+            html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
+            html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
+            html = html.replace("var(--border-color)", borderColor)
+            html = html.replace("var(--horizontal-border-color)", borderColor)
+            html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())
+            html = html.replace("var(--example-line-added-color)", toCssHex(JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR))
+            html = html.replace("var(--example-line-removed-color)", toCssHex(JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR))
+            html = html.replace("var(--text-color)", toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
+            html = html.replace("var(--link-color)",toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED))
+            html = html.replace("var(--data-flow-body-color)", toCssHex(JBUI.CurrentTheme.Tree.BACKGROUND))
+            html = html.replace("var(--tab-item-github-icon-color)",toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
+            html = html.replace("var(--scrollbar-thumb-color)", "${tearLineColor?.let { toCssHex(it)}}")
+            html = html.replace("var(--tab-item-github-icon-color)", toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
+            html = html.replace("var(--tab-item-hover-color)", toCssHex(JBUI.CurrentTheme.DefaultTabs.underlineColor()))
+            html = html.replace("var(--tabs-bottom-color)", toCssHex(JBUI.CurrentTheme.DefaultTabs.background()))
+            html = html.replace("var(--border-color)", toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground()))
+            html = html.replace("var(--editor-color)", toCssHex(UIUtil.getTextFieldBackground()))
+            html = html.replace("var(--label-color)", toCssHex(JBUI.CurrentTheme.Label.foreground()))
+            html = html.replace("var(--container-background-color)", toCssHex(UIUtil.getTextFieldBackground()))
+            html = html.replace("var(--generated-ai-fix-button-background-color)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
+            html = html.replace("var(--dark-button-border-default)", toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground()))
+            html = html.replace("var(--dark-button-default)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
+            html = html.replace(
+                "var(--code-background-color)",
+                editorBackground
+            )
+            html = html.replace(
+                "var(--container-background-color)",
+                editorBackground
+            )
 
-        return object : CefLoadHandlerAdapter() {
-            override fun onLoadEnd(
-                browser: CefBrowser,
-                frame: CefFrame,
-                httpStatusCode: Int,
-            ) {
-                if (frame.isMain) {
-                    val textColor = toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND)
-                    val linkColor = toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED)
-
-                    val borderColor = toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground())
-                    val labelColor = toCssHex(JBUI.CurrentTheme.Label.foreground())
-                    val background = toCssHex(JBUI.CurrentTheme.Tree.BACKGROUND)
-                    val issuePanelBackground = toCssHex(JBUI.CurrentTheme.DefaultTabs.background())
-                    val tabUnderline = toCssHex(JBUI.CurrentTheme.DefaultTabs.underlineColor())
-                    val redCodeBlock = toCssHex(JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR)
-                    val greenCodeBlock = toCssHex(JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR)
-                    val aiCodeBg = UIUtil.getTextFieldBackground()
-                    val codeBlockText = toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND)
-                    val buttonColor = toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart())
-
-                    val globalScheme = EditorColorsManager.getInstance().globalScheme
-                    val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) //TODO Replace with JBUI.CurrentTheme colors
-
-                    val themeScript = """
-                        (function(){
-                        if (window.themeApplied) {
-                            return;
-                        }
-                        window.themeApplied = true;
-                        const style = getComputedStyle(document.documentElement);
-                            const properties = {
-                                '--text-color': "$codeBlockText",
-                                '--link-color': "$linkColor",
-                                '--data-flow-body-color': "$background",
-                                '--example-line-added-color': "$greenCodeBlock",
-                                '--example-line-removed-color': "$redCodeBlock",
-                                '--tab-item-github-icon-color': "$textColor",
-                                '--tab-item-hover-color': "$tabUnderline",
-                                '--scrollbar-thumb-color': "${tearLineColor?.let { toCssHex(it) }}",
-                                '--tabs-bottom-color': "$issuePanelBackground",
-                                '--border-color': "$borderColor",
-                                '--editor-color': "${toCssHex(aiCodeBg)}",
-                                '--label-color': "'$labelColor'",
-                                '--container-background-color': "${toCssHex(aiCodeBg)}",
-                                '--generated-ai-fix-button-background-color': "$buttonColor",
-                                '--dark-button-border-default': "$borderColor",
-                                '--dark-button-default': "$buttonColor",
-                            };
-                            for (let [property, value] of Object.entries(properties)) {
-                                document.documentElement.style.setProperty(property, value);
-                            }
-
-                            // Add theme class to body
-                            const isDarkTheme = $isDarkTheme;
-                            const isHighContrast = $isHighContrast;
-                            document.body.classList.add(isHighContrast ? 'high-contrast' : (isDarkTheme ? 'dark' : 'light'));
-                        })();
-                        """
-                    browser.executeJavaScript(themeScript, browser.url, 0)
-                }
+            html = html.replace(
+                "var(--editor-color)",
+                editorBackground
+            )
+            val contrast = if (isHighContrast) "high-contrast" else ""
+            val theme = if (isDarkTheme) "dark" else "light"
+            val lineWithBody = html.lines().find { it.contains("<body") }
+            if(lineWithBody != null) {
+                    val modifiedLineWithBody =  if(lineWithBody.contains("class")) lineWithBody.replace("class", "class=\"$contrast $theme ") else lineWithBody.replace("<body", "<body class=\"$contrast $theme \"")
+                    html = html.replace(lineWithBody, modifiedLineWithBody);
             }
+            return html;
         }
     }
 }
