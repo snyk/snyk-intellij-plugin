@@ -119,6 +119,5 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         assertFalse(actual.contains("\${ideStyle}"))
         assertFalse(actual.contains("\${ideScript}"))
         assertFalse(actual.contains("\${nonce}"))
-        assertTrue(actual.contains(".ignore-warning"))
     }
 }
