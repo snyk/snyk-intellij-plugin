@@ -1,12 +1,9 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
-import com.intellij.openapi.editor.colors.EditorColors
-import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -19,12 +16,10 @@ import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
-import io.snyk.plugin.ui.jcef.toHex
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import snyk.common.lsp.ScanIssue
-import stylesheets.SnykStylesheets
 import java.awt.BorderLayout
 import java.awt.Font
 import javax.swing.JLabel
