@@ -30,7 +30,7 @@ class ThemeBasedStylingGenerator {
             val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
             val isHighContrast =
                 EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
-
+            html = html.replace("var(--vscode-font-family), ", "")
             html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
             html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
             html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
