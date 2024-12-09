@@ -50,4 +50,4 @@ Continue by following the instructions in the other JetBrains plugin docs:
 
 For troubleshooting and known issues, see [Troubleshooting for the JetBrains plugin](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/troubleshooting-for-the-jetbrains-plugin).
 
-If you need help, submit a [request](https://support.snyk.io/hc/en-us/requests/new) to Snyk Support.
+If you need help, submit a [request](https://support.snyk.io) to Snyk Support.
