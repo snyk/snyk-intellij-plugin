@@ -10,9 +10,11 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.readText
+import com.intellij.util.TestRuntimeUtil
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
+import io.snyk.plugin.isInContent
 import io.snyk.plugin.toLanguageServerURL
 import io.snyk.plugin.toSnykFileSet
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -20,13 +22,12 @@ import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
-import org.jetbrains.kotlin.idea.util.application.isUnitTestMode
 import java.io.File
 import java.time.Duration
 
 class LanguageServerBulkFileListener : SnykBulkFileListener() {
     @TestOnly
-    var disabled = isUnitTestMode()
+    var disabled = TestRuntimeUtil.isRunningUnderUnitTest
 
     override fun before(
         project: Project,
@@ -90,7 +91,7 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
                 shouldProcess = false
             } else {
                 debounceFileCache.put(file.path, true)
-                if (index.isInContent(file) && !isInBlacklistedParentDir(file)) {
+                if (file.isInContent(project) && !isInBlacklistedParentDir(file)) {
                     shouldProcess = true
                 } else {
                     shouldProcess = false

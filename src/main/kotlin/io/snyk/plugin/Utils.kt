@@ -455,11 +455,18 @@ fun VirtualFile.isInContent(project: Project): Boolean {
     val vf = this
     return ReadAction.compute<Boolean, RuntimeException> {
         if (project.isDisposed) return@compute false
-        ProjectFileIndex.getInstance(project).isInContent(vf)
+        ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
     }
 }
 
-inline fun runInBackground(title: String, project: Project? = null, cancellable: Boolean = true, crossinline task: (indicator: ProgressIndicator) -> Unit) {
+fun VirtualFile.isWhitelistedForInclusion() = this.name == "project.assets.json" && this.parent.name == "obj"
+
+inline fun runInBackground(
+    title: String,
+    project: Project? = null,
+    cancellable: Boolean = true,
+    crossinline task: (indicator: ProgressIndicator) -> Unit
+) {
     ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, cancellable) {
         override fun run(indicator: ProgressIndicator) {
             task(indicator)

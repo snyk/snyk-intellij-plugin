@@ -44,6 +44,9 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.0")
     implementation("org.json:json:20231013")
     implementation("org.slf4j:slf4j-api:2.0.5")
+    implementation("org.apache.commons:commons-text:1.12.0")
+    implementation("org.apache.commons:commons-lang3:3.17.0")
+
     implementation("ly.iterative.itly:plugin-iteratively:1.2.11") {
         exclude(group = "com.fasterxml.jackson.core")
     }
