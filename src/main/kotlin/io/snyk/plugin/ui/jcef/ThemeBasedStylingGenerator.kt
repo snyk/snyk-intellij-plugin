@@ -66,6 +66,7 @@ class ThemeBasedStylingGenerator {
                 "var(--editor-color)",
                 editorBackground
             )
+            html = html.replace("var(--circle-color)", toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground()))
             val contrast = if (isHighContrast) "high-contrast" else ""
             val theme = if (isDarkTheme) "dark" else "light"
             val lineWithBody = html.lines().find { it.contains("<body") }
