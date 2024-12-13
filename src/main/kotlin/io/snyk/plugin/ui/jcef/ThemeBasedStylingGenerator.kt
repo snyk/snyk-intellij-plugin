@@ -46,13 +46,14 @@ class ThemeBasedStylingGenerator {
             html = html.replace("var(--tab-item-github-icon-color)", toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
             html = html.replace("var(--tab-item-hover-color)", toCssHex(JBUI.CurrentTheme.DefaultTabs.underlineColor()))
             html = html.replace("var(--tabs-bottom-color)", toCssHex(JBUI.CurrentTheme.DefaultTabs.background()))
-            html = html.replace("var(--border-color)", toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground()))
+            html = html.replace("var(--border-color)", borderColor)
             html = html.replace("var(--editor-color)", toCssHex(UIUtil.getTextFieldBackground()))
             html = html.replace("var(--label-color)", toCssHex(JBUI.CurrentTheme.Label.foreground()))
             html = html.replace("var(--container-background-color)", toCssHex(UIUtil.getTextFieldBackground()))
             html = html.replace("var(--generated-ai-fix-button-background-color)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
-            html = html.replace("var(--dark-button-border-default)", toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground()))
+            html = html.replace("var(--dark-button-border-default)", borderColor)
             html = html.replace("var(--dark-button-default)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
+            html = html.replace("var(--disabled-background-color)", borderColor)
             html = html.replace(
                 "var(--code-background-color)",
                 editorBackground
@@ -66,7 +67,7 @@ class ThemeBasedStylingGenerator {
                 "var(--editor-color)",
                 editorBackground
             )
-            html = html.replace("var(--circle-color)", toCssHex(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground()))
+            html = html.replace("var(--circle-color)", borderColor)
             val contrast = if (isHighContrast) "high-contrast" else ""
             val theme = if (isDarkTheme) "dark" else "light"
             val lineWithBody = html.lines().find { it.contains("<body") }
