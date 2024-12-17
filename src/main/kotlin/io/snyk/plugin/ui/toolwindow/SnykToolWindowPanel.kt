@@ -552,8 +552,21 @@ class SnykToolWindowPanel(
 
         val newContainerTreeNodeText = getNewContainerTreeNodeText(settings, containerResultsCount, addHMLPostfix)
         newContainerTreeNodeText?.let { rootContainerIssuesTreeNode.userObject = it }
+
+        val newRootTreeNodeText = getNewRootTreeNodeText()
+        newRootTreeNodeText.let { rootTreeNode.info = it }
     }
 
+    private fun getNewRootTreeNodeText() : String {
+        val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
+            if (folderConfig?.let {
+                getRootNodeText(
+                    it.folderPath,
+                    it.baseBranch
+                )
+            } != null)  return folderConfig.let { getRootNodeText(it.folderPath, it.baseBranch) }
+            return "Choose branch on ${project.basePath}"
+    }
     private fun getNewContainerTreeNodeText(
         settings: SnykApplicationSettingsStateService,
         containerResultsCount: Int?,
