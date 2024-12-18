@@ -155,6 +155,8 @@ class SnykSettingsDialog(
                 }
                 getSnykCliAuthenticationService(project)?.authenticate()
                 tokenTextField.text = pluginSettings().token
+                customEndpointTextField.text = pluginSettings().customEndpointUrl
+
                 runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
                     this.scanTypesPanelOuter.checkSastEnabled()
                 }
