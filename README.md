@@ -1,7 +1,3 @@
----
-description: Use this documentation to get started with the JetBrains plugin.
----
-
 # JetBrains plugin
 
 ## **Scan early, fix as you develop: elevate your security posture**
@@ -37,7 +33,7 @@ You can use the Snyk JetBrains plugin in the following environments:
 
 Install the plugin at any time free of charge from the [JetBrains marketplace](https://plugins.jetbrains.com/plugin/10972-snyk-vulnerability-scanner) and use it with any Snyk account, including the Free plan. For more information, see the [IDEA plugin installation guide](https://www.jetbrains.com/help/idea/managing-plugins.html).
 
-When the extension is installed, it automatically downloads the  [Snyk CLI,](https://docs.snyk.io/snyk-cli) which includes the [Language Server](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/snyk-language-server).
+When the extension is installed, it automatically downloads the [Snyk CLI,](https://docs.snyk.io/snyk-cli) which includes the [Language Server](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/snyk-language-server).
 
 Continue by following the instructions in the other JetBrains plugin docs:
 
@@ -50,4 +46,4 @@ Continue by following the instructions in the other JetBrains plugin docs:
 
 For troubleshooting and known issues, see [Troubleshooting for the JetBrains plugin](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/troubleshooting-for-the-jetbrains-plugin).
 
-If you need help, submit a [request](https://support.snyk.io/hc/en-us/requests/new) to Snyk Support.
+If you need help, submit a [request](https://support.snyk.io) to Snyk Support.
