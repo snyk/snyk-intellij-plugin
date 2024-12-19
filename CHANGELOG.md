@@ -9,6 +9,7 @@
 ### Fixed
 - folder-specific configs are availabe on opening projects, not only on restart of the IDE
 - display open source issues in Rider. Previously, as the project.assets.json is in a derived folder, it was filtered.
+- correctly display and update base branch name for Net New Issues
 ## [2.10.0]
 ### Changed
 - save git folder config in settings
