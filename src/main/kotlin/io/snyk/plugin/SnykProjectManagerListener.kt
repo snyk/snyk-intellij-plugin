@@ -24,7 +24,7 @@ class SnykProjectManagerListener : ProjectManagerListener {
                     threadPool.submit {
                         val ls = LanguageServerWrapper.getInstance()
                         if (ls.isInitialized) {
-                            ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFolders(project))
+                            ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFoldersFromRoots(project))
                         }
                     }.get(TIMEOUT, TimeUnit.SECONDS)
                 } catch (ignored: Exception) {
