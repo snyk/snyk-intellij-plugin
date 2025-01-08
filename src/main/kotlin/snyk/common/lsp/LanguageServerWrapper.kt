@@ -19,7 +19,6 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toLanguageServerURL
-import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -68,6 +67,7 @@ import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
+import java.net.URI
 import java.util.Collections
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -88,7 +88,8 @@ class LanguageServerWrapper(
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private val gson = Gson()
-    private val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
+    // internal for test set up
+    internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -436,7 +437,7 @@ class LanguageServerWrapper(
         if (notAuthenticated()) return
         if (DumbService.getInstance(project).isDumb) return
         try {
-            val folderUri = folder.toVirtualFile().toLanguageServerURL()
+            val folderUri = URI.create(folder).toASCIIString()
             if (!configuredWorkspaceFolders.any { it.uri == folderUri }) return
             val param = ExecuteCommandParams()
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN

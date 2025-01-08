@@ -23,6 +23,7 @@ import junit.framework.TestCase.fail
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
+import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
 import org.junit.Before
@@ -31,6 +32,7 @@ import snyk.common.lsp.analytics.ScanDoneEvent
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
+import java.net.URI
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
@@ -218,7 +220,10 @@ class LanguageServerWrapperTest {
             lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
         } returns CompletableFuture.completedFuture(null)
 
-        cut.sendFolderScanCommand("testFolder", projectMock)
+        val folder = "testFolder"
+        cut.configuredWorkspaceFolders.add(WorkspaceFolder(URI(folder).toString(), folder))
+
+        cut.sendFolderScanCommand(folder, projectMock)
 
         verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
     }
@@ -263,7 +268,7 @@ class LanguageServerWrapperTest {
         every { dumbServiceMock.isDumb } returns false
         settings.scanOnSave = true
 
-        cut.updateConfiguration()
+        cut.updateConfiguration(true)
 
         verify { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
 
