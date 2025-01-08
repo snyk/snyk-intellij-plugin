@@ -32,7 +32,7 @@ import snyk.common.lsp.analytics.ScanDoneEvent
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
-import java.net.URI
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
@@ -221,7 +221,7 @@ class LanguageServerWrapperTest {
         } returns CompletableFuture.completedFuture(null)
 
         val folder = "testFolder"
-        cut.configuredWorkspaceFolders.add(WorkspaceFolder(URI(folder).toString(), folder))
+        cut.configuredWorkspaceFolders.add(WorkspaceFolder(Paths.get(folder).toUri().toASCIIString(), folder))
 
         cut.sendFolderScanCommand(folder, projectMock)
 
