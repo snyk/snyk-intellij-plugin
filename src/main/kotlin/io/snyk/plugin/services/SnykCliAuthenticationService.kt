@@ -41,7 +41,7 @@ class SnykCliAuthenticationService(
         if (getCliFile().exists()) {
             executeAuthCommand()
         }
-        LanguageServerWrapper.getInstance().updateConfiguration()
+        LanguageServerWrapper.getInstance().updateConfiguration(false)
     }
 
     private fun downloadCliIfNeeded() {

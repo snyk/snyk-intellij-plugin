@@ -63,9 +63,14 @@ import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
+import snyk.common.removeTrailingSlashesIfPresent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.io.FileNotFoundException
+import java.net.URI
+import java.nio.file.Paths
+import java.util.Collections
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -85,6 +90,8 @@ class LanguageServerWrapper(
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private val gson = Gson()
+    // internal for test set up
+    internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -231,7 +238,7 @@ class LanguageServerWrapper(
 
     private fun lsIsAlive() = ::process.isInitialized && process.isAlive
 
-    fun getWorkspaceFolders(project: Project): Set<WorkspaceFolder> {
+    fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
         if (disposed || project.isDisposed) return emptySet()
         val normalizedRoots = getTrustedContentRoots(project)
         return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURL(), it.name) }.toSet()
@@ -316,8 +323,15 @@ class LanguageServerWrapper(
         try {
             if (!ensureLanguageServerInitialized()) return
             val params = DidChangeWorkspaceFoldersParams()
-            params.event = WorkspaceFoldersChangeEvent(added.toList(), removed.toList())
-            languageServer.workspaceService.didChangeWorkspaceFolders(params)
+            params.event = WorkspaceFoldersChangeEvent(
+                added.filter { !configuredWorkspaceFolders.contains(it) },
+                removed.filter { configuredWorkspaceFolders.contains(it) },
+            )
+            if (params.event.added.size > 0 || params.event.removed.size > 0) {
+                languageServer.workspaceService.didChangeWorkspaceFolders(params)
+                configuredWorkspaceFolders.removeAll(removed)
+                configuredWorkspaceFolders.addAll(added)
+            }
         } catch (e: Exception) {
             logger.error(e)
         }
@@ -365,6 +379,7 @@ class LanguageServerWrapper(
         if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
             getTrustedContentRoots(project).forEach {
+                addContentRoots(project)
                 sendFolderScanCommand(it.path, project)
             }
         }
@@ -424,10 +439,14 @@ class LanguageServerWrapper(
         if (notAuthenticated()) return
         if (DumbService.getInstance(project).isDumb) return
         try {
+            val folderUri = Paths.get(folder).toUri().toASCIIString().removeTrailingSlashesIfPresent()
+            if (!configuredWorkspaceFolders.any { it.uri.removeTrailingSlashesIfPresent() == folderUri }) return
             val param = ExecuteCommandParams()
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
+        } catch (e: FileNotFoundException) {
+            logger.debug("File not found: $folder")
         } catch (e: Exception) {
             logger.error("error calling scan command from language server. re-initializing", e)
             restart()
@@ -477,12 +496,12 @@ class LanguageServerWrapper(
         )
     }
 
-    fun updateConfiguration() {
+    fun updateConfiguration(runScan: Boolean = false) {
         if (!ensureLanguageServerInitialized()) return
         val params = DidChangeConfigurationParams(getSettings())
         languageServer.workspaceService.didChangeConfiguration(params)
 
-        if (pluginSettings().scanOnSave) {
+        if (runScan && pluginSettings().scanOnSave) {
             ProjectManager.getInstance().openProjects.forEach { sendScanCommand(it) }
         }
     }
@@ -576,8 +595,8 @@ class LanguageServerWrapper(
         if (disposed || project.isDisposed) return
         ensureLanguageServerInitialized()
         ensureLanguageServerProtocolVersion(project)
-        updateConfiguration()
-        val added = getWorkspaceFolders(project)
+        updateConfiguration(false)
+        val added = getWorkspaceFoldersFromRoots(project)
         updateWorkspaceFolders(added, emptySet())
     }
 
