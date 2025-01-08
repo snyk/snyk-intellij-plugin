@@ -376,6 +376,7 @@ class LanguageServerWrapper(
         if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
             getTrustedContentRoots(project).forEach {
+                addContentRoots(project)
                 sendFolderScanCommand(it.path, project)
             }
         }
@@ -492,12 +493,12 @@ class LanguageServerWrapper(
         )
     }
 
-    fun updateConfiguration() {
+    fun updateConfiguration(runScan: Boolean = false) {
         if (!ensureLanguageServerInitialized()) return
         val params = DidChangeConfigurationParams(getSettings())
         languageServer.workspaceService.didChangeConfiguration(params)
 
-        if (pluginSettings().scanOnSave) {
+        if (runScan && pluginSettings().scanOnSave) {
             ProjectManager.getInstance().openProjects.forEach { sendScanCommand(it) }
         }
     }
@@ -591,7 +592,7 @@ class LanguageServerWrapper(
         if (disposed || project.isDisposed) return
         ensureLanguageServerInitialized()
         ensureLanguageServerProtocolVersion(project)
-        updateConfiguration()
+        updateConfiguration(false)
         val added = getWorkspaceFoldersFromRoots(project)
         updateWorkspaceFolders(added, emptySet())
     }
