@@ -63,11 +63,13 @@ import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
+import snyk.common.removeTrailingSlashesIfPresent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
 import java.net.URI
+import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -437,8 +439,8 @@ class LanguageServerWrapper(
         if (notAuthenticated()) return
         if (DumbService.getInstance(project).isDumb) return
         try {
-            val folderUri = URI.create(folder).toASCIIString()
-            if (!configuredWorkspaceFolders.any { it.uri == folderUri }) return
+            val folderUri = Paths.get(folder).toUri().toASCIIString().removeTrailingSlashesIfPresent()
+            if (!configuredWorkspaceFolders.any { it.uri.removeTrailingSlashesIfPresent() == folderUri }) return
             val param = ExecuteCommandParams()
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)
