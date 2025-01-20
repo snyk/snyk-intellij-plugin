@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.12.0]
+### Changed
+- support 2025.1
+
 ## [2.11.0]
 ### Changed
 - If $/snyk.hasAuthenticated transmits an API URL, this is saved in the settings.
