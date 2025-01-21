@@ -62,6 +62,7 @@ import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.StatePanel
+import io.snyk.plugin.ui.toolwindow.panels.SummaryPanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
@@ -94,6 +95,7 @@ class SnykToolWindowPanel(
 ) : JPanel(),
     Disposable {
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
+    private val summaryPanel = SimpleToolWindowPanel(true, true).apply { name = "summaryPanel" }
     private val logger = Logger.getInstance(this::class.java)
     private val rootTreeNode = ChooseBranchNode(project = project)
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -149,6 +151,7 @@ class SnykToolWindowPanel(
 
         createTreeAndDescriptionPanel()
         chooseMainPanelToDisplay()
+        updateSummaryPanel()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener { treeSelectionEvent ->
             runAsync {
@@ -498,7 +501,12 @@ class SnykToolWindowPanel(
         removeAll()
         val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
         add(vulnerabilitiesSplitter, BorderLayout.CENTER)
-        vulnerabilitiesSplitter.firstComponent = TreePanel(vulnerabilitiesTree)
+
+        val treeSplitter = OnePixelSplitter(true, TOOL_TREE_SPLITTER_PROPORTION_KEY, 0.25f)
+        treeSplitter.firstComponent = summaryPanel
+        treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree)
+
+        vulnerabilitiesSplitter.firstComponent = treeSplitter
         vulnerabilitiesSplitter.secondComponent = descriptionPanel
     }
 
@@ -510,6 +518,14 @@ class SnykToolWindowPanel(
             noIssuesInAnyProductFound() -> displayNoVulnerabilitiesMessage()
             else -> displaySelectVulnerabilityMessage()
         }
+    }
+
+    private fun updateSummaryPanel() {
+        val summaryPanelContent = SummaryPanel()
+        summaryPanel.removeAll()
+        Disposer.register(this, summaryPanelContent)
+        summaryPanel.add(summaryPanelContent)
+        revalidate()
     }
 
     private fun noIssuesInAnyProductFound() =
@@ -954,6 +970,7 @@ class SnykToolWindowPanel(
         const val NO_CONTAINER_IMAGES_FOUND = " - No container images found"
         const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
+        private const val TOOL_TREE_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_TREE_SPLITTER_PROPORTION"
         internal const val NODE_INITIAL_STATE = -1
         const val NODE_NOT_SUPPORTED_STATE = -2
 

@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.SideBorder
 import com.intellij.ui.treeStructure.Tree
@@ -14,6 +15,7 @@ import javax.swing.JPanel
 
 class TreePanel(tree: Tree) : SimpleToolWindowPanel(true, true) {
     private val actionManager = ActionManager.getInstance()
+    private val scanSummaryPanel = SimpleToolWindowPanel(true, true).apply { name = "summaryPanel" }
 
     init {
         name = "treePanel"
