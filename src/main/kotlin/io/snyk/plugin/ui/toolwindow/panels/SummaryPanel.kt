@@ -1,49 +1,53 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.Disposable
-import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST
+import com.intellij.openapi.project.Project
+import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.util.minimumHeight
+import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER
+import io.snyk.plugin.events.SnykScanSummaryListenerLS
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.ui.addAndGetCenteredPanel
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.getStandardLayout
-import javax.swing.JEditorPane
+import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
+import snyk.common.lsp.SnykScanSummaryParams
 import javax.swing.JPanel
 
-class SummaryPanel() : JPanel(), Disposable {
-
+class SummaryPanel(project: Project) : JPanel(), Disposable {
+    var browser: JBCefBrowser
     init {
         name = "summaryPanel"
+        minimumHeight = 0
 
+        // Initialise browser layout
         layout = getStandardLayout(1, 1)
-        val panel = addAndGetCenteredPanel(this, 1, 1)
-        val htmlContent = JEditorPane("text/html", getInitialText())
-        htmlContent.isEditable = false
+        val rawHtml = SummaryPanel::class.java.classLoader.getResource(HTML_INIT_FILE)?.readText()
+        val styledHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(rawHtml?: "")
+        browser = JBCefBrowser()
+        browser.loadHTML(styledHtml, browser.cefBrowser.url)
+        add(browser.component, baseGridConstraints(row = 0, column = 0, anchor = ANCHOR_CENTER))
 
-        panel.add(
-            htmlContent,
-            baseGridConstraints(row = 0, column = 0, anchor = ANCHOR_WEST)
-        )
-
-    }
-
-    private fun getInitialText(): String {
-        return """
-        |<html>
-        |  Summary placeholder
-        |</html>
-        """.trimMargin()
+        // Subscribe to scan summaries
+        project.messageBus.connect(this)
+            .subscribe(SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC, object : SnykScanSummaryListenerLS {
+                override fun onSummaryReceived(summaryParams: SnykScanSummaryParams) {
+                    super.onSummaryReceived(summaryParams)
+                    browser.loadHTML(summaryParams.summary)
+                }
+            })
     }
 
     private fun allIssuesClicked() {
         pluginSettings().setDeltaDisabled()
-        // TODO - Get new HTML from LS
     }
 
     private fun newIssuesClicked() {
         pluginSettings().setDeltaEnabled()
-        // TODO - Get new HTML from LS
     }
 
     override fun dispose() {}
 
+    companion object {
+        const val HTML_INIT_FILE = "html/ScanSummaryInit.html"
+    }
 }

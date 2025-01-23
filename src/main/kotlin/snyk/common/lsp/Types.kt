@@ -37,6 +37,9 @@ data class SnykScanParams(
     val cliError: CliError? = null, // structured error information if applicable
 )
 
+data class SnykScanSummaryParams(
+    val summary: String, // HTML representation of the scan summary
+)
 data class ErrorResponse(
     @SerializedName("error") val error: String,
     @SerializedName("path") val path: String

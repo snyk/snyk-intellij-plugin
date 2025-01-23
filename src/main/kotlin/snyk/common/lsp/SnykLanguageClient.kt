@@ -19,7 +19,9 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanSummaryListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -265,6 +267,13 @@ class SnykLanguageClient :
                     VfsUtilCore.isAncestor(ancestor, folder, true) || ancestor == folder
                 }
         }
+
+    @JsonNotification(value = "$/snyk.scanSummary")
+    fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
+        ProjectManager.getInstance().openProjects.forEach { p ->
+            getSyncPublisher(p, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
+        }
+    }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {

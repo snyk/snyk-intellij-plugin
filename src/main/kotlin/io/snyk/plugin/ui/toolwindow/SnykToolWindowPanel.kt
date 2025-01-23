@@ -521,7 +521,7 @@ class SnykToolWindowPanel(
     }
 
     private fun updateSummaryPanel() {
-        val summaryPanelContent = SummaryPanel()
+        val summaryPanelContent = SummaryPanel(project)
         summaryPanel.removeAll()
         Disposer.register(this, summaryPanelContent)
         summaryPanel.add(summaryPanelContent)
