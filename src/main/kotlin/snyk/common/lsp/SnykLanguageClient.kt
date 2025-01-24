@@ -270,7 +270,8 @@ class SnykLanguageClient :
 
     @JsonNotification(value = "$/snyk.scanSummary")
     fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
-        ProjectManager.getInstance().openProjects.forEach { p ->
+        if (disposed) return
+        ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
             getSyncPublisher(p, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
         }
     }

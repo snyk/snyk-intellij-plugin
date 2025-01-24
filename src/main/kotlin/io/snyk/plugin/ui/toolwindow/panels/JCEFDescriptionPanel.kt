@@ -158,40 +158,9 @@ class SuggestionDescriptionPanelFromLS(
     fun getCustomCssAndScript(): String {
         var html = issue.details()
         val ideScript = getCustomScript()
-
-
-        val lsNonce = extractLsNonceIfPresent(html)
-        var nonce = getNonce()
-        if (lsNonce != "") {
-            nonce = lsNonce
-        }
-
-        html = html.replace("\${ideStyle}", "<style nonce=\${nonce}></style>")
-        html = html.replace("\${headerEnd}", "")
-        html = html.replace("\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
-
-
-        html = html.replace("\${nonce}", nonce)
-        html = ThemeBasedStylingGenerator.replaceWithCustomStyles(html)
-        return html
+        return PanelHTMLUtils.getFormattedHtml(html, ideScript)
     }
-    private fun extractLsNonceIfPresent(html: String): String{
-        // When the nonce is injected by the IDE, it is of format nonce-${nonce}
-        if (!html.contains("\${nonce}") && html.contains("nonce-")){
-            val nonceStartPosition = html.indexOf("nonce-")
-            // Length of LS nonce
-            val startIndex = nonceStartPosition + "nonce-".length
-            val endIndex = startIndex + 24
-            return html.substring(startIndex, endIndex ).trim()
-        }
-        return ""
-    }
-    private fun getNonce(): String {
-        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
-        return (1..32)
-            .map { allowedChars.random() }
-            .joinToString("")
-    }
+
 
     private fun getCustomScript(): String {
         return """

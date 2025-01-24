@@ -38,8 +38,9 @@ data class SnykScanParams(
 )
 
 data class SnykScanSummaryParams(
-    val summary: String, // HTML representation of the scan summary
+    val scanSummary: String, // HTML representation of the scan summary
 )
+
 data class ErrorResponse(
     @SerializedName("error") val error: String,
     @SerializedName("path") val path: String
