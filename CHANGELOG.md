@@ -1,8 +1,11 @@
 # Snyk Security Changelog
 
-## [2.12.0]
+## [2.11.1]
 ### Changed
 - support 2025.1
+
+### Fixed
+- workspace folder configuration on language server (re-)start
 
 ## [2.11.0]
 ### Changed
