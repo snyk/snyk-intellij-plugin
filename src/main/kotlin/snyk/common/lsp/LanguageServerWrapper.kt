@@ -68,7 +68,6 @@ import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
-import java.net.URI
 import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.ExecutorService

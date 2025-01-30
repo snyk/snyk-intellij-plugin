@@ -15,7 +15,6 @@ import io.snyk.plugin.ui.jcef.IgnoreInFileHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
-import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -75,9 +74,9 @@ class SuggestionDescriptionPanelFromLS(
 
         }
         val html = this.getCustomCssAndScript()
-        val jbCefBrowserComponent =
-            JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
-        if (jbCefBrowserComponent == null) {
+        val jbCefBrowser =
+            JCEFUtils.getJBCefBrowserIfSupported(html, loadHandlerGenerators)
+        if (jbCefBrowser == null) {
             val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
             this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
             SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
@@ -88,7 +87,7 @@ class SuggestionDescriptionPanelFromLS(
                     GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
                 ).apply {
                     this.add(
-                        jbCefBrowserComponent,
+                        jbCefBrowser.component,
                         panelGridConstraints(1),
                     )
                 }
@@ -156,7 +155,7 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     fun getCustomCssAndScript(): String {
-        var html = issue.details()
+        val html = issue.details()
         val ideScript = getCustomScript()
         return PanelHTMLUtils.getFormattedHtml(html, ideScript)
     }

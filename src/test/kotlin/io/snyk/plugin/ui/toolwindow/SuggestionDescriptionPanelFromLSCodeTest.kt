@@ -6,6 +6,8 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -79,7 +81,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
     fun `test createUI should show nothing if HTML is allowed but JCEF is not supported`() {
         mockkObject(JCEFUtils)
-        every { JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any()) } returns null
+        every { JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
@@ -94,14 +96,18 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
     fun `test createUI should build panel with HTML from details if allowed`() {
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
+        val mockJBCefBrowser : JBCefBrowser = mockk()
+        every { mockJBCefBrowser.component } returns mockJBCefBrowserComponent
+
         mockkObject(JCEFUtils)
         every {
-            JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any())
-        } returns mockJBCefBrowserComponent
+            JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any())
+        } returns mockJBCefBrowser
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(project, issue)
+
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)

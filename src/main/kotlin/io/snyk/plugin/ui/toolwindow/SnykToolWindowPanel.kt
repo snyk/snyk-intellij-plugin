@@ -18,11 +18,15 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
@@ -71,6 +75,7 @@ import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -177,6 +182,33 @@ class SnykToolWindowPanel(
                 )
                 scanListener
             }
+
+        project.messageBus
+            .connect(this)
+            .subscribe(
+                SnykScanListenerLS.SNYK_SCAN_TOPIC,
+                object : SnykScanListenerLS {
+                    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
+                        // Refresh the tree view on receiving new diags from the Language Server
+                        getSnykCachedResults(project)?.let {
+                            when (product) {
+                                PRODUCT_CODE -> it.currentSnykCodeResultsLS.clear()
+                                PRODUCT_OSS -> it.currentOSSResultsLS.clear()
+                                PRODUCT_IAC -> it.currentIacResultsLS.clear()
+                            }
+                        }
+
+                        Tree(rootTreeNode).apply {
+                            this.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        }
+                    }
+
+                    override fun scanningSnykCodeFinished() = Unit
+                    override fun scanningOssFinished() = Unit
+                    override fun scanningIacFinished() = Unit
+                    override fun scanningError(snykScan: SnykScanParams) = Unit
+                },
+            )
 
         project.messageBus
             .connect(this)

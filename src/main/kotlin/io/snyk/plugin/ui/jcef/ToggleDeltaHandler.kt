@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.runInBackground
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
@@ -17,9 +18,9 @@ class ToggleDeltaHandler {
             } else {
                 pluginSettings().setDeltaDisabled()
             }
-
-            val languageServerWrapper = LanguageServerWrapper.getInstance()
-            languageServerWrapper.updateConfiguration(runScan = false)
+            runInBackground("Snyk: updating configuration") {
+                LanguageServerWrapper.getInstance().updateConfiguration()
+            }
             return@addHandler JBCefJSQuery.Response("success")
         }
 
@@ -31,14 +32,7 @@ class ToggleDeltaHandler {
                         if (window.toggleDeltaQuery) {
                             return;
                         }
-                        window.toggleDeltaQuery = function(value) { ${toggleDeltaQuery.inject("value")} };
-
-                        document.getElementById('totalIssues')?.addEventListener('click', () => {
-                            window.toggleDeltaQuery(false);
-                        });
-                        document.getElementById('newIssues')?.addEventListener('click', () => {
-                            window.toggleDeltaQuery(true);
-                        });
+                        window.toggleDeltaQuery = function(isEnabled) { ${toggleDeltaQuery.inject("isEnabled")} };
                     })()
                     """.trimIndent()
                     browser.executeJavaScript(script, browser.url, 0)
