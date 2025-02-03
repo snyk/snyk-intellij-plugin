@@ -184,6 +184,7 @@ class LanguageServerWrapper(
             }
 
             if (!(listenerFuture.isDone || listenerFuture.isCancelled)) {
+                configuredWorkspaceFolders.clear()
                 sendInitializeMessage()
                 isInitialized = true
                 // listen for downloads / restarts
@@ -232,6 +233,7 @@ class LanguageServerWrapper(
             }
             lsp4jLogger.level = previousLSP4jLogLevel
             messageProducerLogger.level = previousMessageProducerLevel
+            configuredWorkspaceFolders.clear()
         }
     }
 
