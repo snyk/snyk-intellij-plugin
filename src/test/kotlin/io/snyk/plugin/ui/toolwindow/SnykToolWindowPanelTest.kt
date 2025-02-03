@@ -94,6 +94,8 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         assertNotNull(authPanel)
         val treePanel = UIComponentFinder.getJPanelByName(cut, "treePanel")
         assertNotNull(treePanel)
+        val summaryPanel = UIComponentFinder.getJPanelByName(cut, "summaryPanel")
+        assertNotNull(summaryPanel)
     }
 
     @Test
