@@ -109,7 +109,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         val vulnerabilityTree = cut.vulnerabilitiesTree
         val descriptionPanel = UIComponentFinder.getJPanelByName(cut, "descriptionPanel")
         assertNotNull(descriptionPanel)
-        assertEquals(findOnePixelSplitter(vulnerabilityTree), descriptionPanel!!.parent)
+        assertEquals(findOnePixelSplitter(vulnerabilityTree)?.parent, descriptionPanel!!.parent)
     }
 
     //TODO rewrite
