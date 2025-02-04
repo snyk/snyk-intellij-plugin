@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  detekt:
+  static-resource-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
