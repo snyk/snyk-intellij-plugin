@@ -16,6 +16,24 @@ jobs:
           release-branch: master
           iac-scan: disabled
 
+  resource-checks:
+    resource_class: small
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - checkout
+      # Compare the sha1sum of the static resources with those in the language server repository.
+      - run: |
+        declare -A RESOURCES
+        RESOURCES["src/main/resources/html/ScanSummaryInit.html"]="https://raw.githubusercontent.com/snyk/snyk-ls/refs/heads/main/shared_ide_resources/ui/html/ScanSummaryInit.html"
+        for key in ${!RESOURCES[@]}; do
+          CANDIDATE=$(sha1sum $key | awk {'print $1'})
+          REFERENCE=$(curl ${RESOURCES[$key]} | sha1sum | awk {'print $1'})
+          echo "Candidate file $key has sha1sum $CANDIDATE"
+          echo "Reference file ${RESOURCES[$key]} has sha1sum $REFERENCE"
+          [[ $CANDIDATE == $REFERENCE ]]
+        done
+
 workflows:
   version: 2
   CICD:
@@ -28,3 +46,6 @@ workflows:
 
       - security-scans:
           context: devex_ide
+
+      - resource-checks:
+          name: Check static resources against LS repository
