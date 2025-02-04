@@ -13,13 +13,15 @@ jobs:
 
       - name: Check Static Resources
         run: |
-          declare -A RESOURCES
-          RESOURCES["src/main/resources/html/ScanSummaryInit.html"]="https://raw.githubusercontent.com/snyk/snyk-ls/refs/heads/main/shared_ide_resources/ui/html/ScanSummaryInit.html"
-          for key in ${!RESOURCES[@]}; do
-            CANDIDATE=$(sha1sum $key | awk {'print $1'})
-            REFERENCE=$(curl -s ${RESOURCES[$key]} | sha1sum | awk {'print $1'})
-            echo "Candidate file $key has sha1sum $CANDIDATE"
-            echo "Reference file ${RESOURCES[$key]} has sha1sum $REFERENCE"
-            [[ $CANDIDATE == $REFERENCE ]]
+          declare -A resources
+          # Add each resource as a kay, value pair, mapping the local resource to the reference wile (which should be stored in the lanaguage server repository). For example:
+          # resources["<path_to_local_file>"]="<url_of_reference_file>"
+          resources["src/main/resources/html/ScanSummaryInit.html"]="https://raw.githubusercontent.com/snyk/snyk-ls/refs/heads/main/shared_ide_resources/ui/html/ScanSummaryInit.html"
+          for key in ${!resources[@]}; do
+            candidate=${(sha1sum $key | awk {'print $1'}):="null"}
+            reference=$(curl -s ${resources[$key]} | sha1sum | awk {'print $1'})
+            echo "Candidate file $key has sha1sum $candidate"
+            echo "Reference file ${resources[$key]} has sha1sum $reference"
+            [[ $candidate == $reference ]]
           done
 
