@@ -31,6 +31,7 @@ class ThemeBasedStylingGenerator {
             val isHighContrast =
                 EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
             html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
+            html = html.replace("var(--main-font-size)", "10px")
             html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
             html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--ide-background-color)", UIUtil.getPanelBackground().toHex())
