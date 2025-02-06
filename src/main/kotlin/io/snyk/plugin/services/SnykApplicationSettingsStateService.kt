@@ -180,12 +180,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         treeFiltering.containerResults = containerScanEnabled
     }
 
-    fun setDeltaEnabled() {
-        issuesToDisplay = DISPLAY_NEW_ISSUES
-    }
-
-    fun setDeltaDisabled() {
-        issuesToDisplay = DISPLAY_ALL_ISSUES
+    fun setDeltaEnabled(enabled: Boolean) {
+        issuesToDisplay = if (enabled) {
+            DISPLAY_NEW_ISSUES
+        } else {
+            DISPLAY_ALL_ISSUES
+        }
     }
 
     companion object {

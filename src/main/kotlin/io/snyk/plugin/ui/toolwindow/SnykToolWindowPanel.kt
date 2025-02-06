@@ -192,9 +192,9 @@ class SnykToolWindowPanel(
                         // Refresh the tree view on receiving new diags from the Language Server
                         getSnykCachedResults(project)?.let {
                             when (product) {
-                                PRODUCT_CODE -> it.currentSnykCodeResultsLS.clear()
-                                PRODUCT_OSS -> it.currentOSSResultsLS.clear()
-                                PRODUCT_IAC -> it.currentIacResultsLS.clear()
+                                PRODUCT_CODE -> it.currentSnykCodeResultsLS[snykFile] = issueList
+                                PRODUCT_OSS -> it.currentOSSResultsLS[snykFile] = issueList
+                                PRODUCT_IAC -> it.currentIacResultsLS[snykFile] = issueList
                             }
                         }
 

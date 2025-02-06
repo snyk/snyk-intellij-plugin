@@ -13,11 +13,7 @@ class ToggleDeltaHandler {
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val toggleDeltaQuery = JBCefJSQuery.create(jbCefBrowser)
         toggleDeltaQuery.addHandler {deltaEnabled ->
-            if (deltaEnabled.toBoolean()) {
-                pluginSettings().setDeltaEnabled()
-            } else {
-                pluginSettings().setDeltaDisabled()
-            }
+            pluginSettings().setDeltaEnabled(deltaEnabled.toBoolean())
             runInBackground("Snyk: updating configuration") {
                 LanguageServerWrapper.getInstance().updateConfiguration()
             }
