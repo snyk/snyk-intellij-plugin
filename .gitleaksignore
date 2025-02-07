@@ -53,3 +53,4 @@ db2662b39d5195aeda376109d21d1530c194711e:src/main/scala/io/snyk/plugin/client/Ap
 372778ad27f3293b03c96eed86dccfe4d6d8c6f4:src/main/scala/io/snyk/plugin/ApiClient.scala:generic-api-key:14
 372778ad27f3293b03c96eed86dccfe4d6d8c6f4:src/main/scala/io/snyk/plugin/ApiClient.scala:generic-api-key:17
 372778ad27f3293b03c96eed86dccfe4d6d8c6f4:src/main/scala/io/snyk/plugin/ApiClient.scala:generic-api-key:20
+67244ecb074381e16902870e29d9f734cc611fd8:src/main/scala/io/snyk/plugin/metrics/SegmentApi.scala:generic-api-key:56

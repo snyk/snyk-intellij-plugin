@@ -67,7 +67,7 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
             folderConfigSettings.addFolderConfig(folderConfig.copy(baseBranch = baseBranch))
         }
         runInBackground("Snyk: updating configuration") {
-            LanguageServerWrapper.getInstance().updateConfiguration()
+            LanguageServerWrapper.getInstance().updateConfiguration(true)
         }
     }
 
