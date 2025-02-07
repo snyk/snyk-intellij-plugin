@@ -14,9 +14,9 @@ import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
 import snyk.common.lsp.FolderConfig
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LanguageServerSettings
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.WorkspaceTrustSettings
 import kotlin.io.path.absolutePathString
@@ -53,7 +53,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
             selectedItem = "main"
         }
 
-        cut.comboBoxes = mutableListOf(comboBox)
+        cut.baseBranches = mutableListOf(comboBox)
 
         cut.execute()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -73,7 +73,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
             name = folderConfig.folderPath
             selectedItem = "main"
         }
-        cut.comboBoxes = mutableListOf(comboBox)
+        cut.baseBranches = mutableListOf(comboBox)
 
         cut.execute()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -98,7 +98,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
             selectedItem = "main"
         }
 
-        cut.comboBoxes = mutableListOf(comboBox)
+        cut.baseBranches = mutableListOf(comboBox)
 
         cut.doCancelAction()
 
