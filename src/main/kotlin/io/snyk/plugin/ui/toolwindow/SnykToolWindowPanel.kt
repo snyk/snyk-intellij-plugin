@@ -18,11 +18,15 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
@@ -62,6 +66,7 @@ import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.StatePanel
+import io.snyk.plugin.ui.toolwindow.panels.SummaryPanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
@@ -70,6 +75,7 @@ import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -94,6 +100,7 @@ class SnykToolWindowPanel(
 ) : JPanel(),
     Disposable {
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
+    private val summaryPanel = SimpleToolWindowPanel(true, true).apply { name = "summaryPanel" }
     private val logger = Logger.getInstance(this::class.java)
     private val rootTreeNode = ChooseBranchNode(project = project)
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -149,6 +156,7 @@ class SnykToolWindowPanel(
 
         createTreeAndDescriptionPanel()
         chooseMainPanelToDisplay()
+        updateSummaryPanel()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener { treeSelectionEvent ->
             runAsync {
@@ -174,6 +182,33 @@ class SnykToolWindowPanel(
                 )
                 scanListener
             }
+
+        project.messageBus
+            .connect(this)
+            .subscribe(
+                SnykScanListenerLS.SNYK_SCAN_TOPIC,
+                object : SnykScanListenerLS {
+                    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
+                        // Refresh the tree view on receiving new diags from the Language Server
+                        getSnykCachedResults(project)?.let {
+                            when (product) {
+                                PRODUCT_CODE -> it.currentSnykCodeResultsLS[snykFile] = issueList
+                                PRODUCT_OSS -> it.currentOSSResultsLS[snykFile] = issueList
+                                PRODUCT_IAC -> it.currentIacResultsLS[snykFile] = issueList
+                            }
+                        }
+
+                        Tree(rootTreeNode).apply {
+                            this.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        }
+                    }
+
+                    override fun scanningSnykCodeFinished() = Unit
+                    override fun scanningOssFinished() = Unit
+                    override fun scanningIacFinished() = Unit
+                    override fun scanningError(snykScan: SnykScanParams) = Unit
+                },
+            )
 
         project.messageBus
             .connect(this)
@@ -498,7 +533,12 @@ class SnykToolWindowPanel(
         removeAll()
         val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
         add(vulnerabilitiesSplitter, BorderLayout.CENTER)
-        vulnerabilitiesSplitter.firstComponent = TreePanel(vulnerabilitiesTree)
+
+        val treeSplitter = OnePixelSplitter(true, TOOL_TREE_SPLITTER_PROPORTION_KEY, 0.25f)
+        treeSplitter.firstComponent = summaryPanel
+        treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree)
+
+        vulnerabilitiesSplitter.firstComponent = treeSplitter
         vulnerabilitiesSplitter.secondComponent = descriptionPanel
     }
 
@@ -510,6 +550,14 @@ class SnykToolWindowPanel(
             noIssuesInAnyProductFound() -> displayNoVulnerabilitiesMessage()
             else -> displaySelectVulnerabilityMessage()
         }
+    }
+
+    private fun updateSummaryPanel() {
+        val summaryPanelContent = SummaryPanel(project)
+        summaryPanel.removeAll()
+        Disposer.register(this, summaryPanelContent)
+        summaryPanel.add(summaryPanelContent)
+        revalidate()
     }
 
     private fun noIssuesInAnyProductFound() =
@@ -954,6 +1002,7 @@ class SnykToolWindowPanel(
         const val NO_CONTAINER_IMAGES_FOUND = " - No container images found"
         const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
+        private const val TOOL_TREE_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_TREE_SPLITTER_PROPORTION"
         internal const val NODE_INITIAL_STATE = -1
         const val NODE_NOT_SUPPORTED_STATE = -2
 

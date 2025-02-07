@@ -5,20 +5,20 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.ui.jcef.JBCefClient
 import org.cef.handler.CefLoadHandlerAdapter
-import java.awt.Component
 
 typealias LoadHandlerGenerator = (jbCefBrowser: JBCefBrowser) -> CefLoadHandlerAdapter
 
 object JCEFUtils {
     private val jbCefPair : Pair<JBCefClient, JBCefBrowser>? = null
 
-    fun getJBCefBrowserComponentIfSupported(
+    fun getJBCefBrowserIfSupported(
         html: String,
         loadHandlerGenerators: List<LoadHandlerGenerator>,
-    ): Component? {
+    ): JBCefBrowser? {
         if (!JBCefApp.isSupported()) {
             return null
         }
+
         val (cefClient, jbCefBrowser) = getBrowser()
 
         for (loadHandlerGenerator in loadHandlerGenerators) {
@@ -27,7 +27,7 @@ object JCEFUtils {
         }
         jbCefBrowser.loadHTML(html, jbCefBrowser.cefBrowser.url)
 
-        return jbCefBrowser.component
+        return jbCefBrowser
     }
 
     private fun getBrowser(): Pair<JBCefClient, JBCefBrowser> {

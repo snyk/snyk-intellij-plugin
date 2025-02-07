@@ -20,6 +20,11 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
+import io.snyk.plugin.events.SnykScanSummaryListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
@@ -105,9 +110,9 @@ class SnykLanguageClient :
 
         //If the diagnostics for the file is empty, clear the cache.
         if (firstDiagnostic == null) {
-            scanPublisher.onPublishDiagnostics("code", snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics("oss", snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics("iac", snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(PRODUCT_CODE, snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(PRODUCT_OSS, snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(PRODUCT_IAC, snykFile, emptyList())
             return
         }
 
@@ -237,13 +242,10 @@ class SnykLanguageClient :
         logger.info("Scan completed")
 
         when (snykScan.product) {
-            "oss" -> scanPublisher.scanningOssFinished()
-            "code" -> {
-                scanPublisher.scanningSnykCodeFinished()
-            }
-
-            "iac" -> scanPublisher.scanningIacFinished()
-            "container" -> TODO()
+            PRODUCT_OSS -> scanPublisher.scanningOssFinished()
+            PRODUCT_CODE -> scanPublisher.scanningSnykCodeFinished()
+            PRODUCT_IAC -> scanPublisher.scanningIacFinished()
+            PRODUCT_CONTAINER -> TODO()
         }
     }
 
@@ -267,6 +269,15 @@ class SnykLanguageClient :
                     VfsUtilCore.isAncestor(ancestor, folder, true) || ancestor == folder
                 }
         }
+
+    @JsonNotification(value = "$/snyk.scanSummary")
+    fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
+        if (disposed) return
+        ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
+            logger.debug("Publishing Snyk scan summary for $p: ${summaryParams.scanSummary}")
+            getSyncPublisher(p, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
+        }
+    }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {

@@ -38,7 +38,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var cliBaseDownloadURL: String = "https://downloads.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
     var cliReleaseChannel = "stable"
-    var displayAllIssues: String = "All issues"
+    var issuesToDisplay: String = DISPLAY_ALL_ISSUES
     var manageBinariesAutomatically: Boolean = true
     var fileListenerEnabled: Boolean = true
     // TODO migrate to https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
@@ -105,7 +105,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     }
 
     fun isDeltaFindingsEnabled(): Boolean =
-        (displayAllIssues == "Net new issues")
+        (issuesToDisplay == DISPLAY_NEW_ISSUES)
 
     fun getAdditionalParameters(project: Project? = null): String? =
         if (isProjectSettingsAvailable(project)) {
@@ -180,8 +180,17 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         treeFiltering.containerResults = containerScanEnabled
     }
 
-    fun setDeltaEnabled() {
-        displayAllIssues = "Net new issues"
+    fun setDeltaEnabled(enabled: Boolean) {
+        issuesToDisplay = if (enabled) {
+            DISPLAY_NEW_ISSUES
+        } else {
+            DISPLAY_ALL_ISSUES
+        }
+    }
+
+    companion object {
+        const val DISPLAY_ALL_ISSUES = "All issues"
+        const val DISPLAY_NEW_ISSUES = "Net new issues"
     }
 }
 

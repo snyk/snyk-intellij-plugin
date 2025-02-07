@@ -184,7 +184,7 @@ class SnykSettingsDialog(
 
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
                 .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
-            netNewIssuesDropDown.selectedItem = applicationSettings.displayAllIssues
+            netNewIssuesDropDown.selectedItem = applicationSettings.issuesToDisplay
         }
     }
 
