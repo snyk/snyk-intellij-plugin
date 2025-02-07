@@ -94,11 +94,13 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
         baseBranches.forEach {
             val folderConfig: FolderConfig = it.key
 
-            val baseBranch = getSelectedItem(it.value)
-            if (!baseBranch.isNullOrBlank()) {
+            val baseBranch = getSelectedItem(it.value) ?: ""
+            val referenceFolder = referenceFolders[folderConfig]!!.text
+            if (baseBranch.isNotBlank()) {
                 folderConfigSettings.addFolderConfig(folderConfig.copy(baseBranch = baseBranch))
-            } else {
-                folderConfigSettings.addFolderConfig(folderConfig.copy(referenceFolderPath = referenceFolders[folderConfig]!!.text))
+            }
+            if (referenceFolder.isNotBlank()){
+                folderConfigSettings.addFolderConfig(folderConfig.copy(referenceFolderPath = referenceFolder))
             }
         }
         runInBackground("Snyk: updating configuration") {
