@@ -33,7 +33,7 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
     override fun createCenterPanel(): JComponent {
         val folderConfigs = service<FolderConfigSettings>().getAllForProject(project)
         folderConfigs.forEach { folderConfig ->
-            val comboBox = ComboBox(folderConfig.localBranches.sorted().toTypedArray())
+            val comboBox = ComboBox(folderConfig.localBranches?.sorted()?.toTypedArray()?: emptyArray())
             comboBox.selectedItem = folderConfig.baseBranch
             comboBox.name = folderConfig.folderPath
             baseBranches[folderConfig] = comboBox
