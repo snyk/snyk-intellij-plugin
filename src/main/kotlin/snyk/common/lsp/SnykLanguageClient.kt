@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.intellij.configurationStore.StoreUtil
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
@@ -285,13 +286,20 @@ class SnykLanguageClient :
         val oldApiUrl = pluginSettings().customEndpointUrl
         if (oldToken == param.token && oldApiUrl == param.apiUrl) return
 
-        if (!param.apiUrl.isNullOrBlank()){
+        if (!param.apiUrl.isNullOrBlank()) {
             pluginSettings().customEndpointUrl = param.apiUrl
         }
 
+        logger.info("received authentication information: Token-Length: ${param.token?.length}}, URL: ${param.apiUrl}")
+        logger.info("use token-auth? ${pluginSettings().useTokenAuthentication}")
+        logger.debug("is same token?  ${oldToken == param.token}")
+
         pluginSettings().token = param.token
 
-        ApplicationManager.getApplication().saveSettings()
+        // we use internal API here, as we need to force immediate persistence to ensure new
+        // refresh tokens are always persisted, not only every 5 min.
+        StoreUtil.saveSettings(ApplicationManager.getApplication(), true)
+        logger.info("force-saved settings")
 
         if (oldToken.isNullOrBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
@@ -302,8 +310,11 @@ class SnykLanguageClient :
     }
 
     @JsonRequest(value = "workspace/snyk.sdks")
-    fun getSdks(workspaceFolder: WorkspaceFolder) : CompletableFuture<List<LsSdk>> {
-        val project = guessProjectForFile(workspaceFolder.uri.toVirtualFile()) ?: return CompletableFuture.completedFuture(emptyList())
+    fun getSdks(workspaceFolder: WorkspaceFolder): CompletableFuture<List<LsSdk>> {
+        val project =
+            guessProjectForFile(workspaceFolder.uri.toVirtualFile()) ?: return CompletableFuture.completedFuture(
+                emptyList()
+            )
         return CompletableFuture.completedFuture(SdkHelper.getSdks(project))
     }
 
@@ -350,7 +361,7 @@ class SnykLanguageClient :
         }
     }
 
-    private fun cutMessage(messageParams: MessageParams) : String {
+    private fun cutMessage(messageParams: MessageParams): String {
         return if (messageParams.message.length > 500) {
             messageParams.message.substring(0, 500) + "..."
         } else {

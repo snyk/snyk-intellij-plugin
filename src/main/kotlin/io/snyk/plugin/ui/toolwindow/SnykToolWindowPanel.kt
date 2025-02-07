@@ -476,7 +476,7 @@ class SnykToolWindowPanel(
             ),
     ) {
         rootNodesToUpdate.forEach {
-            it.removeAllChildren()
+            if (it.childCount>0) it.removeAllChildren()
             (vulnerabilitiesTree.model as DefaultTreeModel).reload(it)
         }
     }
