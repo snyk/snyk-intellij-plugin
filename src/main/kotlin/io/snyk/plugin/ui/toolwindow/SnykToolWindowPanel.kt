@@ -206,10 +206,7 @@ class SnykToolWindowPanel(
                                 PRODUCT_IAC -> it.currentIacResultsLS[snykFile] = issueList
                             }
                         }
-
-                        invokeLater {
-                            vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
-                        }
+                        vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
                     }
 
                     override fun scanningSnykCodeFinished() = Unit
