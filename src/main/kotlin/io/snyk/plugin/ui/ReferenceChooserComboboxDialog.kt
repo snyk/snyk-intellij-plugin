@@ -10,7 +10,7 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
-import io.snyk.plugin.runInBackground
+import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
@@ -103,7 +103,7 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         }
 
         if (doValidate() == null) {
-            runInBackground("Snyk: updating configuration") {
+            runAsync {
                 LanguageServerWrapper.getInstance().updateConfiguration(true)
             }
         }
