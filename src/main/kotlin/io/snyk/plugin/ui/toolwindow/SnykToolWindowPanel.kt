@@ -47,7 +47,7 @@ import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
 import io.snyk.plugin.toVirtualFile
-import io.snyk.plugin.ui.BranchChooserComboBoxDialog
+import io.snyk.plugin.ui.ReferenceChooserDialog
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
@@ -374,7 +374,7 @@ class SnykToolWindowPanel(
 
             if (lastPathComponent is ChooseBranchNode && capturedNavigateToSourceEnabled && !capturedSmartReloadMode) {
                 invokeLater {
-                    BranchChooserComboBoxDialog(project).show()
+                    ReferenceChooserDialog(project).show()
                 }
             }
 

@@ -21,9 +21,9 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 
-class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
-    val baseBranches: MutableMap<FolderConfig, ComboBox<String>> = mutableMapOf()
-    val referenceFolders: MutableMap<FolderConfig, TextFieldWithBrowseButton> = mutableMapOf()
+class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
+    var baseBranches: MutableMap<FolderConfig, ComboBox<String>> = mutableMapOf()
+    private val referenceFolders: MutableMap<FolderConfig, TextFieldWithBrowseButton> = mutableMapOf()
 
     init {
         init()
@@ -33,7 +33,7 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
     override fun createCenterPanel(): JComponent {
         val folderConfigs = service<FolderConfigSettings>().getAllForProject(project)
         folderConfigs.forEach { folderConfig ->
-            val comboBox = ComboBox(folderConfig.localBranches?.sorted()?.toTypedArray()?: emptyArray())
+            val comboBox = ComboBox(folderConfig.localBranches?.sorted()?.toTypedArray() ?: emptyArray())
             comboBox.selectedItem = folderConfig.baseBranch
             comboBox.name = folderConfig.folderPath
             baseBranches[folderConfig] = comboBox
@@ -84,9 +84,9 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
         return referenceFolder
     }
 
-    override fun doOKAction() {
-        execute()
+    public override fun doOKAction() {
         super.doOKAction()
+        execute()
     }
 
     fun execute() {
@@ -95,16 +95,20 @@ class BranchChooserComboBoxDialog(val project: Project) : DialogWrapper(true) {
             val folderConfig: FolderConfig = it.key
 
             val baseBranch = getSelectedItem(it.value) ?: ""
-            val referenceFolder = referenceFolders[folderConfig]!!.text
+            val referenceFolderControl = referenceFolders[folderConfig]
+            val referenceFolder = referenceFolderControl?.text ?: ""
             if (baseBranch.isNotBlank()) {
                 folderConfigSettings.addFolderConfig(folderConfig.copy(baseBranch = baseBranch))
             }
-            if (referenceFolder.isNotBlank()){
+            if (referenceFolder.isNotBlank()) {
                 folderConfigSettings.addFolderConfig(folderConfig.copy(referenceFolderPath = referenceFolder))
             }
         }
-        runInBackground("Snyk: updating configuration") {
-            LanguageServerWrapper.getInstance().updateConfiguration(true)
+
+        if (doValidate() == null) {
+            runInBackground("Snyk: updating configuration") {
+                LanguageServerWrapper.getInstance().updateConfiguration(true)
+            }
         }
     }
 
