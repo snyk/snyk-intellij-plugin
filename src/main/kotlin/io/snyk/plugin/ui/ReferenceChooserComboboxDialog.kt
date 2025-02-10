@@ -97,12 +97,8 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             val baseBranch = getSelectedItem(it.value) ?: ""
             val referenceFolderControl = referenceFolders[folderConfig]
             val referenceFolder = referenceFolderControl?.text ?: ""
-            if (baseBranch.isNotBlank()) {
-                folderConfigSettings.addFolderConfig(folderConfig.copy(baseBranch = baseBranch))
-            }
-            if (referenceFolder.isNotBlank()) {
-                folderConfigSettings.addFolderConfig(folderConfig.copy(referenceFolderPath = referenceFolder))
-            }
+            folderConfigSettings.addFolderConfig(folderConfig.copy(baseBranch = baseBranch))
+            folderConfigSettings.addFolderConfig(folderConfig.copy(referenceFolderPath = referenceFolder))
         }
 
         if (doValidate() == null) {
