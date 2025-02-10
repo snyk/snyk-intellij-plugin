@@ -207,8 +207,8 @@ class SnykToolWindowPanel(
                             }
                         }
 
-                        Tree(rootTreeNode).apply {
-                            this.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        invokeLater {
+                            vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
                         }
                     }
 
