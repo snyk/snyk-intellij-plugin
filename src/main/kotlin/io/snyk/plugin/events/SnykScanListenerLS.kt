@@ -9,6 +9,11 @@ interface SnykScanListenerLS {
     companion object {
         val SNYK_SCAN_TOPIC =
             Topic.create("Snyk scan LS", SnykScanListenerLS::class.java)
+
+        val PRODUCT_CODE = "code"
+        val PRODUCT_OSS = "oss"
+        val PRODUCT_IAC = "iac"
+        val PRODUCT_CONTAINER = "container"
     }
 
     fun scanningStarted(snykScan: SnykScanParams) {}

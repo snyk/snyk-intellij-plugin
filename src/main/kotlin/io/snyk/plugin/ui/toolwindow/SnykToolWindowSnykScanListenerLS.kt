@@ -10,6 +10,10 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -108,24 +112,24 @@ class SnykToolWindowSnykScanListenerLS(
 
     override fun scanningError(snykScan: SnykScanParams) {
         when (snykScan.product) {
-            "oss" -> {
+            PRODUCT_OSS -> {
                 this.rootOssIssuesTreeNode.removeAllChildren()
                 this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (error)"
             }
 
-            "code" -> {
+            PRODUCT_CODE -> {
                 this.rootSecurityIssuesTreeNode.removeAllChildren()
                 this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
                 this.rootQualityIssuesTreeNode.removeAllChildren()
                 this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
             }
 
-            "iac" -> {
+            PRODUCT_IAC -> {
                 this.rootIacIssuesTreeNode.removeAllChildren()
-                this.rootOssIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
+                this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
-            "container" -> {
+            PRODUCT_CONTAINER -> {
                 // TODO implement
             }
         }

@@ -15,7 +15,6 @@ import io.snyk.plugin.ui.jcef.IgnoreInFileHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
-import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -74,9 +73,9 @@ class SuggestionDescriptionPanelFromLS(
             }
         }
         val html = this.getCustomCssAndScript()
-        val jbCefBrowserComponent =
-            JCEFUtils.getJBCefBrowserComponentIfSupported(html, loadHandlerGenerators)
-        if (jbCefBrowserComponent == null) {
+        val jbCefBrowser =
+            JCEFUtils.getJBCefBrowserIfSupported(html, loadHandlerGenerators)
+        if (jbCefBrowser == null) {
             val statePanel = StatePanel(SnykToolWindowPanel.SELECT_ISSUE_TEXT)
             this.add(wrapWithScrollPane(statePanel), BorderLayout.CENTER)
             SnykBalloonNotificationHelper.showError(unexpectedErrorMessage, null)
@@ -87,7 +86,7 @@ class SuggestionDescriptionPanelFromLS(
                     GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
                 ).apply {
                     this.add(
-                        jbCefBrowserComponent,
+                        jbCefBrowser.component,
                         panelGridConstraints(1),
                     )
                 }
@@ -155,52 +154,9 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     fun getCustomCssAndScript(): String {
-        var html = issue.details()
+        val html = issue.details()
         val ideScript = getCustomScript()
-
-
-        val lsNonce = extractLsNonceIfPresent(html)
-        var nonce = getNonce()
-        if (lsNonce != "") {
-            nonce = lsNonce
-        }
-
-        html = html.replace("\${ideStyle}", "<style nonce=\${nonce}></style>")
-        html = html.replace("\${headerEnd}", "")
-        html = html.replace("\${ideScript}", "$ideScript")
-        html = html.replace("\${ideGenerateAIFix}", getGenerateAiFixScript())
-        html = html.replace("\${ideApplyAIFix}", getApplyAiFixScript())
-        html = html.replace("\${nonce}", nonce)
-        html = ThemeBasedStylingGenerator.replaceWithCustomStyles(html)
-        return html
-    }
-    private fun extractLsNonceIfPresent(html: String): String{
-        // When the nonce is injected by the IDE, it is of format nonce-${nonce}
-        if (!html.contains("\${nonce}") && html.contains("nonce-")){
-            val nonceStartPosition = html.indexOf("nonce-")
-            // Length of LS nonce
-            val startIndex = nonceStartPosition + "nonce-".length
-            val endIndex = startIndex + 24
-            return html.substring(startIndex, endIndex ).trim()
-        }
-        return ""
-    }
-    private fun getNonce(): String {
-        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
-        return (1..32)
-            .map { allowedChars.random() }
-            .joinToString("")
-    }
-    private fun getGenerateAiFixScript(): String {
-        return "const issueId = generateAIFixButton.getAttribute('issue-id');\n" +
-            "                        const folderPath = generateAIFixButton.getAttribute('folder-path');\n" +
-            "                        const filePath = generateAIFixButton.getAttribute('file-path');\n" +
-            "\n" +
-            "                        window.aiFixQuery(folderPath + \"@|@\" + filePath + \"@|@\" + issueId);\n" +
-            "                        "
-    }
-    private fun getApplyAiFixScript(): String {
-        return "window.applyFixQuery(fixId + '|@' + filePath + '|@' + patch);\n"
+        return PanelHTMLUtils.getFormattedHtml(html, ideScript)
     }
     private fun getCustomScript(): String {
         return """

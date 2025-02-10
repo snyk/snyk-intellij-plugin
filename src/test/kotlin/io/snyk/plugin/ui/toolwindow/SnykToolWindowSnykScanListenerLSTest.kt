@@ -69,7 +69,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
         rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
         rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
-        pluginSettings().setDeltaEnabled()
+        pluginSettings().setDeltaEnabled(enabled = true)
         contentRootPaths.forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
     }
 

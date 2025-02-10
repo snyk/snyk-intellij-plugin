@@ -49,7 +49,7 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
-            snykSettingsDialog.getDisplayIssuesSelection() != settingsStateService.displayAllIssues ||
+            snykSettingsDialog.getDisplayIssuesSelection() != settingsStateService.issuesToDisplay ||
 
             isAuthenticationMethodModified()
 
@@ -116,8 +116,8 @@ class SnykProjectSettingsConfigurable(
                 handleReleaseChannelChanged()
             }
 
-            if (snykSettingsDialog.getDisplayIssuesSelection() != pluginSettings().displayAllIssues) {
-                settingsStateService.displayAllIssues = snykSettingsDialog.getDisplayIssuesSelection()
+            if (snykSettingsDialog.getDisplayIssuesSelection() != pluginSettings().issuesToDisplay) {
+                settingsStateService.issuesToDisplay = snykSettingsDialog.getDisplayIssuesSelection()
                 val cache = getSnykCachedResults(project)
                 cache?.currentOSSResultsLS?.clear()
                 cache?.currentSnykCodeResultsLS?.clear()

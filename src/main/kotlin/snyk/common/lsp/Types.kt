@@ -37,6 +37,10 @@ data class SnykScanParams(
     val cliError: CliError? = null, // structured error information if applicable
 )
 
+data class SnykScanSummaryParams(
+    val scanSummary: String, // HTML representation of the scan summary
+)
+
 data class ErrorResponse(
     @SerializedName("error") val error: String,
     @SerializedName("path") val path: String
@@ -520,9 +524,28 @@ data class FolderConfigsParam(
     @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>?,
 )
 
+/**
+ * FolderConfig stores the configuration for a workspace folder
+ *
+ * @param folderPath the path of the folder
+ * @param baseBranch the base branch to compare against (if git repository)
+ * @param localBranches the local branches in the git repository
+ * @param additionalParameters additional parameters to pass to the scan command
+ * @param referenceFolderPath the reference folder to scan, if not a git repository
+ * @param scanCommandConfig the scan command configuration to specify a command to be executed before and/or after the scan
+ */
 data class FolderConfig(
     @SerializedName("folderPath") val folderPath: String,
     @SerializedName("baseBranch") val baseBranch: String,
-    @SerializedName("localBranches") val localBranches: List<String> = emptyList(),
-    @SerializedName("additionalParameters") val additionalParameters: List<String> = emptyList()
+    @SerializedName("localBranches") val localBranches: List<String>? = emptyList(),
+    @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),
+    @SerializedName("referenceFolderPath") val referenceFolderPath: String? = null,
+    @SerializedName("scanCommandConfig") val scanCommandConfig: ScanCommandConfig? = null,
+)
+
+data class ScanCommandConfig(
+    val preScanCommand: String = "",
+    val preScanOnlyReferenceFolder: Boolean = true,
+    val postScanCommand: String = "",
+    val postScanOnlyReferenceFolder: Boolean = true,
 )

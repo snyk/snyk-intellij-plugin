@@ -4,6 +4,7 @@ import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.ui.jcef.JBCefBrowserBase
+import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import org.cef.browser.CefBrowser
@@ -18,7 +19,7 @@ class ThemeBasedStylingGenerator {
         fun toCssHex(color: Color): String {
             return "#%02x%02x%02x".format(color.red, color.green, color.blue)
         }
-        fun replaceWithCustomStyles(htmlToReplace: String):String {
+        fun replaceWithCustomStyles(htmlToReplace: String): String {
             var html = htmlToReplace;
             val editorColorsManager = EditorColorsManager.getInstance()
             val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
@@ -31,8 +32,10 @@ class ThemeBasedStylingGenerator {
             val isHighContrast =
                 EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
             html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
+            html = html.replace("var(--main-font-size)", JBFont.small().size.toString() + "px")
             html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
             html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
+            html = html.replace("var(--ide-background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--border-color)", borderColor)
             html = html.replace("var(--horizontal-border-color)", borderColor)
             html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())

@@ -18,11 +18,15 @@ import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
@@ -42,7 +46,8 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
-import io.snyk.plugin.ui.BranchChooserComboBoxDialog
+import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.ReferenceChooserDialog
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
@@ -62,14 +67,17 @@ import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.StatePanel
+import io.snyk.plugin.ui.toolwindow.panels.SummaryPanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -94,6 +102,7 @@ class SnykToolWindowPanel(
 ) : JPanel(),
     Disposable {
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
+    private val summaryPanel = SimpleToolWindowPanel(true, true).apply { name = "summaryPanel" }
     private val logger = Logger.getInstance(this::class.java)
     private val rootTreeNode = ChooseBranchNode(project = project)
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -113,9 +122,16 @@ class SnykToolWindowPanel(
         }
     }
 
-    private fun getRootNodeText(folderPath: String, baseBranch: String) =
-        "Click to choose base branch for $folderPath [ current: $baseBranch ]"
-
+    private fun getRootNodeText(folderConfig: FolderConfig): String {
+        val detail = if (folderConfig.referenceFolderPath.isNullOrBlank()) {
+            folderConfig.baseBranch
+        } else {
+            folderConfig.referenceFolderPath
+        }
+        return "Click to choose base branch or reference folder for ${
+            folderConfig.folderPath.toVirtualFile().toNioPath().fileName
+        }: [ current: $detail ]"
+    }
 
     /** Flag used to recognize not-user-initiated Description panel reload cases for purposes like:
      *  - disable Itly logging
@@ -133,7 +149,7 @@ class SnykToolWindowPanel(
 
     init {
         val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
-        val rootNodeText = folderConfig?.let { getRootNodeText(it.folderPath, it.baseBranch) }
+        val rootNodeText = folderConfig?.let { getRootNodeText(it) }
             ?: "Choose branch on ${project.basePath}"
         rootTreeNode.info = rootNodeText
 
@@ -149,6 +165,7 @@ class SnykToolWindowPanel(
 
         createTreeAndDescriptionPanel()
         chooseMainPanelToDisplay()
+        updateSummaryPanel()
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener { treeSelectionEvent ->
             runAsync {
@@ -174,6 +191,33 @@ class SnykToolWindowPanel(
                 )
                 scanListener
             }
+
+        project.messageBus
+            .connect(this)
+            .subscribe(
+                SnykScanListenerLS.SNYK_SCAN_TOPIC,
+                object : SnykScanListenerLS {
+                    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
+                        // Refresh the tree view on receiving new diags from the Language Server
+                        getSnykCachedResults(project)?.let {
+                            when (product) {
+                                PRODUCT_CODE -> it.currentSnykCodeResultsLS[snykFile] = issueList
+                                PRODUCT_OSS -> it.currentOSSResultsLS[snykFile] = issueList
+                                PRODUCT_IAC -> it.currentIacResultsLS[snykFile] = issueList
+                            }
+                        }
+
+                        Tree(rootTreeNode).apply {
+                            this.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        }
+                    }
+
+                    override fun scanningSnykCodeFinished() = Unit
+                    override fun scanningOssFinished() = Unit
+                    override fun scanningIacFinished() = Unit
+                    override fun scanningError(snykScan: SnykScanParams) = Unit
+                },
+            )
 
         project.messageBus
             .connect(this)
@@ -330,7 +374,7 @@ class SnykToolWindowPanel(
 
             if (lastPathComponent is ChooseBranchNode && capturedNavigateToSourceEnabled && !capturedSmartReloadMode) {
                 invokeLater {
-                    BranchChooserComboBoxDialog(project).show()
+                    ReferenceChooserDialog(project).show()
                 }
             }
 
@@ -441,7 +485,7 @@ class SnykToolWindowPanel(
             ),
     ) {
         rootNodesToUpdate.forEach {
-            if (it.childCount>0) it.removeAllChildren()
+            if (it.childCount > 0) it.removeAllChildren()
             (vulnerabilitiesTree.model as DefaultTreeModel).reload(it)
         }
     }
@@ -456,7 +500,12 @@ class SnykToolWindowPanel(
                     enableCodeScanAccordingToServerSetting()
                     displayEmptyDescription()
                 } catch (e: Exception) {
-                    displaySnykError(SnykError(e.message ?: "Exception while initializing plugin {${e.message}", ""))
+                    displaySnykError(
+                        SnykError(
+                            e.message ?: "Exception while initializing plugin {${e.message}",
+                            ""
+                        )
+                    )
                     logger.error("Failed to apply Snyk settings", e)
                 }
             }
@@ -498,7 +547,12 @@ class SnykToolWindowPanel(
         removeAll()
         val vulnerabilitiesSplitter = OnePixelSplitter(TOOL_WINDOW_SPLITTER_PROPORTION_KEY, 0.4f)
         add(vulnerabilitiesSplitter, BorderLayout.CENTER)
-        vulnerabilitiesSplitter.firstComponent = TreePanel(vulnerabilitiesTree)
+
+        val treeSplitter = OnePixelSplitter(true, TOOL_TREE_SPLITTER_PROPORTION_KEY, 0.25f)
+        treeSplitter.firstComponent = summaryPanel
+        treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree)
+
+        vulnerabilitiesSplitter.firstComponent = treeSplitter
         vulnerabilitiesSplitter.secondComponent = descriptionPanel
     }
 
@@ -510,6 +564,14 @@ class SnykToolWindowPanel(
             noIssuesInAnyProductFound() -> displayNoVulnerabilitiesMessage()
             else -> displaySelectVulnerabilityMessage()
         }
+    }
+
+    private fun updateSummaryPanel() {
+        val summaryPanelContent = SummaryPanel(project)
+        summaryPanel.removeAll()
+        Disposer.register(this, summaryPanelContent)
+        summaryPanel.add(summaryPanelContent)
+        revalidate()
     }
 
     private fun noIssuesInAnyProductFound() =
@@ -541,7 +603,8 @@ class SnykToolWindowPanel(
         val newOssTreeNodeText = getNewOssTreeNodeText(settings, realError, ossResultsCount, addHMLPostfix)
         newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
-        val newSecurityIssuesNodeText = getNewSecurityIssuesNodeText(settings, securityIssuesCount, addHMLPostfix)
+        val newSecurityIssuesNodeText =
+            getNewSecurityIssuesNodeText(settings, securityIssuesCount, addHMLPostfix)
         newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
 
         val newQualityIssuesNodeText = getNewQualityIssuesNodeText(settings, qualityIssuesCount, addHMLPostfix)
@@ -550,23 +613,20 @@ class SnykToolWindowPanel(
         val newIacTreeNodeText = getNewIacTreeNodeText(settings, iacResultsCount, addHMLPostfix)
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
 
-        val newContainerTreeNodeText = getNewContainerTreeNodeText(settings, containerResultsCount, addHMLPostfix)
+        val newContainerTreeNodeText =
+            getNewContainerTreeNodeText(settings, containerResultsCount, addHMLPostfix)
         newContainerTreeNodeText?.let { rootContainerIssuesTreeNode.userObject = it }
 
         val newRootTreeNodeText = getNewRootTreeNodeText()
         newRootTreeNodeText.let { rootTreeNode.info = it }
     }
 
-    private fun getNewRootTreeNodeText() : String {
+    private fun getNewRootTreeNodeText(): String {
         val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
-            if (folderConfig?.let {
-                getRootNodeText(
-                    it.folderPath,
-                    it.baseBranch
-                )
-            } != null)  return folderConfig.let { getRootNodeText(it.folderPath, it.baseBranch) }
-            return "Choose branch on ${project.basePath}"
+        if (folderConfig?.let { getRootNodeText(it) } != null) return getRootNodeText(folderConfig)
+        return "Choose branch on ${project.basePath}"
     }
+
     private fun getNewContainerTreeNodeText(
         settings: SnykApplicationSettingsStateService,
         containerResultsCount: Int?,
@@ -735,7 +795,8 @@ class SnykToolWindowPanel(
 
     fun displayContainerResults(containerResult: ContainerResult) {
         val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootContainerIssuesTreeNode)
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+        val selectedNodeUserObject =
+            TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         rootContainerIssuesTreeNode.removeAllChildren()
 
@@ -954,6 +1015,7 @@ class SnykToolWindowPanel(
         const val NO_CONTAINER_IMAGES_FOUND = " - No container images found"
         const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
         private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
+        private const val TOOL_TREE_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_TREE_SPLITTER_PROPORTION"
         internal const val NODE_INITIAL_STATE = -1
         const val NODE_NOT_SUPPORTED_STATE = -2
 

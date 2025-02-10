@@ -11,6 +11,10 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
+import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
@@ -113,7 +117,7 @@ class SnykCachedResults(
 
                 override fun scanningError(snykScan: SnykScanParams) {
                     when (snykScan.product) {
-                        "oss" -> {
+                        PRODUCT_OSS -> {
                             currentOSSResultsLS.clear()
                             currentOssError =
                                 SnykError(
@@ -124,7 +128,7 @@ class SnykCachedResults(
                                 )
                         }
 
-                        "code" -> {
+                        PRODUCT_CODE -> {
                             currentSnykCodeResultsLS.clear()
                             currentSnykCodeError =
                                 SnykError(
@@ -135,7 +139,7 @@ class SnykCachedResults(
                                 )
                         }
 
-                        "iac" -> {
+                        PRODUCT_IAC -> {
                             currentIacResultsLS.clear()
                             currentIacError =
                                 SnykError(
@@ -145,7 +149,7 @@ class SnykCachedResults(
                                 )
                         }
 
-                        "container" -> {
+                        PRODUCT_CONTAINER -> {
                             currentContainerError =
                                 SnykError(
                                     snykScan.cliError?.error ?: snykScan.errorMessage

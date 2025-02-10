@@ -6,6 +6,7 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -76,10 +77,13 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
     fun `test createUI should build panel with HTML from details if allowed`() {
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
+        val mockJBCefBrowser : JBCefBrowser = mockk()
+        every { mockJBCefBrowser.component } returns mockJBCefBrowserComponent
+
         mockkObject(JCEFUtils)
         every {
-            JCEFUtils.getJBCefBrowserComponentIfSupported(eq("<html>HTML message</html>"), any())
-        } returns mockJBCefBrowserComponent
+            JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any())
+        } returns mockJBCefBrowser
 
         every { issue.details() } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true

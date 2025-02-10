@@ -2,7 +2,8 @@
 
 ## [2.11.1]
 ### Changed
-- support 2025.1
+- support 2025.1.
+- allow to select a reference folder instead of a branch for delta scanning and display of only net-new issues.
 
 ### Fixed
 - workspace folder configuration on language server (re-)start
