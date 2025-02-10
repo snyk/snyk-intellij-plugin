@@ -46,7 +46,8 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
-import io.snyk.plugin.ui.BranchChooserComboBoxDialog
+import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.ui.ReferenceChooserDialog
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
@@ -73,6 +74,7 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -120,9 +122,16 @@ class SnykToolWindowPanel(
         }
     }
 
-    private fun getRootNodeText(folderPath: String, baseBranch: String) =
-        "Click to choose base branch for $folderPath [ current: $baseBranch ]"
-
+    private fun getRootNodeText(folderConfig: FolderConfig): String {
+        val detail = if (folderConfig.referenceFolderPath.isNullOrBlank()) {
+            folderConfig.baseBranch
+        } else {
+            folderConfig.referenceFolderPath
+        }
+        return "Click to choose base branch or reference folder for ${
+            folderConfig.folderPath.toVirtualFile().toNioPath().fileName
+        }: [ current: $detail ]"
+    }
 
     /** Flag used to recognize not-user-initiated Description panel reload cases for purposes like:
      *  - disable Itly logging
@@ -140,7 +149,7 @@ class SnykToolWindowPanel(
 
     init {
         val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
-        val rootNodeText = folderConfig?.let { getRootNodeText(it.folderPath, it.baseBranch) }
+        val rootNodeText = folderConfig?.let { getRootNodeText(it) }
             ?: "Choose branch on ${project.basePath}"
         rootTreeNode.info = rootNodeText
 
@@ -365,7 +374,7 @@ class SnykToolWindowPanel(
 
             if (lastPathComponent is ChooseBranchNode && capturedNavigateToSourceEnabled && !capturedSmartReloadMode) {
                 invokeLater {
-                    BranchChooserComboBoxDialog(project).show()
+                    ReferenceChooserDialog(project).show()
                 }
             }
 
@@ -476,7 +485,7 @@ class SnykToolWindowPanel(
             ),
     ) {
         rootNodesToUpdate.forEach {
-            if (it.childCount>0) it.removeAllChildren()
+            if (it.childCount > 0) it.removeAllChildren()
             (vulnerabilitiesTree.model as DefaultTreeModel).reload(it)
         }
     }
@@ -491,7 +500,12 @@ class SnykToolWindowPanel(
                     enableCodeScanAccordingToServerSetting()
                     displayEmptyDescription()
                 } catch (e: Exception) {
-                    displaySnykError(SnykError(e.message ?: "Exception while initializing plugin {${e.message}", ""))
+                    displaySnykError(
+                        SnykError(
+                            e.message ?: "Exception while initializing plugin {${e.message}",
+                            ""
+                        )
+                    )
                     logger.error("Failed to apply Snyk settings", e)
                 }
             }
@@ -589,7 +603,8 @@ class SnykToolWindowPanel(
         val newOssTreeNodeText = getNewOssTreeNodeText(settings, realError, ossResultsCount, addHMLPostfix)
         newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
-        val newSecurityIssuesNodeText = getNewSecurityIssuesNodeText(settings, securityIssuesCount, addHMLPostfix)
+        val newSecurityIssuesNodeText =
+            getNewSecurityIssuesNodeText(settings, securityIssuesCount, addHMLPostfix)
         newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
 
         val newQualityIssuesNodeText = getNewQualityIssuesNodeText(settings, qualityIssuesCount, addHMLPostfix)
@@ -598,23 +613,20 @@ class SnykToolWindowPanel(
         val newIacTreeNodeText = getNewIacTreeNodeText(settings, iacResultsCount, addHMLPostfix)
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
 
-        val newContainerTreeNodeText = getNewContainerTreeNodeText(settings, containerResultsCount, addHMLPostfix)
+        val newContainerTreeNodeText =
+            getNewContainerTreeNodeText(settings, containerResultsCount, addHMLPostfix)
         newContainerTreeNodeText?.let { rootContainerIssuesTreeNode.userObject = it }
 
         val newRootTreeNodeText = getNewRootTreeNodeText()
         newRootTreeNodeText.let { rootTreeNode.info = it }
     }
 
-    private fun getNewRootTreeNodeText() : String {
+    private fun getNewRootTreeNodeText(): String {
         val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
-            if (folderConfig?.let {
-                getRootNodeText(
-                    it.folderPath,
-                    it.baseBranch
-                )
-            } != null)  return folderConfig.let { getRootNodeText(it.folderPath, it.baseBranch) }
-            return "Choose branch on ${project.basePath}"
+        if (folderConfig?.let { getRootNodeText(it) } != null) return getRootNodeText(folderConfig)
+        return "Choose branch on ${project.basePath}"
     }
+
     private fun getNewContainerTreeNodeText(
         settings: SnykApplicationSettingsStateService,
         containerResultsCount: Int?,
@@ -783,7 +795,8 @@ class SnykToolWindowPanel(
 
     fun displayContainerResults(containerResult: ContainerResult) {
         val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootContainerIssuesTreeNode)
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+        val selectedNodeUserObject =
+            TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
 
         rootContainerIssuesTreeNode.removeAllChildren()
 

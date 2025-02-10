@@ -29,6 +29,7 @@ import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.toNioPathOrNull
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiFile
@@ -61,8 +62,10 @@ import snyk.iac.IacScanService
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.security.MessageDigest
 import java.util.Objects.nonNull
 import java.util.SortedSet
 import java.util.concurrent.TimeUnit
@@ -459,7 +462,16 @@ fun VirtualFile.isInContent(project: Project): Boolean {
     }
 }
 
+fun VirtualFile.isExecutable(): Boolean = this.toNioPathOrNull()?.let { Files.isExecutable(it) } == true
+
 fun VirtualFile.isWhitelistedForInclusion() = this.name == "project.assets.json" && this.parent.name == "obj"
+
+fun String.sha256(): String {
+    val bytes = this.toByteArray()
+    val md = MessageDigest.getInstance("SHA-256")
+    val digest = md.digest(bytes)
+    return digest.fold("") { str, it -> str + "%02x".format(it) }
+}
 
 inline fun runInBackground(
     title: String,

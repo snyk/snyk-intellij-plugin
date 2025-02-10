@@ -14,18 +14,18 @@ import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
 import snyk.common.lsp.FolderConfig
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LanguageServerSettings
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.WorkspaceTrustSettings
 import kotlin.io.path.absolutePathString
 
 
-class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
+class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     private val lsMock: LanguageServer = mockk(relaxed = true)
     private lateinit var folderConfig: FolderConfig
-    lateinit var cut: BranchChooserComboBoxDialog
+    lateinit var cut: ReferenceChooserDialog
 
     override fun setUp() {
         super.setUp()
@@ -37,7 +37,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
         project.basePath?.let { service<WorkspaceTrustService>().addTrustedPath(it.toPath().parent!!.toNioPath()) }
-        cut = BranchChooserComboBoxDialog(project)
+        cut = ReferenceChooserDialog(project)
     }
 
     override fun tearDown() {
@@ -53,7 +53,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
             selectedItem = "main"
         }
 
-        cut.comboBoxes = mutableListOf(comboBox)
+        cut.baseBranches = mutableMapOf(Pair(folderConfig, comboBox))
 
         cut.execute()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -73,7 +73,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
             name = folderConfig.folderPath
             selectedItem = "main"
         }
-        cut.comboBoxes = mutableListOf(comboBox)
+        cut.baseBranches = mutableMapOf(Pair(folderConfig, comboBox))
 
         cut.execute()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -98,7 +98,7 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
             selectedItem = "main"
         }
 
-        cut.comboBoxes = mutableListOf(comboBox)
+        cut.baseBranches = mutableMapOf(Pair(folderConfig, comboBox))
 
         cut.doCancelAction()
 
@@ -108,5 +108,18 @@ class BranchChooserComboBoxDialogTest : LightPlatform4TestCase() {
         verify(exactly = 0) {
             lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))
         }
+    }
+
+    @Test
+    fun `enforce either reference folder or base branch is set`() {
+        val comboBox = ComboBox(emptyArray<String>())
+        cut.baseBranches = mutableMapOf(Pair(folderConfig, comboBox))
+
+        cut.doOKAction()
+
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
+        verify(exactly = 0) {
+            lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))}
     }
 }

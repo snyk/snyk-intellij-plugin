@@ -126,7 +126,7 @@ class SnykToolWindowSnykScanListenerLS(
 
             PRODUCT_IAC -> {
                 this.rootIacIssuesTreeNode.removeAllChildren()
-                this.rootOssIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
+                this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
             PRODUCT_CONTAINER -> {

@@ -29,6 +29,7 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.sha256
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -282,7 +283,7 @@ class SnykLanguageClient :
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {
         if (disposed) return
-        val oldToken = pluginSettings().token
+        val oldToken = pluginSettings().token ?: ""
         val oldApiUrl = pluginSettings().customEndpointUrl
         if (oldToken == param.token && oldApiUrl == param.apiUrl) return
 
@@ -293,6 +294,7 @@ class SnykLanguageClient :
         logger.info("received authentication information: Token-Length: ${param.token?.length}}, URL: ${param.apiUrl}")
         logger.info("use token-auth? ${pluginSettings().useTokenAuthentication}")
         logger.debug("is same token?  ${oldToken == param.token}")
+        logger.debug("old-token-hash: ${oldToken.sha256()}, new-token-hash: ${param.token?.sha256()}" )
 
         pluginSettings().token = param.token
 
@@ -301,7 +303,7 @@ class SnykLanguageClient :
         StoreUtil.saveSettings(ApplicationManager.getApplication(), true)
         logger.info("force-saved settings")
 
-        if (oldToken.isNullOrBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
+        if (oldToken.isBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
             val wrapper = LanguageServerWrapper.getInstance()
             ProjectManager.getInstance().openProjects.forEach {
                 wrapper.sendScanCommand(it)
