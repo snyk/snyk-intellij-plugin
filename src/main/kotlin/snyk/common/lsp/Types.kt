@@ -539,8 +539,8 @@ data class FolderConfig(
     @SerializedName("baseBranch") val baseBranch: String,
     @SerializedName("localBranches") val localBranches: List<String>? = emptyList(),
     @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),
-    @SerializedName("referenceFolderPath") val referenceFolderPath: String? = null,
-    @SerializedName("scanCommandConfig") val scanCommandConfig: ScanCommandConfig? = null,
+    @SerializedName("referenceFolderPath") val referenceFolderPath: String? = "",
+    @SerializedName("scanCommandConfig") val scanCommandConfig: Map<String,ScanCommandConfig>? = emptyMap(),
 )
 
 data class ScanCommandConfig(
