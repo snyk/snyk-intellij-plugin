@@ -3,6 +3,7 @@ package snyk.common.lsp
 import com.google.gson.Gson
 import com.intellij.configurationStore.StoreUtil
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.ide.navbar.ui.staticNavBarPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -41,12 +42,14 @@ import org.eclipse.lsp4j.MessageParams
 import org.eclipse.lsp4j.MessageType
 import org.eclipse.lsp4j.ProgressParams
 import org.eclipse.lsp4j.PublishDiagnosticsParams
+import org.eclipse.lsp4j.ShowDocumentParams
 import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.services.LanguageClient
+import org.intellij.markdown.html.urlEncode
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.editor.DocumentChanger
@@ -427,5 +430,17 @@ class SnykLanguageClient :
 
     init {
         Disposer.register(SnykPluginDisposable.getInstance(), this)
+    }
+
+    /**
+     * Intercept window/showDocument messages from LS so that we can handle AI fix actions within the IDE.
+     */
+    @JsonNotification("\$/window/showDocument")
+    fun windowShowDocument(param: ShowDocumentParams) {
+        val snykUriScheme = "snyk://"
+        if (param.uri.startsWith(snykUriScheme)) {
+            //Do stuff
+            println(param.uri)
+        }
     }
 }

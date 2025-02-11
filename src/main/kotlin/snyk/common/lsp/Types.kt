@@ -11,6 +11,7 @@ import io.snyk.plugin.getDocument
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
+import java.net.URI
 import java.util.Date
 import java.util.Locale
 import javax.swing.Icon
@@ -548,4 +549,11 @@ data class ScanCommandConfig(
     val preScanOnlyReferenceFolder: Boolean = true,
     val postScanCommand: String = "",
     val postScanOnlyReferenceFolder: Boolean = true,
+)
+
+data class ShowDocumentParams(
+    @SerializedName("uri") val  uri: URI,
+    @SerializedName("external") val  external: Boolean?,
+    @SerializedName("takeFocus") val takeFocus: Boolean?,
+    @SerializedName("selection") val selection: Range?
 )
