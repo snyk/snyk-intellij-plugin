@@ -19,7 +19,10 @@ import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.util.queryParameters
+import com.intellij.util.requireNoJob
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.events.SnykAiFixListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
@@ -43,6 +46,7 @@ import org.eclipse.lsp4j.MessageType
 import org.eclipse.lsp4j.ProgressParams
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.ShowDocumentParams
+import org.eclipse.lsp4j.ShowDocumentResult
 import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams
 import org.eclipse.lsp4j.WorkspaceFolder
@@ -52,11 +56,14 @@ import org.eclipse.lsp4j.services.LanguageClient
 import org.intellij.markdown.html.urlEncode
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
+import snyk.common.annotator.ShowDetailsIntentionAction
 import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
+import java.net.URI
+import java.net.URLDecoder
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -214,9 +221,9 @@ class SnykLanguageClient :
     ) {
         val product =
             when (snykScan.product) {
-                "code" -> ProductType.CODE_SECURITY
-                "oss" -> ProductType.OSS
-                "iac" -> ProductType.IAC
+                PRODUCT_CODE -> ProductType.CODE_SECURITY
+                PRODUCT_OSS -> ProductType.OSS
+                PRODUCT_IAC -> ProductType.IAC
                 else -> return
             }
         val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
@@ -435,12 +442,32 @@ class SnykLanguageClient :
     /**
      * Intercept window/showDocument messages from LS so that we can handle AI fix actions within the IDE.
      */
-    @JsonNotification("\$/window/showDocument")
-    fun windowShowDocument(param: ShowDocumentParams) {
-        val snykUriScheme = "snyk://"
-        if (param.uri.startsWith(snykUriScheme)) {
-            //Do stuff
-            println(param.uri)
+    override fun showDocument(param: ShowDocumentParams): CompletableFuture<ShowDocumentResult> {
+        if (disposed) return CompletableFuture.completedFuture(ShowDocumentResult(false))
+
+        val uri = URI.create(param.uri)
+
+        return if (
+            uri.scheme == "snyk" &&
+            uri.getDecodedParam("product") == "Snyk Code" &&
+            uri.getDecodedParam("action") == "showInDetailsPanel") {
+            ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
+                val aiFixParams = AiFixParams(
+                    uri.path.toVirtualFile(),
+                    uri.queryParameters["issueId"] ?: "",
+                    ProductType.CODE_SECURITY
+                )
+                logger.debug("Publishing Snyk AI Fix notification.")
+                getSyncPublisher(p, SnykAiFixListener.AI_FIX_TOPIC)?.onAiFix(aiFixParams)
+            }
+            CompletableFuture.completedFuture(ShowDocumentResult(true))
+        } else {
+            // Don't intercept
+            super.showDocument(param)
         }
+    }
+
+    private fun URI.getDecodedParam(param: String?): String? {
+        return URLDecoder.decode(this.queryParameters[param], "UTF-8")
     }
 }

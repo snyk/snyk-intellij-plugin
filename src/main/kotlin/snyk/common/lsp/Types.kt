@@ -7,10 +7,12 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
+import snyk.common.ProductType
 import java.net.URI
 import java.util.Date
 import java.util.Locale
@@ -40,6 +42,12 @@ data class SnykScanParams(
 
 data class SnykScanSummaryParams(
     val scanSummary: String, // HTML representation of the scan summary
+)
+
+data class AiFixParams(
+    val file: VirtualFile,
+    val issueId: String,
+    val product: ProductType
 )
 
 data class ErrorResponse(
@@ -549,11 +557,4 @@ data class ScanCommandConfig(
     val preScanOnlyReferenceFolder: Boolean = true,
     val postScanCommand: String = "",
     val postScanOnlyReferenceFolder: Boolean = true,
-)
-
-data class ShowDocumentParams(
-    @SerializedName("uri") val  uri: URI,
-    @SerializedName("external") val  external: Boolean?,
-    @SerializedName("takeFocus") val takeFocus: Boolean?,
-    @SerializedName("selection") val selection: Range?
 )

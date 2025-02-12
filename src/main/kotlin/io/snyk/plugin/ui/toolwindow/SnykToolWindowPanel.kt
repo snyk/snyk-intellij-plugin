@@ -20,6 +20,7 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
+import io.snyk.plugin.events.SnykAiFixListener
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
@@ -74,10 +75,14 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.annotator.ShowDetailsIntentionAction
+import snyk.common.lsp.AiFixParams
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.LsProductConstants
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
+import snyk.common.lsp.SnykScanSummaryParams
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -358,6 +363,21 @@ class SnykToolWindowPanel(
                         displayEmptyDescription()
                     }
                 },
+            )
+
+        project.messageBus
+            .connect(this)
+            .subscribe(
+                SnykAiFixListener.AI_FIX_TOPIC,
+                object : SnykAiFixListener {
+                    override fun onAiFix(aiFixParams: AiFixParams) {
+                        getSnykCachedResultsForProduct(project, aiFixParams.product)?.let { results ->
+                            results[SnykFile(project, aiFixParams.file)]?.first { scanIssue ->
+                                scanIssue.id == aiFixParams.issueId
+                            }?.let { scanIssue -> selectNodeAndDisplayDescription(scanIssue) }
+                        }
+                    }
+                }
             )
     }
 
