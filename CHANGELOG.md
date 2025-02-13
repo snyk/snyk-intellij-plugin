@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.11.2]
+### Changed
+ - Using Code Lens or Code Actions to view an AI Fix now shows the affected issue in the tree view and details pane of the Snyk window.
+
 ## [2.11.1]
 ### Changed
 - support 2025.1.
