@@ -371,14 +371,12 @@ class SnykToolWindowPanel(
                         val issueId = aiFixParams.issueId
                         val product  = aiFixParams.product
                         getSnykCachedResultsForProduct(project, product)?.let { results ->
-                            // TODO - Just look at the values from the map - would avoid ambiguity on file formatting
-                            results.values.flatten().first { scanIssue ->
+                            results.values.flatten().firstOrNull { scanIssue ->
                                 scanIssue.id == issueId
                             }?.let { scanIssue ->
                                 logger.debug("Select node and display description for issue $issueId")
-                                selectNodeAndDisplayDescription(scanIssue)
+                                selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
                             } ?: run { logger.debug("Failed to find issue $issueId in $product cache") }
-
                         }
                     }
                 }
@@ -975,13 +973,15 @@ class SnykToolWindowPanel(
         }
     }
 
-    private fun selectAndDisplayNodeWithIssueDescription(selectCondition: (DefaultMutableTreeNode) -> Boolean) {
+    private fun selectAndDisplayNodeWithIssueDescription(
+        selectCondition: (DefaultMutableTreeNode) -> Boolean,
+        forceRefresh: Boolean = false) {
         val node = TreeUtil.findNode(rootTreeNode) { selectCondition(it) }
         if (node != null) {
             invokeLater {
                 try {
                     triggerSelectionListeners = false
-                    vulnerabilitiesTree.clearSelection()
+                    if (forceRefresh) { vulnerabilitiesTree.clearSelection() }
                     TreeUtil.selectNode(vulnerabilitiesTree, node)
                 } finally {
                     triggerSelectionListeners = true
@@ -991,16 +991,16 @@ class SnykToolWindowPanel(
     }
 
     fun selectNodeAndDisplayDescription(issuesForImage: ContainerIssuesForImage) =
-        selectAndDisplayNodeWithIssueDescription { treeNode ->
+        selectAndDisplayNodeWithIssueDescription ({ treeNode ->
             treeNode is ContainerImageTreeNode &&
                 (treeNode.userObject as ContainerIssuesForImage) == issuesForImage
-        }
+        })
 
-    fun selectNodeAndDisplayDescription(scanIssue: ScanIssue) =
-        selectAndDisplayNodeWithIssueDescription { treeNode ->
+    fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, forceRefresh: Boolean) =
+        selectAndDisplayNodeWithIssueDescription ({ treeNode ->
             treeNode is SuggestionTreeNode &&
                 (treeNode.userObject as ScanIssue).id == scanIssue.id
-        }
+        }, forceRefresh)
 
     @TestOnly
     fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode

@@ -45,7 +45,6 @@ data class SnykScanSummaryParams(
 )
 
 data class AiFixParams(
-    val file: VirtualFile,
     val issueId: String,
     val product: ProductType
 )

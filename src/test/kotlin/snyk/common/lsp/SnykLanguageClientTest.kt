@@ -8,11 +8,13 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.messages.MessageBus
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.events.SnykAiFixListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -22,9 +24,11 @@ import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.Range
+import org.eclipse.lsp4j.ShowDocumentParams
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.progress.ProgressManager
@@ -43,6 +47,7 @@ class SnykLanguageClientTest {
     private val settings = SnykApplicationSettingsStateService()
     private val trustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
     private val dumbServiceMock = mockk<DumbService>()
+    private val messageBusMock = mockk<MessageBus>()
     private val projectManagerMock = mockk<ProjectManager>()
 
     @Before
@@ -65,6 +70,8 @@ class SnykLanguageClientTest {
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
         every { projectMock.isDisposed } returns false
         every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
+        every { projectMock.messageBus} returns messageBusMock
+        every { messageBusMock.isDisposed } returns false
         every { dumbServiceMock.isDumb } returns false
 
         every { pluginSettings() } returns settings
@@ -177,6 +184,50 @@ class SnykLanguageClientTest {
     @Test
     fun `showDocument should only be intercepted for Snyk AI Fix URIs`() {
 
+        fun checkShowDocument(url: String, expectIntercept: Boolean, expectedNotifications: Int = 0) {
+            val mockListener = mockk<SnykAiFixListener>()
+            every { mockListener.onAiFix(any()) } returns Unit
+            every { messageBusMock.syncPublisher(SnykAiFixListener.AI_FIX_TOPIC) } returns mockListener
+
+            if (expectIntercept) {
+                assertEquals(cut.showDocument(ShowDocumentParams(url)).get().isSuccess, expectedNotifications > 0)
+            } else {
+                assertThrows(UnsupportedOperationException::class.java, {cut.showDocument(ShowDocumentParams(url))})
+            }
+            verify(exactly = expectedNotifications) { mockListener.onAiFix(any()) }
+        }
+
+        // HTTP URL should bypass Snyk handler.
+        checkShowDocument(
+            "http:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel", expectIntercept = false)
+
+        // Snyk URL with invalid action should bypass Snyk Handler.
+        checkShowDocument(
+            "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=eatPizza", expectIntercept = false)
+
+        // Snyk URL with non-code product should bypass Snyk handler.
+        checkShowDocument(
+            "snyk:///temp/test.txt?product=Snyk+IaC&issueId=12345&action=showInDetailPanel", expectIntercept = false)
+
+        // Snyk URL with no issue ID should be handled but not trigger notifications.
+        checkShowDocument(
+            "snyk:///temp/test.txt?product=Snyk+Code&action=showInDetailPanel",
+            expectIntercept = true,
+            expectedNotifications = 0)
+
+        // Valid Snyk URL should invoke Snyk handler.
+        checkShowDocument(
+            "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel",
+            expectIntercept = true,
+            expectedNotifications = 1)
+
+        // Check that all projects get notified if we have multiple open.
+        val numProjects = 5
+        every { projectManagerMock.openProjects } returns Array(numProjects) {projectMock}
+        checkShowDocument(
+            "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel",
+            expectIntercept = true,
+            expectedNotifications = numProjects)
     }
 
     private fun createMockDiagnostic(range: Range, message: String, filePath: String): Diagnostic {

@@ -27,9 +27,9 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     private val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
     private lateinit var cut: SnykToolWindowPanel
     val lsMock = mockk<LanguageServer>()
-    val lsClientMock = mockk<SnykLanguageClient>()
-    val lsProcessMock = mockk<Process>()
-    val workspaceServiceMock = mockk<WorkspaceService>()
+    private val lsClientMock = mockk<SnykLanguageClient>()
+    private val lsProcessMock = mockk<Process>()
+    private val workspaceServiceMock = mockk<WorkspaceService>()
 
     override fun setUp() {
         super.setUp()

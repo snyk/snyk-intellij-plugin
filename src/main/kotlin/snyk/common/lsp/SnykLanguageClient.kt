@@ -54,17 +54,14 @@ import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.services.LanguageClient
-import org.intellij.markdown.html.urlEncode
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
-import snyk.common.annotator.ShowDetailsIntentionAction
 import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
 import java.net.URI
-import java.net.URLDecoder
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -455,16 +452,13 @@ class SnykLanguageClient :
             uri.getDecodedParam("action") == "showInDetailPanel") {
             // Track whether we have successfully sent any notifications
             var success = false
-
-            ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
-                val aiFixParams = AiFixParams(
-                    uri.path.toVirtualFile(),
-                    uri.queryParameters["issueId"] ?: "",
-                    ProductType.CODE_SECURITY
-                )
-                logger.debug("Publishing Snyk AI Fix notification for issue ${aiFixParams.issueId}.")
-                getSyncPublisher(p, SnykAiFixListener.AI_FIX_TOPIC)?.onAiFix(aiFixParams)
-                success = true
+            uri.queryParameters["issueId"]?.let { issueId ->
+                ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { project ->
+                    val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
+                    logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
+                    getSyncPublisher(project, SnykAiFixListener.AI_FIX_TOPIC)?.onAiFix(aiFixParams)
+                    success = true
+                }
             }
             CompletableFuture.completedFuture(ShowDocumentResult(success))
         } else {
