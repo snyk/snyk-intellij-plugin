@@ -46,25 +46,7 @@ class GenerateAIFixHandler() {
                             return;
                         }
                         window.aiFixQuery = function(value) { ${aiFixQuery.inject("value")} };
-
-                        const aiFixButton = document.getElementById('generate-ai-fix');
-                        const retryFixButton = document.getElementById('retry-generate-fix');
-                        const issueId = aiFixButton.getAttribute('issue-id');
-                        const folderPath = aiFixButton.getAttribute('folder-path');
-                        const filePath = aiFixButton.getAttribute('file-path');
-
-                        aiFixButton.addEventListener('click', () => {
-                            window.aiFixQuery(folderPath + "@|@" + filePath + "@|@" + issueId);
-                        });
-
-                        retryFixButton.addEventListener('click', () => {
-                            window.aiFixQuery(folderPath + "@|@" + filePath + "@|@" + issueId);
-                        });
-
-                        retryFixButton.addEventListener('click', () => {
-                            window.aiFixQuery(folderPath + "@|@" + filePath + "@|@" + issueId);
-                        });
-                    })();
+                           })();
                     """
                     browser.executeJavaScript(script, browser.url, 0)
                 }

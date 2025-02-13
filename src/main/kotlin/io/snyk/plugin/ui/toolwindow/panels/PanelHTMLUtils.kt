@@ -21,7 +21,9 @@ class PanelHTMLUtils {
             var formattedHtml = html.replace("\${ideStyle}", "<style nonce=\${nonce}>${getCss()}</style>")
             formattedHtml = formattedHtml.replace("\${headerEnd}", "")
             formattedHtml = formattedHtml.replace(
-                "\${ideScript}", "<script nonce=\${nonce}>$ideScript</script>")
+                "\${ideScript}", "$ideScript")
+            formattedHtml = formattedHtml.replace("\${ideGenerateAIFix}", getGenerateAiFixScript())
+            formattedHtml = formattedHtml.replace("\${ideApplyAIFix}", getApplyAiFixScript())
             formattedHtml = formattedHtml.replace("\${nonce}", nonce)
             formattedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(formattedHtml)
             return formattedHtml
@@ -37,5 +39,17 @@ class PanelHTMLUtils {
                 return html.substring(startIndex, endIndex ).trim()
             } else null
         }
+        private fun getGenerateAiFixScript(): String {
+            return "const issueId = generateAIFixButton.getAttribute('issue-id');\n" +
+                "                        const folderPath = generateAIFixButton.getAttribute('folder-path');\n" +
+                "                        const filePath = generateAIFixButton.getAttribute('file-path');\n" +
+                "\n" +
+                "                        window.aiFixQuery(folderPath + \"@|@\" + filePath + \"@|@\" + issueId);\n" +
+                "                        "
+        }
+        private fun getApplyAiFixScript(): String {
+            return "window.applyFixQuery(fixId + '|@' + filePath + '|@' + patch);\n"
+        }
+
     }
 }
