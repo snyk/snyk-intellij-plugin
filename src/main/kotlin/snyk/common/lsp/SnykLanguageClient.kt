@@ -3,7 +3,6 @@ package snyk.common.lsp
 import com.google.gson.Gson
 import com.intellij.configurationStore.StoreUtil
 import com.intellij.ide.impl.ProjectUtil
-import com.intellij.ide.navbar.ui.staticNavBarPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -20,7 +19,6 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.util.queryParameters
-import com.intellij.util.requireNoJob
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykAiFixListener
 import io.snyk.plugin.events.SnykScanListenerLS
@@ -447,9 +445,10 @@ class SnykLanguageClient :
 
         return if (
             uri.scheme == "snyk" &&
-
             uri.getDecodedParam("product") == LsProductConstants.Code.value &&
-            uri.getDecodedParam("action") == "showInDetailPanel") {
+            uri.getDecodedParam("action") == "showInDetailPanel"
+            ) {
+
             // Track whether we have successfully sent any notifications
             var success = false
             uri.queryParameters["issueId"]?.let { issueId ->
@@ -459,7 +458,7 @@ class SnykLanguageClient :
                     getSyncPublisher(project, SnykAiFixListener.AI_FIX_TOPIC)?.onAiFix(aiFixParams)
                     success = true
                 }
-            }
+            } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
             CompletableFuture.completedFuture(ShowDocumentResult(success))
         } else {
             logger.debug("URI does not match Snyk scheme - passing to default handler: ${param.uri}")
