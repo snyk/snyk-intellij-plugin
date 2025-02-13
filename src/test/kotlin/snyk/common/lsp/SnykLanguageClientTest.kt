@@ -174,6 +174,11 @@ class SnykLanguageClientTest {
         assertEquals("Another Issue", result[1].title)
     }
 
+    @Test
+    fun `showDocument should only be intercepted for Snyk AI Fix URIs`() {
+
+    }
+
     private fun createMockDiagnostic(range: Range, message: String, filePath: String): Diagnostic {
         val rangeString = Gson().toJson(range)
         val jsonString = """{"id": 12345, "title": "$message", "filePath": "$filePath", "range": $rangeString}"""

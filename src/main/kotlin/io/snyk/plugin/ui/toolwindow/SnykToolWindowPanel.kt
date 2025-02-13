@@ -75,14 +75,11 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykError
-import snyk.common.annotator.ShowDetailsIntentionAction
 import snyk.common.lsp.AiFixParams
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.common.lsp.LsProductConstants
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
-import snyk.common.lsp.SnykScanSummaryParams
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.container.ContainerIssuesForImage
 import snyk.container.ContainerResult
@@ -371,10 +368,17 @@ class SnykToolWindowPanel(
                 SnykAiFixListener.AI_FIX_TOPIC,
                 object : SnykAiFixListener {
                     override fun onAiFix(aiFixParams: AiFixParams) {
-                        getSnykCachedResultsForProduct(project, aiFixParams.product)?.let { results ->
+                        val issueId = aiFixParams.issueId
+                        val product  = aiFixParams.product
+                        getSnykCachedResultsForProduct(project, product)?.let { results ->
+                            // TODO - Just look at the values from the map - would avoid ambiguity on file formatting
                             results.values.flatten().first { scanIssue ->
-                                scanIssue.id == aiFixParams.issueId
-                            }?.let { scanIssue -> selectNodeAndDisplayDescription(scanIssue) }
+                                scanIssue.id == issueId
+                            }?.let { scanIssue ->
+                                logger.debug("Select node and display description for issue $issueId")
+                                selectNodeAndDisplayDescription(scanIssue)
+                            } ?: run { logger.debug("Failed to find issue $issueId in $product cache") }
+
                         }
                     }
                 }

@@ -30,6 +30,7 @@ import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.events.SnykScanSummaryListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -449,25 +450,26 @@ class SnykLanguageClient :
 
         return if (
             uri.scheme == "snyk" &&
-            uri.getDecodedParam("product") == "Snyk Code" &&
+
+            uri.getDecodedParam("product") == LsProductConstants.Code.value &&
             uri.getDecodedParam("action") == "showInDetailPanel") {
+            // Track whether we have successfully sent any notifications
+            var success = false
+
             ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
                 val aiFixParams = AiFixParams(
                     uri.path.toVirtualFile(),
                     uri.queryParameters["issueId"] ?: "",
                     ProductType.CODE_SECURITY
                 )
-                logger.debug("Publishing Snyk AI Fix notification.")
+                logger.debug("Publishing Snyk AI Fix notification for issue ${aiFixParams.issueId}.")
                 getSyncPublisher(p, SnykAiFixListener.AI_FIX_TOPIC)?.onAiFix(aiFixParams)
+                success = true
             }
-            CompletableFuture.completedFuture(ShowDocumentResult(true))
+            CompletableFuture.completedFuture(ShowDocumentResult(success))
         } else {
-            // Don't intercept
+            logger.debug("URI does not match Snyk scheme - passing to default handler: ${param.uri}")
             super.showDocument(param)
         }
-    }
-
-    private fun URI.getDecodedParam(param: String?): String? {
-        return URLDecoder.decode(this.queryParameters[param], "UTF-8")
     }
 }

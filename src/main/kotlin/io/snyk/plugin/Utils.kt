@@ -36,6 +36,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
+import com.intellij.util.queryParameters
 import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
@@ -62,6 +63,7 @@ import snyk.iac.IacScanService
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
+import java.net.URLDecoder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -153,6 +155,10 @@ fun isUrlValid(url: String?): Boolean {
     } catch (throwable: Throwable) {
         false
     }
+}
+
+fun URI.getDecodedParam(param: String?): String? {
+    return URLDecoder.decode(this.queryParameters[param], "UTF-8")
 }
 
 fun isOssRunning(project: Project): Boolean {
