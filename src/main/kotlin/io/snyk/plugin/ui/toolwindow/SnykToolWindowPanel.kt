@@ -372,7 +372,7 @@ class SnykToolWindowPanel(
                 object : SnykAiFixListener {
                     override fun onAiFix(aiFixParams: AiFixParams) {
                         getSnykCachedResultsForProduct(project, aiFixParams.product)?.let { results ->
-                            results[SnykFile(project, aiFixParams.file)]?.first { scanIssue ->
+                            results.values.flatten().first { scanIssue ->
                                 scanIssue.id == aiFixParams.issueId
                             }?.let { scanIssue -> selectNodeAndDisplayDescription(scanIssue) }
                         }
@@ -977,6 +977,7 @@ class SnykToolWindowPanel(
             invokeLater {
                 try {
                     triggerSelectionListeners = false
+                    vulnerabilitiesTree.clearSelection()
                     TreeUtil.selectNode(vulnerabilitiesTree, node)
                 } finally {
                     triggerSelectionListeners = true

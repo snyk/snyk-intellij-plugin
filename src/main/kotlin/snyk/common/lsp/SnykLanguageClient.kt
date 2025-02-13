@@ -450,7 +450,7 @@ class SnykLanguageClient :
         return if (
             uri.scheme == "snyk" &&
             uri.getDecodedParam("product") == "Snyk Code" &&
-            uri.getDecodedParam("action") == "showInDetailsPanel") {
+            uri.getDecodedParam("action") == "showInDetailPanel") {
             ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
                 val aiFixParams = AiFixParams(
                     uri.path.toVirtualFile(),
