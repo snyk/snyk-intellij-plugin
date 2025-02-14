@@ -134,7 +134,7 @@ class SnykLanguageClient :
     fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): List<ScanIssue> {
         val issueList = diagnosticsParams.diagnostics.stream().map {
             val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
-            // load textrange for issue so it doesn't happen in UI thread
+            // load textRange for issue so it doesn't happen in UI thread
             issue.textRange
             if (issue.isIgnored() && !pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 // apparently the server has consistent ignores activated
