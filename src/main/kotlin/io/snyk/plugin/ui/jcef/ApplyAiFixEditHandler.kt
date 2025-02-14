@@ -24,7 +24,7 @@ class ApplyAiFixEditHandler(private val project: Project) {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         applyFixQuery.addHandler { value ->
-            val params = value.split("|@", limit = 1)
+            val params = value.split("|@", limit = 3)
             val fixId = params[0]  // ID of the AI fix for which we want to generate an edit command.
             logger.debug("Generate ApplAiFixEditCommand for fix $fixId")
             // Avoid blocking the UI thread
