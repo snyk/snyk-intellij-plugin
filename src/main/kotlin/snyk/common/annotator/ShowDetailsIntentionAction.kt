@@ -10,7 +10,7 @@ class ShowDetailsIntentionAction(
     val issue: ScanIssue
 ) : ShowDetailsIntentionActionBase() {
     override fun selectNodeAndDisplayDescription(toolWindowPanel: SnykToolWindowPanel) {
-        toolWindowPanel.selectNodeAndDisplayDescription(issue)
+        toolWindowPanel.selectNodeAndDisplayDescription(issue, forceRefresh = false)
     }
 
     override fun getSeverity(): Severity = issue.getSeverityAsEnum()

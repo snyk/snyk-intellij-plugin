@@ -9,7 +9,7 @@ import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
 import io.snyk.plugin.ui.descriptionHeaderPanel
-import io.snyk.plugin.ui.jcef.ApplyFixHandler
+import io.snyk.plugin.ui.jcef.ApplyAiFixEditHandler
 import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
 import io.snyk.plugin.ui.jcef.IgnoreInFileHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
@@ -58,9 +58,9 @@ class SuggestionDescriptionPanelFromLS(
                     generateAIFixHandler.generateAIFixCommand(it)
                 }
 
-                val applyFixHandler = ApplyFixHandler(project)
+                val applyAiFixEditHandler = ApplyAiFixEditHandler(project)
                 loadHandlerGenerators += {
-                    applyFixHandler.generateApplyFixCommand(it)
+                    applyAiFixEditHandler.generateApplyAiFixEditCommand(it)
                 }
 
             }
