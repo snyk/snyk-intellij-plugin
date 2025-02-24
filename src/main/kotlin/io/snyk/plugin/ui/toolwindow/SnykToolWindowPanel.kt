@@ -20,7 +20,7 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
-import io.snyk.plugin.events.SnykAiFixListener
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
@@ -365,9 +365,9 @@ class SnykToolWindowPanel(
         project.messageBus
             .connect(this)
             .subscribe(
-                SnykAiFixListener.AI_FIX_TOPIC,
-                object : SnykAiFixListener {
-                    override fun onAiFix(aiFixParams: AiFixParams) {
+                SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC,
+                object : SnykShowIssueDetailListener {
+                    override fun onShowIssueDetail(aiFixParams: AiFixParams) {
                         val issueId = aiFixParams.issueId
                         val product  = aiFixParams.product
                         getSnykCachedResultsForProduct(project, product)?.let { results ->

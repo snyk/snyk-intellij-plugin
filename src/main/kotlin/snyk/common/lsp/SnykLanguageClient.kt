@@ -20,7 +20,7 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.events.SnykAiFixListener
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
@@ -455,7 +455,7 @@ class SnykLanguageClient :
                 ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { project ->
                     val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
                     logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
-                    getSyncPublisher(project, SnykAiFixListener.AI_FIX_TOPIC)?.onAiFix(aiFixParams)
+                    getSyncPublisher(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)?.onShowIssueDetail(aiFixParams)
                     success = true
                 }
             } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }

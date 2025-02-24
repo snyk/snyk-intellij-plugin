@@ -14,7 +14,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.events.SnykAiFixListener
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -185,16 +185,16 @@ class SnykLanguageClientTest {
     fun `showDocument should only be intercepted for Snyk AI Fix URIs`() {
 
         fun checkShowDocument(url: String, expectIntercept: Boolean, expectedNotifications: Int = 0) {
-            val mockListener = mockk<SnykAiFixListener>()
-            every { mockListener.onAiFix(any()) } returns Unit
-            every { messageBusMock.syncPublisher(SnykAiFixListener.AI_FIX_TOPIC) } returns mockListener
+            val mockListener = mockk<SnykShowIssueDetailListener>()
+            every { mockListener.onShowIssueDetail(any()) } returns Unit
+            every { messageBusMock.syncPublisher(SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC) } returns mockListener
 
             if (expectIntercept) {
                 assertEquals(cut.showDocument(ShowDocumentParams(url)).get().isSuccess, expectedNotifications > 0)
             } else {
                 assertThrows(UnsupportedOperationException::class.java, {cut.showDocument(ShowDocumentParams(url))})
             }
-            verify(exactly = expectedNotifications) { mockListener.onAiFix(any()) }
+            verify(exactly = expectedNotifications) { mockListener.onShowIssueDetail(any()) }
         }
 
         // HTTP URL should bypass Snyk handler.
