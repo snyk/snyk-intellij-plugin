@@ -5,7 +5,8 @@ import io.snyk.plugin.getDocument
 import org.eclipse.lsp4j.TextEdit
 
 object DocumentChanger {
-    fun applyChange(change: Map.Entry<String, List<TextEdit>>) {
+    fun applyChange(change: Map.Entry<String, List<TextEdit>>?) {
+        if (change == null) return //TODO add log
         val fileURI = change.key
         val virtualFile = VirtualFileManager.getInstance().findFileByUrl(fileURI) ?: return
         val document = virtualFile.getDocument() ?: return
@@ -27,10 +28,10 @@ object DocumentChanger {
             val endLineOffset = document.getLineStartOffset(endLine)
 
             if (startLineOffset + startCharacter > document.getLineEndOffset(startLine)) {
-                startCharacter = document.getLineEndOffset(startLine)
+                startCharacter = document.getLineEndOffset(startLine) - startLineOffset
             }
             if (endLineOffset + endCharacter > document.getLineEndOffset(endLine)) {
-                endCharacter = document.getLineEndOffset(endLine)
+                endCharacter = document.getLineEndOffset(endLine) - endLineOffset
             }
 
             val start = document.getLineStartOffset(startLine) + startCharacter
