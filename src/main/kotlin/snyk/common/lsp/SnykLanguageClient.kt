@@ -451,6 +451,7 @@ class SnykLanguageClient :
 
             // Track whether we have successfully sent any notifications
             var success = false
+
             uri.queryParameters["issueId"]?.let { issueId ->
                 ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { project ->
                     val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
