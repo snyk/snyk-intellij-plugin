@@ -111,6 +111,7 @@ class SnykLanguageClient :
         diagnosticsParams: PublishDiagnosticsParams,
         scanPublisher: SnykScanListenerLS
     ) {
+        if (disposed) return
         val snykFile = SnykFile(project, filePath.toVirtualFile())
         val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
         val product = firstDiagnostic?.source
