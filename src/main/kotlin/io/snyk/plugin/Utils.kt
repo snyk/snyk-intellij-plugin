@@ -20,6 +20,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectFileIndex
@@ -440,14 +441,17 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
 
 fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     if (this.isDisposed) return emptySet()
-    var contentRoots = ProjectRootManager.getInstance(this).contentRoots
+    var contentRoots = emptyArray<VirtualFile>()
+    DumbService.getInstance(this).runWhenSmart {
+        contentRoots = ProjectRootManager.getInstance(this).contentRoots
+    }
     if (contentRoots.isEmpty()) {
-        // this should cover for the case when no content roots are configured, e.g. in rider
+        // This should cover the case when no content roots are configured, e.g. in Rider
         contentRoots = ProjectManager.getInstance().openProjects
-            .mapNotNull { it.basePath?.toVirtualFile() }.toTypedArray()
+            .filter{ it.name == this.name }.mapNotNull { it.basePath?.toVirtualFile() }.toTypedArray()
     }
 
-    // the sort is to ensure that parent folders come first
+    // The sort is to ensure that parent folders come first
     // e.g. /a/b should come before /a/b/c
     return contentRoots
         .filter { it.exists() && it.isDirectory }
