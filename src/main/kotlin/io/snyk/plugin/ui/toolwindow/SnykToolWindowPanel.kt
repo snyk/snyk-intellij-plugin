@@ -20,6 +20,7 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
@@ -74,6 +75,7 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykError
+import snyk.common.lsp.AiFixParams
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
@@ -358,6 +360,26 @@ class SnykToolWindowPanel(
                         displayEmptyDescription()
                     }
                 },
+            )
+
+        project.messageBus
+            .connect(this)
+            .subscribe(
+                SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC,
+                object : SnykShowIssueDetailListener {
+                    override fun onShowIssueDetail(aiFixParams: AiFixParams) {
+                        val issueId = aiFixParams.issueId
+                        val product  = aiFixParams.product
+                        getSnykCachedResultsForProduct(project, product)?.let { results ->
+                            results.values.flatten().firstOrNull { scanIssue ->
+                                scanIssue.id == issueId
+                            }?.let { scanIssue ->
+                                logger.debug("Select node and display description for issue $issueId")
+                                selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
+                            } ?: run { logger.debug("Failed to find issue $issueId in $product cache") }
+                        }
+                    }
+                }
             )
     }
 
@@ -951,12 +973,15 @@ class SnykToolWindowPanel(
         }
     }
 
-    private fun selectAndDisplayNodeWithIssueDescription(selectCondition: (DefaultMutableTreeNode) -> Boolean) {
+    private fun selectAndDisplayNodeWithIssueDescription(
+        selectCondition: (DefaultMutableTreeNode) -> Boolean,
+        forceRefresh: Boolean = false) {
         val node = TreeUtil.findNode(rootTreeNode) { selectCondition(it) }
         if (node != null) {
             invokeLater {
                 try {
                     triggerSelectionListeners = false
+                    if (forceRefresh) { vulnerabilitiesTree.clearSelection() }
                     TreeUtil.selectNode(vulnerabilitiesTree, node)
                 } finally {
                     triggerSelectionListeners = true
@@ -966,16 +991,16 @@ class SnykToolWindowPanel(
     }
 
     fun selectNodeAndDisplayDescription(issuesForImage: ContainerIssuesForImage) =
-        selectAndDisplayNodeWithIssueDescription { treeNode ->
+        selectAndDisplayNodeWithIssueDescription ({ treeNode ->
             treeNode is ContainerImageTreeNode &&
                 (treeNode.userObject as ContainerIssuesForImage) == issuesForImage
-        }
+        })
 
-    fun selectNodeAndDisplayDescription(scanIssue: ScanIssue) =
-        selectAndDisplayNodeWithIssueDescription { treeNode ->
+    fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, forceRefresh: Boolean) =
+        selectAndDisplayNodeWithIssueDescription ({ treeNode ->
             treeNode is SuggestionTreeNode &&
                 (treeNode.userObject as ScanIssue).id == scanIssue.id
-        }
+        }, forceRefresh)
 
     @TestOnly
     fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode

@@ -22,7 +22,6 @@ class GenerateAIFixHandler() {
             val fileURI = params[1]
             val issueID = params[2]
 
-
             runInBackground("Snyk: getting AI fix proposals...") {
                 val responseDiff: List<Fix> =
                     LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)

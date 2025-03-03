@@ -18,7 +18,9 @@ import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
@@ -26,6 +28,7 @@ import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
 import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.events.SnykScanSummaryListenerLS
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -41,6 +44,8 @@ import org.eclipse.lsp4j.MessageParams
 import org.eclipse.lsp4j.MessageType
 import org.eclipse.lsp4j.ProgressParams
 import org.eclipse.lsp4j.PublishDiagnosticsParams
+import org.eclipse.lsp4j.ShowDocumentParams
+import org.eclipse.lsp4j.ShowDocumentResult
 import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams
 import org.eclipse.lsp4j.WorkspaceFolder
@@ -54,6 +59,7 @@ import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
+import java.net.URI
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -129,7 +135,7 @@ class SnykLanguageClient :
     fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): List<ScanIssue> {
         val issueList = diagnosticsParams.diagnostics.stream().map {
             val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
-            // load textrange for issue so it doesn't happen in UI thread
+            // load textRange for issue so it doesn't happen in UI thread
             issue.textRange
             if (issue.isIgnored() && !pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 // apparently the server has consistent ignores activated
@@ -212,9 +218,9 @@ class SnykLanguageClient :
     ) {
         val product =
             when (snykScan.product) {
-                "code" -> ProductType.CODE_SECURITY
-                "oss" -> ProductType.OSS
-                "iac" -> ProductType.IAC
+                PRODUCT_CODE -> ProductType.CODE_SECURITY
+                PRODUCT_OSS -> ProductType.OSS
+                PRODUCT_IAC -> ProductType.IAC
                 else -> return
             }
         val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
@@ -428,5 +434,37 @@ class SnykLanguageClient :
 
     init {
         Disposer.register(SnykPluginDisposable.getInstance(), this)
+    }
+
+    /**
+     * Intercept window/showDocument messages from LS so that we can handle AI fix actions within the IDE.
+     */
+    override fun showDocument(param: ShowDocumentParams): CompletableFuture<ShowDocumentResult> {
+        if (disposed) return CompletableFuture.completedFuture(ShowDocumentResult(false))
+
+        val uri = URI.create(param.uri)
+
+        return if (
+            uri.scheme == "snyk" &&
+            uri.getDecodedParam("product") == LsProductConstants.Code.value &&
+            uri.getDecodedParam("action") == "showInDetailPanel"
+            ) {
+
+            // Track whether we have successfully sent any notifications
+            var success = false
+
+            uri.queryParameters["issueId"]?.let { issueId ->
+                ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { project ->
+                    val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
+                    logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
+                    getSyncPublisher(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)?.onShowIssueDetail(aiFixParams)
+                    success = true
+                }
+            } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
+            CompletableFuture.completedFuture(ShowDocumentResult(success))
+        } else {
+            logger.debug("URI does not match Snyk scheme - passing to default handler: ${param.uri}")
+            super.showDocument(param)
+        }
     }
 }

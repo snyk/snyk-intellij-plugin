@@ -29,10 +29,12 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.analytics.ScanDoneEvent
+import snyk.common.lsp.commands.COMMAND_CODE_FIX_APPLY_AI_EDIT
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.nio.file.Paths
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
@@ -304,6 +306,21 @@ class LanguageServerWrapperTest {
         cut.sendFolderScanCommand("testFolder", projectMock)
 
         verify(exactly = 0) { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    }
+
+    @Test
+    fun `applyAiFixEdit should call language server`() {
+        simulateRunningLS()
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(null)
+
+        val fixId = UUID.randomUUID().toString()
+        cut.sendCodeApplyAiFixEditCommand(fixId)
+
+        verify(exactly = 1) {
+            lsMock.workspaceService.executeCommand(ExecuteCommandParams(COMMAND_CODE_FIX_APPLY_AI_EDIT, listOf(fixId)))
+        }
     }
 
     private fun simulateRunningLS() {
