@@ -176,18 +176,6 @@ class SuggestionDescriptionPanelFromLS(
                 toggleElement(fixErrorSectionElem, "show");
               }
 
-              let suggestion = [];
-
-              // This function will be called once the response is received from the Language Server
-              window.receiveAIFixResponse = function (fixesResponse) {
-                suggestion = [...fixesResponse];
-                if (!suggestion.length) {
-                  showGenerateAIFixError();
-                  return;
-                }
-                showAIFixes(suggestion);
-              };
-
               window.receiveApplyFixResponse = function (success) {
               console.log('[[receiveApplyFixResponse]]', success);
                 if (success) {

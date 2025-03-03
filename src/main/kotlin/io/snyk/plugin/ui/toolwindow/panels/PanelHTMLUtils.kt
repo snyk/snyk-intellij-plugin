@@ -40,12 +40,7 @@ class PanelHTMLUtils {
             } else null
         }
         private fun getGenerateAiFixScript(): String {
-            return "const issueId = generateAIFixButton.getAttribute('issue-id');\n" +
-                "                        const folderPath = generateAIFixButton.getAttribute('folder-path');\n" +
-                "                        const filePath = generateAIFixButton.getAttribute('file-path');\n" +
-                "\n" +
-                "                        window.aiFixQuery(folderPath + \"@|@\" + filePath + \"@|@\" + issueId);\n" +
-                "                        "
+               return  "                        window.aiFixQuery(folderPath + \"@|@\" + filePath + \"@|@\" + issueId);\n"
         }
         private fun getApplyAiFixScript(): String {
             return "window.applyFixQuery(fixId + '|@' + filePath + '|@' + patch);\n"
