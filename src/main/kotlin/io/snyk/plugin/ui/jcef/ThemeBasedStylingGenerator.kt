@@ -56,6 +56,7 @@ class ThemeBasedStylingGenerator {
             html = html.replace("var(--generated-ai-fix-button-background-color)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
             html = html.replace("var(--dark-button-border-default)", borderColor)
             html = html.replace("var(--dark-button-default)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
+            html = html.replace("var(--input-border)", borderColor)
             html = html.replace("var(--disabled-background-color)", borderColor)
             html = html.replace(
                 "var(--code-background-color)",
