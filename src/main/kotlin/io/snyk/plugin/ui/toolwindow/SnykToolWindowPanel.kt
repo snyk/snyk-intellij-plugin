@@ -3,10 +3,13 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.indicatorRunBlockingCancellable
+import com.intellij.openapi.progress.runBlockingCancellable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
@@ -71,6 +74,12 @@ import io.snyk.plugin.ui.toolwindow.panels.StatePanel
 import io.snyk.plugin.ui.toolwindow.panels.SummaryPanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
@@ -200,7 +209,6 @@ class SnykToolWindowPanel(
                 SnykScanListenerLS.SNYK_SCAN_TOPIC,
                 object : SnykScanListenerLS {
                     override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
-                        // Refresh the tree view on receiving new diags from the Language Server
                         getSnykCachedResults(project)?.let {
                             when (product) {
                                 PRODUCT_CODE -> it.currentSnykCodeResultsLS[snykFile] = issueList
@@ -208,7 +216,11 @@ class SnykToolWindowPanel(
                                 PRODUCT_IAC -> it.currentIacResultsLS[snykFile] = issueList
                             }
                         }
-                        vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        // Refresh the tree view on receiving new diags from the Language Server. This must be done on
+                        // the Event Dispatch Thread (EDT).
+                        CoroutineScope(Dispatchers.EDT).launch {
+                            vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        }
                     }
 
                     override fun scanningSnykCodeFinished() = Unit
