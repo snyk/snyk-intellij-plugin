@@ -32,7 +32,9 @@ class ThemeBasedStylingGenerator {
             val isHighContrast =
                 EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
             html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
-            html = html.replace("var(--main-font-size)", JBFont.small().size.toString() + "px")
+            // CSS from the language server assumes a default size of 10px. JBFont uses a default of 13pt, so we
+            // scale that here to get the correct relative point size.
+            html = html.replace("var(--main-font-size)", String.format("%.1fpt", JBFont.regular().size / 1.7))
             html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
             html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--ide-background-color)", UIUtil.getPanelBackground().toHex())
