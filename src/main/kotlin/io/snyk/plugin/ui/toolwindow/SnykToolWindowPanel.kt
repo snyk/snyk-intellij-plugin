@@ -8,8 +8,6 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.indicatorRunBlockingCancellable
-import com.intellij.openapi.progress.runBlockingCancellable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
@@ -76,10 +74,7 @@ import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
@@ -259,6 +254,7 @@ class SnykToolWindowPanel(
                             val message =
                                 "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
                                     cliResult.errors.joinToString(", ") { it.path }
+                            @Suppress("DialogTitleCapitalization")
                             SnykBalloonNotificationHelper.showError(
                                 message,
                                 project,
