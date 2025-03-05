@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -89,7 +90,6 @@ import java.awt.BorderLayout
 import java.util.Objects.nonNull
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-import javax.swing.SwingUtilities.invokeLater
 import javax.swing.event.TreeSelectionEvent
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
