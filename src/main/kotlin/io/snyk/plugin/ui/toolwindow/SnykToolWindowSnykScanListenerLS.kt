@@ -86,7 +86,6 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningOssFinished() {
         if (disposed) return
         ApplicationManager.getApplication().invokeLater {
-            this.rootOssIssuesTreeNode.allowsChildren = true
             this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
             val snykCachedResults = getSnykCachedResults(project)
