@@ -24,8 +24,6 @@ import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykScanSummaryListenerLS
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
-import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SNYK_CODE_PRODUCT
-import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SNYK_URI_SCHEME
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
@@ -445,8 +443,8 @@ class SnykLanguageClient :
         val uri = URI.create(param.uri)
 
         return if (
-            uri.scheme == SNYK_URI_SCHEME &&
-            uri.getDecodedParam("product") == SNYK_CODE_PRODUCT &&
+            uri.scheme == "snyk" &&
+            uri.getDecodedParam("product") == LsProduct.Code.toString() &&
             uri.getDecodedParam("action") == SHOW_DETAIL_ACTION
             ) {
 

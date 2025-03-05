@@ -7,9 +7,7 @@ interface SnykShowIssueDetailListener {
         val SHOW_ISSUE_DETAIL_TOPIC =
             Topic.create("Snyk Show Issue Detail LS", SnykShowIssueDetailListener::class.java)
 
-        const val SNYK_URI_SCHEME = "snyk"
-        const val SNYK_CODE_PRODUCT = "Snyk Code"
-        const val SHOW_DETAIL_ACTION = "showInDetailPanel"
+        const val SHOW_DETAIL_ACTION = "showInDetailPanel" // The action as defined in the Language Server
     }
 
     fun onShowIssueDetail(aiFixParams: AiFixParams)
