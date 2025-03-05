@@ -3,8 +3,6 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
-import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -72,9 +70,6 @@ import io.snyk.plugin.ui.toolwindow.panels.StatePanel
 import io.snyk.plugin.ui.toolwindow.panels.SummaryPanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
@@ -94,6 +89,7 @@ import java.awt.BorderLayout
 import java.util.Objects.nonNull
 import javax.swing.JPanel
 import javax.swing.JScrollPane
+import javax.swing.SwingUtilities.invokeLater
 import javax.swing.event.TreeSelectionEvent
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
@@ -213,7 +209,7 @@ class SnykToolWindowPanel(
                         }
                         // Refresh the tree view on receiving new diags from the Language Server. This must be done on
                         // the Event Dispatch Thread (EDT).
-                        CoroutineScope(Dispatchers.EDT).launch {
+                        invokeLater {
                             vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
                         }
                     }
