@@ -22,11 +22,10 @@ import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykScanListenerLS
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.events.SnykScanSummaryListenerLS
+import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
+import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SNYK_CODE_PRODUCT
+import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SNYK_URI_SCHEME
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
@@ -118,15 +117,15 @@ class SnykLanguageClient :
 
         //If the diagnostics for the file is empty, clear the cache.
         if (firstDiagnostic == null) {
-            scanPublisher.onPublishDiagnostics(PRODUCT_CODE, snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics(PRODUCT_OSS, snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics(PRODUCT_IAC, snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptyList())
             return
         }
 
         val issueList = getScanIssues(diagnosticsParams)
         if (product != null) {
-            scanPublisher.onPublishDiagnostics(product, snykFile, issueList)
+            scanPublisher.onPublishDiagnostics(LsProduct.getFor(product), snykFile, issueList)
         }
 
         return
@@ -217,26 +216,26 @@ class SnykLanguageClient :
         scanPublisher: SnykScanListenerLS,
     ) {
         val product =
-            when (snykScan.product) {
-                PRODUCT_CODE -> ProductType.CODE_SECURITY
-                PRODUCT_OSS -> ProductType.OSS
-                PRODUCT_IAC -> ProductType.IAC
+            when (LsProduct.getFor(snykScan.product)) {
+                LsProduct.Code -> ProductType.CODE_SECURITY
+                LsProduct.OpenSource-> ProductType.OSS
+                LsProduct.InfrastructureAsCode-> ProductType.IAC
                 else -> return
             }
         val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
         when (snykScan.status) {
-            "inProgress" -> {
+            LsScanState.InProgress.value-> {
                 if (ScanState.scanInProgress[key] == true) return
                 ScanState.scanInProgress[key] = true
                 scanPublisher.scanningStarted(snykScan)
             }
 
-            "success" -> {
+            LsScanState.Success.value -> {
                 ScanState.scanInProgress[key] = false
                 processSuccessfulScan(snykScan, scanPublisher)
             }
 
-            "error" -> {
+            LsScanState.Error.value -> {
                 ScanState.scanInProgress[key] = false
                 scanPublisher.scanningError(snykScan)
             }
@@ -249,11 +248,12 @@ class SnykLanguageClient :
     ) {
         logger.info("Scan completed")
 
-        when (snykScan.product) {
-            PRODUCT_OSS -> scanPublisher.scanningOssFinished()
-            PRODUCT_CODE -> scanPublisher.scanningSnykCodeFinished()
-            PRODUCT_IAC -> scanPublisher.scanningIacFinished()
-            PRODUCT_CONTAINER -> TODO()
+        when (LsProduct.getFor(snykScan.product)) {
+            LsProduct.OpenSource -> scanPublisher.scanningOssFinished()
+            LsProduct.Code -> scanPublisher.scanningSnykCodeFinished()
+            LsProduct.InfrastructureAsCode -> scanPublisher.scanningIacFinished()
+            LsProduct.Container -> Unit
+            LsProduct.Unknown -> Unit
         }
     }
 
@@ -445,9 +445,9 @@ class SnykLanguageClient :
         val uri = URI.create(param.uri)
 
         return if (
-            uri.scheme == "snyk" &&
-            uri.getDecodedParam("product") == LsProductConstants.Code.value &&
-            uri.getDecodedParam("action") == "showInDetailPanel"
+            uri.scheme == SNYK_URI_SCHEME &&
+            uri.getDecodedParam("product") == SNYK_CODE_PRODUCT &&
+            uri.getDecodedParam("action") == SHOW_DETAIL_ACTION
             ) {
 
             // Track whether we have successfully sent any notifications

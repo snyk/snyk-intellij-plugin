@@ -10,10 +10,6 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -35,6 +31,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
+import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -89,6 +86,7 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningOssFinished() {
         if (disposed) return
         ApplicationManager.getApplication().invokeLater {
+            this.rootOssIssuesTreeNode.allowsChildren = true
             this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
             val snykCachedResults = getSnykCachedResults(project)
@@ -111,32 +109,31 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     override fun scanningError(snykScan: SnykScanParams) {
-        when (snykScan.product) {
-            PRODUCT_OSS -> {
+        when (LsProduct.getFor(snykScan.product)) {
+            LsProduct.OpenSource -> {
                 this.rootOssIssuesTreeNode.removeAllChildren()
                 this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (error)"
             }
 
-            PRODUCT_CODE -> {
+            LsProduct.Code -> {
                 this.rootSecurityIssuesTreeNode.removeAllChildren()
                 this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
                 this.rootQualityIssuesTreeNode.removeAllChildren()
                 this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
             }
 
-            PRODUCT_IAC -> {
+            LsProduct.InfrastructureAsCode -> {
                 this.rootIacIssuesTreeNode.removeAllChildren()
                 this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
-            PRODUCT_CONTAINER -> {
-                // TODO implement
-            }
+            LsProduct.Container -> Unit
+            LsProduct.Unknown -> Unit
         }
         refreshAnnotationsForOpenFiles(project)
     }
 
-    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {}
+    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) {}
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
@@ -183,7 +180,7 @@ class SnykToolWindowSnykScanListenerLS(
         issueType: String
     ) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentIacError != null) return
+        if (getSnykCachedResults(project)?.currentIacError != null) return // TODO Why only check for IaC error?
 
         val flattenedResults = snykResults.values.flatten()
 
