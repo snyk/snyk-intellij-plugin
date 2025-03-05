@@ -444,7 +444,7 @@ class SnykLanguageClient :
 
         return if (
             uri.scheme == "snyk" &&
-            uri.getDecodedParam("product") == LsProduct.Code.toString() &&
+            uri.getDecodedParam("product") == LsProduct.Code.longName &&
             uri.getDecodedParam("action") == SHOW_DETAIL_ACTION
             ) {
 

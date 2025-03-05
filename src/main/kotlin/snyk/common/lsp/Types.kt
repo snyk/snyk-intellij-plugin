@@ -52,14 +52,12 @@ data class ErrorResponse(
     @SerializedName("path") val path: String
 )
 
-enum class LsProduct(private val longName: String, private val shortName: String) {
+enum class LsProduct(val longName: String, val shortName: String) {
     OpenSource("Snyk Open Source", "oss"),
     Code("Snyk Code", "code"),
     InfrastructureAsCode("Snyk IaC", "iac"),
     Container("Snyk Container", "container"),
     Unknown("", "");
-
-    override fun toString(): String = longName
 
     companion object {
         fun getFor(name: String): LsProduct {
