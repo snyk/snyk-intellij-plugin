@@ -11,14 +11,10 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
-import snyk.common.lsp.LsProductConstants
+import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
@@ -116,8 +112,8 @@ class SnykCachedResults(
                 override fun scanningIacFinished() = Unit
 
                 override fun scanningError(snykScan: SnykScanParams) {
-                    when (snykScan.product) {
-                        PRODUCT_OSS -> {
+                    when (LsProduct.getFor(snykScan.product)) {
+                        LsProduct.OpenSource -> {
                             currentOSSResultsLS.clear()
                             currentOssError =
                                 SnykError(
@@ -128,7 +124,7 @@ class SnykCachedResults(
                                 )
                         }
 
-                        PRODUCT_CODE -> {
+                        LsProduct.Code -> {
                             currentSnykCodeResultsLS.clear()
                             currentSnykCodeError =
                                 SnykError(
@@ -139,7 +135,7 @@ class SnykCachedResults(
                                 )
                         }
 
-                        PRODUCT_IAC -> {
+                        LsProduct.InfrastructureAsCode -> {
                             currentIacResultsLS.clear()
                             currentIacError =
                                 SnykError(
@@ -149,7 +145,7 @@ class SnykCachedResults(
                                 )
                         }
 
-                        PRODUCT_CONTAINER -> {
+                        LsProduct.Container -> {
                             currentContainerError =
                                 SnykError(
                                     snykScan.cliError?.error ?: snykScan.errorMessage
@@ -158,6 +154,8 @@ class SnykCachedResults(
                                     snykScan.cliError?.code,
                                 )
                         }
+
+                        LsProduct.Unknown -> Unit
                     }
 
                     SnykBalloonNotificationHelper
@@ -168,27 +166,17 @@ class SnykCachedResults(
                 }
 
                 override fun onPublishDiagnostics(
-                    product: String,
+                    product: LsProduct,
                     snykFile: SnykFile,
                     issueList: List<ScanIssue>
                 ) {
                     if (snykFile.project.isDisposed || !snykFile.isInContent()) return
                     when (product) {
-                        LsProductConstants.OpenSource.value -> {
-                            currentOSSResultsLS[snykFile] = issueList
-                        }
-
-                        LsProductConstants.Code.value -> {
-                            currentSnykCodeResultsLS[snykFile] = issueList
-                        }
-
-                        LsProductConstants.InfrastructureAsCode.value -> {
-                            currentIacResultsLS[snykFile] = issueList
-                        }
-
-                        LsProductConstants.Container.value -> {
-
-                        }
+                        LsProduct.OpenSource -> currentOSSResultsLS[snykFile] = issueList
+                        LsProduct.Code -> currentSnykCodeResultsLS[snykFile] = issueList
+                        LsProduct.InfrastructureAsCode -> currentIacResultsLS[snykFile] = issueList
+                        LsProduct.Container -> Unit
+                        LsProduct.Unknown -> Unit
                     }
                 }
             },
