@@ -50,7 +50,6 @@ import snyk.common.getEndpointUrl
 import snyk.common.lsp.analytics.AbstractAnalyticsEvent
 import snyk.common.lsp.commands.COMMAND_CODE_FIX_APPLY_AI_EDIT
 import snyk.common.lsp.commands.COMMAND_CODE_FIX_DIFFS
-import snyk.common.lsp.commands.COMMAND_CODE_SUBMIT_FIX_FEEDBACK
 import snyk.common.lsp.commands.COMMAND_COPY_AUTH_LINK
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import snyk.common.lsp.commands.COMMAND_GET_ACTIVE_USER
@@ -637,19 +636,6 @@ class LanguageServerWrapper(
         param.command = COMMAND_CODE_FIX_APPLY_AI_EDIT
         param.arguments = listOf(fixId)
         executeCommand(param)
-    }
-
-    fun submitAutofixFeedbackCommand(fixId: String, feedback: String) {
-        if (notAuthenticated()) return
-
-        try {
-            val param = ExecuteCommandParams()
-            param.command = COMMAND_CODE_SUBMIT_FIX_FEEDBACK
-            param.arguments = listOf(fixId, feedback)
-            executeCommand(param)
-        } catch (err: Exception) {
-            logger.warn("Error in submitAutofixFeedbackCommand", err)
-        }
     }
 
     fun notAuthenticated() = !ensureLanguageServerInitialized() || pluginSettings().token.isNullOrBlank()
