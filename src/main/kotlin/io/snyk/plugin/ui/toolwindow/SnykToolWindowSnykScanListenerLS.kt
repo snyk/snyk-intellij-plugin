@@ -35,7 +35,9 @@ import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
+import javax.swing.SwingUtilities.invokeLater
 import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
 
 class SnykToolWindowSnykScanListenerLS(
     val project: Project,
@@ -110,20 +112,20 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningError(snykScan: SnykScanParams) {
         when (LsProduct.getFor(snykScan.product)) {
             LsProduct.OpenSource -> {
-                this.rootOssIssuesTreeNode.removeAllChildren()
+                removeChildrenAndRefresh(rootOssIssuesTreeNode)
                 this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (error)"
             }
 
             LsProduct.Code -> {
-                this.rootSecurityIssuesTreeNode.removeAllChildren()
-                this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
-                this.rootQualityIssuesTreeNode.removeAllChildren()
-                this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
+                removeChildrenAndRefresh(rootSecurityIssuesTreeNode)
+                rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
+                removeChildrenAndRefresh(rootQualityIssuesTreeNode)
+                rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
             }
 
             LsProduct.InfrastructureAsCode -> {
-                this.rootIacIssuesTreeNode.removeAllChildren()
-                this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
+                removeChildrenAndRefresh(rootIacIssuesTreeNode)
+                rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
             LsProduct.Container -> Unit
@@ -132,11 +134,15 @@ class SnykToolWindowSnykScanListenerLS(
         refreshAnnotationsForOpenFiles(project)
     }
 
+    private fun removeChildrenAndRefresh(node: DefaultMutableTreeNode) {
+        node.removeAllChildren()
+        invokeLater{ (vulnerabilitiesTree.model as DefaultTreeModel).nodeStructureChanged(node) }
+    }
+
     override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) {}
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
 
         val settings = pluginSettings()
 
@@ -179,7 +185,6 @@ class SnykToolWindowSnykScanListenerLS(
         issueType: String
     ) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentIacError != null) return // TODO Why only check for IaC error?
 
         val flattenedResults = snykResults.values.flatten()
 
@@ -215,7 +220,6 @@ class SnykToolWindowSnykScanListenerLS(
 
     fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentOssError != null) return
 
         val settings = pluginSettings()
 
@@ -230,7 +234,6 @@ class SnykToolWindowSnykScanListenerLS(
 
     fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentIacError != null) return
 
         val settings = pluginSettings()
         displayResults(
