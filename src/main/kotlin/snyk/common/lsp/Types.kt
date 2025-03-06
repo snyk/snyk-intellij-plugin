@@ -30,8 +30,8 @@ data class CliError(
 
 // Define the SnykScanParams data class
 data class SnykScanParams(
-    val status: String, // Status (Defined in SnykScanListenerLS.companion)
-    val product: String, // Product under scan (Defined in SnykScanListenerLS.companion)
+    val status: String, // Status (Must map to an LsScanStatus enum)
+    val product: String, // Product under scan (Must map to an LsProduct)
     val folderPath: String, // FolderPath is the root-folder of the current scan
     val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
     val errorMessage: String? = null, // Error Message if applicable
