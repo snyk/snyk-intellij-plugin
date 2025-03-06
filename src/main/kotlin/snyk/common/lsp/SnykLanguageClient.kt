@@ -20,9 +20,9 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykScanSummaryListenerLS
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getDecodedParam
@@ -57,6 +57,7 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
 import java.net.URI
+import java.nio.file.Paths
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -94,7 +95,8 @@ class SnykLanguageClient :
         val filePath = diagnosticsParams.uri
 
         try {
-            getScanPublishersFor(filePath.toVirtualFile().path).forEach { (project, scanPublisher) ->
+            val path = Paths.get(URI.create(filePath)).toString()
+            getScanPublishersFor(path).forEach { (project, scanPublisher) ->
                 updateCache(project, filePath, diagnosticsParams, scanPublisher)
             }
         } catch (e: Exception) {
