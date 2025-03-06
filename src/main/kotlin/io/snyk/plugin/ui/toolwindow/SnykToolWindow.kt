@@ -20,6 +20,7 @@ import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import snyk.common.SnykError
+import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
@@ -95,7 +96,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
                     updateActionsPresentation()
                 }
 
-                override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) =
+                override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) =
                     Unit
             })
 
