@@ -200,7 +200,6 @@ class SnykToolWindowPanel(
                 SnykScanListenerLS.SNYK_SCAN_TOPIC,
                 object : SnykScanListenerLS {
                     override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
-                        // Refresh the tree view on receiving new diags from the Language Server
                         getSnykCachedResults(project)?.let {
                             when (product) {
                                 PRODUCT_CODE -> it.currentSnykCodeResultsLS[snykFile] = issueList
@@ -208,7 +207,11 @@ class SnykToolWindowPanel(
                                 PRODUCT_IAC -> it.currentIacResultsLS[snykFile] = issueList
                             }
                         }
-                        vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        // Refresh the tree view on receiving new diags from the Language Server. This must be done on
+                        // the Event Dispatch Thread (EDT).
+                        invokeLater {
+                            vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        }
                     }
 
                     override fun scanningSnykCodeFinished() = Unit
@@ -247,6 +250,7 @@ class SnykToolWindowPanel(
                             val message =
                                 "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
                                     cliResult.errors.joinToString(", ") { it.path }
+                            @Suppress("DialogTitleCapitalization")
                             SnykBalloonNotificationHelper.showError(
                                 message,
                                 project,
