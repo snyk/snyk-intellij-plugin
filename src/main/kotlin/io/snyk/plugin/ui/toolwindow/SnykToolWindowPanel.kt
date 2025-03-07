@@ -986,8 +986,7 @@ class SnykToolWindowPanel(
                 try {
                     if (forceRefresh) {
                         vulnerabilitiesTree.clearSelection()
-                    }
-                    else {
+                    } else {
                         triggerSelectionListeners = false
                     }
                     TreeUtil.selectNode(vulnerabilitiesTree, node)
