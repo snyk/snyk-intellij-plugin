@@ -79,7 +79,7 @@ class ThemeBasedStylingGenerator {
         }
 
         // Utility function to scale JBFonts appropriately for use in HTML elements that have been designed with px
-        // // values in mind. JBFont defaults will be environment specific - see
+        // values in mind. JBFont defaults will be environment specific - see
         // https://plugins.jetbrains.com/docs/intellij/typography.html#ide-font
         internal fun getRelativeFontSize(inputFontSizePt: Int): String {
             // Target size is the base size for which the HTML element was designed.
