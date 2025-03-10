@@ -51,13 +51,13 @@ object SnykIcons {
     // copy of FeaturesTrainerIcons.Img.GreenCheckmark from https://jetbrains.github.io/ui/resources/icons_list/
     val CHECKMARK_GREEN = getIcon("/icons/greenCheckmark.svg", SnykIcons::class.java)
 
-    private val CRITICAL_SEVERITY_16 = getIcon("/icons/dark-critical-severity.svg", SnykIcons::class.java)
+    private val CRITICAL_SEVERITY_16 = getIcon("/icons/severity_critical_16.svg", SnykIcons::class.java)
     private val CRITICAL_SEVERITY_32 = getIcon("/icons/severity_critical_32.svg", SnykIcons::class.java)
-    private val HIGH_SEVERITY_16 = getIcon("/icons/dark-high-severity.svg", SnykIcons::class.java)
+    private val HIGH_SEVERITY_16 = getIcon("/icons/severity_high_16.svg", SnykIcons::class.java)
     private val HIGH_SEVERITY_32 = getIcon("/icons/severity_high_32.svg", SnykIcons::class.java)
-    private val LOW_SEVERITY_16 = getIcon("/icons/dark-low-severity.svg", SnykIcons::class.java)
+    private val LOW_SEVERITY_16 = getIcon("/icons/severity_low_16.svg", SnykIcons::class.java)
     private val LOW_SEVERITY_32 = getIcon("/icons/severity_low_32.svg", SnykIcons::class.java)
-    private val MEDIUM_SEVERITY_16 = getIcon("/icons/dark-medium-severity.svg", SnykIcons::class.java)
+    private val MEDIUM_SEVERITY_16 = getIcon("/icons/severity_medium_16.svg", SnykIcons::class.java)
     private val MEDIUM_SEVERITY_32 = getIcon("/icons/severity_medium_32.svg", SnykIcons::class.java)
 
     fun getSeverityIcon(severity: Severity, iconSize: IconSize = IconSize.SIZE16): Icon {
