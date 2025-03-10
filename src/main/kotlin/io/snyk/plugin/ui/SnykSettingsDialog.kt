@@ -773,9 +773,9 @@ class SnykSettingsDialog(
 
     fun saveSeveritiesEnablementChanges() = severityEnablementPanel.apply()
 
-    fun isIssueOptionChanged() = issueViewOptionsPanel.isModified()
+    fun isIssueViewOptionsChanged() = issueViewOptionsPanel.isModified()
 
-    fun saveIssueOptionChanges() = issueViewOptionsPanel.apply()
+    fun saveIssueViewOptionsChanges() = issueViewOptionsPanel.apply()
 
     fun getAdditionalParameters(): String = additionalParametersTextField.text
 

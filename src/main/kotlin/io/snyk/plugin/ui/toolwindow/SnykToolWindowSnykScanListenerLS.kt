@@ -283,22 +283,11 @@ class SnykToolWindowSnykScanListenerLS(
                     fixableIssuesCount = fixableIssuesCount,
                 )
 
-                var includeIgnoredIssues = true
-                var includeOpenedIssues = true
-                if (settings.isGlobalIgnoresFeatureEnabled) {
-                    includeOpenedIssues = settings.openIssuesEnabled
-                    includeIgnoredIssues = settings.ignoredIssuesEnabled
-                }
-
                 val resultsToDisplay =
                     snykResults.map { entry ->
                         entry.key to
                             entry.value.filter {
-                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum()) &&
-                                    it.isVisible(
-                                        includeOpenedIssues,
-                                        includeIgnoredIssues,
-                                    )
+                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                             }
                     }.toMap()
                 displayResultsForRootTreeNode(rootNode, resultsToDisplay)

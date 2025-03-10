@@ -64,6 +64,7 @@ import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
+import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.removeTrailingSlashesIfPresent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -488,6 +489,11 @@ class LanguageServerWrapper(
                 high = ps.highSeverityEnabled,
                 medium = ps.mediumSeverityEnabled,
                 low = ps.lowSeverityEnabled,
+            ),
+            issueViewOptions =
+            IssueViewOptions(
+                openIssues = ps.openIssuesEnabled,
+                ignoredIssues = ps.ignoredIssuesEnabled,
             ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
