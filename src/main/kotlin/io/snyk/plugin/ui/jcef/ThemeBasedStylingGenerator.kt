@@ -30,6 +30,7 @@ class ThemeBasedStylingGenerator {
             html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
             html = html.replace("var(--main-font-size)", getRelativeFontSize(JBFont.regular().size))
             html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
+            html = html.replace("var(--dimmed-text-color)", UIUtil.getLabelDisabledForeground().toHex())
             html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--ide-background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--border-color)", borderColor)
@@ -54,6 +55,8 @@ class ThemeBasedStylingGenerator {
             html = html.replace("var(--dark-button-default)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
             html = html.replace("var(--input-border)", borderColor)
             html = html.replace("var(--disabled-background-color)", borderColor)
+            html = html.replace("var(--warning-background)", toCssHex(JBUI.CurrentTheme.IconBadge.WARNING))
+            html = html.replace("var(--warning-text)", UIUtil.getLabelBackground().toHex())
             html = html.replace(
                 "var(--code-background-color)",
                 editorBackground
