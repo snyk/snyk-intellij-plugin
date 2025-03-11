@@ -40,6 +40,9 @@ class CliDownloader {
 
     fun downloadFile(cliFile: File, cliVersion: String, indicator: ProgressIndicator): File {
         indicator.checkCanceled()
+        if (!cliFile.parentFile.exists()){
+            Files.createDirectories(cliFile.parentFile.toPath())
+        }
         val downloadFile = try {
             File.createTempFile(cliFile.name, ".download", cliFile.parentFile)
         } catch (e: Exception) {
