@@ -71,10 +71,36 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
         pluginSettings().setDeltaEnabled(enabled = true)
         contentRootPaths.forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
+
+        rootTreeNode = DefaultMutableTreeNode("")
+        rootTreeNode.add(rootOssIssuesTreeNode)
+        rootTreeNode.add(rootSecurityIssuesTreeNode)
+        rootTreeNode.add(rootQualityIssuesTreeNode)
+        rootTreeNode.add(rootIacIssuesTreeNode)
+        vulnerabilitiesTree = Tree(rootTreeNode).apply {
+            this.isRootVisible = false
+        }
+
+        cut = SnykToolWindowSnykScanListenerLS(
+            project,
+            snykToolWindowPanel,
+            vulnerabilitiesTree,
+            rootSecurityIssuesTreeNode,
+            rootQualityIssuesTreeNode,
+            rootOssIssuesTreeNode,
+            rootIacIssuesTreeNode
+        )
+
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+        pluginSettings().openIssuesEnabled = true
+        pluginSettings().ignoredIssuesEnabled = true
     }
 
     override fun tearDown() {
         super.tearDown()
+        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+        pluginSettings().openIssuesEnabled = true
+        pluginSettings().ignoredIssuesEnabled = true
         unmockkAll()
     }
 
@@ -144,100 +170,69 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         return listOf(issue)
     }
 
-    fun `testAddInfoTreeNodes adds new tree nodes`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+    private fun mapToLabels(treeNode: DefaultMutableTreeNode): List<String> {
+        return treeNode.children().toList().map{ it.toString() }
+    }
 
-        // setup the rootTreeNode from scratch
-        rootTreeNode = DefaultMutableTreeNode("")
-        rootTreeNode.add(rootOssIssuesTreeNode)
-        rootTreeNode.add(rootSecurityIssuesTreeNode)
-        rootTreeNode.add(rootQualityIssuesTreeNode)
-        rootTreeNode.add(rootIacIssuesTreeNode)
-        vulnerabilitiesTree = Tree(rootTreeNode).apply {
-            this.isRootVisible = false
-        }
+    fun `test root nodes are created`() {
+        TestCase.assertEquals(listOf(" Open Source", " Code Security", " Code Quality", " Configuration"), mapToLabels(rootTreeNode))
+    }
 
-        cut = SnykToolWindowSnykScanListenerLS(
-            project,
-            snykToolWindowPanel,
-            vulnerabilitiesTree,
-            rootSecurityIssuesTreeNode,
-            rootQualityIssuesTreeNode,
-            rootOssIssuesTreeNode,
-            rootIacIssuesTreeNode
-        )
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if no issues`() {
+        cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
+        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootOssIssuesTreeNode))
+    }
 
-        TestCase.assertEquals(4, rootTreeNode.childCount)
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(), 1)
-        TestCase.assertEquals(6, rootTreeNode.childCount)
-        TestCase.assertEquals(rootTreeNode.children().toList()[0].toString(), " Open Source")
-        TestCase.assertEquals(rootTreeNode.children().toList()[1].toString(), " Code Security")
-        TestCase.assertEquals(rootTreeNode.children().toList()[2].toString(), " Code Quality")
+    fun `test addInfoTreeNodes adds new tree nodes for code security if no issues`() {
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
+        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if 1 fixable issue`() {
+        cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
         TestCase.assertEquals(
-            "✋ 1 issue found by Snyk, 0 ignored",
-            rootTreeNode.children().toList()[4].toString(),
-        )
-        TestCase.assertEquals(
-            rootTreeNode.children().toList()[5].toString(),
-            "⚡ 1 issue can be fixed automatically",
+            listOf("✋ 1 issue", "⚡ 1 issue can be fixed automatically"),
+            mapToLabels(rootOssIssuesTreeNode)
         )
     }
 
-    fun `testAddInfoTreeNodes adds new tree nodes for code security if all ignored issues are hidden`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
-        pluginSettings().ignoredIssuesEnabled = false
-
-        // setup the rootTreeNode from scratch
-        rootTreeNode = DefaultMutableTreeNode("")
-        rootTreeNode.add(rootOssIssuesTreeNode)
-        rootTreeNode.add(rootSecurityIssuesTreeNode)
-        rootTreeNode.add(rootQualityIssuesTreeNode)
-        rootTreeNode.add(rootIacIssuesTreeNode)
-        vulnerabilitiesTree = Tree(rootTreeNode).apply {
-            this.isRootVisible = false
-        }
-
-        cut = SnykToolWindowSnykScanListenerLS(
-            project,
-            snykToolWindowPanel,
-            vulnerabilitiesTree,
-            rootSecurityIssuesTreeNode,
-            rootQualityIssuesTreeNode,
-            rootOssIssuesTreeNode,
-            rootIacIssuesTreeNode
-        )
-
-        TestCase.assertEquals(4, rootTreeNode.childCount)
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(true), 1)
-        TestCase.assertEquals(7, rootTreeNode.childCount)
+    fun `test addInfoTreeNodes adds new tree nodes for code security if 1 fixable issue`() {
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
+        TestCase.assertEquals(listOf("✋ 1 open issue, 0 ignored issues", "⚡ 1 issue can be fixed automatically"), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
-    fun `testAddInfoTreeNodes adds new tree nodes for code security if all open issues are hidden`() {
-        pluginSettings().isGlobalIgnoresFeatureEnabled = true
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if open issues are hidden`() {
         pluginSettings().openIssuesEnabled = false
 
-        // setup the rootTreeNode from scratch
-        rootTreeNode = DefaultMutableTreeNode("")
-        rootTreeNode.add(rootOssIssuesTreeNode)
-        rootTreeNode.add(rootSecurityIssuesTreeNode)
-        rootTreeNode.add(rootQualityIssuesTreeNode)
-        rootTreeNode.add(rootIacIssuesTreeNode)
-        vulnerabilitiesTree = Tree(rootTreeNode).apply {
-            this.isRootVisible = false
-        }
+        cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
+        TestCase.assertEquals(listOf("Open issues are disabled!", "Adjust your settings to view Open issues."), mapToLabels(rootOssIssuesTreeNode))
+    }
 
-        cut = SnykToolWindowSnykScanListenerLS(
-            project,
-            snykToolWindowPanel,
-            vulnerabilitiesTree,
-            rootSecurityIssuesTreeNode,
-            rootQualityIssuesTreeNode,
-            rootOssIssuesTreeNode,
-            rootIacIssuesTreeNode
-        )
+    fun `test addInfoTreeNodes adds new tree nodes for code security if open issues are hidden and no ignored issues`() {
+        pluginSettings().openIssuesEnabled = false
 
-        TestCase.assertEquals(4, rootTreeNode.childCount)
-        cut.addInfoTreeNodes(rootTreeNode, mockScanIssues(false), 1)
-        TestCase.assertEquals(7, rootTreeNode.childCount)
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
+        TestCase.assertEquals(listOf("✋ No ignored issues, open issues are disabled", "Adjust your settings to view Open issues."), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for code security if open issues are hidden and 1 ignored issues`() {
+        pluginSettings().openIssuesEnabled = false
+
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(isIgnored = true), 0)
+        TestCase.assertEquals(listOf("✋ 1 ignored issue, open issues are disabled"), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for code security if ignored issues are hidden and no open issues`() {
+        pluginSettings().ignoredIssuesEnabled = false
+
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
+        TestCase.assertEquals(listOf("✅ Congrats! No open issues found!", "Adjust your settings to view Ignored issues."), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for code security if ignored issues are hidden and 1 fixable issue`() {
+        pluginSettings().ignoredIssuesEnabled = false
+
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
+        TestCase.assertEquals(listOf("✋ 1 open issue", "⚡ 1 issue can be fixed automatically"), mapToLabels(rootSecurityIssuesTreeNode))
     }
 }

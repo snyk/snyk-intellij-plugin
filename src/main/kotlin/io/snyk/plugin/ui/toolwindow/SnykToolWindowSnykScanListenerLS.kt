@@ -35,6 +35,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
+import snyk.common.lsp.FilterableIssueType
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
@@ -151,6 +152,7 @@ class SnykToolWindowSnykScanListenerLS(
                 .toMap()
 
         displayIssues(
+            filterableIssueType = ScanIssue.CODE_SECURITY,
             enabledInSettings = settings.snykCodeSecurityIssuesScanEnable,
             filterTree = settings.treeFiltering.codeSecurityResults,
             snykResults = securityIssues,
@@ -166,6 +168,7 @@ class SnykToolWindowSnykScanListenerLS(
                 .toMap()
 
         displayIssues(
+            filterableIssueType = ScanIssue.CODE_QUALITY,
             enabledInSettings = settings.snykCodeQualityIssuesScanEnable,
             filterTree = settings.treeFiltering.codeQualityResults,
             snykResults = qualityIssues,
@@ -192,6 +195,7 @@ class SnykToolWindowSnykScanListenerLS(
                 val ossResultsCount =
                     flattenedResults.filter { it.filterableIssueType == ScanIssue.OPEN_SOURCE }.distinct().size
                 displayIssues(
+                    filterableIssueType = ScanIssue.OPEN_SOURCE,
                     enabledInSettings = enabledInSettings,
                     filterTree = filterTree,
                     snykResults = snykResults,
@@ -206,6 +210,7 @@ class SnykToolWindowSnykScanListenerLS(
                     flattenedResults.filter { it.filterableIssueType == ScanIssue.INFRASTRUCTURE_AS_CODE }
                         .distinct().size
                 displayIssues(
+                    filterableIssueType = ScanIssue.INFRASTRUCTURE_AS_CODE,
                     enabledInSettings = enabledInSettings,
                     filterTree = filterTree,
                     snykResults = snykResults,
@@ -247,6 +252,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     private fun displayIssues(
+        filterableIssueType: FilterableIssueType,
         enabledInSettings: Boolean,
         filterTree: Boolean,
         snykResults: Map<SnykFile, List<ScanIssue>>,
@@ -278,6 +284,7 @@ class SnykToolWindowSnykScanListenerLS(
 
             if (filterTree) {
                 addInfoTreeNodes(
+                    filterableIssueType = filterableIssueType,
                     rootNode = rootNode,
                     issues = snykResults.values.flatten().distinct(),
                     fixableIssuesCount = fixableIssuesCount,
@@ -319,8 +326,98 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
+    private fun getIssueFoundText(issuesCount: Int): String {
+        if (!pluginSettings().openIssuesEnabled) {
+            return "Open issues are disabled!"
+        }
+
+        return if (issuesCount == 0) "✅ Congrats! No issues found!" else
+            "✋ $issuesCount issue${if (issuesCount == 1) "" else "s" }"
+    }
+
+    private fun getIssueFoundTextForCodeSecurity(totalIssuesCount: Int, openIssuesCount: Int, ignoredIssuesCount: Int): String {
+        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            return getIssueFoundText(totalIssuesCount)
+        }
+
+        val openIssuesText = "$openIssuesCount open issue${if (openIssuesCount == 1) "" else "s" }"
+        val ignoredIssuesText = "$ignoredIssuesCount ignored issue${if (ignoredIssuesCount == 1) "" else "s" }"
+
+        return if (pluginSettings().openIssuesEnabled) {
+            if (pluginSettings().ignoredIssuesEnabled) {
+                if (totalIssuesCount == 0) {
+                    "✅ Congrats! No issues found!"
+                } else {
+                    "✋ $openIssuesText, $ignoredIssuesText"
+                }
+            } else {
+                if (openIssuesCount == 0) {
+                    "✅ Congrats! No open issues found!"
+                } else {
+                    "✋ $openIssuesText"
+                }
+            }
+        } else if (pluginSettings().ignoredIssuesEnabled) {
+            if (ignoredIssuesCount == 0) {
+                "✋ No ignored issues, open issues are disabled"
+            } else {
+                "✋ $ignoredIssuesText, open issues are disabled"
+            }
+        } else {
+            "Open and Ignored issues are disabled!" // In theory, this is prevented by IntelliJ
+        }
+    }
+
+    private fun getNoIssueViewOptionsSelectedTreeNode(): InfoTreeNode? {
+        if (!pluginSettings().openIssuesEnabled) {
+            return InfoTreeNode(
+                "Adjust your settings to view Open issues.",
+                project,
+            )
+        }
+
+        return null;
+    }
+
+    private fun getNoIssueViewOptionsSelectedTreeNodeForCodeSecurity(): InfoTreeNode? {
+        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            return getNoIssueViewOptionsSelectedTreeNode()
+        }
+
+        if (!pluginSettings().openIssuesEnabled) {
+            return InfoTreeNode(
+                "Adjust your settings to view Open issues.",
+                project,
+            )
+        }
+
+        if (!pluginSettings().ignoredIssuesEnabled) {
+                return InfoTreeNode(
+                    "Adjust your settings to view Ignored issues.",
+                    project,
+                )
+        }
+
+        return null;
+    }
+
+    private fun getFixableIssuesNode(fixableIssuesCount: Int): InfoTreeNode {
+        return InfoTreeNode(
+            if (fixableIssuesCount > 0) "⚡ $fixableIssuesCount issue${if (fixableIssuesCount == 1) "" else "s"} can be fixed automatically" else "There are no issues automatically fixable",
+            project,
+        )
+    }
+
+    private fun getFixableIssuesNodeForCodeSecurity(fixableIssuesCount: Int): InfoTreeNode? {
+        if (!pluginSettings().openIssuesEnabled) {
+            return null
+        }
+        return getFixableIssuesNode(fixableIssuesCount)
+    }
+
     @Suppress("RedundantVisibilityModifierRule")
     fun addInfoTreeNodes(
+        filterableIssueType: FilterableIssueType,
         rootNode: DefaultMutableTreeNode,
         issues: List<ScanIssue>,
         fixableIssuesCount: Int? = null,
@@ -330,17 +427,10 @@ class SnykToolWindowSnykScanListenerLS(
             return
         }
 
-        val settings = pluginSettings()
-        var text = "✅ Congrats! No issues found!"
-        val issuesCount = issues.size
+        val totalIssuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
-        if (issuesCount != 0) {
-            val plural = getPlural(issuesCount)
-            text = "✋ $issuesCount issue$plural found by Snyk"
-            if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
-                text += ", $ignoredIssuesCount ignored"
-            }
-        }
+        val openIssuesCount = totalIssuesCount - ignoredIssuesCount
+        val text = if (filterableIssueType == ScanIssue.CODE_SECURITY) getIssueFoundTextForCodeSecurity(totalIssuesCount, openIssuesCount, ignoredIssuesCount) else getIssueFoundText(totalIssuesCount)
         rootNode.add(
             InfoTreeNode(
                 text,
@@ -348,44 +438,17 @@ class SnykToolWindowSnykScanListenerLS(
             ),
         )
 
-        if (fixableIssuesCount != null) {
-            if (fixableIssuesCount > 0) {
-                val plural = getPlural(fixableIssuesCount)
-                rootNode.add(
-                    InfoTreeNode(
-                        "⚡ $fixableIssuesCount issue$plural can be fixed automatically",
-                        project,
-                    ),
-                )
-            } else {
-                rootNode.add(
-                    InfoTreeNode("There are no issues automatically fixable", project),
-                )
+        if (totalIssuesCount == 0) {
+            val ivoNode = if (filterableIssueType == ScanIssue.CODE_SECURITY) getNoIssueViewOptionsSelectedTreeNodeForCodeSecurity() else getNoIssueViewOptionsSelectedTreeNode()
+            if (ivoNode != null) {
+                rootNode.add(ivoNode)
+            }
+        } else if (fixableIssuesCount != null) {
+            val fixableNode = if (filterableIssueType == ScanIssue.CODE_SECURITY) getFixableIssuesNodeForCodeSecurity(fixableIssuesCount) else getFixableIssuesNode(fixableIssuesCount)
+            if (fixableNode != null) {
+                rootNode.add(fixableNode)
             }
         }
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
-            if (ignoredIssuesCount == issuesCount && !settings.ignoredIssuesEnabled) {
-                rootNode.add(
-                    InfoTreeNode(
-                        "Adjust your Issue View Options to see ignored issues.",
-                        project,
-                    ),
-                )
-            } else if (ignoredIssuesCount == 0 && !settings.openIssuesEnabled) {
-                rootNode.add(
-                    InfoTreeNode(
-                        "Adjust your Issue View Options to open issues.",
-                        project,
-                    ),
-                )
-            }
-        }
-    }
-
-    private fun getPlural(issuesCount: Int) = if (issuesCount > 1) {
-        "s"
-    } else {
-        ""
     }
 
     private fun displayResultsForRootTreeNode(
