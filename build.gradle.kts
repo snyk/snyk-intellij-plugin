@@ -189,7 +189,8 @@ tasks {
         failureLevel.set(
             listOf(
                 org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.COMPATIBILITY_PROBLEMS,
-                org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.INVALID_PLUGIN
+                org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.INVALID_PLUGIN,
+                org.jetbrains.intellij.tasks.RunPluginVerifierTask.FailureLevel.INTERNAL_API_USAGES,
             )
         )
     }
