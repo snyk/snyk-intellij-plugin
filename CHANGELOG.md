@@ -1,4 +1,8 @@
 # Snyk Security Changelog
+## [2.13.0]
+### Changed
+- remove unnecessary dependency on com.intellij.modules.lang to enable Jetbrains Gateway usage
+
 ## [2.12.1]
 ### Changed
 - remove usage of internal IntelliJ API to allow plugin release
