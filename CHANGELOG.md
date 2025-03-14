@@ -1,8 +1,34 @@
 # Snyk Security Changelog
-
-## [2.11.2]
+## [2.12.1]
 ### Changed
- - Using Code Lens or Code Actions to view an AI Fix now shows the affected issue in the tree view and details pane of the Snyk window.
+- remove usage of internal IntelliJ API to allow plugin release
+
+## [2.12.0]
+### Changed
+- chore: bump ls protocol version to 18 by @ShawkyZ in https://github.com/snyk/snyk-intellij-plugin/pull/646
+- chore: update IntelliJ plugin to support 2025.1, fix workspaceFolder config by @bastiandoetsch in https://github.com/snyk/snyk-intellij-plugin/pull/647
+- fix: force-save settings on receiving auth info by @bastiandoetsch in https://github.com/snyk/snyk-intellij-plugin/pull/650
+- feat: scan summary panel [IDE-894] by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/648
+- feat: add job to compare hashes of static resource files by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/649
+- feat: add reference folder to branch chooser by @bastiandoetsch in https://github.com/snyk/snyk-intellij-plugin/pull/652
+- fix: always set reference and base branch folder by @ShawkyZ in https://github.com/snyk/snyk-intellij-plugin/pull/653
+- fix: folderConfig type [IDE-871] by @bastiandoetsch in https://github.com/snyk/snyk-intellij-plugin/pull/655
+- chore: remove unnecessary scripts which were migrated to language server [IDE-655] by @DariusZdroba in https://github.com/snyk/snyk-intellij-plugin/pull/651
+- fix: check for disposal before updating the issue cache by @bastiandoetsch in https://github.com/snyk/snyk-intellij-plugin/pull/658
+- feat/ai fix issue panel [IDE-956] [IDE-760] by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/656
+- fix: only include folders in their parent projects when calculating content roots [IDE-1012] by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/659
+- refactor: remove unused code now that the IDE no longer sends AI fix … by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/662
+- fix: only update tree view on UI thread by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/661
+- fix: add border to delta sumamry toggle to improve visibility by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/660
+- fix: use URI to determine file path by @bastiandoetsch in https://github.com/snyk/snyk-intellij-plugin/pull/664
+- fix: update cache on receive diags by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/663
+- fix: tree node race selection on windows by @ShawkyZ in https://github.com/snyk/snyk-intellij-plugin/pull/667
+- fix: scale web fonts using 10px as a reference size.  by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/666
+- fix: round severity icons updated [IDE-897] by @acke in https://github.com/snyk/snyk-intellij-plugin/pull/669
+- fix: update code and warning colours for ai fix and ignores by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/670
+- fix/icon updates [IDE-987] by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/671
+- fix: icon updates [IDE-897] by @andrewrobinsonhodges-snyk in https://github.com/snyk/snyk-intellij-plugin/pull/672
+- fix: create CLI download directory if it non existent by @DariusZdroba in https://github.com/snyk/snyk-intellij-plugin/pull/673
 
 ## [2.11.1]
 ### Changed
