@@ -51,10 +51,15 @@ import org.jetbrains.concurrency.runAsync
 import snyk.SnykBundle
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import java.awt.Cursor
+import java.awt.Desktop
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.io.File.separator
+import java.net.URI
 import java.util.Objects.nonNull
 import java.util.function.Supplier
 import javax.swing.JButton
@@ -322,11 +327,20 @@ class SnykSettingsDialog(
             ),
         )
 
-        val endpointDescriptionLabel =
-            JLabel(
-                "<html>Sets API endpoint to use for Snyk requests. Useful for custom Snyk setups. <br/>" +
-                    "E.g. <code>https://api.eu.snyk.io</code>.</html>",
-            ).apply { font = FontUtil.minusOne(this.font) }
+        val endpointDescriptionLabel = JLabel(
+            "<html>If you're using SSO(OAuth2), Custom Endpoint configuration is automatic. <br>" +
+                "Otherwise, for public regional instances, see the " +
+                "<a href='https://docs.snyk.io/working-with-snyk/regional-hosting-and-data-residency#available-snyk-regions'>docs</a>.<br>" +
+                "For private instances, contact your team or account manager.</html>"
+        ).apply {
+            font = FontUtil.minusOne(this.font)
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    Desktop.getDesktop().browse(URI("https://docs.snyk.io/working-with-snyk/regional-hosting-and-data-residency#available-snyk-regions"))
+                }
+            })
+        }
 
         generalSettingsPanel.add(
             endpointDescriptionLabel,
