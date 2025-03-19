@@ -328,7 +328,7 @@ class SnykSettingsDialog(
         )
 
         val endpointDescriptionLabel = JLabel(
-            "<html>If you're using SSO(OAuth2), Custom Endpoint configuration is automatic. <br>" +
+            "<html>If you're using SSO with Snyk and OAuth2 the custom endpoint configuration is automatically populated. <br>" +
                 "Otherwise, for public regional instances, see the " +
                 "<a href='https://docs.snyk.io/working-with-snyk/regional-hosting-and-data-residency#available-snyk-regions'>docs</a>.<br>" +
                 "For private instances, contact your team or account manager.</html>"
