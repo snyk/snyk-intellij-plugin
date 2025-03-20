@@ -1,6 +1,5 @@
 package snyk.iac
 
-import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
@@ -9,7 +8,6 @@ import io.snyk.plugin.getIacService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
