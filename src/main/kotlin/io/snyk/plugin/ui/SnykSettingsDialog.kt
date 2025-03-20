@@ -183,7 +183,13 @@ class SnykSettingsDialog(
 
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-            additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
+            service<FolderConfigSettings>().getAllForProject(project)
+            additionalParametersTextField.text = project.basePath?.let {
+                service<FolderConfigSettings>().getAdditionalParams(
+                    it
+                )
+            }
+                //applicationSettings.getAdditionalParameters(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
 
