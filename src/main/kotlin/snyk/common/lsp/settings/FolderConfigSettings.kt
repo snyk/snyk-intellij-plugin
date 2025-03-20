@@ -61,4 +61,15 @@ class FolderConfigSettings : SimplePersistentStateComponent<FolderConfigSettings
             .stream()
             .sorted()
             .collect(Collectors.toList()).toList()
+
+    /**
+     * Returns the additional parameters of the folder config at [folderPath] as a string.
+     *
+     * If no config is found for the path, an empty string is returned. If the additional parameters are null,
+     * they will be replaced with an empty list before being joined into a CSV string.
+     */
+    fun getAdditionalParams(folderPath: String): String {
+        val fromJson = gson.fromJson(state.configs[folderPath], FolderConfig::class.java)
+        return (fromJson?.additionalParameters ?: emptyList()).joinToString(" ")
+    }
 }

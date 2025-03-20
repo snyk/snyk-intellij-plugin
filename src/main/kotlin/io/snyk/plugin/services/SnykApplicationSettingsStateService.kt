@@ -5,13 +5,10 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.getPluginPath
-import io.snyk.plugin.getSnykProjectSettingsService
-import io.snyk.plugin.isProjectSettingsAvailable
 import java.io.File.separator
 import java.time.Instant
 import java.time.LocalDate
@@ -106,13 +103,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     fun isDeltaFindingsEnabled(): Boolean =
         (issuesToDisplay == DISPLAY_NEW_ISSUES)
-
-    fun getAdditionalParameters(project: Project? = null): String? =
-        if (isProjectSettingsAvailable(project)) {
-            getSnykProjectSettingsService(project!!)?.additionalParameters
-        } else {
-            ""
-        }
 
     fun getLastCheckDate(): LocalDate? =
         if (lastCheckDate != null) {

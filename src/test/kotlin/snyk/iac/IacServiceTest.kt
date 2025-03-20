@@ -41,8 +41,6 @@ class IacServiceTest : LightPlatformTestCase() {
         settingsStateService.lastCheckDate = null
         settingsStateService.organization = ""
 
-        project.service<SnykProjectSettingsStateService>().additionalParameters = ""
-
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.languageServer = lsMock
         languageServerWrapper.isInitialized = true
@@ -66,17 +64,6 @@ class IacServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains(getCliFile().absolutePath))
         assertTrue(cliCommands.contains("fake_cli_command"))
         assertTrue(cliCommands.contains("--json"))
-    }
-
-    @Test
-    fun testBuildCliCommandsListWithFileParameter() {
-        setupDummyCliFile()
-
-        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
-
-        val cliCommands = iacService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
-
-        assertFalse(cliCommands.contains("--file=package.json"))
     }
 
     @Test

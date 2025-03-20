@@ -102,8 +102,6 @@ class SnykProjectSettingsConfigurable(
         snykSettingsDialog.saveIssueOptionChanges()
 
         if (isProjectSettingsAvailable(project)) {
-            val snykProjectSettingsService = getSnykProjectSettingsService(project)
-            snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
             val fcs = service<FolderConfigSettings>()
             fcs.getAllForProject(project)
                 .map { it.copy(additionalParameters = snykSettingsDialog.getAdditionalParameters().split(" ")) }
@@ -178,8 +176,14 @@ class SnykProjectSettingsConfigurable(
     private fun isIgnoreUnknownCAModified(): Boolean =
         snykSettingsDialog.isIgnoreUnknownCA() != settingsStateService.ignoreUnknownCA
 
-    private fun isAdditionalParametersModified(): Boolean =
-        isProjectSettingsAvailable(project) && snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(
-            project
-        )?.additionalParameters
+    private fun isAdditionalParametersModified(): Boolean {
+        val dialogAdditionalParameters: String = snykSettingsDialog.getAdditionalParameters()
+        val storedAdditionalParams =  project.basePath?.let {
+            service<FolderConfigSettings>().getAdditionalParams(
+                it
+            )
+        }
+            return (isProjectSettingsAvailable(project)
+                && dialogAdditionalParameters != storedAdditionalParams)
+    }
 }
