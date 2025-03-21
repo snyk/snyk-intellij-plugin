@@ -7,6 +7,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.SimplePersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.annotations.MapAnnotation
 import io.snyk.plugin.getContentRootPaths
@@ -62,14 +63,8 @@ class FolderConfigSettings : SimplePersistentStateComponent<FolderConfigSettings
             .sorted()
             .collect(Collectors.toList()).toList()
 
-    /**
-     * Returns the additional parameters of the folder config at [folderPath] as a string.
-     *
-     * If no config is found for the path, an empty string is returned. If the additional parameters are null,
-     * they will be replaced with an empty list before being joined into a CSV string.
-     */
-    fun getAdditionalParams(folderPath: String): String {
-        val fromJson = gson.fromJson(state.configs[folderPath], FolderConfig::class.java)
-        return (fromJson?.additionalParameters ?: emptyList()).joinToString(" ")
+    fun getAdditionalParams(project: Project): String {
+        val folderConfig = getAllForProject(project).firstOrNull()
+        return (folderConfig?.additionalParameters ?: emptyList()).joinToString(" ")
     }
 }

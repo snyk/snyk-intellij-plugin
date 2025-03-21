@@ -180,19 +180,12 @@ class SnykSettingsDialog(
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
-
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-            service<FolderConfigSettings>().getAllForProject(project)
-            additionalParametersTextField.text = project.basePath?.let {
-                service<FolderConfigSettings>().getAdditionalParams(
-                    it
-                )
-            }
-                //applicationSettings.getAdditionalParameters(project)
+            additionalParametersTextField.text =
+                service<FolderConfigSettings>().getAdditionalParams(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
-
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
                 .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
             netNewIssuesDropDown.selectedItem = applicationSettings.issuesToDisplay
