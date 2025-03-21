@@ -11,7 +11,6 @@ import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
@@ -178,11 +177,7 @@ class SnykProjectSettingsConfigurable(
 
     private fun isAdditionalParametersModified(): Boolean {
         val dialogAdditionalParameters: String = snykSettingsDialog.getAdditionalParameters()
-        val storedAdditionalParams =  project.basePath?.let {
-            service<FolderConfigSettings>().getAdditionalParams(
-                it
-            )
-        }
+        val storedAdditionalParams = service<FolderConfigSettings>().getAdditionalParams(project)
             return (isProjectSettingsAvailable(project)
                 && dialogAdditionalParameters != storedAdditionalParams)
     }
