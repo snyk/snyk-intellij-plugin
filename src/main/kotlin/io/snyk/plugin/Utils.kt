@@ -406,6 +406,14 @@ fun String.toVirtualFile(): VirtualFile {
     }
 }
 
+fun String.toVirtualFileOrNull(): VirtualFile? {
+    return try {
+        this.toVirtualFile()
+    } catch (e: FileNotFoundException) {
+        null
+    }
+}
+
 // add a slash when on windows
 fun VirtualFile.toLanguageServerURL(): String {
     if (this.urlContainsDriveLetter()) {
@@ -454,7 +462,7 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     if (contentRoots.isEmpty()) {
         // This should cover the case when no content roots are configured, e.g. in Rider
         contentRoots = ProjectManager.getInstance().openProjects
-            .filter{ it.name == this.name }.mapNotNull { it.basePath?.toVirtualFile() }.toTypedArray()
+            .filter{ it.name == this.name }.mapNotNull { it.basePath?.toVirtualFileOrNull() }.toTypedArray()
     }
 
     // The sort is to ensure that parent folders come first
