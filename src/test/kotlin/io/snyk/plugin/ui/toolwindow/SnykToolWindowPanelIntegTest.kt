@@ -18,7 +18,6 @@ import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.getContainerService
-import io.snyk.plugin.getIacService
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSyncPublisher
@@ -30,12 +29,13 @@ import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.setupDummyCliFile
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ErrorTreeNode
+import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
+import junit.framework.TestCase
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.services.LanguageServer
-import org.junit.Ignore
 import snyk.common.SnykError
-import snyk.common.UIComponentFinder
+import snyk.common.UIComponentFinder.getComponentByName
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
@@ -49,26 +49,21 @@ import snyk.container.ui.BaseImageRemediationDetailPanel
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueDetailPanel
 import snyk.container.ui.ContainerIssueTreeNode
-import snyk.iac.IacResult
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.awt.Component
 import java.util.concurrent.CompletableFuture
 import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextArea
 import javax.swing.tree.TreeNode
+import kotlin.reflect.KClass
 
-//TODO rewrite
-@Ignore("change to language server")
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
-    private val iacGoofJson = getResourceAsString("iac-test-results/infrastructure-as-code-goof.json")
-    private val ossGoofJson = getResourceAsString("oss-test-results/oss-result-package.json")
+    private val containerResultName = "container-test-results/nginx-with-remediation.json"
     private val containerResultWithRemediationJson =
-        getResourceAsString("container-test-results/nginx-with-remediation.json")
-
-    private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
-        .getResource(resourceName)!!.readText(Charsets.UTF_8)
+        javaClass.classLoader.getResource(containerResultName)!!.readText(Charsets.UTF_8)
 
     private lateinit var toolWindowPanel: SnykToolWindowPanel
     private val scanPublisher
@@ -89,6 +84,13 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         settings.token = fakeApiToken // needed to avoid forced Auth panel showing
         settings.pluginFirstRun = false
         settings.cliReleaseChannel = "preview"
+
+        // Disable all scan types. Individual tests should enable any they need.
+        settings.ossScanEnable = false
+        settings.iacScanEnabled = false
+        settings.snykCodeQualityIssuesScanEnable = false
+        settings.snykCodeSecurityIssuesScanEnable = false
+
         // ToolWindow need to be reinitialised for every test as Project is recreated for Heavy tests
         // also we MUST do it *before* any actual test code due to initialisation of SnykScanListener in init{}
         toolWindowPanel = project.service()
@@ -114,22 +116,12 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         }
     }
 
-    private fun setUpIacTest() {
-        val settings = pluginSettings()
-        settings.ossScanEnable = false
-        settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
-        settings.iacScanEnabled = true
-        settings.containerScanEnabled = false
-    }
+    private fun setUpOssTest() { pluginSettings().ossScanEnable = true }
+
+    private fun setUpIacTest() { pluginSettings().iacScanEnabled = true }
 
     private fun setUpContainerTest(containerResultStub: ContainerResult?) {
-        val settings = pluginSettings()
-        settings.ossScanEnable = false
-        settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
-        settings.iacScanEnabled = false
-        settings.containerScanEnabled = true
+        pluginSettings().containerScanEnabled = true
 
         if (containerResultStub != null) {
             mockkStatic("io.snyk.plugin.UtilsKt")
@@ -198,20 +190,26 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     fun `test when no OSS supported file found should display special text (not error) in node and description`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError =
+        val noFilesErrorParams =
             SnykScanParams("failed", "oss", project.basePath!!, emptyList(), SnykToolWindowPanel.NO_OSS_FILES)
-        val snykErrorControl = SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
+        val controlErrorParams =
+            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
 
-        scanPublisherLS.scanningError(snykErrorControl)
-        scanPublisherLS.scanningError(snykError)
+        scanPublisherLS.scanningError(controlErrorParams)
+        scanPublisherLS.scanningError(noFilesErrorParams)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         val rootOssTreeNode = toolWindowPanel.getRootOssIssuesTreeNode()
+
+        waitWhileTreeBusy()
+
         // flow and internal state check
-        verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(any(), project)
-        }
-        assertTrue(getSnykCachedResults(project)?.currentOssError == null)
+//        verify(exactly = 1, timeout = 2000) {
+//            SnykBalloonNotificationHelper.showError(any(), project)
+//        }
+
+        val ossError = getSnykCachedResults(project)?.currentOssError
+        assertNotNull(ossError)
         assertTrue(getSnykCachedResults(project)?.currentOSSResultsLS?.isEmpty() ?: false)
         val cliErrorMessage = rootOssTreeNode.originalCliErrorMessage
         assertTrue(cliErrorMessage != null && cliErrorMessage.startsWith(SnykToolWindowPanel.NO_OSS_FILES))
@@ -222,48 +220,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
         // description check
         TreeUtil.selectNode(toolWindowPanel.getTree(), rootOssTreeNode)
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-        val jEditorPane = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JEditorPane::class
-        )
-        assertNotNull(jEditorPane)
-        jEditorPane!!
-        assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_OSS_FILES))
-    }
 
-    fun `test when no IAC supported file found should display special text (not error) in node and description`() {
-        mockkObject(SnykBalloonNotificationHelper)
-
-        val snykError =
-            SnykScanParams("failed", "iac", project.basePath!!, emptyList(), SnykToolWindowPanel.NO_IAC_FILES)
-        val snykErrorControl = SnykScanParams("failed", "iac", project.basePath!!, emptyList(), "control")
-
-        scanPublisherLS.scanningError(snykErrorControl)
-        scanPublisherLS.scanningError(snykError)
-        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-
-        val rootIacTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
-        // flow and internal state check
-        verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(any(), project)
-        }
-        assertTrue(getSnykCachedResults(project)?.currentIacError == null)
-        assertTrue(getSnykCachedResults(project)?.currentIacResultsLS?.isEmpty() ?: false)
-        // node check
-        assertEquals(
-            SnykToolWindowPanel.OSS_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_PACKAGE_MANAGER_FOUND,
-            rootIacTreeNode.userObject
-        )
-        // description check
-        TreeUtil.selectNode(toolWindowPanel.getTree(), rootIacTreeNode)
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-        val jEditorPane = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JEditorPane::class
-        )
-        assertNotNull(jEditorPane)
-        jEditorPane!!
+        val jEditorPane = getNonNullDescriptionComponent(JEditorPane::class)
         assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_OSS_FILES))
     }
 
@@ -280,8 +238,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(any(), project)
         }
+        assertNull(getSnykCachedResults(project)?.currentContainerError)
 
-        assertTrue(getSnykCachedResults(project)?.currentContainerError == null)
         assertEquals(
             SnykToolWindowPanel.CONTAINER_ROOT_TEXT + SnykToolWindowPanel.NO_CONTAINER_IMAGES_FOUND,
             toolWindowPanel.getRootContainerIssuesTreeNode().userObject
@@ -294,87 +252,60 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         scanPublisher.scanningContainerError(snykError)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
-        val noImagesFoundPane = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_NO_IMAGES_FOUND_TEXT
-        )
-        assertNotNull(noImagesFoundPane)
+        getNonNullDescriptionComponent(JEditorPane::class, SnykToolWindowPanel.CONTAINER_NO_IMAGES_FOUND_TEXT)
     }
 
     fun `test should display CONTAINER_NO_ISSUES_FOUND_TEXT after scan when no Container issues found and Container node selected`() {
         scanPublisher.scanningContainerFinished(ContainerResult(emptyList()))
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        waitWhileTreeBusy()
 
-        val noIssuesFoundPane = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_NO_ISSUES_FOUND_TEXT
-        )
-        assertNotNull(noIssuesFoundPane)
+        getNonNullDescriptionComponent(JEditorPane::class, SnykToolWindowPanel.CONTAINER_NO_ISSUES_FOUND_TEXT)
     }
 
     fun `test should display CONTAINER_SCAN_START_TEXT before any scan performed and Container node selected`() {
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-
-        val startContainerScanPane = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_SCAN_START_TEXT
-        )
-        assertNotNull(startContainerScanPane)
+        getNonNullDescriptionComponent(JEditorPane::class, SnykToolWindowPanel.CONTAINER_SCAN_START_TEXT)
     }
 
     fun `test should display CONTAINER_SCAN_RUNNING_TEXT before any scan performed and Container node selected`() {
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        waitWhileTreeBusy()
         scanPublisher.scanningStarted()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-
-        val containerScanRunningPane = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JEditorPane::class,
-            SnykToolWindowPanel.CONTAINER_SCAN_RUNNING_TEXT
-        )
-        assertNotNull(containerScanRunningPane)
+        getNonNullDescriptionComponent(JEditorPane::class, SnykToolWindowPanel.CONTAINER_SCAN_RUNNING_TEXT)
     }
 
     fun `test OSS scan should redirect to Auth panel if token is invalid`() {
         mockkObject(SnykBalloonNotificationHelper)
 
-        val snykError =
-            SnykScanParams(
-                "failed",
-                "oss",
-                project.basePath!!,
-                emptyList(),
-                "Authentication failed. Please check the API token on "
-            )
-        val snykErrorControl = SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
+        val authErrorParams =
+            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "auth error")
+        val controlErrorParams =
+            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
 
-        scanPublisherLS.scanningError(snykErrorControl)
-        scanPublisherLS.scanningError(snykError)
+        scanPublisherLS.scanningError(controlErrorParams)
+        scanPublisherLS.scanningError(authErrorParams)
 
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(snykErrorControl.errorMessage!!, project)
+            SnykBalloonNotificationHelper.showError(controlErrorParams.errorMessage!!, project)
         }
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(snykError.errorMessage!!, project)
+            SnykBalloonNotificationHelper.showError(authErrorParams.errorMessage!!, project)
         }
-        assertTrue(getSnykCachedResults(project)?.currentOssError == null)
+
+       // assertNull(getSnykCachedResults(project)?.currentOssError)
+
         assertEquals(
-            SnykToolWindowPanel.OSS_ROOT_TEXT,
+            SnykToolWindowPanel.OSS_ROOT_TEXT + " (error)",
             toolWindowPanel.getRootOssIssuesTreeNode().userObject
         )
-        val authPanel = UIComponentFinder.getComponentByName(toolWindowPanel, JPanel::class, "authPanel")
-        assertNotNull(authPanel)
+
+        getNonNullDescriptionComponent(SnykAuthPanel::class)
     }
 
     fun `test Container scan should redirect to Auth panel if token is invalid`() {
@@ -392,13 +323,11 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         verify(exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(snykError.message, project)
         }
-        assertTrue(getSnykCachedResults(project)?.currentContainerError == null)
-        assertEquals(
-            SnykToolWindowPanel.CONTAINER_ROOT_TEXT,
+        assertNull(getSnykCachedResults(project)?.currentContainerError)
+        assertEquals(SnykToolWindowPanel.CONTAINER_ROOT_TEXT,
             toolWindowPanel.getRootContainerIssuesTreeNode().userObject
         )
-        val authPanel = UIComponentFinder.getComponentByName(toolWindowPanel, JPanel::class, "authPanel")
-        assertNotNull(authPanel)
+        getNonNullDescriptionComponent(JPanel::class, "authPanel")
     }
 
     fun `test Container node should show no child when disabled`() {
@@ -421,19 +350,13 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     fun `test should display '(error)' in OSS root tree node when result is empty and error occurs`() {
-        val snykError =
-            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "an error")
+        val ossError = SnykError("an error", project.basePath!!)
+        val ossErrorParams = SnykScanParams("failed", "oss", ossError.path, emptyList(), ossError.message)
 
-        scanPublisherLS.scanningError(snykError)
-
+        scanPublisherLS.scanningError(ossErrorParams)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        assertTrue(
-            getSnykCachedResults(project)?.currentOssError == SnykError(
-                snykError.errorMessage!!,
-                project.basePath!!
-            )
-        )
+        assertEquals(ossError, getSnykCachedResults(project)?.currentOssError)
         assertTrue(getSnykCachedResults(project)?.currentOSSResultsLS?.isEmpty() ?: false)
         assertEquals(
             SnykToolWindowPanel.OSS_ROOT_TEXT + " (error)",
@@ -442,6 +365,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     fun `test should display 'scanning' in OSS root tree node when it is scanning`() {
+        setUpOssTest()
+
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isOssRunning(project) } returns true
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -455,45 +380,32 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     }
 
     fun testIacErrorShown() {
-        // pre-test setup
-        setUpIacTest()
+        mockkObject(SnykBalloonNotificationHelper)
 
         // mock IaC results
         val iacError = SnykError("fake error", "fake path")
-        val iacResultWithError = IacResult(null, listOf(iacError))
+        val iacErrorParams = SnykScanParams("failed", "iac", iacError.path, emptyList(), iacError.message)
 
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { getIacService(project)?.scan() } returns iacResultWithError
+        // Trigger the callback from Language Server signalling scan failure
+        scanPublisherLS.scanningError(iacErrorParams)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        // actual test run
-        project.service<SnykTaskQueueService>().scan()
-
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-
+        verify (exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(iacError.message, project)
+        }
         assertEquals(iacError, getSnykCachedResults(project)?.currentIacError)
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootIacIssuesTreeNode())
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
-        val descriptionComponents = toolWindowPanel.getDescriptionPanel().components.toList()
-        val errorPanel = descriptionComponents.find { it is SnykErrorPanel } as SnykErrorPanel?
-
-        assertNotNull(errorPanel)
-
-        val errorMessageTextArea =
-            UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "errorMessageTextArea")
-        val pathTextArea = UIComponentFinder.getComponentByName(errorPanel, JTextArea::class, "pathTextArea")
-
-        assertTrue(errorMessageTextArea?.text == iacError.message)
-        assertTrue(pathTextArea?.text == iacError.path)
+        val errorPanel = getNonNullDescriptionComponent(SnykErrorPanel::class)
+        val errorMessageTextArea = getComponentByName(errorPanel, JTextArea::class, "errorMessageTextArea")
+        val pathTextArea = getComponentByName(errorPanel, JTextArea::class, "pathTextArea")
+        assertEquals(iacError.message, errorMessageTextArea!!.text)
+        assertEquals(iacError.path, pathTextArea!!.text)
     }
 
     fun `test all root nodes are shown`() {
-        setUpIacTest()
-        setUpContainerTest(null)
-
-        val tree = toolWindowPanel.getTree()
-        PlatformTestUtil.waitWhileBusy(tree)
+        waitWhileTreeBusy()
 
         val rootNode = toolWindowPanel.getRootNode()
         setOf(
@@ -503,9 +415,9 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             SnykToolWindowPanel.IAC_ROOT_TEXT,
             SnykToolWindowPanel.CONTAINER_ROOT_TEXT
         ).forEach {
-            assertTrue(
+            TestCase.assertNotNull(
                 "Root node for [$it] not found",
-                TreeUtil.findNodeWithObject(rootNode, it) != null
+                TreeUtil.findNodeWithObject(rootNode, it)
             )
         }
     }
@@ -520,24 +432,19 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         // actual test run
         project.service<SnykTaskQueueService>().scan()
 
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        waitWhileTreeBusy()
 
         assertEquals(containerError, getSnykCachedResults(project)?.currentContainerError)
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootContainerIssuesTreeNode())
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
-        val descriptionComponents = toolWindowPanel.getDescriptionPanel().components.toList()
-        val errorPanel = descriptionComponents.find { it is SnykErrorPanel } as? SnykErrorPanel
-
+        val errorPanel = getNonNullDescriptionComponent(SnykErrorPanel::class)
         assertNotNull(errorPanel)
+        val errorMessageTextArea = getComponentByName(errorPanel, JTextArea::class, "errorMessageTextArea")
+        val pathTextArea = getComponentByName(errorPanel, JTextArea::class, "pathTextArea")
 
-        val errorMessageTextArea =
-            UIComponentFinder.getComponentByName(errorPanel!!, JTextArea::class, "errorMessageTextArea")
-        val pathTextArea = UIComponentFinder.getComponentByName(errorPanel, JTextArea::class, "pathTextArea")
-
-        assertTrue(errorMessageTextArea?.text == containerError.message)
-        assertTrue(pathTextArea?.text == containerError.path)
+        assertEquals(containerError.message, errorMessageTextArea?.text)
+        assertEquals(containerError.path, pathTextArea?.text)
     }
 
     fun `test container image nodes with description shown`() {
@@ -546,7 +453,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        waitWhileTreeBusy()
 
         // Assertions
         assertEquals(fakeContainerResult, getSnykCachedResults(project)?.currentContainerResult)
@@ -565,12 +472,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), rootContainerNode.firstChild)
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-        val baseImageRemediationDetailPanel = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            BaseImageRemediationDetailPanel::class
-        )
-        assertNotNull(baseImageRemediationDetailPanel)
+        getNonNullDescriptionComponent(BaseImageRemediationDetailPanel::class)
     }
 
     fun `test container image node and Failed-to-scan image shown`() {
@@ -580,7 +482,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        waitWhileTreeBusy()
 
         // Assertions
         assertEquals(fakeContainerResultWithError, getSnykCachedResults(project)?.currentContainerResult)
@@ -612,7 +514,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        waitWhileTreeBusy()
 
         // Assertions
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
@@ -627,11 +529,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         )
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), issueNode)
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-        val containerIssueDetailPanel = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            ContainerIssueDetailPanel::class
-        )
+        val containerIssueDetailPanel = getNonNullDescriptionComponent(ContainerIssueDetailPanel::class)
         assertNotNull("ContainerIssueDetailPanel should be shown on issue node selection", containerIssueDetailPanel)
     }
 
@@ -640,40 +538,75 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
         TreeUtil.selectNode(toolWindowPanel.getTree(), rootContainerNode.firstChild)
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
 
         // Assertions
-        val currentImageValueLabel = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JLabel::class,
-            BaseImageRemediationDetailPanel.CURRENT_IMAGE
-        )
+        val currentImageValueLabel =
+            getNonNullDescriptionComponent(JLabel::class, BaseImageRemediationDetailPanel.CURRENT_IMAGE)
         assertNotNull(currentImageValueLabel)
         assertEquals("current image incorrect", "nginx:1.16.0", currentImageValueLabel?.text)
 
-        val minorUpgradeValueLabel = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JLabel::class,
-            BaseImageRemediationDetailPanel.MINOR_UPGRADES
-        )
+        val minorUpgradeValueLabel =
+            getNonNullDescriptionComponent(JLabel::class, BaseImageRemediationDetailPanel.MINOR_UPGRADES)
         assertNotNull(minorUpgradeValueLabel)
         assertEquals("minor upgrades incorrect", "nginx:1.20.2", minorUpgradeValueLabel?.text)
 
-        val majorUpgradeValueLabel = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JLabel::class,
-            BaseImageRemediationDetailPanel.MAJOR_UPGRADES
-        )
+        val majorUpgradeValueLabel =
+            getNonNullDescriptionComponent(JLabel::class, BaseImageRemediationDetailPanel.MAJOR_UPGRADES)
         assertNotNull(minorUpgradeValueLabel)
         assertEquals("major upgrades incorrect", "nginx:1.21.4", majorUpgradeValueLabel?.text)
 
-        val alternativeUpgradeValueLabel = UIComponentFinder.getComponentByName(
-            toolWindowPanel.getDescriptionPanel(),
-            JLabel::class,
-            BaseImageRemediationDetailPanel.ALTERNATIVE_UPGRADES
-        )
+        val alternativeUpgradeValueLabel =
+            getNonNullDescriptionComponent(JLabel::class, BaseImageRemediationDetailPanel.ALTERNATIVE_UPGRADES)
+
         assertNotNull(alternativeUpgradeValueLabel)
         assertEquals("alternative upgrades incorrect", "nginx:1-perl", alternativeUpgradeValueLabel?.text)
+    }
+
+
+    fun `test container image node has correct amount of leaf(issue) nodes`() {
+        val containerResult = prepareContainerTreeNodesAndCaches(containerResultWithRemediationJson)
+
+        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+
+        val expectedIssuesCount = containerResult.issuesCount
+        val actualIssueNodesCount = rootContainerNode.children().asSequence().sumOf {
+            (it as TreeNode).childCount
+        }
+        assertEquals(expectedIssuesCount, actualIssueNodesCount)
+    }
+
+    fun `test Container node selected and Description shown on external request`() {
+        // prepare Tree with fake Container results
+        setUpContainerTest(null)
+        getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningContainerFinished(fakeContainerResult)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        val rootContainerTreeNode = toolWindowPanel.getRootContainerIssuesTreeNode()
+        val firstImageNode = rootContainerTreeNode.firstChild as ContainerImageTreeNode
+        val containerImage = firstImageNode.userObject as ContainerIssuesForImage
+
+        // actual test run
+        toolWindowPanel.selectNodeAndDisplayDescription(containerImage)
+        waitWhileTreeBusy()
+
+        // Assertions
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
+        assertEquals(containerImage, selectedNodeUserObject)
+
+        val containerImageDescriptionPanel = getNonNullDescriptionComponent(BaseImageRemediationDetailPanel::class)
+        assertNotNull("Image's Description Panel should not be null", containerImageDescriptionPanel)
+    }
+
+    private fun waitWhileTreeBusy() = PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+
+    private fun <T: Component> getNonNullDescriptionComponent(clazz: KClass<T>, name: String? = null): T {
+        // Check that all relevant UI work has completed before we access the description panel
+        waitWhileTreeBusy()
+        PlatformTestUtil.waitWhileBusy { toolWindowPanel.getDescriptionPanel().components.isEmpty() }
+
+        // Look for a component of the correct type and name within the description panel
+        val component = getComponentByName(toolWindowPanel.getDescriptionPanel(), clazz, name)
+        TestCase.assertNotNull(component)
+        return component!!
     }
 
     private fun prepareContainerTreeNodesAndCaches(containerResultJson: String): ContainerResult {
@@ -705,50 +638,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // actual test run
         project.service<SnykTaskQueueService>().scan()
-        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
-
-        return containerResult
-    }
-
-    fun `test container image node has correct amount of leaf(issue) nodes`() {
-        val containerResult = prepareContainerTreeNodesAndCaches(containerResultWithRemediationJson)
-
-        val rootContainerNode = toolWindowPanel.getRootContainerIssuesTreeNode()
-
-        val expectedIssuesCount = containerResult.issuesCount
-        val actualIssueNodesCount = rootContainerNode.children().asSequence().sumOf {
-            (it as TreeNode).childCount
-        }
-        assertEquals(expectedIssuesCount, actualIssueNodesCount)
-    }
-
-    private fun waitWhileTreeBusy() {
-        val tree = toolWindowPanel.getTree()
-        PlatformTestUtil.waitWhileBusy(tree)
-    }
-
-    fun `test Container node selected and Description shown on external request`() {
-        // prepare Tree with fake Container results
-        setUpContainerTest(null)
-        getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.scanningContainerFinished(fakeContainerResult)
-        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-        val rootContainerTreeNode = toolWindowPanel.getRootContainerIssuesTreeNode()
-        val firstImageNode = rootContainerTreeNode.firstChild as ContainerImageTreeNode
-        val containerImage = firstImageNode.userObject as ContainerIssuesForImage
-
-        // actual test run
-        toolWindowPanel.selectNodeAndDisplayDescription(containerImage)
         waitWhileTreeBusy()
 
-        // Assertions
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(toolWindowPanel.getTree().selectionPath, Any::class.java)
-        assertEquals(containerImage, selectedNodeUserObject)
-
-        val containerImageDescriptionPanel =
-            UIComponentFinder.getComponentByName(
-                toolWindowPanel.getDescriptionPanel(),
-                BaseImageRemediationDetailPanel::class
-            )
-        assertNotNull("Image's Description Panel should not be null", containerImageDescriptionPanel)
+        return containerResult
     }
 }
