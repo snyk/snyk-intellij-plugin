@@ -1,70 +1,41 @@
 package snyk.common.lsp.settings
 
-import com.google.gson.Gson
-import com.intellij.openapi.components.BaseState
-import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.SimplePersistentStateComponent
-import com.intellij.openapi.components.State
-import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.util.xmlb.annotations.MapAnnotation
 import io.snyk.plugin.getContentRootPaths
+import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
+import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 
+@Suppress("UselessCallOnCollection")
 @Service
-@State(
-    name = "FolderConfig.Settings", storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)]
-)
-class FolderConfigSettings : SimplePersistentStateComponent<FolderConfigSettings.State>(State()) {
-    val gson = Gson()
+class FolderConfigSettings {
+    private val configs : MutableMap<String, FolderConfig> = ConcurrentHashMap<String, FolderConfig>()
 
-    class State : BaseState() {
-        @get:MapAnnotation(keyAttributeName = "folderPath", entryTagName = "folderConfig")
-        var configs by map<String, String>()
+    @Suppress("UselessCallOnNotNull", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "RedundantSuppression")
+    fun addFolderConfig(@NotNull folderConfig: FolderConfig) {
+        if (folderConfig?.folderPath.isNullOrBlank() ?: true) return
+        configs[folderConfig.folderPath] = folderConfig
     }
 
-    fun addFolderConfig(folderConfig: FolderConfig) {
-        state.configs[folderConfig.folderPath] = gson.toJson(folderConfig)
-    }
-
-    @Suppress("USELESS_ELVIS", "SENSELESS_COMPARISON") // gson doesn't care about kotlin not null stuff
-    internal fun getFolderConfig(folderPath: String): FolderConfig? {
-        val fromJson = gson.fromJson(state.configs[folderPath], FolderConfig::class.java) ?: return null
-        if (fromJson.additionalParameters == null) {
-            val copy = fromJson.copy(
-                baseBranch = fromJson.baseBranch,
-                folderPath = fromJson.folderPath,
-                localBranches = fromJson.localBranches ?: emptyList(),
-                additionalParameters = fromJson.additionalParameters ?: emptyList(),
-            )
-            addFolderConfig(copy)
-            return copy
-        }
-        return fromJson
+    internal fun getFolderConfig(folderPath: String): FolderConfig {
+        return configs[folderPath]!!
     }
 
     fun getAll(): Map<String, FolderConfig> {
-        return state.configs.map {
-            it.key to gson.fromJson(it.value, FolderConfig::class.java)
-        }.toMap()
+        return HashMap(configs)
     }
 
-    fun clear() = state.configs.clear()
+    fun clear() = configs.clear()
 
-    fun addAll(folderConfigs: List<FolderConfig>) = folderConfigs.forEach { addFolderConfig(it) }
+    fun addAll(folderConfigs: List<FolderConfig>) = folderConfigs.mapNotNull { addFolderConfig(it) }
 
     fun getAllForProject(project: Project): List<FolderConfig> =
         project.getContentRootPaths()
             .mapNotNull { getFolderConfig(it.toAbsolutePath().toString()) }
+            .filterNotNull()
             .stream()
             .sorted()
             .collect(Collectors.toList()).toList()
-
-    fun getAdditionalParams(project: Project): String {
-        val folderConfig = getAllForProject(project).firstOrNull()
-        return (folderConfig?.additionalParameters ?: emptyList()).joinToString(" ")
-    }
 }

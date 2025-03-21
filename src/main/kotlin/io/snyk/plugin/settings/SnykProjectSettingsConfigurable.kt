@@ -103,7 +103,12 @@ class SnykProjectSettingsConfigurable(
         if (isProjectSettingsAvailable(project)) {
             val fcs = service<FolderConfigSettings>()
             fcs.getAllForProject(project)
-                .map { it.copy(additionalParameters = snykSettingsDialog.getAdditionalParameters().split(" ")) }
+                .map {
+                    it.copy(
+                        additionalParameters = snykSettingsDialog.getAdditionalParameters()
+                            .split(" ", System.lineSeparator())
+                    )
+                }
                 .forEach { fcs.addFolderConfig(it) }
         }
 
