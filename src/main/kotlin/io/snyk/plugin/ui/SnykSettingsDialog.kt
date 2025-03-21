@@ -43,6 +43,7 @@ import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
+import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.settings.IssueViewOptionsPanel
 import io.snyk.plugin.ui.settings.ScanTypesPanel
 import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
@@ -182,14 +183,25 @@ class SnykSettingsDialog(
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-            additionalParametersTextField.text =
-                service<FolderConfigSettings>().getAdditionalParams(project)
+            additionalParametersTextField.text = getAdditionalParams(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
                 .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
             netNewIssuesDropDown.selectedItem = applicationSettings.issuesToDisplay
         }
+    }
+
+    private fun getAdditionalParams(project: Project): String? {
+        // get workspace folders for project
+        val folderConfigSettings = service<FolderConfigSettings>()
+        // only use folder config with workspace folder path
+        val additionalParameters = LanguageServerWrapper.getInstance().getWorkspaceFoldersFromRoots(project)
+            .filter { LanguageServerWrapper.getInstance().configuredWorkspaceFolders.contains(it) }
+            .map { it.uri.toVirtualFile().toNioPath().toString() }
+            .map { folderConfigSettings.getFolderConfig(it) }
+            .joinToString(" ")
+        return additionalParameters
     }
 
     fun getRootPanel(): JComponent = rootPanel
