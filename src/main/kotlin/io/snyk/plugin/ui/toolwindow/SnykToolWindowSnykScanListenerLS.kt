@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
@@ -10,10 +11,6 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CONTAINER
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -36,10 +33,12 @@ import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
 import snyk.common.lsp.FilterableIssueType
+import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
 
 class SnykToolWindowSnykScanListenerLS(
     val project: Project,
@@ -112,36 +111,39 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     override fun scanningError(snykScan: SnykScanParams) {
-        when (snykScan.product) {
-            PRODUCT_OSS -> {
-                this.rootOssIssuesTreeNode.removeAllChildren()
+        when (LsProduct.getFor(snykScan.product)) {
+            LsProduct.OpenSource -> {
+                removeChildrenAndRefresh(rootOssIssuesTreeNode)
                 this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (error)"
             }
 
-            PRODUCT_CODE -> {
-                this.rootSecurityIssuesTreeNode.removeAllChildren()
-                this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
-                this.rootQualityIssuesTreeNode.removeAllChildren()
-                this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
+            LsProduct.Code -> {
+                removeChildrenAndRefresh(rootSecurityIssuesTreeNode)
+                rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
+                removeChildrenAndRefresh(rootQualityIssuesTreeNode)
+                rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
             }
 
-            PRODUCT_IAC -> {
-                this.rootIacIssuesTreeNode.removeAllChildren()
-                this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
+            LsProduct.InfrastructureAsCode -> {
+                removeChildrenAndRefresh(rootIacIssuesTreeNode)
+                rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
-            PRODUCT_CONTAINER -> {
-                // TODO implement
-            }
+            LsProduct.Container -> Unit
+            LsProduct.Unknown -> Unit
         }
         refreshAnnotationsForOpenFiles(project)
     }
 
-    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {}
+    private fun removeChildrenAndRefresh(node: DefaultMutableTreeNode) {
+        node.removeAllChildren()
+        invokeLater{ (vulnerabilitiesTree.model as DefaultTreeModel).nodeStructureChanged(node) }
+    }
+
+    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) {}
 
     fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentSnykCodeError != null) return
 
         val settings = pluginSettings()
 
@@ -186,7 +188,6 @@ class SnykToolWindowSnykScanListenerLS(
         issueType: String
     ) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentIacError != null) return
 
         val flattenedResults = snykResults.values.flatten()
 
@@ -224,7 +225,6 @@ class SnykToolWindowSnykScanListenerLS(
 
     fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentOssError != null) return
 
         val settings = pluginSettings()
 
@@ -239,7 +239,6 @@ class SnykToolWindowSnykScanListenerLS(
 
     fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
         if (disposed) return
-        if (getSnykCachedResults(project)?.currentIacError != null) return
 
         val settings = pluginSettings()
         displayResults(

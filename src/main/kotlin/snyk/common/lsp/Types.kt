@@ -7,13 +7,11 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
-import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
 import snyk.common.ProductType
-import java.net.URI
 import java.util.Date
 import java.util.Locale
 import javax.swing.Icon
@@ -32,12 +30,12 @@ data class CliError(
 
 // Define the SnykScanParams data class
 data class SnykScanParams(
-    val status: String, // Status can be either Initial, InProgress, Success or Error
-    val product: String, // Product under scan (Snyk Code, Snyk Open Source, etc...)
+    val status: String, // Status (Must map to an LsScanStatus enum)
+    val product: String, // Product under scan (Must map to an LsProduct)
     val folderPath: String, // FolderPath is the root-folder of the current scan
     val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
     val errorMessage: String? = null, // Error Message if applicable
-    val cliError: CliError? = null, // structured error information if applicable
+    val cliError: CliError? = null, // Structured error information if applicable
 )
 
 data class SnykScanSummaryParams(
@@ -54,16 +52,27 @@ data class ErrorResponse(
     @SerializedName("path") val path: String
 )
 
-enum class LsProductConstants(val value: String) {
-    OpenSource("Snyk Open Source"),
-    Code("Snyk Code"),
-    InfrastructureAsCode("Snyk IaC"),
-    Container("Snyk Container"),
-    Unknown("");
+enum class LsProduct(val longName: String, val shortName: String) {
+    OpenSource("Snyk Open Source", "oss"),
+    Code("Snyk Code", "code"),
+    InfrastructureAsCode("Snyk IaC", "iac"),
+    Container("Snyk Container", "container"),
+    Unknown("", "");
 
-    override fun toString(): String {
-        return value
+    companion object {
+        fun getFor(name: String): LsProduct {
+            return entries.toTypedArray().firstOrNull() { name in arrayOf(it.longName, it.shortName) } ?: Unknown
+        }
     }
+}
+
+enum class LsScanState(val value: String) {
+    Initial("initial"),
+    InProgress("inProgress"),
+    Success("success"),
+    Error("error");
+
+    override fun toString(): String = value
 }
 
 // Define the ScanIssue data class
@@ -549,7 +558,11 @@ data class FolderConfig(
     @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),
     @SerializedName("referenceFolderPath") val referenceFolderPath: String? = "",
     @SerializedName("scanCommandConfig") val scanCommandConfig: Map<String,ScanCommandConfig>? = emptyMap(),
-)
+) : Comparable<FolderConfig> {
+    override fun compareTo(other: FolderConfig): Int {
+        return this.folderPath.compareTo(other.folderPath)
+    }
+}
 
 data class ScanCommandConfig(
     val preScanCommand: String = "",

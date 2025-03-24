@@ -3,13 +3,9 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.openapi.editor.colors.ColorKey
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import org.cef.browser.CefBrowser
-import org.cef.browser.CefFrame
-import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
 
 fun Color.toHex() = ThemeBasedStylingGenerator.toCssHex(this)
@@ -32,8 +28,9 @@ class ThemeBasedStylingGenerator {
             val isHighContrast =
                 EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
             html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
-            html = html.replace("var(--main-font-size)", JBFont.small().size.toString() + "px")
+            html = html.replace("var(--main-font-size)", getRelativeFontSize(JBFont.regular().size))
             html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
+            html = html.replace("var(--dimmed-text-color)", UIUtil.getLabelDisabledForeground().toHex())
             html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--ide-background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--border-color)", borderColor)
@@ -56,7 +53,10 @@ class ThemeBasedStylingGenerator {
             html = html.replace("var(--generated-ai-fix-button-background-color)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
             html = html.replace("var(--dark-button-border-default)", borderColor)
             html = html.replace("var(--dark-button-default)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
+            html = html.replace("var(--input-border)", borderColor)
             html = html.replace("var(--disabled-background-color)", borderColor)
+            html = html.replace("var(--warning-background)", toCssHex(JBUI.CurrentTheme.IconBadge.WARNING))
+            html = html.replace("var(--warning-text)", UIUtil.getLabelBackground().toHex())
             html = html.replace(
                 "var(--code-background-color)",
                 editorBackground
@@ -79,6 +79,23 @@ class ThemeBasedStylingGenerator {
                     html = html.replace(lineWithBody, modifiedLineWithBody);
             }
             return html;
+        }
+
+        // Utility function to scale JBFonts appropriately for use in HTML elements that have been designed with px
+        // values in mind. JBFont defaults will be environment specific - see
+        // https://plugins.jetbrains.com/docs/intellij/typography.html#ide-font
+        internal fun getRelativeFontSize(inputFontSizePt: Int): String {
+            // Target size is the base size for which the HTML element was designed.
+            val targetSizePx = 10
+            val startingFontSizePt = if (inputFontSizePt > 0) inputFontSizePt else JBFont.regular().size
+
+            // JBFont uses pt sizes, not px, so we convert here, using standard web values from
+            // https://www.w3.org/TR/css3-values/#absolute-lengths
+            val pxToPtMultiplier = 72.0 / 96.0
+            val targetSizePt = targetSizePx * pxToPtMultiplier
+
+            // CSS allows 3 decimal places of precision for calculations.
+            return String.format("%.3frem", targetSizePt / startingFontSizePt)
         }
     }
 }

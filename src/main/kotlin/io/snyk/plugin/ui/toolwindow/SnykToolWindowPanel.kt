@@ -25,9 +25,6 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_CODE
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_IAC
-import io.snyk.plugin.events.SnykScanListenerLS.Companion.PRODUCT_OSS
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
@@ -78,6 +75,7 @@ import snyk.common.SnykError
 import snyk.common.lsp.AiFixParams
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.settings.FolderConfigSettings
@@ -199,16 +197,21 @@ class SnykToolWindowPanel(
             .subscribe(
                 SnykScanListenerLS.SNYK_SCAN_TOPIC,
                 object : SnykScanListenerLS {
-                    override fun onPublishDiagnostics(product: String, snykFile: SnykFile, issueList: List<ScanIssue>) {
-                        // Refresh the tree view on receiving new diags from the Language Server
+                    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) {
                         getSnykCachedResults(project)?.let {
                             when (product) {
-                                PRODUCT_CODE -> it.currentSnykCodeResultsLS[snykFile] = issueList
-                                PRODUCT_OSS -> it.currentOSSResultsLS[snykFile] = issueList
-                                PRODUCT_IAC -> it.currentIacResultsLS[snykFile] = issueList
+                                LsProduct.Code -> it.currentSnykCodeResultsLS[snykFile] = issueList
+                                LsProduct.OpenSource -> it.currentOSSResultsLS[snykFile] = issueList
+                                LsProduct.InfrastructureAsCode -> it.currentIacResultsLS[snykFile] = issueList
+                                LsProduct.Container -> Unit
+                                LsProduct.Unknown -> Unit
                             }
                         }
-                        vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        // Refresh the tree view on receiving new diags from the Language Server. This must be done on
+                        // the Event Dispatch Thread (EDT).
+                        invokeLater {
+                            vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                        }
                     }
 
                     override fun scanningSnykCodeFinished() = Unit
@@ -247,6 +250,7 @@ class SnykToolWindowPanel(
                             val message =
                                 "${prodType.productSelectionName} analysis finished with errors for some artifacts:\n" +
                                     cliResult.errors.joinToString(", ") { it.path }
+                            @Suppress("DialogTitleCapitalization")
                             SnykBalloonNotificationHelper.showError(
                                 message,
                                 project,
@@ -980,8 +984,11 @@ class SnykToolWindowPanel(
         if (node != null) {
             invokeLater {
                 try {
-                    triggerSelectionListeners = false
-                    if (forceRefresh) { vulnerabilitiesTree.clearSelection() }
+                    if (forceRefresh) {
+                        vulnerabilitiesTree.clearSelection()
+                    } else {
+                        triggerSelectionListeners = false
+                    }
                     TreeUtil.selectNode(vulnerabilitiesTree, node)
                 } finally {
                     triggerSelectionListeners = true
