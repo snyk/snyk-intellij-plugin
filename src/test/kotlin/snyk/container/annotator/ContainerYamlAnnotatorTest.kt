@@ -154,7 +154,7 @@ class ContainerYamlAnnotatorTest : BasePlatformTestCase() {
     }
 
     fun `test annotation message should display vulnerability count and no remediation`() {
-        val expected = "1 vulnerability found."
+        val expected = "1 issue found."
 
         val actual =
             cut.annotationMessage(createContainerImageForIssuesWithSeverity(Severity.LOW.toString()))

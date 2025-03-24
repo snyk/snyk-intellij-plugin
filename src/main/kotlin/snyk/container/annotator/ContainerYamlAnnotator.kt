@@ -79,10 +79,10 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
         val vulnerabilityString = if (total == 1) "issue" else "issues"
         return buildString {
             val remediationString = when {
-                image.baseImageRemediationInfo?.isRemediationAvailable() == true -> "Upgrade image to a newer version"
+                image.baseImageRemediationInfo?.isRemediationAvailable() == true -> " Upgrade image to a newer version"
                 else -> ""
             }
-            append("$total $vulnerabilityString found. $remediationString")
+            append("$total $vulnerabilityString found.$remediationString")
         }
     }
 
