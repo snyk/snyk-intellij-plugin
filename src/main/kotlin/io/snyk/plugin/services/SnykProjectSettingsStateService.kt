@@ -14,8 +14,6 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 )
 class SnykProjectSettingsStateService : PersistentStateComponent<SnykProjectSettingsStateService> {
 
-    var additionalParameters: String? = null
-
     override fun getState(): SnykProjectSettingsStateService = this
 
     override fun loadState(state: SnykProjectSettingsStateService) {
