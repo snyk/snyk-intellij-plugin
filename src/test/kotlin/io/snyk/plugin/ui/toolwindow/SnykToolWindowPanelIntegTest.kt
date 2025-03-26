@@ -39,6 +39,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import snyk.common.SnykError
+import snyk.common.UIComponentFinder
 import snyk.common.UIComponentFinder.getComponentByName
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykScanParams
@@ -189,6 +190,44 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
             )
         )
     )
+
+    // TODO - Agree on the correct UX, and either reinstate this test case or update it to reflect the current UX.
+    @Ignore("IDE shows generic error when no IaC support file found")
+    @Test
+    fun `test when no IAC supported file found should display special text (not error) in node and description`() {
+        mockkObject(SnykBalloonNotificationHelper)
+
+        val snykError =
+            SnykScanParams("failed", "iac", project.basePath!!, emptyList(), SnykToolWindowPanel.NO_IAC_FILES)
+        val snykErrorControl = SnykScanParams("failed", "iac", project.basePath!!, emptyList(), "control")
+
+        scanPublisherLS.scanningError(snykErrorControl)
+        scanPublisherLS.scanningError(snykError)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        val rootIacTreeNode = toolWindowPanel.getRootIacIssuesTreeNode()
+        // flow and internal state check
+        verify(exactly = 1, timeout = 2000) {
+            SnykBalloonNotificationHelper.showError(any(), project)
+        }
+        assertTrue(getSnykCachedResults(project)?.currentIacError == null)
+        assertTrue(getSnykCachedResults(project)?.currentIacResultsLS?.isEmpty() ?: false)
+        // node check
+        assertEquals(
+            SnykToolWindowPanel.OSS_ROOT_TEXT + SnykToolWindowPanel.NO_SUPPORTED_PACKAGE_MANAGER_FOUND,
+            rootIacTreeNode.userObject
+        )
+        // description check
+        TreeUtil.selectNode(toolWindowPanel.getTree(), rootIacTreeNode)
+        PlatformTestUtil.waitWhileBusy(toolWindowPanel.getTree())
+        val jEditorPane = UIComponentFinder.getComponentByName(
+            toolWindowPanel.getDescriptionPanel(),
+            JEditorPane::class
+        )
+        assertNotNull(jEditorPane)
+        jEditorPane!!
+        assertTrue(jEditorPane.text.contains(SnykToolWindowPanel.NO_OSS_FILES))
+    }
 
     // TODO - Agree on the correct UX, and either reinstate this test case or update it to reflect the current UX.
     @Ignore("IDE shows generic error when no OSS support file found")
