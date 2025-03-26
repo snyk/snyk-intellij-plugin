@@ -326,7 +326,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     private fun getIssueFoundText(issuesCount: Int): String {
-        if (!pluginSettings().openIssuesEnabled) {
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
             return "Open issues are disabled!"
         }
 
@@ -368,6 +368,10 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     private fun getNoIssueViewOptionsSelectedTreeNode(): InfoTreeNode? {
+        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            return null
+        }
+
         if (!pluginSettings().openIssuesEnabled) {
             return InfoTreeNode(
                 "Adjust your settings to view Open issues.",
@@ -380,7 +384,7 @@ class SnykToolWindowSnykScanListenerLS(
 
     private fun getNoIssueViewOptionsSelectedTreeNodeForCodeSecurity(): InfoTreeNode? {
         if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
-            return getNoIssueViewOptionsSelectedTreeNode()
+            return null
         }
 
         if (!pluginSettings().openIssuesEnabled) {
@@ -408,7 +412,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     private fun getFixableIssuesNodeForCodeSecurity(fixableIssuesCount: Int): InfoTreeNode? {
-        if (!pluginSettings().openIssuesEnabled) {
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
             return null
         }
         return getFixableIssuesNode(fixableIssuesCount)

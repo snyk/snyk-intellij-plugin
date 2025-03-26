@@ -104,6 +104,13 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         unmockkAll()
     }
 
+    private fun disableCCI() {
+        pluginSettings().isGlobalIgnoresFeatureEnabled = false
+        // The issue view options shouldn't matter, but we'll test with them disabled to be sure.
+        pluginSettings().openIssuesEnabled = false
+        pluginSettings().ignoredIssuesEnabled = false
+    }
+
     private fun mockScanIssues(
         isIgnored: Boolean? = false,
         hasAIFix: Boolean? = false,
@@ -178,17 +185,41 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         TestCase.assertEquals(listOf(" Open Source", " Code Security", " Code Quality", " Configuration"), mapToLabels(rootTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for non-security if no issues`() {
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if no issues and CCI disabled`() {
+        disableCCI()
+
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
         TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootOssIssuesTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for code security if no issues`() {
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if no issues and viewing open and CCI enabled`() {
+        cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
+        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootOssIssuesTreeNode))
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for code security if no issues and CCI disabled`() {
+        disableCCI()
+
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
         TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for non-security if 1 fixable issue`() {
+    fun `test addInfoTreeNodes adds new tree nodes for code security if no issues and viewing open & ignored and CCI enabled`() {
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
+        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if 1 non-fixable issue with CCI disabled`() {
+        disableCCI()
+
+        cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, mockScanIssues(), 0)
+        TestCase.assertEquals(
+            listOf("✋ 1 issue", "There are no issues automatically fixable"),
+            mapToLabels(rootOssIssuesTreeNode)
+        )
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if 1 fixable issue and viewing open with CCI enabled`() {
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
         TestCase.assertEquals(
             listOf("✋ 1 issue", "⚡ 1 issue can be fixed automatically"),
@@ -196,40 +227,47 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         )
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for code security if 1 fixable issue`() {
+    fun `test addInfoTreeNodes adds new tree nodes for code security if 1 fixable issue with CCI disabled`() {
+        disableCCI()
+
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
-        TestCase.assertEquals(listOf("✋ 1 open issue, 0 ignored issues", "⚡ 1 issue can be fixed automatically"), mapToLabels(rootSecurityIssuesTreeNode))
+        TestCase.assertEquals(listOf("✋ 1 issue", "⚡ 1 issue can be fixed automatically"), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for non-security if open issues are hidden`() {
+    fun `test addInfoTreeNodes adds new tree nodes for code security if 2 fixable issues and viewing open with CCI enabled`() {
+        cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(hasAIFix = true) + mockScanIssues(hasAIFix = true), 2)
+        TestCase.assertEquals(listOf("✋ 2 open issues, 0 ignored issues", "⚡ 2 issues can be fixed automatically"), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test addInfoTreeNodes adds new tree nodes for non-security if open issues are hidden with CCI enabled`() {
         pluginSettings().openIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
         TestCase.assertEquals(listOf("Open issues are disabled!", "Adjust your settings to view Open issues."), mapToLabels(rootOssIssuesTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for code security if open issues are hidden and no ignored issues`() {
+    fun `test addInfoTreeNodes adds new tree nodes for code security if open issues are hidden and no ignored issues with CCI enabled`() {
         pluginSettings().openIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
         TestCase.assertEquals(listOf("✋ No ignored issues, open issues are disabled", "Adjust your settings to view Open issues."), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for code security if open issues are hidden and 1 ignored issues`() {
+    fun `test addInfoTreeNodes adds new tree nodes for code security if open issues are hidden and 1 ignored issues with CCI enabled`() {
         pluginSettings().openIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(isIgnored = true), 0)
         TestCase.assertEquals(listOf("✋ 1 ignored issue, open issues are disabled"), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for code security if ignored issues are hidden and no open issues`() {
+    fun `test addInfoTreeNodes adds new tree nodes for code security if ignored issues are hidden and no open issues with CCI enabled`() {
         pluginSettings().ignoredIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
         TestCase.assertEquals(listOf("✅ Congrats! No open issues found!", "Adjust your settings to view Ignored issues."), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
-    fun `test addInfoTreeNodes adds new tree nodes for code security if ignored issues are hidden and 1 fixable issue`() {
+    fun `test addInfoTreeNodes adds new tree nodes for code security if ignored issues are hidden and 1 fixable issue with CCI enabled`() {
         pluginSettings().ignoredIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
