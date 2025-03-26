@@ -668,7 +668,8 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         // Check that all relevant UI work has completed before we access the description panel
         waitWhileTreeBusy()
         PlatformTestUtil.waitWhileBusy { toolWindowPanel.getDescriptionPanel().components.isEmpty() }
-
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        
         // Look for a component of the correct type and name within the description panel
         val component = getComponentByName(toolWindowPanel.getDescriptionPanel(), clazz, name)
         TestCase.assertNotNull(component)
