@@ -346,7 +346,7 @@ class SnykToolWindowSnykScanListenerLS(
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         if (issuesCount != 0) {
             val plural = getPlural(issuesCount)
-            text = "✋ $issuesCount issue$plural found by Snyk"
+            text = "✋ $issuesCount issue$plural found"
             if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
                 text += ", $ignoredIssuesCount ignored"
             }
