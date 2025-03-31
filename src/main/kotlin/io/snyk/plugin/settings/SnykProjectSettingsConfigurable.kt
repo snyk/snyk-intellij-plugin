@@ -182,7 +182,7 @@ class SnykProjectSettingsConfigurable(
 
     private fun isAdditionalParametersModified(): Boolean {
         val dialogAdditionalParameters: String = snykSettingsDialog.getAdditionalParameters()
-        val storedAdditionalParams = service<FolderConfigSettings>().getAdditionalParams(project)
+        val storedAdditionalParams = service<FolderConfigSettings>().getAdditionalParameters(project)
             return (isProjectSettingsAvailable(project)
                 && dialogAdditionalParameters != storedAdditionalParams)
     }

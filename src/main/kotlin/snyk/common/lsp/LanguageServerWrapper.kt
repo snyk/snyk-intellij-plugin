@@ -61,6 +61,7 @@ import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
 import snyk.common.removeTrailingSlashesIfPresent
@@ -471,6 +472,15 @@ class LanguageServerWrapper(
             } else {
                 "oauth"
             }
+
+        // only send folderConfig after having received the folderConfigs from LS
+        // IntelliJ only has in-memory storage, so that storage should not overwrite
+        // the folderConfigs in language server
+        val folderConfigs = when {
+            this.languageClient.folderConfigsRefreshed -> service<FolderConfigSettings>().getAll().values.toList()
+            else -> emptyList()
+        }
+
         return LanguageServerSettings(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
@@ -482,18 +492,19 @@ class LanguageServerWrapper(
             cliPath = getCliFile().absolutePath,
             token = ps.token,
             filterSeverity =
-            SeverityFilter(
-                critical = ps.criticalSeverityEnabled,
-                high = ps.highSeverityEnabled,
-                medium = ps.mediumSeverityEnabled,
-                low = ps.lowSeverityEnabled,
-            ),
+                SeverityFilter(
+                    critical = ps.criticalSeverityEnabled,
+                    high = ps.highSeverityEnabled,
+                    medium = ps.mediumSeverityEnabled,
+                    low = ps.lowSeverityEnabled,
+                ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
             authenticationMethod = authMethod,
             enableSnykOSSQuickFixCodeActions = "true",
+            folderConfigs = folderConfigs,
         )
     }
 

@@ -72,6 +72,8 @@ class SnykLanguageClient :
     val gson = Gson()
     val progressManager = ProgressManager.getInstance()
 
+    var folderConfigsRefreshed: Boolean = false
+
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -195,7 +197,9 @@ class SnykLanguageClient :
     fun folderConfig(folderConfigParam: FolderConfigsParam?) {
         val folderConfigs = folderConfigParam?.folderConfigs ?: emptyList()
         runAsync {
-            service<FolderConfigSettings>().addAll(folderConfigs)
+            val service = service<FolderConfigSettings>()
+            service.addAll(folderConfigs)
+            this.folderConfigsRefreshed = true
         }
     }
 
@@ -218,13 +222,13 @@ class SnykLanguageClient :
         val product =
             when (LsProduct.getFor(snykScan.product)) {
                 LsProduct.Code -> ProductType.CODE_SECURITY
-                LsProduct.OpenSource-> ProductType.OSS
-                LsProduct.InfrastructureAsCode-> ProductType.IAC
+                LsProduct.OpenSource -> ProductType.OSS
+                LsProduct.InfrastructureAsCode -> ProductType.IAC
                 else -> return
             }
         val key = ScanInProgressKey(snykScan.folderPath.toVirtualFile(), product)
         when (snykScan.status) {
-            LsScanState.InProgress.value-> {
+            LsScanState.InProgress.value -> {
                 if (ScanState.scanInProgress[key] == true) return
                 ScanState.scanInProgress[key] = true
                 scanPublisher.scanningStarted(snykScan)
@@ -281,7 +285,7 @@ class SnykLanguageClient :
     @JsonNotification(value = "$/snyk.scanSummary")
     fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
         if (disposed) return
-        ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
+        ProjectManager.getInstance().openProjects.filter { !it.isDisposed }.forEach { p ->
             getSyncPublisher(p, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
         }
     }
@@ -300,7 +304,7 @@ class SnykLanguageClient :
         logger.info("received authentication information: Token-Length: ${param.token?.length}}, URL: ${param.apiUrl}")
         logger.info("use token-auth? ${pluginSettings().useTokenAuthentication}")
         logger.debug("is same token?  ${oldToken == param.token}")
-        logger.debug("old-token-hash: ${oldToken.sha256()}, new-token-hash: ${param.token?.sha256()}" )
+        logger.debug("old-token-hash: ${oldToken.sha256()}, new-token-hash: ${param.token?.sha256()}")
 
         pluginSettings().token = param.token
 
@@ -447,16 +451,18 @@ class SnykLanguageClient :
             uri.scheme == "snyk" &&
             uri.getDecodedParam("product") == LsProduct.Code.longName &&
             uri.getDecodedParam("action") == SHOW_DETAIL_ACTION
-            ) {
+        ) {
 
             // Track whether we have successfully sent any notifications
             var success = false
 
             uri.queryParameters["issueId"]?.let { issueId ->
-                ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { project ->
+                ProjectManager.getInstance().openProjects.filter { !it.isDisposed }.forEach { project ->
                     val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
                     logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
-                    getSyncPublisher(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)?.onShowIssueDetail(aiFixParams)
+                    getSyncPublisher(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)?.onShowIssueDetail(
+                        aiFixParams
+                    )
                     success = true
                 }
             } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
