@@ -69,8 +69,10 @@ import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -90,8 +92,10 @@ class LanguageServerWrapper(
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private val gson = Gson()
+
     // internal for test set up
     internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
+    internal var folderConfigsRefreshed: MutableMap<Path, Boolean> = ConcurrentHashMap()
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -134,6 +138,7 @@ class LanguageServerWrapper(
         }
 
         try {
+            this.folderConfigsRefreshed.clear()
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel =
@@ -476,10 +481,13 @@ class LanguageServerWrapper(
         // only send folderConfig after having received the folderConfigs from LS
         // IntelliJ only has in-memory storage, so that storage should not overwrite
         // the folderConfigs in language server
-        val folderConfigs = when {
-            this.languageClient.folderConfigsRefreshed -> service<FolderConfigSettings>().getAll().values.toList()
-            else -> emptyList()
-        }
+        val folderConfigs = configuredWorkspaceFolders.mapNotNull { it.uri.toNioPathOrNull() }
+            .filter {
+                folderConfigsRefreshed[it] == true
+            }
+            .map {
+                service<FolderConfigSettings>().getFolderConfig(it.toString())
+            }.toList()
 
         return LanguageServerSettings(
             activateSnykOpenSource = ps.ossScanEnable.toString(),

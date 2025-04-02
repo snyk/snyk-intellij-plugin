@@ -9,8 +9,10 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.toVirtualFileURL
 import okio.Path.Companion.toPath
 import org.eclipse.lsp4j.DidChangeConfigurationParams
+import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
 import snyk.common.lsp.FolderConfig
@@ -19,6 +21,7 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.WorkspaceTrustSettings
+import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
 
 
@@ -36,6 +39,8 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
+        languageServerWrapper.folderConfigsRefreshed[Paths.get(folderConfig.folderPath)] = true
+        languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(folderConfig.folderPath.toVirtualFileURL(), "test"))
         project.basePath?.let { service<WorkspaceTrustService>().addTrustedPath(it.toPath().parent!!.toNioPath()) }
         cut = ReferenceChooserDialog(project)
     }

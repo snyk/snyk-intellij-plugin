@@ -72,8 +72,6 @@ class SnykLanguageClient :
     val gson = Gson()
     val progressManager = ProgressManager.getInstance()
 
-    var folderConfigsRefreshed: Boolean = false
-
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -199,7 +197,10 @@ class SnykLanguageClient :
         runAsync {
             val service = service<FolderConfigSettings>()
             service.addAll(folderConfigs)
-            this.folderConfigsRefreshed = true
+            folderConfigs.forEach {
+                val path = it.folderPath.toNioPathOrNull() ?: return@forEach
+                LanguageServerWrapper.getInstance().folderConfigsRefreshed[path] = true
+            }
         }
     }
 

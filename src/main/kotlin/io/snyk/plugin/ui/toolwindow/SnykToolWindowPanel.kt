@@ -10,6 +10,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
@@ -20,12 +21,12 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
-import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
@@ -44,7 +45,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
-import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.ReferenceChooserDialog
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
@@ -128,9 +128,8 @@ class SnykToolWindowPanel(
         } else {
             folderConfig.referenceFolderPath
         }
-        return "Click to choose base branch or reference folder for ${
-            folderConfig.folderPath.toVirtualFile().toNioPath().fileName
-        }: [ current: $detail ]"
+        val path = folderConfig.folderPath.toNioPathOrNull()
+        return "Click to choose base branch or reference folder for ${path?.fileName ?: path.toString()}: [ current: $detail ]"
     }
 
     /** Flag used to recognize not-user-initiated Description panel reload cases for purposes like:
@@ -149,8 +148,7 @@ class SnykToolWindowPanel(
 
     init {
         val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
-        val rootNodeText = folderConfig?.let { getRootNodeText(it) }
-            ?: "Choose branch on ${project.basePath}"
+        val rootNodeText = getRootNodeText(folderConfig)
         rootTreeNode.info = rootNodeText
 
         vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
@@ -197,7 +195,11 @@ class SnykToolWindowPanel(
             .subscribe(
                 SnykScanListenerLS.SNYK_SCAN_TOPIC,
                 object : SnykScanListenerLS {
-                    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) {
+                    override fun onPublishDiagnostics(
+                        product: LsProduct,
+                        snykFile: SnykFile,
+                        issueList: List<ScanIssue>
+                    ) {
                         getSnykCachedResults(project)?.let {
                             when (product) {
                                 LsProduct.Code -> it.currentSnykCodeResultsLS[snykFile] = issueList
@@ -373,7 +375,7 @@ class SnykToolWindowPanel(
                 object : SnykShowIssueDetailListener {
                     override fun onShowIssueDetail(aiFixParams: AiFixParams) {
                         val issueId = aiFixParams.issueId
-                        val product  = aiFixParams.product
+                        val product = aiFixParams.product
                         getSnykCachedResultsForProduct(project, product)?.let { results ->
                             results.values.flatten().firstOrNull { scanIssue ->
                                 scanIssue.id == issueId
@@ -979,7 +981,8 @@ class SnykToolWindowPanel(
 
     private fun selectAndDisplayNodeWithIssueDescription(
         selectCondition: (DefaultMutableTreeNode) -> Boolean,
-        forceRefresh: Boolean = false) {
+        forceRefresh: Boolean = false
+    ) {
         val node = TreeUtil.findNode(rootTreeNode) { selectCondition(it) }
         if (node != null) {
             invokeLater {
@@ -998,13 +1001,13 @@ class SnykToolWindowPanel(
     }
 
     fun selectNodeAndDisplayDescription(issuesForImage: ContainerIssuesForImage) =
-        selectAndDisplayNodeWithIssueDescription ({ treeNode ->
+        selectAndDisplayNodeWithIssueDescription({ treeNode ->
             treeNode is ContainerImageTreeNode &&
                 (treeNode.userObject as ContainerIssuesForImage) == issuesForImage
         })
 
     fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, forceRefresh: Boolean) =
-        selectAndDisplayNodeWithIssueDescription ({ treeNode ->
+        selectAndDisplayNodeWithIssueDescription({ treeNode ->
             treeNode is SuggestionTreeNode &&
                 (treeNode.userObject as ScanIssue).id == scanIssue.id
         }, forceRefresh)
