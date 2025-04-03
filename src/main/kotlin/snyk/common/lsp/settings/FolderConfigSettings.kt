@@ -2,6 +2,7 @@ package snyk.common.lsp.settings
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.convertUriToPath
 import io.snyk.plugin.getContentRootPaths
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
@@ -60,7 +61,10 @@ class FolderConfigSettings {
         val additionalParameters = LanguageServerWrapper.getInstance().getWorkspaceFoldersFromRoots(project)
             .asSequence()
             .filter { LanguageServerWrapper.getInstance().configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(Paths.get(it.uri)) }
+            .map {
+                val folderPath = convertUriToPath(it.uri)
+                getFolderConfig(folderPath)
+            }
             .filter { it.additionalParameters?.isNotEmpty() ?: false }
             .map { it.additionalParameters?.joinToString(" ") }
             .joinToString(" ")

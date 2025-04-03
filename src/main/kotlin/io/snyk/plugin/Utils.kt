@@ -424,8 +424,7 @@ fun String.toVirtualFileURL(): String {
 
 fun convertUriToPath(encodedUri: String): Path {
     val uri = URI(encodedUri)
-    val path = Paths.get(uri)
-    return path
+    return Paths.get(uri).toAbsolutePath()
 }
 
 fun String.isWindowsURI() = SystemUtils.IS_OS_WINDOWS && this.startsWith("file://")

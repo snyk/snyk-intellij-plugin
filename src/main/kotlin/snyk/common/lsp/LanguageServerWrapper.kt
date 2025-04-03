@@ -12,6 +12,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
+import io.snyk.plugin.convertUriToPath
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
@@ -481,7 +482,7 @@ class LanguageServerWrapper(
         // only send folderConfig after having received the folderConfigs from LS
         // IntelliJ only has in-memory storage, so that storage should not overwrite
         // the folderConfigs in language server
-        val folderConfigs = configuredWorkspaceFolders.mapNotNull { Paths.get(it.uri) }
+        val folderConfigs = configuredWorkspaceFolders.map { convertUriToPath(it.uri) }
             .filter { folderConfigsRefreshed[it] == true }
             .map { service<FolderConfigSettings>().getFolderConfig(it) }
             .toList()
