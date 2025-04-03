@@ -481,13 +481,10 @@ class LanguageServerWrapper(
         // only send folderConfig after having received the folderConfigs from LS
         // IntelliJ only has in-memory storage, so that storage should not overwrite
         // the folderConfigs in language server
-        val folderConfigs = configuredWorkspaceFolders.mapNotNull { it.uri.toNioPathOrNull() }
-            .filter {
-                folderConfigsRefreshed[it] == true
-            }
-            .map {
-                service<FolderConfigSettings>().getFolderConfig(it.toString())
-            }.toList()
+        val folderConfigs = configuredWorkspaceFolders.mapNotNull { Paths.get(it.uri) }
+            .filter { folderConfigsRefreshed[it] == true }
+            .map { service<FolderConfigSettings>().getFolderConfig(it) }
+            .toList()
 
         return LanguageServerSettings(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
