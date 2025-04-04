@@ -12,7 +12,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
-import io.snyk.plugin.convertUriToPath
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
@@ -20,6 +19,7 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toURI
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -70,7 +70,7 @@ import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
-import java.nio.file.Path
+import java.net.URI
 import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
@@ -96,7 +96,7 @@ class LanguageServerWrapper(
 
     // internal for test set up
     internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
-    internal var folderConfigsRefreshed: MutableMap<Path, Boolean> = ConcurrentHashMap()
+    internal var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -482,9 +482,13 @@ class LanguageServerWrapper(
         // only send folderConfig after having received the folderConfigs from LS
         // IntelliJ only has in-memory storage, so that storage should not overwrite
         // the folderConfigs in language server
-        val folderConfigs = configuredWorkspaceFolders.map { convertUriToPath(it.uri) }
-            .filter { folderConfigsRefreshed[it] == true }
-            .map { service<FolderConfigSettings>().getFolderConfig(it) }
+        val folderConfigs = configuredWorkspaceFolders
+            .filter {
+                val folderPath = URI.create(it.uri).path;
+                folderConfigsRefreshed[folderPath] == true
+            }.map {
+                val folderPath = it.uri.toURI().path;
+                service<FolderConfigSettings>().getFolderConfig(folderPath) }
             .toList()
 
         return LanguageServerSettings(

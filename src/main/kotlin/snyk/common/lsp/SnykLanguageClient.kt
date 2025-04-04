@@ -198,8 +198,7 @@ class SnykLanguageClient :
             val service = service<FolderConfigSettings>()
             service.addAll(folderConfigs)
             folderConfigs.forEach {
-                val path = it.folderPath.toNioPathOrNull() ?: return@forEach
-                LanguageServerWrapper.getInstance().folderConfigsRefreshed[path] = true
+                LanguageServerWrapper.getInstance().folderConfigsRefreshed[it.folderPath] = true
             }
         }
     }

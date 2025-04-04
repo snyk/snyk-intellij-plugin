@@ -2,40 +2,37 @@ package snyk.common.lsp.settings
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.convertUriToPath
-import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.toURI
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
-import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 
 @Suppress("UselessCallOnCollection")
 @Service
 class FolderConfigSettings {
-    private val configs: MutableMap<Path, FolderConfig> = ConcurrentHashMap<Path, FolderConfig>()
+    private val configs: MutableMap<String, FolderConfig> = ConcurrentHashMap<String, FolderConfig>()
 
     @Suppress("UselessCallOnNotNull", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "RedundantSuppression")
     fun addFolderConfig(@NotNull folderConfig: FolderConfig) {
         if (folderConfig?.folderPath.isNullOrBlank() ?: true) return
-        val folderPath = Paths.get(folderConfig.folderPath)
-        configs[folderPath] = folderConfig
+        configs[folderConfig.folderPath] = folderConfig
     }
 
-    internal fun getFolderConfig(folderPath: Path): FolderConfig {
+    internal fun getFolderConfig(folderPath: String): FolderConfig {
         val folderConfig = configs[folderPath] ?: createEmpty(folderPath)
         return folderConfig
     }
 
-    private fun createEmpty(folderPath: Path): FolderConfig {
-        val folderConfig = FolderConfig(folderPath = folderPath.toAbsolutePath().toString(), baseBranch = "")
+    private fun createEmpty(folderPath: String): FolderConfig {
+        val folderConfig = FolderConfig(folderPath = folderPath, baseBranch = "main")
         addFolderConfig(folderConfig)
         return folderConfig
     }
 
-    fun getAll(): Map<Path, FolderConfig> {
+    fun getAll(): Map<String, FolderConfig> {
         return HashMap(configs)
     }
 
@@ -44,8 +41,8 @@ class FolderConfigSettings {
     fun addAll(folderConfigs: List<FolderConfig>) = folderConfigs.mapNotNull { addFolderConfig(it) }
 
     fun getAllForProject(project: Project): List<FolderConfig> =
-        project.getContentRootPaths()
-            .mapNotNull { getFolderConfig(it.toAbsolutePath()) }
+        project.getContentRootVirtualFiles()
+            .mapNotNull { getFolderConfig(it.path) }
             .filterNotNull()
             .stream()
             .sorted()
@@ -61,10 +58,7 @@ class FolderConfigSettings {
         val additionalParameters = LanguageServerWrapper.getInstance().getWorkspaceFoldersFromRoots(project)
             .asSequence()
             .filter { LanguageServerWrapper.getInstance().configuredWorkspaceFolders.contains(it) }
-            .map {
-                val folderPath = convertUriToPath(it.uri)
-                getFolderConfig(folderPath)
-            }
+            .map { getFolderConfig(it.uri.toURI().path) }
             .filter { it.additionalParameters?.isNotEmpty() ?: false }
             .map { it.additionalParameters?.joinToString(" ") }
             .joinToString(" ")

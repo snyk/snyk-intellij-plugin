@@ -8,9 +8,8 @@ import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.toVirtualFileURL
-import okio.Path.Companion.toPath
+import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.toURI
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
@@ -19,10 +18,7 @@ import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LanguageServerSettings
-import snyk.trust.WorkspaceTrustService
 import snyk.trust.WorkspaceTrustSettings
-import java.nio.file.Paths
-import kotlin.io.path.absolutePathString
 
 
 class ReferenceChooserDialogTest : LightPlatform4TestCase() {
@@ -33,15 +29,22 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        folderConfig = FolderConfig(project.basePath.toString(), "testBranch")
-        service<FolderConfigSettings>().addFolderConfig(folderConfig)
-        project.getContentRootPaths().forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
-        languageServerWrapper.folderConfigsRefreshed[Paths.get(folderConfig.folderPath)] = true
-        languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(folderConfig.folderPath.toVirtualFileURL(), "test"))
-        project.basePath?.let { service<WorkspaceTrustService>().addTrustedPath(it.toPath().parent!!.toNioPath()) }
+
+        project.getContentRootVirtualFiles().forEach {
+            val absolutePathString = it.path
+            service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
+            folderConfig = FolderConfig(absolutePathString, "testBranch")
+            service<FolderConfigSettings>().addFolderConfig(folderConfig)
+            languageServerWrapper.configuredWorkspaceFolders.add(
+                WorkspaceFolder(
+                    absolutePathString.toURI().toASCIIString(), "test"
+                )
+            )
+            languageServerWrapper.folderConfigsRefreshed[folderConfig.folderPath] = true
+        }
         cut = ReferenceChooserDialog(project)
     }
 
@@ -125,6 +128,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
         verify(exactly = 0) {
-            lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))}
+            lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))
+        }
     }
 }

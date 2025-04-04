@@ -85,7 +85,6 @@ import snyk.container.ContainerService
 import snyk.container.ui.ContainerImageTreeNode
 import snyk.container.ui.ContainerIssueTreeNode
 import java.awt.BorderLayout
-import java.nio.file.Paths
 import java.util.Objects.nonNull
 import javax.swing.JPanel
 import javax.swing.JScrollPane
@@ -148,7 +147,7 @@ class SnykToolWindowPanel(
 
 
     init {
-        val folderConfig = service<FolderConfigSettings>().getFolderConfig(Paths.get(project.basePath.toString()))
+        val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath ?: "")
         val rootNodeText = getRootNodeText(folderConfig)
         rootTreeNode.info = rootNodeText
 
@@ -649,7 +648,7 @@ class SnykToolWindowPanel(
 
     private fun getNewRootTreeNodeText(): String {
 
-        val folderConfig = service<FolderConfigSettings>().getFolderConfig(Paths.get(project.basePath.toString()))
+        val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
         return getRootNodeText(folderConfig)
     }
 
