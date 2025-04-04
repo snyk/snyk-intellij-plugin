@@ -2,7 +2,8 @@ package snyk.common.lsp.settings
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.toPath
 import io.snyk.plugin.toURI
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
@@ -41,8 +42,8 @@ class FolderConfigSettings {
     fun addAll(folderConfigs: List<FolderConfig>) = folderConfigs.mapNotNull { addFolderConfig(it) }
 
     fun getAllForProject(project: Project): List<FolderConfig> =
-        project.getContentRootVirtualFiles()
-            .mapNotNull { getFolderConfig(it.path) }
+        project.getContentRootPaths()
+            .mapNotNull { getFolderConfig(it.toString()) }
             .filterNotNull()
             .stream()
             .sorted()
@@ -58,7 +59,7 @@ class FolderConfigSettings {
         val additionalParameters = LanguageServerWrapper.getInstance().getWorkspaceFoldersFromRoots(project)
             .asSequence()
             .filter { LanguageServerWrapper.getInstance().configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.toURI().path) }
+            .map { getFolderConfig(it.uri.toURI().toPath().toString()) }
             .filter { it.additionalParameters?.isNotEmpty() ?: false }
             .map { it.additionalParameters?.joinToString(" ") }
             .joinToString(" ")

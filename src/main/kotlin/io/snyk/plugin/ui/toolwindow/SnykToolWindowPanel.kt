@@ -28,6 +28,7 @@ import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykTaskQueueListener
+import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCachedResultsForProduct
@@ -147,8 +148,13 @@ class SnykToolWindowPanel(
 
 
     init {
-        val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath ?: "")
-        val rootNodeText = getRootNodeText(folderConfig)
+        val contentRoots = project.getContentRootPaths()
+        var rootNodeText = ""
+        if (contentRoots.isNotEmpty()) {
+            val folderConfig = service<FolderConfigSettings>().getFolderConfig(contentRoots.first().toString())
+            rootNodeText = getRootNodeText(folderConfig)
+        }
+
         rootTreeNode.info = rootNodeText
 
         vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
@@ -647,8 +653,11 @@ class SnykToolWindowPanel(
     }
 
     private fun getNewRootTreeNodeText(): String {
-
-        val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
+        val contentRoots = project.getContentRootPaths()
+        if (contentRoots.isEmpty()) {
+            return "No content roots found"
+        }
+        val folderConfig = service<FolderConfigSettings>().getFolderConfig(contentRoots.first().toString())
         return getRootNodeText(folderConfig)
     }
 

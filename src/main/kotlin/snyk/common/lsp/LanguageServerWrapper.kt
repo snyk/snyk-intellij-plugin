@@ -19,6 +19,7 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toPath
 import io.snyk.plugin.toURI
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
@@ -70,7 +71,6 @@ import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
-import java.net.URI
 import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
@@ -484,10 +484,10 @@ class LanguageServerWrapper(
         // the folderConfigs in language server
         val folderConfigs = configuredWorkspaceFolders
             .filter {
-                val folderPath = URI.create(it.uri).path;
+                val folderPath = it.uri.toURI().toPath().toString()
                 folderConfigsRefreshed[folderPath] == true
             }.map {
-                val folderPath = it.uri.toURI().path;
+                val folderPath = it.uri.toURI().toPath().toString()
                 service<FolderConfigSettings>().getFolderConfig(folderPath) }
             .toList()
 
