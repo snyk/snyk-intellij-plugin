@@ -431,7 +431,7 @@ fun String.toURI(): URI {
     if (this.startsWith("file://")) {
         return URI.create(this)
     }
-    return File(this).toURI()
+    return URI.create("file://${this}")
 }
 
 fun URI.toPath(): Path = Paths.get(this)
