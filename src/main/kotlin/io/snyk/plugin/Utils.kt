@@ -401,7 +401,9 @@ fun String.toVirtualFile(): VirtualFile {
     return if (!this.startsWith("file://")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(Paths.get(this.toURI()))
+        val uri = this.toURI()
+        val path = uri.toPath()
+        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(path)
             ?: throw FileNotFoundException(this)
     }
 }
@@ -425,10 +427,14 @@ fun String.toVirtualFileURL(): String {
 /**
  * This expects a filepath, not a URI
  */
-fun String.toURI(): URI =
-    File(this).toPath().toUri()
+fun String.toURI(): URI {
+    if (this.startsWith("file://")) {
+        return URI.create(this)
+    }
+    return File(this).toURI()
+}
 
-fun URI.toPath(): Path = Paths.get(this.path)
+fun URI.toPath(): Path = Paths.get(this)
 
 fun String.isWindowsURI() = SystemUtils.IS_OS_WINDOWS && this.startsWith("file://")
 

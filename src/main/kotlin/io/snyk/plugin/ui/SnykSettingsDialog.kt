@@ -182,6 +182,10 @@ class SnykSettingsDialog(
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
+            // TODO: check for concrete project roots, and if we received a message for them
+            // this is an edge case, when a project is opened after ls initialization and
+            // preferences dialog is opened before ls sends the additional parameters
+            additionalParametersTextField.isEnabled = LanguageServerWrapper.getInstance().folderConfigsRefreshed.isNotEmpty()
             additionalParametersTextField.text = getAdditionalParams(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
