@@ -29,6 +29,7 @@ data class LanguageServerSettings(
     @SerializedName("automaticAuthentication") val automaticAuthentication: String? = "false",
     @SerializedName("deviceId") val deviceId: String? = pluginSettings().userAnonymousId,
     @SerializedName("filterSeverity") val filterSeverity: SeverityFilter? = null,
+    @SerializedName("issueViewOptions") val issueViewOptions: IssueViewOptions? = null,
     @SerializedName("enableTrustedFoldersFeature") val enableTrustedFoldersFeature: String? = "false",
     @SerializedName("trustedFolders") val trustedFolders: List<String>? = emptyList(),
     @SerializedName("activateSnykCodeSecurity") val activateSnykCodeSecurity: String? = "false",
@@ -55,4 +56,9 @@ data class SeverityFilter(
     @SerializedName("high") val high: Boolean?,
     @SerializedName("medium") val medium: Boolean?,
     @SerializedName("low") val low: Boolean?,
+)
+
+data class IssueViewOptions(
+    @SerializedName("openIssues") val openIssues: Boolean?,
+    @SerializedName("ignoredIssues") val ignoredIssues: Boolean?,
 )

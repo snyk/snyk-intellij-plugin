@@ -43,7 +43,7 @@ class SnykProjectSettingsConfigurable(
             isIgnoreUnknownCAModified() ||
             snykSettingsDialog.isScanTypeChanged() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
-            snykSettingsDialog.isIssueOptionChanged() ||
+            snykSettingsDialog.isIssueViewOptionsChanged() ||
             snykSettingsDialog.manageBinariesAutomatically() != settingsStateService.manageBinariesAutomatically ||
             snykSettingsDialog.getCliPath() != settingsStateService.cliPath ||
             snykSettingsDialog.getCliBaseDownloadURL() != settingsStateService.cliBaseDownloadURL ||
@@ -63,7 +63,7 @@ class SnykProjectSettingsConfigurable(
             isAdditionalParametersModified() ||
             isAuthenticationMethodModified() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
-            snykSettingsDialog.isIssueOptionChanged() ||
+            snykSettingsDialog.isIssueViewOptionsChanged() ||
             snykSettingsDialog.isScanTypeChanged()
 
     override fun apply() {
@@ -99,7 +99,7 @@ class SnykProjectSettingsConfigurable(
 
         snykSettingsDialog.saveScanTypeChanges()
         snykSettingsDialog.saveSeveritiesEnablementChanges()
-        snykSettingsDialog.saveIssueOptionChanges()
+        snykSettingsDialog.saveIssueViewOptionsChanges()
 
         if (isProjectSettingsAvailable(project)) {
             val snykProjectSettingsService = getSnykProjectSettingsService(project)
