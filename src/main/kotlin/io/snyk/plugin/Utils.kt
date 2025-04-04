@@ -401,7 +401,9 @@ fun String.toVirtualFile(): VirtualFile {
     return if (!this.startsWith("file://")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(convertUriToPath(this))
+        val uri = this.toURI()
+        val path = uri.toPath()
+        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(path)
             ?: throw FileNotFoundException(this)
     }
 }
@@ -422,11 +424,18 @@ fun String.toVirtualFileURL(): String {
     return this
 }
 
-fun convertUriToPath(encodedUri: String): Path {
-    val uri = URI(encodedUri)
-    val path = Paths.get(uri)
-    return path
+/**
+ * This expects a filepath or a URI
+ */
+fun String.toURI(): URI {
+    if (this.startsWith("file://")) {
+        return URI.create(this)
+    }
+
+    return URI.create("file://$this")
 }
+
+fun URI.toPath(): Path = Paths.get(this)
 
 fun String.isWindowsURI() = SystemUtils.IS_OS_WINDOWS && this.startsWith("file://")
 
@@ -454,7 +463,7 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     if (contentRoots.isEmpty()) {
         // This should cover the case when no content roots are configured, e.g. in Rider
         contentRoots = ProjectManager.getInstance().openProjects
-            .filter{ it.name == this.name }.mapNotNull { it.basePath?.toVirtualFile() }.toTypedArray()
+            .filter { it.name == this.name }.mapNotNull { it.basePath?.toVirtualFile() }.toTypedArray()
     }
 
     // The sort is to ensure that parent folders come first

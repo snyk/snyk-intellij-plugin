@@ -180,17 +180,27 @@ class SnykSettingsDialog(
             organizationTextField.text = applicationSettings.organization
             ignoreUnknownCACheckBox.isSelected = applicationSettings.ignoreUnknownCA
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
-
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-            additionalParametersTextField.text = applicationSettings.getAdditionalParameters(project)
+            // TODO: check for concrete project roots, and if we received a message for them
+            // this is an edge case, when a project is opened after ls initialization and
+            // preferences dialog is opened before ls sends the additional parameters
+            additionalParametersTextField.isEnabled = LanguageServerWrapper.getInstance().folderConfigsRefreshed.isNotEmpty()
+            additionalParametersTextField.text = getAdditionalParams(project)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
-
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
-                .values.joinToString("\n") { "Base branch for ${it.folderPath}: ${it.baseBranch}" }
+                .values.joinToString("\n") {
+                    "${it.folderPath}: Reference branch: ${it.baseBranch}, Reference directory: ${it.referenceFolderPath}"
+                }
             netNewIssuesDropDown.selectedItem = applicationSettings.issuesToDisplay
         }
+    }
+
+    private fun getAdditionalParams(project: Project): String? {
+        // get workspace folders for project
+        val folderConfigSettings = service<FolderConfigSettings>()
+        return folderConfigSettings.getAdditionalParameters(project)
     }
 
     fun getRootPanel(): JComponent = rootPanel
@@ -337,7 +347,8 @@ class SnykSettingsDialog(
             cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
             addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
-                    Desktop.getDesktop().browse(URI("https://docs.snyk.io/working-with-snyk/regional-hosting-and-data-residency#available-snyk-regions"))
+                    Desktop.getDesktop()
+                        .browse(URI("https://docs.snyk.io/working-with-snyk/regional-hosting-and-data-residency#available-snyk-regions"))
                 }
             })
         }

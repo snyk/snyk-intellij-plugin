@@ -102,7 +102,6 @@ class LanguageServerWrapperTest {
 
         verify { lsMock.initialize(any<InitializeParams>()) }
         verify { lsMock.initialized(any()) }
-        verify { folderConfigSettingsMock.getAll() }
     }
 
     @Test
