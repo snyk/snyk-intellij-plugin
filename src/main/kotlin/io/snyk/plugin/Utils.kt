@@ -425,13 +425,14 @@ fun String.toVirtualFileURL(): String {
 }
 
 /**
- * This expects a filepath, not a URI
+ * This expects a filepath or a URI
  */
 fun String.toURI(): URI {
     if (this.startsWith("file://")) {
         return URI.create(this)
     }
-    return URI.create("file://${this}")
+
+    return URI.create("file://$this")
 }
 
 fun URI.toPath(): Path = Paths.get(this)
