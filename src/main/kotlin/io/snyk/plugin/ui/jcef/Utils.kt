@@ -38,7 +38,9 @@ object JCEFUtils {
         cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
         val jbCefBrowser =
             JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true)
-                .setMouseWheelEventEnable(true).build()
+                .setMouseWheelEventEnable(true)
+                .setUrl("about:blank")
+                .build()
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
         val jbCefPair = Pair(cefClient, jbCefBrowser)
         return jbCefPair
