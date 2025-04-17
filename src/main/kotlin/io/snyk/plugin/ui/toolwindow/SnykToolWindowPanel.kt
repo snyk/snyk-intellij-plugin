@@ -20,12 +20,12 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
-import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.getSnykCachedResults
@@ -148,6 +148,7 @@ class SnykToolWindowPanel(
 
 
     init {
+        Disposer.register(SnykPluginDisposable.getInstance(project), this)
         val folderConfig = service<FolderConfigSettings>().getFolderConfig(project.basePath.toString())
         val rootNodeText = folderConfig?.let { getRootNodeText(it) }
             ?: "Choose branch on ${project.basePath}"
