@@ -1,6 +1,11 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.changelog.Changelog
+import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 // reads properties from gradle.properties file
@@ -19,7 +24,7 @@ version = scmVersion.version
 group = properties("pluginGroup")
 description = properties("pluginName")
 
-val jdk = "17"
+val jdk = "21"
 
 repositories {
     mavenCentral()
@@ -98,6 +103,20 @@ intellijPlatform {
             untilBuild.set(properties("pluginUntilBuild"))
         }
     }
+
+    pluginVerification {
+        ides {
+            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
+        }
+        freeArgs.set(listOf("-mute","TemplateWordInPluginId"))
+        failureLevel.set(
+            listOf(
+                VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
+                VerifyPluginTask.FailureLevel.INVALID_PLUGIN,
+                VerifyPluginTask.FailureLevel.INTERNAL_API_USAGES,
+            )
+        )
+    }
 }
 
 // Configure for detekt plugin
@@ -120,8 +139,8 @@ tasks {
     }
 
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = jdk
-        kotlinOptions.languageVersion = "1.9"
+        compilerOptions.jvmTarget.set(JvmTarget.fromTarget(jdk))
+        compilerOptions.languageVersion.set(KotlinVersion.KOTLIN_2_1)
     }
 
     withType<Detekt> {
@@ -129,7 +148,7 @@ tasks {
         reports {
             sarif {
                 required.set(true)
-                outputLocation.set(file("$buildDir/detekt.sarif"))
+                outputLocation.set(file("${buildDir}/detekt.sarif"))
             }
             html.required.set(false)
             xml.required.set(false)
@@ -149,19 +168,18 @@ tasks {
         sinceBuild.set(properties("pluginSinceBuild"))
         untilBuild.set(properties("pluginUntilBuild"))
 
-        // Set the plugin description directly
-        pluginDescription.set("Snyk helps you find, fix and monitor for known vulnerabilities in your dependencies")
+        val content = File("$projectDir/README.md").readText()
+        val startIndex = content.indexOf("# JetBrains plugin")
+        val descriptionFromReadme =
+            content.substring(startIndex).lines().joinToString("\n").run { markdownToHTML(this) }
+        pluginDescription.set(descriptionFromReadme)
 
         // Get the latest available change notes from the changelog file
-        changeNotes.set(provider {
-            with(changelog) {
-                renderItem(
-                    getOrNull(project.version.toString())
-                        ?: runCatching { getLatest() }.getOrElse { getUnreleased() },
-                    Changelog.OutputType.HTML,
-                )
-            }
-        })
+        changeNotes.set(provider { changelog.renderItem(changelog.getLatest(), Changelog.OutputType.HTML) })
+    }
+
+    verifyPlugin {
+        mustRunAfter(patchPluginXml)
     }
 
     publishPlugin {
