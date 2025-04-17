@@ -40,6 +40,15 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
+private const val CONGRATS_NO_ISSUES_FOUND = "✅ Congrats! No issues found!"
+private const val CONGRATS_NO_OPEN_ISSUES_FOUND = "✅ Congrats! No open issues found!"
+private const val OPEN_ISSUES_ARE_DISABLED = "Open issues are disabled!"
+private const val NO_IGNORED_ISSUES = "✋ No ignored issues, open issues are disabled"
+private const val OPEN_AND_IGNORED_ISSUES_ARE_DISABLED = "Open and Ignored issues are disabled!"
+private const val NO_FIXABLE_ISSUES = "There are no issues automatically fixable."
+private const val IGNORED_ISSUES_FILTERED_BUT_AVAILABLE = "Adjust your settings to view Ignored issues."
+private const val OPEN_ISSUES_FILTERED_BUT_AVAILABLE = "Adjust your settings to view Open issues."
+
 class SnykToolWindowSnykScanListenerLS(
     val project: Project,
     private val snykToolWindowPanel: SnykToolWindowPanel,
@@ -327,10 +336,10 @@ class SnykToolWindowSnykScanListenerLS(
 
     private fun getIssueFoundText(issuesCount: Int): String {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
-            return "Open issues are disabled!"
+            return OPEN_ISSUES_ARE_DISABLED
         }
 
-        return if (issuesCount == 0) "✅ Congrats! No issues found!" else
+        return if (issuesCount == 0) CONGRATS_NO_ISSUES_FOUND else
             "✋ $issuesCount issue${if (issuesCount == 1) "" else "s" }"
     }
 
@@ -339,32 +348,34 @@ class SnykToolWindowSnykScanListenerLS(
             return getIssueFoundText(totalIssuesCount)
         }
 
+        val showingOpen = pluginSettings().openIssuesEnabled
+        val showingIgnored = pluginSettings().ignoredIssuesEnabled
+
         val openIssuesText = "$openIssuesCount open issue${if (openIssuesCount == 1) "" else "s" }"
         val ignoredIssuesText = "$ignoredIssuesCount ignored issue${if (ignoredIssuesCount == 1) "" else "s" }"
 
-        return if (pluginSettings().openIssuesEnabled) {
-            if (pluginSettings().ignoredIssuesEnabled) {
-                if (totalIssuesCount == 0) {
-                    "✅ Congrats! No issues found!"
-                } else {
-                    "✋ $openIssuesText, $ignoredIssuesText"
-                }
+        if (showingOpen && showingIgnored) {
+            return if (totalIssuesCount == 0) {
+                CONGRATS_NO_ISSUES_FOUND
             } else {
-                if (openIssuesCount == 0) {
-                    "✅ Congrats! No open issues found!"
-                } else {
-                    "✋ $openIssuesText"
-                }
+                "✋ $openIssuesText, $ignoredIssuesText"
             }
-        } else if (pluginSettings().ignoredIssuesEnabled) {
-            if (ignoredIssuesCount == 0) {
-                "✋ No ignored issues, open issues are disabled"
+        }
+        if (showingOpen) {
+            return if (openIssuesCount == 0) {
+                CONGRATS_NO_OPEN_ISSUES_FOUND
+            } else {
+                "✋ $openIssuesText"
+            }
+        }
+        if (showingIgnored) {
+            return if (ignoredIssuesCount == 0) {
+                NO_IGNORED_ISSUES
             } else {
                 "✋ $ignoredIssuesText, open issues are disabled"
             }
-        } else {
-            "Open and Ignored issues are disabled!" // In theory, this is prevented by IntelliJ
         }
+        return OPEN_AND_IGNORED_ISSUES_ARE_DISABLED // In theory, this is prevented by IntelliJ
     }
 
     private fun getNoIssueViewOptionsSelectedTreeNode(): InfoTreeNode? {
@@ -374,7 +385,7 @@ class SnykToolWindowSnykScanListenerLS(
 
         if (!pluginSettings().openIssuesEnabled) {
             return InfoTreeNode(
-                "Adjust your settings to view Open issues.",
+                OPEN_ISSUES_FILTERED_BUT_AVAILABLE,
                 project,
             )
         }
@@ -389,14 +400,14 @@ class SnykToolWindowSnykScanListenerLS(
 
         if (!pluginSettings().openIssuesEnabled) {
             return InfoTreeNode(
-                "Adjust your settings to view Open issues.",
+                OPEN_ISSUES_FILTERED_BUT_AVAILABLE,
                 project,
             )
         }
 
         if (!pluginSettings().ignoredIssuesEnabled) {
                 return InfoTreeNode(
-                    "Adjust your settings to view Ignored issues.",
+                    IGNORED_ISSUES_FILTERED_BUT_AVAILABLE,
                     project,
                 )
         }
@@ -404,18 +415,19 @@ class SnykToolWindowSnykScanListenerLS(
         return null;
     }
 
-    private fun getFixableIssuesNode(fixableIssuesCount: Int): InfoTreeNode {
-        return InfoTreeNode(
-            if (fixableIssuesCount > 0) "⚡ $fixableIssuesCount issue${if (fixableIssuesCount == 1) "" else "s"} can be fixed automatically" else "There are no issues automatically fixable",
-            project,
-        )
+    private fun getFixableIssuesText(fixableIssuesCount: Int): String {
+        return if (fixableIssuesCount > 0) {
+            "⚡ $fixableIssuesCount issue${if (fixableIssuesCount == 1) "" else "s"} can be fixed automatically."
+        } else {
+            NO_FIXABLE_ISSUES
+        }
     }
 
-    private fun getFixableIssuesNodeForCodeSecurity(fixableIssuesCount: Int): InfoTreeNode? {
+    private fun getFixableIssuesTextForCodeSecurity(fixableIssuesCount: Int): String? {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
             return null
         }
-        return getFixableIssuesNode(fixableIssuesCount)
+        return getFixableIssuesText(fixableIssuesCount)
     }
 
     @Suppress("RedundantVisibilityModifierRule")
@@ -433,23 +445,19 @@ class SnykToolWindowSnykScanListenerLS(
         val totalIssuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         val openIssuesCount = totalIssuesCount - ignoredIssuesCount
-        val text = if (filterableIssueType == ScanIssue.CODE_SECURITY) getIssueFoundTextForCodeSecurity(totalIssuesCount, openIssuesCount, ignoredIssuesCount) else getIssueFoundText(totalIssuesCount)
-        rootNode.add(
-            InfoTreeNode(
-                text,
-                project,
-            ),
-        )
+        val isCodeSecurity = filterableIssueType == ScanIssue.CODE_SECURITY
 
+        val text = if (!isCodeSecurity) getIssueFoundText(totalIssuesCount) else getIssueFoundTextForCodeSecurity(totalIssuesCount, openIssuesCount, ignoredIssuesCount)
+        rootNode.add(InfoTreeNode(text, project))
         if (totalIssuesCount == 0) {
-            val ivoNode = if (filterableIssueType == ScanIssue.CODE_SECURITY) getNoIssueViewOptionsSelectedTreeNodeForCodeSecurity() else getNoIssueViewOptionsSelectedTreeNode()
+            val ivoNode = if (!isCodeSecurity) getNoIssueViewOptionsSelectedTreeNode() else getNoIssueViewOptionsSelectedTreeNodeForCodeSecurity()
             if (ivoNode != null) {
                 rootNode.add(ivoNode)
             }
         } else if (fixableIssuesCount != null) {
-            val fixableNode = if (filterableIssueType == ScanIssue.CODE_SECURITY) getFixableIssuesNodeForCodeSecurity(fixableIssuesCount) else getFixableIssuesNode(fixableIssuesCount)
-            if (fixableNode != null) {
-                rootNode.add(fixableNode)
+            val fixableText = if (!isCodeSecurity) getFixableIssuesText(fixableIssuesCount) else getFixableIssuesTextForCodeSecurity(fixableIssuesCount)
+            if (fixableText != null) {
+                rootNode.add(InfoTreeNode(fixableText, project))
             }
         }
     }
