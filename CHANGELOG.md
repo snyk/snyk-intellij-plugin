@@ -1,4 +1,8 @@
 # Snyk Security Changelog
+## [2.12.2]
+### Changed
+- fix: initialize jcef browser with 'about:blank' fix usage in 2025.1
+
 ## [2.12.1]
 ### Changed
 - remove usage of internal IntelliJ API to allow plugin release
