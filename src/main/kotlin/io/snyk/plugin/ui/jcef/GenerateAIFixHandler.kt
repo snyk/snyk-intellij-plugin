@@ -45,7 +45,7 @@ class GenerateAIFixHandler() {
                             return;
                         }
                         window.aiFixQuery = function(value) { ${aiFixQuery.inject("value")} };
-                           })();
+                    })();
                     """
                     browser.executeJavaScript(script, browser.url, 0)
                 }

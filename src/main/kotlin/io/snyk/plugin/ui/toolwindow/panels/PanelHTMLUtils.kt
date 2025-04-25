@@ -24,6 +24,7 @@ class PanelHTMLUtils {
                 "\${ideScript}", "$ideScript")
             formattedHtml = formattedHtml.replace("\${ideGenerateAIFix}", getGenerateAiFixScript())
             formattedHtml = formattedHtml.replace("\${ideApplyAIFix}", getApplyAiFixScript())
+            formattedHtml = formattedHtml.replace("\${ideSubmitIgnoreRequest}", getSubmitIgnoreRequestScript())
             formattedHtml = formattedHtml.replace("\${nonce}", nonce)
             formattedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(formattedHtml)
             return formattedHtml
@@ -40,10 +41,13 @@ class PanelHTMLUtils {
             } else null
         }
         private fun getGenerateAiFixScript(): String {
-               return  "                        window.aiFixQuery(folderPath + \"@|@\" + filePath + \"@|@\" + issueId);\n"
+            return  "window.aiFixQuery(folderPath + '@|@' + filePath + '@|@' + issueId);\n"
         }
         private fun getApplyAiFixScript(): String {
             return "window.applyFixQuery(fixId + '|@' + filePath + '|@' + patch);\n"
+        }
+        private fun getSubmitIgnoreRequestScript(): String {
+            return "window.submitIgnoreRequest(issueId + '@|@' + ignoreType + '@|@' + ignoreExpirationDate + '@|@' + ignoreReason);\n"
         }
 
     }
