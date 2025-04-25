@@ -174,7 +174,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         TestCase.assertEquals(rootTreeNode.children().toList()[1].toString(), " Code Security")
         TestCase.assertEquals(rootTreeNode.children().toList()[2].toString(), " Code Quality")
         TestCase.assertEquals(
-            "✋ 1 issue found by Snyk, 0 ignored",
+            "✋ 1 issue found, 0 ignored",
             rootTreeNode.children().toList()[4].toString(),
         )
         TestCase.assertEquals(

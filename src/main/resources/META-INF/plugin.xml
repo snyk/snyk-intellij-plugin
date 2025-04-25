@@ -4,7 +4,6 @@
   <name>Snyk Security</name>
   <vendor url="https://snyk.io">Snyk Ltd.</vendor>
 
-  <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.modules.platform</depends>
   <!-- optional modules -->
   <depends optional="true" config-file="optional/withPHP.xml">com.jetbrains.php</depends>

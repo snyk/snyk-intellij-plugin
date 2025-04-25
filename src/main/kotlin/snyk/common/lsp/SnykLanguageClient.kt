@@ -282,7 +282,6 @@ class SnykLanguageClient :
     fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
         if (disposed) return
         ProjectManager.getInstance().openProjects.filter{!it.isDisposed}.forEach { p ->
-            logger.debug("Publishing Snyk scan summary for $p: ${summaryParams.scanSummary}")
             getSyncPublisher(p, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
         }
     }
