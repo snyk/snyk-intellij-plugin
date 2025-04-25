@@ -4,6 +4,7 @@ import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.ui.jcef.JBCefClient
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.cef.handler.CefLoadHandlerAdapter
 
 typealias LoadHandlerGenerator = (jbCefBrowser: JBCefBrowser) -> CefLoadHandlerAdapter
@@ -16,6 +17,7 @@ object JCEFUtils {
         loadHandlerGenerators: List<LoadHandlerGenerator>,
     ): JBCefBrowser? {
         if (!JBCefApp.isSupported()) {
+            SnykBalloonNotificationHelper.showWarn("JCEF is not supported on this platform, we cannot display issue details", null)
             return null
         }
 
@@ -38,7 +40,9 @@ object JCEFUtils {
         cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
         val jbCefBrowser =
             JBCefBrowserBuilder().setClient(cefClient).setEnableOpenDevToolsMenuItem(true)
-                .setMouseWheelEventEnable(true).build()
+                .setMouseWheelEventEnable(true)
+                .setUrl("about:blank")
+                .build()
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
         val jbCefPair = Pair(cefClient, jbCefBrowser)
         return jbCefPair
