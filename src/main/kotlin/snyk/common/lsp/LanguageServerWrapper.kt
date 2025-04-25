@@ -18,9 +18,8 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.toLanguageServerURL
-import io.snyk.plugin.toPath
-import io.snyk.plugin.toURI
+import io.snyk.plugin.toFilePathString
+import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -249,7 +248,7 @@ class LanguageServerWrapper(
     fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
         if (disposed || project.isDisposed) return emptySet()
         val normalizedRoots = getTrustedContentRoots(project)
-        return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURL(), it.name) }.toSet()
+        return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
     }
 
     private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
@@ -484,10 +483,10 @@ class LanguageServerWrapper(
         // the folderConfigs in language server
         val folderConfigs = configuredWorkspaceFolders
             .filter {
-                val folderPath = it.uri.toURI().toPath().toString()
+                val folderPath = it.uri.toFilePathString()
                 folderConfigsRefreshed[folderPath] == true
             }.map {
-                val folderPath = it.uri.toURI().toPath().toString()
+                val folderPath = it.uri.toFilePathString()
                 service<FolderConfigSettings>().getFolderConfig(folderPath) }
             .toList()
 

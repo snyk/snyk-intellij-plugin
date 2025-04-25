@@ -9,7 +9,7 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.toURI
+import io.snyk.plugin.toFilePathString
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
@@ -40,7 +40,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
             languageServerWrapper.configuredWorkspaceFolders.add(
                 WorkspaceFolder(
-                    absolutePathString.toURI().toASCIIString(), "test"
+                    absolutePathString.toFilePathString(), "test"
                 )
             )
             languageServerWrapper.folderConfigsRefreshed[folderConfig.folderPath] = true

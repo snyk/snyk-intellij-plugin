@@ -34,50 +34,58 @@ class UtilsKtTest {
         var virtualFile = mockk<VirtualFile>()
         every { virtualFile.url } returns uri
 
-        assertEquals("file:///$path", virtualFile.toLanguageServerURL())
+        assertEquals("file:/$path", virtualFile.toLanguageServerURI())
 
         uri = "file:///$path"
         virtualFile = mockk<VirtualFile>()
         every { virtualFile.url } returns uri
 
-        assertEquals("file:///$path", virtualFile.toLanguageServerURL())
-    }
-
-    @Test
-    fun toVirtualFileURL() {
-        val path = "C:/Users/username/file.txt"
-        var testURI = "file:///$path"
-        assertEquals("file://$path", testURI.toVirtualFileURL())
-        testURI = "file://$path"
-        assertEquals("file://$path", testURI.toVirtualFileURL())
-    }
-
-    @Test
-    fun isWindowsURI() {
-        var uri = "file:///C:/Users/username/file.txt"
-        assertTrue(uri.isWindowsURI())
-        uri = "file://C:/Users/username/file.txt"
-        assertTrue(uri.isWindowsURI())
-        assertFalse("C:\\Users\\username\\file.txt".isWindowsURI())
-    }
-
-    @Test
-    fun urlContainsDriveLetter() {
-        var uri = "file://C:/Users/username/file.txt"
-        var virtualFile = mockk<VirtualFile>()
-        every { virtualFile.url } returns uri
-        assertTrue(virtualFile.urlContainsDriveLetter())
-
-        uri = "file://Users/username/file.txt"
-        virtualFile = mockk<VirtualFile>()
-        every { virtualFile.url } returns uri
-
-        assertFalse(virtualFile.urlContainsDriveLetter())
+        assertEquals("file:/$path", virtualFile.toLanguageServerURI())
     }
 
     @Test
     fun isAdditionalParametersValid() {
         assertFalse(isAdditionalParametersValid("-d"))
         assertTrue(isAdditionalParametersValid("asdf"))
+    }
+
+    @Test
+    fun toFilePathString() {
+
+        // Windows files
+        var pathsToTest = arrayOf(
+            "C:\\Users\\username\\file.txt", // Valid path with Windows style separators
+            "C:/Users/username/file.txt", // Valid path with Unix style separators
+            "C:/Users/./username/../username/file.txt", // valid path with extra relative sub paths
+            "file:///C:/Users/username/file.txt", // Valid path with scheme
+            "file:/C:/Users/username/file.txt", // Valid path with scheme
+            "file:///C:/Users/./username/../username/file.txt", // Valid path with scheme and extra relative sub paths
+            "file://C:/Users/username/file.txt", // Invalid path with scheme.
+        )
+
+        var expectedPath = "/C:/Users/username/file.txt" // Note we're deliberately testing for capitalization.
+
+        for (path in pathsToTest) {
+            println(path)
+            assertEquals("Testing path $path", expectedPath, path.toFilePathString())
+        }
+
+        // Unix style files
+        pathsToTest = arrayOf(
+            "\\users\\username\\file.txt", // Valid path with Windows style separators
+            "/users/username/file.txt", // Valid path with Unix style separators
+            "/users/./username/../username/file.txt", // valid path with extra relative sub paths
+            "file:///users/username/file.txt", // Valid path with scheme
+            "file:/users/username/file.txt", // Valid path with scheme
+            "file:///users/./username/../username/file.txt", // Valid path with scheme and extra relative sub paths
+            "file://users/username/file.txt", // Invalid path with scheme.
+        )
+
+        expectedPath = "/users/username/file.txt"
+
+        for (path in pathsToTest) {
+            println(path)
+            assertEquals("Testing path $path", expectedPath, path.toFilePathString())
+        }
     }
 }
