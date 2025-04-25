@@ -63,11 +63,12 @@ class UtilsKtTest {
             "file://C:/Users/username/file.txt", // Invalid path with scheme.
         )
 
-        var expectedPath = "/C:/Users/username/file.txt" // Note we're deliberately testing for capitalization.
+        var expectedPath = "C:/Users/username/file.txt" // Note we're deliberately testing for capitalization.
+        var expectedUri = "file:///C:/Users/username/file.txt"
 
         for (path in pathsToTest) {
-            println(path)
-            assertEquals("Testing path $path", expectedPath, path.toFilePathString())
+            assertEquals("Testing path $path normalization", expectedPath, path.toFilePathString())
+            assertEquals("Testing path $path URI conversion", expectedUri, path.toFileURIString())
         }
 
         // Unix style files
@@ -82,10 +83,11 @@ class UtilsKtTest {
         )
 
         expectedPath = "/users/username/file.txt"
+        expectedUri = "file:///users/username/file.txt"
 
         for (path in pathsToTest) {
-            println(path)
-            assertEquals("Testing path $path", expectedPath, path.toFilePathString())
+            assertEquals("Testing path $path normalization", expectedPath, path.toFilePathString())
+            assertEquals("Testing path $path URI conversion", expectedUri, path.toFileURIString())
         }
     }
 }

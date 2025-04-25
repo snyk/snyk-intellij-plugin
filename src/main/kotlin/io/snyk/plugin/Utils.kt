@@ -401,7 +401,8 @@ fun String.toVirtualFile(): VirtualFile {
     return if (!this.startsWith("file:")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(this.toFilePath())
+        val filePath = Paths.get(this.toFileURIString())
+        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(filePath)
             ?: throw FileNotFoundException(this)
     }
 }
@@ -415,7 +416,7 @@ fun String.toVirtualFileOrNull(): VirtualFile? {
 }
 
 fun VirtualFile.toLanguageServerURI(): String {
-    return this.url.toFileUri().toString()
+    return this.url.toFileURIString()
 }
 
 /**
@@ -426,40 +427,45 @@ fun VirtualFile.toLanguageServerURI(): String {
  *
  *  Note that this only supports local files (i.e, the path should not have an authority component).
  */
-private fun String.toFileUri(): URI{
-    val separator = '/'
+private fun String.toNormalizedFilePath(): String {
     val fileScheme = "file:"
 
     // Ensure we are using standard separators when parsing file paths.
-    var normalizedPath = this.replace('\\', separator)
+    var normalizedPath = this.replace('\\', '/')
 
-    // We temporarily remove any file scheme so we can more easily analyse the path for errors.
+    // Remove any existing file path
     normalizedPath = normalizedPath.removePrefix(fileScheme)
 
-    // As we don't support network shares, we can simplify the URI handling by replacing multiple leading slashes with
-    // a single one.
+    // File URIs can begin with up to 5 forward slashes. As we don't support network shares, we can simplify the URI
+    // handling by replacing multiple leading slashes with a single one.
     normalizedPath = normalizedPath.replaceFirst(Regex("/+"), "/")
 
-    // If we are handling a Windows path it may not have a leading slash, so add one.
-    // Here we are looking for a leading drive letter, followed by a colon, a forward slash and one or more characters
-    // (e.g. "D:/something").
-    if (normalizedPath.matches(Regex("[a-zA-Z]:/.+"))) {
-        normalizedPath = separator + normalizedPath
-    }
-
-    // (Re)add the file scheme and create a normalised path from the resulting URI.
-    return File(normalizedPath).toURI().normalize()
-}
-
-private fun String.toFilePath(): Path {
-    return Paths.get(this.toFileUri())
+    // Normalize the path
+    return File(normalizedPath).normalize().invariantSeparatorsPath
 }
 
 /**
  * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
  */
 fun String.toFilePathString(): String {
-    return this.toFilePath().toString()
+    return this.toNormalizedFilePath()
+}
+
+/**
+ * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
+ */
+fun String.toFileURIString(): String {
+    var pathString = this.toNormalizedFilePath()
+
+    // If we are handling a Windows path it may not have a leading slash, so add one.
+    // Here we are looking for a leading drive letter, followed by a colon, a forward slash and one or more characters
+    // (e.g. "D:/something").
+    if (pathString.matches(Regex("[a-zA-Z]:/.+"))) {
+        pathString = "/$pathString"
+    }
+
+    // Add a file scheme. We use two slashes as standard.
+    return "file://$pathString"
 }
 
 fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.getInstance().getDocument(this) }
