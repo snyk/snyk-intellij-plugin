@@ -34,13 +34,13 @@ class UtilsKtTest {
         var virtualFile = mockk<VirtualFile>()
         every { virtualFile.url } returns uri
 
-        assertEquals("file:/$path", virtualFile.toLanguageServerURI())
+        assertEquals("file:///$path", virtualFile.toLanguageServerURI())
 
         uri = "file:///$path"
         virtualFile = mockk<VirtualFile>()
         every { virtualFile.url } returns uri
 
-        assertEquals("file:/$path", virtualFile.toLanguageServerURI())
+        assertEquals("file:///$path", virtualFile.toLanguageServerURI())
     }
 
     @Test
