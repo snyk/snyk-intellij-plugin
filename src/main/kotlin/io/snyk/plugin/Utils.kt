@@ -3,6 +3,7 @@
 
 package io.snyk.plugin
 
+import ai.grazie.utils.attributes.Attributes
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.util.PsiNavigationSupport
@@ -419,53 +420,66 @@ fun VirtualFile.toLanguageServerURI(): String {
     return this.url.toFileURIString()
 }
 
-/**
- * Converts a string representing a file path to a normalised Uri:
- *  - Converts all separators (forward or backslashes) to a standard form.
- *  - Adds the "file:" scheme
- *  - Normalizes the Uri (e.g. converting "/./a/b/c/../c" to "/a/b/c"
- *
- *  Note that this only supports local files (i.e, the path should not have an authority component).
- */
-private fun String.toNormalizedFilePath(): String {
+private fun String.toNormalizedFilePath(useForwardSlashes: Boolean): String {
     val fileScheme = "file:"
+    val windowsSeparator = "\\"
+    val unixSeparator = "/"
 
-    // Ensure we are using standard separators when parsing file paths.
-    var normalizedPath = this.replace('\\', '/')
+    // Strip the scheme and standardise separators on unix for now
+    val normalizedPath = this.removePrefix(fileScheme).replace(windowsSeparator, unixSeparator)
+    var targetSeparator = unixSeparator
 
-    // Remove any existing file path
-    normalizedPath = normalizedPath.removePrefix(fileScheme)
+    // Split the path into parts, filtering out any blanks or references to the current directory.
+    val parts = normalizedPath.split(unixSeparator).filter { it.isNotBlank() && it != "." }.mapIndexed { idx, value ->
+        if (idx == 0) {
+            // Since we only support local files, we can use the first element of the path can tell us whether we
+            // are dealing with a Windows or unix file.
+            if (value.startsWithWindowsDriveLetter()) {
+                // Change to using Windows separators and capitalize the drive letter
+                if (!useForwardSlashes) targetSeparator = windowsSeparator
+                value.uppercase()
+            } else {
+                // On a Unix system, start with a slash representing root
+                unixSeparator + value
+            }
+        } else value
+    }
 
-    // File URIs can begin with up to 5 forward slashes. As we don't support network shares, we can simplify the URI
-    // handling by replacing multiple leading slashes with a single one.
-    normalizedPath = normalizedPath.replaceFirst(Regex("/+"), "/")
+    // Removing any references to the parent directory (we have already removed references to the current directory)
+    val stack = mutableListOf<String>()
+    for (part in parts) {
+        if (part == "..") {
+            if (stack.isNotEmpty()) stack.removeAt(stack.size - 1)
+        } else stack.add(part)
 
-    // Normalize the path
-    return File(normalizedPath).normalize().invariantSeparatorsPath
+    }
+    return stack.joinToString(targetSeparator)
 }
 
 /**
  * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
  */
 fun String.toFilePathString(): String {
-    return this.toNormalizedFilePath()
+    return this.toNormalizedFilePath(useForwardSlashes = false)
 }
 
 /**
  * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
  */
 fun String.toFileURIString(): String {
-    var pathString = this.toNormalizedFilePath()
+    var pathString = this.toNormalizedFilePath(useForwardSlashes = true)
 
     // If we are handling a Windows path it may not have a leading slash, so add one.
-    // Here we are looking for a leading drive letter, followed by a colon, a forward slash and one or more characters
-    // (e.g. "D:/something").
-    if (pathString.matches(Regex("[a-zA-Z]:/.+"))) {
+    if (pathString.startsWithWindowsDriveLetter()) {
         pathString = "/$pathString"
     }
 
     // Add a file scheme. We use two slashes as standard.
     return "file://$pathString"
+}
+
+private fun String.startsWithWindowsDriveLetter(): Boolean {
+    return this.matches(Regex("^[a-zA-Z]:.*$"))
 }
 
 fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.getInstance().getDocument(this) }

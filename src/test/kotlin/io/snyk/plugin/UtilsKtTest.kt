@@ -12,6 +12,7 @@ import org.apache.commons.lang3.SystemProperties
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.File
 
 class UtilsKtTest {
 
@@ -55,15 +56,18 @@ class UtilsKtTest {
         // Windows files
         var pathsToTest = arrayOf(
             "C:\\Users\\username\\file.txt", // Valid path with Windows style separators
+            "c:\\Users\\username\\file.txt", // Valid path with Windows style separators and a lowercase drive letter
             "C:/Users/username/file.txt", // Valid path with Unix style separators
-            "C:/Users/./username/../username/file.txt", // valid path with extra relative sub paths
-            "file:///C:/Users/username/file.txt", // Valid path with scheme
-            "file:/C:/Users/username/file.txt", // Valid path with scheme
-            "file:///C:/Users/./username/../username/file.txt", // Valid path with scheme and extra relative sub paths
-            "file://C:/Users/username/file.txt", // Invalid path with scheme.
+            "C:\\Users\\.\\username\\..\\username\\file.txt", // valid path with extra relative sub paths
+            "file:///C:/Users/username/file.txt", // Valid URI with blank host
+            "file:///c:/Users/username/file.txt", // Valid URI with blank host and a lowercase drive letter
+            "file:/C:/Users/username/file.txt", // Valid URI with no host
+            "file:///C:/Users/./username/../username/file.txt", // Valid URI and extra relative sub paths
+            "file://C:/Users/username/file.txt", // Invalid URI
+            "file://C:\\Users\\username\\file.txt", // Invalid URI
         )
 
-        var expectedPath = "C:/Users/username/file.txt" // Note we're deliberately testing for capitalization.
+        var expectedPath = "C:\\Users\\username\\file.txt"
         var expectedUri = "file:///C:/Users/username/file.txt"
 
         for (path in pathsToTest) {
