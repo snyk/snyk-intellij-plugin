@@ -402,7 +402,7 @@ fun String.toVirtualFile(): VirtualFile {
     return if (!this.startsWith("file:")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        val filePath = Paths.get(this.toFileURIString())
+        val filePath = Paths.get(this.toFilePathString())
         VirtualFileManager.getInstance().refreshAndFindFileByNioPath(filePath)
             ?: throw FileNotFoundException(this)
     }
