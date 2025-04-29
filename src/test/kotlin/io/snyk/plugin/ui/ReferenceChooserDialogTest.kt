@@ -34,15 +34,11 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         languageServerWrapper.languageServer = lsMock
 
         project.getContentRootPaths().forEach {
-            val absolutePathString = it.toString()
+            val absolutePathString = it.toString().toFilePathString()
             service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
             folderConfig = FolderConfig(absolutePathString, "testBranch")
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
-            languageServerWrapper.configuredWorkspaceFolders.add(
-                WorkspaceFolder(
-                    absolutePathString.toFilePathString(), "test"
-                )
-            )
+            languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(absolutePathString, "test"))
             languageServerWrapper.folderConfigsRefreshed[folderConfig.folderPath] = true
         }
         cut = ReferenceChooserDialog(project)
