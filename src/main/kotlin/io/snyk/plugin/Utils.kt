@@ -3,7 +3,6 @@
 
 package io.snyk.plugin
 
-import ai.grazie.utils.attributes.Attributes
 import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.util.PsiNavigationSupport
@@ -420,12 +419,12 @@ fun VirtualFile.toLanguageServerURI(): String {
     return this.url.toFileURIString()
 }
 
-private fun String.toNormalizedFilePath(useForwardSlashes: Boolean): String {
+private fun String.toNormalizedFilePath(forceUseForwardSlashes: Boolean): String {
     val fileScheme = "file:"
     val windowsSeparator = "\\"
     val unixSeparator = "/"
 
-    // Strip the scheme and standardise separators on unix for now
+    // Strip the scheme and standardise separators on Unix for now.
     val normalizedPath = this.removePrefix(fileScheme).replace(windowsSeparator, unixSeparator)
     var targetSeparator = unixSeparator
 
@@ -435,17 +434,17 @@ private fun String.toNormalizedFilePath(useForwardSlashes: Boolean): String {
             // Since we only support local files, we can use the first element of the path can tell us whether we
             // are dealing with a Windows or unix file.
             if (value.startsWithWindowsDriveLetter()) {
-                // Change to using Windows separators and capitalize the drive letter
-                if (!useForwardSlashes) targetSeparator = windowsSeparator
+                // Change to using Windows separators (if allowed) and capitalize the drive letter.
+                if (!forceUseForwardSlashes) targetSeparator = windowsSeparator
                 value.uppercase()
             } else {
-                // On a Unix system, start with a slash representing root
+                // On a Unix system, start with a slash representing root.
                 unixSeparator + value
             }
         } else value
     }
 
-    // Removing any references to the parent directory (we have already removed references to the current directory)
+    // Removing any references to the parent directory (we have already removed references to the current directory).
     val stack = mutableListOf<String>()
     for (part in parts) {
         if (part == "..") {
@@ -460,14 +459,14 @@ private fun String.toNormalizedFilePath(useForwardSlashes: Boolean): String {
  * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
  */
 fun String.toFilePathString(): String {
-    return this.toNormalizedFilePath(useForwardSlashes = false)
+    return this.toNormalizedFilePath(forceUseForwardSlashes = false)
 }
 
 /**
  * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
  */
 fun String.toFileURIString(): String {
-    var pathString = this.toNormalizedFilePath(useForwardSlashes = true)
+    var pathString = this.toNormalizedFilePath(forceUseForwardSlashes = true)
 
     // If we are handling a Windows path it may not have a leading slash, so add one.
     if (pathString.startsWithWindowsDriveLetter()) {
