@@ -419,6 +419,19 @@ fun VirtualFile.toLanguageServerURI(): String {
     return this.url.toFileURIString()
 }
 
+/**
+ * Normalizes a string that represents a file path or URI.
+ *
+ * This should be called on a string that represents an absolute path to a local file, or a file uri for a local file.
+ * Relative paths and files on network shares are not currently supported.
+ *
+ * We deliberately avoid use of the Path, File and URI libraries as these will make decisions on how paths are handled
+ * based on the underlying operating system. This approach provides consistency.
+ *
+ * @param forceUseForwardSlashes Whether to force the use of forward slashses as path separators, even for files on
+ * Windows. Unix systems will always use forward slashes.
+ * @return The normalized string.
+ */
 private fun String.toNormalizedFilePath(forceUseForwardSlashes: Boolean): String {
     val fileScheme = "file:"
     val windowsSeparator = "\\"
@@ -450,20 +463,19 @@ private fun String.toNormalizedFilePath(forceUseForwardSlashes: Boolean): String
         if (part == "..") {
             if (stack.isNotEmpty()) stack.removeAt(stack.size - 1)
         } else stack.add(part)
-
     }
     return stack.joinToString(targetSeparator)
 }
 
 /**
- * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
+ * Converts a string representing a file path to a normalised form. @see io.snyk.plugin.UtilsKt.toNormalizedFilePath
  */
 fun String.toFilePathString(): String {
     return this.toNormalizedFilePath(forceUseForwardSlashes = false)
 }
 
 /**
- * Converts a string representing a file path to a normalised form. See io.snyk.plugin.UtilsKt.toFilePath
+ * Converts a string representing a file path to a normalised form. @see io.snyk.plugin.UtilsKt.toNormalizedFilePath
  */
 fun String.toFileURIString(): String {
     var pathString = this.toNormalizedFilePath(forceUseForwardSlashes = true)
