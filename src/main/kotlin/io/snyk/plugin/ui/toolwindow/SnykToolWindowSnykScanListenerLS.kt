@@ -343,7 +343,7 @@ class SnykToolWindowSnykScanListenerLS(
             "✋ $issuesCount issue${if (issuesCount == 1) "" else "s" }"
     }
 
-    private fun getIssueFoundTextForCodeSecurity(totalIssuesCount: Int, openIssuesCount: Int, ignoredIssuesCount: Int): String {
+    private fun getIssueFoundTextForCode(totalIssuesCount: Int, openIssuesCount: Int, ignoredIssuesCount: Int): String {
         if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
             return getIssueFoundText(totalIssuesCount)
         }
@@ -393,7 +393,7 @@ class SnykToolWindowSnykScanListenerLS(
         return null;
     }
 
-    private fun getNoIssueViewOptionsSelectedTreeNodeForCodeSecurity(): InfoTreeNode? {
+    private fun getNoIssueViewOptionsSelectedTreeNodeForCode(): InfoTreeNode? {
         if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
             return null
         }
@@ -423,7 +423,7 @@ class SnykToolWindowSnykScanListenerLS(
         }
     }
 
-    private fun getFixableIssuesTextForCodeSecurity(fixableIssuesCount: Int): String? {
+    private fun getFixableIssuesTextForCode(fixableIssuesCount: Int): String? {
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
             return null
         }
@@ -445,17 +445,17 @@ class SnykToolWindowSnykScanListenerLS(
         val totalIssuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
         val openIssuesCount = totalIssuesCount - ignoredIssuesCount
-        val isCodeSecurity = filterableIssueType == ScanIssue.CODE_SECURITY
+        val isCodeNode = filterableIssueType == ScanIssue.CODE_SECURITY || filterableIssueType == ScanIssue.CODE_QUALITY
 
-        val text = if (!isCodeSecurity) getIssueFoundText(totalIssuesCount) else getIssueFoundTextForCodeSecurity(totalIssuesCount, openIssuesCount, ignoredIssuesCount)
+        val text = if (!isCodeNode) getIssueFoundText(totalIssuesCount) else getIssueFoundTextForCode(totalIssuesCount, openIssuesCount, ignoredIssuesCount)
         rootNode.add(InfoTreeNode(text, project))
         if (totalIssuesCount == 0) {
-            val ivoNode = if (!isCodeSecurity) getNoIssueViewOptionsSelectedTreeNode() else getNoIssueViewOptionsSelectedTreeNodeForCodeSecurity()
+            val ivoNode = if (!isCodeNode) getNoIssueViewOptionsSelectedTreeNode() else getNoIssueViewOptionsSelectedTreeNodeForCode()
             if (ivoNode != null) {
                 rootNode.add(ivoNode)
             }
         } else if (fixableIssuesCount != null) {
-            val fixableText = if (!isCodeSecurity) getFixableIssuesText(fixableIssuesCount) else getFixableIssuesTextForCodeSecurity(fixableIssuesCount)
+            val fixableText = if (!isCodeNode) getFixableIssuesText(fixableIssuesCount) else getFixableIssuesTextForCode(fixableIssuesCount)
             if (fixableText != null) {
                 rootNode.add(InfoTreeNode(fixableText, project))
             }
