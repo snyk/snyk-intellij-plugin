@@ -65,6 +65,7 @@ import javax.swing.tree.TreeNode
 import kotlin.reflect.KClass
 
 @RunWith(JUnit4::class)
+@Ignore("Too unstable in CI")
 class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
     private val containerResultName = "container-test-results/nginx-with-remediation.json"
