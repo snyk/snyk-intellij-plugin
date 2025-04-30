@@ -398,10 +398,11 @@ fun getArch(): String {
 }
 
 fun String.toVirtualFile(): VirtualFile {
-    return if (!this.startsWith("file://")) {
+    return if (!this.startsWith("file:")) {
         StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
     } else {
-        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(convertUriToPath(this))
+        val filePath = Paths.get(this.toFilePathString())
+        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(filePath)
             ?: throw FileNotFoundException(this)
     }
 }
@@ -414,35 +415,82 @@ fun String.toVirtualFileOrNull(): VirtualFile? {
     }
 }
 
-// add a slash when on windows
-fun VirtualFile.toLanguageServerURL(): String {
-    if (this.urlContainsDriveLetter()) {
-        return this.url.replace("file://", "file:///")
+fun VirtualFile.toLanguageServerURI(): String {
+    return this.url.toFileURIString()
+}
+
+/**
+ * Normalizes a string that represents a file path or URI.
+ *
+ * This should be called on a string that represents an absolute path to a local file, or a file uri for a local file.
+ * Relative paths and files on network shares are not currently supported.
+ *
+ * We deliberately avoid use of the Path, File and URI libraries as these will make decisions on how paths are handled
+ * based on the underlying operating system. This approach provides consistency.
+ *
+ * @param forceUseForwardSlashes Whether to force the use of forward slashses as path separators, even for files on
+ * Windows. Unix systems will always use forward slashes.
+ * @return The normalized string.
+ */
+private fun String.toNormalizedFilePath(forceUseForwardSlashes: Boolean): String {
+    val fileScheme = "file:"
+    val windowsSeparator = "\\"
+    val unixSeparator = "/"
+
+    // Strip the scheme and standardise separators on Unix for now.
+    val normalizedPath = this.removePrefix(fileScheme).replace(windowsSeparator, unixSeparator)
+    var targetSeparator = unixSeparator
+
+    // Split the path into parts, filtering out any blanks or references to the current directory.
+    val parts = normalizedPath.split(unixSeparator).filter { it.isNotBlank() && it != "." }.mapIndexed { idx, value ->
+        if (idx == 0) {
+            // Since we only support local files, we can use the first element of the path can tell us whether we
+            // are dealing with a Windows or unix file.
+            if (value.startsWithWindowsDriveLetter()) {
+                // Change to using Windows separators (if allowed) and capitalize the drive letter.
+                if (!forceUseForwardSlashes) targetSeparator = windowsSeparator
+                value.uppercase()
+            } else {
+                // On a Unix system, start with a slash representing root.
+                unixSeparator + value
+            }
+        } else value
     }
-    return this.url
-}
 
-// remove first "/" if on windows
-fun String.toVirtualFileURL(): String {
-    if (this.isWindowsURI() && this.startsWith("file:///") && this.length > 10 && this.substring(9, 10) == ":") {
-        return this.replaceFirst("/", "")
+    // Removing any references to the parent directory (we have already removed references to the current directory).
+    val stack = mutableListOf<String>()
+    for (part in parts) {
+        if (part == "..") {
+            if (stack.isNotEmpty()) stack.removeAt(stack.size - 1)
+        } else stack.add(part)
     }
-    return this
+    return stack.joinToString(targetSeparator)
 }
 
-fun convertUriToPath(encodedUri: String): Path {
-    val uri = URI(encodedUri)
-    val path = Paths.get(uri)
-    return path
+/**
+ * Converts a string representing a file path to a normalised form. @see io.snyk.plugin.UtilsKt.toNormalizedFilePath
+ */
+fun String.toFilePathString(): String {
+    return this.toNormalizedFilePath(forceUseForwardSlashes = false)
 }
 
-fun String.isWindowsURI() = SystemUtils.IS_OS_WINDOWS && this.startsWith("file://")
+/**
+ * Converts a string representing a file path to a normalised form. @see io.snyk.plugin.UtilsKt.toNormalizedFilePath
+ */
+fun String.toFileURIString(): String {
+    var pathString = this.toNormalizedFilePath(forceUseForwardSlashes = true)
 
-fun VirtualFile.urlContainsDriveLetter() =
-    this.url.isWindowsURI() && this.url.length > 9 && this.url.substring(8, 9) == ":"
+    // If we are handling a Windows path it may not have a leading slash, so add one.
+    if (pathString.startsWithWindowsDriveLetter()) {
+        pathString = "/$pathString"
+    }
 
-fun VirtualFile.getPsiFile(project: Project): PsiFile? {
-    return runReadAction { PsiManager.getInstance(project).findFile(this) }
+    // Add a file scheme. We use two slashes as standard.
+    return "file://$pathString"
+}
+
+private fun String.startsWithWindowsDriveLetter(): Boolean {
+    return this.matches(Regex("^[a-zA-Z]:.*$"))
 }
 
 fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.getInstance().getDocument(this) }
