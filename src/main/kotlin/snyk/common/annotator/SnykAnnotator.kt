@@ -24,7 +24,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.isInContent
-import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toLanguageServerURI
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
 import org.eclipse.lsp4j.CodeActionParams
@@ -210,7 +210,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     ): List<Either<Command, CodeAction>> {
         val params =
             CodeActionParams(
-                TextDocumentIdentifier(file.toLanguageServerURL()),
+                TextDocumentIdentifier(file.toLanguageServerURI()),
                 range,
                 CodeActionContext(emptyList()),
             )

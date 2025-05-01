@@ -11,7 +11,7 @@ import com.intellij.platform.backend.presentation.TargetPresentation
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
 import io.snyk.plugin.isDocumentationHoverEnabled
-import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.Hover
 import org.eclipse.lsp4j.HoverParams
@@ -44,7 +44,7 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
         val lineNumber = file.viewProvider.document.getLineNumber(offset)
         val lineStartOffset = file.viewProvider.document.getLineStartOffset(lineNumber)
         val hoverParams = HoverParams(
-            TextDocumentIdentifier(file.virtualFile.toLanguageServerURL()),
+            TextDocumentIdentifier(file.virtualFile.toLanguageServerURI()),
             Position(lineNumber, offset - lineStartOffset)
         )
         try {

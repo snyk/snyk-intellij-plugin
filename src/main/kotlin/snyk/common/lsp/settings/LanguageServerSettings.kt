@@ -3,7 +3,6 @@
 package snyk.common.lsp.settings
 
 import com.google.gson.annotations.SerializedName
-import com.intellij.openapi.components.service
 import io.snyk.plugin.pluginSettings
 import org.apache.commons.lang3.SystemUtils
 import snyk.common.lsp.FolderConfig
@@ -47,7 +46,7 @@ data class LanguageServerSettings(
     @SerializedName("hoverVerbosity") val hoverVerbosity: Int = 0,
     @SerializedName("outputFormat") val outputFormat: String = "html",
     @SerializedName("enableDeltaFindings") val enableDeltaFindings: String = pluginSettings().isDeltaFindingsEnabled().toString(),
-    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = service<FolderConfigSettings>().getAll().values.toList()
+    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = emptyList()
 )
 
 data class SeverityFilter(

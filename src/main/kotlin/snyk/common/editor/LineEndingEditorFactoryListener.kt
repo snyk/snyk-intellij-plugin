@@ -18,7 +18,7 @@ import com.intellij.psi.PsiCompiledElement
 import com.intellij.psi.PsiDocumentManager
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.InlineValueContext
 import org.eclipse.lsp4j.InlineValueParams
@@ -117,7 +117,7 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
             val lineEndOffset = document.getLineEndOffset(line)
             val lineStartOffset = document.getLineStartOffset(line)
             val range = Range(Position(line, 0), Position(line, lineEndOffset - lineStartOffset))
-            val params = InlineValueParams(TextDocumentIdentifier(snykFile.virtualFile.toLanguageServerURL()), range, ctx)
+            val params = InlineValueParams(TextDocumentIdentifier(snykFile.virtualFile.toLanguageServerURI()), range, ctx)
             val inlineValue = languageServerWrapper.languageServer.textDocumentService.inlineValue(params)
             val text = try {
                 val result = inlineValue.get(5, TimeUnit.MILLISECONDS)
