@@ -59,6 +59,7 @@ import snyk.common.lsp.commands.COMMAND_GET_SETTINGS_SAST_ENABLED
 import snyk.common.lsp.commands.COMMAND_LOGIN
 import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
+import snyk.common.lsp.commands.COMMAND_SUBMIT_IGNORE_REQUEST
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
@@ -656,6 +657,21 @@ class LanguageServerWrapper(
         param.command = COMMAND_CODE_FIX_APPLY_AI_EDIT
         param.arguments = listOf(fixId)
         executeCommand(param)
+    }
+
+    fun sendSubmitIgnoreRequestCommand(workflow: String, issueId: String, ignoreType: String, ignoreReason: String, ignoreExpirationDate: String) {
+        if (!ensureLanguageServerInitialized()) throw RuntimeException("couldn't initialize language server")
+        try {
+            val param = ExecuteCommandParams()
+            param.command = COMMAND_SUBMIT_IGNORE_REQUEST
+            param.arguments = listOf(workflow, issueId, ignoreType, ignoreReason, ignoreExpirationDate)
+            languageServer.workspaceService.executeCommand(param)
+            logger.debug("Successfully sent submit ignore request command.")
+        } catch (e: TimeoutException) {
+            logger.error("Timeout while calling submit ignore request command", e)
+        } catch (e: Exception) {
+            logger.error("Error calling submit ignore request command", e)
+        }
     }
 
     fun notAuthenticated() = !ensureLanguageServerInitialized() || pluginSettings().token.isNullOrBlank()
