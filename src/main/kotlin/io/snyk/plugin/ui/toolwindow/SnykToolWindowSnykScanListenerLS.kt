@@ -442,8 +442,11 @@ class SnykToolWindowSnykScanListenerLS(
             return
         }
 
+        // totalIssuesCount is the number of issues returned by LS, which pre-filters on Issue View Options and Severity Filters (to be implemented at time of this comment - 6th May 2025).
         val totalIssuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
+        // Depending on Issue View Options, ignored issues might be pre-filtered by the LS and so ignoredIssuesCount may be 0.
+        // In this case, openIssuesCount is the total issue count returned by the LS.
         val openIssuesCount = totalIssuesCount - ignoredIssuesCount
         val isCodeNode = filterableIssueType == ScanIssue.CODE_SECURITY || filterableIssueType == ScanIssue.CODE_QUALITY
 
