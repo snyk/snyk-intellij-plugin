@@ -47,7 +47,6 @@ class IgnoreServiceTest {
         every { isCliInstalled() } returns true
         every { project.basePath } returns expectedWorkingDirectory
         every { settings.token } returns expectedApiToken
-        every { settings.getAdditionalParameters() } returns ""
 
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.languageServer = lsMock

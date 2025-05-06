@@ -18,7 +18,8 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toFilePathString
+import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -58,9 +59,11 @@ import snyk.common.lsp.commands.COMMAND_GET_SETTINGS_SAST_ENABLED
 import snyk.common.lsp.commands.COMMAND_LOGIN
 import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
+import snyk.common.lsp.commands.COMMAND_SUBMIT_IGNORE_REQUEST
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
 import snyk.common.lsp.settings.IssueViewOptions
@@ -71,6 +74,7 @@ import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
 import java.nio.file.Paths
 import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -90,8 +94,10 @@ class LanguageServerWrapper(
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private val gson = Gson()
+
     // internal for test set up
     internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
+    internal var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -134,6 +140,7 @@ class LanguageServerWrapper(
         }
 
         try {
+            this.folderConfigsRefreshed.clear()
             val snykLanguageClient = SnykLanguageClient()
             languageClient = snykLanguageClient
             val logLevel =
@@ -243,7 +250,7 @@ class LanguageServerWrapper(
     fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
         if (disposed || project.isDisposed) return emptySet()
         val normalizedRoots = getTrustedContentRoots(project)
-        return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURL(), it.name) }.toSet()
+        return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
     }
 
     private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
@@ -472,6 +479,19 @@ class LanguageServerWrapper(
             } else {
                 "oauth"
             }
+
+        // only send folderConfig after having received the folderConfigs from LS
+        // IntelliJ only has in-memory storage, so that storage should not overwrite
+        // the folderConfigs in language server
+        val folderConfigs = configuredWorkspaceFolders
+            .filter {
+                val folderPath = it.uri.toFilePathString()
+                folderConfigsRefreshed[folderPath] == true
+            }.map {
+                val folderPath = it.uri.toFilePathString()
+                service<FolderConfigSettings>().getFolderConfig(folderPath) }
+            .toList()
+
         return LanguageServerSettings(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
@@ -483,23 +503,24 @@ class LanguageServerWrapper(
             cliPath = getCliFile().absolutePath,
             token = ps.token,
             filterSeverity =
-            SeverityFilter(
-                critical = ps.criticalSeverityEnabled,
-                high = ps.highSeverityEnabled,
-                medium = ps.mediumSeverityEnabled,
-                low = ps.lowSeverityEnabled,
-            ),
+                SeverityFilter(
+                    critical = ps.criticalSeverityEnabled,
+                    high = ps.highSeverityEnabled,
+                    medium = ps.mediumSeverityEnabled,
+                    low = ps.lowSeverityEnabled,
+                ),
             issueViewOptions =
-            IssueViewOptions(
-                openIssues = ps.openIssuesEnabled,
-                ignoredIssues = ps.ignoredIssuesEnabled,
-            ),
+                IssueViewOptions(
+                    openIssues = ps.openIssuesEnabled,
+                    ignoredIssues = ps.ignoredIssuesEnabled,
+                ),
             enableTrustedFoldersFeature = "false",
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
             authenticationMethod = authMethod,
             enableSnykOSSQuickFixCodeActions = "true",
+            folderConfigs = folderConfigs,
         )
     }
 
@@ -642,6 +663,21 @@ class LanguageServerWrapper(
         param.command = COMMAND_CODE_FIX_APPLY_AI_EDIT
         param.arguments = listOf(fixId)
         executeCommand(param)
+    }
+
+    fun sendSubmitIgnoreRequestCommand(workflow: String, issueId: String, ignoreType: String, ignoreReason: String, ignoreExpirationDate: String) {
+        if (!ensureLanguageServerInitialized()) throw RuntimeException("couldn't initialize language server")
+        try {
+            val param = ExecuteCommandParams()
+            param.command = COMMAND_SUBMIT_IGNORE_REQUEST
+            param.arguments = listOf(workflow, issueId, ignoreType, ignoreReason, ignoreExpirationDate)
+            languageServer.workspaceService.executeCommand(param)
+            logger.debug("Successfully sent submit ignore request command.")
+        } catch (e: TimeoutException) {
+            logger.error("Timeout while calling submit ignore request command", e)
+        } catch (e: Exception) {
+            logger.error("Error calling submit ignore request command", e)
+        }
     }
 
     fun notAuthenticated() = !ensureLanguageServerInitialized() || pluginSettings().token.isNullOrBlank()

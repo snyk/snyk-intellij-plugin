@@ -11,7 +11,6 @@ import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.getSnykProjectSettingsService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
@@ -102,11 +101,14 @@ class SnykProjectSettingsConfigurable(
         snykSettingsDialog.saveIssueViewOptionsChanges()
 
         if (isProjectSettingsAvailable(project)) {
-            val snykProjectSettingsService = getSnykProjectSettingsService(project)
-            snykProjectSettingsService?.additionalParameters = snykSettingsDialog.getAdditionalParameters()
             val fcs = service<FolderConfigSettings>()
             fcs.getAllForProject(project)
-                .map { it.copy(additionalParameters = snykSettingsDialog.getAdditionalParameters().split(" ")) }
+                .map {
+                    it.copy(
+                        additionalParameters = snykSettingsDialog.getAdditionalParameters()
+                            .split(" ", System.lineSeparator())
+                    )
+                }
                 .forEach { fcs.addFolderConfig(it) }
         }
 
@@ -178,8 +180,10 @@ class SnykProjectSettingsConfigurable(
     private fun isIgnoreUnknownCAModified(): Boolean =
         snykSettingsDialog.isIgnoreUnknownCA() != settingsStateService.ignoreUnknownCA
 
-    private fun isAdditionalParametersModified(): Boolean =
-        isProjectSettingsAvailable(project) && snykSettingsDialog.getAdditionalParameters() != getSnykProjectSettingsService(
-            project
-        )?.additionalParameters
+    private fun isAdditionalParametersModified(): Boolean {
+        val dialogAdditionalParameters: String = snykSettingsDialog.getAdditionalParameters()
+        val storedAdditionalParams = service<FolderConfigSettings>().getAdditionalParameters(project)
+            return (isProjectSettingsAvailable(project)
+                && dialogAdditionalParameters != storedAdditionalParams)
+    }
 }
