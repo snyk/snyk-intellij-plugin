@@ -358,7 +358,7 @@ class SnykToolWindowSnykScanListenerLS(
             return if (totalIssuesCount == 0) {
                 CONGRATS_NO_ISSUES_FOUND
             } else {
-                "✋ $openIssuesText, $ignoredIssuesText"
+                "✋ $openIssuesText & $ignoredIssuesText"
             }
         }
         if (showingOpen) {
@@ -415,9 +415,9 @@ class SnykToolWindowSnykScanListenerLS(
         return null;
     }
 
-    private fun getFixableIssuesText(fixableIssuesCount: Int): String {
+    private fun getFixableIssuesText(fixableIssuesCount: Int, sayOpenIssues: Boolean = false): String {
         return if (fixableIssuesCount > 0) {
-            "⚡ $fixableIssuesCount issue${if (fixableIssuesCount == 1) "" else "s"} can be fixed automatically."
+            "⚡ $fixableIssuesCount${if (sayOpenIssues) " open" else ""} issue${if (fixableIssuesCount == 1) " is" else "s are"} fixable automatically."
         } else {
             NO_FIXABLE_ISSUES
         }
@@ -427,7 +427,7 @@ class SnykToolWindowSnykScanListenerLS(
         if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
             return null
         }
-        return getFixableIssuesText(fixableIssuesCount)
+        return getFixableIssuesText(fixableIssuesCount, pluginSettings().isGlobalIgnoresFeatureEnabled)
     }
 
     @Suppress("RedundantVisibilityModifierRule")

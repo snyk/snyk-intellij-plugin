@@ -222,7 +222,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
     fun `test addInfoTreeNodes adds new tree nodes for non-code if 1 fixable issue and viewing open with CCI enabled`() {
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
         TestCase.assertEquals(
-            listOf("✋ 1 issue", "⚡ 1 issue can be fixed automatically."),
+            listOf("✋ 1 issue", "⚡ 1 issue is fixable automatically."),
             mapToLabels(rootOssIssuesTreeNode)
         )
     }
@@ -231,12 +231,12 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         disableCCI()
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
-        TestCase.assertEquals(listOf("✋ 1 issue", "⚡ 1 issue can be fixed automatically."), mapToLabels(rootSecurityIssuesTreeNode))
+        TestCase.assertEquals(listOf("✋ 1 issue", "⚡ 1 issue is fixable automatically."), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for code quality if 2 fixable issues and viewing open with CCI enabled`() {
         cut.addInfoTreeNodes(ScanIssue.CODE_QUALITY, rootQualityIssuesTreeNode, mockScanIssues(hasAIFix = true) + mockScanIssues(hasAIFix = true), 2)
-        TestCase.assertEquals(listOf("✋ 2 open issues, 0 ignored issues", "⚡ 2 issues can be fixed automatically."), mapToLabels(rootQualityIssuesTreeNode))
+        TestCase.assertEquals(listOf("✋ 2 open issues & 0 ignored issues", "⚡ 2 open issues are fixable automatically."), mapToLabels(rootQualityIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for non-code if open issues are hidden with CCI enabled`() {
@@ -271,6 +271,6 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         pluginSettings().ignoredIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.CODE_QUALITY, rootQualityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
-        TestCase.assertEquals(listOf("✋ 1 open issue", "⚡ 1 issue can be fixed automatically."), mapToLabels(rootQualityIssuesTreeNode))
+        TestCase.assertEquals(listOf("✋ 1 open issue", "⚡ 1 open issue is fixable automatically."), mapToLabels(rootQualityIssuesTreeNode))
     }
 }
