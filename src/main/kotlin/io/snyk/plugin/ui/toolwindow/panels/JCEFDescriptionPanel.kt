@@ -15,6 +15,7 @@ import io.snyk.plugin.ui.jcef.IgnoreInFileHandler
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.OpenFileLoadHandlerGenerator
+import io.snyk.plugin.ui.jcef.SubmitIgnoreRequestHandler
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -61,6 +62,11 @@ class SuggestionDescriptionPanelFromLS(
                 val applyAiFixEditHandler = ApplyAiFixEditHandler(project)
                 loadHandlerGenerators += {
                     applyAiFixEditHandler.generateApplyAiFixEditCommand(it)
+                }
+
+                val submitIgnoreRequestHandler = SubmitIgnoreRequestHandler()
+                loadHandlerGenerators += {
+                    submitIgnoreRequestHandler.submitIgnoreRequestCommand(it)
                 }
 
             }

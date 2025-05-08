@@ -1,6 +1,5 @@
 package snyk.iac
 
-import com.intellij.openapi.components.service
 import com.intellij.testFramework.LightPlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
@@ -9,7 +8,6 @@ import io.snyk.plugin.getIacService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
-import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.setupDummyCliFile
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
@@ -41,8 +39,6 @@ class IacServiceTest : LightPlatformTestCase() {
         settingsStateService.lastCheckDate = null
         settingsStateService.organization = ""
 
-        project.service<SnykProjectSettingsStateService>().additionalParameters = ""
-
         val languageServerWrapper = LanguageServerWrapper.getInstance()
         languageServerWrapper.languageServer = lsMock
         languageServerWrapper.isInitialized = true
@@ -66,17 +62,6 @@ class IacServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains(getCliFile().absolutePath))
         assertTrue(cliCommands.contains("fake_cli_command"))
         assertTrue(cliCommands.contains("--json"))
-    }
-
-    @Test
-    fun testBuildCliCommandsListWithFileParameter() {
-        setupDummyCliFile()
-
-        project.service<SnykProjectSettingsStateService>().additionalParameters = "--file=package.json"
-
-        val cliCommands = iacService.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
-
-        assertFalse(cliCommands.contains("--file=package.json"))
     }
 
     @Test

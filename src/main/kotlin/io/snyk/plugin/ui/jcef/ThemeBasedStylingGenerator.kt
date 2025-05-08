@@ -19,6 +19,7 @@ class ThemeBasedStylingGenerator {
             var html = htmlToReplace;
             val editorColorsManager = EditorColorsManager.getInstance()
             val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
+            val textColor = UIUtil.getLabelForeground().toHex()
             val borderColor = JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
             val editorBackground =
                 editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
@@ -29,7 +30,7 @@ class ThemeBasedStylingGenerator {
                 EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
             html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
             html = html.replace("var(--main-font-size)", getRelativeFontSize(JBFont.regular().size))
-            html = html.replace("var(--text-color)", UIUtil.getLabelForeground().toHex())
+            html = html.replace("var(--text-color)", textColor)
             html = html.replace("var(--dimmed-text-color)", UIUtil.getLabelDisabledForeground().toHex())
             html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
             html = html.replace("var(--ide-background-color)", UIUtil.getPanelBackground().toHex())
@@ -38,7 +39,6 @@ class ThemeBasedStylingGenerator {
             html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())
             html = html.replace("var(--example-line-added-color)", toCssHex(JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR))
             html = html.replace("var(--example-line-removed-color)", toCssHex(JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR))
-            html = html.replace("var(--text-color)", toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
             html = html.replace("var(--link-color)",toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED))
             html = html.replace("var(--data-flow-body-color)", toCssHex(JBUI.CurrentTheme.Tree.BACKGROUND))
             html = html.replace("var(--tab-item-github-icon-color)",toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
@@ -50,26 +50,15 @@ class ThemeBasedStylingGenerator {
             html = html.replace("var(--editor-color)", toCssHex(UIUtil.getTextFieldBackground()))
             html = html.replace("var(--label-color)", toCssHex(JBUI.CurrentTheme.Label.foreground()))
             html = html.replace("var(--container-background-color)", toCssHex(UIUtil.getTextFieldBackground()))
-            html = html.replace("var(--generated-ai-fix-button-background-color)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
-            html = html.replace("var(--dark-button-border-default)", borderColor)
-            html = html.replace("var(--dark-button-default)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
+            html = html.replace("var(--button-background-color)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
+            html = html.replace("var(--button-text-color)", textColor /* TODO - Pick a better colour */)
             html = html.replace("var(--input-border)", borderColor)
             html = html.replace("var(--disabled-background-color)", borderColor)
             html = html.replace("var(--warning-background)", toCssHex(JBUI.CurrentTheme.IconBadge.WARNING))
             html = html.replace("var(--warning-text)", UIUtil.getLabelBackground().toHex())
-            html = html.replace(
-                "var(--code-background-color)",
-                editorBackground
-            )
-            html = html.replace(
-                "var(--container-background-color)",
-                editorBackground
-            )
-
-            html = html.replace(
-                "var(--editor-color)",
-                editorBackground
-            )
+            html = html.replace("var(--code-background-color)", editorBackground)
+            html = html.replace("var(--container-background-color)", editorBackground)
+            html = html.replace("var(--editor-color)", editorBackground)
             html = html.replace("var(--circle-color)", borderColor)
             val contrast = if (isHighContrast) "high-contrast" else ""
             val theme = if (isDarkTheme) "dark" else "light"

@@ -15,7 +15,7 @@ import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.isInContent
-import io.snyk.plugin.toLanguageServerURL
+import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.toSnykFileSet
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
@@ -60,7 +60,7 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
                 cache?.remove(file)
                 val param =
                     DidSaveTextDocumentParams(
-                        TextDocumentIdentifier(virtualFile.toLanguageServerURL()),
+                        TextDocumentIdentifier(virtualFile.toLanguageServerURI()),
                         virtualFile.readText()
                     )
                 languageServer.textDocumentService.didSave(param)

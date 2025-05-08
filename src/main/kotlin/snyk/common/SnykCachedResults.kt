@@ -158,11 +158,8 @@ class SnykCachedResults(
                         LsProduct.Unknown -> Unit
                     }
 
-                    SnykBalloonNotificationHelper
-                        .showError(
-                            "scanning error for project ${project.name}. Data: $snykScan",
-                            project,
-                        )
+                    val errorMessage = snykScan.errorMessage ?: "Scanning error for project ${project.name}. Data: $snykScan"
+                    SnykBalloonNotificationHelper.showError(errorMessage, project)
                 }
 
                 override fun onPublishDiagnostics(
