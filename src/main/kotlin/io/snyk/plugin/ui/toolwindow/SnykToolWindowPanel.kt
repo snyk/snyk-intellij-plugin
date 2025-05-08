@@ -21,7 +21,6 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.cli.CliResult
-import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
@@ -47,7 +46,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.snykToolWindow
-import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.ReferenceChooserDialog
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.expandTreeNodeRecursively
