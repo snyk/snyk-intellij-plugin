@@ -1,11 +1,14 @@
 # Snyk Security Changelog
-## [2.12.2]
-### Changed
-- fix: initialize jcef browser with 'about:blank' fix usage in 2025.1
+
 
 ## [2.13.0]
 ### Changed
 - remove unnecessary dependency on com.intellij.modules.lang to enable Jetbrains Gateway usage
+- optimize time spent in UI thread to avoid freezes on large projects
+
+## [2.12.2]
+### Changed
+- fix: initialize jcef browser with 'about:blank' fix usage in 2025.1
 
 ## [2.12.1]
 ### Changed
