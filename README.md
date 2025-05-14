@@ -19,9 +19,7 @@ The Snyk JetBrains plugin allows you to analyze your code, open-source dependenc
 ## How to install and set up the extension
 
 
-The latest Snyk JetBrains plugin supports use with all JetBrains IDEs 2023.3 or newer.
-
-Older plugin versions may support use with JetBrains IDEs 2020.3 or newer.
+For information about the versions of JetBrins supported by the JetBrains plugin, see [Snyk IDE plugins and extensions](../).
 
 Snyk recommends always using the latest version of the JetBrains plugin.
 
