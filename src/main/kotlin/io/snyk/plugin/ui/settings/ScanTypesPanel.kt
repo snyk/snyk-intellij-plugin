@@ -234,7 +234,6 @@ class ScanTypesPanel(
         settings.sastOnServerEnabled = sastSettings?.sastEnabled
         settings.localCodeEngineEnabled = sastSettings?.localCodeEngine?.enabled
         settings.localCodeEngineUrl = sastSettings?.localCodeEngine?.url
-        settings.organization = sastSettings?.org
         settings.autofixEnabled = sastSettings?.autofixEnabled
     }
 
