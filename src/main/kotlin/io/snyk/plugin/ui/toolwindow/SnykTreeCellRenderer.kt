@@ -57,9 +57,12 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val (entry, productType) =
                     parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
 
-                text = "${if (issue.isIgnored()) " [ Ignored ]" else ""}${if (issue.hasAIFix()) " ⚡️" else ""} ${issue.longTitle()}"
+                text =
+                    "${if (issue.isIgnored()) " [ Ignored ]" else ""}${if (issue.hasAIFix()) " ⚡️" else ""} ${issue.longTitle()}"
                 val cachedIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
-                if (cachedIssues != null && cachedIssues[entry.key]?.isEmpty() == true) {
+                val entryIssues = cachedIssues?.get(entry.key) ?: emptyList()
+                val empty = entryIssues.isEmpty()
+                if (empty || !issueIsContained(entryIssues, issue)) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
@@ -219,6 +222,13 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
         icon = nodeIcon
         font = UIUtil.getTreeFont()
         text?.let { append(it, attributes) }
+    }
+
+    private fun issueIsContained(
+        entryIssues: List<ScanIssue>,
+        issue: ScanIssue
+    ): Boolean {
+        return HashSet(entryIssues).contains(issue)
     }
 
     private fun updateTextTooltipAndIcon(
