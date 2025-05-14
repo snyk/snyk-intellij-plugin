@@ -59,7 +59,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
                 text = "${if (issue.isIgnored()) " [ Ignored ]" else ""}${if (issue.hasAIFix()) " ⚡️" else ""} ${issue.longTitle()}"
                 val cachedIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
-                if (cachedIssues?.values?.flatten()?.contains(issue) == false) {
+                if (cachedIssues != null && cachedIssues[entry.key]?.isEmpty() == true) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }

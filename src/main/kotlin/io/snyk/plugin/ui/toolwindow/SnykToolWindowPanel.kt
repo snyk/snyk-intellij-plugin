@@ -483,9 +483,7 @@ class SnykToolWindowPanel(
             it.cacheKubernetesFileFromProject()
         }
 
-        ApplicationManager.getApplication().invokeLater {
-            doCleanUi(true)
-        }
+        doCleanUi(true)
         refreshAnnotationsForOpenFiles(project)
     }
 

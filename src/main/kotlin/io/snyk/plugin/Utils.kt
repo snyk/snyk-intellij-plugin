@@ -141,9 +141,9 @@ val <T> List<T>.head: T
     get() = first()
 
 fun isAdditionalParametersValid(params: String?): Boolean {
-    params.isNullOrEmpty() && return true
+    if (params.isNullOrEmpty()) return true
 
-    val list = params!!.split(" ")
+    val list = params.split(" ")
     return !list.contains("-d")
 }
 
@@ -151,7 +151,7 @@ fun isUrlValid(url: String?): Boolean {
     url.isNullOrEmpty() && return true
 
     return try {
-        val uri = url?.let { URI.create(it) }
+        val uri = url.let { URI.create(it) }
         return uri?.isSnykTenant() ?: false
     } catch (throwable: Throwable) {
         false
@@ -257,6 +257,22 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
     }
 }
 
+
+fun refreshAnnotationsForFile(project: Project, virtualFile: VirtualFile) {
+    if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
+    val psiFile = findPsiFileIgnoringExceptions(virtualFile, project)
+    if (psiFile != null) {
+        refreshAnnotationsForFile(psiFile)
+    }
+}
+
+fun refreshAnnotationsForFile(psiFile: PsiFile) {
+    invokeLater {
+        if (psiFile.project.isDisposed || ApplicationManager.getApplication().isDisposed) return@invokeLater
+        DaemonCodeAnalyzer.getInstance(psiFile.project).restart(psiFile)
+    }
+}
+
 fun refreshAnnotationsForOpenFiles(project: Project) {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
     runAsync {
@@ -269,14 +285,16 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
                 project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
             }
         }
-        openFiles.forEach {
-            val psiFile = findPsiFileIgnoringExceptions(it, project)
-            if (psiFile != null) {
-                invokeLater {
-                    if (!psiFile.project.isDisposed) {
-                        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
-                    }
+
+        if (openFiles.size > 5) {
+            invokeLater {
+                if (!project.isDisposed) {
+                    DaemonCodeAnalyzer.getInstance(project).restart()
                 }
+            }
+        } else {
+            openFiles.forEach {
+                refreshAnnotationsForFile(project, it)
             }
         }
     }
@@ -510,7 +528,7 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     if (contentRoots.isEmpty()) {
         // This should cover the case when no content roots are configured, e.g. in Rider
         contentRoots = ProjectManager.getInstance().openProjects
-            .filter{ it.name == this.name }.mapNotNull { it.basePath?.toVirtualFileOrNull() }.toTypedArray()
+            .filter { it.name == this.name }.mapNotNull { it.basePath?.toVirtualFileOrNull() }.toTypedArray()
     }
 
     // The sort is to ensure that parent folders come first
