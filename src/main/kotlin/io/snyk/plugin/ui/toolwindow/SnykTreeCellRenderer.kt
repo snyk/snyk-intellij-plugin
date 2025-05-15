@@ -223,7 +223,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
     }
 
     fun List<ScanIssue>.issueIsContained(issue: ScanIssue): Boolean {
-        // this is a bit weird, I admit. But HashSet.contains() has an O(1) complexity.
+        // This is a bit weird, I admit. But HashSet.contains() has an O(1) complexity.
+        // even with copying over the whole list (O(n)), in this case it is faster due to `hashCode`
+        // checking the hashes is much faster than comparing the objects in the list.
         return this.isNotEmpty() && HashSet(this).contains(issue)
     }
 
