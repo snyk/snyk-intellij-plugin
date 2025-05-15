@@ -75,9 +75,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val pair = updateTextTooltipAndIcon(file, productType, value, entry.value.first())
                 pair.first?.let { nodeIcon = pair.first }
                 text = pair.second
-                val cachedIssues =
-                    getSnykCachedResultsForProduct(entry.key.project, productType)
-                        ?.filter { it.key.virtualFile == file.virtualFile } ?: emptyMap()
+                val allIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
+                val cachedIssues = allIssues?.get(entry.key) ?: emptyList()
                 if (cachedIssues.isEmpty()) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
