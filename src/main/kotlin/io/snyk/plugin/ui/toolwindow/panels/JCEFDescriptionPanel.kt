@@ -161,37 +161,7 @@ class SuggestionDescriptionPanelFromLS(
 
     fun getCustomCssAndScript(): String {
         val html = issue.details()
-        val ideScript = getCustomScript()
-        return PanelHTMLUtils.getFormattedHtml(html, ideScript)
-    }
-    private fun getCustomScript(): String {
-        return """
-              // Show the AI fixes received from the Language Server
-              function showAIFixes(suggestion) {
-                toggleElement(fixSectionElem, "show");
-                toggleElement(fixLoadingIndicatorElem, "hide");
-                toggleElement(fixWrapperElem, "hide");
-
-                showCurrentDiff(suggestion);
-              }
-
-              function showGenerateAIFixError() {
-                toggleElement(fixLoadingIndicatorElem, "hide");
-                toggleElement(fixWrapperElem, "hide");
-                toggleElement(fixSectionElem, "hide");
-                toggleElement(fixErrorSectionElem, "show");
-              }
-
-              window.receiveApplyFixResponse = function (success) {
-              console.log('[[receiveApplyFixResponse]]', success);
-                if (success) {
-                    console.log('Fix applied', success);
-                    document.getElementById('apply-fix').disabled = true;
-                } else {
-                    console.error('Failed to apply fix', success);
-                }
-              };
-        """.trimIndent()
+        return PanelHTMLUtils.getFormattedHtml(html)
     }
 }
 
