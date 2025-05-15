@@ -61,8 +61,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     "${if (issue.isIgnored()) " [ Ignored ]" else ""}${if (issue.hasAIFix()) " ⚡️" else ""} ${issue.longTitle()}"
                 val cachedIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
                 val entryIssues = cachedIssues?.get(entry.key) ?: emptyList()
-                val empty = entryIssues.isEmpty()
-                if (empty || !issueIsContained(entryIssues, issue)) {
+                if (!entryIssues.issueIsContained(issue)) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
@@ -224,11 +223,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
         text?.let { append(it, attributes) }
     }
 
-    private fun issueIsContained(
-        entryIssues: List<ScanIssue>,
-        issue: ScanIssue
-    ): Boolean {
-        return HashSet(entryIssues).contains(issue)
+    fun List<ScanIssue>.issueIsContained(issue: ScanIssue): Boolean {
+        // this is a bit weird, I admit. But HashSet.contains() has an O(1) complexity.
+        return this.isNotEmpty() && HashSet(this).contains(issue)
     }
 
     private fun updateTextTooltipAndIcon(

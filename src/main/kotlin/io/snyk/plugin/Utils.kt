@@ -273,6 +273,8 @@ fun refreshAnnotationsForFile(psiFile: PsiFile) {
     }
 }
 
+private const val SINGLE_FILE_DECORATION_UPDATE_THRESHOLD = 5
+
 fun refreshAnnotationsForOpenFiles(project: Project) {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
     runAsync {
@@ -286,7 +288,7 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
             }
         }
 
-        if (openFiles.size > 5) {
+        if (openFiles.size > SINGLE_FILE_DECORATION_UPDATE_THRESHOLD) {
             invokeLater {
                 if (!project.isDisposed) {
                     DaemonCodeAnalyzer.getInstance(project).restart()
