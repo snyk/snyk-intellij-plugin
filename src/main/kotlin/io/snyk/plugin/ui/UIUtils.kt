@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.ColorUtil
@@ -367,7 +368,9 @@ fun txtToHtml(s: String): String {
 fun getDisabledIcon(originalIcon: Icon?): Icon? = originalIcon?.let { IconLoader.getDisabledIcon(it) }
 
 fun expandTreeNodeRecursively(tree: JTree, node: DefaultMutableTreeNode) {
-    tree.expandPath(TreePath(node.path))
+    invokeLater {
+        tree.expandPath(TreePath(node.path))
+    }
     node.children().asSequence().forEach {
         expandTreeNodeRecursively(tree, it as DefaultMutableTreeNode)
     }

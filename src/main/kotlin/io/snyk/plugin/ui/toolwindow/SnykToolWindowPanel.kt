@@ -297,32 +297,22 @@ class SnykToolWindowPanel(
                     override fun filtersChanged() {
                         val codeSecurityResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return
-                        ApplicationManager.getApplication().invokeLater {
-                            scanListenerLS.displaySnykCodeResults(codeSecurityResultsLS)
-                        }
+                        scanListenerLS.displaySnykCodeResults(codeSecurityResultsLS)
 
                         val codeQualityResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.CODE_QUALITY) ?: return
-                        ApplicationManager.getApplication().invokeLater {
-                            scanListenerLS.displaySnykCodeResults(codeQualityResultsLS)
-                        }
+                        scanListenerLS.displaySnykCodeResults(codeQualityResultsLS)
 
                         val ossResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return
-                        ApplicationManager.getApplication().invokeLater {
-                            scanListenerLS.displayOssResults(ossResultsLS)
-                        }
+                        scanListenerLS.displayOssResults(ossResultsLS)
 
                         val iacResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.IAC) ?: return
-                        ApplicationManager.getApplication().invokeLater {
-                            scanListenerLS.displayIacResults(iacResultsLS)
-                        }
+                        scanListenerLS.displayIacResults(iacResultsLS)
 
                         val snykCachedResults = getSnykCachedResults(project) ?: return
-                        ApplicationManager.getApplication().invokeLater {
-                            snykCachedResults.currentContainerResult?.let { displayContainerResults(it) }
-                        }
+                        snykCachedResults.currentContainerResult?.let { displayContainerResults(it) }
                     }
                 },
             )
@@ -483,9 +473,7 @@ class SnykToolWindowPanel(
             it.cacheKubernetesFileFromProject()
         }
 
-        ApplicationManager.getApplication().invokeLater {
-            doCleanUi(true)
-        }
+        doCleanUi(true)
         refreshAnnotationsForOpenFiles(project)
     }
 
@@ -828,10 +816,13 @@ class SnykToolWindowPanel(
     }
 
     fun displayContainerResults(containerResult: ContainerResult) {
-        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootContainerIssuesTreeNode)
-        val selectedNodeUserObject =
-            TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-
+        var userObjectsForExpandedChildren: List<Any>? = emptyList()
+        var selectedNodeUserObject: Any? = Object()
+        ApplicationManager.getApplication().invokeAndWait {
+            userObjectsForExpandedChildren = userObjectsForExpandedNodes(rootContainerIssuesTreeNode)
+            selectedNodeUserObject =
+                TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+        }
         rootContainerIssuesTreeNode.removeAllChildren()
 
         fun navigateToImage(
@@ -969,20 +960,29 @@ class SnykToolWindowPanel(
         if (selectedNode is InfoTreeNode) return
 
         displayEmptyDescription()
-        (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
+
+        ApplicationManager.getApplication().invokeAndWait {
+            (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
+        }
 
         userObjectsForExpandedChildren?.let {
             it.forEach { userObject ->
                 val pathToNewNode = TreeUtil.findNodeWithObject(nodeToReload, userObject)?.path
                 if (pathToNewNode != null) {
-                    vulnerabilitiesTree.expandPath(TreePath(pathToNewNode))
+                    invokeLater {
+                        vulnerabilitiesTree.expandPath(TreePath(pathToNewNode))
+                    }
                 }
             }
         } ?: expandTreeNodeRecursively(vulnerabilitiesTree, nodeToReload)
 
         smartReloadMode = true
         try {
-            selectedNode?.let { TreeUtil.selectNode(vulnerabilitiesTree, it) }
+            selectedNode?.let {
+                invokeLater {
+                    TreeUtil.selectNode(vulnerabilitiesTree, it)
+                }
+            }
         } finally {
             smartReloadMode = false
         }

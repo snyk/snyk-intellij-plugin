@@ -1,14 +1,13 @@
 # Snyk Security Changelog
-
 ## [2.13.0]
-### Added
-- support early access of Ignores Approval Workflow
 
 ### Changed
 - remove unnecessary dependency on com.intellij.modules.lang to enable Jetbrains Gateway usage
+- optimize time spent in UI thread to avoid freezes on large projects
+- support early access of Ignores Approval Workflow
 
 ### Fixed
-- fix early access Issue View Options not hiding issues in editor
+- fix ignores Issue View Options not hiding issues in editor
 
 ## [2.12.2]
 ### Changed

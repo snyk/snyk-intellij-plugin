@@ -28,6 +28,7 @@ import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.refreshAnnotationsForFile
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.sha256
 import io.snyk.plugin.toVirtualFile
@@ -163,10 +164,10 @@ class SnykLanguageClient :
         WriteCommandAction.runWriteCommandAction(project) {
             params?.edit?.changes?.forEach {
                 DocumentChanger.applyChange(it)
+                refreshAnnotationsForFile(project, it.key.toVirtualFile())
             }
         }
 
-        refreshUI()
         return CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(true))
     }
 

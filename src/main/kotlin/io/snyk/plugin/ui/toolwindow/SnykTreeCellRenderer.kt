@@ -57,9 +57,11 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val (entry, productType) =
                     parentFileNode.userObject as Pair<Map.Entry<SnykFile, List<ScanIssue>>, ProductType>
 
-                text = "${if (issue.isIgnored()) " [ Ignored ]" else ""}${if (issue.hasAIFix()) " ⚡️" else ""} ${issue.longTitle()}"
+                text =
+                    "${if (issue.isIgnored()) " [ Ignored ]" else ""}${if (issue.hasAIFix()) " ⚡️" else ""} ${issue.longTitle()}"
                 val cachedIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
-                if (cachedIssues?.values?.flatten()?.contains(issue) == false) {
+                val entryIssues = cachedIssues?.get(entry.key) ?: emptyList()
+                if (!entryIssues.issueIsContained(issue)) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
                 }
@@ -73,9 +75,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                 val pair = updateTextTooltipAndIcon(file, productType, value, entry.value.first())
                 pair.first?.let { nodeIcon = pair.first }
                 text = pair.second
-                val cachedIssues =
-                    getSnykCachedResultsForProduct(entry.key.project, productType)
-                        ?.filter { it.key.virtualFile == file.virtualFile } ?: emptyMap()
+                val allIssues = getSnykCachedResultsForProduct(entry.key.project, productType)
+                val cachedIssues = allIssues?.get(entry.key) ?: emptyList()
                 if (cachedIssues.isEmpty()) {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                     nodeIcon = getDisabledIcon(nodeIcon)
@@ -219,6 +220,13 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
         icon = nodeIcon
         font = UIUtil.getTreeFont()
         text?.let { append(it, attributes) }
+    }
+
+    fun List<ScanIssue>.issueIsContained(issue: ScanIssue): Boolean {
+        // This is a bit weird, I admit. But HashSet.contains() has an O(1) complexity.
+        // even with copying over the whole list (O(n)), in this case it is faster due to `hashCode`
+        // checking the hashes is much faster than comparing the objects in the list.
+        return this.isNotEmpty() && HashSet(this).contains(issue)
     }
 
     private fun updateTextTooltipAndIcon(
