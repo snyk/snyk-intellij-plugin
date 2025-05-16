@@ -22,5 +22,5 @@ interface SnykScanListenerLS {
 
     fun scanningError(snykScan: SnykScanParams)
 
-    fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>)
+    fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>)
 }

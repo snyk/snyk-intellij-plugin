@@ -62,6 +62,7 @@ import java.nio.file.Paths
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
 
 /**
  * Processes Language Server requests and notifications from the server to the IDE
@@ -118,22 +119,22 @@ class SnykLanguageClient :
 
         //If the diagnostics for the file is empty, clear the cache.
         if (firstDiagnostic == null) {
-            scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptySet())
+            scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptySet())
+            scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptySet())
             return
         }
 
-        val issueList = getScanIssues(diagnosticsParams)
+        val issues = HashSet(getScanIssues(diagnosticsParams))
         if (product != null) {
-            scanPublisher.onPublishDiagnostics(LsProduct.getFor(product), snykFile, issueList)
+            scanPublisher.onPublishDiagnostics(LsProduct.getFor(product), snykFile, issues)
         }
 
         return
     }
 
-    fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): List<ScanIssue> {
-        val issueList = diagnosticsParams.diagnostics.stream().map {
+    fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): Set<ScanIssue> {
+        val issues = diagnosticsParams.diagnostics.stream().map {
             val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
             // load textRange for issue so it doesn't happen in UI thread
             issue.textRange
@@ -142,9 +143,9 @@ class SnykLanguageClient :
                 pluginSettings().isGlobalIgnoresFeatureEnabled = true
             }
             issue
-        }.toList()
+        }.collect(Collectors.toSet())
 
-        return issueList
+        return issues
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
