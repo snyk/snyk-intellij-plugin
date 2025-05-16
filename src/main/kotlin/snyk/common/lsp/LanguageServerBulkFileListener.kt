@@ -78,7 +78,7 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
     private val blackListedDirectories =
         setOf(".idea", ".git", ".hg", ".svn")
 
-    private fun shouldProcess(file: VirtualFile, index: ProjectFileIndex, project: Project): Boolean {
+    private fun shouldProcess(file: VirtualFile, ignored: ProjectFileIndex, project: Project): Boolean {
         var shouldProcess = false
         val application = ApplicationManager.getApplication()
         if (application.isDisposed) return false

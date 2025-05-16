@@ -87,7 +87,7 @@ fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.ser
 
 fun getSnykCachedResults(project: Project): SnykCachedResults? = project.serviceIfNotDisposed()
 
-fun getSnykCachedResultsForProduct(project: Project, product: ProductType): MutableMap<SnykFile, List<ScanIssue>>? {
+fun getSnykCachedResultsForProduct(project: Project, product: ProductType): MutableMap<SnykFile, Set<ScanIssue>>? {
     return when (product) {
         ProductType.OSS -> getSnykCachedResults(project)?.currentOSSResultsLS
         ProductType.IAC -> getSnykCachedResults(project)?.currentIacResultsLS

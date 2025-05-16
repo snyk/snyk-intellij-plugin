@@ -142,9 +142,9 @@ class SnykToolWindowSnykScanListenerLS(
         invokeLater { (vulnerabilitiesTree.model as DefaultTreeModel).nodeStructureChanged(node) }
     }
 
-    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) {}
+    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>) {}
 
-    fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    fun displaySnykCodeResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
         if (disposed) return
 
         val settings = pluginSettings()
@@ -152,7 +152,7 @@ class SnykToolWindowSnykScanListenerLS(
         // display Security issues
         val securityIssues =
             snykResults
-                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
+                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType }.toSet() }
                 .toMap()
 
         displayIssues(
@@ -168,7 +168,7 @@ class SnykToolWindowSnykScanListenerLS(
         // display Quality (non Security) issues
         val qualityIssues =
             snykResults
-                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
+                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType }.toSet() }
                 .toMap()
 
         displayIssues(
@@ -183,7 +183,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     private fun displayResults(
-        snykResults: Map<SnykFile, List<ScanIssue>>,
+        snykResults: Map<SnykFile, Set<ScanIssue>>,
         enabledInSettings: Boolean,
         filterTree: Boolean,
         rootNode: DefaultMutableTreeNode,
@@ -225,7 +225,7 @@ class SnykToolWindowSnykScanListenerLS(
         }
     }
 
-    fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    fun displayOssResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
         if (disposed) return
 
         val settings = pluginSettings()
@@ -239,7 +239,7 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
-    fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    fun displayIacResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
         if (disposed) return
 
         val settings = pluginSettings()
@@ -256,7 +256,7 @@ class SnykToolWindowSnykScanListenerLS(
         filterableIssueType: FilterableIssueType,
         enabledInSettings: Boolean,
         filterTree: Boolean,
-        snykResults: Map<SnykFile, List<ScanIssue>>,
+        snykResults: Map<SnykFile, Set<ScanIssue>>,
         rootNode: DefaultMutableTreeNode,
         ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
@@ -512,7 +512,7 @@ class SnykToolWindowSnykScanListenerLS(
         expandTreeNodeRecursively(snykToolWindowPanel.vulnerabilitiesTree, rootNode)
     }
 
-    private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {
+    private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, Set<ScanIssue>>): String {
         val high = results.values.flatten().count { it.getSeverityAsEnum() == Severity.HIGH }
         val medium = results.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
         val low = results.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }

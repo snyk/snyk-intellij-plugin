@@ -118,15 +118,15 @@ class SnykLanguageClient :
 
         //If the diagnostics for the file is empty, clear the cache.
         if (firstDiagnostic == null) {
-            scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptyList())
-            scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptyList())
+            scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptySet())
+            scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptySet())
+            scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptySet())
             return
         }
 
-        val issueList = getScanIssues(diagnosticsParams)
+        val issues = HashSet(getScanIssues(diagnosticsParams))
         if (product != null) {
-            scanPublisher.onPublishDiagnostics(LsProduct.getFor(product), snykFile, issueList)
+            scanPublisher.onPublishDiagnostics(LsProduct.getFor(product), snykFile, issues)
         }
 
         return

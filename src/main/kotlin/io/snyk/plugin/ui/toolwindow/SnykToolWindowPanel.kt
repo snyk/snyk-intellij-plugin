@@ -204,7 +204,7 @@ class SnykToolWindowPanel(
                     override fun onPublishDiagnostics(
                         product: LsProduct,
                         snykFile: SnykFile,
-                        issueList: List<ScanIssue>
+                        issueList: Set<ScanIssue>
                     ) {
                         getSnykCachedResults(project)?.let {
                             when (product) {
