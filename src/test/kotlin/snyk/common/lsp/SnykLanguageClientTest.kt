@@ -173,7 +173,7 @@ class SnykLanguageClientTest {
         val diagnosticsParams = PublishDiagnosticsParams(uri, diagnostics)
 
         // Call scanIssues function
-        val result: List<ScanIssue> = cut.getScanIssues(diagnosticsParams)
+        val result: Set<ScanIssue> = cut.getScanIssues(diagnosticsParams)
 
         // Assert the returned list contains parsed ScanIssues
         assertEquals(2, result.size)
