@@ -16,12 +16,16 @@ class PanelHTMLUtils {
                 .joinToString("")
         }
 
-        fun getFormattedHtml(html: String, ideScript: String = ""): String {
+        // Must not have blank template replacements, as they could be used to skip the "${nonce}" injection check
+        // and still end up with the nonce injected, e.g. "${nonce${resolvesToEmpty}}" becomes "${nonce}" - See IDE-1050.
+        fun getFormattedHtml(
+            html: String,
+            ideScript: String = " "
+        ): String {
             val nonce = extractLsNonceIfPresent(html)?: getNonce()
             var formattedHtml = html.replace("\${ideStyle}", "<style nonce=\${nonce}>${getCss()}</style>")
-            formattedHtml = formattedHtml.replace("\${headerEnd}", "")
-            formattedHtml = formattedHtml.replace(
-                "\${ideScript}", "$ideScript")
+            formattedHtml = formattedHtml.replace("\${headerEnd}", " ")
+            formattedHtml = formattedHtml.replace("\${ideScript}", ideScript)
             formattedHtml = formattedHtml.replace("\${ideGenerateAIFix}", getGenerateAiFixScript())
             formattedHtml = formattedHtml.replace("\${ideApplyAIFix}", getApplyAiFixScript())
             formattedHtml = formattedHtml.replace("\${ideSubmitIgnoreRequest}", getSubmitIgnoreRequestScript())
