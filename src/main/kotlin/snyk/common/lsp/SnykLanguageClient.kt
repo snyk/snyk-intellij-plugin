@@ -62,6 +62,7 @@ import java.nio.file.Paths
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
 
 /**
  * Processes Language Server requests and notifications from the server to the IDE
@@ -132,8 +133,8 @@ class SnykLanguageClient :
         return
     }
 
-    fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): List<ScanIssue> {
-        val issueList = diagnosticsParams.diagnostics.stream().map {
+    fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): Set<ScanIssue> {
+        val issues = diagnosticsParams.diagnostics.stream().map {
             val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
             // load textRange for issue so it doesn't happen in UI thread
             issue.textRange
@@ -142,9 +143,9 @@ class SnykLanguageClient :
                 pluginSettings().isGlobalIgnoresFeatureEnabled = true
             }
             issue
-        }.toList()
+        }.collect(Collectors.toSet())
 
-        return issueList
+        return issues
     }
 
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
