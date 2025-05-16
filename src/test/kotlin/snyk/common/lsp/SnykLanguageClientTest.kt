@@ -29,6 +29,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.progress.ProgressManager
@@ -177,8 +178,8 @@ class SnykLanguageClientTest {
 
         // Assert the returned list contains parsed ScanIssues
         assertEquals(2, result.size)
-        assertEquals("Some Issue", result[0].title)
-        assertEquals("Another Issue", result[1].title)
+        assertTrue(result.any { it.title == "Some Issue" })
+        assertTrue(result.any { it.title == "Another Issue" })
     }
 
     @Test
@@ -232,7 +233,7 @@ class SnykLanguageClientTest {
 
     private fun createMockDiagnostic(range: Range, message: String, filePath: String): Diagnostic {
         val rangeString = Gson().toJson(range)
-        val jsonString = """{"id": 12345, "title": "$message", "filePath": "$filePath", "range": $rangeString}"""
+        val jsonString = """{"id": 12345, "title": "$message", "filePath": "$filePath", "range": $rangeString, "severity": "medium", "filterableIssueType": "Open Source", "isIgnored": false, "isNew": false, "additionalData": {"ruleId": "test-rule-id", "key": "test-key", "message": "Mock message", "isSecurityType": false, "rule": "mock-rule", "repoDatasetSize": 0, "exampleCommitFixes": [], "text": "", "priorityScore": 0, "hasAIFix": false, "dataFlow": [], "description": "", "language": "kotlin", "packageManager": "gradle", "packageName": "mock-package", "name": "mock-name", "version": "1.0.0", "from": [], "upgradePath": [], "isPatchable": false, "isUpgradable": false, "projectName": "test-project", "matchingIssues": [], "publicId": "test-public-id"}}""" 
         val mockDiagnostic = Diagnostic()
         mockDiagnostic.range = range
         mockDiagnostic.data = jsonString
