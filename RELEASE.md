@@ -3,7 +3,7 @@
 
 **Protocol Version Verification**
 
--   Ensure the Snyk Language Server Protocol version is correct in the plugin. 
+- Ensure the Snyk Language Server Protocol version is correct in the plugin. 
   - `requiredLsProtocolVersion`  in  `kotlin/io/snyk/plugin/services/SnykApplicationSettingsStateService.kt`  
 
 **Update Changelog**
@@ -13,7 +13,7 @@
 
 **Testing**
 
--   Ensure all tests for the latest commit have passed before proceeding with the release.
+- Ensure all tests for the latest commit have passed before proceeding with the release.
 
 **Initiate Release**
 
@@ -27,7 +27,7 @@
 
 **Release Notes**
 
--   Edit or generate release notes on GitHub.
+- Edit or generate release notes on GitHub.
   - Its okay to include all items from any intermediate hotfix releases in the release notes.
 
 
@@ -53,5 +53,5 @@
 
 **Manual End-to-End Test**
 
--   Manually run a scan using the latest version of the plugin to confirm end-to-end functionality.
+- Manually run a scan using the latest version of the plugin to confirm end-to-end functionality.
 
