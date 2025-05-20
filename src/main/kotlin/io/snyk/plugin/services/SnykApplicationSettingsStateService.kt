@@ -28,7 +28,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     val requiredLsProtocolVersion = 19
 
-    var useTokenAuthentication = false
+    var authenticationType = AuthenticationType.OAUTH2
     var currentLSProtocolVersion: Int? = 0
     var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
@@ -182,6 +182,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         const val DISPLAY_ALL_ISSUES = "All issues"
         const val DISPLAY_NEW_ISSUES = "Net new issues"
     }
+}
+
+enum class AuthenticationType(val languageServerSettingsName: String, val dialogName: String, val dialogIndex: Int) {
+    OAUTH2("oauth2", "OAuth2", 0),
+    PAT("pat", "Personal Access Token", 1),
+    API_TOKEN("token", "API Token", 2),
 }
 
 class TreeFiltering {

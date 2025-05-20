@@ -3,6 +3,7 @@ package snyk.common
 import com.intellij.util.EnvironmentUtil
 import com.intellij.util.net.HttpConfigurable
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.AuthenticationType
 import snyk.pluginInfo
 import java.net.URI
 import java.net.URLEncoder
@@ -10,7 +11,7 @@ import java.net.URLEncoder
 object EnvironmentHelper {
     fun updateEnvironment(
         environment: MutableMap<String, String>,
-        apiToken: String,
+        token: String,
     ) {
         // first of all, use IntelliJ environment tool, to spice up env
         environment.putAll(EnvironmentUtil.getEnvironmentMap())
@@ -22,21 +23,19 @@ object EnvironmentHelper {
 
         val endpointURI = URI(endpoint)
 
-        if (apiToken.isNotEmpty()) {
+        if (token.isNotEmpty()) {
             environment.remove(snykTokenEnvVar)
             environment.remove(oauthEnvVar)
             environment.remove(oauthEnabledEnvVar)
-            when (pluginSettings().useTokenAuthentication) {
-                true -> {
+            when (pluginSettings().authenticationType) {
+                AuthenticationType.API_TOKEN, AuthenticationType.PAT -> {
                     environment[oauthEnabledEnvVar] = "0"
-                    environment.remove(oauthEnvVar)
-                    environment[snykTokenEnvVar] = apiToken
+                    environment[snykTokenEnvVar] = token
                 }
 
-                false -> {
+                AuthenticationType.OAUTH2 -> {
                     environment[oauthEnabledEnvVar] = "1"
-                    environment[oauthEnvVar] = apiToken
-                    environment.remove(snykTokenEnvVar)
+                    environment[oauthEnvVar] = token
                 }
             }
         }

@@ -21,6 +21,7 @@ import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.setupDummyCliFile
 import snyk.PLUGIN_ID
 import snyk.errorHandler.SentryErrorReporter
@@ -86,7 +87,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
 
             pluginSettings().customEndpointUrl = expectedEndpoint
-            pluginSettings().useTokenAuthentication = false
+            pluginSettings().authenticationType = AuthenticationType.OAUTH2
 
             val token = """{ "access_token":"IntelliJ TEST"}"""
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
@@ -108,7 +109,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = "{}"
 
             pluginSettings().customEndpointUrl = expectedEndpoint
-            pluginSettings().useTokenAuthentication = true
+            pluginSettings().authenticationType = AuthenticationType.API_TOKEN
 
             val token = UUID.randomUUID().toString()
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
@@ -256,7 +257,7 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
     fun testSetupCliEnvironmentVariables() {
         val generalCommandLine = GeneralCommandLine("")
         val snykPluginVersion = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
-        pluginSettings().useTokenAuthentication = true
+        pluginSettings().authenticationType = AuthenticationType.API_TOKEN
         ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "test-api-token")
 
         assertEquals("test-api-token", generalCommandLine.environment["SNYK_TOKEN"])

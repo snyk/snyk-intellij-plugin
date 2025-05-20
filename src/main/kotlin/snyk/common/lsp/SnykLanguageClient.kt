@@ -304,7 +304,7 @@ class SnykLanguageClient :
         }
 
         logger.info("received authentication information: Token-Length: ${param.token?.length}}, URL: ${param.apiUrl}")
-        logger.info("use token-auth? ${pluginSettings().useTokenAuthentication}")
+        logger.info("auth type: ${pluginSettings().authenticationType.languageServerSettingsName}")
         logger.debug("is same token?  ${oldToken == param.token}")
         logger.debug("old-token-hash: ${oldToken.sha256()}, new-token-hash: ${param.token?.sha256()}")
 

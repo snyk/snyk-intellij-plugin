@@ -473,12 +473,6 @@ class LanguageServerWrapper(
 
     fun getSettings(): LanguageServerSettings {
         val ps = pluginSettings()
-        val authMethod =
-            if (ps.useTokenAuthentication) {
-                "token"
-            } else {
-                "oauth"
-            }
 
         // only send folderConfig after having received the folderConfigs from LS
         // IntelliJ only has in-memory storage, so that storage should not overwrite
@@ -518,7 +512,7 @@ class LanguageServerWrapper(
             scanningMode = if (!ps.scanOnSave) "manual" else "auto",
             integrationName = pluginInfo.integrationName,
             integrationVersion = pluginInfo.integrationVersion,
-            authenticationMethod = authMethod,
+            authenticationMethod = ps.authenticationType.languageServerSettingsName,
             enableSnykOSSQuickFixCodeActions = "true",
             folderConfigs = folderConfigs,
         )

@@ -53,7 +53,7 @@ class SnykProjectSettingsConfigurable(
             isAuthenticationMethodModified()
 
     private fun isAuthenticationMethodModified() =
-        snykSettingsDialog.getUseTokenAuthentication() != settingsStateService.useTokenAuthentication
+        snykSettingsDialog.getAuthenticationType() != settingsStateService.authenticationType
 
     private fun isCoreParamsModified() =
         isTokenModified() ||
@@ -86,7 +86,7 @@ class SnykProjectSettingsConfigurable(
         }
 
         settingsStateService.token = snykSettingsDialog.getToken()
-        settingsStateService.useTokenAuthentication = snykSettingsDialog.getUseTokenAuthentication()
+        settingsStateService.authenticationType= snykSettingsDialog.getAuthenticationType()
         settingsStateService.organization = snykSettingsDialog.getOrganization()
         settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
