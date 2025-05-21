@@ -33,6 +33,9 @@ import snyk.common.lsp.commands.COMMAND_CODE_FIX_APPLY_AI_EDIT
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
+import java.io.File
+import java.io.FileNotFoundException
+import java.lang.reflect.Field
 import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -142,9 +145,9 @@ class LanguageServerWrapperTest {
                             scanType = "testScan",
                             uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(0, 0, 0, 0),
                         ),
+                    ),
                 ),
-            ),
-        )
+            )
 
         verify(exactly = 0) { lsMock.workspaceService.executeCommand(any()) }
     }
@@ -322,12 +325,31 @@ class LanguageServerWrapperTest {
         }
     }
 
-    private fun simulateRunningLS() {
-        cut.languageClient = mockk(relaxed = true)
-        val processMock = mockk<Process>(relaxed = true)
-        cut.process = processMock
-        every { processMock.info().startInstant().isPresent } returns true
-        every { processMock.isAlive } returns true
+    @Test
+    fun `ensureLanguageServerInitialized should not proceed when disposed`() {
+        every { applicationMock.isDisposed } returns true
+
+        val wrapper = LanguageServerWrapper("dummy")
+        assertFalse(wrapper.ensureLanguageServerInitialized())
+    }
+
+    @Test
+    fun `ensureLanguageServerInitialized should set up language server properly when successful`() {
+        val wrapper = mockk<LanguageServerWrapper>(relaxed = true)
+        every { wrapper.ensureLanguageServerInitialized() } returns true
+
+        val result = wrapper.ensureLanguageServerInitialized()
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `shutdown should handle process termination`() {
+        val wrapper = mockk<LanguageServerWrapper>(relaxed = true)
+
+        wrapper.shutdown()
+
+        verify { wrapper.shutdown() }
     }
 
     @Test
@@ -349,5 +371,13 @@ class LanguageServerWrapperTest {
         assertEquals(getCliFile().absolutePath, actual.cliPath)
         assertEquals(settings.organization, actual.organization)
         assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
+    }
+
+    private fun simulateRunningLS() {
+        cut.languageClient = mockk(relaxed = true)
+        val processMock = mockk<Process>(relaxed = true)
+        cut.process = processMock
+        every { processMock.info().startInstant().isPresent } returns true
+        every { processMock.isAlive } returns true
     }
 }
