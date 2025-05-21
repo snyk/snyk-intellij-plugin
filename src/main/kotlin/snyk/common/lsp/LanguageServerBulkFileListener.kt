@@ -56,7 +56,9 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
 
             for (file in filesAffected) {
                 val virtualFile = file.virtualFile
-                if (!shouldProcess(virtualFile, index, project)) continue
+                if (!shouldProcess(virtualFile, project)) {
+                    continue
+                }
                 cache?.remove(file)
                 val param =
                     DidSaveTextDocumentParams(
@@ -78,7 +80,7 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
     private val blackListedDirectories =
         setOf(".idea", ".git", ".hg", ".svn")
 
-    private fun shouldProcess(file: VirtualFile, index: ProjectFileIndex, project: Project): Boolean {
+    private fun shouldProcess(file: VirtualFile, project: Project): Boolean {
         var shouldProcess = false
         val application = ApplicationManager.getApplication()
         if (application.isDisposed) return false

@@ -18,15 +18,7 @@ The Snyk JetBrains plugin allows you to analyze your code, open-source dependenc
 
 ## How to install and set up the extension
 
-
-The latest Snyk JetBrains plugin supports use with all JetBrains IDEs 2023.3 or newer.
-
-Older plugin versions may support use with JetBrains IDEs 2020.3 or newer.
-
-Snyk recommends always using the latest version of the JetBrains plugin.
-
-
-
+**Note:** For information about the versions of JetBrains supported by the JetBrains plugin, see [Snyk IDE plugins and extensions](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions). Snyk recommends always using the latest version of the JetBrains plugin.
 
 You can use the Snyk JetBrains plugin in the following environments:
 
@@ -41,10 +33,10 @@ When the extension is installed, it automatically downloads the [Snyk CLI,](http
 
 Continue by following the instructions in the other JetBrains plugin docs:
 
-* [Configuration, environment variables, and proxy for the JetBrains plugins](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/configuration-environment-variables-and-proxy-for-the-jetbrains-plugins)
-* [JetBrains plugin authentication](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/authentication-for-the-jetbrains-plugins)
+* [Configuration for the Snyk JetBrains plugin and IDE proxy](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/configuration-environment-variables-and-proxy-for-the-jetbrains-plugins)
+* [Authentication for the JetBrains plugin](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/authentication-for-the-jetbrains-plugins)
 * [JetBrains plugin folder trust](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/jetbrains-plugin-folder-trust)
-* [Run an analysis with the JetBrains plugins](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/run-an-analysis-with-the-jetbrains-plugins)
+* [Run an analysis with the JetBrains plugin](https://docs.snyk.io/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugin/run-an-analysis-with-the-jetbrains-plugin)
 
 ## Support
 

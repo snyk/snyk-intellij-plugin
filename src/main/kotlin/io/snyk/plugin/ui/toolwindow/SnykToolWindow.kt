@@ -24,7 +24,6 @@ import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.container.ContainerResult
-import snyk.iac.IacResult
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -96,7 +95,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
                     updateActionsPresentation()
                 }
 
-                override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) =
+                override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>) =
                     Unit
             })
 

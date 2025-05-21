@@ -63,7 +63,7 @@ jobs:
             echo "No documentation changes detected, exiting."
           fi
         env:
-          SOURCE_PATH: ./docs/docs/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugins/README.md
+          SOURCE_PATH: ./docs/docs/scm-ide-and-ci-cd-integrations/snyk-ide-plugins-and-extensions/jetbrains-plugin/README.md
           FILE_TO_COMMIT: README.md
           DESTINATION_REPOSITORY: snyk-intellij-plugin
           DESTINATION_BRANCH: docs/automatic-gitbook-update

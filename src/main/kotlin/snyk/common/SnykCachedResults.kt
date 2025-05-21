@@ -40,14 +40,14 @@ class SnykCachedResults(
 
     fun isDisposed() = disposed
 
-    val currentSnykCodeResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
-    val currentOSSResultsLS: ConcurrentMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
+    val currentSnykCodeResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
+    val currentOSSResultsLS: ConcurrentMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
 
-    val currentContainerResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
+    val currentContainerResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
     var currentContainerResult: ContainerResult? = null
         get() = if (field?.isExpired() == false) field else null
 
-    val currentIacResultsLS: MutableMap<SnykFile, List<ScanIssue>> = ConcurrentMap()
+    val currentIacResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
 
     var currentOssError: SnykError? = null
     var currentContainerError: SnykError? = null
@@ -165,13 +165,13 @@ class SnykCachedResults(
                 override fun onPublishDiagnostics(
                     product: LsProduct,
                     snykFile: SnykFile,
-                    issueList: List<ScanIssue>
+                    issues: Set<ScanIssue>
                 ) {
                     if (snykFile.project.isDisposed || !snykFile.isInContent()) return
                     when (product) {
-                        LsProduct.OpenSource -> currentOSSResultsLS[snykFile] = issueList
-                        LsProduct.Code -> currentSnykCodeResultsLS[snykFile] = issueList
-                        LsProduct.InfrastructureAsCode -> currentIacResultsLS[snykFile] = issueList
+                        LsProduct.OpenSource -> currentOSSResultsLS[snykFile] = issues
+                        LsProduct.Code -> currentSnykCodeResultsLS[snykFile] = issues
+                        LsProduct.InfrastructureAsCode -> currentIacResultsLS[snykFile] = issues
                         LsProduct.Container -> Unit
                         LsProduct.Unknown -> Unit
                     }

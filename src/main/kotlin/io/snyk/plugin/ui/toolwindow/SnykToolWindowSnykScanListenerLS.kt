@@ -32,12 +32,22 @@ import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
 import snyk.common.ProductType
 import snyk.common.SnykFileIssueComparator
+import snyk.common.lsp.FilterableIssueType
 import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
+
+private const val CONGRATS_NO_ISSUES_FOUND = "✅ Congrats! No issues found!"
+private const val CONGRATS_NO_OPEN_ISSUES_FOUND = "✅ Congrats! No open issues found!"
+private const val OPEN_ISSUES_ARE_DISABLED = "Open issues are disabled!"
+private const val NO_IGNORED_ISSUES = "✋ No ignored issues, open issues are disabled"
+private const val OPEN_AND_IGNORED_ISSUES_ARE_DISABLED = "Open and Ignored issues are disabled!"
+private const val NO_FIXABLE_ISSUES = "There are no issues automatically fixable."
+private const val IGNORED_ISSUES_FILTERED_BUT_AVAILABLE = "Adjust your settings to view Ignored issues."
+private const val OPEN_ISSUES_FILTERED_BUT_AVAILABLE = "Adjust your settings to view Open issues."
 
 class SnykToolWindowSnykScanListenerLS(
     val project: Project,
@@ -74,38 +84,31 @@ class SnykToolWindowSnykScanListenerLS(
 
     override fun scanningSnykCodeFinished() {
         if (disposed) return
-        ApplicationManager.getApplication().invokeLater {
-            this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
-            this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning finished)"
-            this.snykToolWindowPanel.triggerSelectionListeners = false
-            val snykCachedResults = getSnykCachedResults(project)
-            displaySnykCodeResults(snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap())
-            this.snykToolWindowPanel.triggerSelectionListeners = true
-        }
+        this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
+        this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning finished)"
+        this.snykToolWindowPanel.triggerSelectionListeners = false
+        val snykCachedResults = getSnykCachedResults(project)
+        displaySnykCodeResults(snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap())
+        this.snykToolWindowPanel.triggerSelectionListeners = true
         refreshAnnotationsForOpenFiles(project)
     }
 
     override fun scanningOssFinished() {
         if (disposed) return
-        ApplicationManager.getApplication().invokeLater {
-            this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
-            this.snykToolWindowPanel.triggerSelectionListeners = false
-            val snykCachedResults = getSnykCachedResults(project)
-            displayOssResults(snykCachedResults?.currentOSSResultsLS ?: emptyMap())
-            this.snykToolWindowPanel.triggerSelectionListeners = true
-        }
-        refreshAnnotationsForOpenFiles(project)
+        this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
+        this.snykToolWindowPanel.triggerSelectionListeners = false
+        val snykCachedResults = getSnykCachedResults(project)
+        displayOssResults(snykCachedResults?.currentOSSResultsLS ?: emptyMap())
+        this.snykToolWindowPanel.triggerSelectionListeners = true
     }
 
     override fun scanningIacFinished() {
         if (disposed) return
-        ApplicationManager.getApplication().invokeLater {
-            this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
-            this.snykToolWindowPanel.triggerSelectionListeners = false
-            val snykCachedResults = getSnykCachedResults(project)
-            displayIacResults(snykCachedResults?.currentIacResultsLS ?: emptyMap())
-            this.snykToolWindowPanel.triggerSelectionListeners = true
-        }
+        this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
+        this.snykToolWindowPanel.triggerSelectionListeners = false
+        val snykCachedResults = getSnykCachedResults(project)
+        displayIacResults(snykCachedResults?.currentIacResultsLS ?: emptyMap())
+        this.snykToolWindowPanel.triggerSelectionListeners = true
         refreshAnnotationsForOpenFiles(project)
     }
 
@@ -136,12 +139,12 @@ class SnykToolWindowSnykScanListenerLS(
 
     private fun removeChildrenAndRefresh(node: DefaultMutableTreeNode) {
         node.removeAllChildren()
-        invokeLater{ (vulnerabilitiesTree.model as DefaultTreeModel).nodeStructureChanged(node) }
+        invokeLater { (vulnerabilitiesTree.model as DefaultTreeModel).nodeStructureChanged(node) }
     }
 
-    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issueList: List<ScanIssue>) {}
+    override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>) {}
 
-    fun displaySnykCodeResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    fun displaySnykCodeResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
         if (disposed) return
 
         val settings = pluginSettings()
@@ -149,10 +152,11 @@ class SnykToolWindowSnykScanListenerLS(
         // display Security issues
         val securityIssues =
             snykResults
-                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType } }
+                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType }.toSet() }
                 .toMap()
 
         displayIssues(
+            filterableIssueType = ScanIssue.CODE_SECURITY,
             enabledInSettings = settings.snykCodeSecurityIssuesScanEnable,
             filterTree = settings.treeFiltering.codeSecurityResults,
             snykResults = securityIssues,
@@ -164,10 +168,11 @@ class SnykToolWindowSnykScanListenerLS(
         // display Quality (non Security) issues
         val qualityIssues =
             snykResults
-                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType } }
+                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType }.toSet() }
                 .toMap()
 
         displayIssues(
+            filterableIssueType = ScanIssue.CODE_QUALITY,
             enabledInSettings = settings.snykCodeQualityIssuesScanEnable,
             filterTree = settings.treeFiltering.codeQualityResults,
             snykResults = qualityIssues,
@@ -178,7 +183,7 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     private fun displayResults(
-        snykResults: Map<SnykFile, List<ScanIssue>>,
+        snykResults: Map<SnykFile, Set<ScanIssue>>,
         enabledInSettings: Boolean,
         filterTree: Boolean,
         rootNode: DefaultMutableTreeNode,
@@ -193,6 +198,7 @@ class SnykToolWindowSnykScanListenerLS(
                 val ossResultsCount =
                     flattenedResults.filter { it.filterableIssueType == ScanIssue.OPEN_SOURCE }.distinct().size
                 displayIssues(
+                    filterableIssueType = ScanIssue.OPEN_SOURCE,
                     enabledInSettings = enabledInSettings,
                     filterTree = filterTree,
                     snykResults = snykResults,
@@ -207,6 +213,7 @@ class SnykToolWindowSnykScanListenerLS(
                     flattenedResults.filter { it.filterableIssueType == ScanIssue.INFRASTRUCTURE_AS_CODE }
                         .distinct().size
                 displayIssues(
+                    filterableIssueType = ScanIssue.INFRASTRUCTURE_AS_CODE,
                     enabledInSettings = enabledInSettings,
                     filterTree = filterTree,
                     snykResults = snykResults,
@@ -218,7 +225,7 @@ class SnykToolWindowSnykScanListenerLS(
         }
     }
 
-    fun displayOssResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    fun displayOssResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
         if (disposed) return
 
         val settings = pluginSettings()
@@ -232,7 +239,7 @@ class SnykToolWindowSnykScanListenerLS(
         )
     }
 
-    fun displayIacResults(snykResults: Map<SnykFile, List<ScanIssue>>) {
+    fun displayIacResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
         if (disposed) return
 
         val settings = pluginSettings()
@@ -246,9 +253,10 @@ class SnykToolWindowSnykScanListenerLS(
     }
 
     private fun displayIssues(
+        filterableIssueType: FilterableIssueType,
         enabledInSettings: Boolean,
         filterTree: Boolean,
-        snykResults: Map<SnykFile, List<ScanIssue>>,
+        snykResults: Map<SnykFile, Set<ScanIssue>>,
         rootNode: DefaultMutableTreeNode,
         ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
@@ -264,9 +272,13 @@ class SnykToolWindowSnykScanListenerLS(
             return
         }
 
-        val userObjectsForExpandedNodes =
-            snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+        var userObjectsForExpandedChildren: List<Any>? = emptyList()
+        var selectedNodeUserObject: Any? = Object()
+        ApplicationManager.getApplication().invokeAndWait {
+            userObjectsForExpandedChildren =
+                snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
+            selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
+        }
 
         rootNode.removeAllChildren()
 
@@ -277,27 +289,17 @@ class SnykToolWindowSnykScanListenerLS(
 
             if (filterTree) {
                 addInfoTreeNodes(
+                    filterableIssueType = filterableIssueType,
                     rootNode = rootNode,
                     issues = snykResults.values.flatten().distinct(),
                     fixableIssuesCount = fixableIssuesCount,
                 )
 
-                var includeIgnoredIssues = true
-                var includeOpenedIssues = true
-                if (settings.isGlobalIgnoresFeatureEnabled) {
-                    includeOpenedIssues = settings.openIssuesEnabled
-                    includeIgnoredIssues = settings.ignoredIssuesEnabled
-                }
-
                 val resultsToDisplay =
                     snykResults.map { entry ->
                         entry.key to
                             entry.value.filter {
-                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum()) &&
-                                    it.isVisible(
-                                        includeOpenedIssues,
-                                        includeIgnoredIssues,
-                                    )
+                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                             }
                     }.toMap()
                 displayResultsForRootTreeNode(rootNode, resultsToDisplay)
@@ -324,13 +326,110 @@ class SnykToolWindowSnykScanListenerLS(
 
         snykToolWindowPanel.smartReloadRootNode(
             rootNode,
-            userObjectsForExpandedNodes,
+            userObjectsForExpandedChildren,
             selectedNodeUserObject,
         )
     }
 
+    private fun getIssueFoundText(issuesCount: Int): String {
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
+            return OPEN_ISSUES_ARE_DISABLED
+        }
+
+        return if (issuesCount == 0) CONGRATS_NO_ISSUES_FOUND else
+            "✋ $issuesCount issue${if (issuesCount == 1) "" else "s"}"
+    }
+
+    private fun getIssueFoundTextForCode(totalIssuesCount: Int, openIssuesCount: Int, ignoredIssuesCount: Int): String {
+        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            return getIssueFoundText(totalIssuesCount)
+        }
+
+        val showingOpen = pluginSettings().openIssuesEnabled
+        val showingIgnored = pluginSettings().ignoredIssuesEnabled
+
+        val openIssuesText = "$openIssuesCount open issue${if (openIssuesCount == 1) "" else "s"}"
+        val ignoredIssuesText = "$ignoredIssuesCount ignored issue${if (ignoredIssuesCount == 1) "" else "s"}"
+
+        if (showingOpen && showingIgnored) {
+            return if (totalIssuesCount == 0) {
+                CONGRATS_NO_ISSUES_FOUND
+            } else {
+                "✋ $openIssuesText & $ignoredIssuesText"
+            }
+        }
+        if (showingOpen) {
+            return if (openIssuesCount == 0) {
+                CONGRATS_NO_OPEN_ISSUES_FOUND
+            } else {
+                "✋ $openIssuesText"
+            }
+        }
+        if (showingIgnored) {
+            return if (ignoredIssuesCount == 0) {
+                NO_IGNORED_ISSUES
+            } else {
+                "✋ $ignoredIssuesText, open issues are disabled"
+            }
+        }
+        return OPEN_AND_IGNORED_ISSUES_ARE_DISABLED // In theory, this is prevented by IntelliJ
+    }
+
+    private fun getNoIssueViewOptionsSelectedTreeNode(): InfoTreeNode? {
+        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            return null
+        }
+
+        if (!pluginSettings().openIssuesEnabled) {
+            return InfoTreeNode(
+                OPEN_ISSUES_FILTERED_BUT_AVAILABLE,
+                project,
+            )
+        }
+
+        return null;
+    }
+
+    private fun getNoIssueViewOptionsSelectedTreeNodeForCode(): InfoTreeNode? {
+        if (!pluginSettings().isGlobalIgnoresFeatureEnabled) {
+            return null
+        }
+
+        if (!pluginSettings().openIssuesEnabled) {
+            return InfoTreeNode(
+                OPEN_ISSUES_FILTERED_BUT_AVAILABLE,
+                project,
+            )
+        }
+
+        if (!pluginSettings().ignoredIssuesEnabled) {
+            return InfoTreeNode(
+                IGNORED_ISSUES_FILTERED_BUT_AVAILABLE,
+                project,
+            )
+        }
+
+        return null;
+    }
+
+    private fun getFixableIssuesText(fixableIssuesCount: Int, sayOpenIssues: Boolean = false): String {
+        return if (fixableIssuesCount > 0) {
+            "⚡ $fixableIssuesCount${if (sayOpenIssues) " open" else ""} issue${if (fixableIssuesCount == 1) " is" else "s are"} fixable automatically."
+        } else {
+            NO_FIXABLE_ISSUES
+        }
+    }
+
+    private fun getFixableIssuesTextForCode(fixableIssuesCount: Int): String? {
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
+            return null
+        }
+        return getFixableIssuesText(fixableIssuesCount, pluginSettings().isGlobalIgnoresFeatureEnabled)
+    }
+
     @Suppress("RedundantVisibilityModifierRule")
     fun addInfoTreeNodes(
+        filterableIssueType: FilterableIssueType,
         rootNode: DefaultMutableTreeNode,
         issues: List<ScanIssue>,
         fixableIssuesCount: Int? = null,
@@ -340,62 +439,35 @@ class SnykToolWindowSnykScanListenerLS(
             return
         }
 
-        val settings = pluginSettings()
-        var text = "✅ Congrats! No issues found!"
-        val issuesCount = issues.size
+        // totalIssuesCount is the number of issues returned by LS, which pre-filters on Issue View Options and Severity Filters (to be implemented at time of this comment - 6th May 2025).
+        val totalIssuesCount = issues.size
         val ignoredIssuesCount = issues.count { it.isIgnored() }
-        if (issuesCount != 0) {
-            val plural = getPlural(issuesCount)
-            text = "✋ $issuesCount issue$plural found"
-            if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
-                text += ", $ignoredIssuesCount ignored"
-            }
-        }
-        rootNode.add(
-            InfoTreeNode(
-                text,
-                project,
-            ),
+        // Depending on Issue View Options, ignored issues might be pre-filtered by the LS and so ignoredIssuesCount may be 0.
+        // In this case, openIssuesCount is the total issue count returned by the LS.
+        val openIssuesCount = totalIssuesCount - ignoredIssuesCount
+        val isCodeNode = filterableIssueType == ScanIssue.CODE_SECURITY || filterableIssueType == ScanIssue.CODE_QUALITY
+
+        val text = if (!isCodeNode) getIssueFoundText(totalIssuesCount) else getIssueFoundTextForCode(
+            totalIssuesCount,
+            openIssuesCount,
+            ignoredIssuesCount
         )
-
-        if (fixableIssuesCount != null) {
-            if (fixableIssuesCount > 0) {
-                val plural = getPlural(fixableIssuesCount)
-                rootNode.add(
-                    InfoTreeNode(
-                        "⚡ $fixableIssuesCount issue$plural can be fixed automatically",
-                        project,
-                    ),
+        rootNode.add(InfoTreeNode(text, project))
+        if (totalIssuesCount == 0) {
+            val ivoNode =
+                if (!isCodeNode) getNoIssueViewOptionsSelectedTreeNode() else getNoIssueViewOptionsSelectedTreeNodeForCode()
+            if (ivoNode != null) {
+                rootNode.add(ivoNode)
+            }
+        } else if (fixableIssuesCount != null) {
+            val fixableText =
+                if (!isCodeNode) getFixableIssuesText(fixableIssuesCount) else getFixableIssuesTextForCode(
+                    fixableIssuesCount
                 )
-            } else {
-                rootNode.add(
-                    InfoTreeNode("There are no issues automatically fixable", project),
-                )
+            if (fixableText != null) {
+                rootNode.add(InfoTreeNode(fixableText, project))
             }
         }
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled) {
-            if (ignoredIssuesCount == issuesCount && !settings.ignoredIssuesEnabled) {
-                rootNode.add(
-                    InfoTreeNode(
-                        "Adjust your Issue View Options to see ignored issues.",
-                        project,
-                    ),
-                )
-            } else if (ignoredIssuesCount == 0 && !settings.openIssuesEnabled) {
-                rootNode.add(
-                    InfoTreeNode(
-                        "Adjust your Issue View Options to open issues.",
-                        project,
-                    ),
-                )
-            }
-        }
-    }
-
-    private fun getPlural(issuesCount: Int) = if (issuesCount > 1) {
-        "s"
-    } else {
-        ""
     }
 
     private fun displayResultsForRootTreeNode(
@@ -440,7 +512,7 @@ class SnykToolWindowSnykScanListenerLS(
         expandTreeNodeRecursively(snykToolWindowPanel.vulnerabilitiesTree, rootNode)
     }
 
-    private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, List<ScanIssue>>): String {
+    private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, Set<ScanIssue>>): String {
         val high = results.values.flatten().count { it.getSeverityAsEnum() == Severity.HIGH }
         val medium = results.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
         val low = results.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }
