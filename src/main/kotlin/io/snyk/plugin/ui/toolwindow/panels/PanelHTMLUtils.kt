@@ -45,10 +45,10 @@ class PanelHTMLUtils {
             } else null
         }
         private fun getGenerateAiFixScript(): String {
-            return  "window.aiFixQuery(folderPath + '@|@' + filePath + '@|@' + issueId);\n"
+            return  "window.aiFixQuery(issueId);\n"
         }
         private fun getApplyAiFixScript(): String {
-            return "window.applyFixQuery(fixId + '|@' + filePath + '|@' + patch);\n"
+            return "window.applyFixQuery(fixId);\n"
         }
         private fun getSubmitIgnoreRequestScript(): String {
             return "window.submitIgnoreRequest(issueId + '@|@' + ignoreType + '@|@' + ignoreExpirationDate + '@|@' + ignoreReason);\n"
