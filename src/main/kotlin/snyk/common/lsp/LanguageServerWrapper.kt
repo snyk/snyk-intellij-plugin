@@ -629,13 +629,13 @@ class LanguageServerWrapper(
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
+    fun sendCodeFixDiffsCommand(issueID: String): List<Fix> {
         if (notAuthenticated()) return emptyList()
 
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_CODE_FIX_DIFFS
-            param.arguments = listOf(folderURI, fileURI, issueID)
+            param.arguments = listOf(issueID)
             val executeCommandResult = executeCommand(param, 120000) ?: return emptyList()
 
             val diffList: MutableList<Fix> = mutableListOf()
