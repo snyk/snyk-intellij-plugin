@@ -55,12 +55,16 @@ class UtilsKtTest {
         unmockkAll()
         if (SystemUtils.IS_OS_WINDOWS) return
         val expectedPaths = arrayOf(
-            "/Users/username/file.txt", // Valid path
-            "/Users/user name/file.txt", // Valid path
+            "/Users/username/file.txt",
+            "/Users/Username/file.txt",
+            "/Users/user name/file.txt",
+            "/Users/user name/hyphenated - folder/file.txt",
         )
         val inputUris = arrayOf(
-            "file:///Users/username/file.txt", // Invalid URI
-            "file:///Users/user%20name/file.txt", // Invalid URI
+            "file:///Users/username/file.txt", // URI
+            "file:///Users/Username/file.txt", // URI
+            "file:///Users/user%20name/file.txt", // URI with space
+            "file:///Users/user%20name/hyphenated%20-%20folder/file.txt", // URI with hyphen and space
         )
 
 
@@ -79,16 +83,20 @@ class UtilsKtTest {
         if (!SystemUtils.IS_OS_WINDOWS) return
         val expectedPaths = arrayOf(
             "C:\\Users\\username\\file.txt", // Valid path
+            "c:\\Users\\username\\file.txt", // Valid path
             "C:\\Users\\username with spaces\\file.txt", // Valid path
+            "C:\\Users\\username with hyphenated - spaces\\file.txt", // Valid path
             "C:\\Users\\username with \$peci@l characters\\file.txt", // Valid path
-            "\\\\my server\\shared folder\\file name with spaces & special%.txt"
+            "\\\\myserver\\shared folder\\file name with spaces \$peci@l%.txt"
         )
 
         val inputUris = arrayOf(
             "file:///C:/Users/username/file.txt", // Valid URI
+            "file:///c:/Users/username/file.txt", // Valid URI
             "file:///C:/Users/username%20with%20spaces/file.txt", // Valid URI
-            "file:///C:/Users/username%20with%20%24peci@l%20characters/file.txt", // Valid URI
-            "file://my%20server/shared%20folder/file%20name%20with%20spaces%20%26%20special%25.txt" // UNC
+            "file:///C:/Users/username%20with%20hyphenated%20-%20spaces/file.txt", // Valid URI
+            "file:///C:/Users/username%20with%20\$peci@l%20characters/file.txt", // Valid URI
+            "file://myserver/shared%20folder/file%20name%20with%20spaces%20\$peci@l%25.txt" // UNC
         )
 
         var i = 0

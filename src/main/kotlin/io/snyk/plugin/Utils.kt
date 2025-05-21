@@ -445,7 +445,7 @@ fun VirtualFile.toLanguageServerURI(): String {
 }
 
 fun String.fromPathToUriString(): String {
-    return Paths.get(this).toUri().toString()
+    return Paths.get(this).toUri().toASCIIString()
 }
 
 private fun String.startsWithWindowsDriveLetter(): Boolean {
