@@ -1,4 +1,8 @@
 # Snyk Security Changelog
+## [2.13.1]
+### Fixed
+- fixed not initialized exception in error handling during language server startup 
+
 ## [2.13.0]
 
 ### Changed
