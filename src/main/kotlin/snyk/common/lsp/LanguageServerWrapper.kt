@@ -12,13 +12,13 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.toFilePathString
 import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
@@ -64,9 +64,9 @@ import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
-import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.removeTrailingSlashesIfPresent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -485,10 +485,10 @@ class LanguageServerWrapper(
         // the folderConfigs in language server
         val folderConfigs = configuredWorkspaceFolders
             .filter {
-                val folderPath = it.uri.toFilePathString()
+                val folderPath = it.uri.fromUriToPath().toString()
                 folderConfigsRefreshed[folderPath] == true
             }.map {
-                val folderPath = it.uri.toFilePathString()
+                val folderPath = it.uri.fromUriToPath().toString()
                 service<FolderConfigSettings>().getFolderConfig(folderPath) }
             .toList()
 

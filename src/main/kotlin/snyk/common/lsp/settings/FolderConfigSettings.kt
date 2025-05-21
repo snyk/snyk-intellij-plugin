@@ -2,8 +2,8 @@ package snyk.common.lsp.settings
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.toFilePathString
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
@@ -58,7 +58,7 @@ class FolderConfigSettings {
         val additionalParameters = LanguageServerWrapper.getInstance().getWorkspaceFoldersFromRoots(project)
             .asSequence()
             .filter { LanguageServerWrapper.getInstance().configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.toFilePathString()) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
             .filter { it.additionalParameters?.isNotEmpty() ?: false }
             .map { it.additionalParameters?.joinToString(" ") }
             .joinToString(" ")

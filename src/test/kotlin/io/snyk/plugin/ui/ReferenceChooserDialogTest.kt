@@ -9,7 +9,6 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.toFilePathString
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
@@ -34,7 +33,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         languageServerWrapper.languageServer = lsMock
 
         project.getContentRootPaths().forEach {
-            val absolutePathString = it.toString().toFilePathString()
+            val absolutePathString = it.toString()
             service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
             folderConfig = FolderConfig(absolutePathString, "testBranch")
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
