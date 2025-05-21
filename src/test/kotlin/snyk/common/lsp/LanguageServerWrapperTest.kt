@@ -33,9 +33,6 @@ import snyk.common.lsp.commands.COMMAND_CODE_FIX_APPLY_AI_EDIT
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
-import java.io.File
-import java.io.FileNotFoundException
-import java.lang.reflect.Field
 import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
