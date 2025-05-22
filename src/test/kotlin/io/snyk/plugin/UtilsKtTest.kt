@@ -30,18 +30,11 @@ class UtilsKtTest {
 
     @Test
     fun toLanguageServerURL() {
-        val path = "C:/Users/username/file.txt"
-        var uri = "file://$path"
-        var virtualFile = mockk<VirtualFile>()
-        every { virtualFile.url } returns uri
+        val path = "C:\\Users\\username\\file.txt"
+        val virtualFile = mockk<VirtualFile>()
+        every { virtualFile.path } returns path
 
-        assertEquals("file:///$path", virtualFile.toLanguageServerURI())
-
-        uri = "file:///$path"
-        virtualFile = mockk<VirtualFile>()
-        every { virtualFile.url } returns uri
-
-        assertEquals("file:///$path", virtualFile.toLanguageServerURI())
+        assertEquals("file:///C:/Users/username/file.txt", virtualFile.toLanguageServerURI())
     }
 
     @Test

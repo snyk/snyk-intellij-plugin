@@ -441,7 +441,7 @@ fun String.toVirtualFileOrNull(): VirtualFile? {
 }
 
 fun VirtualFile.toLanguageServerURI(): String {
-    return this.url.fromPathToUriString()
+    return this.path.fromPathToUriString()
 }
 
 fun String.fromPathToUriString(): String {
