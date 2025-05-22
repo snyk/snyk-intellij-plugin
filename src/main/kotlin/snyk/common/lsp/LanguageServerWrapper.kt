@@ -85,7 +85,7 @@ import java.util.logging.Level
 import java.util.logging.Logger.getLogger
 import kotlin.io.path.exists
 
-private const val INITIALIZATION_TIMEOUT = 2000L
+private const val INITIALIZATION_TIMEOUT = 20L
 
 @Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(
