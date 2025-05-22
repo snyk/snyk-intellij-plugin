@@ -29,13 +29,27 @@ class UtilsKtTest {
     }
 
     @Test
-    fun toLanguageServerURL() {
+    fun `toLanguageServerURL (windows)`() {
+        unmockkAll()
+        if (!SystemUtils.IS_OS_WINDOWS) return
         val path = "C:\\Users\\username\\file.txt"
         val virtualFile = mockk<VirtualFile>()
         every { virtualFile.path } returns path
 
         assertEquals("file:///C:/Users/username/file.txt", virtualFile.toLanguageServerURI())
     }
+
+    @Test
+    fun `toLanguageServerURL (posix)`() {
+        unmockkAll()
+        if (SystemUtils.IS_OS_WINDOWS) return
+        val path = "/Users/username/file.txt"
+        val virtualFile = mockk<VirtualFile>()
+        every { virtualFile.path } returns path
+
+        assertEquals("file:///Users/username/file.txt", virtualFile.toLanguageServerURI())
+    }
+
 
     @Test
     fun isAdditionalParametersValid() {
