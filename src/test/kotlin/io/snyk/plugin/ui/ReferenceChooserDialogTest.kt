@@ -8,6 +8,7 @@ import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.fromPathToUriString
 import io.snyk.plugin.getContentRootPaths
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.WorkspaceFolder
@@ -37,7 +38,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
             service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
             folderConfig = FolderConfig(absolutePathString, "testBranch")
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
-            languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(absolutePathString, "test"))
+            languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(absolutePathString.fromPathToUriString(), "test"))
             languageServerWrapper.folderConfigsRefreshed[folderConfig.folderPath] = true
         }
         cut = ReferenceChooserDialog(project)
