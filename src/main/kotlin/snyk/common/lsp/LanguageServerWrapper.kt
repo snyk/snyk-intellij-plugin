@@ -203,7 +203,7 @@ class LanguageServerWrapper(
             }
         } catch (e: Exception) {
             logger.warn(e)
-            process.destroy()
+            if (processIsAlive()) process.destroyForcibly()
             isInitialized = false
         }
     }
@@ -217,7 +217,7 @@ class LanguageServerWrapper(
         lsp4jLogger.level = Level.OFF
         messageProducerLogger.level = Level.OFF
         try {
-            val shouldShutdown = lsIsAlive()
+            val shouldShutdown = processIsAlive()
             executorService.submit {
                 if (shouldShutdown) {
                     val project = ProjectUtil.getActiveProject()
@@ -233,11 +233,11 @@ class LanguageServerWrapper(
             // we don't care
         } finally {
             try {
-                if (lsIsAlive()) languageServer.exit()
+                if (processIsAlive()) languageServer.exit()
             } catch (ignore: Exception) {
                 // do nothing
             } finally {
-                if (lsIsAlive()) process.destroyForcibly()
+                if (processIsAlive()) process.destroyForcibly()
             }
             lsp4jLogger.level = previousLSP4jLogLevel
             messageProducerLogger.level = previousMessageProducerLevel
@@ -245,7 +245,7 @@ class LanguageServerWrapper(
         }
     }
 
-    private fun lsIsAlive() = ::process.isInitialized && process.isAlive
+    private fun processIsAlive() = ::process.isInitialized && process.isAlive
 
     fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
         if (disposed || project.isDisposed) return emptySet()
@@ -623,13 +623,13 @@ class LanguageServerWrapper(
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun sendCodeFixDiffsCommand(folderURI: String, fileURI: String, issueID: String): List<Fix> {
+    fun sendCodeFixDiffsCommand(issueID: String): List<Fix> {
         if (notAuthenticated()) return emptyList()
 
         try {
             val param = ExecuteCommandParams()
             param.command = COMMAND_CODE_FIX_DIFFS
-            param.arguments = listOf(folderURI, fileURI, issueID)
+            param.arguments = listOf(issueID)
             val executeCommandResult = executeCommand(param, 120000) ?: return emptyList()
 
             val diffList: MutableList<Fix> = mutableListOf()

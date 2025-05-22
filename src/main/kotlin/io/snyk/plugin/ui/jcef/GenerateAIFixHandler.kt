@@ -17,14 +17,9 @@ class GenerateAIFixHandler() {
         val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         aiFixQuery.addHandler { value ->
-            val params = value.split("@|@")
-            val folderURI = params[0]
-            val fileURI = params[1]
-            val issueID = params[2]
-
             runInBackground("Snyk: getting AI fix proposals...") {
                 val responseDiff: List<Fix> =
-                    LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
+                    LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(value)
 
                 val script = """
                         window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
