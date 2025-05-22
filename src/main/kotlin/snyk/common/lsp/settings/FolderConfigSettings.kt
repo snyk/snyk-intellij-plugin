@@ -7,6 +7,7 @@ import io.snyk.plugin.getContentRootPaths
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
+import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 
@@ -18,11 +19,13 @@ class FolderConfigSettings {
     @Suppress("UselessCallOnNotNull", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "RedundantSuppression")
     fun addFolderConfig(@NotNull folderConfig: FolderConfig) {
         if (folderConfig?.folderPath.isNullOrBlank() ?: true) return
-        configs[folderConfig.folderPath] = folderConfig
+        val normalizedPath = Paths.get(folderConfig.folderPath).normalize().toAbsolutePath().toString()
+        configs[normalizedPath] = folderConfig
     }
 
     internal fun getFolderConfig(folderPath: String): FolderConfig {
-        val folderConfig = configs[folderPath] ?: createEmpty(folderPath)
+        val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
+        val folderConfig = configs[normalizedPath] ?: createEmpty(normalizedPath)
         return folderConfig
     }
 

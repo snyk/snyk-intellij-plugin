@@ -200,7 +200,8 @@ class SnykLanguageClient :
             val service = service<FolderConfigSettings>()
             service.addAll(folderConfigs)
             folderConfigs.forEach {
-                LanguageServerWrapper.getInstance().folderConfigsRefreshed[it.folderPath] = true
+                val normalizedPath = Paths.get(it.folderPath).normalize().toAbsolutePath().toString()
+                LanguageServerWrapper.getInstance().folderConfigsRefreshed[normalizedPath] = true
             }
         }
     }
