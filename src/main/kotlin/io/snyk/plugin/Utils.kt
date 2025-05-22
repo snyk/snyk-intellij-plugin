@@ -428,8 +428,12 @@ fun String.toVirtualFile(): VirtualFile {
 }
 
 fun String.fromUriToPath(): Path {
-    val filePath = Paths.get(URI.create(this))
-    return filePath.normalize()
+    try {
+        val filePath = Paths.get(URI.create(this))
+        return filePath.normalize()
+    } catch (e: IllegalArgumentException) {
+        throw FileNotFoundException("Invalid URI format: $this", e)
+    }
 }
 
 fun String.toVirtualFileOrNull(): VirtualFile? {
