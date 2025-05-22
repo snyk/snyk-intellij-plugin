@@ -34,7 +34,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         languageServerWrapper.languageServer = lsMock
 
         project.getContentRootPaths().forEach {
-            val absolutePathString = it.toString()
+            val absolutePathString = it.toAbsolutePath().toString()
             service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
             folderConfig = FolderConfig(absolutePathString, "testBranch")
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
