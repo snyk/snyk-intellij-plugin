@@ -20,6 +20,7 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.toLanguageServerURI
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -84,7 +85,7 @@ import java.util.logging.Level
 import java.util.logging.Logger.getLogger
 import kotlin.io.path.exists
 
-private const val INITIALIZATION_TIMEOUT = 20L
+private const val INITIALIZATION_TIMEOUT = 2000L
 
 @Suppress("TooGenericExceptionCaught")
 class LanguageServerWrapper(
@@ -199,10 +200,10 @@ class LanguageServerWrapper(
                 LanguageServerRestartListener.getInstance()
                 refreshFeatureFlags()
             } else {
-                logger.warn("Language Server initialization did not succeed")
+                logger.error("Snyk Language Server process launch failed.")
             }
         } catch (e: Exception) {
-            logger.warn(e)
+            logger.error("Initialization of Snyk Language Server failed", e)
             if (processIsAlive()) process.destroyForcibly()
             isInitialized = false
         }
@@ -336,7 +337,7 @@ class LanguageServerWrapper(
                 added.filter { !configuredWorkspaceFolders.contains(it) },
                 removed.filter { configuredWorkspaceFolders.contains(it) },
             )
-            if (params.event.added.size > 0 || params.event.removed.size > 0) {
+            if (params.event.added.isNotEmpty() || params.event.removed.isNotEmpty()) {
                 languageServer.workspaceService.didChangeWorkspaceFolders(params)
                 configuredWorkspaceFolders.removeAll(removed)
                 configuredWorkspaceFolders.addAll(added)
@@ -489,7 +490,8 @@ class LanguageServerWrapper(
                 folderConfigsRefreshed[folderPath] == true
             }.map {
                 val folderPath = it.uri.fromUriToPath().toString()
-                service<FolderConfigSettings>().getFolderConfig(folderPath) }
+                service<FolderConfigSettings>().getFolderConfig(folderPath)
+            }
             .toList()
 
         return LanguageServerSettings(
@@ -621,7 +623,13 @@ class LanguageServerWrapper(
 
     fun addContentRoots(project: Project) {
         if (disposed || project.isDisposed) return
-        ensureLanguageServerInitialized()
+        if (!ensureLanguageServerInitialized()) {
+            SnykBalloonNotificationHelper.showWarn(
+                "Unable to initialize the Snyk Language Server. The plugin will be non-functional.",
+                project
+            )
+            return
+        }
         ensureLanguageServerProtocolVersion(project)
         updateConfiguration(false)
         val added = getWorkspaceFoldersFromRoots(project)
@@ -665,7 +673,13 @@ class LanguageServerWrapper(
         executeCommand(param)
     }
 
-    fun sendSubmitIgnoreRequestCommand(workflow: String, issueId: String, ignoreType: String, ignoreReason: String, ignoreExpirationDate: String) {
+    fun sendSubmitIgnoreRequestCommand(
+        workflow: String,
+        issueId: String,
+        ignoreType: String,
+        ignoreReason: String,
+        ignoreExpirationDate: String
+    ) {
         if (!ensureLanguageServerInitialized()) throw RuntimeException("couldn't initialize language server")
         try {
             val param = ExecuteCommandParams()
