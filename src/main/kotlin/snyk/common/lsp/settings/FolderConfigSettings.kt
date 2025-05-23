@@ -4,9 +4,11 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.suffixIfNot
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
+import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
@@ -19,14 +21,25 @@ class FolderConfigSettings {
     @Suppress("UselessCallOnNotNull", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "RedundantSuppression")
     fun addFolderConfig(@NotNull folderConfig: FolderConfig) {
         if (folderConfig.folderPath.isNullOrBlank()) return
-        val normalizedAbsolutePath = Paths.get(folderConfig.folderPath).normalize().toAbsolutePath().toString()
+        val normalizedAbsolutePath = normalizePath(folderConfig.folderPath)
+
         val configToStore = folderConfig.copy(folderPath = normalizedAbsolutePath)
         configs[normalizedAbsolutePath] = configToStore
     }
 
+    private fun normalizePath(folderPath: String): String {
+        val normalizedAbsolutePath =
+            Paths.get(folderPath)
+                .normalize()
+                .toAbsolutePath()
+                .toString()
+                .suffixIfNot(File.separator)
+        return normalizedAbsolutePath
+    }
+
     internal fun getFolderConfig(folderPath: String): FolderConfig {
-        val normalizedAbsolutePath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
-        val folderConfig = configs[normalizedAbsolutePath] ?: createEmpty(normalizedAbsolutePath)
+        val normalizedPath = normalizePath(folderPath)
+        val folderConfig = configs[normalizedPath] ?: createEmpty(normalizedPath)
         return folderConfig
     }
 
