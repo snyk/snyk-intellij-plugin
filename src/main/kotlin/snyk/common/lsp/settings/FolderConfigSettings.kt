@@ -2,11 +2,14 @@ package snyk.common.lsp.settings
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.toFilePathString
+import io.snyk.plugin.suffixIfNot
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
+import java.io.File
+import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 
@@ -17,19 +20,35 @@ class FolderConfigSettings {
 
     @Suppress("UselessCallOnNotNull", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "RedundantSuppression")
     fun addFolderConfig(@NotNull folderConfig: FolderConfig) {
-        if (folderConfig?.folderPath.isNullOrBlank() ?: true) return
-        configs[folderConfig.folderPath] = folderConfig
+        if (folderConfig.folderPath.isNullOrBlank()) return
+        val normalizedAbsolutePath = normalizePath(folderConfig.folderPath)
+
+        val configToStore = folderConfig.copy(folderPath = normalizedAbsolutePath)
+        configs[normalizedAbsolutePath] = configToStore
+    }
+
+    private fun normalizePath(folderPath: String): String {
+        val normalizedAbsolutePath =
+            Paths.get(folderPath)
+                .normalize()
+                .toAbsolutePath()
+                .toString()
+                .suffixIfNot(File.separator)
+        return normalizedAbsolutePath
     }
 
     internal fun getFolderConfig(folderPath: String): FolderConfig {
-        val folderConfig = configs[folderPath] ?: createEmpty(folderPath)
+        val normalizedPath = normalizePath(folderPath)
+        val folderConfig = configs[normalizedPath] ?: createEmpty(normalizedPath)
         return folderConfig
     }
 
-    private fun createEmpty(folderPath: String): FolderConfig {
-        val folderConfig = FolderConfig(folderPath = folderPath, baseBranch = "main")
-        addFolderConfig(folderConfig)
-        return folderConfig
+    private fun createEmpty(normalizedAbsolutePath: String): FolderConfig {
+        val newConfig = FolderConfig(folderPath = normalizedAbsolutePath, baseBranch = "main")
+        // Directly add to map, as addFolderConfig would re-normalize and copy, which is redundant here
+        // since normalizedAbsolutePath is already what we want for the key and the object's path.
+        configs[normalizedAbsolutePath] = newConfig
+        return newConfig
     }
 
     fun getAll(): Map<String, FolderConfig> {
@@ -58,7 +77,7 @@ class FolderConfigSettings {
         val additionalParameters = LanguageServerWrapper.getInstance().getWorkspaceFoldersFromRoots(project)
             .asSequence()
             .filter { LanguageServerWrapper.getInstance().configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.toFilePathString()) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
             .filter { it.additionalParameters?.isNotEmpty() ?: false }
             .map { it.additionalParameters?.joinToString(" ") }
             .joinToString(" ")

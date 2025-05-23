@@ -199,7 +199,7 @@ class SnykLanguageClient :
             val service = service<FolderConfigSettings>()
             service.addAll(folderConfigs)
             folderConfigs.forEach {
-                LanguageServerWrapper.getInstance().folderConfigsRefreshed[it.folderPath] = true
+                LanguageServerWrapper.getInstance().updateFolderConfigRefresh(it.folderPath, true)
             }
         }
     }

@@ -1,7 +1,8 @@
 # Snyk Security Changelog
 ## [2.13.1]
 ### Fixed
-- fixed not initialized exception in error handling during language server startup 
+- fixed not initialized exception in error handling during language server startup
+- fixed handling of special characters in filepaths
 
 ## [2.13.0]
 

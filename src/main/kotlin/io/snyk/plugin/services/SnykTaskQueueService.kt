@@ -22,6 +22,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.TestOnly
+import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanState
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
@@ -56,7 +57,13 @@ class SnykTaskQueueService(val project: Project) {
 
         // wait for modules to be loaded and indexed so we can add all relevant content roots
         DumbService.getInstance(project).runWhenSmart {
-            languageServerWrapper.addContentRoots(project)
+            runAsync {
+                try {
+                    languageServerWrapper.addContentRoots(project)
+                } catch (e: RuntimeException) {
+                    logger.error("unable to add content roots for project $project", e)
+                }
+            }
         }
     }
 
