@@ -166,4 +166,67 @@ class FolderConfigSettingsTest {
             assertEquals("BaseBranch for lower case path (distinct)", "lower", settings.getFolderConfig(pathLower).baseBranch)
         }
     }
+
+    @Test
+    fun `addFolderConfig with trailing slash is equivalent to without trailing slash`() {
+        val pathWithSlash = "/test/trailing/"
+        val pathWithoutSlash = "/test/trailing"
+        // For non-root paths, Paths.get().normalize() typically removes trailing slashes.
+        val expectedNormalizedPath = Paths.get(pathWithoutSlash).normalize().toAbsolutePath().toString()
+
+        // Add with slash
+        val config1 = FolderConfig(folderPath = pathWithSlash, baseBranch = "main")
+        settings.addFolderConfig(config1)
+
+        // Retrieve with and without slash
+        val retrieved1With = settings.getFolderConfig(pathWithSlash)
+        val retrieved1Without = settings.getFolderConfig(pathWithoutSlash)
+
+        assertNotNull("Config should be retrievable with slash", retrieved1With)
+        assertEquals("Retrieved (with slash) path should be normalized", expectedNormalizedPath, retrieved1With.folderPath)
+        assertNotNull("Config should be retrievable without slash", retrieved1Without)
+        assertEquals("Retrieved (without slash) path should be normalized", expectedNormalizedPath, retrieved1Without.folderPath)
+        assertEquals("Both retrievals should yield the same object instance", retrieved1With, retrieved1Without)
+        assertEquals("Only one config should be stored", 1, settings.getAll().size)
+        assertTrue("Map key should be the normalized path", settings.getAll().containsKey(expectedNormalizedPath))
+
+        // Clear and test adding without slash first
+        settings.clear()
+        val config2 = FolderConfig(folderPath = pathWithoutSlash, baseBranch = "develop")
+        settings.addFolderConfig(config2)
+
+        val retrieved2With = settings.getFolderConfig(pathWithSlash)
+        val retrieved2Without = settings.getFolderConfig(pathWithoutSlash)
+
+        assertNotNull("Config (added without slash) should be retrievable with slash", retrieved2With)
+        assertEquals("Retrieved (with slash) path should be normalized (added without)", expectedNormalizedPath, retrieved2With.folderPath)
+        assertEquals("develop", retrieved2With.baseBranch) // Ensure correct config is retrieved
+        assertNotNull("Config (added without slash) should be retrievable without slash", retrieved2Without)
+        assertEquals("Retrieved (without slash) path should be normalized (added without)", expectedNormalizedPath, retrieved2Without.folderPath)
+        assertEquals("develop", retrieved2Without.baseBranch)
+        assertEquals("Both retrievals should yield the same object instance", retrieved2With, retrieved2Without)
+        assertEquals("Only one config should be stored when adding without slash", 1, settings.getAll().size)
+    }
+
+    @Test
+    fun `addFolderConfig with trailing slash on root path`() {
+        // Behavior of Paths.get for root might differ slightly, e.g. "/" vs "/."
+        // Note: Windows root "C:\\" vs "C:\" might also be relevant if testing on Windows.
+        // For simplicity, this test uses POSIX root.
+        val rootPathWithSlash = "/"
+        val rootPathNormalized = Paths.get(rootPathWithSlash).normalize().toAbsolutePath().toString()
+
+        val config = FolderConfig(folderPath = rootPathWithSlash, baseBranch = "rootBranch")
+        settings.addFolderConfig(config)
+        val retrieved = settings.getFolderConfig(rootPathWithSlash)
+        assertNotNull("Retrieved config for root path should not be null", retrieved)
+        assertEquals("Retrieved root path should be normalized", rootPathNormalized, retrieved.folderPath)
+        assertEquals("Settings map size for root path should be 1", 1, settings.getAll().size)
+
+        // Test with a path that might normalize to root, e.g., "/."
+        val retrievedDot = settings.getFolderConfig("/.")
+        assertNotNull("Retrieved config for '/.' should not be null", retrievedDot)
+        assertEquals("Retrieved path for '/.' should be normalized to root", rootPathNormalized, retrievedDot.folderPath)
+        assertEquals("Settings map size should still be 1 after retrieving '/.'", 1, settings.getAll().size) // Still one config
+    }
 }

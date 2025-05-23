@@ -445,7 +445,7 @@ fun VirtualFile.toLanguageServerURI(): String {
 }
 
 fun String.fromPathToUriString(): String {
-    return Paths.get(this).toUri().toASCIIString()
+    return Paths.get(this).normalize().toUri().toASCIIString()
 }
 
 private fun String.startsWithWindowsDriveLetter(): Boolean {
@@ -456,7 +456,7 @@ fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.g
 
 fun Project.getContentRootPaths(): SortedSet<Path> {
     return getContentRootVirtualFiles()
-        .mapNotNull { it.path.toNioPathOrNull() }
+        .mapNotNull { it.path.toNioPathOrNull()?.normalize() }
         .toSortedSet()
 }
 
