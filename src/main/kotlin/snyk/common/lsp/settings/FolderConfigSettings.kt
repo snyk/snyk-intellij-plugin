@@ -18,21 +18,24 @@ class FolderConfigSettings {
 
     @Suppress("UselessCallOnNotNull", "USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "RedundantSuppression")
     fun addFolderConfig(@NotNull folderConfig: FolderConfig) {
-        if (folderConfig?.folderPath.isNullOrBlank() ?: true) return
-        val normalizedPath = Paths.get(folderConfig.folderPath).normalize().toAbsolutePath().toString()
-        configs[normalizedPath] = folderConfig
+        if (folderConfig.folderPath.isNullOrBlank()) return
+        val normalizedAbsolutePath = Paths.get(folderConfig.folderPath).normalize().toAbsolutePath().toString()
+        val configToStore = folderConfig.copy(folderPath = normalizedAbsolutePath)
+        configs[normalizedAbsolutePath] = configToStore
     }
 
     internal fun getFolderConfig(folderPath: String): FolderConfig {
-        val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
-        val folderConfig = configs[normalizedPath] ?: createEmpty(normalizedPath)
+        val normalizedAbsolutePath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
+        val folderConfig = configs[normalizedAbsolutePath] ?: createEmpty(normalizedAbsolutePath)
         return folderConfig
     }
 
-    private fun createEmpty(folderPath: String): FolderConfig {
-        val folderConfig = FolderConfig(folderPath = folderPath, baseBranch = "main")
-        addFolderConfig(folderConfig)
-        return folderConfig
+    private fun createEmpty(normalizedAbsolutePath: String): FolderConfig {
+        val newConfig = FolderConfig(folderPath = normalizedAbsolutePath, baseBranch = "main")
+        // Directly add to map, as addFolderConfig would re-normalize and copy, which is redundant here
+        // since normalizedAbsolutePath is already what we want for the key and the object's path.
+        configs[normalizedAbsolutePath] = newConfig
+        return newConfig
     }
 
     fun getAll(): Map<String, FolderConfig> {

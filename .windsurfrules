@@ -6,6 +6,7 @@ always write and update test cases. iterate until they pass.
 use existing mocks, don't write new ones.
 if you use mocks, use mockk to generate them.
 always run the tests after editing.
+use junit4 syntax
 
 ** security **
 determine the absolute path of the project directory. you can do that e.g. by executing pwd on the shell within the directory.

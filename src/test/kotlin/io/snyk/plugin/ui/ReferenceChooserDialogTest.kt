@@ -39,7 +39,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
             folderConfig = FolderConfig(absolutePathString, "testBranch")
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
             languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(absolutePathString.fromPathToUriString(), "test"))
-            languageServerWrapper.folderConfigsRefreshed[folderConfig.folderPath] = true
+            languageServerWrapper.updateFolderConfigRefresh(folderConfig.folderPath, true)
         }
         cut = ReferenceChooserDialog(project)
     }

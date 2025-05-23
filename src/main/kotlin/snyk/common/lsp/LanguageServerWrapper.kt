@@ -98,7 +98,7 @@ class LanguageServerWrapper(
 
     // internal for test set up
     internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
-    internal var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
+    private var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -765,6 +765,15 @@ class LanguageServerWrapper(
     override fun dispose() {
         disposed = true
         shutdown()
+    }
+
+    fun getFolderConfigsRefreshed(): Map<String?, Boolean?> {
+        return Collections.unmodifiableMap(this.folderConfigsRefreshed)
+    }
+
+    fun updateFolderConfigRefresh(folderPath: String, refreshed: Boolean) {
+        val path = Paths.get(folderPath).normalize().toAbsolutePath().toString()
+        this.folderConfigsRefreshed[path] = refreshed
     }
 
 
