@@ -9,10 +9,10 @@ import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.apache.commons.lang3.SystemProperties
+import org.apache.commons.lang3.SystemUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import java.io.File
 
 class UtilsKtTest {
 
@@ -29,20 +29,27 @@ class UtilsKtTest {
     }
 
     @Test
-    fun toLanguageServerURL() {
-        val path = "C:/Users/username/file.txt"
-        var uri = "file://$path"
-        var virtualFile = mockk<VirtualFile>()
-        every { virtualFile.url } returns uri
+    fun `toLanguageServerURL (windows)`() {
+        unmockkAll()
+        if (!SystemUtils.IS_OS_WINDOWS) return
+        val path = "C:\\Users\\username\\file.txt"
+        val virtualFile = mockk<VirtualFile>()
+        every { virtualFile.path } returns path
 
-        assertEquals("file:///$path", virtualFile.toLanguageServerURI())
-
-        uri = "file:///$path"
-        virtualFile = mockk<VirtualFile>()
-        every { virtualFile.url } returns uri
-
-        assertEquals("file:///$path", virtualFile.toLanguageServerURI())
+        assertEquals("file:///C:/Users/username/file.txt", virtualFile.toLanguageServerURI())
     }
+
+    @Test
+    fun `toLanguageServerURL (posix)`() {
+        unmockkAll()
+        if (SystemUtils.IS_OS_WINDOWS) return
+        val path = "/Users/username/file.txt"
+        val virtualFile = mockk<VirtualFile>()
+        every { virtualFile.path } returns path
+
+        assertEquals("file:///Users/username/file.txt", virtualFile.toLanguageServerURI())
+    }
+
 
     @Test
     fun isAdditionalParametersValid() {
@@ -51,47 +58,60 @@ class UtilsKtTest {
     }
 
     @Test
-    fun toFilePathString() {
-
-        // Windows files
-        var pathsToTest = arrayOf(
-            "C:\\Users\\username\\file.txt", // Valid path with Windows style separators
-            "c:\\Users\\username\\file.txt", // Valid path with Windows style separators and a lowercase drive letter
-            "C:/Users/username/file.txt", // Valid path with Unix style separators
-            "C:\\Users\\.\\username\\..\\username\\file.txt", // valid path with extra relative sub paths
-            "file:///C:/Users/username/file.txt", // Valid URI with blank host
-            "file:///c:/Users/username/file.txt", // Valid URI with blank host and a lowercase drive letter
-            "file:/C:/Users/username/file.txt", // Valid URI with no host
-            "file:///C:/Users/./username/../username/file.txt", // Valid URI and extra relative sub paths
-            "file://C:/Users/username/file.txt", // Invalid URI
-            "file://C:\\Users\\username\\file.txt", // Invalid URI
+    fun `conversion between path and uri - ensure we can convert a URI to a path and back (posix)`() {
+        unmockkAll()
+        if (SystemUtils.IS_OS_WINDOWS) return
+        val expectedPaths = arrayOf(
+            "/Users/username/file.txt",
+            "/Users/Username/file.txt",
+            "/Users/user name/file.txt",
+            "/Users/user name/hyphenated - folder/file.txt",
+        )
+        val inputUris = arrayOf(
+            "file:///Users/username/file.txt", // URI
+            "file:///Users/Username/file.txt", // URI
+            "file:///Users/user%20name/file.txt", // URI with space
+            "file:///Users/user%20name/hyphenated%20-%20folder/file.txt", // URI with hyphen and space
         )
 
-        var expectedPath = "C:\\Users\\username\\file.txt"
-        var expectedUri = "file:///C:/Users/username/file.txt"
 
-        for (path in pathsToTest) {
-            assertEquals("Testing path $path normalization", expectedPath, path.toFilePathString())
-            assertEquals("Testing path $path URI conversion", expectedUri, path.toFileURIString())
+        var i = 0
+        for (uri in inputUris) {
+            val actualPath = uri.fromUriToPath().toString()
+            assertEquals("Testing $uri to path conversion", expectedPaths[i], actualPath)
+            assertEquals("Testing $actualPath to uri conversion", uri, actualPath.fromPathToUriString())
+            i++
         }
+    }
 
-        // Unix style files
-        pathsToTest = arrayOf(
-            "\\users\\username\\file.txt", // Valid path with Windows style separators
-            "/users/username/file.txt", // Valid path with Unix style separators
-            "/users/./username/../username/file.txt", // valid path with extra relative sub paths
-            "file:///users/username/file.txt", // Valid path with scheme
-            "file:/users/username/file.txt", // Valid path with scheme
-            "file:///users/./username/../username/file.txt", // Valid path with scheme and extra relative sub paths
-            "file://users/username/file.txt", // Invalid path with scheme.
+    @Test
+    fun `conversion between path and uri - ensure we can convert a URI to a path and back (windows)`() {
+        unmockkAll()
+        if (!SystemUtils.IS_OS_WINDOWS) return
+        val expectedPaths = arrayOf(
+            "C:\\Users\\username\\file.txt", // Valid path
+            "c:\\Users\\username\\file.txt", // Valid path
+            "C:\\Users\\username with spaces\\file.txt", // Valid path
+            "C:\\Users\\username with hyphenated - spaces\\file.txt", // Valid path
+            "C:\\Users\\username with \$peci@l characters\\file.txt", // Valid path
+            "\\\\myserver\\shared folder\\file name with spaces \$peci@l%.txt"
         )
 
-        expectedPath = "/users/username/file.txt"
-        expectedUri = "file:///users/username/file.txt"
+        val inputUris = arrayOf(
+            "file:///C:/Users/username/file.txt", // Valid URI
+            "file:///c:/Users/username/file.txt", // Valid URI
+            "file:///C:/Users/username%20with%20spaces/file.txt", // Valid URI
+            "file:///C:/Users/username%20with%20hyphenated%20-%20spaces/file.txt", // Valid URI
+            "file:///C:/Users/username%20with%20\$peci@l%20characters/file.txt", // Valid URI
+            "file://myserver/shared%20folder/file%20name%20with%20spaces%20\$peci@l%25.txt" // UNC
+        )
 
-        for (path in pathsToTest) {
-            assertEquals("Testing path $path normalization", expectedPath, path.toFilePathString())
-            assertEquals("Testing path $path URI conversion", expectedUri, path.toFileURIString())
+        var i = 0
+        for (uri in inputUris) {
+            val actualPath = uri.fromUriToPath().toString()
+            assertEquals("Testing $uri to path conversion", expectedPaths[i], actualPath)
+            assertEquals("Testing $actualPath to uri conversion", uri, actualPath.fromPathToUriString())
+            i++
         }
     }
 }
