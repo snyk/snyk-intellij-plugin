@@ -15,7 +15,7 @@ class ApplyAiFixEditHandler(private val project: Project) {
 
     val logger = Logger.getInstance(this::class.java).apply {
         // tie log level to language server log level
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         if (languageServerWrapper.logger.isDebugEnabled) this.setLevel(LogLevel.DEBUG)
         if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
     }
@@ -27,7 +27,7 @@ class ApplyAiFixEditHandler(private val project: Project) {
             logger.debug("Generate ApplAiFixEditCommand for fix $value")
             // Avoid blocking the UI thread
             runInBackground("Snyk: Send command to apply AI fix edit...") {
-                LanguageServerWrapper.getInstance().sendCodeApplyAiFixEditCommand(value)
+                LanguageServerWrapper.getInstance(project).sendCodeApplyAiFixEditCommand(value)
             }
 
             return@addHandler JBCefJSQuery.Response("success")

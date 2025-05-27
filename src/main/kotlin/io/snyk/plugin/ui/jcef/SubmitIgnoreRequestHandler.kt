@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
+import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.runInBackground
@@ -9,7 +10,7 @@ import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 
 
-class SubmitIgnoreRequestHandler() {
+class SubmitIgnoreRequestHandler(val project: Project) {
 
     fun submitIgnoreRequestCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val submitIgnoreRequest = JBCefJSQuery.create(jbCefBrowser)
@@ -22,7 +23,8 @@ class SubmitIgnoreRequestHandler() {
             val ignoreReason = params[3]
 
             runInBackground("Snyk: submitting ignore request...") {
-                LanguageServerWrapper.getInstance().sendSubmitIgnoreRequestCommand("create", issueId, ignoreType, ignoreReason, ignoreExpirationDate)
+                LanguageServerWrapper.getInstance(project)
+                    .sendSubmitIgnoreRequestCommand("create", issueId, ignoreType, ignoreReason, ignoreExpirationDate)
                 JBCefJSQuery.Response("success")
             }
             return@addHandler JBCefJSQuery.Response("success")

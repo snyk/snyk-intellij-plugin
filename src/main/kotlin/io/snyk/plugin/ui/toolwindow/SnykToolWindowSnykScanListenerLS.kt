@@ -495,8 +495,7 @@ class SnykToolWindowSnykScanListenerLS(
                         else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
                     }
 
-                val fileTreeNode =
-                    SnykFileTreeNode(entry, productType)
+                val fileTreeNode = SnykFileTreeNode(entry, productType)
                 rootNode.add(fileTreeNode)
                 entry.value.sortedByDescending { it.priority() }
                     .forEach { issue ->

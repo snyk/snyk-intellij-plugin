@@ -36,15 +36,15 @@ class SnykPostStartupActivity : ProjectActivity {
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
             // TODO: add subscription for language server messages
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, LanguageServerBulkFileListener())
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ContainerBulkFileListener())
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, LanguageServerBulkFileListener(project))
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ContainerBulkFileListener(project))
             messageBusConnection.subscribe(ProjectManager.TOPIC, SnykProjectManagerListener())
             listenersActivated = true
         }
 
         getSnykCachedResults(project)?.initCacheUpdater()
 
-        AnnotatorCommon.initRefreshing(project)
+        AnnotatorCommon(project).initRefreshing()
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             try {

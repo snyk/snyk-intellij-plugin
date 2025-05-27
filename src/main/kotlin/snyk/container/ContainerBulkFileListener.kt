@@ -4,14 +4,9 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import io.snyk.plugin.SnykBulkFileListener
-import io.snyk.plugin.findPsiFileIgnoringExceptions
-import io.snyk.plugin.getKubernetesImageCache
-import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.*
 
-class ContainerBulkFileListener : SnykBulkFileListener() {
+class ContainerBulkFileListener(project: Project) : SnykBulkFileListener(project) {
 
     private val log = logger<ContainerBulkFileListener>()
 

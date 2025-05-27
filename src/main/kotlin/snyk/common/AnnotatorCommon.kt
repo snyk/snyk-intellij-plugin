@@ -11,14 +11,14 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import snyk.common.lsp.LanguageServerWrapper
 
-object AnnotatorCommon {
+class AnnotatorCommon(val project: Project) {
     val logger = logger<AnnotatorCommon>()
 
     fun prepareAnnotate(psiFile: PsiFile?) {
         logger.debug("Preparing annotation for $psiFile")
 
         // trigger LS initialization if not already done, we consciously don't check the result here
-        LanguageServerWrapper.getInstance().ensureLanguageServerInitialized()
+        LanguageServerWrapper.getInstance(project).ensureLanguageServerInitialized()
 
         // todo: review later if any way to provide up-to-date context for CLI scans is available
         // force saving here will break some user's workflow: https://github.com/snyk/snyk-intellij-plugin/issues/324
@@ -27,7 +27,7 @@ object AnnotatorCommon {
     fun isSeverityToShow(severity: Severity): Boolean =
         pluginSettings().hasSeverityEnabled(severity) || severity == Severity.UNKNOWN
 
-    fun initRefreshing(project: Project) {
+    fun initRefreshing() {
         if (project.isDisposed) return
         if (ApplicationManager.getApplication().isDisposed) return
         logger.debug("Initializing annotations refresh listener")

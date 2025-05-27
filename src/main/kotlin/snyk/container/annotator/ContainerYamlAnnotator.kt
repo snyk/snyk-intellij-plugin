@@ -21,7 +21,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     // save all changes on disk to update caches through SnykBulkFileListener
     override fun doAnnotate(psiFile: PsiFile?) {
-        AnnotatorCommon.prepareAnnotate(psiFile)
+        psiFile?.project?.let { AnnotatorCommon(it).prepareAnnotate(psiFile) }
     }
 
     fun getContainerIssuesForImages(psiFile: PsiFile): List<ContainerIssuesForImage> {
@@ -34,14 +34,15 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         logger.debug("apply on ${psiFile.name}")
+        val annotatorCommon = AnnotatorCommon(psiFile.project)
         getContainerIssuesForImages(psiFile)
             .filter { forImage ->
                 !forImage.ignored && !forImage.obsolete &&
-                    forImage.getSeverities().any { AnnotatorCommon.isSeverityToShow(it) }
+                        forImage.getSeverities().any { annotatorCommon.isSeverityToShow(it) }
             }
             .forEach { forImage ->
                 val severityToShow = forImage.getSeverities()
-                    .filter { AnnotatorCommon.isSeverityToShow(it) }
+                    .filter { annotatorCommon.isSeverityToShow(it) }
                     .maxOrNull() ?: Severity.UNKNOWN
                 val annotationMessage = annotationMessage(forImage)
                 forImage.workloadImages

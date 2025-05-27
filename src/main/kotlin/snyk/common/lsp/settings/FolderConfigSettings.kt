@@ -74,9 +74,10 @@ class FolderConfigSettings {
      */
     fun getAdditionalParameters(project: Project): String {
         // only use folder config with workspace folder path
-        val additionalParameters = LanguageServerWrapper.getInstance().getWorkspaceFoldersFromRoots(project)
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val additionalParameters = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
             .asSequence()
-            .filter { LanguageServerWrapper.getInstance().configuredWorkspaceFolders.contains(it) }
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
             .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
             .filter { it.additionalParameters?.isNotEmpty() ?: false }
             .map { it.additionalParameters?.joinToString(" ") }
