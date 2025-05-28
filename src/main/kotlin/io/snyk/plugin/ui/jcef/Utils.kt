@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
@@ -11,6 +12,8 @@ typealias LoadHandlerGenerator = (jbCefBrowser: JBCefBrowser) -> CefLoadHandlerA
 
 object JCEFUtils {
     private val jbCefPair : Pair<JBCefClient, JBCefBrowser>? = null
+
+    private val logger = Logger.getInstance(JCEFUtils.javaClass)
 
     fun getJBCefBrowserIfSupported(
         html: String,
