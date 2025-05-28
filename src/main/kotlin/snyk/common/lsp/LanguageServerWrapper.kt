@@ -197,7 +197,7 @@ class LanguageServerWrapper(
                 configuredWorkspaceFolders.clear()
                 sendInitializeMessage()
                 isInitialized = true
-                // listen for downloads / restarts
+                // make sure the project restart listener is initialized
                 project.service<LanguageServerRestartListener>()
                 refreshFeatureFlags()
             } else {

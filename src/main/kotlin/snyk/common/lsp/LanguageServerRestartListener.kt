@@ -12,7 +12,7 @@ import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 class LanguageServerRestartListener(val project: Project) : Disposable {
     private var disposed = false
 
-    fun isDisposed() = disposed
+    fun isDisposed() = disposed || project.isDisposed
     override fun dispose() {
         this.disposed = true
     }

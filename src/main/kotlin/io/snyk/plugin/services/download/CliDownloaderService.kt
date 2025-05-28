@@ -4,14 +4,12 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.util.application
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
-import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -81,12 +79,6 @@ class SnykCliDownloaderService {
                 errorHandler.handleIOException(e, latestRelease, indicator, project)
             } catch (e: ChecksumVerificationException) {
                 errorHandler.handleChecksumVerificationException(e, latestRelease, indicator, project)
-            } finally {
-                if (succeeded) {
-                    ProjectManager.getInstance().openProjects.forEach {
-                        LanguageServerWrapper.getInstance(it).restart()
-                    }
-                }
             }
         } finally {
             cliDownloadPublisher.cliDownloadFinished(succeeded)
