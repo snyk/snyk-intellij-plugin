@@ -8,7 +8,9 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.getContainerService
 import io.snyk.plugin.pluginSettings
@@ -37,9 +39,18 @@ class BaseImageRemediationFixTest : BasePlatformTestCase() {
 
     override fun isWriteActionRequired(): Boolean = true
 
+    private lateinit var languageServerWrapperMock: snyk.common.lsp.LanguageServerWrapper // Add field
+
     override fun setUp() {
         super.setUp()
         unmockkAll()
+
+        // Mock LanguageServerWrapper to prevent issues during teardown
+        mockkObject(snyk.common.lsp.LanguageServerWrapper.Companion)
+        languageServerWrapperMock = mockk(relaxed = true)
+        every { snyk.common.lsp.LanguageServerWrapper.getInstance(project) } returns languageServerWrapperMock
+        justRun { languageServerWrapperMock.dispose() }
+        justRun { languageServerWrapperMock.shutdown() }
         pluginSettings().fileListenerEnabled = false
         file = myFixture.copyFileToProject(fileName)
         psiFile = WriteAction.computeAndWait<PsiFile, Throwable> { psiManager.findFile(file)!! }

@@ -22,7 +22,7 @@ class SnykProjectManagerListener : ProjectManagerListener {
                 // limit clean up to TIMEOUT
                 try {
                     threadPool.submit {
-                        val ls = LanguageServerWrapper.getInstance()
+                        val ls = LanguageServerWrapper.getInstance(project)
                         if (ls.isInitialized) {
                             ls.updateWorkspaceFolders(emptySet(), ls.getWorkspaceFoldersFromRoots(project))
                         }

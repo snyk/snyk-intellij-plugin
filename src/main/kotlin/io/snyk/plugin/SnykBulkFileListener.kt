@@ -48,15 +48,12 @@ import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
  * Delete
  *  - addressed at `before` state, old file processed to _clean_ caches
  */
-abstract class SnykBulkFileListener : BulkFileListener {
+abstract class SnykBulkFileListener(val project: Project) : BulkFileListener {
     /****************************** Before **************************/
 
     override fun before(events: List<VFileEvent>) {
-        if (!isFileListenerEnabled()) return
-        for (project in ProjectUtil.getOpenProjects()) {
-            if (project.isDisposed) continue
-            before(project, getBeforeVirtualFiles(events))
-        }
+        if (!isFileListenerEnabled() || project.isDisposed) return
+        before(project, getBeforeVirtualFiles(events))
     }
 
     abstract fun before(project: Project, virtualFilesAffected: Set<VirtualFile>)
@@ -64,12 +61,9 @@ abstract class SnykBulkFileListener : BulkFileListener {
     /****************************** After **************************/
 
     override fun after(events: MutableList<out VFileEvent>) {
-        if (!isFileListenerEnabled()) return
-        for (project in ProjectUtil.getOpenProjects()) {
-            if (project.isDisposed) continue
-            after(project, getAfterVirtualFiles(events))
-            forwardEvents(events)
-        }
+        if (!isFileListenerEnabled() || project.isDisposed) return
+        after(project, getAfterVirtualFiles(events))
+        forwardEvents(events)
     }
 
     open fun forwardEvents(events: MutableList<out VFileEvent>) {}

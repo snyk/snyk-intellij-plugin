@@ -8,7 +8,7 @@ import java.nio.file.Paths
 
 private val LOG = logger<WorkspaceTrustService>()
 
-@Service
+@Service(Service.Level.APP)
 class WorkspaceTrustService {
 
     val settings

@@ -2,6 +2,7 @@ package snyk.container.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
@@ -21,7 +22,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     // save all changes on disk to update caches through SnykBulkFileListener
     override fun doAnnotate(psiFile: PsiFile?) {
-        AnnotatorCommon.prepareAnnotate(psiFile)
+        psiFile?.project?.service<AnnotatorCommon>()
     }
 
     fun getContainerIssuesForImages(psiFile: PsiFile): List<ContainerIssuesForImage> {
@@ -34,14 +35,15 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         logger.debug("apply on ${psiFile.name}")
+        val annotatorCommon = psiFile.project.service<AnnotatorCommon>()
         getContainerIssuesForImages(psiFile)
             .filter { forImage ->
                 !forImage.ignored && !forImage.obsolete &&
-                    forImage.getSeverities().any { AnnotatorCommon.isSeverityToShow(it) }
+                        forImage.getSeverities().any { annotatorCommon.isSeverityToShow(it) }
             }
             .forEach { forImage ->
                 val severityToShow = forImage.getSeverities()
-                    .filter { AnnotatorCommon.isSeverityToShow(it) }
+                    .filter { annotatorCommon.isSeverityToShow(it) }
                     .maxOrNull() ?: Severity.UNKNOWN
                 val annotationMessage = annotationMessage(forImage)
                 forImage.workloadImages

@@ -1,10 +1,14 @@
 package snyk.iac
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.LightPlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getIacService
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
@@ -12,6 +16,7 @@ import io.snyk.plugin.setupDummyCliFile
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
+import java.io.File
 import java.util.concurrent.CompletableFuture
 
 class IacServiceTest : LightPlatformTestCase() {
@@ -23,9 +28,13 @@ class IacServiceTest : LightPlatformTestCase() {
     private fun getResourceAsString(resourceName: String): String = javaClass.classLoader
         .getResource(resourceName)!!.readText(Charsets.UTF_8)
 
+    private val iacService: IacScanService
+        get() = getIacService(project) ?: throw IllegalStateException("IaC service should be available")
+
     @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
+        unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
 
@@ -39,19 +48,21 @@ class IacServiceTest : LightPlatformTestCase() {
         settingsStateService.lastCheckDate = null
         settingsStateService.organization = ""
 
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        mockkStatic(ApplicationManager::class)
+        every { getCliFile() } returns File.createTempFile("cliTestTmpFile", ".tmp")
+        every { isCliInstalled() } returns true
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.languageServer = lsMock
         languageServerWrapper.isInitialized = true
     }
 
     override fun tearDown() {
+        unmockkAll()
         resetSettings(project)
         removeDummyCliFile()
         super.tearDown()
     }
-
-    private val iacService: IacScanService
-        get() = getIacService(project) ?: throw IllegalStateException("IaC service should be available")
 
     @Test
     fun testBuildCliCommandsListWithDefaults() {

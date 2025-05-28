@@ -43,7 +43,7 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
         mockkStatic("io.snyk.plugin.UtilsKt")
 
         mockkObject(LanguageServerWrapper.Companion)
-        every { LanguageServerWrapper.getInstance() } returns mockk(relaxed = true)
+        every { LanguageServerWrapper.getInstance(project) } returns mockk(relaxed = true)
 
         val settings = SnykApplicationSettingsStateService()
         every { pluginSettings() } returns settings
@@ -72,8 +72,8 @@ class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
     /**
      * Should be THE ONLY test where we actually do download the CLI
-     * 🚨 Do __MOCK__ cli download in ANY other test to reduce testing time needed !!!
-     * 🚨 This test fails when the preview release is not available yet
+     * Do __MOCK__ cli download in ANY other test to reduce testing time needed !!!
+     * This test fails when the preview release is not available yet
      */
     fun testDownloadLatestCliRelease() {
         ensureCliFileExistent()

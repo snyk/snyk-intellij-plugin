@@ -39,7 +39,7 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             val cmds = buildCliCommandsList(commands).toMutableList()
             // remove first element = cli path as ls is adding it automatically
             cmds.removeAt(0)
-            val rawResultStr = LanguageServerWrapper.getInstance().executeCLIScan(cmds, projectPath)
+            val rawResultStr = LanguageServerWrapper.getInstance(project).executeCLIScan(cmds, projectPath)
             convertRawCliStringToCliResult(rawResultStr)
         } catch (exception: Exception) {
             getErrorResult(exception.message ?: "Snyk CLI not installed.")

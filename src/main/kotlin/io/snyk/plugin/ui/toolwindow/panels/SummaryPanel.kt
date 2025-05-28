@@ -46,7 +46,7 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
 
         // Create handlers for the toggles between all issues and delta findings
         val loadHandlerGenerators = emptyList<LoadHandlerGenerator>().toMutableList()
-        val toggleDeltaHandler = ToggleDeltaHandler()
+        val toggleDeltaHandler = ToggleDeltaHandler(project)
         loadHandlerGenerators += { toggleDeltaHandler.generate(it) }
 
         val jbCefBrowser =

@@ -1,6 +1,7 @@
 package io.snyk.plugin
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
@@ -36,15 +37,15 @@ class SnykPostStartupActivity : ProjectActivity {
         if (!listenersActivated) {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
             // TODO: add subscription for language server messages
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, LanguageServerBulkFileListener())
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ContainerBulkFileListener())
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, LanguageServerBulkFileListener(project))
+            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ContainerBulkFileListener(project))
             messageBusConnection.subscribe(ProjectManager.TOPIC, SnykProjectManagerListener())
             listenersActivated = true
         }
 
         getSnykCachedResults(project)?.initCacheUpdater()
 
-        AnnotatorCommon.initRefreshing(project)
+        project.service<AnnotatorCommon>().initRefreshing()
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             try {

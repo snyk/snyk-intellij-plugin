@@ -41,7 +41,7 @@ class SnykCliAuthenticationService(
         if (getCliFile().exists()) {
             executeAuthCommand()
         }
-        LanguageServerWrapper.getInstance().updateConfiguration(false)
+        LanguageServerWrapper.getInstance(project).updateConfiguration(false)
     }
 
     private fun downloadCliIfNeeded() {
@@ -61,14 +61,14 @@ class SnykCliAuthenticationService(
     }
 
     private fun executeAuthCommand() {
-        val dialog = AuthDialog()
+        val dialog = AuthDialog(project)
 
         object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
             override fun run(indicator: ProgressIndicator) {
                 dialog.onCancel = {
                     indicator.cancel()
                 }
-                val languageServerWrapper = LanguageServerWrapper.getInstance()
+                val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 languageServerWrapper.logout()
                 val htmlText =
                     """
@@ -95,7 +95,7 @@ class SnykCliAuthenticationService(
     }
 }
 
-class AuthDialog : DialogWrapper(true) {
+class AuthDialog(val project: Project) : DialogWrapper(true) {
     var onCancel: () -> Unit = {}
     private val viewer = getReadOnlyClickableHtmlJEditorPane("Initializing Authentication...")
     val copyUrlAction = CopyUrlAction()
@@ -142,7 +142,7 @@ class AuthDialog : DialogWrapper(true) {
 
     inner class CopyUrlAction : AbstractAction("&Copy URL", PlatformIcons.COPY_ICON) {
         override fun actionPerformed(e: ActionEvent) {
-            val url = LanguageServerWrapper.getInstance().getAuthLink()
+            val url = LanguageServerWrapper.getInstance(project).getAuthLink()
             if (url != null) {
                 CopyPasteManager.getInstance().setContents(StringSelection(url))
                 SnykBalloonNotificationHelper.showInfoBalloonForComponent(

@@ -4,13 +4,14 @@ import com.google.common.cache.CacheBuilder
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.readText
 import com.intellij.util.TestRuntimeUtil
+import com.intellij.util.application
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
@@ -25,7 +26,7 @@ import org.jetbrains.concurrency.runAsync
 import java.io.File
 import java.time.Duration
 
-class LanguageServerBulkFileListener : SnykBulkFileListener() {
+class LanguageServerBulkFileListener(project: Project) : SnykBulkFileListener(project) {
     @TestOnly
     var disabled = TestRuntimeUtil.isRunningUnderUnitTest
 
@@ -42,17 +43,15 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
         if (virtualFilesAffected.isEmpty()) return
 
         runAsync {
-            if (ApplicationManager.getApplication().isDisposed) return@runAsync
             if (project.isDisposed) return@runAsync
             if (DumbService.getInstance(project).isDumb) return@runAsync
 
-            val languageServerWrapper = LanguageServerWrapper.getInstance()
+            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
             if (languageServerWrapper.isDisposed() || !languageServerWrapper.isInitialized) return@runAsync
 
             val languageServer = languageServerWrapper.languageServer
             val cache = getSnykCachedResults(project)?.currentSnykCodeResultsLS
             val filesAffected = toSnykFileSet(project, virtualFilesAffected)
-            val index = ProjectFileIndex.getInstance(project)
 
             for (file in filesAffected) {
                 val virtualFile = file.virtualFile
@@ -82,8 +81,6 @@ class LanguageServerBulkFileListener : SnykBulkFileListener() {
 
     private fun shouldProcess(file: VirtualFile, project: Project): Boolean {
         var shouldProcess = false
-        val application = ApplicationManager.getApplication()
-        if (application.isDisposed) return false
         if (project.isDisposed) return false
         if (DumbService.getInstance(project).isDumb) shouldProcess = false
 

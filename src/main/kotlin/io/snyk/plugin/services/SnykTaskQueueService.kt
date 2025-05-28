@@ -52,7 +52,7 @@ class SnykTaskQueueService(val project: Project) {
     fun getTaskQueue() = taskQueue
 
     fun connectProjectToLanguageServer(project: Project) {
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.ensureLanguageServerInitialized()
 
         // wait for modules to be loaded and indexed so we can add all relevant content roots
@@ -79,7 +79,7 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-                LanguageServerWrapper.getInstance().sendScanCommand(project)
+                LanguageServerWrapper.getInstance(project).sendScanCommand()
 
                 scheduleContainerScan()
             }
@@ -164,9 +164,8 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    // FIXME this is currently not project, but app specific
     fun stopScan() {
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
         if (languageServerWrapper.isInitialized) {
             languageServerWrapper.languageClient.progressManager.cancelProgresses()

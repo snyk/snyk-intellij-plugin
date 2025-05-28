@@ -81,7 +81,6 @@ fun getIacService(project: Project): IacScanService? = project.serviceIfNotDispo
 fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.serviceIfNotDisposed()
 
 fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.serviceIfNotDisposed()
-fun getLanguageServerRestartListener(): LanguageServerRestartListener = ApplicationManager.getApplication().service()
 
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
 
@@ -468,8 +467,7 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     }
     if (contentRoots.isEmpty()) {
         // This should cover the case when no content roots are configured, e.g. in Rider
-        contentRoots = ProjectManager.getInstance().openProjects
-            .filter { it.name == this.name }.mapNotNull { it.basePath?.toVirtualFileOrNull() }.toTypedArray()
+        contentRoots = arrayOf(this.baseDir)
     }
 
     // The sort is to ensure that parent folders come first
