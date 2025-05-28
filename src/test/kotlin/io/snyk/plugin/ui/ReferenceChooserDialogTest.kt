@@ -29,7 +29,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
 

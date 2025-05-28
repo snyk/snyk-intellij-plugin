@@ -1,6 +1,7 @@
 package io.snyk.plugin
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
@@ -44,7 +45,7 @@ class SnykPostStartupActivity : ProjectActivity {
 
         getSnykCachedResults(project)?.initCacheUpdater()
 
-        AnnotatorCommon(project).initRefreshing()
+        project.service<AnnotatorCommon>().initRefreshing()
 
         if (!ApplicationManager.getApplication().isUnitTestMode) {
             try {

@@ -2,6 +2,7 @@ package snyk.container.annotator
 
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
@@ -21,7 +22,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     // save all changes on disk to update caches through SnykBulkFileListener
     override fun doAnnotate(psiFile: PsiFile?) {
-        psiFile?.project?.let { AnnotatorCommon(it).prepareAnnotate(psiFile) }
+        psiFile?.project?.service<AnnotatorCommon>()
     }
 
     fun getContainerIssuesForImages(psiFile: PsiFile): List<ContainerIssuesForImage> {
@@ -34,7 +35,7 @@ class ContainerYamlAnnotator : ExternalAnnotator<PsiFile, Unit>() {
 
     override fun apply(psiFile: PsiFile, annotationResult: Unit, holder: AnnotationHolder) {
         logger.debug("apply on ${psiFile.name}")
-        val annotatorCommon = AnnotatorCommon(psiFile.project)
+        val annotatorCommon = psiFile.project.service<AnnotatorCommon>()
         getContainerIssuesForImages(psiFile)
             .filter { forImage ->
                 !forImage.ignored && !forImage.obsolete &&

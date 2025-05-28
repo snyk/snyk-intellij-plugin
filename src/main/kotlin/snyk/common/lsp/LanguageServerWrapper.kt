@@ -236,7 +236,11 @@ class LanguageServerWrapper(
             } catch (_: Exception) {
                 // do nothing
             } finally {
-                if (processIsAlive()) process.destroyForcibly()
+                try {
+                    if (processIsAlive()) process.destroyForcibly()
+                } catch (_: Exception) {
+                    // do nothing
+                }
             }
             lsp4jLogger.level = previousLSP4jLogLevel
             messageProducerLogger.level = previousMessageProducerLevel

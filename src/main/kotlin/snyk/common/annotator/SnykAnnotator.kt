@@ -11,11 +11,11 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
@@ -82,7 +82,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
         if (disposed) return null
         val project = file.project
         if (!LanguageServerWrapper.getInstance(project).isInitialized) return null
-        val annotatorCommon = AnnotatorCommon(project)
+        val annotatorCommon = project.service<AnnotatorCommon>()
         val map = getIssuesForFile(file)
             .filter { annotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
             .sortedByDescending { it.getSeverityAsEnum() }
@@ -97,7 +97,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
         val psiFile = initialInfo.first
         val project = psiFile.project
         if (!LanguageServerWrapper.getInstance(project).isInitialized) return emptyList()
-        val annotatorCommon = AnnotatorCommon(project)
+        val annotatorCommon = project.service<AnnotatorCommon>()
 
         val gutterIconEnabled = LineMarkerSettings.getSettings().isEnabled(lineMarkerProviderDescriptor)
 

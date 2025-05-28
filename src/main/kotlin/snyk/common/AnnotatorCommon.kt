@@ -1,6 +1,7 @@
 package snyk.common
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
@@ -10,7 +11,7 @@ import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import snyk.common.lsp.LanguageServerWrapper
-
+@Service(Service.Level.PROJECT)
 class AnnotatorCommon(val project: Project) {
     val logger = logger<AnnotatorCommon>()
 

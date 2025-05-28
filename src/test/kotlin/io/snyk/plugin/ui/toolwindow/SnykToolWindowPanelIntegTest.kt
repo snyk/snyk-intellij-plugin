@@ -105,7 +105,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
         mockkStatic(GotoFileCellRenderer::class)
         every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
         languageServerWrapper.process = mockk(relaxed = true)

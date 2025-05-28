@@ -51,8 +51,8 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
     }
 
     override fun setUp() {
-        super.setUp()
         unmockkAll()
+        super.setUp()
         resetSettings(project)
 
         file = myFixture.copyFileToProject(fileName)
@@ -99,8 +99,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
     override fun tearDown() {
         super.tearDown()
         pluginSettings().isGlobalIgnoresFeatureEnabled = true
-        pluginSettings().openIssuesEnabled = true
-        pluginSettings().ignoredIssuesEnabled = true
+        pluginSettings().setDeltaEnabled(false)
         unmockkAll()
     }
 
@@ -221,7 +220,7 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
 
     fun `test addInfoTreeNodes adds new tree nodes for non-code if 1 fixable issue and viewing open with CCI enabled`() {
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
-        TestCase.assertEquals(
+        assertEquals(
             listOf("✋ 1 issue", "⚡ 1 issue is fixable automatically."),
             mapToLabels(rootOssIssuesTreeNode)
         )

@@ -14,6 +14,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
@@ -59,10 +60,8 @@ class SnykLanguageClientTest {
 
         every { ApplicationManager.getApplication() } returns applicationMock
         every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
-
         every { applicationMock.getService(ProjectManager::class.java) } returns projectManagerMock
         every { applicationMock.getService(ProgressManager::class.java) } returns mockk(relaxed = true)
-        every { applicationMock.isDisposed } returns false
         every { applicationMock.messageBus } returns mockk(relaxed = true)
 
         snykPluginDisposable = SnykPluginDisposable()
@@ -73,6 +72,7 @@ class SnykLanguageClientTest {
         every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
         every { projectMock.messageBus} returns messageBusMock
         every { messageBusMock.isDisposed } returns false
+        every { messageBusMock.syncPublisher(SnykScanListenerLS.SNYK_SCAN_TOPIC) } returns mockk(relaxed = true)
         every { dumbServiceMock.isDumb } returns false
 
         every { pluginSettings() } returns settings
@@ -85,7 +85,7 @@ class SnykLanguageClientTest {
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
 
-        cut = SnykLanguageClient()
+        cut = SnykLanguageClient(projectMock, mockk(relaxed = true))
     }
 
     @After
@@ -117,6 +117,7 @@ class SnykLanguageClientTest {
     @Test
     fun `snykScan does not run when disposed`() {
         every { applicationMock.isDisposed } returns true
+        every { projectMock.isDisposed } returns true
         val mockIssue = mockk<ScanIssue>()
         val param = SnykScanParams("success", "code", "testFolder", listOf(mockIssue))
 
@@ -129,6 +130,7 @@ class SnykLanguageClientTest {
     @Test
     fun `hasAuthenticated does not run when disposed`() {
         every { applicationMock.isDisposed } returns true
+        every { projectMock.isDisposed } returns true
 
         val unexpected = "abc"
         val url = "https://snyk.api.io"
@@ -140,6 +142,7 @@ class SnykLanguageClientTest {
     @Test
     fun `addTrustedPaths should not run when disposed`() {
         every { applicationMock.isDisposed } returns true
+        every { projectMock.isDisposed } returns true
 
         val unexpected = "abc"
         cut.addTrustedPaths(SnykTrustedFoldersParams(listOf(unexpected)))
@@ -221,19 +224,11 @@ class SnykLanguageClientTest {
             "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel",
             expectIntercept = true,
             expectedNotifications = 1)
-
-        // Check that all projects get notified if we have multiple open.
-        val numProjects = 5
-        every { projectManagerMock.openProjects } returns Array(numProjects) {projectMock}
-        checkShowDocument(
-            "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel",
-            expectIntercept = true,
-            expectedNotifications = numProjects)
     }
 
     private fun createMockDiagnostic(range: Range, message: String, filePath: String): Diagnostic {
         val rangeString = Gson().toJson(range)
-        val jsonString = """{"id": 12345, "title": "$message", "filePath": "$filePath", "range": $rangeString, "severity": "medium", "filterableIssueType": "Open Source", "isIgnored": false, "isNew": false, "additionalData": {"ruleId": "test-rule-id", "key": "test-key", "message": "Mock message", "isSecurityType": false, "rule": "mock-rule", "repoDatasetSize": 0, "exampleCommitFixes": [], "text": "", "priorityScore": 0, "hasAIFix": false, "dataFlow": [], "description": "", "language": "kotlin", "packageManager": "gradle", "packageName": "mock-package", "name": "mock-name", "version": "1.0.0", "from": [], "upgradePath": [], "isPatchable": false, "isUpgradable": false, "projectName": "test-project", "matchingIssues": [], "publicId": "test-public-id"}}""" 
+        val jsonString = """{"id": 12345, "title": "$message", "filePath": "$filePath", "range": $rangeString, "severity": "medium", "filterableIssueType": "Open Source", "isIgnored": false, "isNew": false, "additionalData": {"ruleId": "test-rule-id", "key": "test-key", "message": "Mock message", "isSecurityType": false, "rule": "mock-rule", "repoDatasetSize": 0, "exampleCommitFixes": [], "text": "", "priorityScore": 0, "hasAIFix": false, "dataFlow": [], "description": "", "language": "kotlin", "packageManager": "gradle", "packageName": "mock-package", "name": "mock-name", "version": "1.0.0", "from": [], "upgradePath": [], "isPatchable": false, "isUpgradable": false, "projectName": "test-project", "matchingIssues": [], "publicId": "test-public-id"}}"""
         val mockDiagnostic = Diagnostic()
         mockDiagnostic.range = range
         mockDiagnostic.data = jsonString

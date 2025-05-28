@@ -44,7 +44,7 @@ fun resetSettings(project: Project?) {
         project
     )
     try {
-        LanguageServerWrapper.getInstance().shutdown()
+        LanguageServerWrapper.getInstance(project!!).shutdown()
     } catch (ignore: Exception) {
         // ignore
     }
