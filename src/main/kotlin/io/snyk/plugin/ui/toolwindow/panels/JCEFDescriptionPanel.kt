@@ -54,7 +54,7 @@ class SuggestionDescriptionPanelFromLS(
                     openFileLoadHandlerGenerator.generate(it)
                 }
 
-                val generateAIFixHandler = GenerateAIFixHandler()
+                val generateAIFixHandler = GenerateAIFixHandler(project)
                 loadHandlerGenerators += {
                     generateAIFixHandler.generateAIFixCommand(it)
                 }
@@ -64,7 +64,7 @@ class SuggestionDescriptionPanelFromLS(
                     applyAiFixEditHandler.generateApplyAiFixEditCommand(it)
                 }
 
-                val submitIgnoreRequestHandler = SubmitIgnoreRequestHandler()
+                val submitIgnoreRequestHandler = SubmitIgnoreRequestHandler(project)
                 loadHandlerGenerators += {
                     submitIgnoreRequestHandler.submitIgnoreRequestCommand(it)
                 }
@@ -160,7 +160,7 @@ class SuggestionDescriptionPanelFromLS(
     }
 
     fun getCustomCssAndScript(): String {
-        val html = issue.details()
+        val html = issue.details(project)
         return PanelHTMLUtils.getFormattedHtml(html)
     }
 }

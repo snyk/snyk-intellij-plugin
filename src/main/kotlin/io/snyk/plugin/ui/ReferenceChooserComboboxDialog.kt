@@ -104,7 +104,7 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
 
         if (doValidate() == null) {
             runInBackground("Snyk: updating configuration") {
-                LanguageServerWrapper.getInstance().updateConfiguration(true)
+                LanguageServerWrapper.getInstance(project).updateConfiguration(true)
             }
         }
     }

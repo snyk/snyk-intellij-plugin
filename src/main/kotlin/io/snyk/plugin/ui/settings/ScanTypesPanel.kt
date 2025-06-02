@@ -180,7 +180,7 @@ class ScanTypesPanel(
         if (snykCodeAvailable) {
             showSnykCodeAlert("Checking if Snyk Code enabled for organisation...")
             var sastSettings = try {
-                val sastSettings = LanguageServerWrapper.getInstance().getSastSettings()
+                val sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
                 settings.sastSettingsError = false
                 sastSettings
             } catch (t: RuntimeException) {
@@ -211,7 +211,7 @@ class ScanTypesPanel(
                                     runAsync {
                                         for (i in 0..20) {
                                             val enabled = try {
-                                                sastSettings = LanguageServerWrapper.getInstance().getSastSettings()
+                                                sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
                                                 updateSettingsWithSastSettings(sastSettings)
                                                 sastSettings?.sastEnabled ?: false
                                             } catch (ignored: RuntimeException) {

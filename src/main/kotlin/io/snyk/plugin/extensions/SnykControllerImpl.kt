@@ -22,6 +22,6 @@ class SnykControllerImpl(val project: Project) : SnykController {
      * If no user is authenticated, this will return null.
      */
     override fun userId(): String? {
-        return LanguageServerWrapper.getInstance().getAuthenticatedUser()
+        return LanguageServerWrapper.getInstance(project).getAuthenticatedUser()
     }
 }

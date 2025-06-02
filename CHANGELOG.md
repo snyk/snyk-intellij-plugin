@@ -1,7 +1,13 @@
 # Snyk Security Changelog
+
+## [2.14.0]
+### Changes
+- make language server run per project, not per application. this fixes issue counts in summary view and makes the UI thread less busy
+
 ## [2.13.1]
 ### Fixed
-- fixed not initialized exception in error handling during language server startup 
+- fixed not initialized exception in error handling during language server startup
+- fixed handling of special characters in filepaths
 
 ## [2.13.0]
 

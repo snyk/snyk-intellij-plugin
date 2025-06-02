@@ -1,25 +1,25 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
-import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.toFilePathString
 import io.snyk.plugin.toLanguageServerURI
+import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -64,9 +64,9 @@ import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
-import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.removeTrailingSlashesIfPresent
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -86,18 +86,20 @@ import kotlin.io.path.exists
 
 private const val INITIALIZATION_TIMEOUT = 20L
 
-@Suppress("TooGenericExceptionCaught")
+@Service(Service.Level.PROJECT)
 class LanguageServerWrapper(
-    private val lsPath: String = getCliFile().absolutePath,
-    private val executorService: ExecutorService = Executors.newCachedThreadPool()
+    private val project: Project,
 ) : Disposable {
+    private val progressManager = ProgressManager(project)
+    private val lsPath: String = getCliFile().absolutePath
+    private val executorService: ExecutorService = Executors.newCachedThreadPool()
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private val gson = Gson()
 
     // internal for test set up
     internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
-    internal var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
+    private var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
     private var disposed = false
         get() {
             return ApplicationManager.getApplication().isDisposed || field
@@ -141,7 +143,7 @@ class LanguageServerWrapper(
 
         try {
             this.folderConfigsRefreshed.clear()
-            val snykLanguageClient = SnykLanguageClient()
+            val snykLanguageClient = SnykLanguageClient(project, progressManager)
             languageClient = snykLanguageClient
             val logLevel =
                 when {
@@ -159,7 +161,7 @@ class LanguageServerWrapper(
                 if (!disposed) {
                     try {
                         process.errorStream.bufferedReader().forEachLine { logger.debug(it) }
-                    } catch (ignored: Exception) {
+                    } catch (_: Exception) {
                         // ignore
                     }
                 }
@@ -195,14 +197,14 @@ class LanguageServerWrapper(
                 configuredWorkspaceFolders.clear()
                 sendInitializeMessage()
                 isInitialized = true
-                // listen for downloads / restarts
-                LanguageServerRestartListener.getInstance()
+                // make sure the project restart listener is initialized
+                project.service<LanguageServerRestartListener>()
                 refreshFeatureFlags()
             } else {
-                logger.warn("Language Server initialization did not succeed")
+                logger.error("Snyk Language Server process launch for ${project.name} failed.")
             }
         } catch (e: Exception) {
-            logger.warn(e)
+            logger.error("Initialization of Snyk Language Server for ${project.name} failed", e)
             if (processIsAlive()) process.destroyForcibly()
             isInitialized = false
         }
@@ -220,24 +222,25 @@ class LanguageServerWrapper(
             val shouldShutdown = processIsAlive()
             executorService.submit {
                 if (shouldShutdown) {
-                    val project = ProjectUtil.getActiveProject()
-                    if (project != null) {
-                        getSnykTaskQueueService(project)?.stopScan()
-                    }
+                    getSnykTaskQueueService(project)?.stopScan()
                     // cancel all progresses, as we can have more progresses than just scans
-                    ProgressManager.getInstance().cancelProgresses()
+                    progressManager.cancelProgresses()
                     languageServer.shutdown().get(1, TimeUnit.SECONDS)
                 }
             }
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
             // we don't care
         } finally {
             try {
                 if (processIsAlive()) languageServer.exit()
-            } catch (ignore: Exception) {
+            } catch (_: Exception) {
                 // do nothing
             } finally {
-                if (processIsAlive()) process.destroyForcibly()
+                try {
+                    if (processIsAlive()) process.destroyForcibly()
+                } catch (_: Exception) {
+                    // do nothing
+                }
             }
             lsp4jLogger.level = previousLSP4jLogLevel
             messageProducerLogger.level = previousMessageProducerLevel
@@ -263,7 +266,7 @@ class LanguageServerWrapper(
         for (root in contentRoots) {
             val pathTrusted = try {
                 trustService.isPathTrusted(root.toNioPath())
-            } catch (e: UnsupportedOperationException) {
+            } catch (_: UnsupportedOperationException) {
                 // this must be temp filesystem so the path mapping doesn't work
                 continue
             }
@@ -336,7 +339,7 @@ class LanguageServerWrapper(
                 added.filter { !configuredWorkspaceFolders.contains(it) },
                 removed.filter { configuredWorkspaceFolders.contains(it) },
             )
-            if (params.event.added.size > 0 || params.event.removed.size > 0) {
+            if (params.event.added.isNotEmpty() || params.event.removed.isNotEmpty()) {
                 languageServer.workspaceService.didChangeWorkspaceFolders(params)
                 configuredWorkspaceFolders.removeAll(removed)
                 configuredWorkspaceFolders.addAll(added)
@@ -384,7 +387,7 @@ class LanguageServerWrapper(
         }
     }
 
-    fun sendScanCommand(project: Project) {
+    fun sendScanCommand() {
         if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
             getTrustedContentRoots(project).forEach {
@@ -412,7 +415,7 @@ class LanguageServerWrapper(
             param.arguments = listOf(featureFlag)
             val result = try {
                 executeCommand(param)
-            } catch (e: TimeoutException) {
+            } catch (_: TimeoutException) {
                 // retry with 30s timeout
                 Thread.sleep(5000)
                 executeCommand(param, 30000)
@@ -454,7 +457,7 @@ class LanguageServerWrapper(
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)
             languageServer.workspaceService.executeCommand(param)
-        } catch (e: FileNotFoundException) {
+        } catch (_: FileNotFoundException) {
             logger.debug("File not found: $folder")
         } catch (e: Exception) {
             logger.error("error calling scan command from language server. re-initializing", e)
@@ -467,7 +470,7 @@ class LanguageServerWrapper(
             shutdown()
             Thread.sleep(1000)
             ensureLanguageServerInitialized()
-            ProjectManager.getInstance().openProjects.forEach { project -> addContentRoots(project) }
+            addContentRoots(project)
         }
     }
 
@@ -479,11 +482,12 @@ class LanguageServerWrapper(
         // the folderConfigs in language server
         val folderConfigs = configuredWorkspaceFolders
             .filter {
-                val folderPath = it.uri.toFilePathString()
+                val folderPath = it.uri.fromUriToPath().toString()
                 folderConfigsRefreshed[folderPath] == true
             }.map {
-                val folderPath = it.uri.toFilePathString()
-                service<FolderConfigSettings>().getFolderConfig(folderPath) }
+                val folderPath = it.uri.fromUriToPath().toString()
+                service<FolderConfigSettings>().getFolderConfig(folderPath)
+            }
             .toList()
 
         return LanguageServerSettings(
@@ -524,7 +528,7 @@ class LanguageServerWrapper(
         languageServer.workspaceService.didChangeConfiguration(params)
 
         if (runScan && pluginSettings().scanOnSave) {
-            ProjectManager.getInstance().openProjects.forEach { sendScanCommand(it) }
+            sendScanCommand()
         }
     }
 
@@ -615,7 +619,13 @@ class LanguageServerWrapper(
 
     fun addContentRoots(project: Project) {
         if (disposed || project.isDisposed) return
-        ensureLanguageServerInitialized()
+        if (!ensureLanguageServerInitialized()) {
+            SnykBalloonNotificationHelper.showWarn(
+                "Unable to initialize the Snyk Language Server. The plugin will be non-functional.",
+                project
+            )
+            return
+        }
         ensureLanguageServerProtocolVersion(project)
         updateConfiguration(false)
         val added = getWorkspaceFoldersFromRoots(project)
@@ -659,7 +669,13 @@ class LanguageServerWrapper(
         executeCommand(param)
     }
 
-    fun sendSubmitIgnoreRequestCommand(workflow: String, issueId: String, ignoreType: String, ignoreReason: String, ignoreExpirationDate: String) {
+    fun sendSubmitIgnoreRequestCommand(
+        workflow: String,
+        issueId: String,
+        ignoreType: String,
+        ignoreReason: String,
+        ignoreExpirationDate: String
+    ) {
         if (!ensureLanguageServerInitialized()) throw RuntimeException("couldn't initialize language server")
         try {
             val param = ExecuteCommandParams()
@@ -747,14 +763,22 @@ class LanguageServerWrapper(
         shutdown()
     }
 
+    fun getFolderConfigsRefreshed(): Map<String?, Boolean?> {
+        return Collections.unmodifiableMap(this.folderConfigsRefreshed)
+    }
+
+    fun updateFolderConfigRefresh(folderPath: String, refreshed: Boolean) {
+        val path = Paths.get(folderPath).normalize().toAbsolutePath().toString()
+        this.folderConfigsRefreshed[path] = refreshed
+    }
+
 
     companion object {
-        private var instance: LanguageServerWrapper? = null
-        fun getInstance() =
-            instance ?: LanguageServerWrapper().also {
-                Disposer.register(SnykPluginDisposable.getInstance(), it)
-                instance = it
-            }
+        fun getInstance(project: Project): LanguageServerWrapper {
+            val service = project.getService(LanguageServerWrapper::class.java)
+            Disposer.register(SnykPluginDisposable.getInstance(project), service)
+            return service
+        }
     }
 
 }

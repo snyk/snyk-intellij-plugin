@@ -40,14 +40,12 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
 
     override fun precomputeOnUiThread(editor: Editor) {}
 
-    override fun isAvailableFor(project: Project): Boolean {
-        return true
-    }
+    override fun isAvailableFor(project: Project): Boolean = true
 
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
-        if (LanguageServerWrapper.getInstance().isDisposed()) return CodeVisionState.READY_EMPTY
-        if (!LanguageServerWrapper.getInstance().isInitialized) return CodeVisionState.READY_EMPTY
         val project = editor.project ?: return CodeVisionState.READY_EMPTY
+        if (LanguageServerWrapper.getInstance(project).isDisposed()) return CodeVisionState.READY_EMPTY
+        if (!LanguageServerWrapper.getInstance(project).isInitialized) return CodeVisionState.READY_EMPTY
         val document = editor.document
 
         val file = ReadAction.compute<PsiFile, RuntimeException> {
@@ -60,7 +58,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.toLanguageServerURI()))
         val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
         val codeLenses = try {
-            LanguageServerWrapper.getInstance().languageServer.textDocumentService.codeLens(params)
+            LanguageServerWrapper.getInstance(project).languageServer.textDocumentService.codeLens(params)
                 .get(timeout, TimeUnit.SECONDS) ?: return CodeVisionState.READY_EMPTY
         } catch (ignored: TimeoutException) {
             logger.info("Timeout fetching code lenses for : $file")
@@ -94,7 +92,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
                 override fun run(indicator: ProgressIndicator) {
                     val params = ExecuteCommandParams(codeLens.command.command, codeLens.command.arguments)
                     try {
-                        LanguageServerWrapper.getInstance().languageServer.workspaceService
+                        LanguageServerWrapper.getInstance(project).languageServer.workspaceService
                             .executeCommand(params).get(2, TimeUnit.MINUTES)
                     } catch (e: TimeoutException) {
                         logger.error("Timeout executing: ${codeLens.command.title}", e)

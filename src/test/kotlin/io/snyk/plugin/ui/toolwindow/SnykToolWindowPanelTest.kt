@@ -40,7 +40,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
         project.replaceService(SnykTaskQueueService::class.java, taskQueueService, project)
 
-        val lsw = LanguageServerWrapper.getInstance()
+        val lsw = LanguageServerWrapper.getInstance(project)
         lsw.languageServer = lsMock
         lsw.languageClient = lsClientMock
         lsw.process = lsProcessMock
@@ -147,7 +147,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         settings.pluginFirstRun = true
         settings.cliReleaseChannel = "preview"
 
-        assertTrue(LanguageServerWrapper.getInstance().ensureLanguageServerInitialized())
+        assertTrue(LanguageServerWrapper.getInstance(project).ensureLanguageServerInitialized())
 
         SnykToolWindowPanel(project)
 

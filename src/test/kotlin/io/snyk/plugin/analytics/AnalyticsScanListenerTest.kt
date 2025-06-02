@@ -46,7 +46,7 @@ class AnalyticsScanListenerTest {
         every { pluginSettings() } returns settings
 
         mockkObject(LanguageServerWrapper.Companion)
-        every { LanguageServerWrapper.getInstance() } returns languageServerWrapper
+        every { LanguageServerWrapper.getInstance(projectMock) } returns languageServerWrapper
         every { languageServerWrapper.notAuthenticated() } returns false
         justRun { languageServerWrapper.sendReportAnalyticsCommand(any()) }
 
@@ -61,6 +61,7 @@ class AnalyticsScanListenerTest {
         val nioPath: Path = mockk()
         val file: File = mockk()
         every { projectMock.basePath } returns "/home/user/project"
+        every { projectMock.getService(SnykPluginDisposable::class.java) } returns mockk(relaxed = true)
         every { any<String>().toVirtualFile() } returns virtualFile
         every { virtualFile.toNioPath() } returns nioPath
         every { nioPath.toFile() } returns file

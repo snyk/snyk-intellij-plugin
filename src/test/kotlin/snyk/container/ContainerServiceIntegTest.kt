@@ -56,7 +56,7 @@ class ContainerServiceIntegTest : LightPlatform4TestCase() {
         setupDummyCliFile()
         project.getContentRootPaths().forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
         cut = ContainerService(project)
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.languageServer = lsMock
         languageServerWrapper.isInitialized = true
     }

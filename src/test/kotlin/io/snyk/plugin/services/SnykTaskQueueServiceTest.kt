@@ -50,7 +50,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
         mockkObject(LanguageServerWrapper.Companion)
         val lswMock = mockk<LanguageServerWrapper>(relaxed = true)
-        every { LanguageServerWrapper.getInstance() } returns lswMock
+        every { LanguageServerWrapper.getInstance(project) } returns lswMock
         every { lswMock.languageServer } returns lsMock
         every { lswMock.isInitialized } returns true
     }

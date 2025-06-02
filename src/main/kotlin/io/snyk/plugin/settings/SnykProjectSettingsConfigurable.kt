@@ -113,7 +113,7 @@ class SnykProjectSettingsConfigurable(
         }
 
         runBackgroundableTask("processing config changes", project, true) {
-            val languageServerWrapper = LanguageServerWrapper.getInstance()
+            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
             }

@@ -11,13 +11,12 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import icons.SnykIcons
 import io.snyk.plugin.Severity
@@ -81,9 +80,11 @@ abstract class SnykAnnotator(private val product: ProductType) :
 
     override fun collectInformation(file: PsiFile): SnykAnnotationInput? {
         if (disposed) return null
-        if (!LanguageServerWrapper.getInstance().isInitialized) return null
+        val project = file.project
+        if (!LanguageServerWrapper.getInstance(project).isInitialized) return null
+        val annotatorCommon = project.service<AnnotatorCommon>()
         val map = getIssuesForFile(file)
-            .filter { AnnotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
+            .filter { annotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
             .sortedByDescending { it.getSeverityAsEnum() }
             .groupBy { it.range }
             .toMap()
@@ -93,16 +94,18 @@ abstract class SnykAnnotator(private val product: ProductType) :
 
     override fun doAnnotate(initialInfo: SnykAnnotationInput): SnykAnnotationList {
         if (disposed) return emptyList()
-        if (!LanguageServerWrapper.getInstance().isInitialized) return emptyList()
-
         val psiFile = initialInfo.first
+        val project = psiFile.project
+        if (!LanguageServerWrapper.getInstance(project).isInitialized) return emptyList()
+        val annotatorCommon = project.service<AnnotatorCommon>()
+
         val gutterIconEnabled = LineMarkerSettings.getSettings().isEnabled(lineMarkerProviderDescriptor)
 
-        AnnotatorCommon.prepareAnnotate(psiFile)
+        annotatorCommon.prepareAnnotate(psiFile)
 
         val codeActions = initialInfo.second
             .map { entry ->
-                entry.key to getCodeActions(psiFile.virtualFile, entry.key).map { it.right }
+                entry.key to getCodeActions(psiFile, entry.key).map { it.right }
                     .sortedBy { it.title }
             }.toMap()
 
@@ -163,7 +166,9 @@ abstract class SnykAnnotator(private val product: ProductType) :
         holder: AnnotationHolder,
     ) {
         if (disposed) return
-        if (!LanguageServerWrapper.getInstance().isInitialized) return
+        val project = psiFile.project
+        if (!LanguageServerWrapper.getInstance(project).isInitialized) return
+
         annotationResult
             .forEach { annotation ->
                 if (!annotation.range.isEmpty) {
@@ -205,21 +210,21 @@ abstract class SnykAnnotator(private val product: ProductType) :
     }
 
     private fun getCodeActions(
-        file: VirtualFile,
+        file: PsiFile,
         range: Range
     ): List<Either<Command, CodeAction>> {
         val params =
             CodeActionParams(
-                TextDocumentIdentifier(file.toLanguageServerURI()),
+                TextDocumentIdentifier(file.virtualFile.toLanguageServerURI()),
                 range,
                 CodeActionContext(emptyList()),
             )
-        val languageServer = LanguageServerWrapper.getInstance().languageServer
+        val languageServer = LanguageServerWrapper.getInstance(file.project).languageServer
         val codeActions =
             try {
                 languageServer.textDocumentService
                     .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
-            } catch (ignored: TimeoutException) {
+            } catch (_: TimeoutException) {
                 logger.info("Timeout fetching code actions for range: $range")
                 emptyList()
             }
@@ -280,8 +285,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
             object : AnAction() {
                 override fun actionPerformed(e: AnActionEvent) {
                     runAsync {
-                        val virtualFile = intention.issue.virtualFile ?: return@runAsync
-                        val project = guessProjectForFile(virtualFile) ?: return@runAsync
+                        val project = annotation.issue.project ?: return@runAsync
                         val toolWindowPanel = getSnykToolWindowPanel(project) ?: return@runAsync
                         intention.selectNodeAndDisplayDescription(toolWindowPanel)
                     }

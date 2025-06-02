@@ -4,6 +4,7 @@ package snyk.common.lsp
 
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
@@ -88,6 +89,7 @@ data class ScanIssue(
     var filterableIssueType: FilterableIssueType,
     var ignoreDetails: IgnoreDetails?,
 ) : Comparable<ScanIssue> {
+    var project: Project? = null
 
     companion object {
         const val OPEN_SOURCE: FilterableIssueType = "Open Source"
@@ -273,20 +275,24 @@ data class ScanIssue(
         }
     }
 
-    fun details(): String {
+    fun details(project: Project): String {
         return when (this.filterableIssueType) {
-            OPEN_SOURCE, CODE_SECURITY, CODE_QUALITY -> getHtml(this.additionalData.details)
-            INFRASTRUCTURE_AS_CODE -> getHtml(this.additionalData.customUIContent)
+            OPEN_SOURCE, CODE_SECURITY, CODE_QUALITY -> getHtml(this.additionalData.details, project)
+            INFRASTRUCTURE_AS_CODE -> getHtml(this.additionalData.customUIContent, project)
             else -> ""
         }
     }
 
-    private fun getHtml(details: String?): String {
+    private fun getHtml(details: String?, project: Project): String {
         return if (details.isNullOrEmpty() && this.id.isNotBlank()) {
-            LanguageServerWrapper.getInstance().generateIssueDescription(this) ?: ""
+            LanguageServerWrapper.getInstance(project).generateIssueDescription(this) ?: ""
         } else {
             ""
         }
+    }
+
+    override fun hashCode(): Int {
+        return this.id.hashCode()
     }
 
     fun annotationMessage(): String {
@@ -557,7 +563,7 @@ data class FolderConfig(
     @SerializedName("localBranches") val localBranches: List<String>? = emptyList(),
     @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),
     @SerializedName("referenceFolderPath") val referenceFolderPath: String? = "",
-    @SerializedName("scanCommandConfig") val scanCommandConfig: Map<String,ScanCommandConfig>? = emptyMap(),
+    @SerializedName("scanCommandConfig") val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
 ) : Comparable<FolderConfig> {
     override fun compareTo(other: FolderConfig): Int {
         return this.folderPath.compareTo(other.folderPath)

@@ -8,8 +8,8 @@ import io.mockk.CapturingSlot
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.fromPathToUriString
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.toFilePathString
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
@@ -29,17 +29,17 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
 
         project.getContentRootPaths().forEach {
-            val absolutePathString = it.toString().toFilePathString()
+            val absolutePathString = it.toAbsolutePath().normalize().toString()
             service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
             folderConfig = FolderConfig(absolutePathString, "testBranch")
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
-            languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(absolutePathString, "test"))
-            languageServerWrapper.folderConfigsRefreshed[folderConfig.folderPath] = true
+            languageServerWrapper.configuredWorkspaceFolders.add(WorkspaceFolder(absolutePathString.fromPathToUriString(), "test"))
+            languageServerWrapper.updateFolderConfigRefresh(absolutePathString, true)
         }
         cut = ReferenceChooserDialog(project)
     }

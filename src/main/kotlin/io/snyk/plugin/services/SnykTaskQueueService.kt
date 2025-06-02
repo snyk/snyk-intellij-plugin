@@ -22,6 +22,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.annotations.TestOnly
+import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanState
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
@@ -51,12 +52,18 @@ class SnykTaskQueueService(val project: Project) {
     fun getTaskQueue() = taskQueue
 
     fun connectProjectToLanguageServer(project: Project) {
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.ensureLanguageServerInitialized()
 
         // wait for modules to be loaded and indexed so we can add all relevant content roots
         DumbService.getInstance(project).runWhenSmart {
-            languageServerWrapper.addContentRoots(project)
+            runAsync {
+                try {
+                    languageServerWrapper.addContentRoots(project)
+                } catch (e: RuntimeException) {
+                    logger.error("unable to add content roots for project $project", e)
+                }
+            }
         }
     }
 
@@ -72,7 +79,7 @@ class SnykTaskQueueService(val project: Project) {
                 waitUntilCliDownloadedIfNeeded()
                 indicator.checkCanceled()
 
-                LanguageServerWrapper.getInstance().sendScanCommand(project)
+                LanguageServerWrapper.getInstance(project).sendScanCommand()
 
                 scheduleContainerScan()
             }
@@ -157,9 +164,8 @@ class SnykTaskQueueService(val project: Project) {
         })
     }
 
-    // FIXME this is currently not project, but app specific
     fun stopScan() {
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
         if (languageServerWrapper.isInitialized) {
             languageServerWrapper.languageClient.progressManager.cancelProgresses()

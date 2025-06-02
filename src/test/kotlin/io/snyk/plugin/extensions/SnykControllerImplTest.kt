@@ -31,10 +31,10 @@ class SnykControllerImplTest : LightPlatformTestCase() {
         every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
         mockkObject(LanguageServerWrapper.Companion)
-        every { LanguageServerWrapper.getInstance() } returns languageServerWrapper
+        every { LanguageServerWrapper.getInstance(project) } returns languageServerWrapper
         every { languageServerWrapper.isInitialized } returns true
         justRun { languageServerWrapper.sendReportAnalyticsCommand(any()) }
-        justRun { languageServerWrapper.sendScanCommand(any()) }
+        justRun { languageServerWrapper.sendScanCommand() }
     }
 
     override fun tearDown() {
@@ -55,6 +55,6 @@ class SnykControllerImplTest : LightPlatformTestCase() {
 
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        verify (timeout = 5000){ languageServerWrapper.sendScanCommand(project) }
+        verify (timeout = 5000){ languageServerWrapper.sendScanCommand() }
     }
 }

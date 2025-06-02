@@ -1,10 +1,5 @@
 package io.snyk.plugin.ui.jcef
 
-import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiFile
-import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
@@ -13,15 +8,12 @@ import io.mockk.verify
 import io.snyk.plugin.resetSettings
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.services.LanguageServer
-import snyk.common.IgnoreService
-import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.annotator.SnykIaCAnnotator
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
-import java.util.function.BooleanSupplier
 
 class IgnoreInFileHandlerTest : BasePlatformTestCase() {
     private lateinit var ignorer: IgnoreInFileHandler
@@ -38,7 +30,7 @@ class IgnoreInFileHandlerTest : BasePlatformTestCase() {
         super.setUp()
         unmockkAll()
         resetSettings(project)
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         languageServerWrapper.languageServer = lsMock
         languageServerWrapper.isInitialized = true
         ignorer = IgnoreInFileHandler(project)

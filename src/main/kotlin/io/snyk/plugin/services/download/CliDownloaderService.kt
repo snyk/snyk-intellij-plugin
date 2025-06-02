@@ -1,23 +1,22 @@
 package io.snyk.plugin.services.download
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
+import com.intellij.util.application
 import com.intellij.util.io.HttpRequests
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
-import snyk.common.lsp.LanguageServerWrapper
 import java.io.IOException
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Date
 
 @Suppress("MemberVisibilityCanBePrivate")
-@Service
+@Service(Service.Level.APP)
 class SnykCliDownloaderService {
 
     companion object {
@@ -28,11 +27,11 @@ class SnykCliDownloaderService {
     var errorHandler = CliDownloaderErrorHandler()
 
     private val cliDownloadPublisher
-        get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+        get() = application.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
-    fun isCliDownloading() = currentProgressIndicator != null && !ApplicationManager.getApplication().isDisposed
+    fun isCliDownloading() = currentProgressIndicator != null && !application.isDisposed
 
     fun stopCliDownload() = currentProgressIndicator?.let {
         it.cancel()
@@ -69,7 +68,6 @@ class SnykCliDownloaderService {
             indicator.text = "Downloading latest Snyk CLI release..."
             indicator.checkCanceled()
 
-            val languageServerWrapper = LanguageServerWrapper.getInstance()
             try {
                 downloader.downloadFile(cliFile, latestRelease, indicator)
                 pluginSettings().cliVersion = latestRelease
@@ -81,8 +79,6 @@ class SnykCliDownloaderService {
                 errorHandler.handleIOException(e, latestRelease, indicator, project)
             } catch (e: ChecksumVerificationException) {
                 errorHandler.handleChecksumVerificationException(e, latestRelease, indicator, project)
-            } finally {
-                if (succeeded) languageServerWrapper.ensureLanguageServerInitialized() else stopCliDownload()
             }
         } finally {
             cliDownloadPublisher.cliDownloadFinished(succeeded)
