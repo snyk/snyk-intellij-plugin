@@ -65,7 +65,7 @@ jobs:
         name: Setup Java
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Gradle Cache
         uses: actions/cache@v4
@@ -77,4 +77,4 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
 
       - name: Run Plugin Verifier
-        run: ./gradlew runPluginVerifier
+        run: ./gradlew verifyPlugin
