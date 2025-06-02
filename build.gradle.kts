@@ -180,6 +180,24 @@ tasks {
         changeNotes.set(provider { changelog.renderItem(changelog.getLatest(), Changelog.OutputType.HTML) })
     }
 
+    val createOpenApiSourceJar by registering(Jar::class) {
+        // Java sources
+        from(sourceSets.main.get().java) {
+            include("**/*.java")
+        }
+        // Kotlin sources
+        from(kotlin.sourceSets.main.get().kotlin) {
+            include("**/*.kt")
+        }
+        destinationDirectory.set(layout.buildDirectory.dir("libs"))
+        archiveClassifier.set("src")
+    }
+
+    buildPlugin {
+        dependsOn(createOpenApiSourceJar)
+        from(createOpenApiSourceJar) { into("lib/src") }
+    }
+
     verifyPlugin {
         mustRunAfter(patchPluginXml)
     }
