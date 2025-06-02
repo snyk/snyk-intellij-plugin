@@ -1,5 +1,6 @@
 package io.snyk.plugin.cli
 
+import com.intellij.credentialStore.Credentials
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.extensions.PluginId
@@ -10,7 +11,10 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.impl.CoreProgressManager
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatformTestCase
-import com.intellij.util.net.HttpConfigurable
+import com.intellij.util.net.ProxyConfiguration
+import com.intellij.util.net.ProxyConfiguration.StaticProxyConfiguration
+import com.intellij.util.net.ProxyCredentialStore
+import com.intellij.util.net.ProxySettings
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
@@ -29,6 +33,8 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
+
+@Suppress("HttpUrlsUsage")
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
     override fun setUp() {
@@ -150,17 +156,12 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
+    @Suppress("UnstableApiUsage")
     fun testSetupCliEnvironmentVariablesWithProxyWithoutAuth() {
-        val httpConfigurable = HttpConfigurable.getInstance()
-        val originalProxyHost = httpConfigurable.PROXY_HOST
-        val originalProxyPort = httpConfigurable.PROXY_PORT
-        val originalUseProxy = httpConfigurable.USE_HTTP_PROXY
-        val originalProxyExceptions = httpConfigurable.PROXY_EXCEPTIONS
+        val proxySettings = ProxySettings.getInstance()
+        val origConfig = proxySettings.getProxyConfiguration()
         try {
-            httpConfigurable.PROXY_PORT = 3128
-            httpConfigurable.PROXY_HOST = "testProxy"
-            httpConfigurable.USE_HTTP_PROXY = true
-            httpConfigurable.PROXY_EXCEPTIONS = "testExceptions"
+            proxySettings.setProxyConfiguration(createDummyProxyConfig())
 
             val generalCommandLine = GeneralCommandLine("")
             val expectedProxy = "http://testProxy:3128"
@@ -169,87 +170,38 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
             assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
         } finally {
-            httpConfigurable.USE_HTTP_PROXY = originalUseProxy
-            httpConfigurable.PROXY_HOST = originalProxyHost
-            httpConfigurable.PROXY_PORT = originalProxyPort
-            httpConfigurable.PROXY_EXCEPTIONS = originalProxyExceptions
+            proxySettings.setProxyConfiguration(origConfig)
         }
     }
 
+    @Suppress("UnstableApiUsage")
     fun testSetupCliEnvironmentVariablesWithProxyWithAuth() {
-        val httpConfigurable = HttpConfigurable.getInstance()
-        val originalProxyHost = httpConfigurable.PROXY_HOST
-        val originalProxyPort = httpConfigurable.PROXY_PORT
-        val originalUseProxy = httpConfigurable.USE_HTTP_PROXY
-        val originalProxyAuthentication = httpConfigurable.PROXY_AUTHENTICATION
-        val originalLogin = httpConfigurable.proxyLogin
-        val originalPassword = httpConfigurable.plainProxyPassword
-        val originalProxyExceptions = httpConfigurable.PROXY_EXCEPTIONS
+        val proxySettings = ProxySettings.getInstance()
+        val credentialStore = ProxyCredentialStore.getInstance()
+        val origConfig = proxySettings.getProxyConfiguration()
+        val password = "test%!@Password"
+        val user = "testLogin"
         try {
-            httpConfigurable.PROXY_PORT = 3128
-            httpConfigurable.PROXY_HOST = "testProxy"
-            httpConfigurable.USE_HTTP_PROXY = true
-            httpConfigurable.PROXY_AUTHENTICATION = true
-            httpConfigurable.proxyLogin = "testLogin"
-            httpConfigurable.plainProxyPassword = "test%!@Password"
-            httpConfigurable.PROXY_EXCEPTIONS = "testExceptions"
-            val encodedLogin = URLEncoder.encode(httpConfigurable.proxyLogin, "UTF-8")
-            val encodedPassword = URLEncoder.encode(httpConfigurable.plainProxyPassword, "UTF-8")
+            val proxyConfiguration = createDummyProxyConfig()
+            proxySettings.setProxyConfiguration(proxyConfiguration)
+
+            val credentials = Credentials(user, password)
+            credentialStore.setCredentials(proxyConfiguration.host, proxyConfiguration.port, credentials, false)
+
+            val encodedLogin = URLEncoder.encode(user, "UTF-8")
+            val encodedPassword = URLEncoder.encode(password, "UTF-8")
 
             val generalCommandLine = GeneralCommandLine("")
             val expectedProxy =
                 "http://$encodedLogin:$encodedPassword@" +
-                    "${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
+                    "${proxyConfiguration.host}:${proxyConfiguration.port}"
 
             ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
             assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
         } finally {
-            httpConfigurable.USE_HTTP_PROXY = originalUseProxy
-            httpConfigurable.PROXY_HOST = originalProxyHost
-            httpConfigurable.PROXY_PORT = originalProxyPort
-            httpConfigurable.PROXY_AUTHENTICATION = originalProxyAuthentication
-            httpConfigurable.proxyLogin = originalLogin
-            httpConfigurable.plainProxyPassword = originalPassword
-            httpConfigurable.PROXY_EXCEPTIONS = originalProxyExceptions
-        }
-    }
-
-    fun testSetupCliEnvironmentVariablesWithProxyWithCancelledAuth() {
-        val httpConfigurable = HttpConfigurable.getInstance()
-        val originalProxyHost = httpConfigurable.PROXY_HOST
-        val originalProxyPort = httpConfigurable.PROXY_PORT
-        val originalUseProxy = httpConfigurable.USE_HTTP_PROXY
-        val originalProxyAuthentication = httpConfigurable.PROXY_AUTHENTICATION
-        val originalAuthenticationCancelled = httpConfigurable.AUTHENTICATION_CANCELLED
-        val originalLogin = httpConfigurable.proxyLogin
-        val originalPassword = httpConfigurable.plainProxyPassword
-        val originalProxyExceptions = httpConfigurable.PROXY_EXCEPTIONS
-        try {
-            httpConfigurable.PROXY_PORT = 3128
-            httpConfigurable.PROXY_HOST = "testProxy"
-            httpConfigurable.USE_HTTP_PROXY = true
-            httpConfigurable.PROXY_AUTHENTICATION = true
-            httpConfigurable.AUTHENTICATION_CANCELLED = true
-            httpConfigurable.PROXY_EXCEPTIONS = "testExceptions"
-
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedProxy =
-                "http://${httpConfigurable.PROXY_HOST}:${httpConfigurable.PROXY_PORT}"
-
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
-
-            assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
-            assertEquals(httpConfigurable.PROXY_EXCEPTIONS, generalCommandLine.environment["no_proxy"])
-        } finally {
-            httpConfigurable.USE_HTTP_PROXY = originalUseProxy
-            httpConfigurable.PROXY_HOST = originalProxyHost
-            httpConfigurable.PROXY_PORT = originalProxyPort
-            httpConfigurable.PROXY_AUTHENTICATION = originalProxyAuthentication
-            httpConfigurable.AUTHENTICATION_CANCELLED = originalAuthenticationCancelled
-            httpConfigurable.proxyLogin = originalLogin
-            httpConfigurable.plainProxyPassword = originalPassword
-            httpConfigurable.PROXY_EXCEPTIONS = originalProxyExceptions
+            proxySettings.setProxyConfiguration(origConfig)
+            credentialStore.clearAllCredentials()
         }
     }
 
@@ -299,4 +251,18 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         // clean up
         registryValue.setValue(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS)
     }
+}
+
+private fun createDummyProxyConfig(): StaticProxyConfiguration {
+    val newConfig = object : StaticProxyConfiguration {
+        override val exceptions: String
+            get() = "testExceptions"
+        override val host: String
+            get() = "testProxy"
+        override val port: Int
+            get() = 3128
+        override val protocol: ProxyConfiguration.ProxyProtocol
+            get() = ProxyConfiguration.ProxyProtocol.HTTP
+    }
+    return newConfig
 }

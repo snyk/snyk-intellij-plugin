@@ -178,6 +178,61 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         }
     }
 
+    fun reset() {
+        pluginInstalledSent = false
+        // requiredLsProtocolVersion is a val, not reset
+        useTokenAuthentication = false
+        currentLSProtocolVersion = 0
+        autofixEnabled = false
+        isGlobalIgnoresFeatureEnabled = false
+        cliBaseDownloadURL = "https://downloads.snyk.io"
+        cliPath = getPluginPath() + separator + Platform.current().snykWrapperFileName
+        cliReleaseChannel = "stable"
+        issuesToDisplay = DISPLAY_ALL_ISSUES
+        manageBinariesAutomatically = true
+        fileListenerEnabled = true
+        token = null
+        customEndpointUrl = null
+        organization = null
+        ignoreUnknownCA = false
+        cliVersion = null
+        scanOnSave = true
+
+        @Suppress("DEPRECATION")
+        cliScanEnable = true // as per initializeComponent logic
+
+        ossScanEnable = true
+        snykCodeSecurityIssuesScanEnable = true
+        snykCodeQualityIssuesScanEnable = true
+        iacScanEnabled = true
+        containerScanEnabled = true
+
+        sastOnServerEnabled = null
+        sastSettingsError = null
+        localCodeEngineEnabled = null
+        localCodeEngineUrl = ""
+        usageAnalyticsEnabled = true
+        crashReportingEnabled = true
+
+        lowSeverityEnabled = true
+        mediumSeverityEnabled = true
+        highSeverityEnabled = true
+        criticalSeverityEnabled = true
+
+        openIssuesEnabled = true
+        ignoredIssuesEnabled = false
+
+        treeFiltering = TreeFiltering() // Re-initialize to its defaults
+
+        lastCheckDate = null
+        pluginFirstRun = true
+
+        lastTimeFeedbackRequestShown = Date.from(Instant.now())
+        showFeedbackRequest = true
+
+        userAnonymousId = UUID.randomUUID().toString() // Re-generate new UUID
+    }
+
     companion object {
         const val DISPLAY_ALL_ISSUES = "All issues"
         const val DISPLAY_NEW_ISSUES = "Net new issues"

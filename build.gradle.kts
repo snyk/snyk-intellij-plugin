@@ -3,6 +3,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
@@ -46,6 +47,7 @@ dependencies {
         bundledPlugin("com.intellij.java")
 
         plugins(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
+        testFramework(TestFrameworkType.Platform)
     }
 
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
