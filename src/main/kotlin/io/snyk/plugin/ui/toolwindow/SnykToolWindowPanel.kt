@@ -148,7 +148,7 @@ class SnykToolWindowPanel(
 
 
     init {
-//        Disposer.register(SnykPluginDisposable.getInstance(project), this)
+        Disposer.register(SnykPluginDisposable.getInstance(project), this)
         val contentRoots = project.getContentRootPaths()
         var rootNodeText = ""
         if (contentRoots.isNotEmpty()) {
