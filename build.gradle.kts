@@ -159,7 +159,7 @@ tasks {
     }
 
     withType<Test> {
-        maxHeapSize = "2048m"
+        maxHeapSize = "4096m"
         testLogging {
             exceptionFormat = TestExceptionFormat.FULL
         }
