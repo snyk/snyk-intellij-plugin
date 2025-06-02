@@ -69,7 +69,7 @@ jobs:
         if: ${{ env.ACT }}
         run: |
           ./gradlew release -Prelease.dryRun
-          echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
+          echo "tagName=$(./gradlew cV -q -Prelease.quiet)" >> $GITHUB_OUTPUT
 
       - name: Create release
         if: ${{ !env.ACT }}
