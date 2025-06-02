@@ -71,10 +71,6 @@ jobs:
           ./gradlew release -Prelease.dryRun
           echo "::set-output name=tagName::$(./gradlew cV -q -Prelease.quiet)"
 
-      - name: Extract release notes
-        id: extract-release-notes
-        uses: ffurrer2/extract-release-notes@v1
-
       - name: Create release
         if: ${{ !env.ACT }}
         id: create_release
