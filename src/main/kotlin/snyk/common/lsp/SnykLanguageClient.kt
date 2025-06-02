@@ -12,19 +12,14 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectLocator
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.project.guessProjectForFile
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
-import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.events.SnykScanSummaryListenerLS
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
-import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
@@ -58,7 +53,6 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
 import java.net.URI
-import java.nio.file.Paths
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -67,16 +61,16 @@ import java.util.stream.Collectors
 /**
  * Processes Language Server requests and notifications from the server to the IDE
  */
-class SnykLanguageClient :
+@Suppress("unused")
+class SnykLanguageClient(private val project: Project, val progressManager: ProgressManager) :
     LanguageClient,
     Disposable {
     val logger = Logger.getInstance("Snyk Language Server")
     val gson = Gson()
-    val progressManager = ProgressManager.getInstance()
 
     private var disposed = false
         get() {
-            return ApplicationManager.getApplication().isDisposed || field
+            return project.isDisposed || field
         }
 
     fun isDisposed() = disposed
@@ -97,9 +91,13 @@ class SnykLanguageClient :
         val filePath = diagnosticsParams.uri
 
         try {
-            val path = Paths.get(URI.create(filePath)).toString()
-            getScanPublishersFor(path).forEach { (project, scanPublisher) ->
-                updateCache(project, filePath, diagnosticsParams, scanPublisher)
+            getSyncPublisher(project, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let {
+                updateCache(
+                    project,
+                    filePath,
+                    diagnosticsParams,
+                    it
+                )
             }
         } catch (e: Exception) {
             logger.error("Error publishing the new diagnostics", e)
@@ -125,7 +123,7 @@ class SnykLanguageClient :
             return
         }
 
-        val issues = HashSet(getScanIssues(diagnosticsParams))
+        val issues = getScanIssues(diagnosticsParams)
         if (product != null) {
             scanPublisher.onPublishDiagnostics(LsProduct.getFor(product), snykFile, issues)
         }
@@ -142,6 +140,7 @@ class SnykLanguageClient :
                 // apparently the server has consistent ignores activated
                 pluginSettings().isGlobalIgnoresFeatureEnabled = true
             }
+            issue.project = project
             issue
         }.collect(Collectors.toSet())
 
@@ -151,16 +150,6 @@ class SnykLanguageClient :
     override fun applyEdit(params: ApplyWorkspaceEditParams?): CompletableFuture<ApplyWorkspaceEditResponse> {
         val falseFuture = CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
         if (disposed) return falseFuture
-        val project =
-            params
-                ?.edit
-                ?.changes
-                ?.keys
-                ?.firstNotNullOfOrNull {
-                    ProjectLocator.getInstance().guessProjectForFile(it.toVirtualFile())
-                }
-                ?: ProjectUtil.getActiveProject()
-                ?: return falseFuture
 
         WriteCommandAction.runWriteCommandAction(project) {
             params?.edit?.changes?.forEach {
@@ -180,15 +169,9 @@ class SnykLanguageClient :
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (disposed) return completedFuture
         runAsync {
-            ProjectManager
-                .getInstance()
-                .openProjects
-                .filter { !it.isDisposed }
-                .forEach { project ->
-                    ReadAction.run<RuntimeException> {
-                        if (!project.isDisposed) refreshAnnotationsForOpenFiles(project)
-                    }
-                }
+            ReadAction.run<RuntimeException> {
+                if (!project.isDisposed) refreshAnnotationsForOpenFiles(project)
+            }
         }
         return completedFuture
     }
@@ -200,7 +183,7 @@ class SnykLanguageClient :
             val service = service<FolderConfigSettings>()
             service.addAll(folderConfigs)
             folderConfigs.forEach {
-                LanguageServerWrapper.getInstance().folderConfigsRefreshed[it.folderPath] = true
+                LanguageServerWrapper.getInstance(project).updateFolderConfigRefresh(it.folderPath, true)
             }
         }
     }
@@ -209,9 +192,8 @@ class SnykLanguageClient :
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
         try {
-            getScanPublishersFor(snykScan.folderPath).forEach { (_, scanPublisher) ->
-                processSnykScan(snykScan, scanPublisher)
-            }
+            getSyncPublisher(project, SnykScanListenerLS.SNYK_SCAN_TOPIC)
+                ?.let { processSnykScan(snykScan, it) }
         } catch (e: Exception) {
             logger.error("Error processing snyk scan", e)
         }
@@ -263,33 +245,10 @@ class SnykLanguageClient :
         }
     }
 
-    /**
-     * Get all the scan publishers for the given scan. As the folder path could apply to different projects
-     * containing that content root, we need to notify all of them.
-     */
-    private fun getScanPublishersFor(path: String): Set<Pair<Project, SnykScanListenerLS>> =
-        getProjectsForFolderPath(path)
-            .mapNotNull { p ->
-                getSyncPublisher(p, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let { scanListenerLS ->
-                    Pair(p, scanListenerLS)
-                }
-            }.toSet()
-
-    private fun getProjectsForFolderPath(folderPath: String) =
-        ProjectManager.getInstance().openProjects.filter {
-            it
-                .getContentRootVirtualFiles().any { ancestor ->
-                    val folder = folderPath.toVirtualFile()
-                    VfsUtilCore.isAncestor(ancestor, folder, true) || ancestor == folder
-                }
-        }
-
     @JsonNotification(value = "$/snyk.scanSummary")
     fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
         if (disposed) return
-        ProjectManager.getInstance().openProjects.filter { !it.isDisposed }.forEach { p ->
-            getSyncPublisher(p, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
-        }
+        getSyncPublisher(project, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
     }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
@@ -316,19 +275,13 @@ class SnykLanguageClient :
         logger.info("force-saved settings")
 
         if (oldToken.isBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
-            val wrapper = LanguageServerWrapper.getInstance()
-            ProjectManager.getInstance().openProjects.forEach {
-                wrapper.sendScanCommand(it)
-            }
+            val wrapper = LanguageServerWrapper.getInstance(project)
+            wrapper.sendScanCommand()
         }
     }
 
     @JsonRequest(value = "workspace/snyk.sdks")
     fun getSdks(workspaceFolder: WorkspaceFolder): CompletableFuture<List<LsSdk>> {
-        val project =
-            guessProjectForFile(workspaceFolder.uri.toVirtualFile()) ?: return CompletableFuture.completedFuture(
-                emptyList()
-            )
         return CompletableFuture.completedFuture(SdkHelper.getSdks(project))
     }
 
@@ -350,7 +303,6 @@ class SnykLanguageClient :
 
     override fun showMessage(messageParams: MessageParams?) {
         if (disposed) return
-        val project = ProjectUtil.getActiveProject()
         when (messageParams?.type) {
             MessageType.Error -> {
                 val m = cutMessage(messageParams)
@@ -386,7 +338,6 @@ class SnykLanguageClient :
     override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> {
         val completedFuture = CompletableFuture.completedFuture(MessageActionItem(""))
         if (disposed) return completedFuture
-        val project = ProjectUtil.getActiveProject() ?: return completedFuture
 
         showMessageRequestFutures.clear()
         val actions =
@@ -408,25 +359,16 @@ class SnykLanguageClient :
 
     override fun logMessage(message: MessageParams?) {
         message?.let {
+            val logMessage = "[${project.name}] ${message.message}"
             when (it.type) {
-                MessageType.Error -> logger.error(it.message)
-                MessageType.Warning -> logger.warn(it.message)
-                MessageType.Info -> logger.info(it.message)
-                MessageType.Log -> logger.debug(it.message)
-                null -> logger.info(it.message)
+                MessageType.Error -> logger.error(logMessage)
+                MessageType.Warning -> logger.warn(logMessage)
+                MessageType.Info -> logger.info(logMessage)
+                MessageType.Log -> logger.debug(logMessage)
+                null -> logger.info(logMessage)
             }
         }
     }
-
-    /**
-     * We don't need this custom notification, as LSP4j already supports LSP 3.17.
-     * This custom notification is sent from the server to give clients that only support
-     * lower LSP protocol versions the chance to retrieve the <pre>data</pre> field of
-     * the diagnostic that contains the issue detail data by implementing a custom
-     * notification listener (e.g. Visual Studio)
-     */
-    @JsonNotification("\$/snyk.publishDiagnostics316")
-    fun publishDiagnostics316(ignored: PublishDiagnosticsParams?) = Unit
 
     companion object {
         // we only allow one message request at a time
@@ -457,16 +399,13 @@ class SnykLanguageClient :
 
             // Track whether we have successfully sent any notifications
             var success = false
-
             uri.queryParameters["issueId"]?.let { issueId ->
-                ProjectManager.getInstance().openProjects.filter { !it.isDisposed }.forEach { project ->
-                    val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
-                    logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
-                    getSyncPublisher(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)?.onShowIssueDetail(
-                        aiFixParams
-                    )
-                    success = true
-                }
+                val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
+                logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
+                getSyncPublisher(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)?.onShowIssueDetail(
+                    aiFixParams
+                )
+                success = true
             } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
             CompletableFuture.completedFuture(ShowDocumentResult(success))
         } else {

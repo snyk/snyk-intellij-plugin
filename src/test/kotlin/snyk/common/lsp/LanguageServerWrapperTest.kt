@@ -39,7 +39,7 @@ import java.util.concurrent.CompletableFuture
 
 class LanguageServerWrapperTest {
     private val folderConfigSettingsMock: FolderConfigSettings = mockk(relaxed = true)
-    private val applicationMock: Application = mockk(relaxed = true)
+    private val applicationMock: Application = mockk()
     private val projectMock: Project = mockk()
     private val lsMock: LanguageServer = mockk()
     private val settings = SnykApplicationSettingsStateService()
@@ -67,6 +67,7 @@ class LanguageServerWrapperTest {
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
         every { projectMock.isDisposed } returns false
         every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
+        every { projectMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable
         every { dumbServiceMock.isDumb } returns false
 
         every { pluginSettings() } returns settings
@@ -77,7 +78,7 @@ class LanguageServerWrapperTest {
         every { pluginInfo.integrationEnvironment } returns "IntelliJ IDEA"
         every { pluginInfo.integrationEnvironmentVersion } returns "2020.3.2"
 
-        cut = LanguageServerWrapper("dummy")
+        cut = LanguageServerWrapper(projectMock)
         cut.languageServer = lsMock
         cut.isInitialized = true
         settings.token = "testToken"
@@ -142,9 +143,9 @@ class LanguageServerWrapperTest {
                             scanType = "testScan",
                             uniqueIssueCount = ScanDoneEvent.UniqueIssueCount(0, 0, 0, 0),
                         ),
+                    ),
                 ),
-            ),
-        )
+            )
 
         verify(exactly = 0) { lsMock.workspaceService.executeCommand(any()) }
     }
@@ -182,7 +183,7 @@ class LanguageServerWrapperTest {
         simulateRunningLS()
         justRun { dumbServiceMock.runWhenSmart(any()) }
 
-        cut.sendScanCommand(projectMock)
+        cut.sendScanCommand()
 
         verify { dumbServiceMock.runWhenSmart(any()) }
     }
@@ -190,7 +191,7 @@ class LanguageServerWrapperTest {
     @Test
     fun `sendScanCommand only runs when initialized`() {
         cut.isInitialized = false
-        cut.sendScanCommand(projectMock)
+        cut.sendScanCommand()
 
         verify(exactly = 0) { dumbServiceMock.runWhenSmart(any()) }
     }
@@ -199,7 +200,7 @@ class LanguageServerWrapperTest {
     fun `sendScanCommand only runs when not disposed`() {
         every { applicationMock.isDisposed } returns true
 
-        cut.sendScanCommand(projectMock)
+        cut.sendScanCommand()
 
         verify(exactly = 0) { dumbServiceMock.runWhenSmart(any()) }
     }
@@ -322,12 +323,55 @@ class LanguageServerWrapperTest {
         }
     }
 
-    private fun simulateRunningLS() {
-        cut.languageClient = mockk(relaxed = true)
+    @Test
+    fun `ensureLanguageServerInitialized should not proceed when disposed`() {
+        every { applicationMock.isDisposed } returns true
+
+        val wrapper = LanguageServerWrapper(projectMock)
+        assertFalse(wrapper.ensureLanguageServerInitialized())
+    }
+
+
+    @Test
+    fun `shutdown should handle process termination`() {
+        // Setup
         val processMock = mockk<Process>(relaxed = true)
-        cut.process = processMock
-        every { processMock.info().startInstant().isPresent } returns true
         every { processMock.isAlive } returns true
+
+        // Create wrapper instance
+        val wrapper = LanguageServerWrapper(projectMock)
+        wrapper.process = processMock
+        wrapper.languageServer = lsMock
+        wrapper.isInitialized = true
+
+        // Add some test workspace folders
+        val workspaceFolder = WorkspaceFolder("test://uri", "Test Folder")
+        wrapper.configuredWorkspaceFolders.add(workspaceFolder)
+
+        // Mock language server shutdown
+        val completableFuture = CompletableFuture.completedFuture(Any())
+        every { lsMock.shutdown() } returns completableFuture
+        justRun { lsMock.exit() }
+
+        // Mock loggers to avoid NPE
+        mockkStatic("java.util.logging.Logger")
+        val loggerMock = mockk<java.util.logging.Logger>(relaxed = true)
+        every { java.util.logging.Logger.getLogger(any()) } returns loggerMock
+
+        // Mock executor service
+        val executorMock = mockk<java.util.concurrent.ExecutorService>(relaxed = true)
+        val executorField = LanguageServerWrapper::class.java.getDeclaredField("executorService")
+        executorField.isAccessible = true
+        executorField.set(wrapper, executorMock)
+
+        // Act
+        wrapper.shutdown()
+
+        // Assert
+        // Check the workspace folders were cleared
+        assertTrue(wrapper.configuredWorkspaceFolders.isEmpty())
+        // Check the process was destroyed if alive
+        verify { processMock.destroyForcibly() }
     }
 
     @Test
@@ -349,5 +393,13 @@ class LanguageServerWrapperTest {
         assertEquals(getCliFile().absolutePath, actual.cliPath)
         assertEquals(settings.organization, actual.organization)
         assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
+    }
+
+    private fun simulateRunningLS() {
+        cut.languageClient = mockk(relaxed = true)
+        val processMock = mockk<Process>(relaxed = true)
+        cut.process = processMock
+        every { processMock.info().startInstant().isPresent } returns true
+        every { processMock.isAlive } returns true
     }
 }

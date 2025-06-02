@@ -33,7 +33,7 @@ class CodeActionIntention(
     override fun invoke(project: Project, editor: Editor?, psiFile: PsiFile?) {
         val task = object : Task.Backgroundable(project, this.title()) {
             override fun run(p0: ProgressIndicator) {
-                val languageServer = LanguageServerWrapper.getInstance().languageServer
+                val languageServer = LanguageServerWrapper.getInstance(project).languageServer
                 var resolvedCodeAction = codeAction
                 if (codeAction.command == null && codeAction.edit == null) {
                     resolvedCodeAction =

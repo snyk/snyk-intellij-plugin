@@ -22,7 +22,7 @@ class IgnoreInFileHandler(
     ) {
     val logger = Logger.getInstance(this::class.java).apply {
         // tie log level to language server log level
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         if (languageServerWrapper.logger.isDebugEnabled) this.setLevel(LogLevel.DEBUG)
         if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
     }

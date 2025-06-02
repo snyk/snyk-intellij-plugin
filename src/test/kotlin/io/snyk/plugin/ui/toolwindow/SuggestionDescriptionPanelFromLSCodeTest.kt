@@ -7,7 +7,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.jcef.JBCefBrowser
-import com.intellij.ui.jcef.JBCefClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -45,8 +44,8 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
     }
 
     override fun setUp() {
-        super.setUp()
         unmockkAll()
+        super.setUp()
         resetSettings(project)
 
         file = myFixture.copyFileToProject(fileName)
@@ -83,7 +82,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         mockkObject(JCEFUtils)
         every { JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
-        every { issue.details() } returns "<html>HTML message</html>"
+        every { issue.details(project) } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(project, issue)
 
@@ -104,7 +103,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
             JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any())
         } returns mockJBCefBrowser
 
-        every { issue.details() } returns "<html>HTML message</html>"
+        every { issue.details(project) } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(project, issue)
 
@@ -117,7 +116,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
     }
 
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
-        every { issue.details() } returns "<html><head>\${ideStyle}</head>HTML message</html>"
+        every { issue.details(project) } returns "<html><head>\${ideStyle}</head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(project, issue)
 

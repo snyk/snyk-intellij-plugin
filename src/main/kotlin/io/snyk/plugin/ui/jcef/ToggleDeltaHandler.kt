@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
+import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.pluginSettings
@@ -9,13 +10,13 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 
-class ToggleDeltaHandler {
+class ToggleDeltaHandler(val project: Project) {
     fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val toggleDeltaQuery = JBCefJSQuery.create(jbCefBrowser)
         toggleDeltaQuery.addHandler {deltaEnabled ->
             runInBackground("Snyk: updating configuration") {
                 pluginSettings().setDeltaEnabled(deltaEnabled.toBoolean())
-                LanguageServerWrapper.getInstance().updateConfiguration()
+                LanguageServerWrapper.getInstance(project).updateConfiguration()
             }
             return@addHandler JBCefJSQuery.Response("success")
         }

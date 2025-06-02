@@ -15,7 +15,7 @@ class ApplyAiFixEditHandler(private val project: Project) {
 
     val logger = Logger.getInstance(this::class.java).apply {
         // tie log level to language server log level
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         if (languageServerWrapper.logger.isDebugEnabled) this.setLevel(LogLevel.DEBUG)
         if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
     }
@@ -24,12 +24,10 @@ class ApplyAiFixEditHandler(private val project: Project) {
         val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         applyFixQuery.addHandler { value ->
-            val params = value.split("|@", limit = 3)
-            val fixId = params[0]  // ID of the AI fix for which we want to generate an edit command.
-            logger.debug("Generate ApplAiFixEditCommand for fix $fixId")
+            logger.debug("Generate ApplAiFixEditCommand for fix $value")
             // Avoid blocking the UI thread
             runInBackground("Snyk: Send command to apply AI fix edit...") {
-                LanguageServerWrapper.getInstance().sendCodeApplyAiFixEditCommand(fixId)
+                LanguageServerWrapper.getInstance(project).sendCodeApplyAiFixEditCommand(value)
             }
 
             return@addHandler JBCefJSQuery.Response("success")

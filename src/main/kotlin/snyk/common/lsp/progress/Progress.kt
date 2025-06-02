@@ -15,13 +15,14 @@
  *******************************************************************************/
 package snyk.common.lsp.progress
 
+import com.intellij.openapi.project.Project
 import org.eclipse.lsp4j.WorkDoneProgressCancelParams
 import org.eclipse.lsp4j.WorkDoneProgressNotification
 import snyk.common.lsp.LanguageServerWrapper
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
 
-internal class Progress(val token: String) {
+internal class Progress(val token: String, val project: Project) {
     var cancellable: Boolean = false
     var done: Boolean = false
 
@@ -45,7 +46,7 @@ internal class Progress(val token: String) {
         this.cancelled = true
         val workDoneProgressCancelParams = WorkDoneProgressCancelParams()
         workDoneProgressCancelParams.setToken(token)
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         if (languageServerWrapper.isInitialized) {
             val languageServer = languageServerWrapper.languageServer
             languageServer.cancelProgress(workDoneProgressCancelParams)

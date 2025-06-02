@@ -99,20 +99,18 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
         val project = editor.project
         val document = editor.document
         private val snykCachedResults = project?.let { getSnykCachedResults(it) }
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = project?.let { LanguageServerWrapper.getInstance(it) }
         val logger = Logger.getInstance(this::class.java).apply {
             // tie log level to language server log level
-            if (languageServerWrapper.logger.isDebugEnabled) this.setLevel(LogLevel.DEBUG)
-            if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
+            if (languageServerWrapper?.logger?.isDebugEnabled == true) this.setLevel(LogLevel.DEBUG)
+            if (languageServerWrapper?.logger?.isTraceEnabled == true) this.setLevel(LogLevel.TRACE)
         }
 
         fun getLineExtension(line: Int): MutableCollection<out LineExtensionInfo> {
             // only OSS has inline values right now
             val hasResults = snykCachedResults?.currentOSSResultsLS?.get(snykFile)?.isNotEmpty() ?: false
-            if (disposed
-                || !languageServerWrapper.isInitialized
-                || !hasResults
-            ) return mutableSetOf()
+            if ((disposed || languageServerWrapper == null) || !languageServerWrapper.isInitialized || !hasResults)
+                return mutableSetOf()
 
             val lineEndOffset = document.getLineEndOffset(line)
             val lineStartOffset = document.getLineStartOffset(line)

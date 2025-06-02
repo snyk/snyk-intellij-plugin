@@ -53,7 +53,7 @@ class AnalyticsScanListener(val project: Project) {
                 containerResult.mediumSeveritiesCount(),
                 containerResult.lowSeveritiesCount()
             )
-            AnalyticsSender.getInstance().logEvent(scanDoneEvent)
+            AnalyticsSender.getInstance(project).logEvent(scanDoneEvent)
         }
 
         override fun scanningContainerError(snykError: SnykError) {
@@ -68,7 +68,7 @@ class AnalyticsScanListener(val project: Project) {
         )
         if (!pluginSettings().pluginInstalledSent) {
             val event = AnalyticsEvent("plugin installed", listOf("install"))
-            AnalyticsSender.getInstance().logEvent(event) {
+            AnalyticsSender.getInstance(project).logEvent(event) {
                 pluginSettings().pluginInstalledSent = true
             }
         }

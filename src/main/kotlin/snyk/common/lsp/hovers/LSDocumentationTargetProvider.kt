@@ -38,7 +38,7 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
     fun isDisposed() = disposed
 
     override fun documentationTargets(file: PsiFile, offset: Int): MutableList<out DocumentationTarget> {
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(file.project)
         if (disposed || !languageServerWrapper.isInitialized || !isDocumentationHoverEnabled()) return mutableListOf()
 
         val lineNumber = file.viewProvider.document.getLineNumber(offset)

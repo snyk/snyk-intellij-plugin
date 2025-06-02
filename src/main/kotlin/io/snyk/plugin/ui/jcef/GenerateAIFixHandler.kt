@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.Gson
+import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.runInBackground
@@ -10,21 +11,15 @@ import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.Fix
 import snyk.common.lsp.LanguageServerWrapper
 
-
-class GenerateAIFixHandler() {
+class GenerateAIFixHandler(private val project: Project) {
 
     fun generateAIFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
         val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         aiFixQuery.addHandler { value ->
-            val params = value.split("@|@")
-            val folderURI = params[0]
-            val fileURI = params[1]
-            val issueID = params[2]
-
             runInBackground("Snyk: getting AI fix proposals...") {
                 val responseDiff: List<Fix> =
-                    LanguageServerWrapper.getInstance().sendCodeFixDiffsCommand(folderURI, fileURI, issueID)
+                    LanguageServerWrapper.getInstance(project).sendCodeFixDiffsCommand(value)
 
                 val script = """
                         window.receiveAIFixResponse(${Gson().toJson(responseDiff)});

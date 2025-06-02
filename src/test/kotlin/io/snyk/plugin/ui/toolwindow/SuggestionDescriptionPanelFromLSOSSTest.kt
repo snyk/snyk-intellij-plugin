@@ -85,7 +85,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
             JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any())
         } returns mockJBCefBrowser
 
-        every { issue.details() } returns "<html>HTML message</html>"
+        every { issue.details(any()) } returns "<html>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(project, issue)
 
@@ -97,7 +97,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
     }
 
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
-        every { issue.details() } returns "<html><head><style>\${ideStyle}</style></head>HTML message</html>"
+        every { issue.details(any()) } returns "<html><head><style>STYLE_PLACEHOLDER</style></head>HTML message</html>"
         every { issue.canLoadSuggestionPanelFromHTML() } returns true
         cut = SuggestionDescriptionPanelFromLS(project, issue)
 

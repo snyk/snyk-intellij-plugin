@@ -26,7 +26,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     // events
     var pluginInstalledSent: Boolean = false
 
-    val requiredLsProtocolVersion = 19
+    val requiredLsProtocolVersion = 20
 
     var useTokenAuthentication = false
     var currentLSProtocolVersion: Int? = 0

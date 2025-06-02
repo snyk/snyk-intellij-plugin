@@ -205,13 +205,13 @@ class SnykToolWindowPanel(
                     override fun onPublishDiagnostics(
                         product: LsProduct,
                         snykFile: SnykFile,
-                        issueList: Set<ScanIssue>
+                        issues: Set<ScanIssue>
                     ) {
                         getSnykCachedResults(project)?.let {
                             when (product) {
-                                LsProduct.Code -> it.currentSnykCodeResultsLS[snykFile] = issueList
-                                LsProduct.OpenSource -> it.currentOSSResultsLS[snykFile] = issueList
-                                LsProduct.InfrastructureAsCode -> it.currentIacResultsLS[snykFile] = issueList
+                                LsProduct.Code -> it.currentSnykCodeResultsLS[snykFile] = issues
+                                LsProduct.OpenSource -> it.currentOSSResultsLS[snykFile] = issues
+                                LsProduct.InfrastructureAsCode -> it.currentIacResultsLS[snykFile] = issues
                                 LsProduct.Container -> Unit
                                 LsProduct.Unknown -> Unit
                             }
@@ -552,7 +552,7 @@ class SnykToolWindowPanel(
         pluginSettings().apply {
             try {
                 // update settings if we get a valid/correct response, else log the error and do nothing
-                val sastSettings = LanguageServerWrapper.getInstance().getSastSettings()
+                val sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
                 sastOnServerEnabled = sastSettings?.sastEnabled ?: false
                 val codeScanAllowed = sastOnServerEnabled == true
                 snykCodeSecurityIssuesScanEnable = snykCodeSecurityIssuesScanEnable && codeScanAllowed

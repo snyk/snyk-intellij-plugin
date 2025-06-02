@@ -33,6 +33,7 @@ class IgnoreServiceTest {
     private val project = mockk<Project>()
     private val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
     private val lsMock = mockk<LanguageServer>()
+    private lateinit var languageServerWrapper: LanguageServerWrapper
 
     @Before
     fun setUp() {
@@ -40,17 +41,19 @@ class IgnoreServiceTest {
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic(ApplicationManager::class)
         every { ApplicationManager.getApplication() } returns applicationMock
-        every { applicationMock.getService(SnykPluginDisposable::class.java)} returns mockk(relaxed = true)
+        every { applicationMock.getService(SnykPluginDisposable::class.java) } returns mockk(relaxed = true)
         every { applicationMock.isDisposed } returns false
         every { pluginSettings() } returns settings
         every { getCliFile() } returns File.createTempFile("cliTestTmpFile", ".tmp")
         every { isCliInstalled() } returns true
         every { project.basePath } returns expectedWorkingDirectory
         every { settings.token } returns expectedApiToken
-
-        val languageServerWrapper = LanguageServerWrapper.getInstance()
+        every { project.getService(SnykPluginDisposable::class.java) } returns mockk(relaxed = true)
+        every { project.isDisposed } returns false
+        languageServerWrapper = LanguageServerWrapper(project)
         languageServerWrapper.languageServer = lsMock
         languageServerWrapper.isInitialized = true
+        every { project.getService(LanguageServerWrapper::class.java) } returns languageServerWrapper
     }
 
     @After
@@ -68,11 +71,14 @@ class IgnoreServiceTest {
         val expectedOutput = ""
         val cut = IgnoreService(project)
 
-        val params = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray()))
+        val params = ExecuteCommandParams(
+            COMMAND_EXECUTE_CLI,
+            listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray())
+        )
 
         every {
             lsMock.workspaceService.executeCommand(params)
-        } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut",expectedOutput)))
+        } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut", expectedOutput)))
 
         cut.ignore(issueId)
 
@@ -91,11 +97,14 @@ class IgnoreServiceTest {
         val expectedOutput = ""
         val cut = IgnoreService(project)
 
-        val params = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray()))
+        val params = ExecuteCommandParams(
+            COMMAND_EXECUTE_CLI,
+            listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray())
+        )
 
         every {
             lsMock.workspaceService.executeCommand(params)
-        } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut",expectedOutput)))
+        } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut", expectedOutput)))
 
         cut.ignoreInstance(issueId, path)
 
@@ -135,11 +144,14 @@ class IgnoreServiceTest {
         )
         val expectedOutput = "unexpected output"
         val cut = IgnoreService(project)
-        val params = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray()))
+        val params = ExecuteCommandParams(
+            COMMAND_EXECUTE_CLI,
+            listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray())
+        )
 
         every {
             lsMock.workspaceService.executeCommand(params)
-        } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut",expectedOutput)))
+        } returns CompletableFuture.completedFuture(mapOf(Pair("stdOut", expectedOutput)))
 
         try {
             cut.ignore(issueId)
@@ -157,7 +169,10 @@ class IgnoreServiceTest {
         )
         val cut = IgnoreService(project)
 
-        val params = ExecuteCommandParams(COMMAND_EXECUTE_CLI, listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray()))
+        val params = ExecuteCommandParams(
+            COMMAND_EXECUTE_CLI,
+            listOf(expectedWorkingDirectory, *expectedCommands.toTypedArray())
+        )
 
         every { lsMock.workspaceService.executeCommand(params) } throws RuntimeException("testException")
 
