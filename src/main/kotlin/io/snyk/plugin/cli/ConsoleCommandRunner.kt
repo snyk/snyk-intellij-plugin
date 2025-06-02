@@ -14,7 +14,6 @@ import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.EnvironmentHelper
-import snyk.errorHandler.SentryErrorReporter
 import java.nio.charset.Charset
 
 open class ConsoleCommandRunner {
@@ -72,8 +71,8 @@ open class ConsoleCommandRunner {
                 processHandler, ScriptRunnerUtil.STDOUT_OR_STDERR_OUTPUT_KEY_FILTER, timeout
             )
         } catch (e: ExecutionException) {
-            SentryErrorReporter.captureException(e)
-            "Execution timeout [${timeout / 1000} sec] is reached with NO results produced"
+            logger.error("Execution timeout [${timeout / 1000} sec] is reached with NO results produced", e)
+            ""
         }
 
         return if (wasProcessTerminated) PROCESS_CANCELLED_BY_USER else processOutput

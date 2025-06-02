@@ -4,34 +4,19 @@ import com.intellij.credentialStore.Credentials
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.extensions.PluginId
-import com.intellij.openapi.progress.EmptyProgressIndicator
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
-import com.intellij.openapi.progress.impl.CoreProgressManager
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.util.net.ProxyConfiguration
 import com.intellij.util.net.ProxyConfiguration.StaticProxyConfiguration
 import com.intellij.util.net.ProxyCredentialStore
 import com.intellij.util.net.ProxySettings
-import io.mockk.every
-import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import io.mockk.verify
-import io.sentry.protocol.SentryId
-import io.snyk.plugin.DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS
-import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
 import snyk.PLUGIN_ID
-import snyk.errorHandler.SentryErrorReporter
 import java.net.URLEncoder
-import java.util.Locale
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 
 @Suppress("HttpUrlsUsage")
@@ -42,9 +27,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         unmockkAll()
         resetSettings(project)
         setupDummyCliFile()
-        // don't report to Sentry when running this test
-        mockkObject(SentryErrorReporter)
-        every { SentryErrorReporter.captureException(any()) } returns SentryId()
     }
 
     override fun tearDown() {
@@ -218,51 +200,18 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         assertEquals("2023.1".length, generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"]?.length)
     }
 
-    fun testErrorReportedWhenExecutionTimeoutExpire() {
-        val registryValue = Registry.get("snyk.timeout.results.waiting")
-        val defaultValue = registryValue.asInteger()
-        assertEquals(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS, defaultValue)
-        registryValue.setValue(100)
-        val seconds = "3"
-        val sleepCommand = if (System.getProperty("os.name").lowercase(Locale.getDefault()).contains("win")) {
-            // see https://www.ibm.com/support/pages/timeout-command-run-batch-job-exits-immediately-and-returns-error-input-redirection-not-supported-exiting-process-immediately
-            listOf("ping", "-n", seconds, "localhost")
-        } else {
-            listOf("/bin/sleep", seconds)
+
+    private fun createDummyProxyConfig(): StaticProxyConfiguration {
+        val newConfig = object : StaticProxyConfiguration {
+            override val exceptions: String
+                get() = "testExceptions"
+            override val host: String
+                get() = "testProxy"
+            override val port: Int
+                get() = 3128
+            override val protocol: ProxyConfiguration.ProxyProtocol
+                get() = ProxyConfiguration.ProxyProtocol.HTTP
         }
-
-        val progressManager = ProgressManager.getInstance() as CoreProgressManager
-        val testRunFuture = progressManager.runProcessWithProgressAsynchronously(
-            object : Task.Backgroundable(project, "Test CLI command invocation", true) {
-                override fun run(indicator: ProgressIndicator) {
-                    val output = ConsoleCommandRunner().execute(sleepCommand, getPluginPath(), "", project)
-                    assertTrue(
-                        "Should get timeout error, but received:\n$output", output.startsWith("Execution timeout")
-                    )
-                }
-            },
-            EmptyProgressIndicator(),
-            null
-        )
-        testRunFuture.get(30000, TimeUnit.MILLISECONDS)
-
-        verify(exactly = 1) { SentryErrorReporter.captureException(any()) }
-
-        // clean up
-        registryValue.setValue(DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS)
+        return newConfig
     }
-}
-
-private fun createDummyProxyConfig(): StaticProxyConfiguration {
-    val newConfig = object : StaticProxyConfiguration {
-        override val exceptions: String
-            get() = "testExceptions"
-        override val host: String
-            get() = "testProxy"
-        override val port: Int
-            get() = 3128
-        override val protocol: ProxyConfiguration.ProxyProtocol
-            get() = ProxyConfiguration.ProxyProtocol.HTTP
-    }
-    return newConfig
 }

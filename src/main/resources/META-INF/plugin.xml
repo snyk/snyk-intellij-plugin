@@ -19,7 +19,6 @@
   <depends optional="true" config-file="optional/withXML.xml">com.intellij.modules.xml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <checkinHandlerFactory implementation="snyk.common.PreCommitHookHandler" />
     <codeInsight.lineMarkerProvider
       language=""
       implementationClass="snyk.common.annotator.SnykLineMarkerProvider"/>
@@ -37,7 +36,7 @@
                          groupId="tools"
                          displayName="Snyk"/>
 
-    <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
+    <!--    <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>-->
 
     <!-- Registry keys -->
     <registryKey key="snyk.timeout.results.waiting"
