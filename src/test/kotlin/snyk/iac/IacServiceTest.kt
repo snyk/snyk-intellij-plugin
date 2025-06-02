@@ -14,7 +14,6 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.setupDummyCliFile
 import org.eclipse.lsp4j.services.LanguageServer
-import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
 import java.io.File
 import java.util.concurrent.CompletableFuture
@@ -64,7 +63,6 @@ class IacServiceTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
-    @Test
     fun testBuildCliCommandsListWithDefaults() {
         setupDummyCliFile()
 
@@ -75,7 +73,6 @@ class IacServiceTest : LightPlatformTestCase() {
         assertTrue(cliCommands.contains("--json"))
     }
 
-    @Test
     fun testScanWithErrorResult() {
         setupDummyCliFile()
 
@@ -101,7 +98,6 @@ class IacServiceTest : LightPlatformTestCase() {
         assertEquals(errorPath, iacResult.getFirstError()!!.path)
     }
 
-    @Test
     fun testScanWithSuccessfulIacResult() {
         setupDummyCliFile()
 
@@ -121,7 +117,6 @@ class IacServiceTest : LightPlatformTestCase() {
         assertEquals("SNYK-CC-TF-53", vulnerabilityId)
     }
 
-    @Test
     fun testConvertRawCliStringToIacResult() {
         val singleObjectIacResult = iacService.convertRawCliStringToCliResult(singleFileJson)
         assertTrue(singleObjectIacResult.isSuccessful())
@@ -149,13 +144,11 @@ class IacServiceTest : LightPlatformTestCase() {
         assertEquals(project.basePath, rawErrorIacResult.getFirstError()!!.path)
     }
 
-    @Test
     fun testConvertRawCliStringToIacResultWithEmptyRawString() {
         val cliResult = iacService.convertRawCliStringToCliResult("")
         assertFalse(cliResult.isSuccessful())
     }
 
-    @Test
     fun testConvertRawCliStringToIacResultWithMissformedJson() {
         val cliResult = iacService.convertRawCliStringToCliResult(
             """
@@ -169,7 +162,6 @@ class IacServiceTest : LightPlatformTestCase() {
         assertFalse(cliResult.isSuccessful())
     }
 
-    @Test
     fun testConvertRawCliStringToIacResultFieldsInitialisation() {
         val iacResult = iacService.convertRawCliStringToCliResult(wholeProjectJson)
         assertTrue(iacResult.isSuccessful())
