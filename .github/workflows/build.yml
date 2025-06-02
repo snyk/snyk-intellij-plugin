@@ -31,7 +31,7 @@ jobs:
         name: Setup Java
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Gradle Cache
         uses: actions/cache@v4
@@ -41,9 +41,6 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-
-      - name: Verify Plugin
-        run: ./gradlew verifyPlugin
 
       - name: Run Tests
         run: ./gradlew clean check -x detekt
@@ -65,7 +62,7 @@ jobs:
         name: Setup Java
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Gradle Cache
         uses: actions/cache@v4
@@ -77,4 +74,4 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
 
       - name: Run Plugin Verifier
-        run: ./gradlew runPluginVerifier
+        run: ./gradlew verifyPlugin

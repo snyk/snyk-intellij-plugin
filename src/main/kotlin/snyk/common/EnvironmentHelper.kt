@@ -1,13 +1,16 @@
 package snyk.common
 
 import com.intellij.util.EnvironmentUtil
-import com.intellij.util.net.HttpConfigurable
+import com.intellij.util.net.ProxyConfiguration
+import com.intellij.util.net.ProxyCredentialStore
+import com.intellij.util.net.ProxySettings
 import io.snyk.plugin.pluginSettings
 import snyk.pluginInfo
 import java.net.URI
 import java.net.URLEncoder
 
 object EnvironmentHelper {
+    @Suppress("HttpUrlsUsage")
     fun updateEnvironment(
         environment: MutableMap<String, String>,
         apiToken: String,
@@ -51,25 +54,27 @@ object EnvironmentHelper {
         environment["SNYK_INTEGRATION_VERSION"] = pluginInfo.integrationVersion
         environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment
         environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"] = pluginInfo.integrationEnvironmentVersion
-        val proxySettings = HttpConfigurable.getInstance()
-        val proxyHost = proxySettings.PROXY_HOST
-        if (proxySettings != null && proxySettings.USE_HTTP_PROXY && proxyHost.isNotEmpty()) {
-            val authentication =
-                if (proxySettings.PROXY_AUTHENTICATION) {
-                    val auth =
-                        proxySettings.getPromptedAuthentication(
-                            proxyHost,
-                            "Snyk: Please enter your proxy password",
-                        )
-                    if (auth == null) "" else auth.userName.urlEncode() + ":" + String(auth.password).urlEncode() + "@"
-                } else {
-                    ""
-                }
-            environment["http_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
-            environment["https_proxy"] = "http://$authentication$proxyHost:${proxySettings.PROXY_PORT}"
-            environment["no_proxy"] = proxySettings.PROXY_EXCEPTIONS
+        val proxyConfiguration = ProxySettings.getInstance().getProxyConfiguration()
+        if (proxyConfiguration is ProxyConfiguration.StaticProxyConfiguration) {
+            val proxyHost = proxyConfiguration.host
+            val proxyPort = proxyConfiguration.port
+            if (proxyConfiguration.protocol == ProxyConfiguration.ProxyProtocol.HTTP && proxyHost.isNotEmpty()) {
+                val credentialStore = ProxyCredentialStore.getInstance()
+                val credentials = credentialStore.getCredentials(proxyHost, proxyConfiguration.port)
+                val userName = credentials?.userName
+                val authentication =
+                    if (credentials != null && userName != null && userName.isNotEmpty()) {
+                        val password = credentials.password.toString()
+                        userName.urlEncode() + ":" + password.urlEncode() + "@"
+                    } else {
+                        ""
+                    }
+                environment["http_proxy"] = "http://$authentication$proxyHost:$proxyPort"
+                environment["https_proxy"] = "http://$authentication$proxyHost:$proxyPort"
+                environment["no_proxy"] = proxyConfiguration.exceptions
+            }
         }
     }
 
-    private fun String.urlEncode() = URLEncoder.encode(this, "UTF-8")
+    fun String.urlEncode(): String = URLEncoder.encode(this, "UTF-8")
 }

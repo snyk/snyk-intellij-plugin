@@ -22,7 +22,6 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
@@ -54,7 +53,6 @@ import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
-import snyk.common.lsp.LanguageServerRestartListener
 import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
@@ -459,6 +457,7 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
         .toSortedSet()
 }
 
+@Suppress("UselessCallOnCollection")
 fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     if (this.isDisposed) return emptySet()
     var contentRoots = emptyArray<VirtualFile>()
@@ -467,12 +466,14 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     }
     if (contentRoots.isEmpty()) {
         // This should cover the case when no content roots are configured, e.g. in Rider
+        @Suppress("DEPRECATION")
         contentRoots = arrayOf(this.baseDir)
     }
 
     // The sort is to ensure that parent folders come first
     // e.g. /a/b should come before /a/b/c
     return contentRoots
+        .filterNotNull()
         .filter { it.exists() && it.isDirectory }
         .sortedBy { it.path }.toSet()
 }
