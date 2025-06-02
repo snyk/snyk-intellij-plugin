@@ -56,7 +56,6 @@ dependencies {
 
     implementation("org.commonmark:commonmark:0.21.0")
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.segment.analytics.java:analytics:3.4.0")
     implementation("io.sentry:sentry:6.27.0")
     implementation("javax.xml.bind:jaxb-api:2.3.1") // necessary because since JDK 9 not included
     implementation("com.squareup.retrofit2:retrofit")
