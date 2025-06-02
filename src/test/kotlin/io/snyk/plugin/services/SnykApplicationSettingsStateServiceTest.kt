@@ -79,7 +79,6 @@ class SnykApplicationSettingsStateServiceTest {
         settingsToModify.lastCheckDate = Date()
         settingsToModify.pluginFirstRun = false
         val oldUserAnonymousId = settingsToModify.userAnonymousId
-        val oldLastTimeFeedbackRequestShown = settingsToModify.lastTimeFeedbackRequestShown
         settingsToModify.showFeedbackRequest = false
 
         // Call reset
@@ -171,7 +170,7 @@ class SnykApplicationSettingsStateServiceTest {
         assertNotEquals(oldUserAnonymousId, settingsToModify.userAnonymousId)
         try {
             UUID.fromString(settingsToModify.userAnonymousId) // Check if it's a valid UUID
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             org.junit.Assert.fail("userAnonymousId is not a valid UUID after reset")
         }
     }
