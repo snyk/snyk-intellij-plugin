@@ -62,21 +62,10 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit")
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:logging-interceptor")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.0")
     implementation("org.json:json:20231013")
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("org.apache.commons:commons-text:1.12.0")
     implementation("org.apache.commons:commons-lang3:3.17.0")
-
-    implementation("ly.iterative.itly:plugin-iteratively:1.2.11") {
-        exclude(group = "com.fasterxml.jackson.core")
-    }
-    implementation("ly.iterative.itly:plugin-schema-validator:1.2.11") {
-        exclude(group = "org.slf4j")
-    }
-    implementation("ly.iterative.itly:sdk-jvm:1.2.11") {
-        exclude(group = "org.json")
-    }
 
     testImplementation("com.google.jimfs:jimfs:1.3.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")
