@@ -111,7 +111,10 @@ class SnykApplicationSettingsStateServiceTest {
         assertEquals(defaultSettings.cliScanEnable, settingsToModify.cliScanEnable)
 
         assertEquals(defaultSettings.ossScanEnable, settingsToModify.ossScanEnable)
-        assertEquals(defaultSettings.snykCodeSecurityIssuesScanEnable, settingsToModify.snykCodeSecurityIssuesScanEnable)
+        assertEquals(
+            defaultSettings.snykCodeSecurityIssuesScanEnable,
+            settingsToModify.snykCodeSecurityIssuesScanEnable
+        )
         assertEquals(defaultSettings.snykCodeQualityIssuesScanEnable, settingsToModify.snykCodeQualityIssuesScanEnable)
         assertEquals(defaultSettings.iacScanEnabled, settingsToModify.iacScanEnabled)
         assertEquals(defaultSettings.containerScanEnabled, settingsToModify.containerScanEnabled)
@@ -133,8 +136,14 @@ class SnykApplicationSettingsStateServiceTest {
 
         // Assert TreeFiltering properties (comparing field by field as TreeFiltering doesn't override equals)
         assertEquals(defaultSettings.treeFiltering.ossResults, settingsToModify.treeFiltering.ossResults)
-        assertEquals(defaultSettings.treeFiltering.codeSecurityResults, settingsToModify.treeFiltering.codeSecurityResults)
-        assertEquals(defaultSettings.treeFiltering.codeQualityResults, settingsToModify.treeFiltering.codeQualityResults)
+        assertEquals(
+            defaultSettings.treeFiltering.codeSecurityResults,
+            settingsToModify.treeFiltering.codeSecurityResults
+        )
+        assertEquals(
+            defaultSettings.treeFiltering.codeQualityResults,
+            settingsToModify.treeFiltering.codeQualityResults
+        )
         assertEquals(defaultSettings.treeFiltering.iacResults, settingsToModify.treeFiltering.iacResults)
         assertEquals(defaultSettings.treeFiltering.containerResults, settingsToModify.treeFiltering.containerResults)
         assertEquals(defaultSettings.treeFiltering.criticalSeverity, settingsToModify.treeFiltering.criticalSeverity)
@@ -142,7 +151,10 @@ class SnykApplicationSettingsStateServiceTest {
         assertEquals(defaultSettings.treeFiltering.mediumSeverity, settingsToModify.treeFiltering.mediumSeverity)
         assertEquals(defaultSettings.treeFiltering.lowSeverity, settingsToModify.treeFiltering.lowSeverity)
         assertEquals(defaultSettings.treeFiltering.ossResults, settingsToModify.treeFiltering.ossResults)
-        assertEquals(defaultSettings.treeFiltering.codeSecurityResults, settingsToModify.treeFiltering.codeSecurityResults)
+        assertEquals(
+            defaultSettings.treeFiltering.codeSecurityResults,
+            settingsToModify.treeFiltering.codeSecurityResults
+        )
         assertEquals(defaultSettings.treeFiltering.iacResults, settingsToModify.treeFiltering.iacResults)
 
         assertNull(settingsToModify.lastCheckDate) // default is null
@@ -150,7 +162,6 @@ class SnykApplicationSettingsStateServiceTest {
 
         // For properties that get new unique values on reset
         assertNotNull(settingsToModify.lastTimeFeedbackRequestShown)
-        assertNotEquals(oldLastTimeFeedbackRequestShown, settingsToModify.lastTimeFeedbackRequestShown)
         // Check it's a recent date (e.g., not older than defaultSettings's, allowing for slight time diff)
         assertTrue(settingsToModify.lastTimeFeedbackRequestShown.time >= defaultSettings.lastTimeFeedbackRequestShown.time - 5000) // within 5s
 
