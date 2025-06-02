@@ -115,6 +115,7 @@
 
   <extensionPoints>
     <extensionPoint
+      qualifiedName="io.snyk.snyk-intellij-plugin.controllerManager"
       name="controllerManager"
       interface="io.snyk.plugin.extensions.SnykControllerManager"/>
   </extensionPoints>
