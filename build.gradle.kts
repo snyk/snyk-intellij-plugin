@@ -150,7 +150,7 @@ tasks {
         reports {
             sarif {
                 required.set(true)
-                outputLocation.set(file("${buildDir}/detekt.sarif"))
+                outputLocation.set(file("${layout.buildDirectory}/detekt.sarif"))
             }
             html.required.set(false)
             xml.required.set(false)

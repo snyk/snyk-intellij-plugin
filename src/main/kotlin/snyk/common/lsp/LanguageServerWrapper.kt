@@ -139,7 +139,7 @@ class LanguageServerWrapper(
         if (cliPath.toNioPathOrNull()?.exists() == false) {
             if (!cliNotFoundWarningDisplayed) {
                 val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $cliPath."
-                SnykBalloonNotificationHelper.showWarn(message, project)
+                logger.warn(message)
                 cliNotFoundWarningDisplayed = true
             }
             return

@@ -2,8 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    branches:
-      - master
     inputs:
       incrementLevel:
         description: 'Version level to increment'
@@ -79,15 +77,10 @@ jobs:
 
       - name: Create release
         if: ${{ !env.ACT }}
-        uses: actions/create-release@v1
+        id: create_release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "v${{ steps.createTag.outputs.tagName }}"
-          release_name: "v${{ steps.createTag.outputs.tagName }}"
-          draft: false
-          prerelease: false
-          body: "${{ steps.extract-release-notes.outputs.release_notes }}"
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create ${{ steps.createTag.outputs.tagName }} --generate-notes $(find . -name 'snyk-intellij-plugin-*.zip')
 
       - name: Publish Plugin
         if: ${{ !env.ACT }}
@@ -98,11 +91,3 @@ jobs:
           ORG_GRADLE_PROJECT_iterativelyEnvironment: "PRODUCTION"
           ORG_GRADLE_PROJECT_segmentWriteKey: ${{ secrets.SEGMENT_WRITE_KEY }}
         run: ./gradlew publishPlugin
-
-#      - name: Create Sentry release
-#        uses: getsentry/action-release@v1
-#        if: ${{ !env.ACT }}
-#        env:
-#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
