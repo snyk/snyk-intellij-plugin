@@ -147,8 +147,6 @@ class SnykProjectSettingsConfigurable(
     private fun handleReleaseChannelChanged() {
         settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
 
-        // this needs to stay as the actions need it to be able to expire the notification.
-        // I honestly don't really understand how this works
         @Suppress("CanBeVal")
         var notification: Notification? = null
         val downloadAction = object : AnAction("Download") {
@@ -165,7 +163,11 @@ class SnykProjectSettingsConfigurable(
                 notification?.expire()
             }
         }
-        SnykBalloonNotificationHelper.showInfo(
+
+        // this assignment is populating the pointer of the notification with the real notification
+        // so that the actions can expire it
+        @Suppress("AssignedValueIsNeverRead")
+        notification = SnykBalloonNotificationHelper.showInfo(
             "You changed the release channel. Would you like to download a new Snyk CLI now?",
             project,
             downloadAction,
