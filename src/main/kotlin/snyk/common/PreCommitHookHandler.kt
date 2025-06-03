@@ -20,9 +20,8 @@ class PreCommitHookHandler : CheckinHandlerFactory() {
                 val noCodeIssues = snykCachedResults.currentSnykCodeResultsLS.isEmpty()
                 val noOSSIssues = snykCachedResults.currentOSSResultsLS.isEmpty()
                 val noIaCIssues = snykCachedResults.currentIacResultsLS.isEmpty()
-                val noContainerIssues = (snykCachedResults.currentContainerResult?.issuesCount ?: 0) == 0
                 LanguageServerWrapper.getInstance(project).sendScanCommand()
-                val doCommit = noCodeIssues && noOSSIssues && noIaCIssues && noContainerIssues
+                val doCommit = noCodeIssues && noOSSIssues && noIaCIssues
                 if (!doCommit) {
                     SnykBalloonNotificationHelper.showWarn("Stopped commit, because of you have issues.", project)
                     return ReturnResult.CANCEL

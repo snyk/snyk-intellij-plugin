@@ -46,9 +46,7 @@ class SnykControllerImplTest : LightPlatformTestCase() {
         val settings = pluginSettings()
         settings.ossScanEnable = true
         settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = false
-        settings.containerScanEnabled = false
 
         val controller = SnykControllerImpl(project)
         controller.scan()

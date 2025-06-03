@@ -161,7 +161,7 @@ class SnykProjectSettingsConfigurable(
                 notification?.expire()
             }
         }
-        notification = SnykBalloonNotificationHelper.showInfo(
+        SnykBalloonNotificationHelper.showInfo(
             "You changed the release channel. Would you like to download a new Snyk CLI now?",
             project,
             downloadAction,

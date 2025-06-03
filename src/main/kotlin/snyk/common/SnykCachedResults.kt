@@ -9,16 +9,12 @@ import com.intellij.openapi.util.Disposer
 import io.ktor.util.collections.ConcurrentMap
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanListenerLS
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
-import snyk.container.ContainerResult
-import snyk.container.ContainerService
 
 @Service(Service.Level.PROJECT)
 class SnykCachedResults(
@@ -42,58 +38,23 @@ class SnykCachedResults(
 
     val currentSnykCodeResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
     val currentOSSResultsLS: ConcurrentMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
-
-    val currentContainerResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
-    var currentContainerResult: ContainerResult? = null
-        get() = if (field?.isExpired() == false) field else null
-
     val currentIacResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
 
     var currentOssError: SnykError? = null
-    var currentContainerError: SnykError? = null
     var currentIacError: SnykError? = null
     var currentSnykCodeError: SnykError? = null
 
     fun clearCaches() {
-        currentContainerResult = null
         currentOssError = null
-        currentContainerError = null
         currentIacError = null
         currentSnykCodeError = null
 
         currentSnykCodeResultsLS.clear()
         currentOSSResultsLS.clear()
         currentIacResultsLS.clear()
-        currentContainerResultsLS.clear()
     }
 
     fun initCacheUpdater() {
-        project.messageBus.connect().subscribe(
-            SnykScanListener.SNYK_SCAN_TOPIC,
-            object : SnykScanListener {
-                override fun scanningStarted() {
-                    currentOssError = null
-                    currentSnykCodeError = null
-                    currentIacError = null
-                    currentContainerError = null
-                }
-
-                override fun scanningContainerFinished(containerResult: ContainerResult) {
-                    currentContainerResult = containerResult
-                }
-
-                override fun scanningContainerError(snykError: SnykError) {
-                    currentContainerResult = null
-                    currentContainerError =
-                        when {
-                            snykError == ContainerService.NO_IMAGES_TO_SCAN_ERROR -> null
-                            snykError.message.startsWith(SnykToolWindowPanel.AUTH_FAILED_TEXT) -> null
-                            else -> snykError
-                        }
-                }
-            },
-        )
-
         project.messageBus.connect().subscribe(
             SnykScanListenerLS.SNYK_SCAN_TOPIC,
             object : SnykScanListenerLS {
@@ -104,7 +65,6 @@ class SnykCachedResults(
                     currentOssError = null
                     currentSnykCodeError = null
                     currentIacError = null
-                    currentContainerError = null
                 }
 
                 override fun scanningSnykCodeFinished() = Unit
@@ -145,16 +105,6 @@ class SnykCachedResults(
                                 )
                         }
 
-                        LsProduct.Container -> {
-                            currentContainerError =
-                                SnykError(
-                                    snykScan.cliError?.error ?: snykScan.errorMessage
-                                    ?: "Failed to run Snyk Container Scan",
-                                    snykScan.cliError?.path ?: snykScan.folderPath,
-                                    snykScan.cliError?.code,
-                                )
-                        }
-
                         LsProduct.Unknown -> Unit
                     }
 
@@ -172,7 +122,6 @@ class SnykCachedResults(
                         LsProduct.OpenSource -> currentOSSResultsLS[snykFile] = issues
                         LsProduct.Code -> currentSnykCodeResultsLS[snykFile] = issues
                         LsProduct.InfrastructureAsCode -> currentIacResultsLS[snykFile] = issues
-                        LsProduct.Container -> Unit
                         LsProduct.Unknown -> Unit
                     }
                 }

@@ -13,9 +13,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
-import junit.framework.TestCase
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import snyk.common.annotator.SnykCodeAnnotator
@@ -30,14 +28,13 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import kotlin.io.path.absolutePathString
 
-class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
+class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
     private lateinit var cut: SnykToolWindowSnykScanListenerLS
     private lateinit var snykToolWindowPanel: SnykToolWindowPanel
     private lateinit var vulnerabilitiesTree: JTree
     private lateinit var rootTreeNode: DefaultMutableTreeNode
     private lateinit var rootOssIssuesTreeNode: DefaultMutableTreeNode
     private lateinit var rootSecurityIssuesTreeNode: DefaultMutableTreeNode
-    private lateinit var rootQualityIssuesTreeNode: DefaultMutableTreeNode
     private lateinit var rootIacIssuesTreeNode: DefaultMutableTreeNode
 
     private val fileName = "app.js"
@@ -67,7 +64,6 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         snykToolWindowPanel = SnykToolWindowPanel(project)
         rootOssIssuesTreeNode = RootOssTreeNode(project)
         rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
-        rootQualityIssuesTreeNode = RootQualityIssuesTreeNode(project)
         rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
         pluginSettings().setDeltaEnabled(enabled = true)
         contentRootPaths.forEach { service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())}
@@ -75,7 +71,6 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         rootTreeNode = DefaultMutableTreeNode("")
         rootTreeNode.add(rootOssIssuesTreeNode)
         rootTreeNode.add(rootSecurityIssuesTreeNode)
-        rootTreeNode.add(rootQualityIssuesTreeNode)
         rootTreeNode.add(rootIacIssuesTreeNode)
         vulnerabilitiesTree = Tree(rootTreeNode).apply {
             this.isRootVisible = false
@@ -86,7 +81,6 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
             snykToolWindowPanel,
             vulnerabilitiesTree,
             rootSecurityIssuesTreeNode,
-            rootQualityIssuesTreeNode,
             rootOssIssuesTreeNode,
             rootIacIssuesTreeNode
         )
@@ -181,38 +175,33 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
     }
 
     fun `test root nodes are created`() {
-        TestCase.assertEquals(listOf(" Open Source", " Code Security", " Code Quality", " Configuration"), mapToLabels(rootTreeNode))
+        assertEquals(listOf(" Open Source", " Code Security", " Configuration"), mapToLabels(rootTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for non-code if no issues and CCI disabled`() {
         disableCCI()
 
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
-        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootOssIssuesTreeNode))
+        assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootOssIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for non-code if no issues and viewing open and CCI enabled`() {
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
-        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootOssIssuesTreeNode))
+        assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootOssIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for code security if no issues and CCI disabled`() {
         disableCCI()
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
-        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootSecurityIssuesTreeNode))
-    }
-
-    fun `test addInfoTreeNodes adds new tree nodes for code quality if no issues and viewing open & ignored and CCI enabled`() {
-        cut.addInfoTreeNodes(ScanIssue.CODE_QUALITY, rootQualityIssuesTreeNode, listOf(), 0)
-        TestCase.assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootQualityIssuesTreeNode))
+        assertEquals(listOf("✅ Congrats! No issues found!"), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for non-code if 1 non-fixable issue with CCI disabled`() {
         disableCCI()
 
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, mockScanIssues(), 0)
-        TestCase.assertEquals(
+        assertEquals(
             listOf("✋ 1 issue", "There are no issues automatically fixable."),
             mapToLabels(rootOssIssuesTreeNode)
         )
@@ -230,46 +219,27 @@ class SnykToolWindowSnykScanListenerLSTest : BasePlatformTestCase() {
         disableCCI()
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
-        TestCase.assertEquals(listOf("✋ 1 issue", "⚡ 1 issue is fixable automatically."), mapToLabels(rootSecurityIssuesTreeNode))
-    }
-
-    fun `test addInfoTreeNodes adds new tree nodes for code quality if 2 fixable issues and viewing open with CCI enabled`() {
-        cut.addInfoTreeNodes(ScanIssue.CODE_QUALITY, rootQualityIssuesTreeNode, mockScanIssues(hasAIFix = true) + mockScanIssues(hasAIFix = true), 2)
-        TestCase.assertEquals(listOf("✋ 2 open issues & 0 ignored issues", "⚡ 2 open issues are fixable automatically."), mapToLabels(rootQualityIssuesTreeNode))
+        assertEquals(listOf("✋ 1 issue", "⚡ 1 issue is fixable automatically."), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for non-code if open issues are hidden with CCI enabled`() {
         pluginSettings().openIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.OPEN_SOURCE, rootOssIssuesTreeNode, listOf(), 0)
-        TestCase.assertEquals(listOf("Open issues are disabled!", "Adjust your settings to view Open issues."), mapToLabels(rootOssIssuesTreeNode))
+        assertEquals(listOf("Open issues are disabled!", "Adjust your settings to view Open issues."), mapToLabels(rootOssIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for code security if open issues are hidden and no ignored issues with CCI enabled`() {
         pluginSettings().openIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
-        TestCase.assertEquals(listOf("✋ No ignored issues, open issues are disabled", "Adjust your settings to view Open issues."), mapToLabels(rootSecurityIssuesTreeNode))
-    }
-
-    fun `test addInfoTreeNodes adds new tree nodes for code quality if open issues are hidden and 1 ignored issues with CCI enabled`() {
-        pluginSettings().openIssuesEnabled = false
-
-        cut.addInfoTreeNodes(ScanIssue.CODE_QUALITY, rootQualityIssuesTreeNode, mockScanIssues(isIgnored = true), 0)
-        TestCase.assertEquals(listOf("✋ 1 ignored issue, open issues are disabled"), mapToLabels(rootQualityIssuesTreeNode))
+        assertEquals(listOf("✋ No ignored issues, open issues are disabled", "Adjust your settings to view Open issues."), mapToLabels(rootSecurityIssuesTreeNode))
     }
 
     fun `test addInfoTreeNodes adds new tree nodes for code security if ignored issues are hidden and no open issues with CCI enabled`() {
         pluginSettings().ignoredIssuesEnabled = false
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
-        TestCase.assertEquals(listOf("✅ Congrats! No open issues found!", "Adjust your settings to view Ignored issues."), mapToLabels(rootSecurityIssuesTreeNode))
-    }
-
-    fun `test addInfoTreeNodes adds new tree nodes for code quality if ignored issues are hidden and 1 fixable issue with CCI enabled`() {
-        pluginSettings().ignoredIssuesEnabled = false
-
-        cut.addInfoTreeNodes(ScanIssue.CODE_QUALITY, rootQualityIssuesTreeNode, mockScanIssues(hasAIFix = true), 1)
-        TestCase.assertEquals(listOf("✋ 1 open issue", "⚡ 1 open issue is fixable automatically."), mapToLabels(rootQualityIssuesTreeNode))
+        assertEquals(listOf("✅ Congrats! No open issues found!", "Adjust your settings to view Ignored issues."), mapToLabels(rootSecurityIssuesTreeNode))
     }
 }

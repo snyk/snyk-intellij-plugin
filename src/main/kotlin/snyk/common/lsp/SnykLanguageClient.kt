@@ -2,7 +2,6 @@ package snyk.common.lsp
 
 import com.google.gson.Gson
 import com.intellij.configurationStore.StoreUtil
-import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -240,7 +239,6 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             LsProduct.OpenSource -> scanPublisher.scanningOssFinished()
             LsProduct.Code -> scanPublisher.scanningSnykCodeFinished()
             LsProduct.InfrastructureAsCode -> scanPublisher.scanningIacFinished()
-            LsProduct.Container -> Unit
             LsProduct.Unknown -> Unit
         }
     }

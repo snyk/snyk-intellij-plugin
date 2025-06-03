@@ -38,14 +38,14 @@ class IgnoreInFileHandlerTest : BasePlatformTestCase() {
 
     fun `test issue should be ignored in file`() {
         every { lsMock.workspaceService.executeCommand(any()) } returns CompletableFuture.completedFuture(null)
-        val filePath = this.getTestDataPath()+ File.separator + fileName;
+        val filePath = this.getTestDataPath()+ File.separator + fileName
         ignorer.applyIgnoreInFileAndSave("SNYK-CC-TF-61", filePath )
-        val projectBasePath = project.basePath ?: "";
+        val projectBasePath = project.basePath ?: ""
 
         // Expected args for executeCommandParams
         val args: List<String> = arrayListOf(projectBasePath, "ignore", "--id=SNYK-CC-TF-61", "--path=${filePath}")
 
-        val executeCommandParams = ExecuteCommandParams (COMMAND_EXECUTE_CLI, args);
+        val executeCommandParams = ExecuteCommandParams (COMMAND_EXECUTE_CLI, args)
         verify { lsMock.workspaceService.executeCommand(executeCommandParams) }
     }
 }

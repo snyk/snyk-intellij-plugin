@@ -13,7 +13,7 @@ There are a few of use cases for the Snyk controller:
 ### Initiating a Snyk scan
 
 There may be situations in which a plugin wants to initiate a security scan, especially at the end of a workflow which
-introduces changes to the project source code, manifest dependencies, OCI container builds, infrastructure files,
+introduces changes to the project source code, manifest dependencies, infrastructure files,
 etc. -- anything Snyk can scan.
 
 ### Determining whether Snyk is authenticated to a user

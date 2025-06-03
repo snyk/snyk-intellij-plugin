@@ -23,8 +23,8 @@ import javax.swing.Icon
 object SnykBalloonNotificationHelper {
 
     private val logger = logger<SnykBalloonNotifications>()
-    const val title = "Snyk"
-    private const val groupAutoHide = "SnykAutoHide"
+    const val TITLE = "Snyk"
+    private const val GROUP_AUTO_HIDE = "SnykAutoHide"
 
     fun showError(message: String, project: Project?, vararg actions: AnAction) {
         showNotification(message, project, NotificationType.ERROR, *actions)
@@ -48,9 +48,9 @@ object SnykBalloonNotificationHelper {
         }
         val msg = message.replace("\n","<br/>")
         val notification = if (actions.isEmpty()) {
-            Notification(groupAutoHide, title, msg, type)
+            Notification(GROUP_AUTO_HIDE, TITLE, msg, type)
         } else {
-            notificationGroup.createNotification(title, msg, type).apply {
+            notificationGroup.createNotification(TITLE, msg, type).apply {
                 actions.forEach { this.addAction(it) }
             }
         }

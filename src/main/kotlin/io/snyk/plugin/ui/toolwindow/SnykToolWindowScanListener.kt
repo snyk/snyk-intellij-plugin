@@ -15,7 +15,6 @@ import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.expandTreeNodeRecursively
-import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_QUALITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.IAC_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NODE_NOT_SUPPORTED_STATE
@@ -23,10 +22,8 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.NO_OSS_FILES
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.OSS_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.SCANNING_TEXT
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootContainerIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootQualityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
@@ -54,7 +51,6 @@ class SnykToolWindowSnykScanListenerLS(
     private val snykToolWindowPanel: SnykToolWindowPanel,
     private val vulnerabilitiesTree: JTree,
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
-    private val rootQualityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
     private val rootIacIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListenerLS, Disposable {
@@ -85,7 +81,6 @@ class SnykToolWindowSnykScanListenerLS(
     override fun scanningSnykCodeFinished() {
         if (disposed) return
         this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
-        this.rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (scanning finished)"
         this.snykToolWindowPanel.triggerSelectionListeners = false
         val snykCachedResults = getSnykCachedResults(project)
         displaySnykCodeResults(snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap())
@@ -122,8 +117,6 @@ class SnykToolWindowSnykScanListenerLS(
             LsProduct.Code -> {
                 removeChildrenAndRefresh(rootSecurityIssuesTreeNode)
                 rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
-                removeChildrenAndRefresh(rootQualityIssuesTreeNode)
-                rootQualityIssuesTreeNode.userObject = "$CODE_QUALITY_ROOT_TEXT (error)"
             }
 
             LsProduct.InfrastructureAsCode -> {
@@ -131,7 +124,6 @@ class SnykToolWindowSnykScanListenerLS(
                 rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
             }
 
-            LsProduct.Container -> Unit
             LsProduct.Unknown -> Unit
         }
         refreshAnnotationsForOpenFiles(project)
@@ -163,22 +155,6 @@ class SnykToolWindowSnykScanListenerLS(
             rootNode = this.rootSecurityIssuesTreeNode,
             securityIssuesCount = securityIssues.values.flatten().distinct().size,
             fixableIssuesCount = securityIssues.values.flatten().distinct().count { it.hasAIFix() },
-        )
-
-        // display Quality (non Security) issues
-        val qualityIssues =
-            snykResults
-                .map { it.key to it.value.filter { issue -> !issue.additionalData.isSecurityType }.toSet() }
-                .toMap()
-
-        displayIssues(
-            filterableIssueType = ScanIssue.CODE_QUALITY,
-            enabledInSettings = settings.snykCodeQualityIssuesScanEnable,
-            filterTree = settings.treeFiltering.codeQualityResults,
-            snykResults = qualityIssues,
-            rootNode = this.rootQualityIssuesTreeNode,
-            qualityIssuesCount = qualityIssues.values.flatten().distinct().size,
-            fixableIssuesCount = qualityIssues.values.flatten().distinct().count { it.hasAIFix() },
         )
     }
 
@@ -260,9 +236,7 @@ class SnykToolWindowSnykScanListenerLS(
         rootNode: DefaultMutableTreeNode,
         ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
-        qualityIssuesCount: Int? = null,
         iacResultsCount: Int? = null,
-        containerResultsCount: Int? = null,
         fixableIssuesCount: Int? = null,
     ) {
         val settings = pluginSettings()
@@ -317,10 +291,8 @@ class SnykToolWindowSnykScanListenerLS(
 
         snykToolWindowPanel.updateTreeRootNodesPresentation(
             securityIssuesCount = securityIssuesCount,
-            qualityIssuesCount = qualityIssuesCount,
             ossResultsCount = ossResultsCountForDisplay,
             iacResultsCount = iacResultsCount,
-            containerResultsCount = containerResultsCount,
             addHMLPostfix = rootNodePostFix,
         )
 
@@ -387,7 +359,7 @@ class SnykToolWindowSnykScanListenerLS(
             )
         }
 
-        return null;
+        return null
     }
 
     private fun getNoIssueViewOptionsSelectedTreeNodeForCode(): InfoTreeNode? {
@@ -409,7 +381,7 @@ class SnykToolWindowSnykScanListenerLS(
             )
         }
 
-        return null;
+        return null
     }
 
     private fun getFixableIssuesText(fixableIssuesCount: Int, sayOpenIssues: Boolean = false): String {
@@ -445,7 +417,7 @@ class SnykToolWindowSnykScanListenerLS(
         // Depending on Issue View Options, ignored issues might be pre-filtered by the LS and so ignoredIssuesCount may be 0.
         // In this case, openIssuesCount is the total issue count returned by the LS.
         val openIssuesCount = totalIssuesCount - ignoredIssuesCount
-        val isCodeNode = filterableIssueType == ScanIssue.CODE_SECURITY || filterableIssueType == ScanIssue.CODE_QUALITY
+        val isCodeNode = filterableIssueType == ScanIssue.CODE_SECURITY
 
         val text = if (!isCodeNode) getIssueFoundText(totalIssuesCount) else getIssueFoundTextForCode(
             totalIssuesCount,
@@ -487,10 +459,8 @@ class SnykToolWindowSnykScanListenerLS(
             .forEach { entry ->
                 val productType =
                     when (rootNode) {
-                        is RootQualityIssuesTreeNode -> ProductType.CODE_QUALITY
                         is RootSecurityIssuesTreeNode -> ProductType.CODE_SECURITY
                         is RootOssTreeNode -> ProductType.OSS
-                        is RootContainerIssuesTreeNode -> ProductType.CONTAINER
                         is RootIacIssuesTreeNode -> ProductType.IAC
                         else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
                     }

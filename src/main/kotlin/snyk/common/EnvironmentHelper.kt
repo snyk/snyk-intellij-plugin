@@ -45,11 +45,6 @@ object EnvironmentHelper {
         }
 
         environment["SNYK_API"] = endpoint
-
-        if (!pluginSettings().usageAnalyticsEnabled || !endpointURI.isAnalyticsPermitted()) {
-            environment["SNYK_CFG_DISABLE_ANALYTICS"] = "1"
-        }
-
         environment["SNYK_INTEGRATION_NAME"] = pluginInfo.integrationName
         environment["SNYK_INTEGRATION_VERSION"] = pluginInfo.integrationVersion
         environment["SNYK_INTEGRATION_ENVIRONMENT"] = pluginInfo.integrationEnvironment

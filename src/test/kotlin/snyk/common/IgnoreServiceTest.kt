@@ -13,7 +13,6 @@ import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
-import junit.framework.TestCase.assertEquals
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
@@ -21,7 +20,6 @@ import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.commands.COMMAND_EXECUTE_CLI
-import snyk.iac.IacIssue
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -109,30 +107,6 @@ class IgnoreServiceTest {
         cut.ignoreInstance(issueId, path)
 
         verify(exactly = 1) { lsMock.workspaceService.executeCommand(params) }
-    }
-
-    @Test
-    fun `buildPath should construct the right path`() {
-        val issuePath = listOf("[DocId:1]", "spec")
-        val issue = IacIssue(
-            id = "testId",
-            title = "",
-            severity = "",
-            publicId = "",
-            documentation = "",
-            lineNumber = 0,
-            issue = "",
-            impact = "",
-            resolve = "",
-            references = emptyList(), path = issuePath
-        )
-        val cut = IgnoreService(project)
-        val targetFile = "production/deployment.yaml"
-        val expectedPath = targetFile + " > " + issuePath.joinToString(" > ")
-
-        val actualPath = cut.buildPath(issue, targetFile)
-
-        assertEquals(expectedPath, actualPath)
     }
 
     @Test(expected = IgnoreException::class)

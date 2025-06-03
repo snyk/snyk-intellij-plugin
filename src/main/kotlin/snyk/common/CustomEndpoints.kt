@@ -1,7 +1,6 @@
 package snyk.common
 
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.prefixIfNot
 import io.snyk.plugin.suffixIfNot
 import java.net.URI
 import java.net.URISyntaxException
@@ -127,13 +126,6 @@ fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
 
 fun URI.isAnalyticsPermitted() = host != null &&
     (host.lowercase() == "api.snyk.io" || host.lowercase() == "api.us.snyk.io" || host.lowercase() == "snyk.io")
-
-fun isAnalyticsPermitted(): Boolean {
-    val settings = pluginSettings()
-    return settings.customEndpointUrl
-        ?.let { URI(it) }
-        ?.isAnalyticsPermitted() ?: true
-}
 
 fun isLocalCodeEngine() = pluginSettings().localCodeEngineEnabled == true
 

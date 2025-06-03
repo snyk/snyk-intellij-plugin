@@ -4,7 +4,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import snyk.common.lsp.ScanIssue
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -15,6 +15,6 @@ class SuggestionTreeNode(
 ) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
     override fun getDescriptionPanel(): IssueDescriptionPanelBase {
-        return SuggestionDescriptionPanelFromLS(project, issue)
+        return SuggestionDescriptionPanel(project, issue)
     }
 }
