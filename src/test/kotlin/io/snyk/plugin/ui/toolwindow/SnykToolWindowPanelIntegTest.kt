@@ -13,7 +13,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isOssRunning
@@ -45,7 +45,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         private lateinit var toolWindowPanel: SnykToolWindowPanel
 
     private val scanPublisherLS
-        get() = getSyncPublisher(project, SnykScanListenerLS.SNYK_SCAN_TOPIC)!!
+        get() = getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)!!
 
     private val fakeApiToken = "fake_token"
     private val lsMock = mockk<LanguageServer>(relaxed = true)

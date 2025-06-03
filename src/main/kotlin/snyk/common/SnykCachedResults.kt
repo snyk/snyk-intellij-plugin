@@ -9,7 +9,7 @@ import com.intellij.openapi.util.Disposer
 import io.ktor.util.collections.ConcurrentMap
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.lsp.LsProduct
@@ -56,8 +56,8 @@ class SnykCachedResults(
 
     fun initCacheUpdater() {
         project.messageBus.connect().subscribe(
-            SnykScanListenerLS.SNYK_SCAN_TOPIC,
-            object : SnykScanListenerLS {
+            SnykScanListener.SNYK_SCAN_TOPIC,
+            object : SnykScanListener {
                 val logger = logger<SnykCachedResults>()
 
                 override fun scanningStarted(snykScan: SnykScanParams) {

@@ -19,7 +19,7 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykTaskQueueListener
@@ -157,7 +157,7 @@ class SnykToolWindowPanel(
         val scanListenerLS =
             run {
                 val scanListener =
-                    SnykToolWindowSnykScanListenerLS(
+                    SnykToolWindowSnykScanListener(
                         project,
                         this,
                         vulnerabilitiesTree,
@@ -166,7 +166,7 @@ class SnykToolWindowPanel(
                         rootIacIssuesTreeNode
                     )
                 project.messageBus.connect(this).subscribe(
-                    SnykScanListenerLS.SNYK_SCAN_TOPIC,
+                    SnykScanListener.SNYK_SCAN_TOPIC,
                     scanListener,
                 )
                 scanListener
@@ -175,8 +175,8 @@ class SnykToolWindowPanel(
         project.messageBus
             .connect(this)
             .subscribe(
-                SnykScanListenerLS.SNYK_SCAN_TOPIC,
-                object : SnykScanListenerLS {
+                SnykScanListener.SNYK_SCAN_TOPIC,
+                object : SnykScanListener {
                     override fun onPublishDiagnostics(
                         product: LsProduct,
                         snykFile: SnykFile,

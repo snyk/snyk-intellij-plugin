@@ -1,6 +1,10 @@
 package snyk.common.codevision
 
-import com.intellij.codeInsight.codeVision.*
+import com.intellij.codeInsight.codeVision.CodeVisionAnchorKind
+import com.intellij.codeInsight.codeVision.CodeVisionEntry
+import com.intellij.codeInsight.codeVision.CodeVisionProvider
+import com.intellij.codeInsight.codeVision.CodeVisionRelativeOrdering
+import com.intellij.codeInsight.codeVision.CodeVisionState
 import com.intellij.codeInsight.codeVision.settings.CodeVisionGroupSettingProvider
 import com.intellij.codeInsight.codeVision.ui.model.ClickableTextCodeVisionEntry
 import com.intellij.openapi.application.ReadAction
@@ -13,8 +17,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
-import icons.SnykIcons
 import io.snyk.plugin.isInContent
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURI
 import org.eclipse.lsp4j.CodeLens
 import org.eclipse.lsp4j.CodeLensParams
@@ -40,7 +44,10 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
 
     override fun precomputeOnUiThread(editor: Editor) {}
 
-    override fun isAvailableFor(project: Project): Boolean = true
+    override fun isAvailableFor(project: Project): Boolean {
+        val pluginSettings = pluginSettings()
+        return pluginSettings.ossScanEnable || pluginSettings.snykCodeSecurityIssuesScanEnable || pluginSettings.iacScanEnabled
+    }
 
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
         val project = editor.project ?: return CodeVisionState.READY_EMPTY
@@ -60,7 +67,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         val codeLenses = try {
             LanguageServerWrapper.getInstance(project).languageServer.textDocumentService.codeLens(params)
                 .get(timeout, TimeUnit.SECONDS) ?: return CodeVisionState.READY_EMPTY
-        } catch (ignored: TimeoutException) {
+        } catch (_: TimeoutException) {
             logger.info("Timeout fetching code lenses for : $file")
             return CodeVisionState.READY_EMPTY
         }
@@ -75,8 +82,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
                 text = codeLens.command.title,
                 providerId = id,
                 onClick = LSCommandExecutionHandler(codeLens),
-                extraActions = emptyList(),
-                icon = SnykIcons.TOOL_WINDOW
+                extraActions = emptyList()
             )
             lenses.add(range to entry)
         }

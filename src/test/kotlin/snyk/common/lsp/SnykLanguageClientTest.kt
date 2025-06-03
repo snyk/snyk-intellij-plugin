@@ -14,7 +14,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
@@ -72,7 +72,7 @@ class SnykLanguageClientTest {
         every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
         every { projectMock.messageBus} returns messageBusMock
         every { messageBusMock.isDisposed } returns false
-        every { messageBusMock.syncPublisher(SnykScanListenerLS.SNYK_SCAN_TOPIC) } returns mockk(relaxed = true)
+        every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockk(relaxed = true)
         every { dumbServiceMock.isDumb } returns false
 
         every { pluginSettings() } returns settings

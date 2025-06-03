@@ -10,7 +10,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -46,14 +46,14 @@ private const val NO_FIXABLE_ISSUES = "There are no issues automatically fixable
 private const val IGNORED_ISSUES_FILTERED_BUT_AVAILABLE = "Adjust your settings to view Ignored issues."
 private const val OPEN_ISSUES_FILTERED_BUT_AVAILABLE = "Adjust your settings to view Open issues."
 
-class SnykToolWindowSnykScanListenerLS(
+class SnykToolWindowSnykScanListener(
     val project: Project,
     private val snykToolWindowPanel: SnykToolWindowPanel,
     private val vulnerabilitiesTree: JTree,
     private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
     private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
     private val rootIacIssuesTreeNode: DefaultMutableTreeNode,
-) : SnykScanListenerLS, Disposable {
+) : SnykScanListener, Disposable {
     private var disposed = false
         get() {
             return project.isDisposed || ApplicationManager.getApplication().isDisposed || field

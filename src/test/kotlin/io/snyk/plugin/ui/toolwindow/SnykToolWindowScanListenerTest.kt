@@ -29,7 +29,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 import kotlin.io.path.absolutePathString
 
 class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
-    private lateinit var cut: SnykToolWindowSnykScanListenerLS
+    private lateinit var cut: SnykToolWindowSnykScanListener
     private lateinit var snykToolWindowPanel: SnykToolWindowPanel
     private lateinit var vulnerabilitiesTree: JTree
     private lateinit var rootTreeNode: DefaultMutableTreeNode
@@ -76,7 +76,7 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
             this.isRootVisible = false
         }
 
-        cut = SnykToolWindowSnykScanListenerLS(
+        cut = SnykToolWindowSnykScanListener(
             project,
             snykToolWindowPanel,
             vulnerabilitiesTree,

@@ -14,7 +14,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.PopupHandler
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.ui.expandTreeNodeRecursively
@@ -65,7 +65,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
     private fun initialiseToolbarUpdater() {
         // update actions presentation immediately after running state changes (avoid default 500 ms delay)
         project.messageBus.connect(this)
-            .subscribe(SnykScanListenerLS.SNYK_SCAN_TOPIC, object : SnykScanListenerLS {
+            .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, object : SnykScanListener {
                 override fun scanningSnykCodeFinished() {
                     updateActionsPresentation()
                 }

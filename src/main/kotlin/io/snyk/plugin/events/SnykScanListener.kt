@@ -6,10 +6,10 @@ import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 
-interface SnykScanListenerLS {
+interface SnykScanListener {
     companion object {
         val SNYK_SCAN_TOPIC =
-            Topic.create("Snyk scan LS", SnykScanListenerLS::class.java)
+            Topic.create("Snyk scan LS", SnykScanListener::class.java)
     }
 
     fun scanningStarted(snykScan: SnykScanParams) {}

@@ -15,8 +15,8 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
-import io.snyk.plugin.events.SnykScanListenerLS
-import io.snyk.plugin.events.SnykScanSummaryListenerLS
+import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
 import io.snyk.plugin.getDecodedParam
@@ -90,7 +90,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         val filePath = diagnosticsParams.uri
 
         try {
-            getSyncPublisher(project, SnykScanListenerLS.SNYK_SCAN_TOPIC)?.let {
+            getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.let {
                 updateCache(
                     project,
                     filePath,
@@ -107,7 +107,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         project: Project,
         filePath: String,
         diagnosticsParams: PublishDiagnosticsParams,
-        scanPublisher: SnykScanListenerLS
+        scanPublisher: SnykScanListener
     ) {
         if (disposed) return
         val snykFile = SnykFile(project, filePath.toVirtualFile())
@@ -191,7 +191,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
         try {
-            getSyncPublisher(project, SnykScanListenerLS.SNYK_SCAN_TOPIC)
+            getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)
                 ?.let { processSnykScan(snykScan, it) }
         } catch (e: Exception) {
             logger.error("Error processing snyk scan", e)
@@ -200,7 +200,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
     private fun processSnykScan(
         snykScan: SnykScanParams,
-        scanPublisher: SnykScanListenerLS,
+        scanPublisher: SnykScanListener,
     ) {
         val product =
             when (LsProduct.getFor(snykScan.product)) {
@@ -231,7 +231,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
     private fun processSuccessfulScan(
         snykScan: SnykScanParams,
-        scanPublisher: SnykScanListenerLS,
+        scanPublisher: SnykScanListener,
     ) {
         logger.info("Scan completed")
 
@@ -246,7 +246,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     @JsonNotification(value = "$/snyk.scanSummary")
     fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
         if (disposed) return
-        getSyncPublisher(project, SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
+        getSyncPublisher(project, SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
     }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")

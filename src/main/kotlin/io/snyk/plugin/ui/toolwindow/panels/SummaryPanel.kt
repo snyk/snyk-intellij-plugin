@@ -8,7 +8,7 @@ import com.intellij.ui.util.minimumHeight
 import com.intellij.ui.util.minimumWidth
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH
-import io.snyk.plugin.events.SnykScanSummaryListenerLS
+import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.getStandardLayout
@@ -59,7 +59,7 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
 
             // Subscribe to scan summaries
             project.messageBus.connect(this)
-                .subscribe(SnykScanSummaryListenerLS.SNYK_SCAN_SUMMARY_TOPIC, object : SnykScanSummaryListenerLS {
+                .subscribe(SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC, object : SnykScanSummaryListener {
                     // Replace the current HTML with the new HTML from the Language Server
                     override fun onSummaryReceived(summaryParams: SnykScanSummaryParams) {
                         styledHtml = getFormattedHtml(summaryParams.scanSummary)
