@@ -552,7 +552,7 @@ class LanguageServerWrapper(
         return null
     }
 
-    // triggers login and returns auth URL
+    // triggers login and returns token
     fun login(): String? {
         if (!ensureLanguageServerInitialized()) return null
         try {

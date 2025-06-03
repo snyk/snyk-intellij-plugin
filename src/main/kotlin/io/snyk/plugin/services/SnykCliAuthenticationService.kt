@@ -80,13 +80,13 @@ class SnykCliAuthenticationService(
                     """.trimIndent()
                 dialog.updateHtmlText(htmlText)
                 dialog.copyUrlAction.isEnabled = true
-                languageServerWrapper.login()
-                val exitCode =
-                    if (!pluginSettings().token.isNullOrBlank()) {
+                val exitCode = languageServerWrapper.login().let { token ->
+                    if (!token.isNullOrBlank()) {
                         DialogWrapper.OK_EXIT_CODE
                     } else {
                         DialogWrapper.CLOSE_EXIT_CODE
                     }
+                }
                 ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
             }
         }.queue()
