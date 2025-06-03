@@ -1,5 +1,6 @@
 package io.snyk.plugin.settings
 
+import com.intellij.notification.Notification
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
@@ -145,16 +146,24 @@ class SnykProjectSettingsConfigurable(
 
     private fun handleReleaseChannelChanged() {
         settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+
+        // this needs to stay as the actions need it to be able to expire the notification.
+        // I honestly don't really understand how this works
+        @Suppress("CanBeVal")
+        var notification: Notification? = null
         val downloadAction = object : AnAction("Download") {
             override fun actionPerformed(e: AnActionEvent) {
                 getSnykTaskQueueService(project)?.downloadLatestRelease(true) ?: SnykBalloonNotificationHelper.showWarn(
                     "Could not download Snyk CLI",
                     project
                 )
+                notification?.expire()
             }
         }
         val noAction = object : AnAction("Cancel") {
-            override fun actionPerformed(e: AnActionEvent) {}
+            override fun actionPerformed(e: AnActionEvent) {
+                notification?.expire()
+            }
         }
         SnykBalloonNotificationHelper.showInfo(
             "You changed the release channel. Would you like to download a new Snyk CLI now?",
