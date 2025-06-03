@@ -15,6 +15,7 @@ jobs:
           open-source-additional-arguments: --exclude=test
           release-branch: master
           iac-scan: disabled
+          debug: true
 
 workflows:
   version: 2
