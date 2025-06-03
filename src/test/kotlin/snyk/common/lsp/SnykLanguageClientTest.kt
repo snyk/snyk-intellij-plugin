@@ -196,7 +196,7 @@ class SnykLanguageClientTest {
             if (expectIntercept) {
                 assertEquals(cut.showDocument(ShowDocumentParams(url)).get().isSuccess, expectedNotifications > 0)
             } else {
-                assertThrows(UnsupportedOperationException::class.java, {cut.showDocument(ShowDocumentParams(url))})
+                assertThrows(UnsupportedOperationException::class.java) { cut.showDocument(ShowDocumentParams(url)) }
             }
             verify(exactly = expectedNotifications) { mockListener.onShowIssueDetail(any()) }
         }

@@ -778,7 +778,7 @@ class SnykSettingsDialog(
     fun getToken(): String =
         try {
             tokenTextField.document.getText(0, tokenTextField.document.length)
-        } catch (exception: BadLocationException) {
+        } catch (_: BadLocationException) {
             ""
         }
 

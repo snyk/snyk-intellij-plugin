@@ -69,7 +69,7 @@ fun needsSnykToken(endpoint: String): Boolean {
 fun getEndpointUrl(): String {
     val endpointUrl = try {
         pluginSettings().customEndpointUrl
-    } catch (e: RuntimeException) {
+    } catch (_: RuntimeException) {
         // This is a workaround for the case when the plugin is not initialized yet.
         ""
     }
@@ -134,7 +134,7 @@ internal fun String.removeTrailingSlashesIfPresent(): String {
     return try {
         URI(candidate)
         candidate
-    } catch (ignored: URISyntaxException) {
+    } catch (_: URISyntaxException) {
         this
     }
 }

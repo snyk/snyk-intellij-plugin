@@ -154,5 +154,3 @@ class AuthDialog(val project: Project) : DialogWrapper(true) {
         }
     }
 }
-
-fun String.removeLineEnd(): String = this.replace("\n", "").replace("\r", "")

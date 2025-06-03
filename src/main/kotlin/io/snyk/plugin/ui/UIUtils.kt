@@ -26,7 +26,6 @@ import java.awt.Font
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import javax.swing.Icon
-import javax.swing.ImageIcon
 import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JLabel
@@ -42,15 +41,6 @@ fun boldLabel(title: String): JLabel {
     val label = JLabel(title)
     val labelFont = label.font
     label.font = labelFont.deriveFont(labelFont.style or Font.BOLD)
-
-    return label
-}
-
-fun iconLabel(imageIcon: ImageIcon): JLabel {
-    val label = JLabel()
-    label.horizontalAlignment = 0
-    label.icon = imageIcon
-    label.text = ""
 
     return label
 }
