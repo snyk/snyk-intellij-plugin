@@ -103,7 +103,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         }
 
         // Migration from old settings. OAuth2 is default, so we only need to handle migration for API Token users.
-        if (!useTokenAuthentication) {
+        if (useTokenAuthentication) {
             authenticationType = AuthenticationType.API_TOKEN
         }
     }
