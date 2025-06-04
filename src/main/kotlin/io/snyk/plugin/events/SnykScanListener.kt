@@ -1,18 +1,26 @@
 package io.snyk.plugin.events
 
 import com.intellij.util.messages.Topic
-import snyk.common.SnykError
-import snyk.container.ContainerResult
+import io.snyk.plugin.SnykFile
+import snyk.common.lsp.LsProduct
+import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 
 interface SnykScanListener {
     companion object {
         val SNYK_SCAN_TOPIC =
-            Topic.create("Snyk scan", SnykScanListener::class.java)
+            Topic.create("Snyk scan LS", SnykScanListener::class.java)
     }
 
-    fun scanningStarted()
+    fun scanningStarted(snykScan: SnykScanParams) {}
 
-    fun scanningContainerFinished(containerResult: ContainerResult)
+    fun scanningSnykCodeFinished()
 
-    fun scanningContainerError(snykError: SnykError)
+    fun scanningOssFinished()
+
+    fun scanningIacFinished()
+
+    fun scanningError(snykScan: SnykScanParams)
+
+    fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>)
 }

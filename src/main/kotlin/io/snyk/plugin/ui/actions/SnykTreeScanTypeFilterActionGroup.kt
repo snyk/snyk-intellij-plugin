@@ -33,9 +33,7 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
     override fun getChildren(e: AnActionEvent?): Array<AnAction> = listOfNotNull(
         createOssScanAction(),
         createSecurityIssuesScanAction(),
-        createQualityIssuesScanAction(),
         createIacScanAction(),
-        createContainerScanAction()
     ).toTypedArray()
 
     private fun createScanFilteringAction(
@@ -90,14 +88,6 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
         availabilityPostfix = snykCodeAvailabilityPostfix()
     )
 
-    private fun createQualityIssuesScanAction(): AnAction = createScanFilteringAction(
-        productType = ProductType.CODE_QUALITY,
-        scanTypeAvailable = settings.snykCodeQualityIssuesScanEnable && isSnykCodeAvailable(),
-        resultsTreeFiltering = settings.treeFiltering.codeQualityResults,
-        setResultsTreeFiltering = { settings.treeFiltering.codeQualityResults = it },
-        availabilityPostfix = snykCodeAvailabilityPostfix()
-    )
-
     private fun createIacScanAction(): AnAction = createScanFilteringAction(
         productType = ProductType.IAC,
         scanTypeAvailable = settings.iacScanEnabled,
@@ -105,20 +95,11 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
         setResultsTreeFiltering = { settings.treeFiltering.iacResults = it }
     )
 
-    private fun createContainerScanAction(): AnAction = createScanFilteringAction(
-        productType = ProductType.CONTAINER,
-        scanTypeAvailable = settings.containerScanEnabled,
-        resultsTreeFiltering = settings.treeFiltering.containerResults,
-        setResultsTreeFiltering = { settings.treeFiltering.containerResults = it }
-    )
-
     private fun isLastScanTypeDisabling(e: AnActionEvent): Boolean {
         val onlyOneEnabled = arrayOf(
             settings.ossScanEnable && settings.treeFiltering.ossResults,
             settings.snykCodeSecurityIssuesScanEnable && settings.treeFiltering.codeSecurityResults,
-            settings.snykCodeQualityIssuesScanEnable && settings.treeFiltering.codeQualityResults,
-            settings.iacScanEnabled && settings.treeFiltering.iacResults,
-            settings.containerScanEnabled && settings.treeFiltering.containerResults
+            settings.iacScanEnabled && settings.treeFiltering.iacResults
         ).count { it } == 1
         if (onlyOneEnabled) {
             val message = "At least one Scan type should be enabled and selected"

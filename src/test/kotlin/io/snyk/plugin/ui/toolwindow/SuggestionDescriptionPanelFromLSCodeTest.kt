@@ -15,7 +15,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import snyk.UIComponentFinder.getJBCEFBrowser
@@ -29,7 +29,7 @@ import java.nio.file.Paths
 import javax.swing.JLabel
 
 class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
-    private lateinit var cut: SuggestionDescriptionPanelFromLS
+    private lateinit var cut: SuggestionDescriptionPanel
     private val fileName = "app.js"
     private lateinit var snykFile: SnykFile
     private lateinit var issue: ScanIssue
@@ -83,8 +83,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every { JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
         every { issue.details(project) } returns "<html>HTML message</html>"
-        every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(project, issue)
+        cut = SuggestionDescriptionPanel(project, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -104,8 +103,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         } returns mockJBCefBrowser
 
         every { issue.details(project) } returns "<html>HTML message</html>"
-        every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(project, issue)
+        cut = SuggestionDescriptionPanel(project, issue)
 
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
@@ -117,8 +115,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
         every { issue.details(project) } returns "<html><head>\${ideStyle}</head>HTML message</html>"
-        every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(project, issue)
+        cut = SuggestionDescriptionPanel(project, issue)
 
         val actual = cut.getCustomCssAndScript()
         assertFalse(actual.contains("\${ideStyle}"))

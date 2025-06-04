@@ -87,14 +87,14 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
 
     private fun convertSingleEntryToCliResult(rawStr: String): R =
         when {
-            isSuccessCliJsonString(rawStr) -> getResultOrError() {
+            isSuccessCliJsonString(rawStr) -> getResultOrError {
                 // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
                 val cliIssues = Gson().fromJson(rawStr, getCliIIssuesClass())
                 // `Gson().fromJson` could put `null` value into not-null field
                 val sanitizedCliIssues = sanitizeCliIssues(cliIssues)
                 return@getResultOrError getProductResult(listOf(sanitizedCliIssues))
             }
-            isErrorCliJsonString(rawStr) -> getResultOrError() {
+            isErrorCliJsonString(rawStr) -> getResultOrError {
                 // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
                 val cliError: CliError = Gson().fromJson(rawStr, CliError::class.java)
                 // `Gson().fromJson` could put `null` value into not-null field
@@ -112,7 +112,7 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
         }
 
     private fun convertArrayToCliResult(rawStr: String): R =
-        getResultOrError() {
+        getResultOrError {
             // see https://sites.google.com/site/gson/gson-user-guide#TOC-Serializing-and-Deserializing-Collection-with-Objects-of-Arbitrary-Types
             // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
             val jsonArray: JsonArray = JsonParser.parseString(rawStr).asJsonArray

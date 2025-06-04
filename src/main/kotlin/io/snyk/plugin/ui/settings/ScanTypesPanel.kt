@@ -14,10 +14,9 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.FontUtil
 import com.intellij.util.progress.sleepCancellable
 import com.intellij.util.ui.JBUI
-import io.snyk.plugin.getKubernetesImageCache
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.runInBackground
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.isSnykCodeAvailable
 import snyk.common.lsp.LanguageServerWrapper
@@ -38,12 +37,8 @@ class ScanTypesPanel(
 
     private var currentOSSScanEnabled = settings.ossScanEnable
     private var currentSnykCodeSecurityScanEnabled = settings.snykCodeSecurityIssuesScanEnable
-    private var currentSnykCodeQualityScanEnabled = settings.snykCodeQualityIssuesScanEnable
     private var currentIaCScanEnabled = settings.iacScanEnabled
-    private var currentContainerScanEnabled = settings.containerScanEnabled
-
     private var codeSecurityCheckbox: JBCheckBox? = null
-    private var codeQualityCheckbox: JBCheckBox? = null
     private var snykCodeComment: JLabel? = null
     private var snykCodeAlertHyperLinkLabel = HyperlinkLabel()
     private var snykCodeReCheckLinkLabel = ActionLink("Check again") {
@@ -55,8 +50,7 @@ class ScanTypesPanel(
     val scanTypesPanel = panel {
         getOSSCheckbox(cliScanComments)
         getIaCCheckbox()
-        getContainerCheckbox()
-        getCodeCheckboxes()
+        getCodeCheckbox()
         row {
             cell(snykCodeAlertHyperLinkLabel).applyToComponent { font = FontUtil.minusOne(font) }
             cell(snykCodeReCheckLinkLabel).applyToComponent { font = FontUtil.minusOne(font) }
@@ -69,7 +63,7 @@ class ScanTypesPanel(
         border = JBUI.Borders.empty(2)
     }
 
-    private fun Panel.getCodeCheckboxes() {
+    private fun Panel.getCodeCheckbox() {
         row {
             checkBox(ProductType.CODE_SECURITY.productSelectionName).applyToComponent {
                 name = text
@@ -85,37 +79,6 @@ class ScanTypesPanel(
                     }
                 }
                 .bindSelected(settings::snykCodeSecurityIssuesScanEnable)
-
-            checkBox(ProductType.CODE_QUALITY.productSelectionName).applyToComponent {
-                name = text
-                codeQualityCheckbox = this
-                label("").component.convertIntoHelpHintLabel(ProductType.CODE_QUALITY.description)
-            }
-                .actionListener { _, it ->
-                    val isSelected = it.isSelected
-                    if (canBeChanged(it)) {
-                        currentSnykCodeQualityScanEnabled = isSelected
-                    }
-                }
-                .bindSelected(settings::snykCodeQualityIssuesScanEnable)
-        }
-    }
-
-    private fun Panel.getContainerCheckbox() {
-        row {
-            checkBox(ProductType.CONTAINER.productSelectionName).applyToComponent {
-                name = text
-                label("").component.convertIntoHelpHintLabel(ProductType.CONTAINER.description)
-            }
-                .actionListener { _, it ->
-                    val isSelected = it.isSelected
-                    if (canBeChanged(it)) {
-                        currentContainerScanEnabled = isSelected
-                        val imagesCache = getKubernetesImageCache(project)
-                        if (isSelected) imagesCache?.cacheKubernetesFileFromProject() else imagesCache?.clear()
-                    }
-                }
-                .bindSelected(settings::containerScanEnabled)
         }
     }
 
@@ -194,38 +157,49 @@ class ScanTypesPanel(
             updateSettingsWithSastSettings(sastSettings)
 
             if (sastSettings != null) {
-                    when (sastSettings.sastEnabled) {
-                        true -> {
-                            setSnykCodeAvailability(true)
-                            val message =
-                                "Snyk Code is enabled for your organisation ${settings.organization}. \nAutofix enabled: ${sastSettings.autofixEnabled}"
-                            showSnykCodeAlert(message)
-                        }
-                        false -> {
-                            disableSnykCode()
-                            showSnykCodeAlert(
-                                message = "Snyk Code is disabled by your organisation's configuration: ",
-                                linkText = "Snyk > Settings > Snyk Code",
-                                url = toSnykCodeSettingsUrl(settings.customEndpointUrl),
-                                runOnClick = {
-                                    runAsync {
-                                        for (i in 0..20) {
-                                            val enabled = try {
-                                                sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
-                                                updateSettingsWithSastSettings(sastSettings)
-                                                sastSettings?.sastEnabled ?: false
-                                            } catch (ignored: RuntimeException) {
-                                                continue
-                                            }
-                                            setSnykCodeAvailability(enabled)
-                                            if (enabled) break
-                                            sleepCancellable(1000)
+                when (sastSettings.sastEnabled) {
+                    true -> {
+                        setSnykCodeAvailability(true)
+                        val message =
+                            "Snyk Code is enabled for your organisation ${settings.organization}. \nAutofix enabled: ${sastSettings.autofixEnabled}"
+                        showSnykCodeAlert(message)
+                    }
+
+                    false -> {
+                        disableSnykCode()
+                        val baseMessage = "Periodically checking if Snyk Code is enabled on organization level..."
+                        showSnykCodeAlert(
+                            message = "Snyk Code is disabled by your organisation's configuration: ",
+                            linkText = "Snyk > Settings > Snyk Code",
+                            url = toSnykCodeSettingsUrl(settings.customEndpointUrl),
+                            runOnClick = {
+                                runInBackground(baseMessage, project, true) {
+                                    val maxTries = 60
+                                    for (i in 0..maxTries) {
+                                        it.checkCanceled()
+                                        it.text = "$baseMessage (tries: $i/$maxTries)"
+
+                                        val enabled = try {
+                                            it.text = "$baseMessage (tries: $i/$maxTries - calling API)"
+                                            sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
+                                            updateSettingsWithSastSettings(sastSettings)
+                                            sastSettings?.sastEnabled ?: false
+                                        } catch (_: RuntimeException) {
+                                            continue
                                         }
+                                        setSnykCodeAvailability(enabled)
+                                        if (enabled) break
+
+                                        it.checkCanceled()
+                                        val sleepTime = 2L
+                                        it.text = "$baseMessage (tries: $i/$maxTries - sleeping for $sleepTime secs)"
+                                        sleepCancellable(sleepTime * 1000)
                                     }
                                 }
-                            )
-                        }
+                            }
+                        )
                     }
+                }
             }
         }
     }
@@ -239,15 +213,12 @@ class ScanTypesPanel(
 
     private fun disableSnykCode() {
         codeSecurityCheckbox?.isSelected = false
-        codeQualityCheckbox?.isSelected = false
-        codeQualityCheckbox?.isEnabled = false
         codeSecurityCheckbox?.isEnabled = false
         settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
     }
 
     private fun shouldSnykCodeCommentBeVisible() =
-        codeSecurityCheckbox?.isSelected == true || codeQualityCheckbox?.isSelected == true
+        codeSecurityCheckbox?.isSelected == true
 
     private var currentHyperlinkListener: HyperlinkListener? = null
 
@@ -279,18 +250,13 @@ class ScanTypesPanel(
         codeSecurityCheckbox?.let {
             it.isEnabled = enabled
         }
-        codeQualityCheckbox?.let {
-            it.isEnabled = enabled
-        }
     }
 
     private fun canBeChanged(component: JBCheckBox): Boolean {
         val onlyOneEnabled = arrayOf(
             currentOSSScanEnabled,
             currentSnykCodeSecurityScanEnabled,
-            currentSnykCodeQualityScanEnabled,
             currentIaCScanEnabled,
-            currentContainerScanEnabled,
         ).count { it } == 1
 
         if (onlyOneEnabled && !component.isSelected) {

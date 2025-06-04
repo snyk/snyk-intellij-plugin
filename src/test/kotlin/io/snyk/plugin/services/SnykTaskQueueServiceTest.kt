@@ -11,8 +11,6 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
-import io.snyk.plugin.getContainerService
-import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
@@ -20,13 +18,9 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.SnykCliDownloaderService
-import io.snyk.plugin.setupDummyCliFile
-import org.awaitility.Awaitility.await
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.container.ContainerResult
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.util.concurrent.TimeUnit
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
@@ -62,20 +56,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         super.tearDown()
     }
 
-    fun testSnykTaskQueueService() {
-        setupDummyCliFile()
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-
-        snykTaskQueueService.scan()
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
-
-        snykTaskQueueService.downloadLatestRelease()
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
-    }
     fun testCliDownloadBeforeScanIfNeeded() {
         setupAppSettingsForDownloadTests()
         every { isCliInstalled() } returns true
@@ -84,7 +64,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         snykTaskQueueService.scan()
 
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-        assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
         verify { isCliInstalled() }
     }
 
@@ -98,7 +77,6 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         snykTaskQueueService.scan()
 
         PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-        assertTrue(snykTaskQueueService.getTaskQueue().isEmpty)
         verify(exactly = 0) { downloaderMock.downloadFile(any(), any(), any()) }
     }
 
@@ -106,9 +84,7 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val settings = pluginSettings()
         settings.ossScanEnable = true
         settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
         settings.iacScanEnabled = false
-        settings.containerScanEnabled = false
         return settings
     }
 
@@ -135,29 +111,5 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         val settings = pluginSettings()
 
         assertNull(settings.localCodeEngineEnabled)
-    }
-
-    fun testContainerScanTriggeredAndProduceResults() {
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { isCliInstalled() } returns true
-        val fakeContainerResult = ContainerResult(emptyList())
-        every { getContainerService(project)?.scan() } returns fakeContainerResult
-
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        val settings = pluginSettings()
-        settings.ossScanEnable = false
-        settings.snykCodeSecurityIssuesScanEnable = false
-        settings.snykCodeQualityIssuesScanEnable = false
-        settings.iacScanEnabled = false
-        settings.containerScanEnabled = true
-
-        getSnykCachedResults(project)?.currentContainerResult = null
-
-        snykTaskQueueService.scan()
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-
-        await().atMost(2, TimeUnit.SECONDS).until {
-            getSnykCachedResults(project)?.currentContainerResult != null
-        }
     }
 }

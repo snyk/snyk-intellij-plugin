@@ -129,9 +129,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
         assertTrue(pluginSettings().ossScanEnable)
         assertTrue(pluginSettings().snykCodeSecurityIssuesScanEnable)
-        assertTrue(pluginSettings().snykCodeQualityIssuesScanEnable)
         assertTrue(pluginSettings().iacScanEnabled)
-        assertTrue(pluginSettings().containerScanEnabled)
     }
 
     @Test
@@ -153,9 +151,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
         assertTrue(pluginSettings().ossScanEnable)
         assertTrue(pluginSettings().snykCodeSecurityIssuesScanEnable)
-        assertTrue(pluginSettings().snykCodeQualityIssuesScanEnable)
         assertTrue(pluginSettings().iacScanEnabled)
-        assertTrue(pluginSettings().containerScanEnabled)
     }
 
     private fun findOnePixelSplitter(vulnerabilityTree: Tree): Container? {

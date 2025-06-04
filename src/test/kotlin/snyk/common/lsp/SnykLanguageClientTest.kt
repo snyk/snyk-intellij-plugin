@@ -14,7 +14,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.events.SnykScanListenerLS
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
@@ -72,7 +72,7 @@ class SnykLanguageClientTest {
         every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
         every { projectMock.messageBus} returns messageBusMock
         every { messageBusMock.isDisposed } returns false
-        every { messageBusMock.syncPublisher(SnykScanListenerLS.SNYK_SCAN_TOPIC) } returns mockk(relaxed = true)
+        every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockk(relaxed = true)
         every { dumbServiceMock.isDumb } returns false
 
         every { pluginSettings() } returns settings
@@ -196,7 +196,7 @@ class SnykLanguageClientTest {
             if (expectIntercept) {
                 assertEquals(cut.showDocument(ShowDocumentParams(url)).get().isSuccess, expectedNotifications > 0)
             } else {
-                assertThrows(UnsupportedOperationException::class.java, {cut.showDocument(ShowDocumentParams(url))})
+                assertThrows(UnsupportedOperationException::class.java) { cut.showDocument(ShowDocumentParams(url)) }
             }
             verify(exactly = expectedNotifications) { mockListener.onShowIssueDetail(any()) }
         }
@@ -226,9 +226,9 @@ class SnykLanguageClientTest {
             expectedNotifications = 1)
     }
 
-    private fun createMockDiagnostic(range: Range, message: String, filePath: String): Diagnostic {
+    private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
         val rangeString = Gson().toJson(range)
-        val jsonString = """{"id": 12345, "title": "$message", "filePath": "$filePath", "range": $rangeString, "severity": "medium", "filterableIssueType": "Open Source", "isIgnored": false, "isNew": false, "additionalData": {"ruleId": "test-rule-id", "key": "test-key", "message": "Mock message", "isSecurityType": false, "rule": "mock-rule", "repoDatasetSize": 0, "exampleCommitFixes": [], "text": "", "priorityScore": 0, "hasAIFix": false, "dataFlow": [], "description": "", "language": "kotlin", "packageManager": "gradle", "packageName": "mock-package", "name": "mock-name", "version": "1.0.0", "from": [], "upgradePath": [], "isPatchable": false, "isUpgradable": false, "projectName": "test-project", "matchingIssues": [], "publicId": "test-public-id"}}"""
+        val jsonString = """{"id": "$id", "title": "$id", "filePath": "$filePath", "range": $rangeString, "severity": "medium", "filterableIssueType": "Open Source", "isIgnored": false, "isNew": false, "additionalData": {"ruleId": "test-rule-id", "key": "test-key", "message": "Mock message", "isSecurityType": false, "rule": "mock-rule", "repoDatasetSize": 0, "exampleCommitFixes": [], "text": "", "priorityScore": 0, "hasAIFix": false, "dataFlow": [], "description": "", "language": "kotlin", "packageManager": "gradle", "packageName": "mock-package", "name": "mock-name", "version": "1.0.0", "from": [], "upgradePath": [], "isPatchable": false, "isUpgradable": false, "projectName": "test-project", "matchingIssues": [], "publicId": "test-public-id"}}"""
         val mockDiagnostic = Diagnostic()
         mockDiagnostic.range = range
         mockDiagnostic.data = jsonString

@@ -35,15 +35,6 @@ enum class Severity {
             else -> UIUtil.getPanelBackground()
         }
 
-    fun getBgColor(): Color =
-        when (this) {
-            CRITICAL -> Color.decode("#FFDAD8")
-            HIGH -> Color.decode("#FFDBCC")
-            MEDIUM -> Color.decode("#FFE8CD")
-            LOW -> Color.decode("#EEEEEE")
-            else -> UIUtil.getPanelBackground()
-        }
-
     fun getHighlightSeverity(): HighlightSeverity =
         when (this) {
             CRITICAL -> HighlightSeverity.ERROR
@@ -65,20 +56,4 @@ enum class Severity {
         }
 
     fun getIcon(): Icon = SnykIcons.getSeverityIcon(this)
-
-    companion object {
-        private const val SEVERITY_CRITICAL = "critical"
-        private const val SEVERITY_HIGH = "high"
-        private const val SEVERITY_MEDIUM = "medium"
-        private const val SEVERITY_LOW = "low"
-
-        fun getFromName(name: String): Severity =
-            when (name) {
-                SEVERITY_CRITICAL -> CRITICAL
-                SEVERITY_HIGH -> HIGH
-                SEVERITY_MEDIUM -> MEDIUM
-                SEVERITY_LOW -> LOW
-                else -> UNKNOWN
-            }
-    }
 }

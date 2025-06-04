@@ -17,7 +17,7 @@ class GenerateAIFixHandler(private val project: Project) {
         val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
         aiFixQuery.addHandler { value ->
-            runInBackground("Snyk: getting AI fix proposals...") {
+            runInBackground("Snyk: getting Agent Fix proposals...") {
                 val responseDiff: List<Fix> =
                     LanguageServerWrapper.getInstance(project).sendCodeFixDiffsCommand(value)
 

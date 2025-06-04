@@ -13,7 +13,6 @@ import io.snyk.plugin.extensions.SnykControllerManager
 import io.snyk.plugin.ui.SnykBalloonNotifications
 import snyk.common.AnnotatorCommon
 import snyk.common.lsp.LanguageServerBulkFileListener
-import snyk.container.ContainerBulkFileListener
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
@@ -38,7 +37,6 @@ class SnykPostStartupActivity : ProjectActivity {
             val messageBusConnection = ApplicationManager.getApplication().messageBus.connect()
             // TODO: add subscription for language server messages
             messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, LanguageServerBulkFileListener(project))
-            messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, ContainerBulkFileListener(project))
             messageBusConnection.subscribe(ProjectManager.TOPIC, SnykProjectManagerListener())
             listenersActivated = true
         }
@@ -68,14 +66,6 @@ class SnykPostStartupActivity : ProjectActivity {
         if (settings.showFeedbackRequest && feedbackRequestShownMoreThenTwoWeeksAgo) {
             SnykBalloonNotifications.showFeedbackRequest(project)
             settings.lastTimeFeedbackRequestShown = Date.from(Instant.now())
-        }
-
-        if (settings.containerScanEnabled) {
-            getKubernetesImageCache(project)?.cacheKubernetesFileFromProject()
-        }
-
-        if (!settings.token.isNullOrBlank() && settings.scanOnSave) {
-            getSnykTaskQueueService(project)?.scheduleContainerScan()
         }
 
         ExtensionPointsUtil.controllerManager.extensionList.forEach {

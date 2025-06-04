@@ -5,6 +5,7 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.BrowserHyperlinkListener
 import com.intellij.ui.ColorUtil
+import com.intellij.ui.JBColor
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.ActionLink
 import com.intellij.uiDesigner.core.GridConstraints
@@ -25,7 +26,6 @@ import java.awt.Font
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import javax.swing.Icon
-import javax.swing.ImageIcon
 import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JLabel
@@ -41,15 +41,6 @@ fun boldLabel(title: String): JLabel {
     val label = JLabel(title)
     val labelFont = label.font
     label.font = labelFont.deriveFont(labelFont.style or Font.BOLD)
-
-    return label
-}
-
-fun iconLabel(imageIcon: ImageIcon): JLabel {
-    val label = JLabel()
-    label.horizontalAlignment = 0
-    label.icon = imageIcon
-    label.text = ""
 
     return label
 }
@@ -309,7 +300,7 @@ fun addRowOfItemsToPanel(
             currentColumn++
             panel.add(
                 JLabel(separator).apply {
-                    if (opaqueSeparator) makeOpaque(this, 50)
+                    if (opaqueSeparator) makeOpaque(this)
                     if (customFont != null) this.font = customFont
                 },
                 baseGridConstraints(0, column = currentColumn, indent = 0)
@@ -322,12 +313,20 @@ fun addRowOfItemsToPanel(
     return currentColumn
 }
 
-private fun makeOpaque(component: JComponent, alpha: Int) {
-    component.foreground = Color(
-        component.foreground.red,
-        component.foreground.green,
-        component.foreground.blue,
-        alpha
+private fun makeOpaque(component: JComponent) {
+    val alpha = 50
+    component.foreground = JBColor(
+        Color(
+            component.foreground.red,
+            component.foreground.green,
+            component.foreground.blue,
+            alpha
+        ), Color(
+            component.foreground.red,
+            component.foreground.green,
+            component.foreground.blue,
+            alpha
+        )
     )
 }
 

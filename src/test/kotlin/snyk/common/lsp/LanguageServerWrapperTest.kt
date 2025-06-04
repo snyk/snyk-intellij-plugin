@@ -384,7 +384,6 @@ class LanguageServerWrapperTest {
 
         val actual = cut.getSettings()
 
-        assertEquals(settings.snykCodeQualityIssuesScanEnable.toString(), actual.activateSnykCodeQuality)
         assertEquals(settings.snykCodeSecurityIssuesScanEnable.toString(), actual.activateSnykCodeSecurity)
         assertEquals(settings.iacScanEnabled.toString(), actual.activateSnykIac)
         assertEquals(settings.ossScanEnable.toString(), actual.activateSnykOpenSource)

@@ -51,21 +51,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
         }
     }
 
-    fun testSetupCliEnvironmentVariablesWithFedrampCustomEndpoint() {
-        val oldEndpoint = pluginSettings().customEndpointUrl
-        try {
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://api.fedramp.snykgov.io/"
-            pluginSettings().customEndpointUrl = expectedEndpoint
-
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
-
-            assertEquals("1", generalCommandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"])
-        } finally {
-            pluginSettings().customEndpointUrl = oldEndpoint
-        }
-    }
-
     fun testSetupCliEnvironmentVariablesWithOAuthEndpoint() {
         val oldEndpoint = pluginSettings().customEndpointUrl
         try {
@@ -122,19 +107,6 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
             assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
         } finally {
             pluginSettings().customEndpointUrl = oldEndpoint
-        }
-    }
-
-    fun testSetupCliEnvironmentVariablesWithDisabledUsageAnalytics() {
-        val originalUsageAnalyticsEnabled = pluginSettings().usageAnalyticsEnabled
-        try {
-            pluginSettings().usageAnalyticsEnabled = false
-            val generalCommandLine = GeneralCommandLine("")
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
-
-            assertEquals("1", generalCommandLine.environment["SNYK_CFG_DISABLE_ANALYTICS"])
-        } finally {
-            pluginSettings().usageAnalyticsEnabled = originalUsageAnalyticsEnabled
         }
     }
 

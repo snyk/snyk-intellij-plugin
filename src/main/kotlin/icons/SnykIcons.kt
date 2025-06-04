@@ -22,11 +22,6 @@ object SnykIcons {
     val SNYK_CODE_DISABLED = getIcon("/icons/code_disabled.svg", SnykIcons::class.java)
     val IAC = getIcon("/icons/iac.svg", SnykIcons::class.java)
     val IAC_DISABLED = getIcon("/icons/iac_disabled.svg", SnykIcons::class.java)
-    val CONTAINER = getIcon("/icons/container.svg", SnykIcons::class.java)
-    val CONTAINER_DISABLED = getIcon("/icons/container_disabled.svg", SnykIcons::class.java)
-
-    val CONTAINER_IMAGE = getIcon("/icons/container_image.svg", SnykIcons::class.java)
-    val CONTAINER_IMAGE_24 = getIcon("/icons/container_image_24.svg", SnykIcons::class.java)
 
     val GRADLE = getIcon("/icons/gradle.svg", SnykIcons::class.java)
     val MAVEN = getIcon("/icons/maven.svg", SnykIcons::class.java)

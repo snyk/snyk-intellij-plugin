@@ -21,14 +21,6 @@ enum class ProductType(
         override fun getCountText(count: Int, isUniqueCount: Boolean): String =
             getIssuesCountText(count, isUniqueCount)
     },
-    CONTAINER(
-        productSelectionName = "Snyk Container",
-        treeName = "Container",
-        description = "Find and fix vulnerabilities in container images and Kubernetes applications"
-    ) {
-        override fun getCountText(count: Int, isUniqueCount: Boolean): String =
-            getVulnerabilitiesCountText(count, isUniqueCount)
-    },
     CODE_SECURITY(
         productSelectionName = "Snyk Code Security",
         treeName = "Code Security",
@@ -36,15 +28,8 @@ enum class ProductType(
     ) {
         override fun getCountText(count: Int, isUniqueCount: Boolean): String =
             getVulnerabilitiesCountText(count, isUniqueCount)
-    },
-    CODE_QUALITY(
-        productSelectionName = "Snyk Code Quality",
-        treeName = "Code Quality",
-        description = "Find and fix code quality issues in your application code in real time"
-    ) {
-        override fun getCountText(count: Int, isUniqueCount: Boolean): String =
-            getIssuesCountText(count, isUniqueCount)
     };
+
     override fun toString(): String = productSelectionName
 
     abstract fun getCountText(count: Int, isUniqueCount: Boolean = false): String

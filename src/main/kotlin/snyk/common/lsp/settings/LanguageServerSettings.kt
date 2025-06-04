@@ -32,7 +32,6 @@ data class LanguageServerSettings(
     @SerializedName("enableTrustedFoldersFeature") val enableTrustedFoldersFeature: String? = "false",
     @SerializedName("trustedFolders") val trustedFolders: List<String>? = emptyList(),
     @SerializedName("activateSnykCodeSecurity") val activateSnykCodeSecurity: String? = "false",
-    @SerializedName("activateSnykCodeQuality") val activateSnykCodeQuality: String? = "false",
     @SerializedName("osPlatform") val osPlatform: String? = SystemUtils.OS_NAME,
     @SerializedName("osArch") val osArch: String? = SystemUtils.OS_ARCH,
     @SerializedName("runtimeVersion") val runtimeVersion: String? = SystemUtils.JAVA_VERSION,

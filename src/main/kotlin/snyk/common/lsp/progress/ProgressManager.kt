@@ -16,10 +16,7 @@
 package snyk.common.lsp.progress
 
 
-import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager

@@ -658,7 +658,7 @@ class SnykSettingsDialog(
 
         val netNewIssuesText =
             JLabel(
-                "Specifies whether to see only net new issues or all issues. This setting does not apply for Snyk Container."
+                "Specifies whether to see only net new issues or all issues."
             ).apply { font = FontUtil.minusOne(this.font) }
 
         netNewIssuesPanel.add(
@@ -778,7 +778,7 @@ class SnykSettingsDialog(
     fun getToken(): String =
         try {
             tokenTextField.document.getText(0, tokenTextField.document.length)
-        } catch (exception: BadLocationException) {
+        } catch (_: BadLocationException) {
             ""
         }
 
