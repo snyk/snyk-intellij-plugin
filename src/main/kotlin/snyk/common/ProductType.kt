@@ -22,7 +22,7 @@ enum class ProductType(
             getIssuesCountText(count, isUniqueCount)
     },
     CODE_SECURITY(
-        productSelectionName = "Snyk Code",
+        productSelectionName = "Snyk Code Security",
         treeName = "Code Security",
         description = "Find and fix vulnerabilities in your application code in real time"
     ) {
