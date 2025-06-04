@@ -175,7 +175,7 @@ class ScanTypesPanel(
                             runOnClick = {
                                 runInBackground(baseMessage, project, true) {
                                     val maxTries = 60
-                                    for (i in 0..120) {
+                                    for (i in 0..maxTries) {
                                         it.checkCanceled()
                                         it.text = "$baseMessage (tries: $i/$maxTries)"
 
