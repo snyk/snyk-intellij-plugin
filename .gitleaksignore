@@ -1,5 +1,8 @@
 # add false positives here
 
+162edaf0b27f570b5918359f763d9aa8b33a7974:build.gradle.kts:generic-api-key:27
+
+# file no longer exists
 c3f9781b901513845c54c9dacf93c2a437d972d6:src/integTest/resources/container-test-result.json:generic-api-key:17029
 c3f9781b901513845c54c9dacf93c2a437d972d6:src/integTest/resources/container-test-result.json:generic-api-key:17034
 c3f9781b901513845c54c9dacf93c2a437d972d6:src/integTest/resources/container-test-result.json:generic-api-key:17038
@@ -40,9 +43,6 @@ c3f9781b901513845c54c9dacf93c2a437d972d6:src/integTest/resources/container-test-
 c3f9781b901513845c54c9dacf93c2a437d972d6:src/integTest/resources/container-test-result-with-remediation.json:generic-api-key:44080
 c3f9781b901513845c54c9dacf93c2a437d972d6:src/integTest/resources/container-test-result-with-remediation.json:generic-api-key:44084
 c3f9781b901513845c54c9dacf93c2a437d972d6:src/integTest/resources/container-test-result-with-remediation.json:generic-api-key:44088
-162edaf0b27f570b5918359f763d9aa8b33a7974:build.gradle.kts:generic-api-key:27
-
-# file no longer exists
 f07c7e4a0c1519cea46122d593700dadea81118b:src/main/resources/application.properties:generic-api-key:5
 6d5ccbbb2c98d1af1f362a74a451074458dd4104:src/main/scala/io/snyk/plugin/metrics/SegmentApi.scala:generic-api-key:56
 f04b8f89456992b188d53e78b845d0f5d13de914:src/main/scala/io/snyk/plugin/client/SnykCredentials.scala:generic-api-key:52
