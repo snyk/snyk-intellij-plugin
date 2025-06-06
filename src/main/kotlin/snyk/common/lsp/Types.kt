@@ -94,7 +94,6 @@ data class ScanIssue(
         const val OPEN_SOURCE: FilterableIssueType = "Open Source"
         const val CODE_SECURITY: FilterableIssueType = "Code Security"
         const val INFRASTRUCTURE_AS_CODE: FilterableIssueType = "Infrastructure As Code"
-        const val CONTAINER: FilterableIssueType = "Container"
     }
 
     var textRange: TextRange? = null
