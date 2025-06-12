@@ -574,6 +574,10 @@ class LanguageServerWrapper(
         return this.loginFuture
     }
 
+    /**
+     * This sends a $/cancelRequest for the previous login command ID.
+     * See https://github.com/eclipse-lsp4j/lsp4j/blob/main/documentation/jsonrpc.md#cancelling-requests
+     */
     fun cancelPreviousLogin() {
         loginFuture?.cancel(true)
     }
