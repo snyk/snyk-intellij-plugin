@@ -57,6 +57,7 @@ import java.awt.Desktop
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
+import java.awt.event.ItemEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.io.File.separator
@@ -164,7 +165,7 @@ class SnykSettingsDialog(
                 customEndpointTextField.text = pluginSettings().customEndpointUrl
 
                 runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
-                    this.scanTypesPanelOuter.checkSastEnabled()
+                    scanTypesPanelOuter.updateSnykCodeSettingsBasedOnSastSettings()
                 }
             }
         }
@@ -312,6 +313,16 @@ class SnykSettingsDialog(
                 anchor = UIGridConstraints.ANCHOR_WEST
             ),
         )
+
+        authenticationType.apply {
+            addItemListener { event ->
+                if (event.stateChange == ItemEvent.SELECTED) {
+                    // User has selected a new auth mechanism; update the Language Server config.
+                    LanguageServerWrapper.getInstance(project).updateConfiguration(false)
+                }
+
+            }
+        }
 
         generalSettingsPanel.add(
             authenticationType,

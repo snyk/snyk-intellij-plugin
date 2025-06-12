@@ -48,7 +48,7 @@ class ScanTypesPanel(
     private var snykCodeAlertHyperLinkLabel = HyperlinkLabel()
     private var snykCodeReCheckLinkLabel = ActionLink("Check again") {
         runBackgroundableTask("Checking Snyk Code enablement in organisation", project, true) {
-            checkSastEnabled()
+            updateSnykCodeSettingsBasedOnSastSettings()
         }
     }
 
@@ -62,7 +62,7 @@ class ScanTypesPanel(
             cell(snykCodeReCheckLinkLabel).applyToComponent { font = FontUtil.minusOne(font) }
         }
         runBackgroundableTask("Checking Snyk Code enablement in organisation", project, true) {
-            checkSastEnabled()
+            updateSnykCodeSettingsBasedOnSastSettings()
         }
     }.apply {
         name = "scanTypesPanel"
@@ -170,63 +170,59 @@ class ScanTypesPanel(
     }
 
     // TODO move to LS
-    fun checkSastEnabled() {
+    fun updateSnykCodeSettingsBasedOnSastSettings() {
+        // Only continue if Snyk Code is enabled.
         if (pluginSettings().token.isNullOrBlank()) {
             showSnykCodeAlert("A Snyk Token is necessary to check for Snyk Code enablement.")
             return
         }
-        val snykCodeAvailable = isSnykCodeAvailable(settings.customEndpointUrl)
+        showSnykCodeAlert("Checking if Snyk Code enabled for organisation...")
+        if (!isSnykCodeAvailable(settings.customEndpointUrl)) return
 
-        if (snykCodeAvailable) {
-            showSnykCodeAlert("Checking if Snyk Code enabled for organisation...")
-            var sastSettings = try {
-                val sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
-                settings.sastSettingsError = false
-                sastSettings
-            } catch (t: RuntimeException) {
-                settings.sastSettingsError = true
-                val defaultErrorMsg = "Your org's SAST settings are misconfigured."
-                val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
-                showSnykCodeAlert(userMessage)
-                null
-            }
+        // Only continue if we have SAST settings available.
+        var sastSettings = try {
+            val sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
+            settings.sastSettingsError = false
+            sastSettings
+        } catch (t: RuntimeException) {
+            settings.sastSettingsError = true
+            val defaultErrorMsg = "Your org's SAST settings are misconfigured."
+            val userMessage = if (t.message.isNullOrEmpty()) defaultErrorMsg else t.message!!
+            showSnykCodeAlert(userMessage)
+            null
+        }
+        if (sastSettings == null) return
 
-            updateSettingsWithSastSettings(sastSettings)
+        updateSettingsWithSastSettings(sastSettings)
 
-            if (sastSettings != null) {
-                    when (sastSettings.sastEnabled) {
-                        true -> {
-                            setSnykCodeAvailability(true)
-                            val message =
-                                "Snyk Code is enabled for your organisation ${settings.organization}. \nAutofix enabled: ${sastSettings.autofixEnabled}"
-                            showSnykCodeAlert(message)
-                        }
-                        false -> {
-                            disableSnykCode()
-                            showSnykCodeAlert(
-                                message = "Snyk Code is disabled by your organisation's configuration: ",
-                                linkText = "Snyk > Settings > Snyk Code",
-                                url = toSnykCodeSettingsUrl(settings.customEndpointUrl),
-                                runOnClick = {
-                                    runAsync {
-                                        for (i in 0..20) {
-                                            val enabled = try {
-                                                sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
-                                                updateSettingsWithSastSettings(sastSettings)
-                                                sastSettings?.sastEnabled ?: false
-                                            } catch (ignored: RuntimeException) {
-                                                continue
-                                            }
-                                            setSnykCodeAvailability(enabled)
-                                            if (enabled) break
-                                            sleepCancellable(1000)
-                                        }
-                                    }
-                                }
-                            )
+        if (sastSettings.sastEnabled) {
+            setSnykCodeAvailability(true)
+            val message =
+                "Snyk Code is enabled for your organisation ${settings.organization}. \nAutofix enabled: ${sastSettings.autofixEnabled}"
+            showSnykCodeAlert(message)
+        } else {
+            disableSnykCode()
+            showSnykCodeAlert(
+                message = "Snyk Code is disabled by your organisation's configuration: ",
+                linkText = "Snyk > Settings > Snyk Code",
+                url = toSnykCodeSettingsUrl(settings.customEndpointUrl),
+                runOnClick = {
+                    runAsync {
+                        for (i in 0..20) {
+                            val enabled = try {
+                                sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
+                                updateSettingsWithSastSettings(sastSettings)
+                                sastSettings?.sastEnabled ?: false
+                            } catch (ignored: RuntimeException) {
+                                continue
+                            }
+                            setSnykCodeAvailability(enabled)
+                            if (enabled) break
+                            sleepCancellable(1000)
                         }
                     }
-            }
+                }
+            )
         }
     }
 
