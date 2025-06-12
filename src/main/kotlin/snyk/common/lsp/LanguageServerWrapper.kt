@@ -91,10 +91,11 @@ class LanguageServerWrapper(
     private val project: Project,
 ) : Disposable {
     private val progressManager = ProgressManager(project)
-    private val lsPath: String = getCliFile().absolutePath
+    private val cliPath: String = getCliFile().absolutePath
     private val executorService: ExecutorService = Executors.newCachedThreadPool()
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
+    private var cliNotFoundWarningDisplayed: Boolean = false
     private val gson = Gson()
 
     // internal for test set up
@@ -135,9 +136,12 @@ class LanguageServerWrapper(
 
     private fun initialize() {
         if (disposed) return
-        if (lsPath.toNioPathOrNull()?.exists() == false) {
-            val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $lsPath."
-            logger.warn(message)
+        if (cliPath.toNioPathOrNull()?.exists() == false) {
+            if (!cliNotFoundWarningDisplayed) {
+                val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $cliPath."
+                logger.warn(message)
+                cliNotFoundWarningDisplayed = true
+            }
             return
         }
 
@@ -151,7 +155,7 @@ class LanguageServerWrapper(
                     snykLanguageClient.logger.isTraceEnabled -> "trace"
                     else -> "info"
                 }
-            val cmd = listOf(lsPath, "language-server", "-l", logLevel)
+            val cmd = listOf(cliPath, "language-server", "-l", logLevel)
             val processBuilder = ProcessBuilder(cmd)
             EnvironmentHelper.updateEnvironment(processBuilder.environment(), pluginSettings().token ?: "")
 
@@ -493,7 +497,6 @@ class LanguageServerWrapper(
         return LanguageServerSettings(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
-            activateSnykCodeQuality = ps.snykCodeQualityIssuesScanEnable.toString(),
             activateSnykIac = ps.iacScanEnabled.toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),

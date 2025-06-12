@@ -57,12 +57,11 @@ enum class LsProduct(val longName: String, val shortName: String) {
     OpenSource("Snyk Open Source", "oss"),
     Code("Snyk Code", "code"),
     InfrastructureAsCode("Snyk IaC", "iac"),
-    Container("Snyk Container", "container"),
     Unknown("", "");
 
     companion object {
         fun getFor(name: String): LsProduct {
-            return entries.toTypedArray().firstOrNull() { name in arrayOf(it.longName, it.shortName) } ?: Unknown
+            return entries.toTypedArray().firstOrNull { name in arrayOf(it.longName, it.shortName) } ?: Unknown
         }
     }
 }
@@ -94,9 +93,7 @@ data class ScanIssue(
     companion object {
         const val OPEN_SOURCE: FilterableIssueType = "Open Source"
         const val CODE_SECURITY: FilterableIssueType = "Code Security"
-        const val CODE_QUALITY: FilterableIssueType = "Code Quality"
         const val INFRASTRUCTURE_AS_CODE: FilterableIssueType = "Infrastructure As Code"
-        const val CONTAINER: FilterableIssueType = "Container"
     }
 
     var textRange: TextRange? = null
@@ -158,10 +155,6 @@ data class ScanIssue(
     fun title(): String {
         return when (this.filterableIssueType) {
             OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> this.title
-            CODE_QUALITY -> {
-                this.additionalData.message.split('.').firstOrNull() ?: "Unknown issue"
-            }
-
             CODE_SECURITY -> {
                 this.title.split(":").firstOrNull() ?: "Unknown issue"
             }
@@ -176,7 +169,7 @@ data class ScanIssue(
                 "${this.additionalData.packageName}@${this.additionalData.version}: ${this.title()}"
             }
 
-            CODE_QUALITY, CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> {
+            CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> {
                 return "${this.title()} [${this.range.start.line + 1},${this.range.start.character}]"
             }
 
@@ -196,7 +189,7 @@ data class ScanIssue(
                 }
             }
 
-            CODE_QUALITY, CODE_SECURITY -> this.additionalData.priorityScore
+            CODE_SECURITY -> this.additionalData.priorityScore
             else -> TODO()
         }
     }
@@ -212,7 +205,6 @@ data class ScanIssue(
             }
 
             CODE_SECURITY -> "Security Issue"
-            CODE_QUALITY -> "Quality Issue"
             INFRASTRUCTURE_AS_CODE -> "Configuration Issue"
             else -> TODO()
         }
@@ -224,7 +216,7 @@ data class ScanIssue(
                 this.additionalData.identifiers?.CWE ?: emptyList()
             }
 
-            CODE_QUALITY, CODE_SECURITY -> {
+            CODE_SECURITY -> {
                 this.additionalData.cwe ?: emptyList()
             }
 
@@ -238,7 +230,7 @@ data class ScanIssue(
                 this.additionalData.identifiers?.CVE ?: emptyList()
             }
 
-            CODE_QUALITY, CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> emptyList()
+            CODE_SECURITY, INFRASTRUCTURE_AS_CODE -> emptyList()
             else -> TODO()
         }
     }
@@ -277,7 +269,7 @@ data class ScanIssue(
 
     fun details(project: Project): String {
         return when (this.filterableIssueType) {
-            OPEN_SOURCE, CODE_SECURITY, CODE_QUALITY -> getHtml(this.additionalData.details, project)
+            OPEN_SOURCE, CODE_SECURITY -> getHtml(this.additionalData.details, project)
             INFRASTRUCTURE_AS_CODE -> getHtml(this.additionalData.customUIContent, project)
             else -> ""
         }
@@ -307,8 +299,6 @@ data class ScanIssue(
 
         }
     }
-
-    fun canLoadSuggestionPanelFromHTML(): Boolean = true
 
     fun hasAIFix(): Boolean {
         return this.additionalData.isUpgradable || this.additionalData.hasAIFix
@@ -347,6 +337,15 @@ data class ScanIssue(
         this.range.start.line.compareTo(other.range.start.line).let { if (it != 0) it else 0 }
         this.range.end.line.compareTo(other.range.end.line).let { if (it != 0) it else 0 }
         return 0
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ScanIssue
+
+        return id == other.id
     }
 }
 

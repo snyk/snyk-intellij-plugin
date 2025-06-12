@@ -11,11 +11,11 @@ abstract class SnykIntentionActionBase : IntentionAction, Iconable, PriorityActi
 
     override fun startInWriteAction(): Boolean = true
 
-    override fun getFamilyName(): String = intentionDefaultFamilyName
+    override fun getFamilyName(): String = DEFAULT_FAMILY_NAME
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
 
     companion object {
-        private const val intentionDefaultFamilyName = "Snyk"
+        private const val DEFAULT_FAMILY_NAME = "Snyk"
     }
 }

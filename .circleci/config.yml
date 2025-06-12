@@ -7,7 +7,7 @@ jobs:
   security-scans:
     resource_class: small
     docker:
-      - image: cimg/openjdk:17.0
+      - image: cimg/openjdk:21.0
     steps:
       - checkout
       - prodsec/security_scans:
@@ -15,6 +15,7 @@ jobs:
           open-source-additional-arguments: --exclude=test
           release-branch: master
           iac-scan: disabled
+          debug: true
 
 workflows:
   version: 2

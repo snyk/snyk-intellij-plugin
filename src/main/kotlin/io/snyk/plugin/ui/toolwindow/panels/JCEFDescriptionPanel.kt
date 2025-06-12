@@ -24,14 +24,11 @@ import java.awt.BorderLayout
 import java.awt.Font
 import javax.swing.JLabel
 import javax.swing.JPanel
-import kotlin.collections.set
 
-class SuggestionDescriptionPanelFromLS(
+class SuggestionDescriptionPanel(
     val project: Project,
     private val issue: ScanIssue,
 ) : IssueDescriptionPanelBase(
-    title = issue.title(),
-    severity = issue.getSeverityAsEnum(),
 ) {
     private val unexpectedErrorMessage =
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
@@ -43,7 +40,7 @@ class SuggestionDescriptionPanelFromLS(
         // TODO: replace directly in HTML instead of JS
 
         when (issue.filterableIssueType) {
-            ScanIssue.CODE_QUALITY, ScanIssue.CODE_SECURITY -> {
+            ScanIssue.CODE_SECURITY -> {
                 val virtualFiles = LinkedHashMap<String, VirtualFile?>()
                 for (dataFlow in issue.additionalData.dataFlow) {
                     virtualFiles[dataFlow.filePath] = dataFlow.filePath.toVirtualFile()
@@ -121,7 +118,7 @@ class SuggestionDescriptionPanelFromLS(
                 GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
             ).apply {
                 when (issue.filterableIssueType) {
-                    ScanIssue.CODE_SECURITY, ScanIssue.CODE_QUALITY -> {
+                    ScanIssue.CODE_SECURITY -> {
                         this.add(
                             SnykCodeOverviewPanel(issue.additionalData),
                             panelGridConstraints(2),

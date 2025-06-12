@@ -22,7 +22,6 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.toNioPathOrNull
@@ -54,13 +53,9 @@ import snyk.common.ProductType
 import snyk.common.SnykCachedResults
 import snyk.common.UIComponentFinder
 import snyk.common.isSnykTenant
-import snyk.common.lsp.LanguageServerRestartListener
 import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
-import snyk.container.ContainerService
-import snyk.container.KubernetesImageCache
-import snyk.iac.IacScanService
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URI
@@ -76,10 +71,6 @@ import javax.swing.JComponent
 
 private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
 
-fun getIacService(project: Project): IacScanService? = project.serviceIfNotDisposed()
-
-fun getKubernetesImageCache(project: Project): KubernetesImageCache? = project.serviceIfNotDisposed()
-
 fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? = project.serviceIfNotDisposed()
 
 fun getSnykToolWindowPanel(project: Project): SnykToolWindowPanel? = project.serviceIfNotDisposed()
@@ -90,15 +81,11 @@ fun getSnykCachedResultsForProduct(project: Project, product: ProductType): Muta
     return when (product) {
         ProductType.OSS -> getSnykCachedResults(project)?.currentOSSResultsLS
         ProductType.IAC -> getSnykCachedResults(project)?.currentIacResultsLS
-        ProductType.CONTAINER -> getSnykCachedResults(project)?.currentContainerResultsLS
         ProductType.CODE_SECURITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
-        ProductType.CODE_QUALITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
     }
 }
 
 fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? = project.serviceIfNotDisposed()
-
-fun getContainerService(project: Project): ContainerService? = project.serviceIfNotDisposed()
 
 fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationService? = project?.serviceIfNotDisposed()
 
@@ -165,44 +152,27 @@ fun isOssRunning(project: Project): Boolean {
     return isProductScanRunning(project, ProductType.OSS)
 }
 
-private fun isProductScanRunning(project: Project, productType: ProductType): Boolean {
-    return isProductScanRunning(project, productType, null)
-}
-
 private fun isProductScanRunning(
     project: Project,
-    productType: ProductType,
-    progressIndicator: ProgressIndicator?
+    productType: ProductType
 ): Boolean {
     val lsRunning = project.getContentRootVirtualFiles().any { vf ->
         val key = ScanInProgressKey(vf, productType)
         ScanState.scanInProgress[key] == true
     }
-    return lsRunning ||
-        (progressIndicator != null && progressIndicator.isRunning && !progressIndicator.isCanceled)
+    return lsRunning
 }
 
 fun isSnykCodeRunning(project: Project): Boolean {
-    return isProductScanRunning(project, ProductType.CODE_SECURITY) || isProductScanRunning(
-        project,
-        ProductType.CODE_QUALITY
-    )
+    return isProductScanRunning(project, ProductType.CODE_SECURITY)
 }
 
 fun isIacRunning(project: Project): Boolean {
     return isProductScanRunning(project, ProductType.IAC)
 }
 
-fun isContainerRunning(project: Project): Boolean {
-    return isProductScanRunning(
-        project,
-        ProductType.CONTAINER,
-        getSnykTaskQueueService(project)?.containerScanProgressIndicator
-    )
-}
-
 fun isScanRunning(project: Project): Boolean =
-    isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project) || isContainerRunning(project)
+    isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
 
 fun isCliDownloading(): Boolean = getSnykCliDownloaderService().isCliDownloading()
 
@@ -459,6 +429,7 @@ fun Project.getContentRootPaths(): SortedSet<Path> {
         .toSortedSet()
 }
 
+@Suppress("UselessCallOnCollection")
 fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     if (this.isDisposed) return emptySet()
     var contentRoots = emptyArray<VirtualFile>()
@@ -467,12 +438,14 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
     }
     if (contentRoots.isEmpty()) {
         // This should cover the case when no content roots are configured, e.g. in Rider
+        @Suppress("DEPRECATION")
         contentRoots = arrayOf(this.baseDir)
     }
 
     // The sort is to ensure that parent folders come first
     // e.g. /a/b should come before /a/b/c
     return contentRoots
+        .filterNotNull()
         .filter { it.exists() && it.isDirectory }
         .sortedBy { it.path }.toSet()
 }

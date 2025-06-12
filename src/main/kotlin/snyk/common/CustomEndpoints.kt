@@ -1,7 +1,6 @@
 package snyk.common
 
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.prefixIfNot
 import io.snyk.plugin.suffixIfNot
 import java.net.URI
 import java.net.URISyntaxException
@@ -70,7 +69,7 @@ fun needsSnykToken(endpoint: String): Boolean {
 fun getEndpointUrl(): String {
     val endpointUrl = try {
         pluginSettings().customEndpointUrl
-    } catch (e: RuntimeException) {
+    } catch (_: RuntimeException) {
         // This is a workaround for the case when the plugin is not initialized yet.
         ""
     }
@@ -128,13 +127,6 @@ fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
 fun URI.isAnalyticsPermitted() = host != null &&
     (host.lowercase() == "api.snyk.io" || host.lowercase() == "api.us.snyk.io" || host.lowercase() == "snyk.io")
 
-fun isAnalyticsPermitted(): Boolean {
-    val settings = pluginSettings()
-    return settings.customEndpointUrl
-        ?.let { URI(it) }
-        ?.isAnalyticsPermitted() ?: true
-}
-
 fun isLocalCodeEngine() = pluginSettings().localCodeEngineEnabled == true
 
 internal fun String.removeTrailingSlashesIfPresent(): String {
@@ -142,7 +134,7 @@ internal fun String.removeTrailingSlashesIfPresent(): String {
     return try {
         URI(candidate)
         candidate
-    } catch (ignored: URISyntaxException) {
+    } catch (_: URISyntaxException) {
         this
     }
 }

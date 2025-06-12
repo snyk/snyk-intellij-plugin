@@ -4,6 +4,7 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.ui.components.ActionLink
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+import java.net.URI
 import java.net.URL
 
 class LabelProvider {
@@ -26,26 +27,26 @@ class LabelProvider {
         return if (packageManager != "npm") {
             ActionLink(packageName)
         } else {
-            val url = URL("$NPM_BASE_URL/$packageName")
+            val url = URI("$NPM_BASE_URL/$packageName").toURL()
             return createActionLink(url, packageName)
         }
     }
 
     fun getCWELabel(cwe: String): ActionLink {
-        return createActionLink(URL("$CWE_BASE_URL/${cwe.removePrefix("CWE-")}.html"), cwe)
+        return createActionLink(URI("$CWE_BASE_URL/${cwe.removePrefix("CWE-")}.html").toURL(), cwe)
     }
 
     fun getVulnerabilityLabel(id: String, idUrl: String? = null): ActionLink {
         val url = idUrl ?: "$VULNERABILITY_BASE_URL/$id"
-        return createActionLink(URL(url), id.uppercase())
+        return createActionLink(URI(url).toURL(), id.uppercase())
     }
 
     fun getCVSSLabel(text: String, id: String): ActionLink {
-        return createActionLink(URL("$CVSS_BASE_URL#$id"), text)
+        return createActionLink(URI("$CVSS_BASE_URL#$id").toURL(), text)
     }
 
     fun getCVELabel(cve: String): ActionLink {
-        return createActionLink(URL("$CVE_BASE_URL=$cve"), cve)
+        return createActionLink(URI("$CVE_BASE_URL=$cve").toURL(), cve)
     }
 
     fun createActionLink(

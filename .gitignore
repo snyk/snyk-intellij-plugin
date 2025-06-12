@@ -39,3 +39,6 @@ Thumbs.db
 .directory
 .DS_Store
 /downloaded_cli/
+
+.qodo
+.intellijPlatform

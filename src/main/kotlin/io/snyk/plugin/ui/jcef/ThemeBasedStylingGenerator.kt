@@ -16,7 +16,7 @@ class ThemeBasedStylingGenerator {
             return "#%02x%02x%02x".format(color.red, color.green, color.blue)
         }
         fun replaceWithCustomStyles(htmlToReplace: String): String {
-            var html = htmlToReplace;
+            var html = htmlToReplace
             val editorColorsManager = EditorColorsManager.getInstance()
             val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
             val textColor = UIUtil.getLabelForeground().toHex()
@@ -65,9 +65,9 @@ class ThemeBasedStylingGenerator {
             val lineWithBody = html.lines().find { it.contains("<body") }
             if(lineWithBody != null) {
                     val modifiedLineWithBody =  if(lineWithBody.contains("class")) lineWithBody.replace("class", "class=\"$contrast $theme ") else lineWithBody.replace("<body", "<body class=\"$contrast $theme \"")
-                    html = html.replace(lineWithBody, modifiedLineWithBody);
+                    html = html.replace(lineWithBody, modifiedLineWithBody)
             }
-            return html;
+            return html
         }
 
         // Utility function to scale JBFonts appropriately for use in HTML elements that have been designed with px

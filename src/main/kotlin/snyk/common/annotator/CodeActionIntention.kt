@@ -13,8 +13,8 @@ import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.TextEdit
 import snyk.common.ProductType
-import snyk.common.intentionactions.SnykIntentionActionBase
 import snyk.common.editor.DocumentChanger
+import snyk.common.intentionactions.SnykIntentionActionBase
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 import java.util.concurrent.TimeUnit
@@ -78,9 +78,7 @@ class CodeActionIntention(
                 }
             }
             ProductType.IAC -> SnykIcons.IAC
-            ProductType.CONTAINER -> SnykIcons.CONTAINER
             ProductType.CODE_SECURITY -> SnykIcons.SNYK_CODE
-            ProductType.CODE_QUALITY -> SnykIcons.SNYK_CODE
         }
     }
 
@@ -97,9 +95,7 @@ class CodeActionIntention(
         return when (product) {
             ProductType.OSS -> "Applying Snyk OpenSource Action"
             ProductType.IAC -> "Applying Snyk Infrastructure as Code Action"
-            ProductType.CONTAINER -> "Applying Snyk Container Action"
             ProductType.CODE_SECURITY -> "Applying Snyk Code Action"
-            ProductType.CODE_QUALITY -> "Applying Snyk Code Action"
         }
     }
 }

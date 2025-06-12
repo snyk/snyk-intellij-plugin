@@ -54,17 +54,11 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     var ossScanEnable: Boolean = true
     var snykCodeSecurityIssuesScanEnable: Boolean = true
-    var snykCodeQualityIssuesScanEnable: Boolean = true
     var iacScanEnabled: Boolean = true
-    var containerScanEnabled: Boolean = true
-
     var sastOnServerEnabled: Boolean? = null
     var sastSettingsError: Boolean? = null
     var localCodeEngineEnabled: Boolean? = null
     var localCodeEngineUrl: String? = ""
-    var usageAnalyticsEnabled = true
-    var crashReportingEnabled = true
-
     var lowSeverityEnabled = true
     var mediumSeverityEnabled = true
     var highSeverityEnabled = true
@@ -172,9 +166,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
         treeFiltering.ossResults = ossScanEnable
         treeFiltering.codeSecurityResults = snykCodeSecurityIssuesScanEnable
-        treeFiltering.codeQualityResults = snykCodeQualityIssuesScanEnable
         treeFiltering.iacResults = iacScanEnabled
-        treeFiltering.containerResults = containerScanEnabled
     }
 
     fun setDeltaEnabled(enabled: Boolean) {
@@ -200,9 +192,7 @@ enum class AuthenticationType(val languageServerSettingsName: String, val dialog
 class TreeFiltering {
     var ossResults: Boolean = true
     var codeSecurityResults: Boolean = true
-    var codeQualityResults: Boolean = true
     var iacResults: Boolean = true
-    var containerResults: Boolean = true
 
     var lowSeverity = true
     var mediumSeverity = true

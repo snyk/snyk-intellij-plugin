@@ -16,15 +16,12 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.AUTH_FAILED_TE
 import org.jetbrains.annotations.TestOnly
 import snyk.common.SnykError
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.errorHandler.SentryErrorReporter
 
 /**
  * Wrap work with Snyk CLI.
  * See [Kotlin's generic type's magic](https://kotlinlang.org/docs/generics.html).
  */
 abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Project) {
-
-    private var consoleCommandRunner = ConsoleCommandRunner()
 
     private val logger = logger<CliAdapter<CliIssues, R>>()
 
@@ -83,21 +80,21 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
                 convertArrayToCliResult(rawStr)
             }
             rawStr.first() == '{' -> {
-                convertSingleEntryToCliResult(rawStr, reportExceptions = true)
+                convertSingleEntryToCliResult(rawStr)
             }
             else -> getErrorResult(rawStr)
         }
 
-    private fun convertSingleEntryToCliResult(rawStr: String, reportExceptions: Boolean): R =
+    private fun convertSingleEntryToCliResult(rawStr: String): R =
         when {
-            isSuccessCliJsonString(rawStr) -> getResultOrError(reportExceptions, rawStr) {
+            isSuccessCliJsonString(rawStr) -> getResultOrError {
                 // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
                 val cliIssues = Gson().fromJson(rawStr, getCliIIssuesClass())
                 // `Gson().fromJson` could put `null` value into not-null field
                 val sanitizedCliIssues = sanitizeCliIssues(cliIssues)
                 return@getResultOrError getProductResult(listOf(sanitizedCliIssues))
             }
-            isErrorCliJsonString(rawStr) -> getResultOrError(reportExceptions, rawStr) {
+            isErrorCliJsonString(rawStr) -> getResultOrError {
                 // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
                 val cliError: CliError = Gson().fromJson(rawStr, CliError::class.java)
                 // `Gson().fromJson` could put `null` value into not-null field
@@ -107,20 +104,15 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             else -> getErrorResult(rawStr)
         }
 
-    private fun getResultOrError(reportExceptions: Boolean, rawStr: String, resultProducer: () -> R): R =
+    private fun getResultOrError(resultProducer: () -> R): R =
         try {
             resultProducer()
         } catch (e: Throwable) {
-            if (reportExceptions) {
-                SentryErrorReporter.captureException(
-                    Throwable(getSentryErrorMessage(rawStr, e.message ?: e.toString()), e)
-                )
-            }
             getErrorResult("Failed to parse CLI's json: ${e.message ?: e.toString()}")
         }
 
     private fun convertArrayToCliResult(rawStr: String): R =
-        getResultOrError(reportExceptions = true, rawStr = rawStr) {
+        getResultOrError {
             // see https://sites.google.com/site/gson/gson-user-guide#TOC-Serializing-and-Deserializing-Collection-with-Objects-of-Arbitrary-Types
             // we should catch all exceptions here including JsonParseException, JsonSyntaxException, etc.
             val jsonArray: JsonArray = JsonParser.parseString(rawStr).asJsonArray
@@ -128,15 +120,13 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             val cliIssues = jsonArray
                 .map { it.toString() }
                 .mapNotNull { elementAsString ->
-                    val cliResult = convertSingleEntryToCliResult(elementAsString, reportExceptions = false)
+                    val cliResult = convertSingleEntryToCliResult(elementAsString)
                     allErrors.addAll(cliResult.errors)
                     cliResult.allCliIssues
                 }
                 .flatten()
             if (allErrors.isNotEmpty()) {
-                SentryErrorReporter.captureException(Throwable(
-                    getSentryErrorMessage(rawStr, allErrors.joinToString("\n") { it.message })
-                ))
+                logger.warn(allErrors.joinToString("\n") { it.message })
             }
             val authError = allErrors.find { it.message.startsWith(AUTH_FAILED_TEXT) }
             // if any Auth failure error persist then we should treat all results as Auth failure
@@ -147,15 +137,6 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
             }
         }
 
-    private fun getSentryErrorMessage(rawStr: String, originalErrorMessage: String): String =
-        "Failed to parse CLI's output as ${getCliIIssuesClass().simpleName}:\n" +
-            "$originalErrorMessage\n" +
-            "${rawStr.take(1000)}\n" +
-            if (rawStr.length > 1000) "...(${rawStr.length - 1000} more symbols were cut)\n\n" else "\n"
-
-    // todo? potentially we should be able to get Class through `refined CliIssue` here, something like:
-    // private inline fun <reified CliIssues> getCliIIssuesClass(): Class<CliIssues> = CliIssues::class.java
-    // see https://kotlinlang.org/docs/inline-functions.htm#reified-type-parameters
     protected abstract fun getCliIIssuesClass(): Class<CliIssues>
 
     protected open fun isSuccessCliJsonString(jsonStr: String): Boolean = jsonStr.contains("\"vulnerabilities\":")
@@ -195,11 +176,6 @@ abstract class CliAdapter<CliIssues, R : CliResult<CliIssues>>(val project: Proj
     fun buildCliCommandsList_TEST_ONLY(cmds: List<String>): List<String> = buildCliCommandsList(cmds)
 
     abstract fun buildExtraOptions(): List<String>
-
-    @TestOnly
-    fun setConsoleCommandRunner(newRunner: ConsoleCommandRunner) {
-        this.consoleCommandRunner = newRunner
-    }
 
     private fun getCliCommandPath(): String =
         if (isCliInstalled()) getCliFile().absolutePath else throw CliNotExistsException()

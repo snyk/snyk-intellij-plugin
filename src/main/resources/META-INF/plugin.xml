@@ -5,21 +5,8 @@
   <vendor url="https://snyk.io">Snyk Ltd.</vendor>
 
   <depends>com.intellij.modules.platform</depends>
-  <!-- optional modules -->
-  <depends optional="true" config-file="optional/withPHP.xml">com.jetbrains.php</depends>
-  <depends optional="true" config-file="optional/withGo.xml">org.jetbrains.plugins.go</depends>
-  <depends optional="true" config-file="optional/withKotlin.xml">org.jetbrains.kotlin</depends>
-  <depends optional="true" config-file="optional/withJava.xml">com.intellij.java</depends>
-  <depends optional="true" config-file="optional/withCsharp.xml">com.intellij.modules.rider</depends>
-  <depends optional="true" config-file="optional/withPython.xml">com.intellij.modules.python</depends>
-  <depends optional="true" config-file="optional/withJavaScript.xml">JavaScript</depends>
-  <depends optional="true" config-file="optional/withJSON.xml">com.intellij.modules.json</depends>
-  <depends optional="true" config-file="optional/withHCL.xml">org.intellij.plugins.hcl</depends>
-  <depends optional="true" config-file="optional/withYAML.xml">org.jetbrains.plugins.yaml</depends>
-  <depends optional="true" config-file="optional/withXML.xml">com.intellij.modules.xml</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <checkinHandlerFactory implementation="snyk.common.PreCommitHookHandler" />
     <codeInsight.lineMarkerProvider
       language=""
       implementationClass="snyk.common.annotator.SnykLineMarkerProvider"/>
@@ -37,7 +24,7 @@
                          groupId="tools"
                          displayName="Snyk"/>
 
-    <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>
+    <!--    <errorHandler implementation="snyk.errorHandler.SnykErrorReportSubmitter"/>-->
 
     <!-- Registry keys -->
     <registryKey key="snyk.timeout.results.waiting"
@@ -115,6 +102,7 @@
 
   <extensionPoints>
     <extensionPoint
+      qualifiedName="io.snyk.snyk-intellij-plugin.controllerManager"
       name="controllerManager"
       interface="io.snyk.plugin.extensions.SnykControllerManager"/>
   </extensionPoints>

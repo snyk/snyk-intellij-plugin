@@ -15,7 +15,7 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
-import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanelFromLS
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import snyk.UIComponentFinder.getJLabelByText
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.IssueData
@@ -24,7 +24,7 @@ import java.nio.file.Paths
 import javax.swing.JLabel
 
 class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
-    private lateinit var cut: SuggestionDescriptionPanelFromLS
+    private lateinit var cut: SuggestionDescriptionPanel
     private val fileName = "app.js"
     private lateinit var snykFile: SnykFile
     private lateinit var issue: ScanIssue
@@ -79,15 +79,13 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
         val mockJBCefBrowser : JBCefBrowser = mockk()
         every { mockJBCefBrowser.component } returns mockJBCefBrowserComponent
-
         mockkObject(JCEFUtils)
         every {
             JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any())
         } returns mockJBCefBrowser
-
         every { issue.details(any()) } returns "<html>HTML message</html>"
-        every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(project, issue)
+
+        cut = SuggestionDescriptionPanel(project, issue)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -98,8 +96,8 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
 
     fun `test getStyledHTML should inject CSS into the HTML if allowed`() {
         every { issue.details(any()) } returns "<html><head><style>STYLE_PLACEHOLDER</style></head>HTML message</html>"
-        every { issue.canLoadSuggestionPanelFromHTML() } returns true
-        cut = SuggestionDescriptionPanelFromLS(project, issue)
+
+        cut = SuggestionDescriptionPanel(project, issue)
 
         val actual = cut.getCustomCssAndScript()
 

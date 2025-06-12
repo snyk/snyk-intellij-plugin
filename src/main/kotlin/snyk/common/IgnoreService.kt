@@ -4,7 +4,6 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.CliResult
 import io.snyk.plugin.services.CliAdapter
-import snyk.iac.IacIssue
 
 class IgnoreService(project: Project) : CliAdapter<Unit, IgnoreService.IgnoreResults>(project) {
 
@@ -24,11 +23,6 @@ class IgnoreService(project: Project) : CliAdapter<Unit, IgnoreService.IgnoreRes
 
     private fun isFail(result: IgnoreResults) =
         result.errors.isNotEmpty() && result.getFirstError()?.message != CLI_PRODUCE_NO_OUTPUT
-
-    fun buildPath(issue: IacIssue, targetFile: String): String {
-        val separator = " > "
-        return targetFile + separator + issue.path.joinToString(separator)
-    }
 
     override fun getProductResult(cliIssues: List<Unit>?, snykErrors: List<SnykError>) =
         IgnoreResults(snykErrors.firstOrNull()?.message)
