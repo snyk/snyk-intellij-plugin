@@ -23,6 +23,7 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
+import java.util.concurrent.CancellationException
 import javax.swing.AbstractAction
 import javax.swing.Action
 import javax.swing.JComponent
@@ -65,10 +66,11 @@ class SnykCliAuthenticationService(
 
         object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
             override fun run(indicator: ProgressIndicator) {
+                val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 dialog.onCancel = {
+                    languageServerWrapper.cancelPreviousLogin()
                     indicator.cancel()
                 }
-                val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 languageServerWrapper.logout()
                 val htmlText =
                     """
@@ -81,13 +83,26 @@ class SnykCliAuthenticationService(
                 dialog.updateHtmlText(htmlText)
                 dialog.copyUrlAction.isEnabled = true
                 languageServerWrapper.login()
-                val exitCode =
-                    if (!pluginSettings().token.isNullOrBlank()) {
-                        DialogWrapper.OK_EXIT_CODE
-                    } else {
-                        DialogWrapper.CLOSE_EXIT_CODE
+                    ?.whenComplete { result, e ->
+                        var token: String
+                        if (e != null) {
+                            if (e is CancellationException) {
+                                logger.warn("login timed out or cancelled", e)
+                            } else {
+                                logger.warn("could not login", e)
+                            }
+                            token = ""
+                        } else {
+                            token = result?.toString() ?: ""
+                        }
+                        pluginSettings().token = token
+                        val exitCode = if (!pluginSettings().token.isNullOrBlank()) {
+                            DialogWrapper.OK_EXIT_CODE
+                        } else {
+                            DialogWrapper.CLOSE_EXIT_CODE
+                        }
+                        ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
                     }
-                ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
             }
         }.queue()
 
