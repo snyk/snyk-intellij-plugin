@@ -184,9 +184,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 }
 
 enum class AuthenticationType(val languageServerSettingsName: String, val dialogName: String, val dialogIndex: Int) {
-    OAUTH2("oauth2", "OAuth2", 0),
+    OAUTH2("oauth2", "OAuth2 (Recommended)", 0),
     PAT("pat", "Personal Access Token", 1),
-    API_TOKEN("token", "API Token", 2),
+    API_TOKEN("token", "API Token (Legacy)", 2),
 }
 
 class TreeFiltering {
