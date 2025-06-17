@@ -15,6 +15,7 @@ import com.intellij.ui.scale.JBUIScale
 import com.intellij.util.PlatformIcons
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykTaskQueueService
+import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import snyk.common.lsp.LanguageServerWrapper
@@ -22,6 +23,7 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.StringSelection
 import java.awt.event.ActionEvent
+import java.util.concurrent.CancellationException
 import javax.swing.AbstractAction
 import javax.swing.Action
 import javax.swing.JComponent
@@ -64,31 +66,39 @@ class SnykCliAuthenticationService(
 
         object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
             override fun run(indicator: ProgressIndicator) {
+                val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 dialog.onCancel = {
+                    languageServerWrapper.cancelPreviousLogin()
                     indicator.cancel()
                 }
-                val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 languageServerWrapper.logout()
                 val htmlText =
                     """
-                <html>
-                    We are now redirecting you to our auth page, go ahead and log in.<br><br>
-                    Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.<br><br>
-                    If a browser window doesn't open after a few seconds, please copy the url using the button below and manually paste it in a browser.
-                </html>
-                """.trimIndent()
-
+                    <html>
+                        We are now redirecting you to our auth page, go ahead and log in.<br><br>
+                        Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.<br><br>
+                        If a browser window doesn't open after a few seconds, please copy the url using the button below and manually paste it in a browser.
+                    </html>
+                    """.trimIndent()
                 dialog.updateHtmlText(htmlText)
                 dialog.copyUrlAction.isEnabled = true
+                languageServerWrapper.login()?.whenComplete { result, e ->
+                    val token = result?.toString() ?: ""
 
-                val exitCode = languageServerWrapper.login().let { token ->
-                    if (!token.isNullOrBlank()) {
+                    if (e is CancellationException) {
+                        logger.warn("login timed out or cancelled", e)
+                    } else {
+                        logger.warn("could not login", e)
+                    }
+
+                    pluginSettings().token = token
+                    val exitCode = if (!pluginSettings().token.isNullOrBlank()) {
                         DialogWrapper.OK_EXIT_CODE
                     } else {
                         DialogWrapper.CLOSE_EXIT_CODE
                     }
+                    ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
                 }
-                ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
             }
         }.queue()
 
