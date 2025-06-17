@@ -74,6 +74,7 @@ import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.io.FileNotFoundException
 import java.nio.file.Paths
 import java.util.Collections
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -97,6 +98,7 @@ class LanguageServerWrapper(
     private var initializeResult: InitializeResult? = null
     private var cliNotFoundWarningDisplayed: Boolean = false
     private val gson = Gson()
+    private var loginFuture: CompletableFuture<Any>? = null
 
     // internal for test set up
     internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
@@ -561,20 +563,23 @@ class LanguageServerWrapper(
         return null
     }
 
-    // triggers login and returns auth URL
-    fun login(): String? {
+    fun login(): CompletableFuture<Any>? {
         if (!ensureLanguageServerInitialized()) return null
-        try {
-            val loginCmd = ExecuteCommandParams(COMMAND_LOGIN, emptyList())
-            pluginSettings().token =
-                languageServer.workspaceService
-                    .executeCommand(loginCmd)
-                    .get(120, TimeUnit.SECONDS)
-                    ?.toString() ?: ""
-        } catch (e: TimeoutException) {
-            logger.warn("could not login", e)
-        }
-        return pluginSettings().token
+        cancelPreviousLogin()
+        val loginCmd = ExecuteCommandParams(COMMAND_LOGIN, emptyList())
+        this.loginFuture = languageServer.workspaceService
+            .executeCommand(loginCmd)
+            .orTimeout(120, TimeUnit.SECONDS)
+
+        return this.loginFuture
+    }
+
+    /**
+     * This sends a $/cancelRequest for the previous login command ID.
+     * See https://github.com/eclipse-lsp4j/lsp4j/blob/main/documentation/jsonrpc.md#cancelling-requests
+     */
+    fun cancelPreviousLogin() {
+        loginFuture?.cancel(true)
     }
 
     fun getAuthLink(): String? {
@@ -618,6 +623,7 @@ class LanguageServerWrapper(
 
     fun logout() {
         if (!ensureLanguageServerInitialized()) return
+        cancelPreviousLogin()
         val cmd = ExecuteCommandParams(COMMAND_LOGOUT, emptyList())
         try {
             executeCommand(cmd)
