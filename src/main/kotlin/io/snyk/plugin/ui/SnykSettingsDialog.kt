@@ -314,15 +314,18 @@ class SnykSettingsDialog(
             ),
         )
 
-        authenticationType.apply {
-            addItemListener { event ->
-                if (event.stateChange == ItemEvent.SELECTED) {
-                    // User has selected a new auth mechanism; update the Language Server config.
-                    LanguageServerWrapper.getInstance(project).updateConfiguration(false)
-                }
-
+authenticationType.apply {
+    addItemListener { event ->
+        if (event.stateChange == ItemEvent.SELECTED) {
+            val newIndex = selectedIndex
+            val oldIndex = applicationSettings.authenticationType.dialogIndex
+            if (newIndex != oldIndex) {
+                // User has selected a new auth mechanism; update the Language Server config.
+                LanguageServerWrapper.getInstance(project).updateConfiguration(false)
             }
         }
+    }
+}
 
         generalSettingsPanel.add(
             authenticationType,

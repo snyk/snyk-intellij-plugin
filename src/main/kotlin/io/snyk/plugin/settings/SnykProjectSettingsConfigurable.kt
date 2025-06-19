@@ -86,7 +86,7 @@ class SnykProjectSettingsConfigurable(
         }
 
         settingsStateService.token = snykSettingsDialog.getToken()
-        settingsStateService.authenticationType= snykSettingsDialog.getAuthenticationType()
+        settingsStateService.authenticationType = snykSettingsDialog.getAuthenticationType()
         settingsStateService.organization = snykSettingsDialog.getOrganization()
         settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
