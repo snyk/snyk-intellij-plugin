@@ -4,6 +4,7 @@ package snyk.common.lsp.settings
 
 import com.google.gson.annotations.SerializedName
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.AuthenticationType
 import org.apache.commons.lang3.SystemUtils
 import snyk.common.lsp.FolderConfig
 import snyk.pluginInfo
@@ -37,7 +38,7 @@ data class LanguageServerSettings(
     @SerializedName("runtimeVersion") val runtimeVersion: String? = SystemUtils.JAVA_VERSION,
     @SerializedName("runtimeName") val runtimeName: String? = SystemUtils.JAVA_RUNTIME_NAME,
     @SerializedName("scanningMode") val scanningMode: String? = null,
-    @SerializedName("authenticationMethod") val authenticationMethod: String = "oauth",
+    @SerializedName("authenticationMethod") val authenticationMethod: String = AuthenticationType.OAUTH2.languageServerSettingsName,
     @SerializedName("snykCodeApi") val snykCodeApi: String? = null,
     @SerializedName("enableSnykLearnCodeActions") val enableSnykLearnCodeActions: String? = null,
     @SerializedName("enableSnykOSSQuickFixCodeActions") val enableSnykOSSQuickFixCodeActions: String? = null,
