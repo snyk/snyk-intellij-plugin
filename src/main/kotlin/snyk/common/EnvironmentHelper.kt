@@ -39,6 +39,7 @@ object EnvironmentHelper {
                 AuthenticationType.OAUTH2 -> {
                     environment[oauthEnabledEnvVar] = "1"
                     environment[oauthEnvVar] = token
+                    environment.remove(snykTokenEnvVar)
                 }
             }
         }

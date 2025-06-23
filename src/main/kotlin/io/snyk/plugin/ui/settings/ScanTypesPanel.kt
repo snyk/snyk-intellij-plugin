@@ -140,7 +140,10 @@ class ScanTypesPanel(
             return
         }
         showSnykCodeAlert("Checking if Snyk Code enabled for organisation...")
-        if (!isSnykCodeAvailable(settings.customEndpointUrl)) return
+        if (!isSnykCodeAvailable(settings.customEndpointUrl)) {
+            showSnykCodeDisabledAlert()
+            return
+        }
 
         // Only continue if we have SAST settings available.
         var sastSettings = try {
@@ -159,49 +162,49 @@ class ScanTypesPanel(
         updateSettingsWithSastSettings(sastSettings)
 
 
-        when (sastSettings.sastEnabled) {
-            true -> {
-                setSnykCodeAvailability(true)
-                val message =
-                    "Snyk Code is enabled for your organisation ${settings.organization}. \nAutofix enabled: ${sastSettings.autofixEnabled}"
-                showSnykCodeAlert(message)
-            }
+        if (sastSettings.sastEnabled) {
+            setSnykCodeAvailability(true)
+            val message =
+                "Snyk Code is enabled for your organisation ${settings.organization}. \nAutofix enabled: ${sastSettings.autofixEnabled}"
+            showSnykCodeAlert(message)
+        } else {
+            disableSnykCode()
+            val baseMessage = "Periodically checking if Snyk Code is enabled on organization level..."
+            showSnykCodeDisabledAlert(runOnClick = {
+                runInBackground(baseMessage, project, true) {
+                    val maxTries = 60
+                    for (i in 0..maxTries) {
+                        it.checkCanceled()
+                        it.text = "$baseMessage (tries: $i/$maxTries)"
 
-            false -> {
-                disableSnykCode()
-                val baseMessage = "Periodically checking if Snyk Code is enabled on organization level..."
-                showSnykCodeAlert(
-                    message = "Snyk Code is disabled by your organisation's configuration: ",
-                    linkText = "Snyk > Settings > Snyk Code",
-                    url = toSnykCodeSettingsUrl(settings.customEndpointUrl),
-                    runOnClick = {
-                        runInBackground(baseMessage, project, true) {
-                            val maxTries = 60
-                            for (i in 0..maxTries) {
-                                it.checkCanceled()
-                                it.text = "$baseMessage (tries: $i/$maxTries)"
-
-                                val enabled = try {
-                                    it.text = "$baseMessage (tries: $i/$maxTries - calling API)"
-                                    sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
-                                    updateSettingsWithSastSettings(sastSettings)
-                                    sastSettings?.sastEnabled ?: false
-                                } catch (_: RuntimeException) {
-                                    continue
-                                }
-                                setSnykCodeAvailability(enabled)
-                                if (enabled) break
-
-                                it.checkCanceled()
-                                val sleepTime = 2L
-                                it.text = "$baseMessage (tries: $i/$maxTries - sleeping for $sleepTime secs)"
-                                sleepCancellable(sleepTime * 1000)
-                            }
+                        val enabled = try {
+                            it.text = "$baseMessage (tries: $i/$maxTries - calling API)"
+                            sastSettings = LanguageServerWrapper.getInstance(project).getSastSettings()
+                            updateSettingsWithSastSettings(sastSettings)
+                            sastSettings?.sastEnabled ?: false
+                        } catch (_: RuntimeException) {
+                            continue
                         }
+                        setSnykCodeAvailability(enabled)
+                        if (enabled) break
+
+                        it.checkCanceled()
+                        val sleepTime = 2L
+                        it.text = "$baseMessage (tries: $i/$maxTries - sleeping for $sleepTime secs)"
+                        sleepCancellable(sleepTime * 1000)
                     }
-                )
-            }
+                }
+            })
         }
+    }
+
+    private fun showSnykCodeDisabledAlert(runOnClick: (() -> Unit)? = null) {
+        showSnykCodeAlert(
+            message = "Snyk Code is disabled by your organisation's configuration: ",
+            linkText = "Snyk > Settings > Snyk Code",
+            url = toSnykCodeSettingsUrl(settings.customEndpointUrl),
+            runOnClick = runOnClick
+        )
     }
 
     private fun updateSettingsWithSastSettings(sastSettings: LanguageServerWrapper.SastSettings?) {
