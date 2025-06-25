@@ -5,14 +5,16 @@ import com.intellij.util.net.ProxyConfiguration
 import com.intellij.util.net.ProxyCredentialStore
 import com.intellij.util.net.ProxySettings
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.AuthenticationType
 import snyk.pluginInfo
+import java.net.URI
 import java.net.URLEncoder
 
 object EnvironmentHelper {
     @Suppress("HttpUrlsUsage")
     fun updateEnvironment(
         environment: MutableMap<String, String>,
-        apiToken: String,
+        token: String,
     ) {
         // first of all, use IntelliJ environment tool, to spice up env
         environment.putAll(EnvironmentUtil.getEnvironmentMap())
@@ -22,20 +24,21 @@ object EnvironmentHelper {
         val oauthEnvVar = "INTERNAL_OAUTH_TOKEN_STORAGE"
         val snykTokenEnvVar = "SNYK_TOKEN"
 
-        if (apiToken.isNotEmpty()) {
+        val endpointURI = URI(endpoint)
+
+        if (token.isNotEmpty()) {
             environment.remove(snykTokenEnvVar)
             environment.remove(oauthEnvVar)
             environment.remove(oauthEnabledEnvVar)
-            when (pluginSettings().useTokenAuthentication) {
-                true -> {
+            when (pluginSettings().authenticationType) {
+                AuthenticationType.API_TOKEN, AuthenticationType.PAT -> {
                     environment[oauthEnabledEnvVar] = "0"
-                    environment.remove(oauthEnvVar)
-                    environment[snykTokenEnvVar] = apiToken
+                    environment[snykTokenEnvVar] = token
                 }
 
-                false -> {
+                AuthenticationType.OAUTH2 -> {
                     environment[oauthEnabledEnvVar] = "1"
-                    environment[oauthEnvVar] = apiToken
+                    environment[oauthEnvVar] = token
                     environment.remove(snykTokenEnvVar)
                 }
             }

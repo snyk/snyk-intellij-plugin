@@ -28,7 +28,9 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
 
     val requiredLsProtocolVersion = 20
 
+    @Deprecated("left for old users migration only")
     var useTokenAuthentication = false
+    var authenticationType = AuthenticationType.OAUTH2
     var currentLSProtocolVersion: Int? = 0
     var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
@@ -92,6 +94,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         if (!cliScanEnable) {
             ossScanEnable = false
             cliScanEnable = true // drop prev state
+        }
+
+        // Migration from old settings. OAuth2 is default, so we only need to handle migration for API Token users.
+        if (useTokenAuthentication) {
+            authenticationType = AuthenticationType.API_TOKEN
+            useTokenAuthentication = false
         }
     }
 
@@ -174,6 +182,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
         const val DISPLAY_ALL_ISSUES = "All issues"
         const val DISPLAY_NEW_ISSUES = "Net new issues"
     }
+}
+
+enum class AuthenticationType(val languageServerSettingsName: String, val dialogName: String, val dialogIndex: Int) {
+    OAUTH2("oauth", "OAuth2 (Recommended)", 0),
+    PAT("pat", "Personal Access Token", 1),
+    API_TOKEN("token", "API Token (Legacy)", 2),
 }
 
 class TreeFiltering {

@@ -82,27 +82,23 @@ class SnykCliAuthenticationService(
                     """.trimIndent()
                 dialog.updateHtmlText(htmlText)
                 dialog.copyUrlAction.isEnabled = true
-                languageServerWrapper.login()
-                    ?.whenComplete { result, e ->
-                        var token: String
-                        if (e != null) {
-                            if (e is CancellationException) {
-                                logger.warn("login timed out or cancelled", e)
-                            } else {
-                                logger.warn("could not login", e)
-                            }
-                            token = ""
-                        } else {
-                            token = result?.toString() ?: ""
-                        }
-                        pluginSettings().token = token
-                        val exitCode = if (!pluginSettings().token.isNullOrBlank()) {
-                            DialogWrapper.OK_EXIT_CODE
-                        } else {
-                            DialogWrapper.CLOSE_EXIT_CODE
-                        }
-                        ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
+                languageServerWrapper.login()?.whenComplete { result, e ->
+                    val token = result?.toString() ?: ""
+
+                    if (e is CancellationException) {
+                        logger.warn("login timed out or cancelled", e)
+                    } else {
+                        logger.warn("could not login", e)
                     }
+
+                    pluginSettings().token = token
+                    val exitCode = if (!pluginSettings().token.isNullOrBlank()) {
+                        DialogWrapper.OK_EXIT_CODE
+                    } else {
+                        DialogWrapper.CLOSE_EXIT_CODE
+                    }
+                    ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
+                }
             }
         }.queue()
 
