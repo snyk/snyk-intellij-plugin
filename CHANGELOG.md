@@ -5,6 +5,7 @@
 - make language server run per project, not per application. this fixes issue counts in summary view and makes the UI thread less busy
 - switch to new IntelliJ gradle plugin. This makes the plugin only work on 2024.2+ platforms.
 - removed deprecated Code Quality and Container products
+- added PAT support
 
 ## [2.13.1]
 ### Fixed
