@@ -10,6 +10,7 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 
+// "|" works also for separating in windows paths
 const val navigationSeparator = "|"
 
 class OpenFileLoadHandlerGenerator(
@@ -25,17 +26,13 @@ class OpenFileLoadHandlerGenerator(
         val endCharacter = values[4].toInt()
 
         val virtualFile = virtualFiles[filePath] ?: return JBCefJSQuery.Response("success")
+        val document = virtualFile.getDocument()?: return JBCefJSQuery.Response("success")
 
-        val document = virtualFile.getDocument()
-        if (document == null) {
-            return JBCefJSQuery.Response("success")
-        }
-        
         // Ensure line numbers are within bounds
         val maxLine = document.lineCount - 1
         val safeStartLine = startLine.coerceIn(0, maxLine)
         val safeEndLine = endLine.coerceIn(0, maxLine)
-        
+
         val startLineStartOffset = document.getLineStartOffset(safeStartLine)
         val startOffset = startLineStartOffset + startCharacter
         val endLineStartOffset = document.getLineStartOffset(safeEndLine)
