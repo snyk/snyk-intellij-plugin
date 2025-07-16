@@ -10,12 +10,14 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 
+const val navigationSeparator = "|"
+
 class OpenFileLoadHandlerGenerator(
     private val project: Project,
     private val virtualFiles: LinkedHashMap<String, VirtualFile?>,
 ) {
     fun openFile(value: String): JBCefJSQuery.Response {
-        val values = value.replace("\n", "").split(":")
+        val values = value.replace("\n", "").split(navigationSeparator)
         val filePath = values[0]
         val startLine = values[1].toInt()
         val endLine = values[2].toInt()
@@ -54,10 +56,10 @@ class OpenFileLoadHandlerGenerator(
 
                         function navigateToIssue(e, target) {
                             e.preventDefault();
-                            window.openFileQuery(target.getAttribute("file-path") + ":" +
-                                 target.getAttribute("start-line") + ":" +
-                                 target.getAttribute("end-line") + ":" +
-                                 target.getAttribute("start-character") + ":" +
+                            window.openFileQuery(target.getAttribute("file-path") + "$navigationSeparator" +
+                                 target.getAttribute("start-line") + "$navigationSeparator" +
+                                 target.getAttribute("end-line") + "$navigationSeparator" +
+                                 target.getAttribute("start-character") + "$navigationSeparator" +
                                  target.getAttribute("end-character"));
                         }
 
