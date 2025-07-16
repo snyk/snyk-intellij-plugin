@@ -27,9 +27,18 @@ class OpenFileLoadHandlerGenerator(
         val virtualFile = virtualFiles[filePath] ?: return JBCefJSQuery.Response("success")
 
         val document = virtualFile.getDocument()
-        val startLineStartOffset = document?.getLineStartOffset(startLine) ?: 0
-        val startOffset = startLineStartOffset + (startCharacter)
-        val endLineStartOffset = document?.getLineStartOffset(endLine) ?: 0
+        if (document == null) {
+            return JBCefJSQuery.Response("success")
+        }
+        
+        // Ensure line numbers are within bounds
+        val maxLine = document.lineCount - 1
+        val safeStartLine = startLine.coerceIn(0, maxLine)
+        val safeEndLine = endLine.coerceIn(0, maxLine)
+        
+        val startLineStartOffset = document.getLineStartOffset(safeStartLine)
+        val startOffset = startLineStartOffset + startCharacter
+        val endLineStartOffset = document.getLineStartOffset(safeEndLine)
         val endOffset = endLineStartOffset + endCharacter - 1
 
         navigateToSource(project, virtualFile, startOffset, endOffset)

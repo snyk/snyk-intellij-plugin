@@ -96,9 +96,11 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
     }
 
     fun `test openFile should handle navigation with large line numbers`() {
+        // Test with line numbers beyond file bounds - should handle gracefully
         val response = generator.openFile("$fileName|999|1000|50|100")
         assertNotNull(response)
         assertEquals("success", response.response())
+        // Navigation should still succeed even with out-of-bounds line numbers
     }
 
     fun `test navigationSeparator constant should be pipe character`() {
