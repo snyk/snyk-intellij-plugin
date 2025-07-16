@@ -7,6 +7,10 @@
 - removed deprecated Code Quality and Container products
 - added PAT support
 
+### Fixed
+- Fixed dataflow navigation on Windows by changing navigation separator from `:` to `|` to handle Windows drive paths (e.g., `C:`) correctly
+- Added bounds checking for line numbers to prevent IndexOutOfBoundsException when navigating to lines beyond file bounds
+
 ## [2.13.1]
 ### Fixed
 - fixed not initialized exception in error handling during language server startup
