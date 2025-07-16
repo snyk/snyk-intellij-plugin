@@ -1,5 +1,10 @@
 # Snyk Security Changelog
 
+## [Unreleased]
+### Fixed
+- Fixed dataflow navigation on Windows by changing navigation separator from `:` to `|` to handle Windows drive paths (e.g., `C:`) correctly
+- Added bounds checking for line numbers to prevent IndexOutOfBoundsException when navigating to lines beyond file bounds
+
 ## [2.14.0]
 ### Changes
 - make language server run per project, not per application. this fixes issue counts in summary view and makes the UI thread less busy
