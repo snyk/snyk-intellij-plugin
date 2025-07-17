@@ -40,14 +40,18 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
 
-      - name: Test
+      - name: Run Plugin Verifier
+        run: ./gradlew verifyPlugin
+
+      - name: Run Tests
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
         run: |
-          ./gradlew check -x detekt test verifyPlugin clean
+          ./gradlew clean check -x detekt
           git clean -d --force
           git reset --hard
+
 
       - name: Create Tag
         id: createTag
@@ -71,13 +75,6 @@ jobs:
           ./gradlew release -Prelease.dryRun
           echo "tagName=$(./gradlew cV -q -Prelease.quiet)" >> $GITHUB_OUTPUT
 
-      - name: Create release
-        if: ${{ !env.ACT }}
-        id: create_release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create ${{ steps.createTag.outputs.tagName }} --generate-notes $(find . -name 'snyk-intellij-plugin-*.zip')
-
       - name: Publish Plugin
         if: ${{ !env.ACT }}
         env:
@@ -87,3 +84,10 @@ jobs:
           ORG_GRADLE_PROJECT_iterativelyEnvironment: "PRODUCTION"
           ORG_GRADLE_PROJECT_segmentWriteKey: ${{ secrets.SEGMENT_WRITE_KEY }}
         run: ./gradlew publishPlugin
+
+      - name: Create release
+        if: ${{ !env.ACT }}
+        id: create_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create ${{ steps.createTag.outputs.tagName }} --generate-notes $(find . -name 'snyk-intellij-plugin-*.zip')
