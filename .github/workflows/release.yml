@@ -83,7 +83,7 @@ jobs:
           ORG_GRADLE_PROJECT_environment: "PRODUCTION"
           ORG_GRADLE_PROJECT_iterativelyEnvironment: "PRODUCTION"
           ORG_GRADLE_PROJECT_segmentWriteKey: ${{ secrets.SEGMENT_WRITE_KEY }}
-        run: ./gradlew buildPlugin publishPlugin
+        run: ./gradlew publishPlugin
 
       - name: Create release
         if: ${{ !env.ACT }}
