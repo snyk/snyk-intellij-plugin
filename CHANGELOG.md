@@ -1,6 +1,6 @@
 # Snyk Security Changelog
 
-## [2.14.0]
+## [2.15.0]
 ### Changes
 - make language server run per project, not per application. this fixes issue counts in summary view and makes the UI thread less busy
 - switch to new IntelliJ gradle plugin. This makes the plugin only work on 2024.2+ platforms.
