@@ -45,7 +45,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
         run: |
-          ./gradlew test verifyPlugin clean
+          ./gradlew check -x detekt test verifyPlugin clean
           git clean -d --force
           git reset --hard
 
