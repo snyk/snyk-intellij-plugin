@@ -204,12 +204,13 @@ tasks {
         }
     }
     
-    register<Test>("runE2ETests") {
+    val runE2ETests by registering(Test::class) {
         group = "verification"
         description = "Run E2E UI tests (requires IDE with robot-server)"
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
         
+        // Include E2E tests (must be specific to avoid running non-E2E tests)
         include("**/e2e/**/*E2ETest.class")
         
         maxHeapSize = "4096m"
@@ -227,6 +228,11 @@ tasks {
         testLogging {
             events("passed", "skipped", "failed")
             exceptionFormat = TestExceptionFormat.FULL
+        }
+        
+        doFirst {
+            println("E2E test classpath: ${classpath.files}")
+            println("E2E test classes dir: ${testClassesDirs.files}")
         }
     }
 
