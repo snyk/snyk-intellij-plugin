@@ -232,6 +232,7 @@ tasks {
     }
 
     // Configure IDE for UI testing with robot-server
+    // Note: runIdeForUiTests is not registered by default in 2.x, so we create it
     val runIdeForUiTests by registering(RunIdeTask::class) {
         systemProperty("robot-server.port", "8082")
         systemProperty("ide.mac.message.dialogs.as.sheets", "false")
@@ -239,6 +240,9 @@ tasks {
         systemProperty("jb.consents.confirmation.enabled", "false")
         systemProperty("idea.trust.all.projects", "true")
         systemProperty("ide.show.tips.on.startup.default.value", "false")
+        
+        // Disable auto-reload for UI tests
+        autoReload = false
     }
 
     // Download and configure robot-server plugin
@@ -260,9 +264,11 @@ tasks {
 
     runIdeForUiTests {
         dependsOn(downloadRobotServerPlugin)
-        doFirst {
-            val pluginFile = downloadRobotServerPlugin.get().outputs.files.singleFile
-            systemProperty("jb.idea.plugin.path", pluginFile.absolutePath)
+        plugins {
+            // Load the robot-server plugin
+            plugin(provider {
+                downloadRobotServerPlugin.get().outputs.files.singleFile.absolutePath
+            })
         }
     }
 
