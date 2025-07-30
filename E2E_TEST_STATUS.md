@@ -44,6 +44,12 @@ The E2E test infrastructure for the Snyk IntelliJ plugin has been successfully i
 - Gradle 8.x
 - Xvfb (for headless environments)
 
+#### Verification
+Run the verification script to check setup:
+```bash
+./scripts/test-e2e-setup.sh
+```
+
 #### Local Execution
 
 **Option 1: Using the helper script**
@@ -60,6 +66,12 @@ The E2E test infrastructure for the Snyk IntelliJ plugin has been successfully i
 
 # Terminal 2: Run E2E tests
 ./gradlew runE2ETests
+```
+
+**Note**: If you encounter Gradle cache issues with IDE download, try:
+```bash
+rm -rf ~/.gradle/caches/
+./gradlew setupDependencies --refresh-dependencies
 ```
 
 #### CI/CD Execution
