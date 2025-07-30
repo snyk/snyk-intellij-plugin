@@ -6,7 +6,6 @@ import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 import org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask
-import org.jetbrains.intellij.platform.gradle.tasks.RunIdeBase
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -240,9 +239,6 @@ tasks {
         systemProperty("jb.consents.confirmation.enabled", "false")
         systemProperty("idea.trust.all.projects", "true")
         systemProperty("ide.show.tips.on.startup.default.value", "false")
-        
-        // Set required properties
-        splitMode = RunIdeBase.SplitMode.NONE
     }
 
     // Download and configure robot-server plugin
