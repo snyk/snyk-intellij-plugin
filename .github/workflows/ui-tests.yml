@@ -22,7 +22,7 @@ jobs:
             display: ':1'
           - os: windows-latest
             display: ':0'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -80,13 +80,13 @@ jobs:
             -Didea.trust.all.projects=true \
             -Dide.show.tips.on.startup.default.value=false \
             -PrunIdeWithPlugins="build/robot-server-plugin.zip" &
-          
+
           IDE_PID=$!
-          
+
           # Wait for IDE to start
           echo "Waiting for IDE to start..."
           sleep 60
-          
+
           # Check if robot server is accessible
           max_attempts=30
           attempt=0
@@ -99,19 +99,19 @@ jobs:
             sleep 5
             attempt=$((attempt + 1))
           done
-          
+
           if [ $attempt -eq $max_attempts ]; then
             echo "Robot Server failed to start!"
             kill $IDE_PID 2>/dev/null || true
             exit 1
           fi
-          
+
           # Run E2E tests
           ./gradlew test --tests "*E2ETest" --info || E2E_RESULT=$?
-          
+
           # Stop IDE
           kill $IDE_PID 2>/dev/null || true
-          
+
           # Exit with E2E test result
           exit ${E2E_RESULT:-0}
         env:
@@ -120,7 +120,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.os }}
           path: |

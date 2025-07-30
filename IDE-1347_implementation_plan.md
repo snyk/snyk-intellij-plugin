@@ -249,7 +249,7 @@ object TestFixtures {
   
 - name: Upload Test Results
   if: always()
-  uses: actions/upload-artifact@v3
+  uses: actions/upload-artifact@v4
   with:
     name: test-results
     path: build/test-results/
