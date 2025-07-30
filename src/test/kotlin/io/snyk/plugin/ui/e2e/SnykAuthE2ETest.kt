@@ -14,6 +14,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.awt.event.KeyEvent
 import java.time.Duration
 
 /**
@@ -49,9 +50,21 @@ class SnykAuthE2ETest {
                 // Check if we're on the welcome screen
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
-                // Focus the IDE window
-                welcomeFrame.runJs("component.requestFocus(); component.requestFocusInWindow();")
-                Thread.sleep(500) // Give time for focus
+                // Focus the IDE application window
+                runJs("""
+                    importPackage(com.intellij.openapi.wm)
+                    importPackage(java.lang)
+                    var wm = WindowManager.getInstance()
+                    var window = wm.getFrame(null)
+                    if (window != null) {
+                        window.toFront()
+                        window.requestFocus()
+                        window.setAlwaysOnTop(true)
+                        Thread.sleep(100)
+                        window.setAlwaysOnTop(false)
+                    }
+                """)
+                Thread.sleep(1000) // Give time for window to come to front
                 
                 // Click Clone Repository button using accessible name
                 // There are 2 elements with this accessible name (button and label), we need the button
@@ -67,15 +80,30 @@ class SnykAuthE2ETest {
                 // Wait for VCS dialog
                 Thread.sleep(2000)
                 
-                // Find URL input field and enter nodejs-goof repository
-                val urlField = find<CommonContainerFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']"))
-                urlField.click()
-                keyboard {
-                    enterText("https://github.com/snyk-labs/nodejs-goof")
+                // Find the dialog
+                val dialog = find<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
+                
+                // Find URL input field and enter repository URL
+                val urlFields = dialog.findAll<CommonContainerFixture>(byXpath("//div[@class='JTextField']"))
+                if (urlFields.isNotEmpty()) {
+                    // First field is usually the URL field
+                    urlFields[0].click()
+                    keyboard {
+                        enterText("https://github.com/snyk-labs/nodejs-goof")
+                    }
+                }
+                
+                // Find directory field and set a temp directory
+                if (urlFields.size > 1) {
+                    urlFields[1].click()
+                    keyboard {
+                        hotKey(KeyEvent.VK_META, KeyEvent.VK_A) // Select all
+                        enterText(System.getProperty("java.io.tmpdir") + "snyk-test-nodejs-goof")
+                    }
                 }
                 
                 // Click Clone button in dialog
-                val cloneDialogButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                val cloneDialogButton = dialog.find<JButtonFixture>(byXpath("//div[@text='Clone']"))
                 cloneDialogButton.click()
                 
             } catch (e: Exception) {
