@@ -159,6 +159,79 @@ Add to your CI configuration:
 - Check for dynamic class names
 - Use more specific attributes (text, accessiblename)
 
+## Covered Test Scenarios
+
+### Component Tests
+1. **SnykAuthPanelUITest**
+   - Authentication panel display when not authenticated
+   - Authenticate button enablement state
+   - Button action listener functionality
+
+2. **SnykToolWindowUITest**  
+   - Auth panel creation when not authenticated
+   - Authenticate button state in tool window
+   - Label text verification
+   - Button click simulation
+
+### E2E Tests
+
+1. **SnykAuthE2ETest**
+   - IDE startup and initialization
+   - Snyk tool window opening
+   - Authentication panel verification
+   - Trust and scan button interaction
+
+2. **SnykWorkflowE2ETest**
+   - **Complete workflow test:**
+     - IDE startup with project handling
+     - Snyk tool window navigation
+     - Authentication status checking
+     - Scan triggering and monitoring
+     - Results verification and tree navigation
+   - **Settings navigation test:**
+     - Opening IDE settings
+     - Navigating to Snyk settings
+     - Verifying settings panel elements
+     - Token field and scan type checkboxes
+
+3. **SnykOssScanE2ETest**
+   - **OSS vulnerability scanning:**
+     - Project opening
+     - Enabling OSS scanning in settings
+     - Triggering OSS-specific scan
+     - Waiting for and verifying OSS results
+     - Vulnerability details viewing
+   - **OSS results filtering:**
+     - Accessing filter options
+     - Applying severity filters
+     - Verifying filtered results
+
+### Test Coverage by Feature
+
+| Feature | Component Tests | E2E Tests |
+|---------|----------------|-----------|
+| Authentication | ✅ | ✅ |
+| Tool Window | ✅ | ✅ |
+| OSS Scanning | ❌ | ✅ |
+| Code Security | ❌ | ❌ |
+| IaC Scanning | ❌ | ❌ |
+| Settings Panel | ❌ | ✅ |
+| Results Tree | ❌ | ✅ |
+| JCEF Panels | ❌ | ❌ |
+| Actions/Buttons | Partial | ✅ |
+
+### Scenarios Not Yet Covered
+
+- Code Security scanning workflow
+- IaC (Infrastructure as Code) scanning
+- Fix suggestions and code actions
+- Ignoring issues functionality
+- Project trust management
+- CLI download and updates
+- Error handling scenarios
+- Multi-project support
+- Integration with IDE features (code navigation, quick fixes)
+
 ## Additional Resources
 
 - [Remote-Robot Documentation](https://github.com/JetBrains/intellij-ui-test-robot)
