@@ -20,8 +20,7 @@ import java.time.Duration
  * E2E test for Code Security scanning functionality
  * Tests the complete workflow of scanning code for security vulnerabilities
  */
-class SnykCodeSecurityE2ETest {
-    private lateinit var remoteRobot: RemoteRobot
+class SnykCodeSecurityE2ETest : E2ETestBase() {
     private val testProjectPath = System.getProperty("test.project.path", ".")
 
     @Before
@@ -32,100 +31,13 @@ class SnykCodeSecurityE2ETest {
     @Test
     fun `should perform code security scan and display results`() = with(remoteRobot) {
         step("Open nodejs-goof project from VCS") {
-            try {
-                // Check if we're on the welcome screen
-                val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
-                
-                // Focus the IDE application window
-                runJs("""
-                    importPackage(com.intellij.openapi.wm)
-                    importPackage(java.lang)
-                    var wm = WindowManager.getInstance()
-                    var window = wm.getFrame(null)
-                    if (window != null) {
-                        window.toFront()
-                        window.requestFocus()
-                        window.setAlwaysOnTop(true)
-                        Thread.sleep(100)
-                        window.setAlwaysOnTop(false)
-                    }
-                """)
-                Thread.sleep(1000) // Give time for window to come to front
-                
-                // Click Clone Repository button using accessible name
-                // There are 2 elements with this accessible name (button and label), we need the button
-                val cloneButtons = welcomeFrame.findAll<JButtonFixture>(
-                    byXpath("//div[@accessiblename='Clone Repository']")
-                )
-            if (cloneButtons.isEmpty()) {
-                throw IllegalStateException("Could not find Clone Repository button")
-            }
-            // The first one should be the actual button
-            cloneButtons.first().click()
-                
-                // Wait for VCS dialog
-                Thread.sleep(2000)
-                
-                // Find the dialog
-                val dialog = find<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
-                
-                // Find URL input field and enter repository URL
-                val urlFields = dialog.findAll<CommonContainerFixture>(byXpath("//div[@class='JTextField']"))
-                if (urlFields.isNotEmpty()) {
-                    // First field is usually the URL field
-                    urlFields[0].click()
-                    keyboard {
-                        enterText("https://github.com/snyk-labs/nodejs-goof")
-                    }
-                }
-                
-                // Find directory field and set a temp directory
-                if (urlFields.size > 1) {
-                    urlFields[1].click()
-                    keyboard {
-                        hotKey(KeyEvent.VK_META, KeyEvent.VK_A) // Select all
-                        enterText(System.getProperty("java.io.tmpdir") + "snyk-test-nodejs-goof")
-                    }
-                }
-                
-                // Click Clone button in dialog
-                val cloneDialogButton = dialog.find<JButtonFixture>(byXpath("//div[@text='Clone']"))
-                cloneDialogButton.click()
-                
-            } catch (e: Exception) {
-                // We might already have a project open
-                println("Failed to clone from VCS, assuming project is already open: ${e.message}")
-            }
-            
-            // Wait for project to open
-            waitFor(duration = Duration.ofSeconds(60)) {
-                try {
-                    find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-            }
+            cloneOrOpenProject("https://github.com/snyk-labs/nodejs-goof", "snyk-test-nodejs-goof")
         }
 
 
 
         step("Open Snyk tool window") {
-            val ideFrame = find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
-
-            // Try to find Snyk tool window stripe button
-            waitFor(duration = Duration.ofSeconds(10)) {
-                try {
-                    val snykToolWindowButton = ideFrame.find<JButtonFixture>(
-                        byXpath("//div[@tooltiptext='Snyk' and @class='StripeButton']"),
-                        Duration.ofSeconds(5)
-                    )
-                    snykToolWindowButton.click()
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-            }
+            openSnykToolWindow()
         }
 
         step("Enable Code Security scanning in settings") {

@@ -17,8 +17,7 @@ import org.junit.Assert.assertTrue
  * E2E test for OSS (Open Source Security) scanning functionality
  * Tests the complete workflow of scanning dependencies for vulnerabilities
  */
-class SnykOssScanE2ETest {
-    private lateinit var remoteRobot: RemoteRobot
+class SnykOssScanE2ETest : E2ETestBase() {
     
     @Before
     fun setUp() {
@@ -28,73 +27,10 @@ class SnykOssScanE2ETest {
     @Test
     fun `scan project for OSS vulnerabilities`() = with(remoteRobot) {
         step("Open Java-Goof project from VCS") {
-                        try {
-                // Check if we're on the welcome screen
-                val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
-                
-                // Focus the IDE application window
-                runJs("""
-                    importPackage(com.intellij.openapi.wm)
-                    importPackage(java.lang)
-                    var wm = WindowManager.getInstance()
-                    var window = wm.getFrame(null)
-                    if (window != null) {
-                        window.toFront()
-                        window.requestFocus()
-                        window.setAlwaysOnTop(true)
-                        Thread.sleep(100)
-                        window.setAlwaysOnTop(false)
-                    }
-                """)
-                Thread.sleep(1000) // Give time for window to come to front
-                
-                // Click Clone Repository button using accessible name
-                // There are 2 elements with this accessible name (button and label), we need the button
-                val cloneButtons = welcomeFrame.findAll<JButtonFixture>(
-                    byXpath("//div[@accessiblename='Clone Repository']")
-                )
-            if (cloneButtons.isEmpty()) {
-                throw IllegalStateException("Could not find Clone Repository button")
-            }
-            // The first one should be the actual button
-            cloneButtons.first().click()
-                
-                // Wait for VCS dialog
-                Thread.sleep(2000)
-                
-                // Find the dialog
-                val dialog = find<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
-                
-                // Find URL input field and enter repository URL
-                val urlFields = dialog.findAll<CommonContainerFixture>(byXpath("//div[@class='JTextField']"))
-                if (urlFields.isNotEmpty()) {
-                    // First field is usually the URL field
-                    urlFields[0].click()
-                    keyboard {
-                        enterText("https://github.com/JennySnyk/Java-Goof")
-                    }
-                }
-                
-                // Find directory field and set a temp directory
-                if (urlFields.size > 1) {
-                    urlFields[1].click()
-                    keyboard {
-                        hotKey(KeyEvent.VK_META, KeyEvent.VK_A) // Select all
-                        enterText(System.getProperty("java.io.tmpdir") + "snyk-test-java-goof")
-                    }
-                }
-                
-                // Click Clone button in dialog
-                val cloneDialogButton = dialog.find<JButtonFixture>(byXpath("//div[@text='Clone']"))
-                cloneDialogButton.click()
-                
-            } catch (e: Exception) {
-                // We might already have a project open
-                println("Failed to clone from VCS, assuming project is already open: ${e.message}")
-            }
+                        cloneOrOpenProject("https://github.com/JennySnyk/Java-Goof", "snyk-test-java-goof")
             
-            // Wait for project to open and indexing to complete
-            waitFor(duration = Duration.ofSeconds(90)) {
+            // Wait for indexing to complete
+            waitFor(duration = Duration.ofSeconds(30)) {
                 try {
                     val ideFrame = find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
                     // Check that indexing is complete
