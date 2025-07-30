@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.e2e
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.JButtonFixture
+import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.utils.keyboard
 import com.intellij.remoterobot.utils.waitFor
@@ -60,22 +61,33 @@ abstract class E2ETestBase {
                 val dialog = find<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
                 
                 // Find URL input field and enter repository URL
-                val urlFields = dialog.findAll<CommonContainerFixture>(byXpath("//div[@class='JTextField']"))
+                val urlFields = dialog.findAll<JTextFieldFixture>(byXpath("//div[@class='JTextField']"))
+                println("Found ${urlFields.size} text fields in clone dialog")
+                
                 if (urlFields.isNotEmpty()) {
                     // First field is usually the URL field
-                    urlFields[0].click()
-                    keyboard {
-                        enterText(repoUrl)
-                    }
+                    println("Setting URL field to: $repoUrl")
+                    val urlField = urlFields[0]
+                    urlField.click()
+                    Thread.sleep(500) // Give time for focus
+                    
+                    // Use the text property to set the value
+                    urlField.text = repoUrl
+                    println("URL field set successfully")
                 }
                 
                 // Find directory field and set a temp directory
                 if (urlFields.size > 1) {
-                    urlFields[1].click()
-                    keyboard {
-                        hotKey(KeyEvent.VK_META, KeyEvent.VK_A) // Select all
-                        enterText(System.getProperty("java.io.tmpdir") + projectName)
-                    }
+                    Thread.sleep(500) // Wait a bit before moving to next field
+                    val tempDir = System.getProperty("java.io.tmpdir") + projectName
+                    println("Setting directory field to: $tempDir")
+                    val dirField = urlFields[1]
+                    dirField.click()
+                    Thread.sleep(500) // Give time for focus
+                    
+                    // Use the text property to set the value
+                    dirField.text = tempDir
+                    println("Directory field set successfully")
                 }
                 
                 // Click Clone button in dialog
