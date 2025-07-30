@@ -61,6 +61,8 @@ abstract class E2ETestBase {
                 val dialog = find<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
                 
                 // Find URL input field using TextFieldWithBrowseButton
+                var fieldsFilledSuccessfully = false
+                
                 try {
                     // First try to find TextFieldWithBrowseButton components
                     val browseFields = dialog.findAll<CommonContainerFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']"))
@@ -91,31 +93,45 @@ abstract class E2ETestBase {
                             enterText(System.getProperty("java.io.tmpdir") + projectName)
                         }
                         println("Entered directory: ${System.getProperty("java.io.tmpdir") + projectName}")
+                        fieldsFilledSuccessfully = true
+                    } else {
+                        println("Not enough TextFieldWithBrowseButton fields found, trying JTextField approach")
+                        throw Exception("Need to try JTextField approach")
                     }
                 } catch (e: Exception) {
                     println("Failed to use TextFieldWithBrowseButton, trying JTextField approach: ${e.message}")
                     
-                    // Fallback to JTextField
-                    val textFields = dialog.findAll<JTextFieldFixture>(byXpath("//div[@class='JTextField']"))
-                    println("Found ${textFields.size} JTextField fields")
-                    
-                    if (textFields.isNotEmpty()) {
-                        textFields[0].text = repoUrl
-                        println("Set URL using text property")
-                    }
-                    
-                    if (textFields.size > 1) {
-                        textFields[1].text = System.getProperty("java.io.tmpdir") + projectName
-                        println("Set directory using text property")
+                    try {
+                        // Fallback to JTextField
+                        val textFields = dialog.findAll<JTextFieldFixture>(byXpath("//div[@class='JTextField']"))
+                        println("Found ${textFields.size} JTextField fields")
+                        
+                        if (textFields.size >= 2) {
+                            textFields[0].text = repoUrl
+                            println("Set URL using text property")
+                            
+                            textFields[1].text = System.getProperty("java.io.tmpdir") + projectName
+                            println("Set directory using text property")
+                            
+                            fieldsFilledSuccessfully = true
+                        } else {
+                            println("ERROR: Not enough text fields found to fill URL and directory")
+                        }
+                    } catch (e2: Exception) {
+                        println("ERROR: Failed to fill text fields: ${e2.message}")
                     }
                 }
                 
-                // Click Clone button in dialog
-                Thread.sleep(1000) // Wait before clicking clone
-                val cloneDialogButton = dialog.find<JButtonFixture>(byXpath("//div[@text='Clone']"))
-                println("Clicking Clone button")
-                cloneDialogButton.click()
-                println("Clone button clicked, waiting for project to load...")
+                // Only click Clone button if we successfully filled the fields
+                if (fieldsFilledSuccessfully) {
+                    Thread.sleep(1000) // Wait before clicking clone
+                    val cloneDialogButton = dialog.find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                    println("Clicking Clone button")
+                    cloneDialogButton.click()
+                    println("Clone button clicked, waiting for project to load...")
+                } else {
+                    println("ERROR: Could not fill URL and directory fields, skipping clone button click")
+                }
                 
             } catch (e: Exception) {
                 // We might already have a project open
