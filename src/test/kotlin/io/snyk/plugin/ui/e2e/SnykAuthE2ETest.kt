@@ -4,6 +4,7 @@ import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.JButtonFixture
+import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException
@@ -34,6 +35,45 @@ class SnykAuthE2ETest {
     fun `should display Snyk tool window and authenticate`() = with(remoteRobot) {
         step("Wait for IDE to start") {
             waitFor(duration = Duration.ofSeconds(30)) {
+                try {
+                    // Look for the welcome frame first
+                    find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame' or @class='IdeFrameImpl']"))
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+            }
+        }
+        
+        step("Open a project from VCS") {
+            try {
+                // Check if we're on the welcome screen
+                val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
+                
+                // Click "Get from VCS" button
+                val getFromVcsButton = welcomeFrame.find<JButtonFixture>(
+                    byXpath("//div[@text='Get from VCS' or @text='Get from Version Control']")
+                )
+                getFromVcsButton.click()
+                
+                // Wait for VCS dialog
+                Thread.sleep(2000)
+                
+                // Find URL input field and enter nodejs-goof repository
+                val urlField = find<JTextFieldFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']//div[@class='JBTextField']"))
+                urlField.text = "https://github.com/snyk-labs/nodejs-goof"
+                
+                // Click Clone button
+                val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                cloneButton.click()
+                
+            } catch (e: Exception) {
+                // We might already have a project open
+                println("Welcome screen not found or VCS clone failed, assuming project is already open: ${e.message}")
+            }
+            
+            // Wait for project to open
+            waitFor(duration = Duration.ofSeconds(60)) {
                 try {
                     find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
                     true

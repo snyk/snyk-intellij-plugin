@@ -31,38 +31,41 @@ class SnykIacScanE2ETest {
 
     @Test
     fun `should perform IaC scan on terraform and kubernetes files`() = with(remoteRobot) {
-        step("Wait for IDE to start") {
-            waitFor(duration = Duration.ofSeconds(30)) {
+        step("Open terraform-goof project from VCS") {
+            try {
+                // Check if we're on the welcome screen
+                val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
+                
+                // Click "Get from VCS" button
+                val getFromVcsButton = welcomeFrame.find<JButtonFixture>(
+                    byXpath("//div[@text='Get from VCS' or @text='Get from Version Control']")
+                )
+                getFromVcsButton.click()
+                
+                // Wait for VCS dialog
+                Thread.sleep(2000)
+                
+                // Find URL input field and enter terraform-goof repository
+                val urlField = find<JTextFieldFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']//div[@class='JBTextField']"))
+                urlField.text = "https://github.com/snyk-labs/terraform-goof"
+                
+                // Click Clone button
+                val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                cloneButton.click()
+                
+            } catch (e: Exception) {
+                // We might already have a project open
+                println("Failed to clone from VCS, assuming project is already open: ${e.message}")
+            }
+            
+            // Wait for project to open
+            waitFor(duration = Duration.ofSeconds(60)) {
                 try {
                     find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
                     true
                 } catch (e: Exception) {
                     false
                 }
-            }
-        }
-
-        step("Open test project with IaC files") {
-            // Open File menu
-            find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']")).apply {
-                keyboard {
-                    hotKey(KeyEvent.VK_ALT, KeyEvent.VK_F)
-                }
-            }
-
-            // Click Open
-            find<CommonContainerFixture>(byXpath("//div[@text='Open...']")).click()
-
-            // Wait for file dialog and enter path
-            waitFor(duration = Duration.ofSeconds(5)) {
-                findAll<CommonContainerFixture>(
-                    byXpath("//div[@class='FileChooserDialogImpl']")
-                ).isNotEmpty()
-            }
-
-            keyboard {
-                enterText(testProjectPath)
-                enter()
             }
         }
 
@@ -178,7 +181,7 @@ class SnykIacScanE2ETest {
 
             // Verify Terraform and Kubernetes issues are found
             waitFor(duration = Duration.ofSeconds(30)) {
-                resultsTree.hasText(".tf") ||
+                resultsTree.hasText(".tf") || 
                 resultsTree.hasText(".yaml") ||
                 resultsTree.hasText(".yml")
             }
@@ -279,7 +282,7 @@ class SnykIacScanE2ETest {
                 Duration.ofSeconds(10)
             )
 
-            assertTrue("Should show filtered IaC results",
+            assertTrue("Should show filtered IaC results", 
                 resultsTree.hasText("High") || resultsTree.hasText("0 issues"))
         }
     }

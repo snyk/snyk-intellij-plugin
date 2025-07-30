@@ -31,8 +31,35 @@ class SnykCodeSecurityE2ETest {
 
     @Test
     fun `should perform code security scan and display results`() = with(remoteRobot) {
-        step("Wait for IDE to start") {
-            waitFor(duration = Duration.ofSeconds(30)) {
+        step("Open nodejs-goof project from VCS") {
+            try {
+                // Check if we're on the welcome screen
+                val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
+                
+                // Click "Get from VCS" button
+                val getFromVcsButton = welcomeFrame.find<JButtonFixture>(
+                    byXpath("//div[@text='Get from VCS' or @text='Get from Version Control']")
+                )
+                getFromVcsButton.click()
+                
+                // Wait for VCS dialog
+                Thread.sleep(2000)
+                
+                // Find URL input field and enter nodejs-goof repository
+                val urlField = find<JTextFieldFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']//div[@class='JBTextField']"))
+                urlField.text = "https://github.com/snyk-labs/nodejs-goof"
+                
+                // Click Clone button
+                val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                cloneButton.click()
+                
+            } catch (e: Exception) {
+                // We might already have a project open
+                println("Failed to clone from VCS, assuming project is already open: ${e.message}")
+            }
+            
+            // Wait for project to open
+            waitFor(duration = Duration.ofSeconds(60)) {
                 try {
                     find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
                     true
@@ -42,29 +69,7 @@ class SnykCodeSecurityE2ETest {
             }
         }
 
-        step("Open test project") {
-            // Open File menu
-            find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']")).apply {
-                keyboard {
-                    hotKey(KeyEvent.VK_ALT, KeyEvent.VK_F)
-                }
-            }
 
-            // Click Open
-            find<CommonContainerFixture>(byXpath("//div[@text='Open...']")).click()
-
-            // Wait for file dialog and enter path
-            waitFor(duration = Duration.ofSeconds(5)) {
-                findAll<CommonContainerFixture>(
-                    byXpath("//div[@class='FileChooserDialogImpl']")
-                ).isNotEmpty()
-            }
-
-            keyboard {
-                enterText(testProjectPath)
-                enter()
-            }
-        }
 
         step("Open Snyk tool window") {
             val ideFrame = find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
@@ -164,7 +169,7 @@ class SnykCodeSecurityE2ETest {
                         byXpath("//div[@class='Tree']"),
                         Duration.ofSeconds(10)
                     )
-
+                    
                     // Check for Code Security node
                     resultsTree.hasText("Code Security")
                 } catch (e: Exception) {
@@ -183,8 +188,8 @@ class SnykCodeSecurityE2ETest {
 
             // Verify at least one vulnerability is found
             waitFor(duration = Duration.ofSeconds(30)) {
-                resultsTree.hasText("High") ||
-                resultsTree.hasText("Medium") ||
+                resultsTree.hasText("High") || 
+                resultsTree.hasText("Medium") || 
                 resultsTree.hasText("Low")
             }
         }
@@ -197,7 +202,7 @@ class SnykCodeSecurityE2ETest {
 
             // Find and click on a vulnerability by searching for text
             try {
-                val vulnerabilityNode = resultsTree.findText("vulnerability") ?:
+                val vulnerabilityNode = resultsTree.findText("vulnerability") ?: 
                                       resultsTree.findText("issue") ?:
                                       resultsTree.findText("security")
                 vulnerabilityNode?.click()

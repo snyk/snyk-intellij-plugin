@@ -27,28 +27,44 @@ class SnykOssScanE2ETest {
     
     @Test
     fun `scan project for OSS vulnerabilities`() = with(remoteRobot) {
-        step("Open test project with vulnerable dependencies") {
-            val ideFrame = find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
+        step("Open Java-Goof project from VCS") {
+            try {
+                // Check if we're on the welcome screen
+                val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
+                
+                // Click "Get from VCS" button
+                val getFromVcsButton = welcomeFrame.find<JButtonFixture>(
+                    byXpath("//div[@text='Get from VCS' or @text='Get from Version Control']")
+                )
+                getFromVcsButton.click()
+                
+                // Wait for VCS dialog
+                Thread.sleep(2000)
+                
+                // Find URL input field and enter Java-Goof repository
+                val urlField = find<JTextFieldFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']//div[@class='JBTextField']"))
+                urlField.text = "https://github.com/JennySnyk/Java-Goof"
+                
+                // Click Clone button
+                val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                cloneButton.click()
+                
+            } catch (e: Exception) {
+                // We might already have a project open
+                println("Failed to clone from VCS, assuming project is already open: ${e.message}")
+            }
             
-            // Open project via File menu
-            keyboard {
-                if (System.getProperty("os.name").contains("Mac")) {
-                    hotKey(KeyEvent.VK_META, KeyEvent.VK_O)
-                } else {
-                    hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_O)
+            // Wait for project to open and indexing to complete
+            waitFor(duration = Duration.ofSeconds(90)) {
+                try {
+                    val ideFrame = find<CommonContainerFixture>(byXpath("//div[@class='IdeFrameImpl']"))
+                    // Check that indexing is complete
+                    ideFrame.findAll<CommonContainerFixture>(
+                        byXpath("//div[@class='InlineProgressPanel']")
+                    ).isEmpty()
+                } catch (e: Exception) {
+                    false
                 }
-            }
-            
-            // Wait for file chooser
-            waitFor(duration = Duration.ofSeconds(10)) {
-                findAll<CommonContainerFixture>(
-                    byXpath("//div[@title='Open File or Project']")
-                ).isNotEmpty()
-            }
-            
-            // For demo purposes, we'll cancel and assume a project is already open
-            keyboard {
-                key(KeyEvent.VK_ESCAPE)
             }
         }
         

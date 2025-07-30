@@ -158,9 +158,6 @@ tasks {
             exceptionFormat = TestExceptionFormat.FULL
         }
         
-        // Exclude E2E tests from regular test run as they require IDE + robot-server
-        exclude("**/e2e/**")
-        
         // Add JVM arguments to handle Java module system restrictions for UI tests
         jvmArgs(
             "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
@@ -170,6 +167,12 @@ tasks {
             "--add-opens", "java.base/java.util=ALL-UNNAMED",
             "--add-exports", "java.desktop/sun.awt=ALL-UNNAMED"
         )
+    }
+    
+    // Configure the default test task to exclude E2E tests
+    test {
+        // Exclude E2E tests from regular test run as they require IDE + robot-server
+        exclude("**/e2e/**")
     }
 
     register<Test>("runUiTests") {
