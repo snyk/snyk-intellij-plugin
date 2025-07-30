@@ -210,7 +210,7 @@ tasks {
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
         
-        include("**/e2e/**E2ETest.class")
+        include("**/e2e/**/*E2ETest.class")
         
         maxHeapSize = "4096m"
         
