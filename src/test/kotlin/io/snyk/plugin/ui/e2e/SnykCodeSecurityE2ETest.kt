@@ -36,11 +36,11 @@ class SnykCodeSecurityE2ETest {
                 // Check if we're on the welcome screen
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
-                // Click "Clone Repository" button
-                val getFromVcsButton = welcomeFrame.find<JButtonFixture>(
-                    byXpath("//div[@text='Clone Repository']")
-                )
-                getFromVcsButton.click()
+                            // Click Clone Repository button using accessible name
+            val cloneButton = welcomeFrame.find<JButtonFixture>(
+                byXpath("//div[@class='JButton' and @accessiblename='Clone Repository']")
+            )
+            cloneButton.click()
                 
                 // Wait for VCS dialog
                 Thread.sleep(2000)

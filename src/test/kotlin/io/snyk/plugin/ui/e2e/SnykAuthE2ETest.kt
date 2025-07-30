@@ -49,24 +49,11 @@ class SnykAuthE2ETest {
                 // Check if we're on the welcome screen
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
-                // Find the button using a more flexible approach
-                val buttons = welcomeFrame.findAll<JButtonFixture>(byXpath("//div[@class='JButton']"))
-                
-                // Find the clone button by checking accessible name
-                val cloneButton = buttons.find { button ->
-                    try {
-                        val accessibleName = button.callJs<String>("component.getAccessibleContext()?.getAccessibleName() || ''")
-                        accessibleName.contains("Clone", ignoreCase = true)
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-                
-                if (cloneButton != null) {
-                    cloneButton.click()
-                } else {
-                    throw IllegalStateException("Could not find Clone Repository button")
-                }
+                // Click Clone Repository button using accessible name
+                val cloneButton = welcomeFrame.find<JButtonFixture>(
+                    byXpath("//div[@class='JButton' and @accessiblename='Clone Repository']")
+                )
+                cloneButton.click()
                 
                 // Wait for VCS dialog
                 Thread.sleep(2000)
@@ -78,9 +65,9 @@ class SnykAuthE2ETest {
                     enterText("https://github.com/snyk-labs/nodejs-goof")
                 }
                 
-                // Click Clone button
-                val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
-                cloneButton.click()
+                // Click Clone button in dialog
+                val cloneDialogButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                cloneDialogButton.click()
                 
             } catch (e: Exception) {
                 // We might already have a project open
