@@ -49,6 +49,10 @@ class SnykAuthE2ETest {
                 // Check if we're on the welcome screen
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
+                // Focus the IDE window
+                welcomeFrame.runJs("component.requestFocus(); component.requestFocusInWindow();")
+                Thread.sleep(500) // Give time for focus
+                
                 // Click Clone Repository button using accessible name
                 // There are 2 elements with this accessible name (button and label), we need the button
                 val cloneButtons = welcomeFrame.findAll<JButtonFixture>(

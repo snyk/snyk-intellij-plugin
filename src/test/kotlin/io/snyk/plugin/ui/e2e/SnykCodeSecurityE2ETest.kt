@@ -36,11 +36,15 @@ class SnykCodeSecurityE2ETest {
                 // Check if we're on the welcome screen
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
-                            // Click Clone Repository button using accessible name
-            // There are 2 elements with this accessible name (button and label), we need the button
-            val cloneButtons = welcomeFrame.findAll<JButtonFixture>(
-                byXpath("//div[@accessiblename='Clone Repository']")
-            )
+                // Focus the IDE window
+                welcomeFrame.runJs("component.requestFocus(); component.requestFocusInWindow();")
+                Thread.sleep(500) // Give time for focus
+                
+                // Click Clone Repository button using accessible name
+                // There are 2 elements with this accessible name (button and label), we need the button
+                val cloneButtons = welcomeFrame.findAll<JButtonFixture>(
+                    byXpath("//div[@accessiblename='Clone Repository']")
+                )
             if (cloneButtons.isEmpty()) {
                 throw IllegalStateException("Could not find Clone Repository button")
             }
