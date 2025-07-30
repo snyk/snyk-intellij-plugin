@@ -260,7 +260,7 @@ class SnykIacScanE2ETest {
                         byXpath("//div[@text='$severity']"),
                         Duration.ofSeconds(2)
                     )
-                    if (checkbox.isSelected()) {
+                    if (checkbox.isSelected) {
                         checkbox.click()
                     }
                 } catch (e: Exception) {

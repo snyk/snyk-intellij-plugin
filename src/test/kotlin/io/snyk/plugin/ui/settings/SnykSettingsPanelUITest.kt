@@ -7,6 +7,8 @@ import org.junit.Test
 import javax.swing.JCheckBox
 import javax.swing.JTextField
 import snyk.UIComponentFinder
+import java.awt.Component
+import java.awt.Container
 
 /**
  * Component tests for Snyk Settings UI panels
@@ -14,16 +16,31 @@ import snyk.UIComponentFinder
  */
 class SnykSettingsPanelUITest : SnykUITestBase() {
 
+    private fun getAllCheckboxesFromPanel(container: Component): List<JCheckBox> {
+        val checkboxes = mutableListOf<JCheckBox>()
+        if (container is JCheckBox) {
+            checkboxes.add(container)
+        }
+        if (container is Container) {
+            for (component in container.components) {
+                checkboxes.addAll(getAllCheckboxesFromPanel(component))
+            }
+        }
+        return checkboxes
+    }
+
     @Test
     fun `test scan types panel displays all scan type checkboxes`() {
         // Create scan types panel
         val scanTypesPanel = ScanTypesPanel(project)
         
         // Verify all scan type checkboxes exist
-        val ossCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Open Source", JCheckBox::class.java)
-        val codeSecurityCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Code Security issues", JCheckBox::class.java)
-        val codeQualityCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Code Quality issues", JCheckBox::class.java)
-        val iacCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Infrastructure as Code issues", JCheckBox::class.java)
+        val panel = scanTypesPanel.scanTypesPanel
+        val checkboxes = getAllCheckboxesFromPanel(panel)
+        val ossCheckbox = checkboxes.find { it.text?.contains("Open Source") == true }
+        val codeSecurityCheckbox = checkboxes.find { it.text?.contains("Code Security") == true }
+        val codeQualityCheckbox = checkboxes.find { it.text?.contains("Code Quality") == true }
+        val iacCheckbox = checkboxes.find { it.text?.contains("Infrastructure as Code") == true }
 
         assertNotNull("OSS checkbox should exist", ossCheckbox)
         assertNotNull("Code Security checkbox should exist", codeSecurityCheckbox)
@@ -43,9 +60,11 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val scanTypesPanel = ScanTypesPanel(project)
 
         // Verify checkboxes reflect settings
-        val ossCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Open Source", JCheckBox::class.java)
-        val codeSecurityCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Code Security issues", JCheckBox::class.java)
-        val iacCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Infrastructure as Code issues", JCheckBox::class.java)
+        val panel = scanTypesPanel.scanTypesPanel
+        val checkboxes = getAllCheckboxesFromPanel(panel)
+        val ossCheckbox = checkboxes.find { it.text?.contains("Open Source") == true }
+        val codeSecurityCheckbox = checkboxes.find { it.text?.contains("Code Security") == true }
+        val iacCheckbox = checkboxes.find { it.text?.contains("Infrastructure as Code") == true }
 
         assertTrue("OSS should be enabled", ossCheckbox?.isSelected ?: false)
         assertFalse("Code Security should be disabled", codeSecurityCheckbox?.isSelected ?: true)
@@ -58,10 +77,11 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val severitiesPanel = SeveritiesEnablementPanel()
 
         // Verify all severity checkboxes exist
-        val criticalCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Critical", JCheckBox::class.java)
-        val highCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "High", JCheckBox::class.java)
-        val mediumCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Medium", JCheckBox::class.java)
-        val lowCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Low", JCheckBox::class.java)
+        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel as Component)
+        val criticalCheckbox = checkboxes.find { it.text == "Critical" }
+        val highCheckbox = checkboxes.find { it.text == "High" }
+        val mediumCheckbox = checkboxes.find { it.text == "Medium" }
+        val lowCheckbox = checkboxes.find { it.text == "Low" }
 
         assertNotNull("Critical checkbox should exist", criticalCheckbox)
         assertNotNull("High checkbox should exist", highCheckbox)
@@ -82,10 +102,11 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val severitiesPanel = SeveritiesEnablementPanel()
 
         // Verify checkboxes reflect settings
-        val criticalCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Critical", JCheckBox::class.java)
-        val highCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "High", JCheckBox::class.java)
-        val mediumCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Medium", JCheckBox::class.java)
-        val lowCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Low", JCheckBox::class.java)
+        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel as Component)
+        val criticalCheckbox = checkboxes.find { it.text == "Critical" }
+        val highCheckbox = checkboxes.find { it.text == "High" }
+        val mediumCheckbox = checkboxes.find { it.text == "Medium" }
+        val lowCheckbox = checkboxes.find { it.text == "Low" }
 
         assertTrue("Critical should be enabled", criticalCheckbox?.isSelected ?: false)
         assertTrue("High should be enabled", highCheckbox?.isSelected ?: false)
@@ -99,8 +120,9 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val optionsPanel = IssueViewOptionsPanel(project)
 
         // Verify the panel contains filter options
-        val ignoredCheckbox = UIComponentFinder.getComponentByText(optionsPanel, "Ignored issues", JCheckBox::class.java)
-        val openIssuesCheckbox = UIComponentFinder.getComponentByText(optionsPanel, "Open issues", JCheckBox::class.java)
+        val checkboxes = getAllCheckboxesFromPanel(optionsPanel.panel)
+        val ignoredCheckbox = checkboxes.find { it.text == "Ignored issues" }
+        val openIssuesCheckbox = checkboxes.find { it.text == "Open issues" }
 
         assertNotNull("Ignored issues checkbox should exist", ignoredCheckbox)
         assertNotNull("Open issues checkbox should exist", openIssuesCheckbox)
@@ -117,8 +139,9 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val optionsPanel = IssueViewOptionsPanel(project)
 
         // Verify checkboxes reflect settings
-        val ignoredCheckbox = UIComponentFinder.getComponentByText(optionsPanel, "Ignored issues", JCheckBox::class.java)
-        val openIssuesCheckbox = UIComponentFinder.getComponentByText(optionsPanel, "Open issues", JCheckBox::class.java)
+        val checkboxes = getAllCheckboxesFromPanel(optionsPanel.panel)
+        val ignoredCheckbox = checkboxes.find { it.text == "Ignored issues" }
+        val openIssuesCheckbox = checkboxes.find { it.text == "Open issues" }
 
         assertFalse("Ignored issues should be disabled", ignoredCheckbox?.isSelected ?: true)
         assertTrue("Open issues should be enabled", openIssuesCheckbox?.isSelected ?: false)
@@ -130,7 +153,9 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val scanTypesPanel = ScanTypesPanel(project)
         
         // Get checkbox and change its state
-        val ossCheckbox = UIComponentFinder.getComponentByText(scanTypesPanel, "Snyk Open Source", JCheckBox::class.java)!!
+        val panel = scanTypesPanel.scanTypesPanel
+        val checkboxes = getAllCheckboxesFromPanel(panel)
+        val ossCheckbox = checkboxes.find { it.text?.contains("Open Source") == true }!!
         val originalState = ossCheckbox.isSelected
         
         // Simulate click
@@ -145,10 +170,11 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val severitiesPanel = SeveritiesEnablementPanel()
         
         // Get all severity checkboxes
-        val criticalCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Critical", JCheckBox::class.java)!!
-        val highCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "High", JCheckBox::class.java)!!
-        val mediumCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Medium", JCheckBox::class.java)!!
-        val lowCheckbox = UIComponentFinder.getComponentByText(severitiesPanel, "Low", JCheckBox::class.java)!!
+        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel as Component)
+        val criticalCheckbox = checkboxes.find { it.text == "Critical" }!!
+        val highCheckbox = checkboxes.find { it.text == "High" }!!
+        val mediumCheckbox = checkboxes.find { it.text == "Medium" }!!
+        val lowCheckbox = checkboxes.find { it.text == "Low" }!!
         
         // Deselect all
         criticalCheckbox.isSelected = false

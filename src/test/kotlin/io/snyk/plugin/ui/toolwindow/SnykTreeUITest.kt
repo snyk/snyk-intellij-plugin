@@ -56,8 +56,7 @@ class SnykTreeUITest : SnykUITestBase() {
         // Note: SnykFileTreeNode requires a different constructor, we'll simplify the test
         
         // Verify package manager icon provider recognizes npm
-        val iconProvider = PackageManagerIconProvider()
-        val icon = iconProvider.getPackageManagerIcon("package.json")
+        val icon = PackageManagerIconProvider.getIcon("npm")
         
         assertNotNull("Should have npm icon", icon)
     }

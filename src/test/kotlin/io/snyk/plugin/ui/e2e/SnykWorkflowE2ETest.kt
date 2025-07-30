@@ -184,7 +184,7 @@ class SnykWorkflowE2ETest {
                 
                 // Get root node
                 val rootItem = tree.collectItems().firstOrNull()
-                assertTrue(rootItem != null, "Issue tree should have items")
+                assertTrue("Issue tree should have items", rootItem != null)
                 
                 // Expand first node if possible
                 if (rootItem != null && rootItem.hasChildren) {
@@ -234,7 +234,7 @@ class SnykWorkflowE2ETest {
                 byXpath("//div[@class='SearchTextField']"),
                 Duration.ofSeconds(5)
             )
-            searchField.setText("Snyk")
+            searchField.text = "Snyk"
             
             // Click on Snyk in the tree
             val settingsTree = settingsDialog.find<JTreeFixture>(
@@ -260,14 +260,14 @@ class SnykWorkflowE2ETest {
                 byXpath("//div[@accessiblename='Token' or @tooltiptext='Snyk API Token']")
             )
             
-            assertTrue(tokenFields.isNotEmpty(), "Token field should be present")
+            assertTrue("Token field should be present", tokenFields.isNotEmpty())
             
             // Check for scan type checkboxes
             val checkboxes = settingsDialog.findAll<JCheckboxFixture>(
                 byXpath("//div[@class='JCheckBox']")
             )
             
-            assertTrue(checkboxes.isNotEmpty(), "Scan type checkboxes should be present")
+            assertTrue("Scan type checkboxes should be present", checkboxes.isNotEmpty())
         }
         
         step("Close settings dialog") {
@@ -333,7 +333,7 @@ class SnykWorkflowE2ETest {
     }
     
     private fun JTreeFixture.expandPath(path: List<Int>) {
-        callJs(
+        callJs<String>(
             """
             const tree = component;
             const model = tree.getModel();
@@ -352,7 +352,7 @@ class SnykWorkflowE2ETest {
     }
     
     private fun JTreeFixture.clickPath(path: List<Int>) {
-        callJs(
+        callJs<String>(
             """
             const tree = component;
             const model = tree.getModel();

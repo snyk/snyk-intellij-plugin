@@ -149,7 +149,7 @@ class SnykOssScanE2ETest {
                 item.nodeText.contains("vulnerabilit", ignoreCase = true)
             }
             
-            assertTrue(ossItems.isNotEmpty(), "Should find OSS vulnerability results")
+            assertTrue("Should find OSS vulnerability results", ossItems.isNotEmpty())
             
             // Expand first vulnerability
             if (ossItems.isNotEmpty() && ossItems.first().hasChildren) {
@@ -192,7 +192,7 @@ class SnykOssScanE2ETest {
                     byXpath("//div[contains(@class, 'IssueDescriptionPanel')]")
                 )
                 
-                assertTrue(detailsPanels.isNotEmpty(), "Vulnerability details should be displayed")
+                assertTrue("Vulnerability details should be displayed", detailsPanels.isNotEmpty())
             }
         }
     }
@@ -271,15 +271,15 @@ class SnykOssScanE2ETest {
             }
             
             assertTrue(
-                lowSeverityItems.isEmpty(),
-                "Low severity items should be filtered out"
+                "Low severity items should be filtered out",
+                lowSeverityItems.isEmpty()
             )
         }
     }
     
     @After
     fun tearDown() {
-        cleanup()
+        remoteRobot.cleanup()
     }
     
     // Helper methods
@@ -373,7 +373,7 @@ class SnykOssScanE2ETest {
     }
     
     private fun JTreeFixture.expandPath(path: List<Int>) {
-        callJs(
+        callJs<String>(
             """
             const tree = component;
             const model = tree.getModel();
@@ -394,7 +394,7 @@ class SnykOssScanE2ETest {
     }
     
     private fun JTreeFixture.clickPath(path: List<Int>) {
-        callJs(
+        callJs<String>(
             """
             const tree = component;
             const model = tree.getModel();

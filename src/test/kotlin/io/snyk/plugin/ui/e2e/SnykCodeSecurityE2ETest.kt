@@ -116,7 +116,7 @@ class SnykCodeSecurityE2ETest {
                 Duration.ofSeconds(5)
             )
 
-            if (!codeSecurityCheckbox.isSelected()) {
+            if (!codeSecurityCheckbox.isSelected) {
                 codeSecurityCheckbox.click()
             }
 
