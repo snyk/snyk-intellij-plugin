@@ -131,7 +131,7 @@ jobs:
         if: always()
         uses: dorny/test-reporter@v1
         with:
-          name: UI Test Results - ${{ matrix.os }}
+          name: 'UI Test Results - ${{ matrix.os }}'
           path: 'build/test-results/**/*.xml'
           reporter: java-junit
           fail-on-error: false

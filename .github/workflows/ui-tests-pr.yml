@@ -56,10 +56,11 @@ jobs:
             build/reports/tests/
             build/test-results/
 
-      - name: Add test summary
+      - name: Generate test report
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: dorny/test-reporter@v1
         with:
-          junit_files: 'build/test-results/**/*.xml'
-          check_name: 'UI Component Test Results'
-          comment_mode: always
+          name: 'UI Component Test Results'
+          path: 'build/test-results/**/*.xml'
+          reporter: java-junit
+          fail-on-error: false
