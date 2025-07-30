@@ -60,39 +60,62 @@ abstract class E2ETestBase {
                 // Find the dialog
                 val dialog = find<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
                 
-                // Find URL input field and enter repository URL
-                val urlFields = dialog.findAll<JTextFieldFixture>(byXpath("//div[@class='JTextField']"))
-                println("Found ${urlFields.size} text fields in clone dialog")
-                
-                if (urlFields.isNotEmpty()) {
-                    // First field is usually the URL field
-                    println("Setting URL field to: $repoUrl")
-                    val urlField = urlFields[0]
-                    urlField.click()
-                    Thread.sleep(500) // Give time for focus
+                // Find URL input field using TextFieldWithBrowseButton
+                try {
+                    // First try to find TextFieldWithBrowseButton components
+                    val browseFields = dialog.findAll<CommonContainerFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']"))
+                    println("Found ${browseFields.size} TextFieldWithBrowseButton fields")
                     
-                    // Use the text property to set the value
-                    urlField.text = repoUrl
-                    println("URL field set successfully")
-                }
-                
-                // Find directory field and set a temp directory
-                if (urlFields.size > 1) {
-                    Thread.sleep(500) // Wait a bit before moving to next field
-                    val tempDir = System.getProperty("java.io.tmpdir") + projectName
-                    println("Setting directory field to: $tempDir")
-                    val dirField = urlFields[1]
-                    dirField.click()
-                    Thread.sleep(500) // Give time for focus
+                    if (browseFields.size >= 2) {
+                        // URL field is usually first
+                        println("Clicking on URL browse field")
+                        browseFields[0].click()
+                        Thread.sleep(500)
+                        keyboard {
+                            val isMac = System.getProperty("os.name").contains("Mac")
+                            val selectAllKey = if (isMac) KeyEvent.VK_META else KeyEvent.VK_CONTROL
+                            hotKey(selectAllKey, KeyEvent.VK_A)
+                            enterText(repoUrl)
+                        }
+                        println("Entered URL: $repoUrl")
+                        
+                        // Directory field is usually second
+                        Thread.sleep(500)
+                        println("Clicking on directory browse field")
+                        browseFields[1].click()
+                        Thread.sleep(500)
+                        keyboard {
+                            val isMac = System.getProperty("os.name").contains("Mac")
+                            val selectAllKey = if (isMac) KeyEvent.VK_META else KeyEvent.VK_CONTROL
+                            hotKey(selectAllKey, KeyEvent.VK_A)
+                            enterText(System.getProperty("java.io.tmpdir") + projectName)
+                        }
+                        println("Entered directory: ${System.getProperty("java.io.tmpdir") + projectName}")
+                    }
+                } catch (e: Exception) {
+                    println("Failed to use TextFieldWithBrowseButton, trying JTextField approach: ${e.message}")
                     
-                    // Use the text property to set the value
-                    dirField.text = tempDir
-                    println("Directory field set successfully")
+                    // Fallback to JTextField
+                    val textFields = dialog.findAll<JTextFieldFixture>(byXpath("//div[@class='JTextField']"))
+                    println("Found ${textFields.size} JTextField fields")
+                    
+                    if (textFields.isNotEmpty()) {
+                        textFields[0].text = repoUrl
+                        println("Set URL using text property")
+                    }
+                    
+                    if (textFields.size > 1) {
+                        textFields[1].text = System.getProperty("java.io.tmpdir") + projectName
+                        println("Set directory using text property")
+                    }
                 }
                 
                 // Click Clone button in dialog
+                Thread.sleep(1000) // Wait before clicking clone
                 val cloneDialogButton = dialog.find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                println("Clicking Clone button")
                 cloneDialogButton.click()
+                println("Clone button clicked, waiting for project to load...")
                 
             } catch (e: Exception) {
                 // We might already have a project open
