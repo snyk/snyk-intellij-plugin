@@ -15,7 +15,6 @@ import org.junit.Before
 import org.junit.Test
 import java.awt.event.KeyEvent
 import java.time.Duration
-import java.awt.event.KeyEvent
 
 /**
  * E2E test for Infrastructure as Code (IaC) scanning functionality

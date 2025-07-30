@@ -6,6 +6,7 @@ import com.intellij.remoterobot.fixtures.JButtonFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.utils.keyboard
 import com.intellij.remoterobot.utils.waitFor
+import com.intellij.remoterobot.stepsProcessing.step
 import java.awt.event.KeyEvent
 import java.time.Duration
 
