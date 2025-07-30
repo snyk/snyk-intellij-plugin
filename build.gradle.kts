@@ -66,7 +66,7 @@ dependencies {
     implementation("org.json:json:20231013")
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("org.apache.commons:commons-text:1.12.0")
-    implementation("org.apache.commons:commons-lang3:3.17.0")
+    implementation("org.apache.commons:commons-lang3:3.18.0")
 
     testImplementation("com.google.jimfs:jimfs:1.3.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")
