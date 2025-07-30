@@ -7,6 +7,7 @@
 - always create an implementation plan and save it to the directory under ${issueID}_implementation_plan but never commit it. take it as a reference for each step and how to proceed. Get confirmation that the plan is ok.
 - Maintain existing code patterns and conventions
 - always commit the .cursorrules when they have changed
+- add the implementation plan to jira and update it while progressing using the jira mcp tools
 
 ** how to implement **
 - don't comment what is done, instead comment why something is done if the code is not clear
