@@ -62,13 +62,14 @@ class SnykToolWindowUITest : SnykUITestBase() {
         // When: Creating auth panel
         val authPanel = SnykAuthPanel(project)
         
-        // Then: Should have correct description label
+        // Then: Should have correct description label with authentication instructions
         val label = UIComponentFinder.getComponentByCondition(
             authPanel,
             JLabel::class
-        ) { it.text?.contains("Trust this project and start the Snyk Scan") == true }
+        ) { it.text?.contains("Authenticate to Snyk.io") == true }
         
         assertNotNull("Description label should exist", label)
+        assertTrue("Label should contain authentication instructions", label?.text?.contains("Analyze code for issues") == true)
     }
     
     @Test
