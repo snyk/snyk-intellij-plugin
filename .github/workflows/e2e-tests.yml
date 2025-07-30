@@ -1,0 +1,102 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "OSS Scan"
+            test: "SnykOssScanE2ETest"
+          - name: "Code Security"
+            test: "SnykCodeSecurityE2ETest"
+          - name: "IaC Scan"
+            test: "SnykIacScanE2ETest"
+          - name: "Authentication"
+            test: "SnykAuthE2ETest"
+          - name: "Project Trust"
+            test: "SnykProjectTrustE2ETest"
+          - name: "Workflow"
+            test: "SnykWorkflowE2ETest"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Download Robot Server Plugin
+        run: |
+          mkdir -p build
+          curl -L "https://plugins.jetbrains.com/plugin/download?rel=true&updateId=465614" -o build/robot-server-plugin.zip
+
+      - name: Set up virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export DISPLAY=:99.0
+          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+
+      - name: Build Plugin
+        run: ./gradlew buildPlugin
+
+      - name: Start IDE with Robot Server
+        env:
+          DISPLAY: :99.0
+        run: |
+          ./gradlew runIdeForUiTests &
+          IDE_PID=$!
+          echo "IDE_PID=$IDE_PID" >> $GITHUB_ENV
+          
+          # Wait for IDE to start and robot server to be ready
+          echo "Waiting for IDE to start..."
+          for i in {1..60}; do
+            if curl -s http://localhost:8082 > /dev/null; then
+              echo "Robot Server is ready!"
+              break
+            fi
+            echo "Waiting for Robot Server... (attempt $i/60)"
+            sleep 2
+          done
+
+      - name: Run E2E Test - ${{ matrix.name }}
+        env:
+          DISPLAY: :99.0
+        run: ./gradlew test --tests "*${{ matrix.test }}" --info
+
+      - name: Stop IDE
+        if: always()
+        run: |
+          if [ ! -z "$IDE_PID" ]; then
+            kill $IDE_PID || true
+          fi
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-results-${{ matrix.test }}
+          path: |
+            build/reports/tests/
+            build/test-results/
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: E2E Tests - ${{ matrix.name }}
+          path: build/test-results/test/*.xml
+          reporter: java-junit
