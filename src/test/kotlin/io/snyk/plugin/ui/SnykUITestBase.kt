@@ -18,6 +18,7 @@ import snyk.common.UITestUtils
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import io.snyk.plugin.getCliFile
 
 /**
  * Base class for Snyk UI tests providing common setup and utilities
@@ -38,6 +39,9 @@ abstract class SnykUITestBase : LightPlatform4TestCase() {
         // Mock trust service to avoid trust dialogs
         mockkStatic("snyk.trust.TrustedProjectsKt")
         every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+        
+        // Make CLI executable if present
+        makeCliExecutable()
 
         // Setup settings
         settings = pluginSettings()
@@ -106,5 +110,16 @@ abstract class SnykUITestBase : LightPlatform4TestCase() {
      */
     protected fun waitForUiUpdates() {
         UITestUtils.waitForUiUpdates()
+    }
+    
+    private fun makeCliExecutable() {
+        try {
+            val cliPath = getCliFile()
+            if (cliPath != null && cliPath.exists()) {
+                cliPath.setExecutable(true)
+            }
+        } catch (e: Exception) {
+            // Ignore permission errors in tests
+        }
     }
 }

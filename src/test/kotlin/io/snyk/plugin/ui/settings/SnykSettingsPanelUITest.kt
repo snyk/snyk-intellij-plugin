@@ -77,7 +77,7 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val severitiesPanel = SeveritiesEnablementPanel()
 
         // Verify all severity checkboxes exist
-        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel as Component)
+        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel.panel)
         val criticalCheckbox = checkboxes.find { it.text == "Critical" }
         val highCheckbox = checkboxes.find { it.text == "High" }
         val mediumCheckbox = checkboxes.find { it.text == "Medium" }
@@ -102,7 +102,7 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val severitiesPanel = SeveritiesEnablementPanel()
 
         // Verify checkboxes reflect settings
-        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel as Component)
+        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel.panel)
         val criticalCheckbox = checkboxes.find { it.text == "Critical" }
         val highCheckbox = checkboxes.find { it.text == "High" }
         val mediumCheckbox = checkboxes.find { it.text == "Medium" }
@@ -170,7 +170,7 @@ class SnykSettingsPanelUITest : SnykUITestBase() {
         val severitiesPanel = SeveritiesEnablementPanel()
         
         // Get all severity checkboxes
-        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel as Component)
+        val checkboxes = getAllCheckboxesFromPanel(severitiesPanel.panel)
         val criticalCheckbox = checkboxes.find { it.text == "Critical" }!!
         val highCheckbox = checkboxes.find { it.text == "High" }!!
         val mediumCheckbox = checkboxes.find { it.text == "Medium" }!!

@@ -159,6 +159,9 @@ tasks {
             exceptionFormat = TestExceptionFormat.FULL
         }
         
+        // Exclude E2E tests from regular test run as they require IDE + robot-server
+        exclude("**/e2e/**")
+        
         // Add JVM arguments to handle Java module system restrictions for UI tests
         jvmArgs(
             "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
@@ -172,13 +175,13 @@ tasks {
 
     register<Test>("runUiTests") {
         group = "verification"
-        description = "Run UI integration tests"
+        description = "Run UI integration tests (excluding E2E)"
         testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
         
         include("**/*UITest.class")
         include("**/*IntegTest.class")
-        include("**/*E2ETest.class")
+        exclude("**/e2e/**")
         
         maxHeapSize = "4096m"
         
@@ -196,6 +199,65 @@ tasks {
             events("passed", "skipped", "failed")
             exceptionFormat = TestExceptionFormat.FULL
         }
+    }
+    
+    register<Test>("runE2ETests") {
+        group = "verification"
+        description = "Run E2E UI tests (requires IDE with robot-server)"
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+        
+        include("**/e2e/**E2ETest.class")
+        
+        maxHeapSize = "4096m"
+        
+        // Add JVM arguments to handle Java module system restrictions
+        jvmArgs(
+            "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/java.awt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/javax.swing=ALL-UNNAMED",
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+            "--add-exports", "java.desktop/sun.awt=ALL-UNNAMED"
+        )
+        
+        testLogging {
+            events("passed", "skipped", "failed")
+            exceptionFormat = TestExceptionFormat.FULL
+        }
+    }
+
+    // Configure IDE for UI testing with robot-server
+    register<RunIdeTask>("runIdeForUiTests") {
+        systemProperty("robot-server.port", "8082")
+        systemProperty("ide.mac.message.dialogs.as.sheets", "false")
+        systemProperty("jb.privacy.policy.text", "<!--999.999-->")
+        systemProperty("jb.consents.confirmation.enabled", "false")
+        systemProperty("idea.trust.all.projects", "true")
+        systemProperty("ide.show.tips.on.startup.default.value", "false")
+    }
+
+    // Download and configure robot-server plugin
+    val downloadRobotServerPlugin by registering {
+        val pluginFile = file("${layout.buildDirectory.get()}/robot-server-plugin.zip")
+        outputs.file(pluginFile)
+        doLast {
+            pluginFile.parentFile.mkdirs()
+            if (!pluginFile.exists()) {
+                val url = "https://plugins.jetbrains.com/plugin/download?rel=true&updateId=465614"
+                uri(url).toURL().openStream().use { input ->
+                    pluginFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }
+        }
+    }
+
+    named<RunIdeTask>("runIdeForUiTests") {
+        dependsOn(downloadRobotServerPlugin)
+        val pluginFile = downloadRobotServerPlugin.get().outputs.files.singleFile
+        pluginsPath.set(listOf(pluginFile))
     }
 
     // Configure the PatchPluginXml task
