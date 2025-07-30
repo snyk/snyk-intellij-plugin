@@ -50,10 +50,15 @@ class SnykAuthE2ETest {
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
                 // Click Clone Repository button using accessible name
-                val cloneButton = welcomeFrame.find<JButtonFixture>(
-                    byXpath("//div[@class='JButton' and @accessiblename='Clone Repository']")
+                // There are 2 elements with this accessible name (button and label), we need the button
+                val cloneButtons = welcomeFrame.findAll<JButtonFixture>(
+                    byXpath("//div[@accessiblename='Clone Repository']")
                 )
-                cloneButton.click()
+                if (cloneButtons.isEmpty()) {
+                    throw IllegalStateException("Could not find Clone Repository button")
+                }
+                // The first one should be the actual button
+                cloneButtons.first().click()
                 
                 // Wait for VCS dialog
                 Thread.sleep(2000)
