@@ -5,7 +5,6 @@ import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
-import org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -231,41 +230,28 @@ tasks {
         }
     }
 
-    // Configure IDE for UI testing with robot-server
-    // Note: runIdeForUiTests is not registered by default in 2.x, so we create it
-    val runIdeForUiTests by registering(RunIdeTask::class) {
-        systemProperty("robot-server.port", "8082")
-        systemProperty("ide.mac.message.dialogs.as.sheets", "false")
-        systemProperty("jb.privacy.policy.text", "<!--999.999-->")
-        systemProperty("jb.consents.confirmation.enabled", "false")
-        systemProperty("idea.trust.all.projects", "true")
-        systemProperty("ide.show.tips.on.startup.default.value", "false")
-        
-        // Disable auto-reload for UI tests
-        autoReload = false
-    }
-
-    // Download and configure robot-server plugin
-    val downloadRobotServerPlugin by registering {
-        val pluginFile = file("${layout.buildDirectory.get()}/robot-server-plugin.zip")
-        outputs.file(pluginFile)
-        doLast {
-            pluginFile.parentFile.mkdirs()
-            if (!pluginFile.exists()) {
-                val url = "https://plugins.jetbrains.com/plugin/download?rel=true&updateId=465614"
-                uri(url).toURL().openStream().use { input ->
-                    pluginFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
+    // Configure IDE for UI testing with robot-server using intellijPlatformTesting extension
+    intellijPlatformTesting {
+        runIde {
+            register("runIdeForUiTests") {
+                task {
+                    systemProperty("robot-server.port", "8082")
+                    systemProperty("ide.mac.message.dialogs.as.sheets", "false")
+                    systemProperty("jb.privacy.policy.text", "<!--999.999-->")
+                    systemProperty("jb.consents.confirmation.enabled", "false")
+                    systemProperty("idea.trust.all.projects", "true")
+                    systemProperty("ide.show.tips.on.startup.default.value", "false")
+                    
+                    // Disable auto-reload for UI tests
+                    autoReload = false
+                }
+                
+                // Add robot-server plugin
+                plugins {
+                    robotServerPlugin()
                 }
             }
         }
-    }
-
-    runIdeForUiTests {
-        dependsOn(downloadRobotServerPlugin)
-        // The robot-server plugin will be loaded by adding it to the plugins directory
-        // This is handled by the IDE when the system property robot-server.port is set
     }
 
     // Configure the PatchPluginXml task

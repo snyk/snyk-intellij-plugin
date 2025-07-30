@@ -10,21 +10,6 @@ echo
 
 # Configuration
 ROBOT_PORT="${ROBOT_PORT:-8082}"
-ROBOT_SERVER_VERSION="0.11.23"
-ROBOT_SERVER_URL="https://plugins.jetbrains.com/plugin/download?rel=true&updateId=465614"
-ROBOT_SERVER_PATH="build/robot-server-plugin.zip"
-
-# Functions
-download_robot_server() {
-    if [ ! -f "$ROBOT_SERVER_PATH" ]; then
-        echo "Downloading Robot Server Plugin..."
-        mkdir -p "$(dirname "$ROBOT_SERVER_PATH")"
-        curl -L "$ROBOT_SERVER_URL" -o "$ROBOT_SERVER_PATH"
-        echo "Robot Server Plugin downloaded."
-    else
-        echo "Robot Server Plugin already downloaded."
-    fi
-}
 
 start_ide_with_robot() {
     echo "Starting IDE with Robot Server on port $ROBOT_PORT..."
@@ -32,13 +17,6 @@ start_ide_with_robot() {
     # Build the plugin first
     echo "Building plugin..."
     ./gradlew buildPlugin
-    
-    # Copy robot-server plugin to sandbox plugins directory
-    echo "Setting up robot-server plugin..."
-    local sandbox_dir="build/idea-sandbox/IC-2024.2/plugins"
-    mkdir -p "$sandbox_dir"
-    cp "$ROBOT_SERVER_PATH" "$sandbox_dir/"
-    cd "$sandbox_dir" && unzip -q "$(basename "$ROBOT_SERVER_PATH")" && cd - > /dev/null
     
     # Run IDE with robot-server using the configured task
     echo "Starting IDE with robot-server..."
@@ -92,9 +70,6 @@ cleanup() {
 main() {
     # Set up cleanup on exit
     trap cleanup EXIT
-    
-    # Download robot server if needed
-    download_robot_server
     
     # Start IDE with robot server
     start_ide_with_robot
