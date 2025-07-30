@@ -1,0 +1,137 @@
+name: UI Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  ui-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            display: ':99'
+          - os: macos-latest
+            display: ':1'
+          - os: windows-latest
+            display: ':0'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup display (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          export DISPLAY=${{ matrix.display }}
+          Xvfb ${{ matrix.display }} -screen 0 1920x1080x24 > /dev/null 2>&1 &
+
+      - name: Download Robot Server Plugin
+        run: |
+          mkdir -p build
+          curl -L "https://plugins.jetbrains.com/plugin/download?rel=true&updateId=465614" \
+            -o "build/robot-server-plugin.zip"
+
+      - name: Build Plugin
+        run: ./gradlew buildPlugin
+
+      - name: Run Component UI Tests
+        run: ./gradlew runUiTests --tests "*UITest" --info
+        env:
+          DISPLAY: ${{ matrix.display }}
+
+      - name: Run E2E UI Tests (Optional)
+        if: matrix.os == 'ubuntu-latest'  # Run E2E tests only on Linux for now
+        run: |
+          # Start IDE with robot server in background
+          ./gradlew runIde \
+            -Drobot-server.port=8082 \
+            -Dide.mac.message.dialogs.as.sheets=false \
+            -Djb.privacy.policy.text="<!--999.999-->" \
+            -Djb.consents.confirmation.enabled=false \
+            -Didea.trust.all.projects=true \
+            -Dide.show.tips.on.startup.default.value=false \
+            -PrunIdeWithPlugins="build/robot-server-plugin.zip" &
+          
+          IDE_PID=$!
+          
+          # Wait for IDE to start
+          echo "Waiting for IDE to start..."
+          sleep 60
+          
+          # Check if robot server is accessible
+          max_attempts=30
+          attempt=0
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -s "http://localhost:8082" > /dev/null; then
+              echo "Robot Server is ready!"
+              break
+            fi
+            echo "Waiting for Robot Server... (attempt $((attempt + 1))/$max_attempts)"
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          
+          if [ $attempt -eq $max_attempts ]; then
+            echo "Robot Server failed to start!"
+            kill $IDE_PID 2>/dev/null || true
+            exit 1
+          fi
+          
+          # Run E2E tests
+          ./gradlew test --tests "*E2ETest" --info || E2E_RESULT=$?
+          
+          # Stop IDE
+          kill $IDE_PID 2>/dev/null || true
+          
+          # Exit with E2E test result
+          exit ${E2E_RESULT:-0}
+        env:
+          DISPLAY: ${{ matrix.display }}
+        continue-on-error: true  # E2E tests are optional for now
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            build/reports/tests/
+            build/test-results/
+
+      - name: Generate test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: UI Test Results - ${{ matrix.os }}
+          path: 'build/test-results/**/*.xml'
+          reporter: java-junit
+          fail-on-error: false
