@@ -4,7 +4,6 @@ import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.JButtonFixture
-import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException
@@ -50,9 +49,9 @@ class SnykAuthE2ETest {
                 // Check if we're on the welcome screen
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
-                // Click "Get from VCS" button
+                // Click "Clone Repository" button
                 val getFromVcsButton = welcomeFrame.find<JButtonFixture>(
-                    byXpath("//div[@text='Get from VCS' or @text='Get from Version Control']")
+                    byXpath("//div[@text='Clone Repository']")
                 )
                 getFromVcsButton.click()
                 
@@ -60,8 +59,11 @@ class SnykAuthE2ETest {
                 Thread.sleep(2000)
                 
                 // Find URL input field and enter nodejs-goof repository
-                val urlField = find<JTextFieldFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']//div[@class='JBTextField']"))
-                urlField.text = "https://github.com/snyk-labs/nodejs-goof"
+                val urlField = find<CommonContainerFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']"))
+                urlField.click()
+                keyboard {
+                    enterText("https://github.com/snyk-labs/nodejs-goof")
+                }
                 
                 // Click Clone button
                 val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))

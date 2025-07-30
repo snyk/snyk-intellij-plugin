@@ -32,9 +32,9 @@ class SnykOssScanE2ETest {
                 // Check if we're on the welcome screen
                 val welcomeFrame = find<CommonContainerFixture>(byXpath("//div[@class='FlatWelcomeFrame']"))
                 
-                // Click "Get from VCS" button
+                // Click "Clone Repository" button
                 val getFromVcsButton = welcomeFrame.find<JButtonFixture>(
-                    byXpath("//div[@text='Get from VCS' or @text='Get from Version Control']")
+                    byXpath("//div[@text='Clone Repository']")
                 )
                 getFromVcsButton.click()
                 
@@ -42,8 +42,11 @@ class SnykOssScanE2ETest {
                 Thread.sleep(2000)
                 
                 // Find URL input field and enter Java-Goof repository
-                val urlField = find<JTextFieldFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']//div[@class='JBTextField']"))
-                urlField.text = "https://github.com/JennySnyk/Java-Goof"
+                val urlField = find<CommonContainerFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']"))
+                urlField.click()
+                keyboard {
+                    enterText("https://github.com/JennySnyk/Java-Goof")
+                }
                 
                 // Click Clone button
                 val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
