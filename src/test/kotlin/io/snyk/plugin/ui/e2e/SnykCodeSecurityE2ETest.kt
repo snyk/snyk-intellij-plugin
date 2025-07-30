@@ -52,9 +52,9 @@ class SnykCodeSecurityE2ETest {
                     enterText("https://github.com/snyk-labs/nodejs-goof")
                 }
                 
-                // Click Clone button
-                val cloneButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
-                cloneButton.click()
+                // Click Clone button in dialog
+                val cloneDialogButton = find<JButtonFixture>(byXpath("//div[@text='Clone']"))
+                cloneDialogButton.click()
                 
             } catch (e: Exception) {
                 // We might already have a project open
