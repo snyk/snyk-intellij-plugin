@@ -151,24 +151,25 @@ abstract class E2ETestBase {
                     try {
                         println("Approach 4: Using keyboard navigation")
                         
-                        // Focus on dialog
-                        dialog.click()
+                        // The URL field should already be focused when dialog opens
                         Thread.sleep(500)
                         
-                        // Tab to first field and enter URL
+                        // Enter URL in the already-focused field
                         keyboard {
-                            key(KeyEvent.VK_TAB)
-                            Thread.sleep(300)
                             val isMac = System.getProperty("os.name").contains("Mac")
                             val selectAllKey = if (isMac) KeyEvent.VK_META else KeyEvent.VK_CONTROL
+                            
+                            // Clear and enter URL
                             hotKey(selectAllKey, KeyEvent.VK_A)
                             enterText(repoUrl)
-                            println("Entered URL via keyboard navigation")
+                            println("Entered URL in already-focused field")
                             
-                            // Tab to next field
+                            // Tab to directory field
                             Thread.sleep(300)
                             key(KeyEvent.VK_TAB)
                             Thread.sleep(300)
+                            
+                            // Clear and enter directory
                             hotKey(selectAllKey, KeyEvent.VK_A)
                             enterText(System.getProperty("java.io.tmpdir") + projectName)
                             println("Entered directory via keyboard navigation")
