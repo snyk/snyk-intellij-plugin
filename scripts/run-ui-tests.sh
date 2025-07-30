@@ -33,6 +33,13 @@ start_ide_with_robot() {
     echo "Building plugin..."
     ./gradlew buildPlugin
     
+    # Copy robot-server plugin to sandbox plugins directory
+    echo "Setting up robot-server plugin..."
+    local sandbox_dir="build/idea-sandbox/IC-2024.2/plugins"
+    mkdir -p "$sandbox_dir"
+    cp "$ROBOT_SERVER_PATH" "$sandbox_dir/"
+    cd "$sandbox_dir" && unzip -q "$(basename "$ROBOT_SERVER_PATH")" && cd - > /dev/null
+    
     # Run IDE with robot-server using the configured task
     echo "Starting IDE with robot-server..."
     ./gradlew runIdeForUiTests &

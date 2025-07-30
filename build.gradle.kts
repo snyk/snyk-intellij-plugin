@@ -264,12 +264,8 @@ tasks {
 
     runIdeForUiTests {
         dependsOn(downloadRobotServerPlugin)
-        plugins {
-            // Load the robot-server plugin
-            plugin(provider {
-                downloadRobotServerPlugin.get().outputs.files.singleFile.absolutePath
-            })
-        }
+        // The robot-server plugin will be loaded by adding it to the plugins directory
+        // This is handled by the IDE when the system property robot-server.port is set
     }
 
     // Configure the PatchPluginXml task
