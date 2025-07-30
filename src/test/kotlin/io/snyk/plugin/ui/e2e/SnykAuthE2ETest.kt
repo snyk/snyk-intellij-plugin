@@ -2,16 +2,19 @@ package io.snyk.plugin.ui.e2e
 
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
+import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.JButtonFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.WaitForConditionTimeoutException
 import com.intellij.remoterobot.utils.waitFor
+import com.intellij.remoterobot.utils.keyboard
 import org.junit.After
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.Duration
-import kotlin.test.assertTrue
 
 /**
  * True E2E UI test using Remote-Robot framework
@@ -83,7 +86,17 @@ class SnykAuthE2ETest {
         try {
             remoteRobot.findAll<CommonContainerFixture>(
                 byXpath("//div[@class='MyDialog']")
-            ).forEach { it.close() }
+            ).forEach { 
+                // Close dialogs by clicking cancel or ESC
+                try {
+                    it.button("Cancel").click()
+                } catch (e: Exception) {
+                    // If no cancel button, press ESC
+                    remoteRobot.keyboard {
+                        key(java.awt.event.KeyEvent.VK_ESCAPE)
+                    }
+                }
+            }
         } catch (e: WaitForConditionTimeoutException) {
             // No dialogs to close
         }

@@ -11,7 +11,7 @@ import org.junit.Before
 import org.junit.Test
 import java.awt.event.KeyEvent
 import java.time.Duration
-import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
 
 /**
  * E2E test for OSS (Open Source Security) scanning functionality
@@ -41,7 +41,7 @@ class SnykOssScanE2ETest {
             
             // Wait for file chooser
             waitFor(duration = Duration.ofSeconds(10)) {
-                findAll<DialogFixture>(
+                findAll<CommonContainerFixture>(
                     byXpath("//div[@title='Open File or Project']")
                 ).isNotEmpty()
             }
@@ -322,8 +322,13 @@ class SnykOssScanE2ETest {
     private fun RemoteRobot.cleanup() {
         try {
             // Close any open dialogs
-            findAll<DialogFixture>(byXpath("//div[@class='MyDialog']"))
-                .forEach { it.close() }
+            findAll<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
+                .forEach {
+                    // Close dialogs by pressing ESC
+                    keyboard {
+                        key(KeyEvent.VK_ESCAPE)
+                    }
+                }
             
             // Reset focus
             keyboard {

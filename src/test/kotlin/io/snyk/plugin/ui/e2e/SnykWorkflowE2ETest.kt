@@ -7,11 +7,12 @@ import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.keyboard
 import com.intellij.remoterobot.utils.waitFor
 import org.junit.After
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.awt.event.KeyEvent
 import java.time.Duration
-import kotlin.test.assertTrue
 
 /**
  * Comprehensive E2E test demonstrating various UI testing capabilities
@@ -52,7 +53,7 @@ class SnykWorkflowE2ETest {
                 
                 // Handle file chooser dialog
                 waitFor {
-                    findAll<DialogFixture>(
+                    findAll<CommonContainerFixture>(
                         byXpath("//div[@title='Open File or Project']")
                     ).isNotEmpty()
                 }
@@ -186,7 +187,7 @@ class SnykWorkflowE2ETest {
                 assertTrue(rootItem != null, "Issue tree should have items")
                 
                 // Expand first node if possible
-                if (rootItem != null && rootItem.hasChildren()) {
+                if (rootItem != null && rootItem.hasChildren) {
                     tree.expandPath(rootItem.path)
                     
                     // Verify children are visible
@@ -219,12 +220,12 @@ class SnykWorkflowE2ETest {
         
         step("Navigate to Snyk settings") {
             waitFor(duration = Duration.ofSeconds(10)) {
-                findAll<DialogFixture>(
+                findAll<CommonContainerFixture>(
                     byXpath("//div[@title='Settings' or @title='Preferences']")
                 ).isNotEmpty()
             }
             
-            val settingsDialog = find<DialogFixture>(
+            val settingsDialog = find<CommonContainerFixture>(
                 byXpath("//div[@title='Settings' or @title='Preferences']")
             )
             
@@ -233,7 +234,7 @@ class SnykWorkflowE2ETest {
                 byXpath("//div[@class='SearchTextField']"),
                 Duration.ofSeconds(5)
             )
-            searchField.text = "Snyk"
+            searchField.setText("Snyk")
             
             // Click on Snyk in the tree
             val settingsTree = settingsDialog.find<JTreeFixture>(
@@ -250,7 +251,7 @@ class SnykWorkflowE2ETest {
         }
         
         step("Verify Snyk settings panel") {
-            val settingsDialog = find<DialogFixture>(
+            val settingsDialog = find<CommonContainerFixture>(
                 byXpath("//div[@title='Settings' or @title='Preferences']")
             )
             
@@ -280,8 +281,13 @@ class SnykWorkflowE2ETest {
     fun tearDown() {
         // Close any open dialogs
         try {
-            remoteRobot.findAll<DialogFixture>(byXpath("//div[@class='MyDialog']"))
-                .forEach { it.close() }
+            remoteRobot.findAll<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
+                .forEach {
+                    // Close dialogs by pressing ESC
+                    remoteRobot.keyboard {
+                        key(KeyEvent.VK_ESCAPE)
+                    }
+                }
         } catch (e: Exception) {
             // Ignore if no dialogs
         }
