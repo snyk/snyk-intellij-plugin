@@ -154,6 +154,23 @@ tasks {
         }
     }
 
+    register<Test>("runUiTests") {
+        group = "verification"
+        description = "Run UI integration tests"
+        testClassesDirs = sourceSets["test"].output.classesDirs
+        classpath = sourceSets["test"].runtimeClasspath
+        
+        include("**/*UITest.class")
+        include("**/*IntegTest.class")
+        
+        maxHeapSize = "4096m"
+        
+        testLogging {
+            events("passed", "skipped", "failed")
+            exceptionFormat = TestExceptionFormat.FULL
+        }
+    }
+
     // Configure the PatchPluginXml task
     patchPluginXml {
         sinceBuild.set(properties("pluginSinceBuild"))
