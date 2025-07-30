@@ -152,6 +152,16 @@ tasks {
         testLogging {
             exceptionFormat = TestExceptionFormat.FULL
         }
+        
+        // Add JVM arguments to handle Java module system restrictions for UI tests
+        jvmArgs(
+            "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/java.awt=ALL-UNNAMED", 
+            "--add-opens", "java.desktop/javax.swing=ALL-UNNAMED",
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+            "--add-exports", "java.desktop/sun.awt=ALL-UNNAMED"
+        )
     }
 
     register<Test>("runUiTests") {
@@ -164,6 +174,16 @@ tasks {
         include("**/*IntegTest.class")
         
         maxHeapSize = "4096m"
+        
+        // Add JVM arguments to handle Java module system restrictions
+        jvmArgs(
+            "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/java.awt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/javax.swing=ALL-UNNAMED",
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+            "--add-exports", "java.desktop/sun.awt=ALL-UNNAMED"
+        )
         
         testLogging {
             events("passed", "skipped", "failed")
