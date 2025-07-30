@@ -232,7 +232,7 @@ tasks {
     }
 
     // Configure IDE for UI testing with robot-server
-    register<RunIdeTask>("runIdeForUiTests") {
+    val runIdeForUiTests by registering(RunIdeTask::class) {
         systemProperty("robot-server.port", "8082")
         systemProperty("ide.mac.message.dialogs.as.sheets", "false")
         systemProperty("jb.privacy.policy.text", "<!--999.999-->")
@@ -258,7 +258,7 @@ tasks {
         }
     }
 
-    named<RunIdeTask>("runIdeForUiTests") {
+    runIdeForUiTests {
         dependsOn(downloadRobotServerPlugin)
         doFirst {
             val pluginFile = downloadRobotServerPlugin.get().outputs.files.singleFile
