@@ -30,39 +30,42 @@ start_ide_with_robot() {
     echo "Starting IDE with Robot Server on port $ROBOT_PORT..."
     
     # Build the plugin first
+    echo "Building plugin..."
     ./gradlew buildPlugin
     
-    # Run IDE with system properties and robot server plugin
-    ./gradlew runIde \
-        -Drobot-server.port="$ROBOT_PORT" \
-        -Dide.mac.message.dialogs.as.sheets=false \
-        -Djb.privacy.policy.text="<!--999.999-->" \
-        -Djb.consents.confirmation.enabled=false \
-        -Didea.trust.all.projects=true \
-        -Dide.show.tips.on.startup.default.value=false \
-        -PrunIdeWithPlugins="$ROBOT_SERVER_PATH" &
+    # Run IDE with robot-server using the configured task
+    echo "Starting IDE with robot-server..."
+    ./gradlew runIdeForUiTests &
     
     IDE_PID=$!
     echo "IDE started with PID: $IDE_PID"
     
-    # Wait for IDE to be ready
-    echo "Waiting for IDE to start..."
-    sleep 30
+    # Wait for robot server to be ready
+    echo "Waiting for Robot Server to be ready..."
+    local max_attempts=60
+    local attempt=0
     
-    # Check if robot server is accessible
-    if curl -s "http://localhost:$ROBOT_PORT" > /dev/null; then
-        echo "Robot Server is ready at http://localhost:$ROBOT_PORT"
-    else
-        echo "Warning: Robot Server may not be ready yet"
-    fi
+    while [ $attempt -lt $max_attempts ]; do
+        if curl -s "http://localhost:$ROBOT_PORT" > /dev/null 2>&1; then
+            echo "✅ Robot Server is ready at http://localhost:$ROBOT_PORT"
+            return 0
+        fi
+        
+        attempt=$((attempt + 1))
+        echo "Waiting for Robot Server... (attempt $attempt/$max_attempts)"
+        sleep 2
+    done
+    
+    echo "❌ Robot Server failed to start within timeout"
+    return 1
 }
 
 run_ui_tests() {
     echo
-    echo "Running UI tests..."
+    echo "Running E2E tests..."
     
-    # Run only E2E tests
-    ./gradlew test --tests "*E2ETest" --info
+    # Run E2E tests using the dedicated task
+    ./gradlew runE2ETests --info
     
     TEST_RESULT=$?
     return $TEST_RESULT
