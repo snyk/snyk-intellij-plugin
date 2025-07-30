@@ -30,6 +30,7 @@ val jdk = "21"
 repositories {
     mavenCentral()
     mavenLocal()
+    maven { url = uri("https://packages.jetbrains.team/maven/p/ij/intellij-dependencies") }
     intellijPlatform {
         defaultRepositories()
     }
@@ -75,6 +76,10 @@ dependencies {
     testImplementation("org.hamcrest:hamcrest:2.2")
     testImplementation("io.mockk:mockk:1.14.2")
     testImplementation("org.awaitility:awaitility:4.2.0")
+    
+    // Remote-Robot for E2E UI testing
+    testImplementation("com.intellij.remoterobot:remote-robot:0.11.23")
+    testImplementation("com.intellij.remoterobot:remote-fixtures:0.11.23")
 
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
 }
@@ -172,6 +177,7 @@ tasks {
         
         include("**/*UITest.class")
         include("**/*IntegTest.class")
+        include("**/*E2ETest.class")
         
         maxHeapSize = "4096m"
         
@@ -232,4 +238,40 @@ tasks {
         token.set(System.getenv("PUBLISH_TOKEN"))
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
     }
+    
+    runIdeForUiTests {
+        // Configure robot-server plugin
+        systemProperty("robot-server.port", "8082")
+        systemProperty("ide.mac.message.dialogs.as.sheets", "false")
+        systemProperty("jb.privacy.policy.text", "<!--999.999-->")
+        systemProperty("jb.consents.confirmation.enabled", "false")
+        systemProperty("idea.trust.all.projects", "true")
+        systemProperty("ide.show.tips.on.startup.default.value", "false")
+    }
+}
+
+// Download robot-server plugin task
+val downloadRobotServerPlugin by tasks.registering {
+    val robotServerPluginVersion = "0.11.23"
+    val robotServerPluginUrl = "https://plugins.jetbrains.com/plugin/download?rel=true&updateId=465614"
+    val robotServerPluginFile = file("${project.layout.buildDirectory.get()}/robot-server-plugin/robot-server-plugin-$robotServerPluginVersion.zip")
+    
+    outputs.file(robotServerPluginFile)
+    
+    doLast {
+        robotServerPluginFile.parentFile.mkdirs()
+        if (!robotServerPluginFile.exists()) {
+            uri(robotServerPluginUrl).toURL().openStream().use { input ->
+                robotServerPluginFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+        }
+    }
+}
+
+tasks.runIdeForUiTests {
+    dependsOn(downloadRobotServerPlugin)
+    val robotServerPluginFile = downloadRobotServerPlugin.get().outputs.files.singleFile
+    jvmArgs("-Dplugin.path=${robotServerPluginFile.absolutePath}")
 }
