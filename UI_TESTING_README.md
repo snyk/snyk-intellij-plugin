@@ -173,6 +173,20 @@ Add to your CI configuration:
    - Label text verification
    - Button click simulation
 
+3. **SnykSettingsPanelUITest**
+   - Scan types panel with all checkboxes
+   - Settings state reflection in UI
+   - Severity filter panel functionality
+   - Issue view options panel
+   - Checkbox state changes and updates
+
+4. **SnykTreeUITest**
+   - Root nodes for each scan type
+   - Package manager icon display
+   - Tree node selection and expansion
+   - Error node display
+   - Severity filtering support
+
 ### E2E Tests
 
 1. **SnykAuthE2ETest**
@@ -206,6 +220,32 @@ Add to your CI configuration:
      - Applying severity filters
      - Verifying filtered results
 
+4. **SnykCodeSecurityE2ETest**
+   - IDE startup and project opening
+   - Enabling Code Security in settings
+   - Triggering Code Security scan
+   - Verifying scan results
+   - Viewing vulnerability details
+
+5. **SnykIacScanE2ETest**
+   - **IaC scanning workflow:**
+     - Project opening with IaC files
+     - Enabling IaC scanning
+     - Scan execution and monitoring
+     - Results verification for Terraform/K8s
+   - **IaC issue filtering:**
+     - Severity-based filtering
+     - Verifying filtered results
+
+6. **SnykProjectTrustE2ETest**
+   - **Trust management:**
+     - Trust dialog for untrusted projects
+     - Trusting a project workflow
+     - Verifying trust persistence
+   - **Auto-trust settings:**
+     - Configuring trust settings
+     - Testing auto-trust behavior
+
 ### Test Coverage by Feature
 
 | Feature | Component Tests | E2E Tests |
@@ -213,24 +253,26 @@ Add to your CI configuration:
 | Authentication | ✅ | ✅ |
 | Tool Window | ✅ | ✅ |
 | OSS Scanning | ❌ | ✅ |
-| Code Security | ❌ | ❌ |
-| IaC Scanning | ❌ | ❌ |
-| Settings Panel | ❌ | ✅ |
-| Results Tree | ❌ | ✅ |
+| Code Security | ❌ | ✅ |
+| IaC Scanning | ❌ | ✅ |
+| Settings Panel | ✅ | ✅ |
+| Results Tree | ✅ | ✅ |
 | JCEF Panels | ❌ | ❌ |
 | Actions/Buttons | Partial | ✅ |
+| Project Trust | ❌ | ✅ |
 
 ### Scenarios Not Yet Covered
 
-- Code Security scanning workflow
-- IaC (Infrastructure as Code) scanning
 - Fix suggestions and code actions
-- Ignoring issues functionality
-- Project trust management
+- Ignoring issues functionality (Ignore in file, Ignore by ID)
 - CLI download and updates
-- Error handling scenarios
+- Error handling scenarios (network failures, auth failures)
 - Multi-project support
 - Integration with IDE features (code navigation, quick fixes)
+- JCEF panel interactions (AI fixes, issue details)
+- Code Quality scanning
+- Container scanning integration
+- License compliance checking
 
 ## Additional Resources
 
