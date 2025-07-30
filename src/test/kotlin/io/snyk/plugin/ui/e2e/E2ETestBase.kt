@@ -60,17 +60,18 @@ abstract class E2ETestBase {
                 // Find the dialog
                 val dialog = find<CommonContainerFixture>(byXpath("//div[@class='MyDialog']"))
                 
-                // Find URL input field using TextFieldWithBrowseButton
+                // Find URL input field - try multiple approaches
                 var fieldsFilledSuccessfully = false
                 
+                // Approach 1: Try TextFieldWithBrowseButton
                 try {
-                    // First try to find TextFieldWithBrowseButton components
                     val browseFields = dialog.findAll<CommonContainerFixture>(byXpath("//div[@class='TextFieldWithBrowseButton']"))
-                    println("Found ${browseFields.size} TextFieldWithBrowseButton fields")
+                    println("Approach 1: Found ${browseFields.size} TextFieldWithBrowseButton fields")
                     
                     if (browseFields.size >= 2) {
-                        // URL field is usually first
-                        println("Clicking on URL browse field")
+                        println("Using TextFieldWithBrowseButton approach")
+                        
+                        // Click inside the first field (URL)
                         browseFields[0].click()
                         Thread.sleep(500)
                         keyboard {
@@ -81,9 +82,8 @@ abstract class E2ETestBase {
                         }
                         println("Entered URL: $repoUrl")
                         
-                        // Directory field is usually second
+                        // Click inside the second field (Directory)
                         Thread.sleep(500)
-                        println("Clicking on directory browse field")
                         browseFields[1].click()
                         Thread.sleep(500)
                         keyboard {
@@ -94,31 +94,89 @@ abstract class E2ETestBase {
                         }
                         println("Entered directory: ${System.getProperty("java.io.tmpdir") + projectName}")
                         fieldsFilledSuccessfully = true
-                    } else {
-                        println("Not enough TextFieldWithBrowseButton fields found, trying JTextField approach")
-                        throw Exception("Need to try JTextField approach")
                     }
                 } catch (e: Exception) {
-                    println("Failed to use TextFieldWithBrowseButton, trying JTextField approach: ${e.message}")
-                    
+                    println("Approach 1 failed: ${e.message}")
+                }
+                
+                // Approach 2: Try finding by more specific xpath
+                if (!fieldsFilledSuccessfully) {
                     try {
-                        // Fallback to JTextField
-                        val textFields = dialog.findAll<JTextFieldFixture>(byXpath("//div[@class='JTextField']"))
-                        println("Found ${textFields.size} JTextField fields")
+                        println("Approach 2: Looking for text fields within TextFieldWithBrowseButton")
                         
-                        if (textFields.size >= 2) {
-                            textFields[0].text = repoUrl
-                            println("Set URL using text property")
+                        // Look for text fields that are children of TextFieldWithBrowseButton
+                        val textFieldsInBrowse = dialog.findAll<JTextFieldFixture>(
+                            byXpath("//div[@class='TextFieldWithBrowseButton']//div[@class='JTextField']")
+                        )
+                        println("Found ${textFieldsInBrowse.size} text fields inside browse buttons")
+                        
+                        if (textFieldsInBrowse.size >= 2) {
+                            textFieldsInBrowse[0].text = repoUrl
+                            println("Set URL using nested text field")
                             
-                            textFields[1].text = System.getProperty("java.io.tmpdir") + projectName
-                            println("Set directory using text property")
+                            textFieldsInBrowse[1].text = System.getProperty("java.io.tmpdir") + projectName
+                            println("Set directory using nested text field")
                             
                             fieldsFilledSuccessfully = true
-                        } else {
-                            println("ERROR: Not enough text fields found to fill URL and directory")
                         }
-                    } catch (e2: Exception) {
-                        println("ERROR: Failed to fill text fields: ${e2.message}")
+                    } catch (e: Exception) {
+                        println("Approach 2 failed: ${e.message}")
+                    }
+                }
+                
+                // Approach 3: Look for any input-like components
+                if (!fieldsFilledSuccessfully) {
+                    try {
+                        println("Approach 3: Looking for any JTextField in dialog")
+                        
+                        val anyTextFields = dialog.findAll<JTextFieldFixture>(byXpath(".//div[@class='JTextField']"))
+                        println("Found ${anyTextFields.size} JTextField elements anywhere in dialog")
+                        
+                        if (anyTextFields.size >= 2) {
+                            anyTextFields[0].text = repoUrl
+                            println("Set URL using any text field approach")
+                            
+                            anyTextFields[1].text = System.getProperty("java.io.tmpdir") + projectName
+                            println("Set directory using any text field approach")
+                            
+                            fieldsFilledSuccessfully = true
+                        }
+                    } catch (e: Exception) {
+                        println("Approach 3 failed: ${e.message}")
+                    }
+                }
+                
+                // Approach 4: Try clicking in the general area and using keyboard
+                if (!fieldsFilledSuccessfully) {
+                    try {
+                        println("Approach 4: Using keyboard navigation")
+                        
+                        // Focus on dialog
+                        dialog.click()
+                        Thread.sleep(500)
+                        
+                        // Tab to first field and enter URL
+                        keyboard {
+                            key(KeyEvent.VK_TAB)
+                            Thread.sleep(300)
+                            val isMac = System.getProperty("os.name").contains("Mac")
+                            val selectAllKey = if (isMac) KeyEvent.VK_META else KeyEvent.VK_CONTROL
+                            hotKey(selectAllKey, KeyEvent.VK_A)
+                            enterText(repoUrl)
+                            println("Entered URL via keyboard navigation")
+                            
+                            // Tab to next field
+                            Thread.sleep(300)
+                            key(KeyEvent.VK_TAB)
+                            Thread.sleep(300)
+                            hotKey(selectAllKey, KeyEvent.VK_A)
+                            enterText(System.getProperty("java.io.tmpdir") + projectName)
+                            println("Entered directory via keyboard navigation")
+                        }
+                        
+                        fieldsFilledSuccessfully = true
+                    } catch (e: Exception) {
+                        println("Approach 4 failed: ${e.message}")
                     }
                 }
                 
