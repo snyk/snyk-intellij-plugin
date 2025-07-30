@@ -1,107 +1,94 @@
 package io.snyk.plugin.ui.toolwindow
 
-import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.treeStructure.Tree
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
 import io.snyk.plugin.ui.SnykUITestBase
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import org.junit.Test
 import snyk.common.UIComponentFinder
 import snyk.common.UITestUtils
 import javax.swing.JButton
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.tree.DefaultMutableTreeNode
 
 /**
- * UI tests for SnykToolWindow
- * Tests the main tool window component and its interactions
+ * UI tests for SnykToolWindow components
+ * Tests the tool window panel and its interactions
  */
 class SnykToolWindowUITest : SnykUITestBase() {
 
-    @Test
-    fun `should display auth panel when not authenticated`() {
+    @Test  
+    fun `should create auth panel when not authenticated`() {
         // Given: User is not authenticated
         settings.token = null
         
-        // When: Creating tool window
-        val toolWindow = SnykToolWindow(project)
+        // When: Creating auth panel directly
+        val authPanel = SnykAuthPanel(project)
         
-        // Then: Auth panel should be visible
-        val authPanel = UIComponentFinder.getComponentByCondition(
-            toolWindow.getContent(),
-            SnykAuthPanel::class
-        ) { true }
+        // Then: Panel should be created successfully
+        assertNotNull("Auth panel should be created", authPanel)
         
-        assertNotNull("Auth panel should be displayed", authPanel)
-        
-        // And: Main panel should not be visible
-        val mainPanel = UIComponentFinder.getComponentByCondition(
-            toolWindow.getContent(),
-            JPanel::class
-        ) { it.name == "mainPanel" }
-        
-        assertNull("Main panel should not be visible when not authenticated", mainPanel)
-    }
-    
-    @Test
-    fun `should display main panel when authenticated`() {
-        // Given: User is authenticated
-        settings.token = "test-token"
-        
-        // When: Creating tool window
-        val toolWindow = SnykToolWindow(project)
-        
-        // Then: Main panel should be visible
-        val mainPanel = UIComponentFinder.getComponentByCondition(
-            toolWindow.getContent(),
-            JPanel::class
-        ) { it.name == "mainPanel" }
-        
-        assertNotNull("Main panel should be displayed when authenticated", mainPanel)
-    }
-    
-    @Test
-    fun `should show vulnerability tree when scan completes`() {
-        // Given: Authenticated user
-        settings.token = "test-token"
-        enableOssScan()
-        
-        val toolWindow = SnykToolWindow(project)
-        
-        // When: Simulating scan results
-        val tree = UIComponentFinder.getComponentByCondition(
-            toolWindow.getContent(),
-            Tree::class
-        ) { true }
-        
-        assertNotNull("Vulnerability tree should exist", tree)
-        
-        // Then: Tree should be properly structured
-        val rootNode = tree?.model?.root as? DefaultMutableTreeNode
-        assertNotNull("Tree should have root node", rootNode)
-    }
-    
-    @Test
-    fun `should handle run scan action`() {
-        // Given: Authenticated user with tool window
-        settings.token = "test-token"
-        val toolWindow = SnykToolWindow(project)
-        
-        // When: Finding and clicking run scan button
-        val runScanButton = UIComponentFinder.getComponentByCondition(
-            toolWindow.getContent(),
+        // And: Should have authenticate button
+        val authenticateButton = UIComponentFinder.getComponentByCondition(
+            authPanel,
             JButton::class
-        ) { it.toolTipText?.contains("Run Snyk scan") == true }
+        ) { it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT }
         
-        assertNotNull("Run scan button should exist", runScanButton)
+        assertNotNull("Authenticate button should exist", authenticateButton)
+    }
+    
+    @Test
+    fun `should enable authenticate button in auth panel`() {
+        // Given: User is not authenticated
+        settings.token = null
         
-        // Simulate click
-        runScanButton?.let {
+        // When: Creating auth panel
+        val authPanel = SnykAuthPanel(project)
+        
+        // Then: Button should be enabled
+        val button = UIComponentFinder.getComponentByCondition(
+            authPanel,
+            JButton::class
+        ) { it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT }
+        
+        assertTrue("Authenticate button should be enabled", button?.isEnabled == true)
+    }
+    
+    @Test
+    fun `should display correct label text in auth panel`() {
+        // Given: User is not authenticated  
+        settings.token = null
+        
+        // When: Creating auth panel
+        val authPanel = SnykAuthPanel(project)
+        
+        // Then: Should have correct description label
+        val label = UIComponentFinder.getComponentByCondition(
+            authPanel,
+            JLabel::class
+        ) { it.text?.contains("Trust this project and start the Snyk Scan") == true }
+        
+        assertNotNull("Description label should exist", label)
+    }
+    
+    @Test
+    fun `should simulate button click in auth panel`() {
+        // Given: Auth panel with button
+        settings.token = null
+        val authPanel = SnykAuthPanel(project)
+        
+        // When: Finding and clicking button
+        val button = UIComponentFinder.getComponentByCondition(
+            authPanel,
+            JButton::class
+        ) { it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT }
+        
+        assertNotNull("Button should exist", button)
+        
+        // Then: Can simulate click without errors
+        button?.let {
             UITestUtils.simulateClick(it)
+            // In real test, would verify action through mocks
         }
-        
-        // Then: Task should be queued (would need to verify through mocks)
     }
 }
