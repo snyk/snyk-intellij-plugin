@@ -116,7 +116,7 @@ class SnykCodeSecurityE2ETest {
                 Duration.ofSeconds(5)
             )
 
-            if (!codeSecurityCheckbox.isSelected) {
+            if (!codeSecurityCheckbox.isSelected()) {
                 codeSecurityCheckbox.click()
             }
 
@@ -164,7 +164,7 @@ class SnykCodeSecurityE2ETest {
                         byXpath("//div[@class='Tree']"),
                         Duration.ofSeconds(10)
                     )
-                    
+
                     // Check for Code Security node
                     resultsTree.hasText("Code Security")
                 } catch (e: Exception) {
@@ -183,8 +183,8 @@ class SnykCodeSecurityE2ETest {
 
             // Verify at least one vulnerability is found
             waitFor(duration = Duration.ofSeconds(30)) {
-                resultsTree.hasText("High") || 
-                resultsTree.hasText("Medium") || 
+                resultsTree.hasText("High") ||
+                resultsTree.hasText("Medium") ||
                 resultsTree.hasText("Low")
             }
         }
@@ -197,7 +197,7 @@ class SnykCodeSecurityE2ETest {
 
             // Find and click on a vulnerability by searching for text
             try {
-                val vulnerabilityNode = resultsTree.findText("vulnerability") ?: 
+                val vulnerabilityNode = resultsTree.findText("vulnerability") ?:
                                       resultsTree.findText("issue") ?:
                                       resultsTree.findText("security")
                 vulnerabilityNode?.click()

@@ -178,7 +178,7 @@ class SnykIacScanE2ETest {
 
             // Verify Terraform and Kubernetes issues are found
             waitFor(duration = Duration.ofSeconds(30)) {
-                resultsTree.hasText(".tf") || 
+                resultsTree.hasText(".tf") ||
                 resultsTree.hasText(".yaml") ||
                 resultsTree.hasText(".yml")
             }
@@ -260,7 +260,7 @@ class SnykIacScanE2ETest {
                         byXpath("//div[@text='$severity']"),
                         Duration.ofSeconds(2)
                     )
-                    if (checkbox.isSelected) {
+                    if (checkbox.isSelected()) {
                         checkbox.click()
                     }
                 } catch (e: Exception) {
@@ -279,7 +279,7 @@ class SnykIacScanE2ETest {
                 Duration.ofSeconds(10)
             )
 
-            assertTrue("Should show filtered IaC results", 
+            assertTrue("Should show filtered IaC results",
                 resultsTree.hasText("High") || resultsTree.hasText("0 issues"))
         }
     }
