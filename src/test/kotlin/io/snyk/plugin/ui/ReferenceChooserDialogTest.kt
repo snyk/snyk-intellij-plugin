@@ -85,6 +85,8 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
         // we expect the selected item
         assertEquals("main", transmittedSettings.folderConfigs[0].baseBranch)
+        // we also expect the reference folder to be transmitted
+        assertEquals("/some/reference/path", transmittedSettings.folderConfigs[0].referenceFolderPath)
     }
 
     @Test
@@ -117,6 +119,8 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
 
         // we expect the selected item
         assertEquals("main", transmittedSettings.folderConfigs[0].baseBranch)
+        // we also expect the reference folder to be transmitted
+        assertEquals("/some/reference/path", transmittedSettings.folderConfigs[0].referenceFolderPath)
     }
 
     @Test
