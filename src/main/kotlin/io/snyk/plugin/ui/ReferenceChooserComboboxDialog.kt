@@ -7,7 +7,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-import com.intellij.openapi.ui.ValidationInfo
+
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
@@ -26,10 +26,6 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     var baseBranches: MutableMap<FolderConfig, ComboBox<String>> = mutableMapOf()
     internal var referenceFolders: MutableMap<FolderConfig, TextFieldWithBrowseButton> = mutableMapOf()
 
-    private val originalBaseBranches: MutableMap<FolderConfig, String> = mutableMapOf()
-    private val originalReferenceFolders: MutableMap<FolderConfig, String> = mutableMapOf()
-    private val changedComponents: MutableSet<FolderConfig> = mutableSetOf()
-
     init {
         init()
         title = "Choose base branch for net-new issue scanning"
@@ -39,18 +35,17 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     override fun createCenterPanel(): JComponent {
         val folderConfigs = service<FolderConfigSettings>().getAllForProject(project)
         folderConfigs.forEach { folderConfig ->
-            val comboBox = ComboBox(folderConfig.localBranches?.sorted()?.toTypedArray() ?: emptyArray())
-            comboBox.selectedItem = folderConfig.baseBranch
-            comboBox.name = folderConfig.folderPath
+            // Only create combo box if there are local branches
+            if (folderConfig.localBranches?.isNotEmpty() == true) {
+                val comboBox = ComboBox(folderConfig.localBranches.sorted().toTypedArray())
+                comboBox.selectedItem = folderConfig.baseBranch
+                comboBox.name = folderConfig.folderPath
 
-            // Store original values for change detection
-            originalBaseBranches[folderConfig] = folderConfig.baseBranch
+                baseBranches[folderConfig] = comboBox
+            }
 
-            baseBranches[folderConfig] = comboBox
+            // Always create reference folder
             referenceFolders[folderConfig] = configureReferenceFolder(folderConfig)
-
-            // Add change listeners to track modifications
-            comboBox.addActionListener { onComponentChanged(folderConfig) }
         }
 
         val gridBagLayout = GridBagLayout()
@@ -61,11 +56,17 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         gridBag.defaultPaddingX = 20
         gridBag.defaultPaddingY = 20
 
-        baseBranches.forEach {
-            dialogPanel.add(JLabel("Base Branch for ${it.value.name}: "), gridBag.nextLine())
-            dialogPanel.add(it.value, gridBag.nextLine())
-            val referenceFolder = referenceFolders[it.key]
-            dialogPanel.add(JLabel("Reference Folder for ${referenceFolder!!.name}: "), gridBag.nextLine())
+        folderConfigs.forEach { folderConfig ->
+            // Only show base branch if it exists and there are local branches
+            if (baseBranches.containsKey(folderConfig)) {
+                val comboBox = baseBranches[folderConfig]!!
+                dialogPanel.add(JLabel("Base Branch for ${comboBox.name}: "), gridBag.nextLine())
+                dialogPanel.add(comboBox, gridBag.nextLine())
+            }
+
+            // Always show reference folder
+            val referenceFolder = referenceFolders[folderConfig]!!
+            dialogPanel.add(JLabel("Reference Folder for ${referenceFolder.name}: "), gridBag.nextLine())
             dialogPanel.add(referenceFolder, gridBag.nextLine())
         }
 
@@ -82,9 +83,6 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         val referenceFolder = TextFieldWithBrowseButton()
         referenceFolder.text = folderConfig.referenceFolderPath ?: ""
         referenceFolder.name = folderConfig.folderPath
-
-        // Store original value for change detection
-        originalReferenceFolders[folderConfig] = folderConfig.referenceFolderPath ?: ""
 
         referenceFolder.toolTipText =
             "Optional. Here you can specify a reference directory to be used for scanning."
@@ -106,53 +104,25 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT,
         )
 
-        // Track changes by adding a document listener to the text field
-        referenceFolder.textField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
-            override fun insertUpdate(e: javax.swing.event.DocumentEvent?) { onComponentChanged(folderConfig) }
-            override fun removeUpdate(e: javax.swing.event.DocumentEvent?) { onComponentChanged(folderConfig) }
-            override fun changedUpdate(e: javax.swing.event.DocumentEvent?) { onComponentChanged(folderConfig) }
-        })
-
         return referenceFolder
     }
 
-    private fun onComponentChanged(folderConfig: FolderConfig) {
-        changedComponents.add(folderConfig)
-    }
-
-    private fun hasComponentChanged(folderConfig: FolderConfig): Boolean {
-        val baseBranch = baseBranches[folderConfig]
-        val refFolder = referenceFolders[folderConfig]
-
-        if (baseBranch == null || refFolder == null) {
-            return false
-        }
-
-        val currentBaseBranch = getSelectedItem(baseBranch) ?: ""
-        val currentRefFolder = refFolder.text
-        val originalBaseBranch = originalBaseBranches[folderConfig] ?: ""
-        val originalRefFolder = originalReferenceFolders[folderConfig] ?: ""
-
-        return currentBaseBranch != originalBaseBranch || currentRefFolder != originalRefFolder
-    }
-
     public override fun doOKAction() {
-        // Always allow OK action, validation is now advisory
         super.doOKAction()
         execute()
     }
 
     fun execute() {
         val folderConfigSettings = service<FolderConfigSettings>()
-        baseBranches.forEach {
-            val folderConfig: FolderConfig = it.key
 
-            val baseBranch = getSelectedItem(it.value) ?: ""
+        // Iterate over the baseBranches keys to ensure we process the correct folder configs
+        baseBranches.keys.forEach { folderConfig ->
+            val baseBranch = getSelectedItem(baseBranches[folderConfig]!!) ?: ""
             val referenceFolderControl = referenceFolders[folderConfig]
             val referenceFolder = referenceFolderControl?.text ?: ""
 
-            // Only update if there are actual changes or if the component was modified
-            if (hasComponentChanged(folderConfig) && (referenceFolder.isNotBlank() || baseBranch.isNotBlank())) {
+            // Update if either base branch or reference folder is provided
+            if (referenceFolder.isNotBlank() || baseBranch.isNotBlank()) {
                 folderConfigSettings.addFolderConfig(
                     folderConfig.copy(
                         baseBranch = baseBranch,
@@ -162,32 +132,28 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             }
         }
 
-        // Always try to update configuration, but don't block dialog closure
-        runInBackground("Snyk: updating configuration") {
-            LanguageServerWrapper.getInstance(project).updateConfiguration(true)
-        }
-    }
+        // Also process any folder configs that only have reference folders (no base branches)
+        val allFolderConfigs = service<FolderConfigSettings>().getAllForProject(project)
+        allFolderConfigs.forEach { folderConfig ->
+            if (!baseBranches.containsKey(folderConfig) && referenceFolders.containsKey(folderConfig)) {
+                val referenceFolderControl = referenceFolders[folderConfig]
+                val referenceFolder = referenceFolderControl?.text ?: ""
 
-    override fun doValidate(): ValidationInfo? {
-        // Only validate components that have been changed by the user
-        changedComponents.forEach { folderConfig ->
-            val baseBranch = baseBranches[folderConfig]
-            val refFolder = referenceFolders[folderConfig]
-
-            if (baseBranch != null && refFolder != null) {
-                val baseBranchSelected = !getSelectedItem(baseBranch).isNullOrBlank()
-                val refFolderSelected = refFolder.text.isNotBlank()
-
-                // Only validate if the user has made changes to this component
-                if (hasComponentChanged(folderConfig) && !baseBranchSelected && !refFolderSelected) {
-                    return ValidationInfo(
-                        "Please select a base branch for ${baseBranch.name} or a reference folder",
-                        baseBranch
+                if (referenceFolder.isNotBlank()) {
+                    folderConfigSettings.addFolderConfig(
+                        folderConfig.copy(
+                            baseBranch = "",
+                            referenceFolderPath = referenceFolder
+                        )
                     )
                 }
             }
         }
-        return null
+
+        // Always try to update configuration, but don't block dialog closure
+        runInBackground("Snyk: updating configuration") {
+            LanguageServerWrapper.getInstance(project).updateConfiguration(true)
+        }
     }
 
     private fun getSelectedItem(baseBranch: ComboBox<String>) = baseBranch.selectedItem?.toString()
