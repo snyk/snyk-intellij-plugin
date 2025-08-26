@@ -8,6 +8,7 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.runInBackground
@@ -51,6 +52,7 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             // Add change listeners to track modifications
             comboBox.addActionListener { onComponentChanged(folderConfig) }
         }
+
         val gridBagLayout = GridBagLayout()
         val dialogPanel = JPanel(gridBagLayout)
         val gridBag = GridBag()
@@ -66,7 +68,14 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             dialogPanel.add(JLabel("Reference Folder for ${referenceFolder!!.name}: "), gridBag.nextLine())
             dialogPanel.add(referenceFolder, gridBag.nextLine())
         }
-        return dialogPanel
+
+        // Wrap the content panel in a scroll pane
+        val scrollPane = JBScrollPane(dialogPanel)
+        scrollPane.verticalScrollBarPolicy = JBScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+        scrollPane.horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+        scrollPane.border = JBUI.Borders.empty()
+
+        return scrollPane
     }
 
     private fun configureReferenceFolder(folderConfig: FolderConfig): TextFieldWithBrowseButton {
