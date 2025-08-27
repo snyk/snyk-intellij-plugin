@@ -29,24 +29,10 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     init {
         init()
         title = "Choose base branch for net-new issue scanning"
-        isOKActionEnabled = true
     }
 
     override fun createCenterPanel(): JComponent {
         val folderConfigs = service<FolderConfigSettings>().getAllForProject(project)
-        folderConfigs.forEach { folderConfig ->
-            // Only create combo box if there are local branches
-            if (folderConfig.localBranches?.isNotEmpty() == true) {
-                val comboBox = ComboBox(folderConfig.localBranches.sorted().toTypedArray())
-                comboBox.selectedItem = folderConfig.baseBranch
-                comboBox.name = folderConfig.folderPath
-
-                baseBranches[folderConfig] = comboBox
-            }
-
-            // Always create reference folder
-            referenceFolders[folderConfig] = configureReferenceFolder(folderConfig)
-        }
 
         val gridBagLayout = GridBagLayout()
         val dialogPanel = JPanel(gridBagLayout)
@@ -57,15 +43,24 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         gridBag.defaultPaddingY = 20
 
         folderConfigs.forEach { folderConfig ->
-            // Only show base branch if it exists and there are local branches
-            if (baseBranches.containsKey(folderConfig)) {
-                val comboBox = baseBranches[folderConfig]!!
+            // Only create combo box if there are local branches
+            folderConfig.localBranches?.takeIf { it.isNotEmpty() }?.let { localBranches ->
+                val comboBox = ComboBox(localBranches.sorted().toTypedArray())
+                comboBox.selectedItem = folderConfig.baseBranch
+                comboBox.name = folderConfig.folderPath
+
+                baseBranches[folderConfig] = comboBox
+
+                // Add base branch components to dialog
                 dialogPanel.add(JLabel("Base Branch for ${comboBox.name}: "), gridBag.nextLine())
                 dialogPanel.add(comboBox, gridBag.nextLine())
             }
 
-            // Always show reference folder
-            val referenceFolder = referenceFolders[folderConfig]!!
+            // Always create reference folder
+            val referenceFolder = configureReferenceFolder(folderConfig)
+            referenceFolders[folderConfig] = referenceFolder
+
+            // Add reference folder components to dialog
             dialogPanel.add(JLabel("Reference Folder for ${referenceFolder.name}: "), gridBag.nextLine())
             dialogPanel.add(referenceFolder, gridBag.nextLine())
         }
@@ -117,16 +112,16 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
 
         // Iterate over the baseBranches keys to ensure we process the correct folder configs
         baseBranches.keys.forEach { folderConfig ->
-            val baseBranch = getSelectedItem(baseBranches[folderConfig]!!) ?: ""
+            val comboBox = baseBranches[folderConfig]
+            val baseBranch = comboBox?.let { getSelectedItem(it) } ?: ""
             val referenceFolderControl = referenceFolders[folderConfig]
-            val referenceFolder = referenceFolderControl?.text ?: ""
 
             // Update if either base branch or reference folder is provided
-            if (referenceFolder.isNotBlank() || baseBranch.isNotBlank()) {
+            if (baseBranch.isNotBlank() || referenceFolderControl?.text?.isNotBlank() == true) {
                 folderConfigSettings.addFolderConfig(
                     folderConfig.copy(
                         baseBranch = baseBranch,
-                        referenceFolderPath = referenceFolder
+                        referenceFolderPath = referenceFolderControl?.text ?: ""
                     )
                 )
             }
@@ -135,17 +130,16 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         // Also process any folder configs that only have reference folders (no base branches)
         val allFolderConfigs = service<FolderConfigSettings>().getAllForProject(project)
         allFolderConfigs.forEach { folderConfig ->
-            if (!baseBranches.containsKey(folderConfig) && referenceFolders.containsKey(folderConfig)) {
-                val referenceFolderControl = referenceFolders[folderConfig]
-                val referenceFolder = referenceFolderControl?.text ?: ""
-
-                if (referenceFolder.isNotBlank()) {
-                    folderConfigSettings.addFolderConfig(
-                        folderConfig.copy(
-                            baseBranch = "",
-                            referenceFolderPath = referenceFolder
+            if (!baseBranches.containsKey(folderConfig)) {
+                referenceFolders[folderConfig]?.text?.let { referenceFolder ->
+                    if (referenceFolder.isNotBlank()) {
+                        folderConfigSettings.addFolderConfig(
+                            folderConfig.copy(
+                                baseBranch = "",
+                                referenceFolderPath = referenceFolder
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
