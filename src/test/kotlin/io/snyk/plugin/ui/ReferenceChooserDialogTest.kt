@@ -91,6 +91,9 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         cut.baseBranches = mutableMapOf(Pair(folderConfig, comboBox))
         cut.referenceFolders = mutableMapOf(Pair(folderConfig, referenceFolderControl))
 
+        // Manually set hasChanges since we're bypassing the UI change listeners
+        cut.hasChanges = true
+
         cut.execute()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
@@ -104,16 +107,16 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `test execute transmits config to language server even when no changes are made`() {
-        // setup selected item to main
+    fun `test execute does not transmit config to language server when no changes are made`() {
+        // setup selected item to match the original folderConfig (no changes)
         val comboBox = ComboBox(arrayOf("main", "dev")).apply {
             name = folderConfig.folderPath
-            selectedItem = "main"
+            selectedItem = folderConfig.baseBranch // Use original value, not "main"
         }
 
-        // Create a reference folder control to ensure change tracking works
+        // Create a reference folder control with original value (no changes)
         val referenceFolder = JTextField().apply {
-            text = "/some/reference/path"
+            text = folderConfig.referenceFolderPath ?: "" // Use original value
         }
         val referenceFolderControl = TextFieldWithBrowseButton(referenceFolder)
 
@@ -123,18 +126,10 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         cut.execute()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
-        // we need the config update before the scan
-        verify(exactly = 1, timeout = 2000) {
-            lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))
+        // Since no changes were made, nothing should be transmitted
+        verify(exactly = 0) {
+            lsMock.workspaceService.didChangeConfiguration(any())
         }
-
-        val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
-
-        // we expect the selected item
-        assertEquals("main", transmittedSettings.folderConfigs[0].baseBranch)
-        // we also expect the reference folder to be transmitted
-        assertEquals("/some/reference/path", transmittedSettings.folderConfigs[0].referenceFolderPath)
     }
 
     @Test
@@ -201,6 +196,9 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         val referenceFolderControl = TextFieldWithBrowseButton(referenceFolder)
         dialog.referenceFolders[configNoBranches] = referenceFolderControl
 
+        // Manually set hasChanges since we're bypassing the UI change listeners
+        dialog.hasChanges = true
+
         // Execute - should not crash and should process reference folder
         dialog.execute()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
@@ -215,6 +213,22 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         assertNotNull(transmittedConfig)
         assertEquals("", transmittedConfig!!.baseBranch) // Should be empty string
         assertEquals("/some/reference/path", transmittedConfig.referenceFolderPath)
+    }
+
+    @Test
+    fun `test OK button is disabled initially and enabled after changes`() {
+        // Create new dialog instance
+        val dialog = ReferenceChooserDialog(project)
+
+        // Initially, OK button should be disabled (no changes)
+        assertFalse(dialog.isOKActionEnabled)
+
+        // Simulate a change by modifying a combo box
+        val comboBox = dialog.baseBranches.values.firstOrNull()
+        if (comboBox != null) {
+            comboBox.selectedItem = "dev" // Change selection
+            assertTrue(dialog.isOKActionEnabled)
+        }
     }
 
 }

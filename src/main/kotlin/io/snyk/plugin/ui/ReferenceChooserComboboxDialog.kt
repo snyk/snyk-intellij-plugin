@@ -7,7 +7,6 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
@@ -25,11 +24,14 @@ import javax.swing.JPanel
 class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     var baseBranches: MutableMap<FolderConfig, ComboBox<String>> = mutableMapOf()
     internal var referenceFolders: MutableMap<FolderConfig, TextFieldWithBrowseButton> = mutableMapOf()
+    internal var hasChanges = false
 
     init {
         init()
         title = "Choose base branch for net-new issue scanning"
     }
+
+    override fun isOKActionEnabled(): Boolean = hasChanges
 
     override fun createCenterPanel(): JComponent {
         val folderConfigs = service<FolderConfigSettings>().getAllForProject(project)
@@ -48,6 +50,9 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
                 val comboBox = ComboBox(localBranches.sorted().toTypedArray())
                 comboBox.selectedItem = folderConfig.baseBranch
                 comboBox.name = folderConfig.folderPath
+
+                // Add change listener to track modifications
+                comboBox.addActionListener { hasChanges = true }
 
                 baseBranches[folderConfig] = comboBox
 
@@ -82,6 +87,9 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         referenceFolder.toolTipText =
             "Optional. Here you can specify a reference directory to be used for scanning."
 
+        // Add change listener to track modifications
+        referenceFolder.addPropertyChangeListener("text") { hasChanges = true }
+
         val descriptor = FileChooserDescriptor(
             false,
             true,
@@ -108,6 +116,11 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     }
 
     fun execute() {
+        // Only proceed if there are actual changes
+        if (!hasChanges) {
+            return
+        }
+
         val folderConfigSettings = service<FolderConfigSettings>()
 
         // Iterate over the baseBranches keys to ensure we process the correct folder configs
@@ -144,7 +157,7 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             }
         }
 
-        // Always try to update configuration, but don't block dialog closure
+        // Only update configuration if there are changes
         runInBackground("Snyk: updating configuration") {
             LanguageServerWrapper.getInstance(project).updateConfiguration(true)
         }
