@@ -37,8 +37,11 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
         project.getContentRootPaths().forEach {
             val absolutePathString = it.toAbsolutePath().normalize().toString()
             service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
-            folderConfig = FolderConfig(absolutePathString, "testBranch")
+
+            // Create a folder config with local branches for the original tests
+            folderConfig = FolderConfig(absolutePathString, "testBranch", localBranches = listOf("main", "dev"))
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
+
             languageServerWrapper.configuredWorkspaceFolders.add(
                 WorkspaceFolder(
                     absolutePathString.fromPathToUriString(),
@@ -58,6 +61,17 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     override fun tearDown() {
         super.tearDown()
         unmockkAll()
+    }
+
+    /**
+     * Helper method to create a folder config with no local branches for testing
+     */
+    private fun createFolderConfigWithNoBranches(): FolderConfig {
+        val folderConfigSettings = service<FolderConfigSettings>()
+        val existingConfig = folderConfigSettings.getFolderConfig(folderConfig.folderPath)
+        val modifiedConfig = existingConfig.copy(localBranches = emptyList())
+        folderConfigSettings.addFolderConfig(modifiedConfig)
+        return modifiedConfig
     }
 
     @Test
@@ -142,4 +156,65 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
             lsMock.workspaceService.didChangeConfiguration(capture(capturedParam))
         }
     }
+
+    @Test
+    fun `test dialog shows only reference folder when local branches is null`() {
+        // Create a folder config with null local branches
+        val folderConfigSettings = service<FolderConfigSettings>()
+        val existingConfig = folderConfigSettings.getFolderConfig(folderConfig.folderPath)
+        val configNullBranches = existingConfig.copy(localBranches = null)
+        folderConfigSettings.addFolderConfig(configNullBranches)
+
+        // Create new dialog instance
+        val dialog = ReferenceChooserDialog(project)
+
+        // Verify that only reference folder components are created
+        assertFalse(dialog.baseBranches.containsKey(configNullBranches))
+        assertTrue(dialog.referenceFolders.containsKey(configNullBranches))
+    }
+
+    @Test
+    fun `test dialog shows only reference folder when local branches is empty`() {
+        // Create a folder config with empty local branches
+        val configEmptyBranches = createFolderConfigWithNoBranches()
+
+        // Create new dialog instance
+        val dialog = ReferenceChooserDialog(project)
+
+        // Verify that only reference folder components are created
+        assertFalse(dialog.baseBranches.containsKey(configEmptyBranches))
+        assertTrue(dialog.referenceFolders.containsKey(configEmptyBranches))
+    }
+
+    @Test
+    fun `test execute handles folder configs with no base branches correctly`() {
+        // Create a folder config with no local branches
+        val configNoBranches = createFolderConfigWithNoBranches()
+
+        // Create new dialog instance
+        val dialog = ReferenceChooserDialog(project)
+
+        // Set up reference folder with text
+        val referenceFolder = JTextField().apply {
+            text = "/some/reference/path"
+        }
+        val referenceFolderControl = TextFieldWithBrowseButton(referenceFolder)
+        dialog.referenceFolders[configNoBranches] = referenceFolderControl
+
+        // Execute - should not crash and should process reference folder
+        dialog.execute()
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Verify that configuration was updated
+        val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
+        verify { lsMock.workspaceService.didChangeConfiguration(capture(capturedParam)) }
+
+        val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
+        val transmittedConfig = transmittedSettings.folderConfigs.find { it.folderPath == configNoBranches.folderPath }
+
+        assertNotNull(transmittedConfig)
+        assertEquals("", transmittedConfig!!.baseBranch) // Should be empty string
+        assertEquals("/some/reference/path", transmittedConfig.referenceFolderPath)
+    }
+
 }
