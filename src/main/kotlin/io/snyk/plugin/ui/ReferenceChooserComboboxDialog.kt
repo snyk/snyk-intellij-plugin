@@ -7,7 +7,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.runInBackground
@@ -23,22 +23,19 @@ import javax.swing.JPanel
 
 class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     var baseBranches: MutableMap<FolderConfig, ComboBox<String>> = mutableMapOf()
-    private val referenceFolders: MutableMap<FolderConfig, TextFieldWithBrowseButton> = mutableMapOf()
+    internal var referenceFolders: MutableMap<FolderConfig, TextFieldWithBrowseButton> = mutableMapOf()
+    internal var hasChanges = false
 
     init {
         init()
         title = "Choose base branch for net-new issue scanning"
     }
 
+    override fun isOKActionEnabled(): Boolean = hasChanges
+
     override fun createCenterPanel(): JComponent {
         val folderConfigs = service<FolderConfigSettings>().getAllForProject(project)
-        folderConfigs.forEach { folderConfig ->
-            val comboBox = ComboBox(folderConfig.localBranches?.sorted()?.toTypedArray() ?: emptyArray())
-            comboBox.selectedItem = folderConfig.baseBranch
-            comboBox.name = folderConfig.folderPath
-            baseBranches[folderConfig] = comboBox
-            referenceFolders[folderConfig] = configureReferenceFolder(folderConfig)
-        }
+
         val gridBagLayout = GridBagLayout()
         val dialogPanel = JPanel(gridBagLayout)
         val gridBag = GridBag()
@@ -47,14 +44,39 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         gridBag.defaultPaddingX = 20
         gridBag.defaultPaddingY = 20
 
-        baseBranches.forEach {
-            dialogPanel.add(JLabel("Base Branch for ${it.value.name}: "), gridBag.nextLine())
-            dialogPanel.add(it.value, gridBag.nextLine())
-            val referenceFolder = referenceFolders[it.key]
-            dialogPanel.add(JLabel("Reference Folder for ${referenceFolder!!.name}: "), gridBag.nextLine())
+        folderConfigs.forEach { folderConfig ->
+            // Only create combo box if there are local branches
+            folderConfig.localBranches?.takeIf { it.isNotEmpty() }?.let { localBranches ->
+                val comboBox = ComboBox(localBranches.sorted().toTypedArray())
+                comboBox.selectedItem = folderConfig.baseBranch
+                comboBox.name = folderConfig.folderPath
+
+                // Add change listener to track modifications
+                comboBox.addActionListener { hasChanges = true }
+
+                baseBranches[folderConfig] = comboBox
+
+                // Add base branch components to dialog
+                dialogPanel.add(JLabel("Base Branch for ${comboBox.name}: "), gridBag.nextLine())
+                dialogPanel.add(comboBox, gridBag.nextLine())
+            }
+
+            // Always create reference folder
+            val referenceFolder = configureReferenceFolder(folderConfig)
+            referenceFolders[folderConfig] = referenceFolder
+
+            // Add reference folder components to dialog
+            dialogPanel.add(JLabel("Reference Folder for ${referenceFolder.name}: "), gridBag.nextLine())
             dialogPanel.add(referenceFolder, gridBag.nextLine())
         }
-        return dialogPanel
+
+        // Wrap the content panel in a scroll pane
+        val scrollPane = JBScrollPane(dialogPanel)
+        scrollPane.verticalScrollBarPolicy = JBScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+        scrollPane.horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+        scrollPane.border = JBUI.Borders.empty()
+
+        return scrollPane
     }
 
     private fun configureReferenceFolder(folderConfig: FolderConfig): TextFieldWithBrowseButton {
@@ -64,6 +86,9 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
 
         referenceFolder.toolTipText =
             "Optional. Here you can specify a reference directory to be used for scanning."
+
+        // Add change listener to track modifications
+        referenceFolder.addPropertyChangeListener("text") { hasChanges = true }
 
         val descriptor = FileChooserDescriptor(
             false,
@@ -81,6 +106,7 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             descriptor,
             TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT,
         )
+
         return referenceFolder
     }
 
@@ -90,40 +116,51 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     }
 
     fun execute() {
+        // Only proceed if there are actual changes
+        if (!hasChanges) {
+            return
+        }
+
         val folderConfigSettings = service<FolderConfigSettings>()
-        baseBranches.forEach {
-            val folderConfig: FolderConfig = it.key
 
-            val baseBranch = getSelectedItem(it.value) ?: ""
+        // Iterate over the baseBranches keys to ensure we process the correct folder configs
+        baseBranches.keys.forEach { folderConfig ->
+            val comboBox = baseBranches[folderConfig]
+            val baseBranch = comboBox?.let { getSelectedItem(it) } ?: ""
             val referenceFolderControl = referenceFolders[folderConfig]
-            val referenceFolder = referenceFolderControl?.text ?: ""
-            if (referenceFolder.isNotBlank() || baseBranch.isNotBlank()) {
-                folderConfigSettings.addFolderConfig(folderConfig.copy(baseBranch = baseBranch, referenceFolderPath = referenceFolder))
-            }
-        }
 
-        if (doValidate() == null) {
-            runInBackground("Snyk: updating configuration") {
-                LanguageServerWrapper.getInstance(project).updateConfiguration(true)
-            }
-        }
-    }
-
-    override fun doValidate(): ValidationInfo? {
-        baseBranches.forEach { entry ->
-            val baseBranch = entry.value
-            val refFolder = referenceFolders[entry.key]
-
-            val baseBranchSelected = !getSelectedItem(baseBranch).isNullOrBlank()
-            val refFolderSelected = refFolder != null && refFolder.text.isNotBlank()
-            if (!baseBranchSelected && !refFolderSelected) {
-                return ValidationInfo(
-                    "Please select a base branch for ${baseBranch.name} or a reference folder",
-                    baseBranch
+            // Update if either base branch or reference folder is provided
+            if (baseBranch.isNotBlank() || referenceFolderControl?.text?.isNotBlank() == true) {
+                folderConfigSettings.addFolderConfig(
+                    folderConfig.copy(
+                        baseBranch = baseBranch,
+                        referenceFolderPath = referenceFolderControl?.text ?: ""
+                    )
                 )
             }
         }
-        return null
+
+        // Also process any folder configs that only have reference folders (no base branches)
+        val allFolderConfigs = service<FolderConfigSettings>().getAllForProject(project)
+        allFolderConfigs.forEach { folderConfig ->
+            if (!baseBranches.containsKey(folderConfig)) {
+                referenceFolders[folderConfig]?.text?.let { referenceFolder ->
+                    if (referenceFolder.isNotBlank()) {
+                        folderConfigSettings.addFolderConfig(
+                            folderConfig.copy(
+                                baseBranch = "",
+                                referenceFolderPath = referenceFolder
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        // Only update configuration if there are changes
+        runInBackground("Snyk: updating configuration") {
+            LanguageServerWrapper.getInstance(project).updateConfiguration(true)
+        }
     }
 
     private fun getSelectedItem(baseBranch: ComboBox<String>) = baseBranch.selectedItem?.toString()
