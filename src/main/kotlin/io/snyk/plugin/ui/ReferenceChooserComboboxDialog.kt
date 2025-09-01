@@ -88,7 +88,11 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
             "Optional. Here you can specify a reference directory to be used for scanning."
 
         // Add change listener to track modifications
-        referenceFolder.addPropertyChangeListener("text") { hasChanges = true }
+        referenceFolder.textField.document.addDocumentListener(object : javax.swing.event.DocumentListener {
+            override fun insertUpdate(e: javax.swing.event.DocumentEvent?) { hasChanges = true }
+            override fun removeUpdate(e: javax.swing.event.DocumentEvent?) { hasChanges = true }
+            override fun changedUpdate(e: javax.swing.event.DocumentEvent?) { hasChanges = true }
+        })
 
         val descriptor = FileChooserDescriptor(
             false,
