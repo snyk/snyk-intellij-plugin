@@ -1,5 +1,13 @@
 # Snyk Security Changelog
 
+## [2.16.0]
+### Changed
+- Added support for JetBrains 2025.2 IDE releases
+- Increased available memory for CI security scans
+- Improved reference folder and branch selection handling for Net New Issues feature
+- Added security guidance in the [Security](SECURITY.md) document
+- Improved contribution guidance in the [Contributing](CONTRIBUTING.md), [Contributor Agreement](Contributor-Agreement.md) and [Code of Conduct](CODE_OF_CONDUCT.md) documents
+
 ## [2.15.0]
 ### Changes
 - make language server run per project, not per application. this fixes issue counts in summary view and makes the UI thread less busy
