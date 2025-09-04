@@ -66,6 +66,7 @@ class LanguageServerWrapperTest {
 
         every { projectManagerMock.openProjects } returns arrayOf(projectMock)
         every { projectMock.isDisposed } returns false
+        every { projectMock.getName() } returns "test-project"
         every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
         every { projectMock.getService(SnykPluginDisposable::class.java) } returns snykPluginDisposable
         every { dumbServiceMock.isDumb } returns false
