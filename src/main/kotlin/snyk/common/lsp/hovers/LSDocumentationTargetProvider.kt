@@ -4,6 +4,7 @@ package snyk.common.lsp.hovers
 
 import com.intellij.model.Pointer
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.backend.documentation.DocumentationResult
 import com.intellij.platform.backend.documentation.DocumentationTarget
 import com.intellij.platform.backend.documentation.DocumentationTargetProvider
@@ -39,21 +40,33 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
 
     override fun documentationTargets(file: PsiFile, offset: Int): MutableList<out DocumentationTarget> {
         val languageServerWrapper = LanguageServerWrapper.getInstance(file.project)
-        if (disposed || !languageServerWrapper.isInitialized || !isDocumentationHoverEnabled()) return mutableListOf()
+        val emptyReturnList = mutableListOf<DocumentationTarget>()
+        if (disposed || !languageServerWrapper.isInitialized || !isDocumentationHoverEnabled()) return emptyReturnList
 
         val lineNumber = file.viewProvider.document.getLineNumber(offset)
         val lineStartOffset = file.viewProvider.document.getLineStartOffset(lineNumber)
+        val virtualFile: VirtualFile? = try {
+            file.virtualFile
+        } catch (_: NullPointerException) {
+            // don't do anything
+            null
+        }
+
+        if (virtualFile == null) {
+            return emptyReturnList
+        }
+
         val hoverParams = HoverParams(
-            TextDocumentIdentifier(file.virtualFile.toLanguageServerURI()),
+            TextDocumentIdentifier(virtualFile.toLanguageServerURI()),
             Position(lineNumber, offset - lineStartOffset)
         )
         try {
             val hover =
                 languageServerWrapper.languageServer.textDocumentService.hover(hoverParams).get(5, TimeUnit.SECONDS)
-            if (hover == null || hover.contents.right.value.isEmpty()) return mutableListOf()
+            if (hover == null || hover.contents.right.value.isEmpty()) return emptyReturnList
             return mutableListOf(SnykDocumentationTarget(hover))
         } catch (ignored: TimeoutException) {
-            return mutableListOf()
+            return emptyReturnList
         }
     }
 
