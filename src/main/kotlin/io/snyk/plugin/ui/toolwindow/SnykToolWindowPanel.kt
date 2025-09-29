@@ -383,7 +383,10 @@ class SnykToolWindowPanel(
             securityIssuesCount = NODE_INITIAL_STATE,
             iacResultsCount = NODE_INITIAL_STATE,
         )
-        (vulnerabilitiesTree.model as DefaultTreeModel).reload()
+
+        invokeLater {
+            (vulnerabilitiesTree.model as DefaultTreeModel).reload()
+        }
 
         if (reDisplayDescription) {
             displayEmptyDescription()
@@ -399,8 +402,9 @@ class SnykToolWindowPanel(
             ),
     ) {
         rootNodesToUpdate.forEach {
-            if (it.childCount > 0) it.removeAllChildren()
-            (vulnerabilitiesTree.model as DefaultTreeModel).reload(it)
+            if (it.childCount > 0) {
+                it.removeAllChildren()
+            }
         }
     }
 
