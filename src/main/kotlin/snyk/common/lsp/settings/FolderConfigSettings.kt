@@ -4,7 +4,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getContentRootPaths
-import io.snyk.plugin.suffixIfNot
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
@@ -33,7 +32,6 @@ class FolderConfigSettings {
                 .normalize()
                 .toAbsolutePath()
                 .toString()
-                .suffixIfNot(File.separator)
         return normalizedAbsolutePath
     }
 

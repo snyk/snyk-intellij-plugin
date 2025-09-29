@@ -1,6 +1,5 @@
 package snyk.common.lsp.settings
 
-import io.snyk.plugin.suffixIfNot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -23,7 +22,7 @@ class FolderConfigSettingsTest {
     @Test
     fun `addFolderConfig stores and getFolderConfig retrieves with simple path`() {
         val path = "/test/projectA"
-        val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString().suffixIfNot(File.separator)
+        val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString()
         val config = FolderConfig(
             folderPath = path,
             baseBranch = "main",
@@ -50,7 +49,6 @@ class FolderConfigSettingsTest {
     fun `addFolderConfig normalizes path with dot and double-dot segments`() {
         val rawPath = "/test/projectB/./subfolder/../othersubfolder"
         val expectedNormalizedPath = Paths.get(rawPath).normalize().toAbsolutePath().toString()
-            .suffixIfNot(File.separator)
 
         val config = FolderConfig(folderPath = rawPath, baseBranch = "develop")
         settings.addFolderConfig(config)
@@ -74,7 +72,7 @@ class FolderConfigSettingsTest {
         val path1 = "/my/project/folder"
         val path2 = "/my/project/./folder"
         val path3 = "/my/project/../project/folder"
-        val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString().suffixIfNot(File.separator)
+        val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
 
         val config = FolderConfig(folderPath = path1, baseBranch = "feature-branch")
         settings.addFolderConfig(config)
@@ -105,7 +103,7 @@ class FolderConfigSettingsTest {
     fun `getFolderConfig creates and stores new config if not found, with normalized path`() {
         val rawPath = "/new/folder/./for/creation"
         val expectedNormalizedPath =
-            Paths.get(rawPath).normalize().toAbsolutePath().toString().suffixIfNot(File.separator)
+            Paths.get(rawPath).normalize().toAbsolutePath().toString()
 
         assertTrue("Settings should be empty initially", settings.getAll().isEmpty())
 
@@ -143,7 +141,7 @@ class FolderConfigSettingsTest {
     fun `addFolderConfig overwrites existing config with same normalized path`() {
         val path = "/my/overwritable/folder"
         val equivalentPath = "/my/overwritable/./folder/../folder"
-        val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString().suffixIfNot(File.separator)
+        val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString()
 
         val config1 = FolderConfig(folderPath = path, baseBranch = "v1", additionalParameters = listOf("param1"))
         settings.addFolderConfig(config1)
@@ -174,8 +172,8 @@ class FolderConfigSettingsTest {
         val pathUpper = "/Case/Sensitive/Path"
         val pathLower = "/case/sensitive/path"
 
-        val normalizedUpper = Paths.get(pathUpper).normalize().toAbsolutePath().toString().suffixIfNot(File.separator)
-        val normalizedLower = Paths.get(pathLower).normalize().toAbsolutePath().toString().suffixIfNot(File.separator)
+        val normalizedUpper = Paths.get(pathUpper).normalize().toAbsolutePath().toString()
+        val normalizedLower = Paths.get(pathLower).normalize().toAbsolutePath().toString()
 
         val configUpper = FolderConfig(folderPath = pathUpper, baseBranch = "upper")
         settings.addFolderConfig(configUpper)
@@ -224,7 +222,7 @@ class FolderConfigSettingsTest {
         val pathWithoutSlash = "/test/trailing"
         // For non-root paths, Paths.get().normalize() typically removes trailing slashes.
         val expectedNormalizedPath =
-            Paths.get(pathWithoutSlash).normalize().toAbsolutePath().toString().suffixIfNot(File.separator)
+            Paths.get(pathWithoutSlash).normalize().toAbsolutePath().toString()
 
         // Add with slash
         val config1 = FolderConfig(folderPath = pathWithSlash, baseBranch = "main")
