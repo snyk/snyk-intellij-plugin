@@ -39,7 +39,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
             service<WorkspaceTrustSettings>().addTrustedPath(absolutePathString)
 
             // Create a folder config with local branches for the original tests
-            folderConfig = FolderConfig(absolutePathString, "testBranch", localBranches = listOf("main", "dev"))
+            folderConfig = FolderConfig(absolutePathString, baseBranch = "testBranch", localBranches = listOf("main", "dev"))
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
 
             languageServerWrapper.configuredWorkspaceFolders.add(

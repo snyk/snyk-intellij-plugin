@@ -49,7 +49,6 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
             snykSettingsDialog.getDisplayIssuesSelection() != settingsStateService.issuesToDisplay ||
-
             isAuthenticationMethodModified()
 
     private fun isAuthenticationMethodModified() =
@@ -60,6 +59,7 @@ class SnykProjectSettingsConfigurable(
             isCustomEndpointModified() ||
             isOrganizationModified() ||
             isAdditionalParametersModified() ||
+            isPreferredOrgModified() ||
             isAuthenticationMethodModified() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
             snykSettingsDialog.isIssueViewOptionsChanged() ||
@@ -106,7 +106,8 @@ class SnykProjectSettingsConfigurable(
                 .map {
                     it.copy(
                         additionalParameters = snykSettingsDialog.getAdditionalParameters()
-                            .split(" ", System.lineSeparator())
+                            .split(" ", System.lineSeparator()),
+                        preferredOrg = snykSettingsDialog.getPreferredOrg()
                     )
                 }
                 .forEach { fcs.addFolderConfig(it) }
@@ -191,5 +192,12 @@ class SnykProjectSettingsConfigurable(
         val storedAdditionalParams = service<FolderConfigSettings>().getAdditionalParameters(project)
         return (isProjectSettingsAvailable(project)
             && dialogAdditionalParameters != storedAdditionalParams)
+    }
+
+    private fun isPreferredOrgModified(): Boolean {
+        val dialogPreferredOrg: String = snykSettingsDialog.getPreferredOrg()
+        val storedPreferredOrg = service<FolderConfigSettings>().getPreferredOrg(project)
+        return (isProjectSettingsAvailable(project)
+            && dialogPreferredOrg != storedPreferredOrg)
     }
 }

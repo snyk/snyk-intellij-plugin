@@ -58,7 +58,7 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
         service<FolderConfigSettings>()
             .addFolderConfig(
                 FolderConfig(
-                    contentRootPaths.first().toAbsolutePath().toString(), "main"
+                    contentRootPaths.first().toAbsolutePath().toString(), baseBranch = "main"
                 )
             )
         snykToolWindowPanel = SnykToolWindowPanel(project)
