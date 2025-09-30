@@ -16,7 +16,18 @@ class PlatformTest {
         val linuxPlatform = Platform.detect(properties)
         assertTrue(Platform.LINUX == linuxPlatform || Platform.LINUX_ALPINE == linuxPlatform)
 
+        properties["os.name"] = "linux"
+        properties["os.arch"] = "aarch64"
+        val arm64Platform = Platform.detect(properties)
+        assertTrue(Platform.LINUX_ARM64 == arm64Platform || Platform.LINUX_ALPINE_ARM64 == arm64Platform)
+
+        properties["os.name"] = "linux"
+        properties["os.arch"] = "arm64"
+        val arm64Platform2 = Platform.detect(properties)
+        assertTrue(Platform.LINUX_ARM64 == arm64Platform2 || Platform.LINUX_ALPINE_ARM64 == arm64Platform2)
+
         properties["os.name"] = "mac os x"
+        properties["os.arch"] = "something"
         assertTrue(Platform.MAC_OS == Platform.detect(properties))
 
         properties["os.name"] = "osx"
