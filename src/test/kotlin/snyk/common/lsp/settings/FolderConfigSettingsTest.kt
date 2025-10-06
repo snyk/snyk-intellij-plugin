@@ -14,8 +14,6 @@ import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
-import java.io.File
-import java.net.URI
 import java.nio.file.Paths
 
 class FolderConfigSettingsTest {
@@ -386,7 +384,7 @@ class FolderConfigSettingsTest {
     fun `getPreferredOrg returns empty string when no configs exist`() {
         val projectMock = mockk<Project>(relaxed = true)
         val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-        
+
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
         every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns emptySet()
@@ -400,12 +398,12 @@ class FolderConfigSettingsTest {
     fun `getPreferredOrg returns preferredOrg from first folder config with non-empty value`() {
         val projectMock = mockk<Project>(relaxed = true)
         val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-        
+
         val path1 = "/test/project1"
         val path2 = "/test/project2"
         val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
         val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
-        
+
         // Add configs with preferredOrg
         val config1 = FolderConfig(
             folderPath = path1,
@@ -442,12 +440,12 @@ class FolderConfigSettingsTest {
     fun `getPreferredOrg skips empty preferredOrg and returns first non-empty value`() {
         val projectMock = mockk<Project>(relaxed = true)
         val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-        
+
         val path1 = "/test/project1"
         val path2 = "/test/project2"
         val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
         val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
-        
+
         // Add configs - first with empty preferredOrg, second with value
         val config1 = FolderConfig(
             folderPath = path1,
@@ -484,10 +482,10 @@ class FolderConfigSettingsTest {
     fun `getPreferredOrg returns empty string when all preferredOrg values are empty`() {
         val projectMock = mockk<Project>(relaxed = true)
         val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-        
+
         val path1 = "/test/project1"
         val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
-        
+
         val config1 = FolderConfig(
             folderPath = path1,
             baseBranch = "main",
@@ -513,12 +511,12 @@ class FolderConfigSettingsTest {
     fun `getPreferredOrg only includes configured workspace folders`() {
         val projectMock = mockk<Project>(relaxed = true)
         val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-        
+
         val path1 = "/test/project1"
         val path2 = "/test/project2"
         val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
         val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
-        
+
         val config1 = FolderConfig(
             folderPath = path1,
             baseBranch = "main",
@@ -549,5 +547,69 @@ class FolderConfigSettingsTest {
 
         val result = settings.getPreferredOrg(projectMock)
         assertEquals("PreferredOrg should only use configured workspace folders", "org-uuid-2", result)
+    }
+
+    @Test
+    fun `addFolderConfig stores and retrieves orgSetByUser with default false`() {
+        val path = "/test/project"
+        val config = FolderConfig(
+            folderPath = path,
+            baseBranch = "main"
+        )
+
+        settings.addFolderConfig(config)
+
+        val retrievedConfig = settings.getFolderConfig(path)
+        assertNotNull("Retrieved config should not be null", retrievedConfig)
+        assertEquals("orgSetByUser should default to false", false, retrievedConfig.orgSetByUser)
+    }
+
+    @Test
+    fun `addFolderConfig stores and retrieves orgSetByUser set to true`() {
+        val path = "/test/project"
+        val config = FolderConfig(
+            folderPath = path,
+            baseBranch = "main",
+            orgSetByUser = true
+        )
+
+        settings.addFolderConfig(config)
+
+        val retrievedConfig = settings.getFolderConfig(path)
+        assertNotNull("Retrieved config should not be null", retrievedConfig)
+        assertEquals("orgSetByUser should be true", true, retrievedConfig.orgSetByUser)
+    }
+
+    @Test
+    fun `addFolderConfig overwrites orgSetByUser when config is updated`() {
+        val path = "/test/project"
+        val config1 = FolderConfig(
+            folderPath = path,
+            baseBranch = "main",
+            orgSetByUser = false
+        )
+        settings.addFolderConfig(config1)
+
+        val retrieved1 = settings.getFolderConfig(path)
+        assertEquals("First orgSetByUser should be false", false, retrieved1.orgSetByUser)
+
+        val config2 = FolderConfig(
+            folderPath = path,
+            baseBranch = "main",
+            orgSetByUser = true
+        )
+        settings.addFolderConfig(config2)
+
+        val retrieved2 = settings.getFolderConfig(path)
+        assertEquals("orgSetByUser should be updated to true", true, retrieved2.orgSetByUser)
+    }
+
+    @Test
+    fun `getFolderConfig creates new config with orgSetByUser false by default`() {
+        val path = "/new/project"
+
+        val newConfig = settings.getFolderConfig(path)
+        assertNotNull("New config should not be null", newConfig)
+        assertEquals("New config orgSetByUser should be false", false, newConfig.orgSetByUser)
     }
 }

@@ -60,6 +60,7 @@ class SnykProjectSettingsConfigurable(
             isOrganizationModified() ||
             isAdditionalParametersModified() ||
             isPreferredOrgModified() ||
+            isAutoDetectOrgModified() ||
             isAuthenticationMethodModified() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
             snykSettingsDialog.isIssueViewOptionsChanged() ||
@@ -107,7 +108,8 @@ class SnykProjectSettingsConfigurable(
                     it.copy(
                         additionalParameters = snykSettingsDialog.getAdditionalParameters()
                             .split(" ", System.lineSeparator()),
-                        preferredOrg = snykSettingsDialog.getPreferredOrg()
+                        preferredOrg = snykSettingsDialog.getPreferredOrg(),
+                        orgSetByUser = !snykSettingsDialog.isAutoDetectOrg()
                     )
                 }
                 .forEach { fcs.addFolderConfig(it) }
@@ -199,5 +201,12 @@ class SnykProjectSettingsConfigurable(
         val storedPreferredOrg = service<FolderConfigSettings>().getPreferredOrg(project)
         return (isProjectSettingsAvailable(project)
             && dialogPreferredOrg != storedPreferredOrg)
+    }
+
+    private fun isAutoDetectOrgModified(): Boolean {
+        val dialogAutoDetectOrg: Boolean = snykSettingsDialog.isAutoDetectOrg()
+        val storedOrgSetByUser = service<FolderConfigSettings>().getAllForProject(project).firstOrNull()?.orgSetByUser ?: false
+        return (isProjectSettingsAvailable(project)
+            && dialogAutoDetectOrg == storedOrgSetByUser) // inverse comparison
     }
 }
