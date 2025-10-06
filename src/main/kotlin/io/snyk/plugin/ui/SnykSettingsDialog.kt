@@ -593,19 +593,44 @@ class SnykSettingsDialog(
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
-            autoDetectOrgCheckbox.text = "Auto-detect organization"
+            val autoDetectOrgLabel = JLabel("Auto-select organization:")
             projectSettingsPanel.add(
-                autoDetectOrgCheckbox,
+                autoDetectOrgLabel,
+                baseGridConstraintsAnchorWest(
+                    row = 1,
+                    indent = 0,
+                ),
+            )
+
+            val autoDetectOrgContextHelpLabel =
+                ContextHelpLabel.createWithLink(
+                    null,
+                    "Use automatic organization selection, where the most suitable organization for your project is selected from the organizations you have access to which have the project imported, falling back to the preferred organization as defined in your web account settings.\n\nIf you do not use this feature, then either the org you entered, or if blank or incorrect, your profile default organization is used.",
+                    "web account settings",
+                ) {
+                    BrowserUtil.browse("https://app.snyk.io/account")
+                }
+
+            val autoDetectOrgPanel = JPanel(GridBagLayout()).apply {
+                val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+                add(autoDetectOrgCheckbox, gb.nextLine().next())
+                add(autoDetectOrgContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+            }
+
+            projectSettingsPanel.add(
+                autoDetectOrgPanel,
                 baseGridConstraints(
                     row = 1,
                     column = 1,
-                    colSpan = 1,
+                    colSpan = 2,
                     anchor = UIGridConstraints.ANCHOR_WEST,
                     fill = UIGridConstraints.FILL_NONE,
                     hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
                     indent = 0,
                 ),
             )
+
+            autoDetectOrgLabel.labelFor = autoDetectOrgCheckbox
 
             val preferredOrgLabel = JLabel("Preferred organization:")
             projectSettingsPanel.add(
