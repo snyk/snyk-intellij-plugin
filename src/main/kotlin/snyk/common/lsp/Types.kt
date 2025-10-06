@@ -558,11 +558,13 @@ data class FolderConfigsParam(
  */
 data class FolderConfig(
     @SerializedName("folderPath") val folderPath: String,
+    @SerializedName("preferredOrg") val preferredOrg: String = "",
     @SerializedName("baseBranch") val baseBranch: String,
     @SerializedName("localBranches") val localBranches: List<String>? = emptyList(),
     @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),
     @SerializedName("referenceFolderPath") val referenceFolderPath: String? = "",
     @SerializedName("scanCommandConfig") val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
+    @SerializedName("orgSetByUser") val orgSetByUser: Boolean = false,
 ) : Comparable<FolderConfig> {
     override fun compareTo(other: FolderConfig): Int {
         return this.folderPath.compareTo(other.folderPath)

@@ -82,4 +82,22 @@ class FolderConfigSettings {
             .joinToString(" ")
         return additionalParameters
     }
+
+    /**
+     * Gets the preferred organization for the given project by aggregating the folder configs with workspace folder paths.
+     * @param project the project to get the preferred organization for
+     * @return the preferred organization for the project
+     */
+    fun getPreferredOrg(project: Project): String {
+        // only use folder config with workspace folder path
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val preferredOrg = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .filter { it.preferredOrg.isNotEmpty() }
+            .map { it.preferredOrg }
+            .firstOrNull()
+        return preferredOrg ?: ""
+    }
 }
