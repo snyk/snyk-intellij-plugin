@@ -101,8 +101,9 @@ class SnykSettingsDialog(
     private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
     private val organizationTextField: JTextField =
         JTextField().apply {
-            toolTipText = "The UUID of your organization or the org stub"
+            toolTipText = "This field is superseded by the 'Preferred Organization' on project level"
             preferredWidth = tokenTextField.preferredWidth
+            isEnabled = false
         }
     private val ignoreUnknownCACheckBox: JCheckBox =
         JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
