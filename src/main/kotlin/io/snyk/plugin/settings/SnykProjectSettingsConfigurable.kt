@@ -109,7 +109,7 @@ class SnykProjectSettingsConfigurable(
                         additionalParameters = snykSettingsDialog.getAdditionalParameters()
                             .split(" ", System.lineSeparator()),
                         preferredOrg = snykSettingsDialog.getPreferredOrg(),
-                        orgSetByUser = !snykSettingsDialog.isAutoDetectOrg()
+                        orgSetByUser = snykSettingsDialog.getPreferredOrg().isNotBlank() || !snykSettingsDialog.isAutoDetectOrg()
                     )
                 }
                 .forEach { fcs.addFolderConfig(it) }
@@ -183,8 +183,12 @@ class SnykProjectSettingsConfigurable(
     private fun isCustomEndpointModified(): Boolean =
         snykSettingsDialog.getCustomEndpoint() != settingsStateService.customEndpointUrl
 
-    private fun isOrganizationModified(): Boolean =
-        snykSettingsDialog.getOrganization() != settingsStateService.organization
+    private fun isOrganizationModified(): Boolean {
+        val dialogOrganization: String = snykSettingsDialog.getOrganization()
+        val storedOrganization = service<FolderConfigSettings>().getOrganization(project)
+        return (isProjectSettingsAvailable(project)
+            && dialogOrganization != storedOrganization)
+    }
 
     private fun isIgnoreUnknownCAModified(): Boolean =
         snykSettingsDialog.isIgnoreUnknownCA() != settingsStateService.ignoreUnknownCA
@@ -205,8 +209,8 @@ class SnykProjectSettingsConfigurable(
 
     private fun isAutoDetectOrgModified(): Boolean {
         val dialogAutoDetectOrg: Boolean = snykSettingsDialog.isAutoDetectOrg()
-        val storedOrgSetByUser = service<FolderConfigSettings>().getAllForProject(project).firstOrNull()?.orgSetByUser ?: false
+        val storedAutoOrgEnabled = service<FolderConfigSettings>().isAutoOrganizationEnabled(project)
         return (isProjectSettingsAvailable(project)
-            && dialogAutoDetectOrg == storedOrgSetByUser) // inverse comparison
+            && dialogAutoDetectOrg != storedAutoOrgEnabled)
     }
 }

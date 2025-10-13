@@ -559,6 +559,7 @@ data class FolderConfigsParam(
 data class FolderConfig(
     @SerializedName("folderPath") val folderPath: String,
     @SerializedName("preferredOrg") val preferredOrg: String = "",
+    @SerializedName("autoDeterminedOrg") val autoDeterminedOrg: String = "",
     @SerializedName("baseBranch") val baseBranch: String,
     @SerializedName("localBranches") val localBranches: List<String>? = emptyList(),
     @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),

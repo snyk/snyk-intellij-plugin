@@ -22,7 +22,13 @@ class FolderConfigSettings {
         if (folderConfig.folderPath.isNullOrBlank()) return
         val normalizedAbsolutePath = normalizePath(folderConfig.folderPath)
 
-        val configToStore = folderConfig.copy(folderPath = normalizedAbsolutePath)
+        // Handle null values from Language Server by providing defaults
+        val configToStore = folderConfig.copy(
+            folderPath = normalizedAbsolutePath,
+            preferredOrg = folderConfig.preferredOrg ?: "",
+            autoDeterminedOrg = folderConfig.autoDeterminedOrg ?: "",
+            referenceFolderPath = folderConfig.referenceFolderPath ?: ""
+        )
         configs[normalizedAbsolutePath] = configToStore
     }
 
@@ -99,5 +105,82 @@ class FolderConfigSettings {
             .map { it.preferredOrg }
             .firstOrNull()
         return preferredOrg ?: ""
+    }
+
+    /**
+     * Gets the appropriate organization for the given project based on orgSetByUser flag.
+     * Returns autoDeterminedOrg if orgSetByUser is false, otherwise returns preferredOrg.
+     * @param project the project to get the organization for
+     * @return the appropriate organization for the project
+     */
+    fun getOrganization(project: Project): String {
+        // only use folder config with workspace folder path
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .firstOrNull()
+
+        return if (folderConfig?.orgSetByUser == true) {
+            folderConfig.preferredOrg
+        } else {
+            folderConfig?.autoDeterminedOrg ?: ""
+        }
+    }
+
+    /**
+     * Checks if auto-organization is enabled for the given project.
+     * Returns true if orgSetByUser is false (auto-detect enabled), false otherwise.
+     * @param project the project to check
+     * @return true if auto-organization is enabled
+     */
+    fun isAutoOrganizationEnabled(project: Project): Boolean {
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .firstOrNull()
+
+        return folderConfig?.orgSetByUser != true
+    }
+
+    /**
+     * Sets the auto-organization setting for the given project.
+     * @param project the project to update
+     * @param autoOrganization true to enable auto-organization, false to use preferred organization
+     */
+    fun setAutoOrganization(project: Project, autoOrganization: Boolean) {
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .toList()
+
+        folderConfigs.forEach { folderConfig ->
+            val updatedConfig = folderConfig.copy(orgSetByUser = !autoOrganization)
+            addFolderConfig(updatedConfig)
+        }
+    }
+
+    /**
+     * Sets the organization for the given project.
+     * @param project the project to update
+     * @param organization the organization to set (empty string to clear)
+     */
+    fun setOrganization(project: Project, organization: String?) {
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .toList()
+
+        folderConfigs.forEach { folderConfig ->
+            val updatedConfig = folderConfig.copy(preferredOrg = organization ?: "")
+            addFolderConfig(updatedConfig)
+        }
     }
 }

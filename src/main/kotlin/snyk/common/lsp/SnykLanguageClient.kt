@@ -177,12 +177,15 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
     @JsonNotification(value = "$/snyk.folderConfigs")
     fun folderConfig(folderConfigParam: FolderConfigsParam?) {
+        if (disposed) return
         val folderConfigs = folderConfigParam?.folderConfigs ?: emptyList()
         runAsync {
             val service = service<FolderConfigSettings>()
+            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+
             service.addAll(folderConfigs)
             folderConfigs.forEach {
-                LanguageServerWrapper.getInstance(project).updateFolderConfigRefresh(it.folderPath, true)
+                languageServerWrapper.updateFolderConfigRefresh(it.folderPath, true)
             }
         }
     }

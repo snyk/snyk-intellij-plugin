@@ -37,6 +37,7 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.isAdditionalParametersValid
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
@@ -115,11 +116,27 @@ class SnykSettingsDialog(
     private val autoDetectOrgCheckbox: JCheckBox =
         JCheckBox().apply {
             toolTipText = "When checked, the organization is automatically detected from Snyk settings"
+
+            // Update the text field when checkbox state changes
+            addActionListener {
+                updatePreferredOrgTextField()
+            }
         }
     private val preferredOrgTextField: JTextField =
         JTextField().apply {
             toolTipText = "The UUID of your preferred organization or the org stub"
             preferredWidth = tokenTextField.preferredWidth
+
+            // Auto-disable auto-detect when user enters a preferred organization
+            document.addDocumentListener(object : DocumentAdapter() {
+                override fun textChanged(event: DocumentEvent) {
+                    val orgSetByUser = isOrgSetByUser(project)
+                    val checkboxSelected = autoDetectOrgCheckbox.isSelected
+                    if (!orgSetByUser && checkboxSelected) {
+                        autoDetectOrgCheckbox.isSelected = false
+                    }
+                }
+            })
         }
 
     private val scanTypesPanelOuter = ScanTypesPanel(project)
@@ -195,9 +212,11 @@ class SnykSettingsDialog(
             additionalParametersTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
             additionalParametersTextField.text = getAdditionalParams(project)
             autoDetectOrgCheckbox.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
-            autoDetectOrgCheckbox.isSelected = !isOrgSetByUser(project)
+            val orgSetByUser = isOrgSetByUser(project)
+            val organization = getOrganization(project)
+            autoDetectOrgCheckbox.isSelected = !orgSetByUser
             preferredOrgTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
-            preferredOrgTextField.text = getPreferredOrg(project)
+            preferredOrgTextField.text = organization
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
@@ -220,10 +239,16 @@ class SnykSettingsDialog(
         return folderConfigSettings.getPreferredOrg(project)
     }
 
+    private fun getOrganization(project: Project): String? {
+        // get workspace folders for project
+        val folderConfigSettings = service<FolderConfigSettings>()
+        return folderConfigSettings.getOrganization(project)
+    }
+
     private fun isOrgSetByUser(project: Project): Boolean {
         // get workspace folders for project
         val folderConfigSettings = service<FolderConfigSettings>()
-        return folderConfigSettings.getAllForProject(project).firstOrNull()?.orgSetByUser ?: false
+        return !folderConfigSettings.isAutoOrganizationEnabled(project)
     }
 
     fun getRootPanel(): JComponent = rootPanel
@@ -902,6 +927,27 @@ class SnykSettingsDialog(
     fun getPreferredOrg(): String = preferredOrgTextField.text
 
     fun isAutoDetectOrg(): Boolean = autoDetectOrgCheckbox.isSelected
+
+    private fun updatePreferredOrgTextField() {
+        val checkboxState = autoDetectOrgCheckbox.isSelected
+        val folderConfigSettings = service<FolderConfigSettings>()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .firstOrNull()
+
+        val organization = if (checkboxState) {
+            // Checkbox checked = auto-detect enabled = use autoDeterminedOrg
+            folderConfig?.autoDeterminedOrg ?: ""
+        } else {
+            // Checkbox unchecked = manual selection = use preferredOrg
+            folderConfig?.preferredOrg ?: ""
+        }
+
+        preferredOrgTextField.text = organization
+    }
 
     private fun initializeValidation() {
         setupValidation(
