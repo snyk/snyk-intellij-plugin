@@ -133,7 +133,7 @@ class SnykSettingsDialog(
                     val orgSetByUser = isOrgSetByUser(project)
                     val checkboxSelected = autoDetectOrgCheckbox.isSelected
                     if (!orgSetByUser && checkboxSelected) {
-                        autoDetectOrgCheckbox.isSelected = false
+                        autoDetectOrgCheckbox.isSelected = !orgSetByUser
                     }
                 }
             })
@@ -213,10 +213,25 @@ class SnykSettingsDialog(
             additionalParametersTextField.text = getAdditionalParams(project)
             autoDetectOrgCheckbox.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
             val orgSetByUser = isOrgSetByUser(project)
-            val organization = getOrganization(project)
             autoDetectOrgCheckbox.isSelected = !orgSetByUser
             preferredOrgTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
-            preferredOrgTextField.text = organization
+
+            // Set textbox based on orgSetByUser value
+            val folderConfigSettings = service<FolderConfigSettings>()
+            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+            val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+                .asSequence()
+                .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+                .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }
+                .firstOrNull()
+
+            if (!orgSetByUser) {
+                // orgSetByUser is false: show autoDeterminedOrg
+                preferredOrgTextField.text = folderConfig?.autoDeterminedOrg ?: ""
+            } else {
+                // orgSetByUser is true: show preferredOrg
+                preferredOrgTextField.text = folderConfig?.preferredOrg ?: ""
+            }
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
@@ -942,8 +957,8 @@ class SnykSettingsDialog(
             // Checkbox checked = auto-detect enabled = use autoDeterminedOrg
             folderConfig?.autoDeterminedOrg ?: ""
         } else {
-            // Checkbox unchecked = manual selection = use preferredOrg
-            folderConfig?.preferredOrg ?: ""
+            // Checkbox unchecked = manual selection = clear textbox for user input
+            ""
         }
 
         preferredOrgTextField.text = organization

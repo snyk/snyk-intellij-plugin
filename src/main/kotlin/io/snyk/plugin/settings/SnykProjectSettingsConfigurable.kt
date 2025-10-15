@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -101,18 +102,28 @@ class SnykProjectSettingsConfigurable(
         snykSettingsDialog.saveSeveritiesEnablementChanges()
         snykSettingsDialog.saveIssueViewOptionsChanges()
 
-        if (isProjectSettingsAvailable(project)) {
-            val fcs = service<FolderConfigSettings>()
-            fcs.getAllForProject(project)
-                .map {
-                    it.copy(
-                        additionalParameters = snykSettingsDialog.getAdditionalParameters()
-                            .split(" ", System.lineSeparator()),
-                        preferredOrg = snykSettingsDialog.getPreferredOrg(),
-                        orgSetByUser = snykSettingsDialog.getPreferredOrg().isNotBlank() || !snykSettingsDialog.isAutoDetectOrg()
-                    )
-                }
-                .forEach { fcs.addFolderConfig(it) }
+        // Always update folder configs for auto-org settings, using the same logic as language server
+        val fcs = service<FolderConfigSettings>()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { it.uri.fromUriToPath().toString() }
+            .toList()
+
+        folderConfigs.forEach { folderPath ->
+            val existingConfig = fcs.getFolderConfig(folderPath)
+            val updatedConfig = existingConfig.copy(
+                additionalParameters = snykSettingsDialog.getAdditionalParameters()
+                    .split(" ", System.lineSeparator()),
+                preferredOrg = if (snykSettingsDialog.isAutoDetectOrg()) {
+                    "" // Clear preferredOrg when auto-detect is enabled (checkbox ticked)
+                } else {
+                    snykSettingsDialog.getPreferredOrg() // Use textbox value when manual (checkbox unticked)
+                },
+                orgSetByUser = !snykSettingsDialog.isAutoDetectOrg() // false when ticked, true when unticked
+            )
+            fcs.addFolderConfig(updatedConfig)
         }
 
         runBackgroundableTask("processing config changes", project, true) {
