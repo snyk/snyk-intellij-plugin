@@ -124,7 +124,6 @@ class SnykSettingsDialog(
         }
     private val preferredOrgTextField: JTextField =
         JTextField().apply {
-            toolTipText = "The UUID of your preferred organization or the org stub"
             preferredWidth = tokenTextField.preferredWidth
 
             // Auto-disable auto-detect when user enters a preferred organization
@@ -645,7 +644,16 @@ class SnykSettingsDialog(
             val autoDetectOrgContextHelpLabel =
                 ContextHelpLabel.createWithLink(
                     null,
-                    "Use automatic organization selection, where the most suitable organization for your project is selected from the organizations you have access to which have the project imported, falling back to the preferred organization as defined in your web account settings.\n\nIf you do not use this feature, then either the org you entered, or if blank or incorrect, your profile default organization is used.",
+                    "Use automatic organization selection. When enabled, Snyk will automatically select the most appropriate organization for your project using context found in your repository and your authentication. If an organization is configured manually, this feature will be overridden. If an appropriate organization cannot be identified automatically, the preferred organization defined in your web account settings will be used as a fallback.",
+                    "User docs",
+                ) {
+                    BrowserUtil.browse("https://docs.snyk.io/developer-tools/snyk-ide-plugins-and-extensions/jetbrains-plugin")
+                }
+
+            val preferredOrgContextHelpLabel =
+                ContextHelpLabel.createWithLink(
+                    null,
+                    "Specify the organization (ID or name) for Snyk to run scans against. If the organization is provided manually, automatic organization selection is overridden. If the organization value is blank or invalid, the preferred organization defined in your web account settings will be used.",
                     "web account settings",
                 ) {
                     BrowserUtil.browse("https://app.snyk.io/account")
@@ -655,6 +663,12 @@ class SnykSettingsDialog(
                 val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
                 add(autoDetectOrgCheckbox, gb.nextLine().next())
                 add(autoDetectOrgContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+            }
+
+            val preferredOrgPanel = JPanel(GridBagLayout()).apply {
+                val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+                add(preferredOrgTextField, gb.nextLine().next())
+                add(preferredOrgContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
             }
 
             projectSettingsPanel.add(
@@ -682,7 +696,7 @@ class SnykSettingsDialog(
             )
 
             projectSettingsPanel.add(
-                preferredOrgTextField,
+                preferredOrgPanel,
                 baseGridConstraints(
                     row = 2,
                     column = 1,
