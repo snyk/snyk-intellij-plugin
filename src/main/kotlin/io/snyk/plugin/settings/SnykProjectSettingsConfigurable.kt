@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -49,7 +50,6 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
             snykSettingsDialog.getDisplayIssuesSelection() != settingsStateService.issuesToDisplay ||
-
             isAuthenticationMethodModified()
 
     private fun isAuthenticationMethodModified() =
@@ -60,6 +60,8 @@ class SnykProjectSettingsConfigurable(
             isCustomEndpointModified() ||
             isOrganizationModified() ||
             isAdditionalParametersModified() ||
+            isPreferredOrgModified() ||
+            isAutoDetectOrgModified() ||
             isAuthenticationMethodModified() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
             snykSettingsDialog.isIssueViewOptionsChanged() ||
@@ -100,16 +102,28 @@ class SnykProjectSettingsConfigurable(
         snykSettingsDialog.saveSeveritiesEnablementChanges()
         snykSettingsDialog.saveIssueViewOptionsChanges()
 
-        if (isProjectSettingsAvailable(project)) {
-            val fcs = service<FolderConfigSettings>()
-            fcs.getAllForProject(project)
-                .map {
-                    it.copy(
-                        additionalParameters = snykSettingsDialog.getAdditionalParameters()
-                            .split(" ", System.lineSeparator())
-                    )
-                }
-                .forEach { fcs.addFolderConfig(it) }
+        // Always update folder configs for auto-org settings, using the same logic as language server
+        val fcs = service<FolderConfigSettings>()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { it.uri.fromUriToPath().toString() }
+            .toList()
+
+        folderConfigs.forEach { folderPath ->
+            val existingConfig = fcs.getFolderConfig(folderPath)
+            val updatedConfig = existingConfig.copy(
+                additionalParameters = snykSettingsDialog.getAdditionalParameters()
+                    .split(" ", System.lineSeparator()),
+                preferredOrg = if (snykSettingsDialog.isAutoDetectOrg()) {
+                    "" // Clear preferredOrg when auto-detect is enabled (checkbox ticked)
+                } else {
+                    snykSettingsDialog.getPreferredOrg() // Use textbox value when manual (checkbox unticked)
+                },
+                orgSetByUser = !snykSettingsDialog.isAutoDetectOrg() // false when ticked, true when unticked
+            )
+            fcs.addFolderConfig(updatedConfig)
         }
 
         runBackgroundableTask("processing config changes", project, true) {
@@ -180,8 +194,12 @@ class SnykProjectSettingsConfigurable(
     private fun isCustomEndpointModified(): Boolean =
         snykSettingsDialog.getCustomEndpoint() != settingsStateService.customEndpointUrl
 
-    private fun isOrganizationModified(): Boolean =
-        snykSettingsDialog.getOrganization() != settingsStateService.organization
+    private fun isOrganizationModified(): Boolean {
+        val dialogOrganization: String = snykSettingsDialog.getOrganization()
+        val storedOrganization = service<FolderConfigSettings>().getOrganization(project)
+        return (isProjectSettingsAvailable(project)
+            && dialogOrganization != storedOrganization)
+    }
 
     private fun isIgnoreUnknownCAModified(): Boolean =
         snykSettingsDialog.isIgnoreUnknownCA() != settingsStateService.ignoreUnknownCA
@@ -191,5 +209,19 @@ class SnykProjectSettingsConfigurable(
         val storedAdditionalParams = service<FolderConfigSettings>().getAdditionalParameters(project)
         return (isProjectSettingsAvailable(project)
             && dialogAdditionalParameters != storedAdditionalParams)
+    }
+
+    private fun isPreferredOrgModified(): Boolean {
+        val dialogPreferredOrg: String = snykSettingsDialog.getPreferredOrg()
+        val storedPreferredOrg = service<FolderConfigSettings>().getPreferredOrg(project)
+        return (isProjectSettingsAvailable(project)
+            && dialogPreferredOrg != storedPreferredOrg)
+    }
+
+    private fun isAutoDetectOrgModified(): Boolean {
+        val dialogAutoDetectOrg: Boolean = snykSettingsDialog.isAutoDetectOrg()
+        val storedAutoOrgEnabled = service<FolderConfigSettings>().isAutoOrganizationEnabled(project)
+        return (isProjectSettingsAvailable(project)
+            && dialogAutoDetectOrg != storedAutoOrgEnabled)
     }
 }

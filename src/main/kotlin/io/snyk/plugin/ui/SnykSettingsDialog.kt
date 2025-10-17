@@ -37,6 +37,7 @@ import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.isAdditionalParametersValid
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
@@ -101,8 +102,9 @@ class SnykSettingsDialog(
     private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
     private val organizationTextField: JTextField =
         JTextField().apply {
-            toolTipText = "The UUID of your organization or the org stub"
+            toolTipText = "Global organization setting. This field is used when auto-detect organization is disabled."
             preferredWidth = tokenTextField.preferredWidth
+            isEnabled = false
         }
     private val ignoreUnknownCACheckBox: JCheckBox =
         JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
@@ -111,6 +113,31 @@ class SnykSettingsDialog(
         JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
     private val additionalParametersTextField: JTextField =
         ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
+    private val autoDetectOrgCheckbox: JCheckBox =
+        JCheckBox().apply {
+            toolTipText = "When checked, the organization is automatically detected from Snyk settings"
+
+            // Update the text field when checkbox state changes
+            addActionListener {
+                updatePreferredOrgTextField()
+                updateOrganizationTextField()
+            }
+        }
+    private val preferredOrgTextField: JTextField =
+        JTextField().apply {
+            preferredWidth = tokenTextField.preferredWidth
+
+            // Auto-disable auto-detect when user enters a preferred organization
+            document.addDocumentListener(object : DocumentAdapter() {
+                override fun textChanged(event: DocumentEvent) {
+                    val orgSetByUser = isOrgSetByUser(project)
+                    val checkboxSelected = autoDetectOrgCheckbox.isSelected
+                    if (!orgSetByUser && checkboxSelected) {
+                        autoDetectOrgCheckbox.isSelected = !orgSetByUser
+                    }
+                }
+            })
+        }
 
     private val scanTypesPanelOuter = ScanTypesPanel(project)
     private val scanTypesPanel = scanTypesPanelOuter.scanTypesPanel
@@ -184,6 +211,30 @@ class SnykSettingsDialog(
             // preferences dialog is opened before ls sends the additional parameters
             additionalParametersTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
             additionalParametersTextField.text = getAdditionalParams(project)
+            autoDetectOrgCheckbox.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+            val orgSetByUser = isOrgSetByUser(project)
+            autoDetectOrgCheckbox.isSelected = !orgSetByUser
+            preferredOrgTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+
+            // Set organizationTextField enabled state based on autoDetectOrgCheckbox
+            updateOrganizationTextField()
+
+            // Set textbox based on orgSetByUser value
+            val folderConfigSettings = service<FolderConfigSettings>()
+            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+            val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+                .asSequence()
+                .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+                .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }
+                .firstOrNull()
+
+            if (!orgSetByUser) {
+                // orgSetByUser is false: show autoDeterminedOrg only
+                preferredOrgTextField.text = folderConfig?.autoDeterminedOrg ?: ""
+            } else {
+                // orgSetByUser is true: show preferredOrg only
+                preferredOrgTextField.text = folderConfig?.preferredOrg ?: ""
+            }
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
@@ -198,6 +249,24 @@ class SnykSettingsDialog(
         // get workspace folders for project
         val folderConfigSettings = service<FolderConfigSettings>()
         return folderConfigSettings.getAdditionalParameters(project)
+    }
+
+    private fun getPreferredOrg(project: Project): String? {
+        // get workspace folders for project
+        val folderConfigSettings = service<FolderConfigSettings>()
+        return folderConfigSettings.getPreferredOrg(project)
+    }
+
+    private fun getOrganization(project: Project): String? {
+        // get workspace folders for project
+        val folderConfigSettings = service<FolderConfigSettings>()
+        return folderConfigSettings.getOrganization(project)
+    }
+
+    private fun isOrgSetByUser(project: Project): Boolean {
+        // get workspace folders for project
+        val folderConfigSettings = service<FolderConfigSettings>()
+        return !folderConfigSettings.isAutoOrganizationEnabled(project)
     }
 
     fun getRootPanel(): JComponent = rootPanel
@@ -530,7 +599,7 @@ class SnykSettingsDialog(
         /** Project settings ------------------ */
 
         if (isProjectSettingsAvailable(project)) {
-            val projectSettingsPanel = JPanel(UIGridLayoutManager(3, 3, JBUI.emptyInsets(), -1, -1))
+            val projectSettingsPanel = JPanel(UIGridLayoutManager(4, 3, JBUI.emptyInsets(), -1, -1))
             projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
 
             rootPanel.add(
@@ -567,11 +636,89 @@ class SnykSettingsDialog(
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
+            val autoDetectOrgLabel = JLabel("Auto-select organization:")
+            projectSettingsPanel.add(
+                autoDetectOrgLabel,
+                baseGridConstraintsAnchorWest(
+                    row = 1,
+                    indent = 0,
+                ),
+            )
+
+            val autoDetectOrgContextHelpLabel =
+                ContextHelpLabel.createWithLink(
+                    null,
+                    "Use automatic organization selection. When enabled, Snyk will automatically select the most appropriate organization for your project using context found in your repository and your authentication. If an organization is configured manually, this feature will be overridden. If an appropriate organization cannot be identified automatically, the preferred organization defined in your web account settings will be used as a fallback.",
+                    "User docs",
+                ) {
+                    BrowserUtil.browse("https://docs.snyk.io/developer-tools/snyk-ide-plugins-and-extensions/jetbrains-plugin")
+                }
+
+            val preferredOrgContextHelpLabel =
+                ContextHelpLabel.createWithLink(
+                    null,
+                    "Specify the organization (ID or name) for Snyk to run scans against. If the organization is provided manually, automatic organization selection is overridden. If the organization value is blank or invalid, the preferred organization defined in your web account settings will be used.",
+                    "web account settings",
+                ) {
+                    BrowserUtil.browse("https://app.snyk.io/account")
+                }
+
+            val autoDetectOrgPanel = JPanel(GridBagLayout()).apply {
+                val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+                add(autoDetectOrgCheckbox, gb.nextLine().next())
+                add(autoDetectOrgContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+            }
+
+            val preferredOrgPanel = JPanel(GridBagLayout()).apply {
+                val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+                add(preferredOrgTextField, gb.nextLine().next())
+                add(preferredOrgContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+            }
+
+            projectSettingsPanel.add(
+                autoDetectOrgPanel,
+                baseGridConstraints(
+                    row = 1,
+                    column = 1,
+                    colSpan = 2,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
+                    fill = UIGridConstraints.FILL_NONE,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                    indent = 0,
+                ),
+            )
+
+            autoDetectOrgLabel.labelFor = autoDetectOrgCheckbox
+
+            val preferredOrgLabel = JLabel("Preferred organization:")
+            projectSettingsPanel.add(
+                preferredOrgLabel,
+                baseGridConstraintsAnchorWest(
+                    row = 2,
+                    indent = 0,
+                ),
+            )
+
+            projectSettingsPanel.add(
+                preferredOrgPanel,
+                baseGridConstraints(
+                    row = 2,
+                    column = 1,
+                    colSpan = 2,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
+                    fill = UIGridConstraints.FILL_NONE,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                    indent = 0,
+                ),
+            )
+
+            preferredOrgLabel.labelFor = preferredOrgTextField
+
             val projectSettingsSpacer = Spacer()
             projectSettingsPanel.add(
                 projectSettingsSpacer,
                 baseGridConstraints(
-                    row = 2,
+                    row = 3,
                     fill = UIGridConstraints.FILL_VERTICAL,
                     hSizePolicy = 1,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
@@ -809,6 +956,43 @@ class SnykSettingsDialog(
     fun saveIssueViewOptionsChanges() = issueViewOptionsPanel.apply()
 
     fun getAdditionalParameters(): String = additionalParametersTextField.text
+
+    fun getPreferredOrg(): String = preferredOrgTextField.text
+
+    fun isAutoDetectOrg(): Boolean = autoDetectOrgCheckbox.isSelected
+
+    private fun updatePreferredOrgTextField() {
+        val checkboxState = autoDetectOrgCheckbox.isSelected
+        val folderConfigSettings = service<FolderConfigSettings>()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .firstOrNull()
+
+        val organization = if (checkboxState) {
+            // Checkbox checked = auto-detect enabled = use autoDeterminedOrg only
+            folderConfig?.autoDeterminedOrg ?: ""
+        } else {
+            // Checkbox unchecked = manual selection = clear textbox for user input
+            ""
+        }
+
+        preferredOrgTextField.text = organization
+    }
+
+    private fun updateOrganizationTextField() {
+        val checkboxState = autoDetectOrgCheckbox.isSelected
+
+        if (checkboxState) {
+            // Checkbox checked = auto-detect enabled = disable global organization field
+            organizationTextField.isEnabled = false
+        } else {
+            // Checkbox unchecked = manual selection = enable global organization field
+            organizationTextField.isEnabled = true
+        }
+    }
 
     private fun initializeValidation() {
         setupValidation(

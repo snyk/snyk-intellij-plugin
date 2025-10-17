@@ -118,6 +118,7 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
 }
 
 fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {
+    if (project.isDisposed) return null
     val messageBus = project.messageBus
     if (messageBus.isDisposed) return null
     return messageBus.syncPublisher(topic)
