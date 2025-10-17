@@ -91,6 +91,7 @@ class FolderConfigSettings {
 
     /**
      * Gets the preferred organization for the given project by aggregating the folder configs with workspace folder paths.
+     * Falls back to global organization setting if folder-specific preferred org is empty.
      * @param project the project to get the preferred organization for
      * @return the preferred organization for the project
      */
@@ -104,12 +105,26 @@ class FolderConfigSettings {
             .filter { it.preferredOrg.isNotEmpty() }
             .map { it.preferredOrg }
             .firstOrNull()
-        return preferredOrg ?: ""
+
+        // Fallback to global organization if folder-specific preferred org is empty
+        return if (preferredOrg?.isNotEmpty() == true) {
+            preferredOrg
+        } else {
+            // Get global organization from application settings
+            val application = com.intellij.openapi.application.ApplicationManager.getApplication()
+            if (application != null) {
+                val applicationSettings = application.getService(io.snyk.plugin.services.SnykApplicationSettingsStateService::class.java)
+                applicationSettings.organization ?: ""
+            } else {
+                ""
+            }
+        }
     }
 
     /**
      * Gets the appropriate organization for the given project based on orgSetByUser flag.
      * Returns autoDeterminedOrg if orgSetByUser is false, otherwise returns preferredOrg.
+     * Falls back to global organization setting if folder-specific values are empty.
      * @param project the project to get the organization for
      * @return the appropriate organization for the project
      */
@@ -122,10 +137,24 @@ class FolderConfigSettings {
             .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
             .firstOrNull()
 
-        return if (folderConfig?.orgSetByUser == true) {
+        val folderOrg = if (folderConfig?.orgSetByUser == true) {
             folderConfig.preferredOrg
         } else {
             folderConfig?.autoDeterminedOrg ?: ""
+        }
+
+        // Fallback to global organization if folder-specific organization is empty
+        return if (folderOrg.isNotEmpty()) {
+            folderOrg
+        } else {
+            // Get global organization from application settings
+            val application = com.intellij.openapi.application.ApplicationManager.getApplication()
+            if (application != null) {
+                val applicationSettings = application.getService(io.snyk.plugin.services.SnykApplicationSettingsStateService::class.java)
+                applicationSettings.organization ?: ""
+            } else {
+                ""
+            }
         }
     }
 

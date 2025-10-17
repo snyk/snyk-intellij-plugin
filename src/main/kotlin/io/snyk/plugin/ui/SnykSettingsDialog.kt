@@ -102,7 +102,7 @@ class SnykSettingsDialog(
     private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
     private val organizationTextField: JTextField =
         JTextField().apply {
-            toolTipText = "This field is superseded by the 'Preferred Organization' on project level"
+            toolTipText = "Global organization setting. This field is used when auto-detect organization is disabled."
             preferredWidth = tokenTextField.preferredWidth
             isEnabled = false
         }
@@ -120,6 +120,7 @@ class SnykSettingsDialog(
             // Update the text field when checkbox state changes
             addActionListener {
                 updatePreferredOrgTextField()
+                updateOrganizationTextField()
             }
         }
     private val preferredOrgTextField: JTextField =
@@ -215,6 +216,9 @@ class SnykSettingsDialog(
             autoDetectOrgCheckbox.isSelected = !orgSetByUser
             preferredOrgTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
 
+            // Set organizationTextField enabled state based on autoDetectOrgCheckbox
+            updateOrganizationTextField()
+
             // Set textbox based on orgSetByUser value
             val folderConfigSettings = service<FolderConfigSettings>()
             val languageServerWrapper = LanguageServerWrapper.getInstance(project)
@@ -225,10 +229,10 @@ class SnykSettingsDialog(
                 .firstOrNull()
 
             if (!orgSetByUser) {
-                // orgSetByUser is false: show autoDeterminedOrg
+                // orgSetByUser is false: show autoDeterminedOrg only
                 preferredOrgTextField.text = folderConfig?.autoDeterminedOrg ?: ""
             } else {
-                // orgSetByUser is true: show preferredOrg
+                // orgSetByUser is true: show preferredOrg only
                 preferredOrgTextField.text = folderConfig?.preferredOrg ?: ""
             }
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
@@ -968,7 +972,7 @@ class SnykSettingsDialog(
             .firstOrNull()
 
         val organization = if (checkboxState) {
-            // Checkbox checked = auto-detect enabled = use autoDeterminedOrg
+            // Checkbox checked = auto-detect enabled = use autoDeterminedOrg only
             folderConfig?.autoDeterminedOrg ?: ""
         } else {
             // Checkbox unchecked = manual selection = clear textbox for user input
@@ -976,6 +980,18 @@ class SnykSettingsDialog(
         }
 
         preferredOrgTextField.text = organization
+    }
+
+    private fun updateOrganizationTextField() {
+        val checkboxState = autoDetectOrgCheckbox.isSelected
+
+        if (checkboxState) {
+            // Checkbox checked = auto-detect enabled = disable global organization field
+            organizationTextField.isEnabled = false
+        } else {
+            // Checkbox unchecked = manual selection = enable global organization field
+            organizationTextField.isEnabled = true
+        }
     }
 
     private fun initializeValidation() {
