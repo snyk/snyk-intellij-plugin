@@ -326,6 +326,8 @@ class SnykToolWindowSnykScanListener(
         if (showingOpen && showingIgnored) {
             return if (totalIssuesCount == 0) {
                 CONGRATS_NO_ISSUES_FOUND
+            } else if (ignoredIssuesCount == 0) {
+                "✋ $openIssuesText"
             } else {
                 "✋ $openIssuesText & $ignoredIssuesText"
             }
