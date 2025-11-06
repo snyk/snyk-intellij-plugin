@@ -11,8 +11,6 @@ fun toSnykCodeApiUrl(endpointUrl: String?): String {
 
     val codeSubdomain = "deeproxy"
     val snykCodeApiUrl = when {
-        isLocalCodeEngine() ->
-            return pluginSettings().localCodeEngineUrl!!
 
         uri.isDeeproxy() ->
             endpoint
@@ -42,7 +40,6 @@ fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
     val catchAllURL = "https://app.snyk.io"
 
     val baseUrl = when {
-        isLocalCodeEngine() -> return endpointUrl?.replace("https://api.", "https://app.") ?: catchAllURL
 
         uri.host == "snyk.io" ->
             "https://app.snyk.io/"
@@ -63,7 +60,7 @@ fun toSnykCodeSettingsUrl(endpointUrl: String?): String {
 
 fun needsSnykToken(endpoint: String): Boolean {
     val uri = URI(endpoint)
-    return uri.isSnykApi() || uri.isSnykTenant() || uri.isDeeproxy() || isLocalCodeEngine()
+    return uri.isSnykApi() || uri.isSnykTenant() || uri.isDeeproxy()
 }
 
 fun getEndpointUrl(): String {
@@ -81,7 +78,7 @@ fun getEndpointUrl(): String {
 fun isSnykCodeAvailable(endpointUrl: String?): Boolean {
     val endpoint = resolveCustomEndpoint(endpointUrl)
     val uri = URI(endpoint)
-    return uri.isSnykTenant() || isLocalCodeEngine()
+    return uri.isSnykTenant()
 }
 
 /**
@@ -126,8 +123,6 @@ fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
 
 fun URI.isAnalyticsPermitted() = host != null &&
     (host.lowercase() == "api.snyk.io" || host.lowercase() == "api.us.snyk.io" || host.lowercase() == "snyk.io")
-
-fun isLocalCodeEngine() = pluginSettings().localCodeEngineEnabled == true
 
 internal fun String.removeTrailingSlashesIfPresent(): String {
     val candidate = this.replace(Regex("/+$"), "")

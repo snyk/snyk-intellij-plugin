@@ -89,14 +89,6 @@ class CustomEndpointsTest {
     }
 
     @Test
-    fun `isSnykCodeAvailable returns true if local engine is enabled`() {
-        settings.localCodeEngineUrl = "https://api.foo.bar"
-        settings.localCodeEngineEnabled = true
-
-        assertEquals(isSnykCodeAvailable("https://api.foo.bar"), true)
-    }
-
-    @Test
     fun `isSnykCodeAvailable returns true for Single Tenant deployments`() {
         val snykCodeAvailable = isSnykCodeAvailable("https://api.random-uuid.snyk.io")
 
@@ -110,15 +102,6 @@ class CustomEndpointsTest {
 
         assertEquals("https://deeproxy.snyk.io/", apiUrlForProduction)
         assertEquals("https://deeproxy.dev.snyk.io/", apiUrlForDevelopment)
-    }
-
-    @Test
-    fun `toSnykCodeApiUrl returns local engine URL if local engine is enabled`() {
-        settings.localCodeEngineUrl = "https://api.foo.bar"
-        settings.localCodeEngineEnabled = true
-        val apiUrlForProduction = toSnykCodeApiUrl("https://api.snyk.io")
-
-        assertEquals("https://api.foo.bar", apiUrlForProduction)
     }
 
     @Test
@@ -143,14 +126,6 @@ class CustomEndpointsTest {
         assertEquals("https://app.dev.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://dev.snyk.io"))
         assertEquals("https://app.dev.eu.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://dev.api.eu.snyk.io"))
         assertEquals("https://app.snyk.io/manage/snyk-code", toSnykCodeSettingsUrl("https://something.eu.snyk.io"))
-    }
-
-    @Test
-    fun `toSnykCodeSettingsUrl returns APP-URL for local engine`() {
-        settings.localCodeEngineUrl = "https://api.foo.bar"
-        settings.localCodeEngineEnabled = true
-
-        assertEquals("https://app.foo.bar", toSnykCodeSettingsUrl("https://api.foo.bar"))
     }
 
     @Test
@@ -206,15 +181,6 @@ class CustomEndpointsTest {
     fun `api snyk domain needs token`() {
         val uri = "https://api.snyk.io"
         assertTrue(needsSnykToken(uri))
-    }
-
-    @Test
-    fun `needsSnykToken return true if local-engine is enabled`() {
-        every { pluginSettings().localCodeEngineUrl } returns "https://foo.bar"
-        every { pluginSettings().localCodeEngineEnabled } returns true
-        val uri = "https://foo.bar/api"
-
-        assertEquals(needsSnykToken(uri), true)
     }
 
     @Test
