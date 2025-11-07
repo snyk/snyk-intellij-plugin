@@ -102,7 +102,7 @@ class SnykSettingsDialog(
     private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
     private val organizationTextField: JTextField =
         JTextField().apply {
-            toolTipText = "Global organization setting. This field is used when auto-detect organization is disabled."
+            toolTipText = "Global organization setting. This field is used when auto-select organization is disabled in the Project settings."
             preferredWidth = tokenTextField.preferredWidth
             isEnabled = false
         }
@@ -461,19 +461,6 @@ class SnykSettingsDialog(
             ),
         )
 
-        generalSettingsPanel.add(
-            organizationTextField,
-            baseGridConstraints(
-                row = 7,
-                column = 1,
-                colSpan = 1,
-                anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0,
-            ),
-        )
-
         val organizationContextHelpLabel =
             ContextHelpLabel.createWithLink(
                 null,
@@ -482,14 +469,23 @@ class SnykSettingsDialog(
             ) {
                 BrowserUtil.browse(SnykBundle.message("snyk.settings.organization.tooltip.link"))
             }
+
+        val organizationPanel = JPanel(GridBagLayout()).apply {
+            val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+            add(organizationTextField, gb.nextLine().next())
+            add(organizationContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+        }
+
         generalSettingsPanel.add(
-            organizationContextHelpLabel,
-            baseGridConstraintsAnchorWest(
+            organizationPanel,
+            baseGridConstraints(
                 row = 7,
-                column = 2,
-                indent = 0,
+                column = 1,
+                colSpan = 2,
+                anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                indent = 0,
             ),
         )
 
@@ -644,19 +640,19 @@ class SnykSettingsDialog(
             val autoDetectOrgContextHelpLabel =
                 ContextHelpLabel.createWithLink(
                     null,
-                    "Use automatic organization selection. When enabled, Snyk will automatically select the most appropriate organization for your project using context found in your repository and your authentication. If an organization is configured manually, this feature will be overridden. If an appropriate organization cannot be identified automatically, the preferred organization defined in your web account settings will be used as a fallback.",
-                    "User docs",
+                    SnykBundle.message("snyk.settings.autoDetectOrg.tooltip.description"),
+                    SnykBundle.message("snyk.settings.autoDetectOrg.tooltip.linkText"),
                 ) {
-                    BrowserUtil.browse("https://docs.snyk.io/developer-tools/snyk-ide-plugins-and-extensions/jetbrains-plugin")
+                    BrowserUtil.browse(SnykBundle.message("snyk.settings.autoDetectOrg.tooltip.link"))
                 }
 
             val preferredOrgContextHelpLabel =
                 ContextHelpLabel.createWithLink(
                     null,
-                    "Specify the organization (ID or name) for Snyk to run scans against. If the organization is provided manually, automatic organization selection is overridden. If the organization value is blank or invalid, the preferred organization defined in your web account settings will be used.",
-                    "web account settings",
+                    SnykBundle.message("snyk.settings.preferredOrg.tooltip.description"),
+                    SnykBundle.message("snyk.settings.preferredOrg.tooltip.linkText"),
                 ) {
-                    BrowserUtil.browse("https://app.snyk.io/account")
+                    BrowserUtil.browse(SnykBundle.message("snyk.settings.preferredOrg.tooltip.link"))
                 }
 
             val autoDetectOrgPanel = JPanel(GridBagLayout()).apply {
