@@ -57,8 +57,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var iacScanEnabled: Boolean = true
     var sastOnServerEnabled: Boolean? = null
     var sastSettingsError: Boolean? = null
-    var localCodeEngineEnabled: Boolean? = null
-    var localCodeEngineUrl: String? = ""
     var lowSeverityEnabled = true
     var mediumSeverityEnabled = true
     var highSeverityEnabled = true

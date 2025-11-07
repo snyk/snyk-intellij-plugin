@@ -715,14 +715,11 @@ class LanguageServerWrapper(
 
     data class SastSettings(
         val sastEnabled: Boolean,
-        val localCodeEngine: LocalCodeEngine,
         val org: String? = null,
         val supportedLanguages: List<String>,
         val reportFalsePositivesEnabled: Boolean,
         val autofixEnabled: Boolean,
     )
-
-    data class LocalCodeEngine(val allowCloudUpload: Boolean, val url: String, val enabled: Boolean)
 
     @Suppress("UNCHECKED_CAST")
     fun getSastSettings(): SastSettings? {
@@ -731,14 +728,8 @@ class LanguageServerWrapper(
             val executeCommandParams = ExecuteCommandParams(COMMAND_GET_SETTINGS_SAST_ENABLED, emptyList())
             val response = executeCommand(executeCommandParams, 10000)
             if (response is Map<*, *>) {
-                val localCodeEngineMap: Map<String, *> = response["localCodeEngine"] as Map<String, *>
                 return SastSettings(
                     sastEnabled = response["sastEnabled"] as Boolean,
-                    localCodeEngine = LocalCodeEngine(
-                        allowCloudUpload = localCodeEngineMap["allowCloudUpload"] as Boolean,
-                        url = localCodeEngineMap["url"] as String,
-                        enabled = localCodeEngineMap["enabled"] as Boolean,
-                    ),
                     org = response["org"] as String?,
                     reportFalsePositivesEnabled = response["reportFalsePositivesEnabled"] as Boolean,
                     autofixEnabled = response["autofixEnabled"] as Boolean,

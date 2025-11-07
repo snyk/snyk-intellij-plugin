@@ -18,7 +18,6 @@ import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.LabelProvider
 import org.apache.commons.text.StringEscapeUtils
-import snyk.common.isSnykCodeAvailable
 import java.awt.Color
 import java.awt.Container
 import java.awt.Dimension
@@ -91,7 +90,6 @@ fun snykCodeAvailabilityPostfix(): String {
     return when {
         sastSettingsError == true -> " (Snyk Code settings misconfigured)"
         sastOnServerEnabled == false -> " (disabled in Snyk.io)"
-        !isSnykCodeAvailable(pluginSettings().customEndpointUrl) -> " (disabled for endpoint)"
         sastOnServerEnabled == null -> " (unreachable server settings)"
         else -> ""
     }

@@ -78,11 +78,9 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
         setResultsTreeFiltering = { settings.treeFiltering.ossResults = it }
     )
 
-    private fun isSnykCodeAvailable(): Boolean = snykCodeAvailabilityPostfix().isEmpty()
-
     private fun createSecurityIssuesScanAction(): AnAction = createScanFilteringAction(
         productType = ProductType.CODE_SECURITY,
-        scanTypeAvailable = settings.snykCodeSecurityIssuesScanEnable && isSnykCodeAvailable(),
+        scanTypeAvailable = settings.snykCodeSecurityIssuesScanEnable,
         resultsTreeFiltering = settings.treeFiltering.codeSecurityResults,
         setResultsTreeFiltering = { settings.treeFiltering.codeSecurityResults = it },
         availabilityPostfix = snykCodeAvailabilityPostfix()
