@@ -40,7 +40,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `should display right authenticate button text`() {
+    fun `test authenticate button displays correct text`() {
         val cut = SnykAuthPanel(project)
         val authenticateButton = UIComponentFinder.getComponentByCondition(cut, JButton::class) {
             it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT
@@ -50,7 +50,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
     }
 
     @Test
-    fun `should display right description label`() {
+    fun `test description label displays correct trust and scan information`() {
         val expectedText = """
         |<html>
         |<ol>

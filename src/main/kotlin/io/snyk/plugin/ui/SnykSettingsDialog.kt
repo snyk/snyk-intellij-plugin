@@ -24,7 +24,6 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.util.preferredWidth
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.FontUtil
@@ -55,6 +54,7 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import java.awt.Cursor
 import java.awt.Desktop
+import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
@@ -92,18 +92,18 @@ class SnykSettingsDialog(
 
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, rootPanel)
 
-    private val tokenTextField = JBPasswordField().apply { preferredWidth = 600 }
+    private val tokenTextField = JBPasswordField().apply { preferredSize = Dimension(600, preferredSize.height) }
     private val receiveTokenButton = JButton("Connect IDE to Snyk")
     private val authenticationType =
         ComboBox(AuthenticationType.entries.sortedBy { it.dialogIndex }.map { it.dialogName }.toTypedArray()).apply {
             this.isEditable = false
         }
 
-    private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
+    private val customEndpointTextField = JTextField().apply { preferredSize = Dimension(600, preferredSize.height) }
     private val organizationTextField: JTextField =
         JTextField().apply {
             toolTipText = "Global organization setting. This field is used when auto-select organization is disabled in the Project settings."
-            preferredWidth = tokenTextField.preferredWidth
+            preferredSize = Dimension(600, preferredSize.height)
             isEnabled = false
         }
     private val ignoreUnknownCACheckBox: JCheckBox =
@@ -125,7 +125,7 @@ class SnykSettingsDialog(
         }
     private val preferredOrgTextField: JTextField =
         JTextField().apply {
-            preferredWidth = tokenTextField.preferredWidth
+            preferredSize = Dimension(600, preferredSize.height)
 
             // Auto-disable auto-detect when user enters a preferred organization
             document.addDocumentListener(object : DocumentAdapter() {

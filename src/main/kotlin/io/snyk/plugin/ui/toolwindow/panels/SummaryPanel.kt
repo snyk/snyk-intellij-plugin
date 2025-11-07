@@ -4,8 +4,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.ui.util.minimumHeight
-import com.intellij.ui.util.minimumWidth
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH
 import io.snyk.plugin.events.SnykScanSummaryListener
@@ -22,8 +20,7 @@ import java.awt.Dimension
 class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Disposable {
     init {
         name = "summaryPanel"
-        minimumHeight = 0
-        minimumWidth = 0
+        minimumSize = Dimension(0, 0)
 
         // Initialise browser layout
         layout = getStandardLayout(1, 1)
