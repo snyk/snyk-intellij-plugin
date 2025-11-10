@@ -113,15 +113,26 @@ class SnykProjectSettingsConfigurable(
 
         folderConfigs.forEach { folderPath ->
             val existingConfig = fcs.getFolderConfig(folderPath)
+
+            // If preferredOrgTextField is blank, enable auto-detect
+            val preferredOrgText = snykSettingsDialog.getPreferredOrg()
+            val shouldAutoDetect = if (preferredOrgText.isBlank()) {
+                // Update the checkbox to reflect auto-detect is enabled
+                snykSettingsDialog.setAutoDetectOrg(true)
+                true
+            } else {
+                snykSettingsDialog.isAutoDetectOrg()
+            }
+
             val updatedConfig = existingConfig.copy(
                 additionalParameters = snykSettingsDialog.getAdditionalParameters()
                     .split(" ", System.lineSeparator()),
-                preferredOrg = if (snykSettingsDialog.isAutoDetectOrg()) {
+                preferredOrg = if (shouldAutoDetect) {
                     "" // Clear preferredOrg when auto-detect is enabled (checkbox ticked)
                 } else {
-                    snykSettingsDialog.getPreferredOrg() // Use textbox value when manual (checkbox unticked)
+                    preferredOrgText // Use textbox value when manual (checkbox unticked)
                 },
-                orgSetByUser = !snykSettingsDialog.isAutoDetectOrg() // false when ticked, true when unticked
+                orgSetByUser = !shouldAutoDetect // false when ticked, true when unticked
             )
             fcs.addFolderConfig(updatedConfig)
         }

@@ -6,7 +6,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
-import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ComponentValidator
@@ -104,7 +103,6 @@ class SnykSettingsDialog(
         JTextField().apply {
             toolTipText = "Global organization setting. This field is used when auto-select organization is disabled in the Project settings."
             preferredSize = Dimension(600, preferredSize.height)
-            isEnabled = false
         }
     private val ignoreUnknownCACheckBox: JCheckBox =
         JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
@@ -113,6 +111,8 @@ class SnykSettingsDialog(
         JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
     private val additionalParametersTextField: JTextField =
         ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
+    private var userSetPreferredOrg = false
+
     private val autoDetectOrgCheckbox: JCheckBox =
         JCheckBox().apply {
             toolTipText = "When checked, the organization is automatically detected from Snyk settings"
@@ -120,7 +120,6 @@ class SnykSettingsDialog(
             // Update the text field when checkbox state changes
             addActionListener {
                 updatePreferredOrgTextField()
-                updateOrganizationTextField()
             }
         }
     private val preferredOrgTextField: JTextField =
@@ -130,10 +129,10 @@ class SnykSettingsDialog(
             // Auto-disable auto-detect when user enters a preferred organization
             document.addDocumentListener(object : DocumentAdapter() {
                 override fun textChanged(event: DocumentEvent) {
-                    val orgSetByUser = isOrgSetByUser(project)
-                    val checkboxSelected = autoDetectOrgCheckbox.isSelected
-                    if (!orgSetByUser && checkboxSelected) {
-                        autoDetectOrgCheckbox.isSelected = !orgSetByUser
+                    if (userSetPreferredOrg &&
+                        autoDetectOrgCheckbox.isSelected &&
+                        preferredOrgTextField.text.isNotBlank()) {
+                        autoDetectOrgCheckbox.isSelected = false
                     }
                 }
             })
@@ -205,15 +204,15 @@ class SnykSettingsDialog(
             // TODO: check for concrete project roots, and if we received a message for them
             // this is an edge case, when a project is opened after ls initialization and
             // preferences dialog is opened before ls sends the additional parameters
-            additionalParametersTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+            val folderConfigsRefreshed = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+            additionalParametersTextField.isEnabled = folderConfigsRefreshed
             additionalParametersTextField.text = getAdditionalParams(project)
-            autoDetectOrgCheckbox.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+            autoDetectOrgCheckbox.isEnabled = folderConfigsRefreshed
             val orgSetByUser = isOrgSetByUser(project)
             autoDetectOrgCheckbox.isSelected = !orgSetByUser
-            preferredOrgTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
 
-            // Set organizationTextField enabled state based on autoDetectOrgCheckbox
-            updateOrganizationTextField()
+            preferredOrgTextField.isEnabled = folderConfigsRefreshed && orgSetByUser
+
 
             // Set textbox based on orgSetByUser value
             val folderConfigSettings = service<FolderConfigSettings>()
@@ -241,22 +240,10 @@ class SnykSettingsDialog(
         }
     }
 
-    private fun getAdditionalParams(project: Project): String? {
+    private fun getAdditionalParams(project: Project): String {
         // get workspace folders for project
         val folderConfigSettings = service<FolderConfigSettings>()
         return folderConfigSettings.getAdditionalParameters(project)
-    }
-
-    private fun getPreferredOrg(project: Project): String? {
-        // get workspace folders for project
-        val folderConfigSettings = service<FolderConfigSettings>()
-        return folderConfigSettings.getPreferredOrg(project)
-    }
-
-    private fun getOrganization(project: Project): String? {
-        // get workspace folders for project
-        val folderConfigSettings = service<FolderConfigSettings>()
-        return folderConfigSettings.getOrganization(project)
     }
 
     private fun isOrgSetByUser(project: Project): Boolean {
@@ -285,7 +272,7 @@ class SnykSettingsDialog(
         /** General settings ------------------ */
 
         val generalSettingsPanel = JPanel(UIGridLayoutManager(8, 3, JBUI.emptyInsets(), -1, -1))
-        generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
+        generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General Settings")
 
         rootPanel.add(
             generalSettingsPanel,
@@ -493,7 +480,7 @@ class SnykSettingsDialog(
 
         val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, JBUI.emptyInsets(), 30, -1))
         issueViewPanel.isVisible = true
-        issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
+        issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue View Options")
 
         val issueViewLabel = JLabel("Show the following issues:")
         issueViewLabel.toolTipText = "Code Consistent Ignores is a feature" +
@@ -563,7 +550,7 @@ class SnykSettingsDialog(
         )
 
         val severitiesPanel = JPanel(UIGridLayoutManager(1, 1, JBUI.emptyInsets(), -1, -1))
-        severitiesPanel.border = IdeBorderFactory.createTitledBorder("Severity selection")
+        severitiesPanel.border = IdeBorderFactory.createTitledBorder("Severity Selection")
 
         productAndSeveritiesPanel.add(
             severitiesPanel,
@@ -595,7 +582,7 @@ class SnykSettingsDialog(
 
         if (isProjectSettingsAvailable(project)) {
             val projectSettingsPanel = JPanel(UIGridLayoutManager(4, 3, JBUI.emptyInsets(), -1, -1))
-            projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
+            projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project Settings")
 
             rootPanel.add(
                 projectSettingsPanel,
@@ -728,7 +715,7 @@ class SnykSettingsDialog(
         /** User experience ------------------ */
 
         val userExperiencePanel = JPanel(UIGridLayoutManager(6, 4, JBUI.emptyInsets(), -1, -1))
-        userExperiencePanel.border = IdeBorderFactory.createTitledBorder("User experience")
+        userExperiencePanel.border = IdeBorderFactory.createTitledBorder("User Experience")
 
         rootPanel.add(
             userExperiencePanel,
@@ -825,7 +812,7 @@ class SnykSettingsDialog(
 
     private fun createExecutableSettingsPanel() {
         val executableSettingsPanel = JPanel(GridBagLayout())
-        executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable settings")
+        executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable Settings")
         val gb =
             GridBag()
                 .setDefaultWeightX(1.0)
@@ -956,6 +943,10 @@ class SnykSettingsDialog(
 
     fun isAutoDetectOrg(): Boolean = autoDetectOrgCheckbox.isSelected
 
+    fun setAutoDetectOrg(enabled: Boolean) {
+        autoDetectOrgCheckbox.isSelected = enabled
+    }
+
     private fun updatePreferredOrgTextField() {
         val checkboxState = autoDetectOrgCheckbox.isSelected
         val folderConfigSettings = service<FolderConfigSettings>()
@@ -974,20 +965,12 @@ class SnykSettingsDialog(
             ""
         }
 
+        userSetPreferredOrg = false
         preferredOrgTextField.text = organization
+        preferredOrgTextField.isEnabled = !checkboxState
+        userSetPreferredOrg = true
     }
 
-    private fun updateOrganizationTextField() {
-        val checkboxState = autoDetectOrgCheckbox.isSelected
-
-        if (checkboxState) {
-            // Checkbox checked = auto-detect enabled = disable global organization field
-            organizationTextField.isEnabled = false
-        } else {
-            // Checkbox unchecked = manual selection = enable global organization field
-            organizationTextField.isEnabled = true
-        }
-    }
 
     private fun initializeValidation() {
         setupValidation(
