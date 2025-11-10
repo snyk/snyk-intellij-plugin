@@ -64,7 +64,7 @@ class SnykCliAuthenticationService(
     private fun executeAuthCommand() {
         val dialog = AuthDialog(project)
 
-        object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
+        val task = object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
             override fun run(indicator: ProgressIndicator) {
                 val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 dialog.onCancel = {
@@ -80,14 +80,17 @@ class SnykCliAuthenticationService(
                         If a browser window doesn't open after a few seconds, please copy the url using the button below and manually paste it in a browser.
                     </html>
                     """.trimIndent()
-                dialog.updateHtmlText(htmlText)
-                dialog.copyUrlAction.isEnabled = true
+                ApplicationManager.getApplication().invokeLater({
+                    dialog.updateHtmlText(htmlText)
+                    dialog.copyUrlAction.isEnabled = true
+                }, ModalityState.stateForComponent(dialog.contentPane))
+
                 languageServerWrapper.login()?.whenComplete { result, e ->
                     val token = result?.toString() ?: ""
 
                     if (e is CancellationException) {
                         logger.warn("login timed out or cancelled", e)
-                    } else {
+                    } else if (e != null) {
                         logger.warn("could not login", e)
                     }
 
@@ -100,9 +103,11 @@ class SnykCliAuthenticationService(
                     ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
                 }
             }
-        }.queue()
+        }
 
-        dialog.showAndGet()
+        // Start the background task, then show dialog non-blocking
+        task.queue()
+        dialog.show()
     }
 }
 

@@ -496,6 +496,9 @@ class SnykSettingsDialog(
         issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
 
         val issueViewLabel = JLabel("Show the following issues:")
+        issueViewLabel.toolTipText = "Code Consistent Ignores is a feature" +
+            " which provides consistent handling of \"ignore\" rules" +
+            " for code security findings across all surfaces - such as the CLI, IDE, and Snyk UI"
         issueViewPanel.add(
             issueViewLabel,
             baseGridConstraintsAnchorWest(
