@@ -31,6 +31,7 @@ import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
@@ -49,6 +50,7 @@ import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.jetbrains.concurrency.runAsync
 import snyk.SnykBundle
+import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import java.awt.Cursor
@@ -162,22 +164,29 @@ class SnykSettingsDialog(
 
         receiveTokenButton.isEnabled = !getSnykCliDownloaderService().isCliDownloading()
 
-        ApplicationManager
-            .getApplication()
-            .messageBus
-            .connect(rootPanel)
-            .subscribe(
-                SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
-                object : SnykCliDownloadListener {
-                    override fun cliDownloadStarted() {
-                        receiveTokenButton.isEnabled = false
-                    }
+        val messageBusConnection = ApplicationManager.getApplication().messageBus.connect(rootPanel)
 
-                    override fun cliDownloadFinished(succeed: Boolean) {
-                        receiveTokenButton.isEnabled = true
-                    }
-                },
-            )
+        messageBusConnection.subscribe(
+            SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+            object : SnykCliDownloadListener {
+                override fun cliDownloadStarted() {
+                    receiveTokenButton.isEnabled = false
+                }
+
+                override fun cliDownloadFinished(succeed: Boolean) {
+                    receiveTokenButton.isEnabled = true
+                }
+            },
+        )
+
+        messageBusConnection.subscribe(
+            SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC,
+            object : SnykFolderConfigListener {
+                override fun folderConfigsChanged(folderConfigsNotEmpty: Boolean) {
+                    updateProjectSettingsFields(folderConfigsNotEmpty)
+                }
+            },
+        )
 
         receiveTokenButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
@@ -201,35 +210,8 @@ class SnykSettingsDialog(
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-            // TODO: check for concrete project roots, and if we received a message for them
-            // this is an edge case, when a project is opened after ls initialization and
-            // preferences dialog is opened before ls sends the additional parameters
-            val folderConfigsRefreshed = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
-            additionalParametersTextField.isEnabled = folderConfigsRefreshed
-            additionalParametersTextField.text = getAdditionalParams(project)
-            autoDetectOrgCheckbox.isEnabled = folderConfigsRefreshed
-            val orgSetByUser = isOrgSetByUser(project)
-            autoDetectOrgCheckbox.isSelected = !orgSetByUser
-
-            preferredOrgTextField.isEnabled = folderConfigsRefreshed && orgSetByUser
-
-
-            // Set textbox based on orgSetByUser value
-            val folderConfigSettings = service<FolderConfigSettings>()
-            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-            val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
-                .asSequence()
-                .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
-                .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }
-                .firstOrNull()
-
-            if (!orgSetByUser) {
-                // orgSetByUser is false: show autoDeterminedOrg only
-                preferredOrgTextField.text = folderConfig?.autoDeterminedOrg ?: ""
-            } else {
-                // orgSetByUser is true: show preferredOrg only
-                preferredOrgTextField.text = folderConfig?.preferredOrg ?: ""
-            }
+            val haveFolderConfigs = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+            updateProjectSettingsFields(haveFolderConfigs)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
@@ -238,6 +220,17 @@ class SnykSettingsDialog(
                 }
             netNewIssuesDropDown.selectedItem = applicationSettings.issuesToDisplay
         }
+    }
+
+    private fun updateProjectSettingsFields(haveFolderConfigs: Boolean) {
+        additionalParametersTextField.text = getAdditionalParams(project)
+        additionalParametersTextField.isEnabled = haveFolderConfigs
+
+
+        autoDetectOrgCheckbox.isEnabled = haveFolderConfigs
+        autoDetectOrgCheckbox.isSelected = !isOrgSetByUser(project)
+
+        updatePreferredOrgTextField()
     }
 
     private fun getAdditionalParams(project: Project): String {
@@ -947,22 +940,26 @@ class SnykSettingsDialog(
         autoDetectOrgCheckbox.isSelected = enabled
     }
 
-    private fun updatePreferredOrgTextField() {
-        val checkboxState = autoDetectOrgCheckbox.isSelected
+    private fun getFirstFolderConfig(): FolderConfig? {
         val folderConfigSettings = service<FolderConfigSettings>()
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+        return languageServerWrapper.getWorkspaceFoldersFromRoots(project)
             .asSequence()
             .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
             .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }
             .firstOrNull()
+    }
+
+    private fun updatePreferredOrgTextField() {
+        val checkboxState = autoDetectOrgCheckbox.isSelected
+        val folderConfig = getFirstFolderConfig()
 
         val organization = if (checkboxState) {
             // Checkbox checked = auto-detect enabled = use autoDeterminedOrg only
             folderConfig?.autoDeterminedOrg ?: ""
         } else {
             // Checkbox unchecked = manual selection = clear textbox for user input
-            ""
+            folderConfig?.preferredOrg ?: ""
         }
 
         userSetPreferredOrg = false
