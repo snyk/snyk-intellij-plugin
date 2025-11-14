@@ -37,6 +37,7 @@ data class SnykScanParams(
     val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
     val errorMessage: String? = null, // Error Message if applicable
     val cliError: CliError? = null, // Structured error information if applicable
+    val showNotification: Boolean
 )
 
 data class SnykScanSummaryParams(

@@ -109,7 +109,9 @@ class SnykCachedResults(
                     }
 
                     val errorMessage = snykScan.errorMessage ?: "Scanning error for project ${project.name}. Data: $snykScan"
-                    SnykBalloonNotificationHelper.showError(errorMessage, project)
+                    if (snykScan.showNotification) {
+                        SnykBalloonNotificationHelper.showError(errorMessage, project)
+                    }
                 }
 
                 override fun onPublishDiagnostics(

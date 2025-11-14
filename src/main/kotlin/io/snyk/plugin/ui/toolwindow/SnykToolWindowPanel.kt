@@ -561,7 +561,14 @@ class SnykToolWindowPanel(
         securityIssuesCount: Int?,
         addHMLPostfix: String
     ) = when {
-        getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
+        getSnykCachedResults(project)?.currentSnykCodeError != null -> {
+            val errorMessage = getSnykCachedResults(project)?.currentSnykCodeError?.message
+            val errorSuffix = when {
+                errorMessage?.contains("not enabled", ignoreCase = true) == true -> "(disabled at Snyk)"
+                else -> "(error)"
+            }
+            "$CODE_SECURITY_ROOT_TEXT $errorSuffix"
+        }
         isSnykCodeRunning(project) &&
             settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
 
@@ -761,6 +768,9 @@ class SnykToolWindowPanel(
 
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
+
+    @TestOnly
+    fun getRootSecurityIssuesTreeNode() = rootSecurityIssuesTreeNode
 
     fun getTree() = vulnerabilitiesTree
 
