@@ -951,10 +951,10 @@ class SnykSettingsDialog(
     }
 
     private fun updatePreferredOrgTextField() {
-        val checkboxState = autoDetectOrgCheckbox.isSelected
+        val autoDetectOrgSelected = autoDetectOrgCheckbox.isSelected
         val folderConfig = getFirstFolderConfig()
 
-        val organization = if (checkboxState) {
+        val organization = if (autoDetectOrgSelected) {
             // Checkbox checked = auto-detect enabled = use autoDeterminedOrg only
             folderConfig?.autoDeterminedOrg ?: ""
         } else {
@@ -964,7 +964,7 @@ class SnykSettingsDialog(
 
         userSetPreferredOrg = false
         preferredOrgTextField.text = organization
-        preferredOrgTextField.isEnabled = !checkboxState
+        preferredOrgTextField.isEnabled = !autoDetectOrgSelected
         userSetPreferredOrg = true
     }
 
