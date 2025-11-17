@@ -281,7 +281,7 @@ class SnykToolWindowSnykScanListener(
         }
 
         val currentOssError = getSnykCachedResults(project)?.currentOssError
-        val cliErrorMessage = currentOssError?.message
+        val cliErrorMessage = currentOssError?.error
 
         var ossResultsCountForDisplay = ossResultsCount
         if (cliErrorMessage?.contains(NO_OSS_FILES) == true) {

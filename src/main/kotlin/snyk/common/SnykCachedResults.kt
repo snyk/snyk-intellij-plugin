@@ -13,6 +13,7 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.lsp.LsProduct
+import snyk.common.lsp.PresentableError
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 
@@ -40,9 +41,9 @@ class SnykCachedResults(
     val currentOSSResultsLS: ConcurrentMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
     val currentIacResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
 
-    var currentOssError: SnykError? = null
-    var currentIacError: SnykError? = null
-    var currentSnykCodeError: SnykError? = null
+    var currentOssError: PresentableError? = null
+    var currentIacError: PresentableError? = null
+    var currentSnykCodeError: PresentableError? = null
 
     fun clearCaches() {
         currentOssError = null
@@ -75,41 +76,24 @@ class SnykCachedResults(
                     when (LsProduct.getFor(snykScan.product)) {
                         LsProduct.OpenSource -> {
                             currentOSSResultsLS.clear()
-                            currentOssError =
-                                SnykError(
-                                    snykScan.cliError?.error ?: snykScan.errorMessage
-                                    ?: "Failed to run Snyk Open Source Scan",
-                                    snykScan.cliError?.path ?: snykScan.folderPath,
-                                    snykScan.cliError?.code,
-                                )
+                            currentOssError = snykScan.presentableError
                         }
 
                         LsProduct.Code -> {
                             currentSnykCodeResultsLS.clear()
-                            currentSnykCodeError =
-                                SnykError(
-                                    snykScan.cliError?.error ?: snykScan.errorMessage
-                                    ?: "Failed to run Snyk Code Scan",
-                                    snykScan.cliError?.path ?: snykScan.folderPath,
-                                    snykScan.cliError?.code,
-                                )
+                            currentSnykCodeError = snykScan.presentableError
                         }
 
                         LsProduct.InfrastructureAsCode -> {
                             currentIacResultsLS.clear()
-                            currentIacError =
-                                SnykError(
-                                    snykScan.cliError?.error ?: snykScan.errorMessage ?: "Failed to run Snyk IaC Scan",
-                                    snykScan.cliError?.path ?: snykScan.folderPath,
-                                    snykScan.cliError?.code,
-                                )
+                            currentIacError = snykScan.presentableError
                         }
 
                         LsProduct.Unknown -> Unit
                     }
 
-                    val errorMessage = snykScan.errorMessage ?: "Scanning error for project ${project.name}. Data: $snykScan"
-                    if (snykScan.showNotification) {
+                    val errorMessage = snykScan.presentableError?.error ?: "Scanning error for project ${project.name}. Data: $snykScan"
+                    if (snykScan.presentableError?.showNotification == true) {
                         SnykBalloonNotificationHelper.showError(errorMessage, project)
                     }
                 }

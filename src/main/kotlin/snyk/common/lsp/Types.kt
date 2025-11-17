@@ -29,15 +29,29 @@ data class CliError(
     val command: String? = null,
 )
 
+data class PresentableError(
+    val code: Int? = null, // Error code
+    val error: String? = null, // Error message
+    val path: String? = null, // Path where the error occurred
+    val command: String? = null, // Command that caused the error
+    val showNotification: Boolean = false, // ShowNotification is for IDE to decide to display a notification or not
+    val treeNodeSuffix: String = "" // TreeNodeSuffix is an optional suffix message to be displayed in the tree node in IDEs
+) {
+    fun toSnykError(defaultPath: String = ""): snyk.common.SnykError {
+        return snyk.common.SnykError(
+            message = error ?: treeNodeSuffix,
+            path = path ?: defaultPath,
+            code = code
+        )
+    }
+}
+
 // Define the SnykScanParams data class
 data class SnykScanParams(
     val status: String, // Status (Must map to an LsScanStatus enum)
     val product: String, // Product under scan (Must map to an LsProduct)
     val folderPath: String, // FolderPath is the root-folder of the current scan
-    val issues: List<ScanIssue>, // Issues contain the scan results in the common issues model
-    val errorMessage: String? = null, // Error Message if applicable
-    val cliError: CliError? = null, // Structured error information if applicable
-    val showNotification: Boolean
+    val presentableError: PresentableError? = null // PresentableError structured error object for displaying it to the user
 )
 
 data class SnykScanSummaryParams(

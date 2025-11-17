@@ -118,8 +118,7 @@ class SnykLanguageClientTest {
     fun `snykScan does not run when disposed`() {
         every { applicationMock.isDisposed } returns true
         every { projectMock.isDisposed } returns true
-        val mockIssue = mockk<ScanIssue>()
-        val param = SnykScanParams("success", "code", "testFolder", listOf(mockIssue))
+        val param = SnykScanParams("success", "code", "testFolder")
 
         cut.snykScan(param)
 
