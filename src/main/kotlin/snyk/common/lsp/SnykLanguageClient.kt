@@ -15,6 +15,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
+import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
@@ -186,6 +187,13 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             service.addAll(folderConfigs)
             folderConfigs.forEach {
                 languageServerWrapper.updateFolderConfigRefresh(it.folderPath, true)
+            }
+
+            try {
+                getSyncPublisher(project, SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+                    ?.folderConfigsChanged(folderConfigs.isNotEmpty())
+            } catch (e: Exception) {
+                logger.error("Error processing snyk folder configs", e)
             }
         }
     }
