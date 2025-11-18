@@ -20,6 +20,7 @@ import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.toVirtualFileOrNull
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.Position
@@ -183,6 +184,26 @@ class SnykLanguageClientTest {
         assertEquals(2, result.size)
         assertTrue(result.any { it.title == "Some Issue" })
         assertTrue(result.any { it.title == "Another Issue" })
+    }
+
+    @Test
+    fun `publishDiagnostics should handle non-existent files gracefully`() {
+        val nonExistentUri = "file:///tmp/non_existent_file_12345.txt"
+        every { nonExistentUri.toVirtualFileOrNull() } returns null
+
+        val mockListener = mockk<SnykScanListener>(relaxed = true)
+        every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+        val diagnostics: MutableList<Diagnostic> = ArrayList()
+        val range = Range(Position(0, 0), Position(0, 1))
+        diagnostics.add(createMockDiagnostic(range, "Some Issue", nonExistentUri))
+        val diagnosticsParams = PublishDiagnosticsParams(nonExistentUri, diagnostics)
+
+        // Should not throw exception
+        cut.publishDiagnostics(diagnosticsParams)
+
+        // Verify that no diagnostics were published since file doesn't exist
+        verify(exactly = 0) { mockListener.onPublishDiagnostics(any(), any(), any()) }
     }
 
     @Test

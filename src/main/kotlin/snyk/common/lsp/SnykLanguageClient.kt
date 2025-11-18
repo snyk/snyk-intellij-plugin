@@ -26,6 +26,7 @@ import io.snyk.plugin.refreshAnnotationsForFile
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.sha256
 import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.toVirtualFileOrNull
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
@@ -110,7 +111,15 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         scanPublisher: SnykScanListener
     ) {
         if (disposed) return
-        val snykFile = SnykFile(project, filePath.toVirtualFile())
+
+        // Handle case where file no longer exists (e.g., temporary files)
+        val virtualFile = filePath.toVirtualFileOrNull()
+        if (virtualFile == null) {
+            logger.debug("File not found for diagnostics: $filePath")
+            return
+        }
+
+        val snykFile = SnykFile(project, virtualFile)
         val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
         val product = firstDiagnostic?.source
 
