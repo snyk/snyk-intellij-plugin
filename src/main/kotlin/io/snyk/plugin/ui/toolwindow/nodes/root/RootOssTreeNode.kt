@@ -16,5 +16,5 @@ class RootOssTreeNode(project: Project) : RootTreeNodeBase(SnykToolWindowPanel.O
     override fun getSelectVulnerabilityMessage(): String =
         originalCliErrorMessage?.let { txtToHtml(it) } ?: super.getSelectVulnerabilityMessage()
 
-    override fun getSnykError(): SnykError? = getSnykCachedResults(project)?.currentOssError
+    override fun getSnykError(): SnykError? = getSnykCachedResults(project)?.currentOssError?.toSnykError()
 }

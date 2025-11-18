@@ -541,7 +541,10 @@ class SnykToolWindowPanel(
         iacResultsCount: Int?,
         addHMLPostfix: String
     ) = when {
-        getSnykCachedResults(project)?.currentIacError != null -> "$IAC_ROOT_TEXT (error)"
+        getSnykCachedResults(project)?.currentIacError != null -> {
+            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            "$IAC_ROOT_TEXT $errorSuffix"
+        }
         isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
         else ->
             iacResultsCount?.let { count ->
@@ -551,7 +554,7 @@ class SnykToolWindowPanel(
                         count == 0 -> NO_ISSUES_FOUND_TEXT
                         count > 0 -> ProductType.IAC.getCountText(count, isUniqueCount = true) + addHMLPostfix
                         count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_IAC_FILES_FOUND
-                        else -> throw IllegalStateException("ResultsCount is meaningful")
+                        else -> throw IllegalStateException("ResultsCount is not meaningful")
                     }
             }
     }
@@ -561,7 +564,10 @@ class SnykToolWindowPanel(
         securityIssuesCount: Int?,
         addHMLPostfix: String
     ) = when {
-        getSnykCachedResults(project)?.currentSnykCodeError != null -> "$CODE_SECURITY_ROOT_TEXT (error)"
+        getSnykCachedResults(project)?.currentSnykCodeError != null -> {
+            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            "$CODE_SECURITY_ROOT_TEXT $errorSuffix"
+        }
         isSnykCodeRunning(project) &&
             settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
 
@@ -572,7 +578,7 @@ class SnykToolWindowPanel(
                         count == NODE_INITIAL_STATE -> ""
                         count == 0 -> NO_ISSUES_FOUND_TEXT
                         count > 0 -> ProductType.CODE_SECURITY.getCountText(count) + addHMLPostfix
-                        else -> throw IllegalStateException("ResultsCount is meaningful")
+                        else -> throw IllegalStateException("ResultsCount is not meaningful")
                     }
             }
     }
@@ -584,7 +590,10 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
-        realError -> "$OSS_ROOT_TEXT (error)"
+        realError -> {
+            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            "$OSS_ROOT_TEXT $errorSuffix"
+        }
 
         else ->
             ossResultsCount?.let { count ->
@@ -761,6 +770,9 @@ class SnykToolWindowPanel(
 
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
+
+    @TestOnly
+    fun getRootSecurityIssuesTreeNode() = rootSecurityIssuesTreeNode
 
     fun getTree() = vulnerabilitiesTree
 
