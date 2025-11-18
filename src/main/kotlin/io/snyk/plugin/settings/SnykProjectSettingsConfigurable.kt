@@ -114,14 +114,19 @@ class SnykProjectSettingsConfigurable(
         folderConfigs.forEach { folderPath ->
             val existingConfig = fcs.getFolderConfig(folderPath)
 
-            // If preferredOrgTextField is blank, enable auto-detect
+            // Respect the checkbox state first - allow empty preferredOrg when auto-detect is unchecked
+            // This enables fallback to global organization when preferredOrg is empty
             val preferredOrgText = snykSettingsDialog.getPreferredOrg()
-            val shouldAutoDetect = if (preferredOrgText.isBlank()) {
-                // Update the checkbox to reflect auto-detect is enabled
-                snykSettingsDialog.setAutoDetectOrg(true)
-                true
+            val checkboxState = snykSettingsDialog.isAutoDetectOrg()
+
+            // If checkbox is checked (auto-detect enabled), always use auto-detect regardless of text field
+            // If checkbox is unchecked (auto-detect disabled), respect the text field value (can be empty for fallback)
+            val shouldAutoDetect = if (checkboxState) {
+                true // Checkbox checked = auto-detect enabled
             } else {
-                snykSettingsDialog.isAutoDetectOrg()
+                // Checkbox unchecked = manual mode
+                // If text is blank, user wants to use global org fallback, so keep manual mode (orgSetByUser = true)
+                false
             }
 
             val updatedConfig = existingConfig.copy(
