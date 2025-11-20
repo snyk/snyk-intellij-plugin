@@ -127,17 +127,6 @@ class SnykSettingsDialog(
     private val preferredOrgTextField: JTextField =
         JTextField().apply {
             preferredSize = Dimension(600, preferredSize.height)
-
-            // Auto-disable auto-detect when user enters a preferred organization
-            document.addDocumentListener(object : DocumentAdapter() {
-                override fun textChanged(event: DocumentEvent) {
-                    if (userSetPreferredOrg &&
-                        autoDetectOrgCheckbox.isSelected &&
-                        preferredOrgTextField.text.isNotBlank()) {
-                        autoDetectOrgCheckbox.isSelected = false
-                    }
-                }
-            })
         }
 
     private val scanTypesPanelOuter = ScanTypesPanel(project)
