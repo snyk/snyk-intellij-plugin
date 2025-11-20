@@ -210,12 +210,8 @@ class SnykProjectSettingsConfigurable(
     private fun isCustomEndpointModified(): Boolean =
         snykSettingsDialog.getCustomEndpoint() != settingsStateService.customEndpointUrl
 
-    private fun isOrganizationModified(): Boolean {
-        val dialogOrganization: String = snykSettingsDialog.getOrganization()
-        val storedOrganization = service<FolderConfigSettings>().getOrganization(project)
-        return (isProjectSettingsAvailable(project)
-            && dialogOrganization != storedOrganization)
-    }
+    private fun isOrganizationModified(): Boolean =
+        snykSettingsDialog.getOrganization() != settingsStateService.organization
 
     private fun isIgnoreUnknownCAModified(): Boolean =
         snykSettingsDialog.isIgnoreUnknownCA() != settingsStateService.ignoreUnknownCA
