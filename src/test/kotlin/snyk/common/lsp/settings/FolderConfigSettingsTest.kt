@@ -439,49 +439,7 @@ class FolderConfigSettingsTest {
     }
 
     @Test
-    fun `getPreferredOrg skips empty preferredOrg and returns first non-empty value`() {
-        val projectMock = mockk<Project>(relaxed = true)
-        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-
-        val path1 = "/test/project1"
-        val path2 = "/test/project2"
-        val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
-        val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
-
-        // Add configs - first with empty preferredOrg, second with value
-        val config1 = FolderConfig(
-            folderPath = path1,
-            baseBranch = "main",
-            preferredOrg = ""
-        )
-        val config2 = FolderConfig(
-            folderPath = path2,
-            baseBranch = "main",
-            preferredOrg = "org-uuid-2"
-        )
-        settings.addFolderConfig(config1)
-        settings.addFolderConfig(config2)
-
-        val workspaceFolder1 = WorkspaceFolder().apply {
-            uri = normalizedPath1.fromPathToUriString()
-            name = "project1"
-        }
-        val workspaceFolder2 = WorkspaceFolder().apply {
-            uri = normalizedPath2.fromPathToUriString()
-            name = "project2"
-        }
-
-        mockkObject(LanguageServerWrapper.Companion)
-        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder1, workspaceFolder2)
-        every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1, workspaceFolder2)
-
-        val result = settings.getPreferredOrg(projectMock)
-        assertEquals("PreferredOrg should skip empty and return first non-empty value", "org-uuid-2", result)
-    }
-
-    @Test
-    fun `getPreferredOrg returns empty string when all preferredOrg values are empty`() {
+    fun `getPreferredOrg returns preferredOrg even when empty`() {
         val projectMock = mockk<Project>(relaxed = true)
         val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
 
@@ -506,7 +464,7 @@ class FolderConfigSettingsTest {
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
 
         val result = settings.getPreferredOrg(projectMock)
-        assertEquals("PreferredOrg should be empty string when all values are empty", "", result)
+        assertEquals("PreferredOrg should be empty string when value is empty", "", result)
     }
 
     @Test
