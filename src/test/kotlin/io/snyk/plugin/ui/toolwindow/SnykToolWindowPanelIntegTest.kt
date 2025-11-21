@@ -32,6 +32,7 @@ import org.junit.runners.JUnit4
 import snyk.common.SnykError
 import snyk.common.UIComponentFinder.getComponentByName
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.PresentableError
 import snyk.common.lsp.SnykScanParams
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 import java.awt.Component
@@ -100,8 +101,24 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         mockkObject(SnykBalloonNotificationHelper)
 
         val snykError =
-            SnykScanParams("failed", "iac", project.basePath!!, emptyList(), SnykToolWindowPanel.NO_IAC_FILES)
-        val snykErrorControl = SnykScanParams("failed", "iac", project.basePath!!, emptyList(), "control")
+            SnykScanParams(
+                "failed",
+                "iac",
+                project.basePath!!,
+                PresentableError(
+                    error = SnykToolWindowPanel.NO_IAC_FILES,
+                    showNotification = true
+                )
+            )
+        val snykErrorControl = SnykScanParams(
+            "failed",
+            "iac",
+            project.basePath!!,
+            PresentableError(
+                error = "control",
+                showNotification = true
+            )
+        )
 
         scanPublisherLS.scanningError(snykErrorControl)
         scanPublisherLS.scanningError(snykError)
@@ -139,9 +156,25 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         setUpOssTest()
 
         val noFilesErrorParams =
-            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), SnykToolWindowPanel.NO_OSS_FILES)
+            SnykScanParams(
+                "failed",
+                "oss",
+                project.basePath!!,
+                PresentableError(
+                    error = SnykToolWindowPanel.NO_OSS_FILES,
+                    showNotification = true
+                )
+            )
         val controlErrorParams =
-            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
+            SnykScanParams(
+                "failed",
+                "oss",
+                project.basePath!!,
+                PresentableError(
+                    error = "control",
+                    showNotification = true
+                )
+            )
 
         scanPublisherLS.scanningError(noFilesErrorParams)
         scanPublisherLS.scanningError(controlErrorParams)
@@ -180,9 +213,25 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         mockkObject(SnykBalloonNotificationHelper)
 
         val authErrorParams =
-            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "auth error")
+            SnykScanParams(
+                "failed",
+                "oss",
+                project.basePath!!,
+                PresentableError(
+                    error = "auth error",
+                    showNotification = true
+                )
+            )
         val controlErrorParams =
-            SnykScanParams("failed", "oss", project.basePath!!, emptyList(), "control")
+            SnykScanParams(
+                "failed",
+                "oss",
+                project.basePath!!,
+                PresentableError(
+                    error = "control",
+                    showNotification = true
+                )
+            )
 
         scanPublisherLS.scanningError(controlErrorParams)
         scanPublisherLS.scanningError(authErrorParams)
@@ -190,10 +239,10 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(controlErrorParams.errorMessage!!, project)
+            SnykBalloonNotificationHelper.showError(controlErrorParams.presentableError?.error!!, project)
         }
         verify(exactly = 1, timeout = 2000) {
-            SnykBalloonNotificationHelper.showError(authErrorParams.errorMessage!!, project)
+            SnykBalloonNotificationHelper.showError(authErrorParams.presentableError?.error!!, project)
         }
 
         assertNull(getSnykCachedResults(project)?.currentOssError)
@@ -209,12 +258,22 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     @Test
     fun `test should display '(error)' in OSS root tree node when result is empty and error occurs`() {
         val ossError = SnykError("an error", project.basePath!!)
-        val ossErrorParams = SnykScanParams("failed", "oss", ossError.path, emptyList(), ossError.message)
+        val presentableError = PresentableError(
+            error = ossError.message,
+            path = ossError.path,
+            showNotification = true
+        )
+        val ossErrorParams = SnykScanParams(
+            "failed",
+            "oss",
+            ossError.path,
+            presentableError
+        )
 
         scanPublisherLS.scanningError(ossErrorParams)
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        assertEquals(ossError, getSnykCachedResults(project)?.currentOssError)
+        assertEquals(presentableError, getSnykCachedResults(project)?.currentOssError)
         assertTrue(getSnykCachedResults(project)?.currentOSSResultsLS?.isEmpty() ?: false)
         assertEquals(
             SnykToolWindowPanel.OSS_ROOT_TEXT + " (error)",
@@ -244,7 +303,17 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
 
         // mock IaC results
         val iacError = SnykError("fake error", "fake path")
-        val iacErrorParams = SnykScanParams("failed", "iac", iacError.path, emptyList(), iacError.message)
+        val presentableError = PresentableError(
+            error = iacError.message,
+            path = iacError.path,
+            showNotification = true
+        )
+        val iacErrorParams = SnykScanParams(
+            "failed",
+            "iac",
+            iacError.path,
+            presentableError
+        )
 
         // Trigger the callback from Language Server signalling scan failure
         scanPublisherLS.scanningError(iacErrorParams)
@@ -253,7 +322,7 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         verify (exactly = 1, timeout = 2000) {
             SnykBalloonNotificationHelper.showError(iacError.message, project)
         }
-        assertEquals(iacError, getSnykCachedResults(project)?.currentIacError)
+        assertEquals(presentableError, getSnykCachedResults(project)?.currentIacError)
 
         TreeUtil.selectNode(toolWindowPanel.getTree(), toolWindowPanel.getRootIacIssuesTreeNode())
 

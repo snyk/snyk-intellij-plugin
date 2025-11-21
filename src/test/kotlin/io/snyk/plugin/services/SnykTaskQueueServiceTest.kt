@@ -106,10 +106,4 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         // the Task should roll out gracefully without any Exception or Error
         snykTaskQueueService.downloadLatestRelease()
     }
-
-    fun `test LCE should be unknown in initial settings state`() {
-        val settings = pluginSettings()
-
-        assertNull(settings.localCodeEngineEnabled)
-    }
 }

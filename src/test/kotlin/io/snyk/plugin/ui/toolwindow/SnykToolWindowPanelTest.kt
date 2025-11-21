@@ -51,13 +51,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         every { lsMock.workspaceService } returns workspaceServiceMock
         val sastSettings = mapOf(
             Pair("sastEnabled", true),
-            Pair(
-                "localCodeEngine", mapOf(
-                    Pair("allowCloudUpload", false),
-                    Pair("enabled", false),
-                    Pair("url", "")
-                )
-            ),
             Pair("org", "1234"),
             Pair("reportFalsePositivesEnabled", false),
             Pair("autofixEnabled", false),
@@ -67,7 +60,6 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
         every { settings.token } returns null
         every { settings.sastOnServerEnabled } returns true
-        every { settings.localCodeEngineEnabled } returns false
     }
 
     override fun tearDown() {

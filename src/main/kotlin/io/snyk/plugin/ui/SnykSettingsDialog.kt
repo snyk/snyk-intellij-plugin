@@ -6,7 +6,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
-import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ComponentValidator
@@ -24,7 +23,6 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.fields.ExpandableTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.util.preferredWidth
 import com.intellij.uiDesigner.core.Spacer
 import com.intellij.util.Alarm
 import com.intellij.util.FontUtil
@@ -33,10 +31,12 @@ import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.isAdditionalParametersValid
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
@@ -50,10 +50,12 @@ import io.snyk.plugin.ui.settings.SeveritiesEnablementPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.jetbrains.concurrency.runAsync
 import snyk.SnykBundle
+import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import java.awt.Cursor
 import java.awt.Desktop
+import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
@@ -91,18 +93,18 @@ class SnykSettingsDialog(
 
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, rootPanel)
 
-    private val tokenTextField = JBPasswordField().apply { preferredWidth = 600 }
+    private val tokenTextField = JBPasswordField().apply { preferredSize = Dimension(600, preferredSize.height) }
     private val receiveTokenButton = JButton("Connect IDE to Snyk")
     private val authenticationType =
         ComboBox(AuthenticationType.entries.sortedBy { it.dialogIndex }.map { it.dialogName }.toTypedArray()).apply {
             this.isEditable = false
         }
 
-    private val customEndpointTextField = JTextField().apply { preferredWidth = tokenTextField.preferredWidth }
+    private val customEndpointTextField = JTextField().apply { preferredSize = Dimension(600, preferredSize.height) }
     private val organizationTextField: JTextField =
         JTextField().apply {
-            toolTipText = "The UUID of your organization or the org stub"
-            preferredWidth = tokenTextField.preferredWidth
+            toolTipText = "Global organization setting. This field is used when auto-select organization is disabled in the Project settings."
+            preferredSize = Dimension(600, preferredSize.height)
         }
     private val ignoreUnknownCACheckBox: JCheckBox =
         JCheckBox().apply { toolTipText = "Enabling this causes SSL certificate validation to be disabled" }
@@ -111,6 +113,20 @@ class SnykSettingsDialog(
         JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
     private val additionalParametersTextField: JTextField =
         ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
+
+    private val autoDetectOrgCheckbox: JCheckBox =
+        JCheckBox().apply {
+            toolTipText = "When checked, the organization is automatically detected from Snyk settings"
+
+            // Update the text field when checkbox state changes
+            addActionListener {
+                updatePreferredOrgTextField()
+            }
+        }
+    private val preferredOrgTextField: JTextField =
+        JTextField().apply {
+            preferredSize = Dimension(600, preferredSize.height)
+        }
 
     private val scanTypesPanelOuter = ScanTypesPanel(project)
     private val scanTypesPanel = scanTypesPanelOuter.scanTypesPanel
@@ -136,22 +152,29 @@ class SnykSettingsDialog(
 
         receiveTokenButton.isEnabled = !getSnykCliDownloaderService().isCliDownloading()
 
-        ApplicationManager
-            .getApplication()
-            .messageBus
-            .connect(rootPanel)
-            .subscribe(
-                SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
-                object : SnykCliDownloadListener {
-                    override fun cliDownloadStarted() {
-                        receiveTokenButton.isEnabled = false
-                    }
+        val messageBusConnection = ApplicationManager.getApplication().messageBus.connect(rootPanel)
 
-                    override fun cliDownloadFinished(succeed: Boolean) {
-                        receiveTokenButton.isEnabled = true
-                    }
-                },
-            )
+        messageBusConnection.subscribe(
+            SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+            object : SnykCliDownloadListener {
+                override fun cliDownloadStarted() {
+                    receiveTokenButton.isEnabled = false
+                }
+
+                override fun cliDownloadFinished(succeed: Boolean) {
+                    receiveTokenButton.isEnabled = true
+                }
+            },
+        )
+
+        messageBusConnection.subscribe(
+            SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC,
+            object : SnykFolderConfigListener {
+                override fun folderConfigsChanged(folderConfigsNotEmpty: Boolean) {
+                    updateProjectSettingsFields(folderConfigsNotEmpty)
+                }
+            },
+        )
 
         receiveTokenButton.addActionListener {
             ApplicationManager.getApplication().invokeLater {
@@ -163,10 +186,6 @@ class SnykSettingsDialog(
                 getSnykCliAuthenticationService(project)?.authenticate()
                 tokenTextField.text = pluginSettings().token
                 customEndpointTextField.text = pluginSettings().customEndpointUrl
-
-                runBackgroundableTask("Checking Snyk Code Enablement In Organisation", project, true) {
-                    scanTypesPanelOuter.updateSnykCodeSettingsBasedOnSastSettings()
-                }
             }
         }
 
@@ -179,11 +198,8 @@ class SnykSettingsDialog(
             manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
             cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
             cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-            // TODO: check for concrete project roots, and if we received a message for them
-            // this is an edge case, when a project is opened after ls initialization and
-            // preferences dialog is opened before ls sends the additional parameters
-            additionalParametersTextField.isEnabled = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
-            additionalParametersTextField.text = getAdditionalParams(project)
+            val haveFolderConfigs = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+            updateProjectSettingsFields(haveFolderConfigs)
             scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
             cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
             baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
@@ -194,10 +210,27 @@ class SnykSettingsDialog(
         }
     }
 
-    private fun getAdditionalParams(project: Project): String? {
+    private fun updateProjectSettingsFields(haveFolderConfigs: Boolean) {
+        additionalParametersTextField.text = getAdditionalParams(project)
+        additionalParametersTextField.isEnabled = haveFolderConfigs
+
+
+        autoDetectOrgCheckbox.isEnabled = haveFolderConfigs
+        autoDetectOrgCheckbox.isSelected = !isOrgSetByUser(project)
+
+        updatePreferredOrgTextField()
+    }
+
+    private fun getAdditionalParams(project: Project): String {
         // get workspace folders for project
         val folderConfigSettings = service<FolderConfigSettings>()
         return folderConfigSettings.getAdditionalParameters(project)
+    }
+
+    private fun isOrgSetByUser(project: Project): Boolean {
+        // get workspace folders for project
+        val folderConfigSettings = service<FolderConfigSettings>()
+        return !folderConfigSettings.isAutoOrganizationEnabled(project)
     }
 
     fun getRootPanel(): JComponent = rootPanel
@@ -220,7 +253,7 @@ class SnykSettingsDialog(
         /** General settings ------------------ */
 
         val generalSettingsPanel = JPanel(UIGridLayoutManager(8, 3, JBUI.emptyInsets(), -1, -1))
-        generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General settings")
+        generalSettingsPanel.border = IdeBorderFactory.createTitledBorder("General Settings")
 
         rootPanel.add(
             generalSettingsPanel,
@@ -396,19 +429,6 @@ class SnykSettingsDialog(
             ),
         )
 
-        generalSettingsPanel.add(
-            organizationTextField,
-            baseGridConstraints(
-                row = 7,
-                column = 1,
-                colSpan = 1,
-                anchor = UIGridConstraints.ANCHOR_WEST,
-                fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
-                indent = 0,
-            ),
-        )
-
         val organizationContextHelpLabel =
             ContextHelpLabel.createWithLink(
                 null,
@@ -417,14 +437,23 @@ class SnykSettingsDialog(
             ) {
                 BrowserUtil.browse(SnykBundle.message("snyk.settings.organization.tooltip.link"))
             }
+
+        val organizationPanel = JPanel(GridBagLayout()).apply {
+            val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+            add(organizationTextField, gb.nextLine().next())
+            add(organizationContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+        }
+
         generalSettingsPanel.add(
-            organizationContextHelpLabel,
-            baseGridConstraintsAnchorWest(
+            organizationPanel,
+            baseGridConstraints(
                 row = 7,
-                column = 2,
-                indent = 0,
+                column = 1,
+                colSpan = 2,
+                anchor = UIGridConstraints.ANCHOR_WEST,
                 fill = UIGridConstraints.FILL_NONE,
-                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK or UIGridConstraints.SIZEPOLICY_CAN_GROW,
+                indent = 0,
             ),
         )
 
@@ -432,7 +461,7 @@ class SnykSettingsDialog(
 
         val issueViewPanel = JPanel(UIGridLayoutManager(3, 2, JBUI.emptyInsets(), 30, -1))
         issueViewPanel.isVisible = true
-        issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue view options")
+        issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue View Options")
 
         val issueViewLabel = JLabel("Show the following issues:")
         issueViewLabel.toolTipText = "Code Consistent Ignores is a feature" +
@@ -502,7 +531,7 @@ class SnykSettingsDialog(
         )
 
         val severitiesPanel = JPanel(UIGridLayoutManager(1, 1, JBUI.emptyInsets(), -1, -1))
-        severitiesPanel.border = IdeBorderFactory.createTitledBorder("Severity selection")
+        severitiesPanel.border = IdeBorderFactory.createTitledBorder("Severity Selection")
 
         productAndSeveritiesPanel.add(
             severitiesPanel,
@@ -533,8 +562,8 @@ class SnykSettingsDialog(
         /** Project settings ------------------ */
 
         if (isProjectSettingsAvailable(project)) {
-            val projectSettingsPanel = JPanel(UIGridLayoutManager(3, 3, JBUI.emptyInsets(), -1, -1))
-            projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project settings")
+            val projectSettingsPanel = JPanel(UIGridLayoutManager(4, 3, JBUI.emptyInsets(), -1, -1))
+            projectSettingsPanel.border = IdeBorderFactory.createTitledBorder("Project Settings")
 
             rootPanel.add(
                 projectSettingsPanel,
@@ -570,11 +599,89 @@ class SnykSettingsDialog(
 
             additionalParametersLabel.labelFor = additionalParametersTextField
 
+            val autoDetectOrgLabel = JLabel("Auto-select organization:")
+            projectSettingsPanel.add(
+                autoDetectOrgLabel,
+                baseGridConstraintsAnchorWest(
+                    row = 1,
+                    indent = 0,
+                ),
+            )
+
+            val autoDetectOrgContextHelpLabel =
+                ContextHelpLabel.createWithLink(
+                    null,
+                    SnykBundle.message("snyk.settings.autoDetectOrg.tooltip.description"),
+                    SnykBundle.message("snyk.settings.autoDetectOrg.tooltip.linkText"),
+                ) {
+                    BrowserUtil.browse(SnykBundle.message("snyk.settings.autoDetectOrg.tooltip.link"))
+                }
+
+            val preferredOrgContextHelpLabel =
+                ContextHelpLabel.createWithLink(
+                    null,
+                    SnykBundle.message("snyk.settings.preferredOrg.tooltip.description"),
+                    SnykBundle.message("snyk.settings.preferredOrg.tooltip.linkText"),
+                ) {
+                    BrowserUtil.browse(SnykBundle.message("snyk.settings.preferredOrg.tooltip.link"))
+                }
+
+            val autoDetectOrgPanel = JPanel(GridBagLayout()).apply {
+                val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+                add(autoDetectOrgCheckbox, gb.nextLine().next())
+                add(autoDetectOrgContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+            }
+
+            val preferredOrgPanel = JPanel(GridBagLayout()).apply {
+                val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+                add(preferredOrgTextField, gb.nextLine().next())
+                add(preferredOrgContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+            }
+
+            projectSettingsPanel.add(
+                autoDetectOrgPanel,
+                baseGridConstraints(
+                    row = 1,
+                    column = 1,
+                    colSpan = 2,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
+                    fill = UIGridConstraints.FILL_NONE,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_CAN_SHRINK,
+                    indent = 0,
+                ),
+            )
+
+            autoDetectOrgLabel.labelFor = autoDetectOrgCheckbox
+
+            val preferredOrgLabel = JLabel("Preferred organization:")
+            projectSettingsPanel.add(
+                preferredOrgLabel,
+                baseGridConstraintsAnchorWest(
+                    row = 2,
+                    indent = 0,
+                ),
+            )
+
+            projectSettingsPanel.add(
+                preferredOrgPanel,
+                baseGridConstraints(
+                    row = 2,
+                    column = 1,
+                    colSpan = 2,
+                    anchor = UIGridConstraints.ANCHOR_WEST,
+                    fill = UIGridConstraints.FILL_NONE,
+                    hSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
+                    indent = 0,
+                ),
+            )
+
+            preferredOrgLabel.labelFor = preferredOrgTextField
+
             val projectSettingsSpacer = Spacer()
             projectSettingsPanel.add(
                 projectSettingsSpacer,
                 baseGridConstraints(
-                    row = 2,
+                    row = 3,
                     fill = UIGridConstraints.FILL_VERTICAL,
                     hSizePolicy = 1,
                     vSizePolicy = UIGridConstraints.SIZEPOLICY_WANT_GROW,
@@ -589,7 +696,7 @@ class SnykSettingsDialog(
         /** User experience ------------------ */
 
         val userExperiencePanel = JPanel(UIGridLayoutManager(6, 4, JBUI.emptyInsets(), -1, -1))
-        userExperiencePanel.border = IdeBorderFactory.createTitledBorder("User experience")
+        userExperiencePanel.border = IdeBorderFactory.createTitledBorder("User Experience")
 
         rootPanel.add(
             userExperiencePanel,
@@ -686,7 +793,7 @@ class SnykSettingsDialog(
 
     private fun createExecutableSettingsPanel() {
         val executableSettingsPanel = JPanel(GridBagLayout())
-        executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable settings")
+        executableSettingsPanel.border = IdeBorderFactory.createTitledBorder("Executable Settings")
         val gb =
             GridBag()
                 .setDefaultWeightX(1.0)
@@ -812,6 +919,41 @@ class SnykSettingsDialog(
     fun saveIssueViewOptionsChanges() = issueViewOptionsPanel.apply()
 
     fun getAdditionalParameters(): String = additionalParametersTextField.text
+
+    fun getPreferredOrg(): String = preferredOrgTextField.text
+
+    fun isAutoSelectOrgEnabled(): Boolean = autoDetectOrgCheckbox.isSelected
+
+    fun setAutoDetectOrg(enabled: Boolean) {
+        autoDetectOrgCheckbox.isSelected = enabled
+    }
+
+    private fun getFolderConfig(): FolderConfig? {
+        val folderConfigSettings = service<FolderConfigSettings>()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        return languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .firstOrNull()
+    }
+
+    private fun updatePreferredOrgTextField() {
+        val autoDetectOrgSelected = autoDetectOrgCheckbox.isSelected
+        val folderConfig = getFolderConfig()
+
+        val organization = if (autoDetectOrgSelected) {
+            // Checkbox checked = auto-detect enabled = use autoDeterminedOrg only
+            folderConfig?.autoDeterminedOrg ?: ""
+        } else {
+            // Checkbox unchecked = manual selection = clear textbox for user input
+            folderConfig?.preferredOrg ?: ""
+        }
+
+        preferredOrgTextField.text = organization
+        preferredOrgTextField.isEnabled = !autoDetectOrgSelected
+    }
+
 
     private fun initializeValidation() {
         setupValidation(

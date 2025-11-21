@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -49,7 +50,6 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.isScanOnSaveEnabled() != settingsStateService.scanOnSave ||
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
             snykSettingsDialog.getDisplayIssuesSelection() != settingsStateService.issuesToDisplay ||
-
             isAuthenticationMethodModified()
 
     private fun isAuthenticationMethodModified() =
@@ -60,6 +60,8 @@ class SnykProjectSettingsConfigurable(
             isCustomEndpointModified() ||
             isOrganizationModified() ||
             isAdditionalParametersModified() ||
+            isPreferredOrgModified() ||
+            isAutoSelectOrgModified() ||
             isAuthenticationMethodModified() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
             snykSettingsDialog.isIssueViewOptionsChanged() ||
@@ -100,19 +102,26 @@ class SnykProjectSettingsConfigurable(
         snykSettingsDialog.saveSeveritiesEnablementChanges()
         snykSettingsDialog.saveIssueViewOptionsChanges()
 
-        if (isProjectSettingsAvailable(project)) {
-            val fcs = service<FolderConfigSettings>()
-            fcs.getAllForProject(project)
-                .map {
-                    it.copy(
-                        additionalParameters = snykSettingsDialog.getAdditionalParameters()
-                            .split(" ", System.lineSeparator())
-                    )
-                }
-                .forEach { fcs.addFolderConfig(it) }
+        // Always update folder configs for auto-org settings, using the same logic as language server
+        val fcs = service<FolderConfigSettings>()
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { it.uri.fromUriToPath().toString() }
+            .toList()
+
+        folderConfigs.forEach { folderPath ->
+            applyFolderConfigChanges(
+                fcs,
+                folderPath,
+                snykSettingsDialog.getPreferredOrg(),
+                snykSettingsDialog.isAutoSelectOrgEnabled(),
+                snykSettingsDialog.getAdditionalParameters()
+            )
         }
 
-        runBackgroundableTask("processing config changes", project, true) {
+        runBackgroundableTask("Processing config changes", project, true) {
             val languageServerWrapper = LanguageServerWrapper.getInstance(project)
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
@@ -192,4 +201,40 @@ class SnykProjectSettingsConfigurable(
         return (isProjectSettingsAvailable(project)
             && dialogAdditionalParameters != storedAdditionalParams)
     }
+
+    private fun isPreferredOrgModified(): Boolean {
+        val dialogPreferredOrg: String = snykSettingsDialog.getPreferredOrg()
+        val storedPreferredOrg = service<FolderConfigSettings>().getPreferredOrg(project)
+        return (isProjectSettingsAvailable(project)
+            && dialogPreferredOrg != storedPreferredOrg)
+    }
+
+    private fun isAutoSelectOrgModified(): Boolean {
+        val dialogAutoOrgEnabled: Boolean = snykSettingsDialog.isAutoSelectOrgEnabled()
+        val storedAutoOrgEnabled = service<FolderConfigSettings>().isAutoOrganizationEnabled(project)
+        return (isProjectSettingsAvailable(project) && dialogAutoOrgEnabled != storedAutoOrgEnabled)
+    }
+}
+
+/**
+ * Utility function to apply folder config changes based on dialog settings.
+ * This encapsulates the logic for updating preferredOrg and orgSetByUser based on
+ * the auto-select org checkbox state.
+ */
+fun applyFolderConfigChanges(
+    fcs: FolderConfigSettings,
+    folderPath: String,
+    preferredOrgText: String,
+    autoSelectOrgEnabled: Boolean,
+    additionalParameters: String
+) {
+    val existingConfig = fcs.getFolderConfig(folderPath)
+
+    val updatedConfig = existingConfig.copy(
+        additionalParameters = additionalParameters.split(" ", System.lineSeparator()),
+        // Clear the preferredOrg field if the auto org selection is enabled.
+        preferredOrg = if (autoSelectOrgEnabled) "" else preferredOrgText.trim(),
+        orgSetByUser = !autoSelectOrgEnabled
+    )
+    fcs.addFolderConfig(updatedConfig)
 }

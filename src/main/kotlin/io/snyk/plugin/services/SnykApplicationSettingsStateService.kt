@@ -26,7 +26,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     // events
     var pluginInstalledSent: Boolean = false
 
-    val requiredLsProtocolVersion = 20
+    val requiredLsProtocolVersion = 21
 
     @Deprecated("left for old users migration only")
     var useTokenAuthentication = false
@@ -57,8 +57,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var iacScanEnabled: Boolean = true
     var sastOnServerEnabled: Boolean? = null
     var sastSettingsError: Boolean? = null
-    var localCodeEngineEnabled: Boolean? = null
-    var localCodeEngineUrl: String? = ""
     var lowSeverityEnabled = true
     var mediumSeverityEnabled = true
     var highSeverityEnabled = true

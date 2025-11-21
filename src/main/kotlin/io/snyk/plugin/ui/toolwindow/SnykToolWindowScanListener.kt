@@ -71,11 +71,10 @@ class SnykToolWindowSnykScanListener(
 
     override fun scanningStarted(snykScan: SnykScanParams) {
         if (disposed) return
-        ApplicationManager.getApplication().invokeLater {
-            this.snykToolWindowPanel.cleanUiAndCaches()
-            this.snykToolWindowPanel.updateTreeRootNodesPresentation()
-            this.snykToolWindowPanel.displayScanningMessage()
-        }
+
+        this.snykToolWindowPanel.cleanUiAndCaches()
+        this.snykToolWindowPanel.updateTreeRootNodesPresentation()
+        this.snykToolWindowPanel.displayScanningMessage()
     }
 
     override fun scanningSnykCodeFinished() {
@@ -108,25 +107,26 @@ class SnykToolWindowSnykScanListener(
     }
 
     override fun scanningError(snykScan: SnykScanParams) {
-        when (LsProduct.getFor(snykScan.product)) {
-            LsProduct.OpenSource -> {
-                removeChildrenAndRefresh(rootOssIssuesTreeNode)
-                this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (error)"
-            }
+        if (disposed) return
+        ApplicationManager.getApplication().invokeLater {
+            when (LsProduct.getFor(snykScan.product)) {
+                LsProduct.OpenSource -> {
+                    removeChildrenAndRefresh(rootOssIssuesTreeNode)
+                }
 
-            LsProduct.Code -> {
-                removeChildrenAndRefresh(rootSecurityIssuesTreeNode)
-                rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (error)"
-            }
+                LsProduct.Code -> {
+                    removeChildrenAndRefresh(rootSecurityIssuesTreeNode)
+                }
 
-            LsProduct.InfrastructureAsCode -> {
-                removeChildrenAndRefresh(rootIacIssuesTreeNode)
-                rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (error)"
-            }
+                LsProduct.InfrastructureAsCode -> {
+                    removeChildrenAndRefresh(rootIacIssuesTreeNode)
+                }
 
-            LsProduct.Unknown -> Unit
+                LsProduct.Unknown -> Unit
+            }
+            snykToolWindowPanel.updateTreeRootNodesPresentation()
+            refreshAnnotationsForOpenFiles(project)
         }
-        refreshAnnotationsForOpenFiles(project)
     }
 
     private fun removeChildrenAndRefresh(node: DefaultMutableTreeNode) {
@@ -281,7 +281,7 @@ class SnykToolWindowSnykScanListener(
         }
 
         val currentOssError = getSnykCachedResults(project)?.currentOssError
-        val cliErrorMessage = currentOssError?.message
+        val cliErrorMessage = currentOssError?.error
 
         var ossResultsCountForDisplay = ossResultsCount
         if (cliErrorMessage?.contains(NO_OSS_FILES) == true) {
