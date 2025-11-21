@@ -113,7 +113,6 @@ class SnykSettingsDialog(
         JCheckBox().apply { toolTipText = "If enabled, automatically scan on save, start-up and configuration change" }
     private val additionalParametersTextField: JTextField =
         ExpandableTextField().apply { toolTipText = "--all-projects is already defaulted, -d causes problems" }
-    private var userSetPreferredOrg = false
 
     private val autoDetectOrgCheckbox: JCheckBox =
         JCheckBox().apply {
@@ -929,7 +928,7 @@ class SnykSettingsDialog(
         autoDetectOrgCheckbox.isSelected = enabled
     }
 
-    private fun getFirstFolderConfig(): FolderConfig? {
+    private fun getFolderConfig(): FolderConfig? {
         val folderConfigSettings = service<FolderConfigSettings>()
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
         return languageServerWrapper.getWorkspaceFoldersFromRoots(project)
@@ -941,7 +940,7 @@ class SnykSettingsDialog(
 
     private fun updatePreferredOrgTextField() {
         val autoDetectOrgSelected = autoDetectOrgCheckbox.isSelected
-        val folderConfig = getFirstFolderConfig()
+        val folderConfig = getFolderConfig()
 
         val organization = if (autoDetectOrgSelected) {
             // Checkbox checked = auto-detect enabled = use autoDeterminedOrg only
@@ -951,10 +950,8 @@ class SnykSettingsDialog(
             folderConfig?.preferredOrg ?: ""
         }
 
-        userSetPreferredOrg = false
         preferredOrgTextField.text = organization
         preferredOrgTextField.isEnabled = !autoDetectOrgSelected
-        userSetPreferredOrg = true
     }
 
 

@@ -122,43 +122,6 @@ class FolderConfigSettings {
     }
 
     /**
-     * Gets the appropriate organization for the given project based on orgSetByUser flag.
-     * Returns autoDeterminedOrg if orgSetByUser is false, otherwise returns preferredOrg.
-     * Falls back to global organization setting if folder-specific values are empty.
-     * @param project the project to get the organization for
-     * @return the appropriate organization for the project
-     */
-    fun getOrganization(project: Project): String {
-        // only use folder config with workspace folder path
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
-            .asSequence()
-            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
-            .firstOrNull()
-
-        val folderOrg = if (folderConfig?.orgSetByUser == true) {
-            folderConfig.preferredOrg
-        } else {
-            folderConfig?.autoDeterminedOrg ?: ""
-        }
-
-        // Fallback to global organization if folder-specific organization is empty
-        return if (folderOrg.isNotEmpty()) {
-            folderOrg
-        } else {
-            // Get global organization from application settings
-            val application = com.intellij.openapi.application.ApplicationManager.getApplication()
-            if (application != null) {
-                val applicationSettings = application.getService(io.snyk.plugin.services.SnykApplicationSettingsStateService::class.java)
-                applicationSettings.organization ?: ""
-            } else {
-                ""
-            }
-        }
-    }
-
-    /**
      * Checks if auto-organization is enabled for the given project.
      * Returns true if orgSetByUser is false (auto-detect enabled), false otherwise.
      * @param project the project to check
