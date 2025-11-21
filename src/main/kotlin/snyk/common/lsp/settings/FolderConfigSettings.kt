@@ -107,10 +107,7 @@ class FolderConfigSettings {
      */
     fun getPreferredOrg(project: Project): String {
         // Note - this will not work for projects with extra content roots outside of the the main workspace folder.
-        return getFolderConfigs(project)
-            .filter { it.preferredOrg.isNotEmpty() }
-            .map { it.preferredOrg }
-            .firstOrNull() ?: ""
+        return getFolderConfigs(project).map { it.preferredOrg }.firstOrNull() ?: ""
     }
 
     /**
