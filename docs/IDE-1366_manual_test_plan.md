@@ -1,5 +1,8 @@
 # Manual Test Plan for IDE-1366: Get Project Organization from Language Server
 
+> **Note**: This test plan has been moved to Confluence. The latest version is available at:
+> https://snyksec.atlassian.net/wiki/spaces/IDE/pages/4022009871/IntelliJ+manual+test+plan+IDE-1366
+
 ## Overview of Changes
 
 **New Feature**: Organization selection in project settings (Settings → Tools → Snyk)
