@@ -61,28 +61,21 @@ class SnykProjectSettingsConfigurableTest {
 
         // Mock the dialog - checkbox is checked (auto-detect enabled)
         every { snykSettingsDialogMock.getPreferredOrg() } returns ""
-        every { snykSettingsDialogMock.isAutoDetectOrg() } returns true // User checked auto-detect
+        every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true // User checked auto-detect
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
         every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
-        // Simulate the apply logic - respect checkbox state first
-        val preferredOrgText = snykSettingsDialogMock.getPreferredOrg()
-        val checkboxState = snykSettingsDialogMock.isAutoDetectOrg()
-        val shouldAutoDetect = if (checkboxState) {
-            true // Checkbox checked = auto-detect enabled
-        } else {
-            false // Checkbox unchecked = manual mode (can be empty for fallback)
-        }
-
-        val updatedConfig = initialConfig.copy(
-            additionalParameters = snykSettingsDialogMock.getAdditionalParameters().split(" ", System.lineSeparator()),
-            preferredOrg = if (shouldAutoDetect) "" else preferredOrgText.trim(),
-            orgSetByUser = !shouldAutoDetect
+        // Use the real apply logic
+        applyFolderConfigChanges(
+            folderConfigSettings,
+            path,
+            snykSettingsDialogMock.getPreferredOrg(),
+            snykSettingsDialogMock.isAutoSelectOrgEnabled(),
+            snykSettingsDialogMock.getAdditionalParameters()
         )
-        folderConfigSettings.addFolderConfig(updatedConfig)
 
         // Verify the result
         val resultConfig = folderConfigSettings.getFolderConfig(path)
@@ -110,28 +103,21 @@ class SnykProjectSettingsConfigurableTest {
 
         // Mock the dialog - checkbox is unchecked, preferredOrg is empty (user wants global org fallback)
         every { snykSettingsDialogMock.getPreferredOrg() } returns ""
-        every { snykSettingsDialogMock.isAutoDetectOrg() } returns false // User unchecked auto-detect
+        every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns false // User unchecked auto-detect
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
         every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
-        // Simulate the apply logic - respect checkbox state first
-        val preferredOrgText = snykSettingsDialogMock.getPreferredOrg()
-        val checkboxState = snykSettingsDialogMock.isAutoDetectOrg()
-        val shouldAutoDetect = if (checkboxState) {
-            true // Checkbox checked = auto-detect enabled
-        } else {
-            false // Checkbox unchecked = manual mode (can be empty for fallback)
-        }
-
-        val updatedConfig = initialConfig.copy(
-            additionalParameters = snykSettingsDialogMock.getAdditionalParameters().split(" ", System.lineSeparator()),
-            preferredOrg = if (shouldAutoDetect) "" else preferredOrgText.trim(),
-            orgSetByUser = !shouldAutoDetect
+        // Use the real apply logic
+        applyFolderConfigChanges(
+            folderConfigSettings,
+            path,
+            snykSettingsDialogMock.getPreferredOrg(),
+            snykSettingsDialogMock.isAutoSelectOrgEnabled(),
+            snykSettingsDialogMock.getAdditionalParameters()
         )
-        folderConfigSettings.addFolderConfig(updatedConfig)
 
         // Verify the result - should keep manual mode with empty preferredOrg for global org fallback
         val resultConfig = folderConfigSettings.getFolderConfig(path)
@@ -159,28 +145,21 @@ class SnykProjectSettingsConfigurableTest {
 
         // Mock the dialog to return a specific org
         every { snykSettingsDialogMock.getPreferredOrg() } returns "my-specific-org"
-        every { snykSettingsDialogMock.isAutoDetectOrg() } returns false // User unchecked auto-detect
+        every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns false // User unchecked auto-detect
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
         every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
-        // Simulate the apply logic - respect checkbox state first
-        val preferredOrgText = snykSettingsDialogMock.getPreferredOrg()
-        val checkboxState = snykSettingsDialogMock.isAutoDetectOrg()
-        val shouldAutoDetect = if (checkboxState) {
-            true // Checkbox checked = auto-detect enabled
-        } else {
-            false // Checkbox unchecked = manual mode (can be empty for fallback)
-        }
-
-        val updatedConfig = initialConfig.copy(
-            additionalParameters = snykSettingsDialogMock.getAdditionalParameters().split(" ", System.lineSeparator()),
-            preferredOrg = if (shouldAutoDetect) "" else preferredOrgText.trim(),
-            orgSetByUser = !shouldAutoDetect
+        // Use the real apply logic
+        applyFolderConfigChanges(
+            folderConfigSettings,
+            path,
+            snykSettingsDialogMock.getPreferredOrg(),
+            snykSettingsDialogMock.isAutoSelectOrgEnabled(),
+            snykSettingsDialogMock.getAdditionalParameters()
         )
-        folderConfigSettings.addFolderConfig(updatedConfig)
 
         // Verify the result
         val resultConfig = folderConfigSettings.getFolderConfig(path)
@@ -208,28 +187,21 @@ class SnykProjectSettingsConfigurableTest {
 
         // Mock the dialog - user has text in field but checkbox is checked
         every { snykSettingsDialogMock.getPreferredOrg() } returns "some-org-in-field"
-        every { snykSettingsDialogMock.isAutoDetectOrg() } returns true // User checked auto-detect
+        every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true // User checked auto-detect
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
         every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
-        // Simulate the apply logic - respect checkbox state first
-        val preferredOrgText = snykSettingsDialogMock.getPreferredOrg()
-        val checkboxState = snykSettingsDialogMock.isAutoDetectOrg()
-        val shouldAutoDetect = if (checkboxState) {
-            true // Checkbox checked = auto-detect enabled
-        } else {
-            false // Checkbox unchecked = manual mode (can be empty for fallback)
-        }
-
-        val updatedConfig = initialConfig.copy(
-            additionalParameters = snykSettingsDialogMock.getAdditionalParameters().split(" ", System.lineSeparator()),
-            preferredOrg = if (shouldAutoDetect) "" else preferredOrgText.trim(),
-            orgSetByUser = !shouldAutoDetect
+        // Use the real apply logic
+        applyFolderConfigChanges(
+            folderConfigSettings,
+            path,
+            snykSettingsDialogMock.getPreferredOrg(),
+            snykSettingsDialogMock.isAutoSelectOrgEnabled(),
+            snykSettingsDialogMock.getAdditionalParameters()
         )
-        folderConfigSettings.addFolderConfig(updatedConfig)
 
         // Verify the result - should use auto-detect since checkbox is checked
         val resultConfig = folderConfigSettings.getFolderConfig(path)

@@ -61,7 +61,7 @@ class SnykProjectSettingsConfigurable(
             isOrganizationModified() ||
             isAdditionalParametersModified() ||
             isPreferredOrgModified() ||
-            isAutoDetectOrgModified() ||
+            isAutoSelectOrgModified() ||
             isAuthenticationMethodModified() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
             snykSettingsDialog.isIssueViewOptionsChanged() ||
@@ -112,37 +112,16 @@ class SnykProjectSettingsConfigurable(
             .toList()
 
         folderConfigs.forEach { folderPath ->
-            val existingConfig = fcs.getFolderConfig(folderPath)
-
-            // Respect the checkbox state first - allow empty preferredOrg when auto-detect is unchecked
-            // This enables fallback to global organization when preferredOrg is empty
-            val preferredOrgText = snykSettingsDialog.getPreferredOrg()
-            val checkboxState = snykSettingsDialog.isAutoDetectOrg()
-
-            // If checkbox is checked (auto-detect enabled), always use auto-detect regardless of text field
-            // If checkbox is unchecked (auto-detect disabled), respect the text field value (can be empty for fallback)
-            val shouldAutoDetect = if (checkboxState) {
-                true // Checkbox checked = auto-detect enabled
-            } else {
-                // Checkbox unchecked = manual mode
-                // If text is blank, user wants to use global org fallback, so keep manual mode (orgSetByUser = true)
-                false
-            }
-
-            val updatedConfig = existingConfig.copy(
-                additionalParameters = snykSettingsDialog.getAdditionalParameters()
-                    .split(" ", System.lineSeparator()),
-                preferredOrg = if (shouldAutoDetect) {
-                    "" // Clear preferredOrg when auto-detect is enabled (checkbox ticked)
-                } else {
-                    preferredOrgText // Use textbox value when manual (checkbox unticked)
-                },
-                orgSetByUser = !shouldAutoDetect // false when ticked, true when unticked
+            applyFolderConfigChanges(
+                fcs,
+                folderPath,
+                snykSettingsDialog.getPreferredOrg(),
+                snykSettingsDialog.isAutoSelectOrgEnabled(),
+                snykSettingsDialog.getAdditionalParameters()
             )
-            fcs.addFolderConfig(updatedConfig)
         }
 
-        runBackgroundableTask("processing config changes", project, true) {
+        runBackgroundableTask("Processing config changes", project, true) {
             val languageServerWrapper = LanguageServerWrapper.getInstance(project)
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
@@ -230,10 +209,32 @@ class SnykProjectSettingsConfigurable(
             && dialogPreferredOrg != storedPreferredOrg)
     }
 
-    private fun isAutoDetectOrgModified(): Boolean {
-        val dialogAutoDetectOrg: Boolean = snykSettingsDialog.isAutoDetectOrg()
+    private fun isAutoSelectOrgModified(): Boolean {
+        val dialogAutoOrgEnabled: Boolean = snykSettingsDialog.isAutoSelectOrgEnabled()
         val storedAutoOrgEnabled = service<FolderConfigSettings>().isAutoOrganizationEnabled(project)
-        return (isProjectSettingsAvailable(project)
-            && dialogAutoDetectOrg != storedAutoOrgEnabled)
+        return (isProjectSettingsAvailable(project) && dialogAutoOrgEnabled != storedAutoOrgEnabled)
     }
+}
+
+/**
+ * Utility function to apply folder config changes based on dialog settings.
+ * This encapsulates the logic for updating preferredOrg and orgSetByUser based on
+ * the auto-select org checkbox state.
+ */
+fun applyFolderConfigChanges(
+    fcs: FolderConfigSettings,
+    folderPath: String,
+    preferredOrgText: String,
+    autoSelectOrgEnabled: Boolean,
+    additionalParameters: String
+) {
+    val existingConfig = fcs.getFolderConfig(folderPath)
+
+    val updatedConfig = existingConfig.copy(
+        additionalParameters = additionalParameters.split(" ", System.lineSeparator()),
+        // Clear the preferredOrg field if the auto org selection is enabled.
+        preferredOrg = if (autoSelectOrgEnabled) "" else preferredOrgText.trim(),
+        orgSetByUser = !autoSelectOrgEnabled
+    )
+    fcs.addFolderConfig(updatedConfig)
 }

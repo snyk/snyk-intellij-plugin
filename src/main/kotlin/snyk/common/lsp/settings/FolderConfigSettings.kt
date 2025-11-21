@@ -79,46 +79,38 @@ class FolderConfigSettings {
     fun getAdditionalParameters(project: Project): String {
         // only use folder config with workspace folder path
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val additionalParameters = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
-            .asSequence()
-            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+        val additionalParameters = getFolderConfigs(project)
             .filter { it.additionalParameters?.isNotEmpty() ?: false }
-            .map { it.additionalParameters?.joinToString(" ") }
+            .mapNotNull { it.additionalParameters?.joinToString(" ") }
             .joinToString(" ")
         return additionalParameters
     }
 
     /**
+     * Gets the folder configs for the given project by aggregating the folder configs with workspace folder paths.
+     * @param project the project to get the folder configs for
+     * @return the folder configs for the project
+     */
+    fun getFolderConfigs(project: Project): List<FolderConfig> {
+        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+        return languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+            .asSequence()
+            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
+            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+            .toList()
+    }
+
+    /**
      * Gets the preferred organization for the given project by aggregating the folder configs with workspace folder paths.
-     * Falls back to global organization setting if folder-specific preferred org is empty.
      * @param project the project to get the preferred organization for
      * @return the preferred organization for the project
      */
     fun getPreferredOrg(project: Project): String {
-        // only use folder config with workspace folder path
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val preferredOrg = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
-            .asSequence()
-            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
+        // Note - this will not work for projects with extra content roots outside of the the main workspace folder.
+        return getFolderConfigs(project)
             .filter { it.preferredOrg.isNotEmpty() }
             .map { it.preferredOrg }
-            .firstOrNull()
-
-        // Fallback to global organization if folder-specific preferred org is empty
-        return if (preferredOrg?.isNotEmpty() == true) {
-            preferredOrg
-        } else {
-            // Get global organization from application settings
-            val application = com.intellij.openapi.application.ApplicationManager.getApplication()
-            if (application != null) {
-                val applicationSettings = application.getService(io.snyk.plugin.services.SnykApplicationSettingsStateService::class.java)
-                applicationSettings.organization ?: ""
-            } else {
-                ""
-            }
-        }
+            .firstOrNull() ?: ""
     }
 
     /**
@@ -128,14 +120,7 @@ class FolderConfigSettings {
      * @return true if auto-organization is enabled
      */
     fun isAutoOrganizationEnabled(project: Project): Boolean {
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val folderConfig = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
-            .asSequence()
-            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
-            .firstOrNull()
-
-        return folderConfig?.orgSetByUser != true
+        return getFolderConfigs(project).firstOrNull()?.orgSetByUser != true
     }
 
     /**
@@ -144,14 +129,7 @@ class FolderConfigSettings {
      * @param autoOrganization true to enable auto-organization, false to use preferred organization
      */
     fun setAutoOrganization(project: Project, autoOrganization: Boolean) {
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
-            .asSequence()
-            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
-            .toList()
-
-        folderConfigs.forEach { folderConfig ->
+        getFolderConfigs(project).forEach { folderConfig ->
             val updatedConfig = folderConfig.copy(orgSetByUser = !autoOrganization)
             addFolderConfig(updatedConfig)
         }
@@ -160,17 +138,10 @@ class FolderConfigSettings {
     /**
      * Sets the organization for the given project.
      * @param project the project to update
-     * @param organization the organization to set (empty string to clear)
+     * @param organization the organization to set
      */
     fun setOrganization(project: Project, organization: String?) {
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
-            .asSequence()
-            .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
-            .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
-            .toList()
-
-        folderConfigs.forEach { folderConfig ->
+        getFolderConfigs(project).forEach { folderConfig ->
             val updatedConfig = folderConfig.copy(preferredOrg = organization ?: "")
             addFolderConfig(updatedConfig)
         }

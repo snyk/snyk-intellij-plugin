@@ -922,7 +922,7 @@ class SnykSettingsDialog(
 
     fun getPreferredOrg(): String = preferredOrgTextField.text
 
-    fun isAutoDetectOrg(): Boolean = autoDetectOrgCheckbox.isSelected
+    fun isAutoSelectOrgEnabled(): Boolean = autoDetectOrgCheckbox.isSelected
 
     fun setAutoDetectOrg(enabled: Boolean) {
         autoDetectOrgCheckbox.isSelected = enabled
