@@ -24,7 +24,7 @@ enum class ProductType(
     CODE_SECURITY(
         productSelectionName = "Snyk Code Security",
         treeName = "Code Security",
-        description = "Find and fix vulnerabilities in your application code in real time"
+        description = "Find and fix vulnerabilities in your application code in real time. For these scans to run, Snyk Code must be enabled for your organization in Snyk settings."
     ) {
         override fun getCountText(count: Int, isUniqueCount: Boolean): String =
             getVulnerabilitiesCountText(count, isUniqueCount)
