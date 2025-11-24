@@ -464,11 +464,24 @@ class SnykSettingsDialog(
         issueViewPanel.border = IdeBorderFactory.createTitledBorder("Issue View Options")
 
         val issueViewLabel = JLabel("Show the following issues:")
-        issueViewLabel.toolTipText = "Code Consistent Ignores is a feature" +
-            " which provides consistent handling of \"ignore\" rules" +
-            " for code security findings across all surfaces - such as the CLI, IDE, and Snyk UI"
+
+        val issueViewContextHelpLabel =
+            ContextHelpLabel.createWithLink(
+                null,
+                SnykBundle.message("snyk.settings.issueViewOptions.tooltip.description"),
+                SnykBundle.message("snyk.settings.issueViewOptions.tooltip.linkText"),
+            ) {
+                BrowserUtil.browse(SnykBundle.message("snyk.settings.issueViewOptions.tooltip.link"))
+            }
+
+        val issueViewLabelPanel = JPanel(GridBagLayout()).apply {
+            val gb = GridBag().setDefaultWeightX(0.0).setDefaultFill(GridBagConstraints.NONE).setDefaultInsets(JBUI.emptyInsets())
+            add(issueViewLabel, gb.nextLine().next())
+            add(issueViewContextHelpLabel, gb.next().insets(JBUI.insetsLeft(2)))
+        }
+
         issueViewPanel.add(
-            issueViewLabel,
+            issueViewLabelPanel,
             baseGridConstraintsAnchorWest(
                 row = 0,
                 indent = 0,
