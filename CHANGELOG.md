@@ -1,5 +1,19 @@
 # Snyk Security Changelog
 
+## [2.18.0]
+### Changed
+- Added organization configuration at project level
+- Add support for automatic organization configuration
+
+### Fixed
+- Fixed FileNotFoundException when publishing diagnostics
+- Fixed thread deadlocks when showing authentication dialog
+
+## [2.17.0]
+### Fixed
+- Fixed null pointer exception in document hover
+- Fixed EDT (Event Dispatch Thread) usage for model tree node reload
+
 ## [2.16.0]
 ### Changed
 - Added support for JetBrains 2025.2 IDE releases
