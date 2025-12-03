@@ -542,7 +542,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         getSnykCachedResults(project)?.currentIacError != null -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)!!.currentIacError!!.treeNodeSuffix
             "$IAC_ROOT_TEXT $errorSuffix"
         }
         isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
@@ -591,7 +591,7 @@ class SnykToolWindowPanel(
     ) = when {
         isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
         realError -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)!!.currentOssError!!.treeNodeSuffix
             "$OSS_ROOT_TEXT $errorSuffix"
         }
 
