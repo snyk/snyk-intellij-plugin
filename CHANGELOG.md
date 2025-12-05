@@ -1,5 +1,9 @@
 # Snyk Security Changelog
 
+## [2.18.1]
+### Fixed
+- Fixed Agent Fix not applying edits for file paths containing spaces or special characters by properly handling URL-encoded URIs in workspace edit operations
+
 ## [2.18.0]
 ### Changed
 - Added organization configuration at project level
