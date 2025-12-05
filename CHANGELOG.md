@@ -1,5 +1,10 @@
 # Snyk Security Changelog
 
+## [2.18.1]
+### Fixed
+- Fixed Agent Fix not applying edits for file paths containing spaces or special characters by properly handling URL-encoded URIs in workspace edit operations
+- Fixed inconsistent error handling in tree node text: OSS now checks for errors before scanning status (matching IAC and Code Security behavior)
+- Fixed IAC error display to filter out errors when no supported files are found, matching OSS behavior
 ## [2.18.0]
 ### Changed
 - Added organization configuration at project level
