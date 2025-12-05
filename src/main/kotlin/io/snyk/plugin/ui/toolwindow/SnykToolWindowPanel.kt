@@ -510,17 +510,19 @@ class SnykToolWindowPanel(
     ) {
         val settings = pluginSettings()
 
-        val realError =
+        val realOssError =
             getSnykCachedResults(project)?.currentOssError != null && ossResultsCount != NODE_NOT_SUPPORTED_STATE
+        val realIacError =
+            getSnykCachedResults(project)?.currentIacError != null && iacResultsCount != NODE_NOT_SUPPORTED_STATE
 
-        val newOssTreeNodeText = getNewOssTreeNodeText(settings, realError, ossResultsCount, addHMLPostfix)
+        val newOssTreeNodeText = getNewOssTreeNodeText(settings, realOssError, ossResultsCount, addHMLPostfix)
         newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
         val newSecurityIssuesNodeText =
             getNewSecurityIssuesNodeText(settings, securityIssuesCount, addHMLPostfix)
         newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
 
-        val newIacTreeNodeText = getNewIacTreeNodeText(settings, iacResultsCount, addHMLPostfix)
+        val newIacTreeNodeText = getNewIacTreeNodeText(settings, realIacError, iacResultsCount, addHMLPostfix)
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
 
         val newRootTreeNodeText = getNewRootTreeNodeText()
@@ -538,11 +540,12 @@ class SnykToolWindowPanel(
 
     private fun getNewIacTreeNodeText(
         settings: SnykApplicationSettingsStateService,
+        realError: Boolean,
         iacResultsCount: Int?,
         addHMLPostfix: String
     ) = when {
-        getSnykCachedResults(project)?.currentIacError != null -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+        realError -> {
+            val errorSuffix = getSnykCachedResults(project)!!.currentIacError!!.treeNodeSuffix
             "$IAC_ROOT_TEXT $errorSuffix"
         }
         isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
@@ -589,11 +592,11 @@ class SnykToolWindowPanel(
         ossResultsCount: Int?,
         addHMLPostfix: String
     ) = when {
-        isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
         realError -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)!!.currentOssError!!.treeNodeSuffix
             "$OSS_ROOT_TEXT $errorSuffix"
         }
+        isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
 
         else ->
             ossResultsCount?.let { count ->
