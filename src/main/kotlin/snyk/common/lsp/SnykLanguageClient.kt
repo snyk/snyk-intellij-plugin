@@ -160,6 +160,15 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         val falseFuture = CompletableFuture.completedFuture(ApplyWorkspaceEditResponse(false))
         if (disposed) return falseFuture
 
+        if (params?.edit?.changes != null) {
+            logger.debug("applyEdit: Received ${params.edit.changes.size} file change(s)")
+            params.edit.changes.forEach { (uri, edits) ->
+                logger.debug("applyEdit: URI: $uri (length: ${uri.length}), edit count: ${edits.size}")
+                logger.debug("applyEdit: URI contains space: ${uri.contains(" ")}")
+                logger.debug("applyEdit: URI contains %20: ${uri.contains("%20")}")
+            }
+        }
+
         WriteCommandAction.runWriteCommandAction(project) {
             params?.edit?.changes?.forEach {
                 DocumentChanger.applyChange(it)

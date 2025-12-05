@@ -1,14 +1,32 @@
 package snyk.common.editor
 
-import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.diagnostic.Logger
 import io.snyk.plugin.getDocument
+import io.snyk.plugin.toVirtualFileOrNull
 import org.eclipse.lsp4j.TextEdit
 
 object DocumentChanger {
+    private val logger = Logger.getInstance("Snyk DocumentChanger")
+
     fun applyChange(change: Map.Entry<String, List<TextEdit>>?) {
-        if (change == null) return //TODO add log
+        if (change == null) {
+            logger.warn("applyChange called with null change")
+            return
+        }
         val fileURI = change.key
-        val virtualFile = VirtualFileManager.getInstance().findFileByUrl(fileURI) ?: return
+        logger.debug("applyChange: Attempting to find file by URI: $fileURI (length: ${fileURI.length})")
+
+        // Use toVirtualFileOrNull() which properly handles URI decoding (e.g., %20 to spaces)
+        // This converts the URI to a path first, which automatically decodes URL-encoded characters
+        val virtualFile = fileURI.toVirtualFileOrNull()
+        if (virtualFile == null) {
+            logger.warn("applyChange: Could not find VirtualFile for URI: $fileURI")
+            logger.debug("applyChange: URI contains spaces: ${fileURI.contains(" ")}")
+            logger.debug("applyChange: URI contains %20: ${fileURI.contains("%20")}")
+            return
+        }
+        logger.debug("applyChange: Found VirtualFile: ${virtualFile.path} for URI: $fileURI")
+
         val document = virtualFile.getDocument() ?: return
         // Our LS is coded to give us the TextEdits in ascending order, but we must apply them in descending order.
         // Imagine we had an edit that added 10 lines to the start of the file followed by an edit that added a line to the 4th line of the file,
