@@ -1,12 +1,12 @@
 package snyk.common.editor
 
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.toVirtualFileOrNull
 import org.eclipse.lsp4j.TextEdit
 
 object DocumentChanger {
-    private val logger = Logger.getInstance("Snyk DocumentChanger")
+    private val logger = logger<DocumentChanger>()
 
     fun applyChange(change: Map.Entry<String, List<TextEdit>>?) {
         if (change == null) {
@@ -20,12 +20,8 @@ object DocumentChanger {
         // This converts the URI to a path first, which automatically decodes URL-encoded characters
         val virtualFile = fileURI.toVirtualFileOrNull()
         if (virtualFile == null) {
-            logger.warn("applyChange: Could not find VirtualFile for URI: $fileURI")
-            logger.debug("applyChange: URI contains spaces: ${fileURI.contains(" ")}")
-            logger.debug("applyChange: URI contains %20: ${fileURI.contains("%20")}")
             return
         }
-        logger.debug("applyChange: Found VirtualFile: ${virtualFile.path} for URI: $fileURI")
 
         val document = virtualFile.getDocument() ?: return
         // Our LS is coded to give us the TextEdits in ascending order, but we must apply them in descending order.
