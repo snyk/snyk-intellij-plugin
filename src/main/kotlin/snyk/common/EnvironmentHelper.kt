@@ -24,7 +24,7 @@ object EnvironmentHelper {
         val oauthEnvVar = "INTERNAL_OAUTH_TOKEN_STORAGE"
         val snykTokenEnvVar = "SNYK_TOKEN"
 
-        val endpointURI = URI(endpoint)
+        URI(endpoint)
 
         if (token.isNotEmpty()) {
             environment.remove(snykTokenEnvVar)

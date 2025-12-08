@@ -1,7 +1,7 @@
 package io.snyk.plugin.ui.toolwindow.nodes
 
-import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanelBase
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 
 interface DescriptionHolderTreeNode {
-    fun getDescriptionPanel(): IssueDescriptionPanelBase
+    fun getDescriptionPanel(): SuggestionDescriptionPanel
 }

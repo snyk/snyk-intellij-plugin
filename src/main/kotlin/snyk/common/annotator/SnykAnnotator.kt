@@ -69,7 +69,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
         disposed = true
     }
 
-    inner class SnykAnnotation(
+    class SnykAnnotation(
         val issue: ScanIssue,
         val annotationSeverity: HighlightSeverity,
         val annotationMessage: String,

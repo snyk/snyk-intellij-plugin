@@ -774,9 +774,6 @@ class SnykToolWindowPanel(
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
 
-    @TestOnly
-    fun getRootSecurityIssuesTreeNode() = rootSecurityIssuesTreeNode
-
     fun getTree() = vulnerabilitiesTree
 
     @TestOnly

@@ -32,11 +32,11 @@ import com.intellij.util.ui.JBUI
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykFolderConfigListener
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
-import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.isAdditionalParametersValid
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
@@ -128,7 +128,7 @@ class SnykSettingsDialog(
             preferredSize = Dimension(600, preferredSize.height)
         }
 
-    private val scanTypesPanelOuter = ScanTypesPanel(project)
+    private val scanTypesPanelOuter = ScanTypesPanel()
     private val scanTypesPanel = scanTypesPanelOuter.scanTypesPanel
 
     private val issueViewOptionsPanel = IssueViewOptionsPanel(project).panel
@@ -936,10 +936,6 @@ class SnykSettingsDialog(
     fun getPreferredOrg(): String = preferredOrgTextField.text
 
     fun isAutoSelectOrgEnabled(): Boolean = autoDetectOrgCheckbox.isSelected
-
-    fun setAutoDetectOrg(enabled: Boolean) {
-        autoDetectOrgCheckbox.isSelected = enabled
-    }
 
     private fun getFolderConfig(): FolderConfig? {
         val folderConfigSettings = service<FolderConfigSettings>()

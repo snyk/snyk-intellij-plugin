@@ -7,7 +7,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykTaskQueueService
 import org.junit.Test

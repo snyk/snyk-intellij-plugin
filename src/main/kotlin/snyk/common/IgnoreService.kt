@@ -33,7 +33,7 @@ class IgnoreService(project: Project) : CliAdapter<Unit, IgnoreService.IgnoreRes
 
     override fun buildExtraOptions(): List<String> = emptyList()
 
-    inner class IgnoreResults(errorMessage: String?) : CliResult<Unit>(
+    class IgnoreResults(errorMessage: String?) : CliResult<Unit>(
         null,
         errorMessage?.let { listOf(SnykError(it, "")) } ?: emptyList()
     ) {

@@ -32,7 +32,6 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var useTokenAuthentication = false
     var authenticationType = AuthenticationType.OAUTH2
     var currentLSProtocolVersion: Int? = 0
-    var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://downloads.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName

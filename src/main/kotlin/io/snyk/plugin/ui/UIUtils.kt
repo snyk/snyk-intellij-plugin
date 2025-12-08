@@ -67,23 +67,6 @@ fun buildBoldTitleLabel(title: String): JLabel {
     return bold16pxLabel
 }
 
-fun insertTitleAndResizableTextIntoPanelColumns(
-    panel: JPanel,
-    row: Int,
-    title: String,
-    htmlText: String,
-    textFont: Font = UIUtil.getLabelFont()
-) {
-    panel.add(
-        boldLabel(title),
-        baseGridConstraints(row, 0, anchor = GridConstraints.ANCHOR_NORTHWEST)
-    )
-    panel.add(
-        getReadOnlyClickableHtmlJEditorPane(htmlText, textFont, noBorder = true),
-        panelGridConstraints(row, 1)
-    )
-}
-
 fun snykCodeAvailabilityPostfix(): String {
     val sastOnServerEnabled = pluginSettings().sastOnServerEnabled
     val sastSettingsError = pluginSettings().sastSettingsError

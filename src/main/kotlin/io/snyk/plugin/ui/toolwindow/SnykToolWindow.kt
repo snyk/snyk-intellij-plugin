@@ -100,7 +100,7 @@ class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false
         isDisposed = true
     }
 
-    inner class ExpandNodeChildAction(
+    class ExpandNodeChildAction(
         val tree: JTree
     ) : DumbAwareAction("Expand All Children", "Expand All Children", AllIcons.Actions.Expandall) {
         override fun actionPerformed(e: AnActionEvent) {

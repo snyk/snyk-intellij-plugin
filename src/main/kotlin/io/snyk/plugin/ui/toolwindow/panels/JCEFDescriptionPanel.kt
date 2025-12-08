@@ -5,10 +5,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import io.snyk.plugin.toVirtualFile
-import io.snyk.plugin.ui.DescriptionHeaderPanel
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import io.snyk.plugin.ui.baseGridConstraintsAnchorWest
-import io.snyk.plugin.ui.descriptionHeaderPanel
 import io.snyk.plugin.ui.jcef.ApplyAiFixEditHandler
 import io.snyk.plugin.ui.jcef.GenerateAIFixHandler
 import io.snyk.plugin.ui.jcef.IgnoreInFileHandler
@@ -21,15 +18,12 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
 import snyk.common.lsp.ScanIssue
 import java.awt.BorderLayout
-import java.awt.Font
-import javax.swing.JLabel
 import javax.swing.JPanel
 
 class SuggestionDescriptionPanel(
     val project: Project,
     private val issue: ScanIssue,
-) : IssueDescriptionPanelBase(
-) {
+) : JPanel(BorderLayout()), IssueDescriptionPanel {
     private val unexpectedErrorMessage =
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
@@ -67,10 +61,10 @@ class SuggestionDescriptionPanel(
                 }
 
             }
-            ScanIssue.INFRASTRUCTURE_AS_CODE ->
-            {
+
+            ScanIssue.INFRASTRUCTURE_AS_CODE -> {
                 val applyIgnoreInFileHandler = IgnoreInFileHandler(project)
-                loadHandlerGenerators +={
+                loadHandlerGenerators += {
                     applyIgnoreInFileHandler.generateIgnoreInFileCommand(it)
                 }
             }
@@ -101,74 +95,9 @@ class SuggestionDescriptionPanel(
         }
     }
 
-    override fun secondRowTitlePanel(): DescriptionHeaderPanel =
-        descriptionHeaderPanel(
-            issueNaming = issue.issueNaming(),
-            cwes = issue.cwes(),
-            cvssScore = issue.cvssScore(),
-            cvssV3 = issue.cvssV3(),
-            cves = issue.cves(),
-            id = issue.id(),
-        )
-
-    override fun createMainBodyPanel(): Pair<JPanel, Int> {
-        val lastRowToAddSpacer = 5
-        val panel =
-            JPanel(
-                GridLayoutManager(lastRowToAddSpacer + 1, 1, JBUI.insets(0, 10, 20, 10), -1, 20),
-            ).apply {
-                when (issue.filterableIssueType) {
-                    ScanIssue.CODE_SECURITY -> {
-                        this.add(
-                            SnykCodeOverviewPanel(issue.additionalData),
-                            panelGridConstraints(2),
-                        )
-                        this.add(
-                            SnykCodeDataflowPanel(project, issue.additionalData),
-                            panelGridConstraints(3),
-                        )
-                        this.add(
-                            SnykCodeExampleFixesPanel(issue.additionalData),
-                            panelGridConstraints(4),
-                        )
-                    }
-
-                    ScanIssue.OPEN_SOURCE -> {
-                        this.add(
-                            SnykOSSIntroducedThroughPanel(issue.additionalData),
-                            baseGridConstraintsAnchorWest(1, indent = 0),
-                        )
-                        this.add(
-                            SnykOSSDetailedPathsPanel(issue.additionalData),
-                            panelGridConstraints(2),
-                        )
-                        this.add(
-                            SnykOSSOverviewPanel(issue.additionalData),
-                            panelGridConstraints(3),
-                        )
-                    }
-
-                    else -> {
-                        // do nothing
-                    }
-                }
-            }
-        return Pair(panel, lastRowToAddSpacer)
-    }
-
     fun getCustomCssAndScript(): String {
         val html = issue.details(project)
         return PanelHTMLUtils.getFormattedHtml(html)
     }
 }
 
-fun defaultFontLabel(
-    labelText: String,
-    bold: Boolean = false,
-): JLabel {
-    return JLabel().apply {
-        val titleLabelFont: Font? = io.snyk.plugin.ui.getFont(if (bold) Font.BOLD else -1, 14, font)
-        titleLabelFont?.let { font = it }
-        text = labelText
-    }
-}
