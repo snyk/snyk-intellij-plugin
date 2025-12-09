@@ -30,6 +30,7 @@ import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.analytics.ScanDoneEvent
 import snyk.common.lsp.commands.COMMAND_CODE_FIX_APPLY_AI_EDIT
+import snyk.common.lsp.commands.COMMAND_WORKSPACE_CONFIGURATION
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -372,6 +373,42 @@ class LanguageServerWrapperTest {
         assertTrue(wrapper.configuredWorkspaceFolders.isEmpty())
         // Check the process was destroyed if alive
         verify { processMock.destroyForcibly() }
+    }
+
+    @Test
+    fun `getConfigHtml should return HTML when LS responds with string`() {
+        simulateRunningLS()
+        val expectedHtml = "<html><body>Config</body></html>"
+        every {
+            lsMock.workspaceService.executeCommand(
+                ExecuteCommandParams(COMMAND_WORKSPACE_CONFIGURATION, emptyList())
+            )
+        } returns CompletableFuture.completedFuture(expectedHtml)
+
+        val result = cut.getConfigHtml()
+
+        assertEquals(expectedHtml, result)
+    }
+
+    @Test
+    fun `getConfigHtml should return null when LS not initialized`() {
+        cut.isInitialized = false
+
+        val result = cut.getConfigHtml()
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `getConfigHtml should return null when LS returns non-string`() {
+        simulateRunningLS()
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(mapOf("error" to "unexpected"))
+
+        val result = cut.getConfigHtml()
+
+        assertEquals(null, result)
     }
 
     @Test
