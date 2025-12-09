@@ -26,7 +26,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     // events
     var pluginInstalledSent: Boolean = false
 
-    val requiredLsProtocolVersion = 21
+    val requiredLsProtocolVersion = 22
 
     @Deprecated("left for old users migration only")
     var useTokenAuthentication = false
