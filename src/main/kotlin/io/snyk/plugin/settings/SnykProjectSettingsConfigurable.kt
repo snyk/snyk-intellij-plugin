@@ -144,7 +144,6 @@ class SnykProjectSettingsConfigurable(
         }
 
         runBackgroundableTask("Processing config changes", project, true) {
-            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
                 handleReleaseChannelChanged()
             }
@@ -158,20 +157,11 @@ class SnykProjectSettingsConfigurable(
                 getSnykToolWindowPanel(project)?.getTree()?.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
             }
 
-            languageServerWrapper.refreshFeatureFlags()
-            languageServerWrapper.updateConfiguration(true)
+            executePostApplySettings(project)
         }
 
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()
-            // FIXME we should always send settings updates, and listeners should decide what to do
-            // A settings change should not cause a scan automatically, so the event should be split
-            getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
-        }
-        if (productSelectionChanged || severitySelectionChanged) {
-            settingsStateService.matchFilteringWithEnablement()
-            getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
-            getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
         }
     }
 
@@ -259,4 +249,22 @@ fun applyFolderConfigChanges(
         orgSetByUser = !autoSelectOrgEnabled
     )
     fcs.addFolderConfig(updatedConfig)
+}
+
+/**
+ * Common post-apply logic shared between old dialog and new HTML settings panel.
+ * Refreshes feature flags, updates LS configuration, and fires settings events.
+ */
+fun executePostApplySettings(project: Project) {
+    val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+    val settings = pluginSettings()
+
+    languageServerWrapper.refreshFeatureFlags()
+    languageServerWrapper.updateConfiguration(true)
+
+    settings.matchFilteringWithEnablement()
+
+    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
+    getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
+    getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
 }
