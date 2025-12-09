@@ -23,7 +23,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         settings = mockk(relaxed = true)
         every { pluginSettings() } returns settings
 
-        cut = SaveConfigHandler(project)
+        cut = SaveConfigHandler(project) {}
     }
 
     override fun tearDown() {

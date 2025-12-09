@@ -18,7 +18,10 @@ import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 
-class SaveConfigHandler(private val project: Project) {
+class SaveConfigHandler(
+    private val project: Project,
+    private val onConfigChanged: () -> Unit
+) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
     private val gson = Gson()
 
@@ -30,6 +33,7 @@ class SaveConfigHandler(private val project: Project) {
         saveConfigQuery.addHandler { jsonString ->
             try {
                 parseAndSaveConfig(jsonString)
+                onConfigChanged()
                 runInBackground("Snyk: updating configuration...") {
                     LanguageServerWrapper.getInstance(project).updateConfiguration(true)
                 }

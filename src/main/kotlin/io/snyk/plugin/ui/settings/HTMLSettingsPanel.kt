@@ -26,6 +26,8 @@ class HTMLSettingsPanel(
     private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
     private var jbCefBrowser: JBCefBrowser? = null
     private var isUsingFallback = false
+    @Volatile
+    private var modified = false
 
     init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
@@ -98,7 +100,7 @@ class HTMLSettingsPanel(
 
         jbCefBrowser?.setOpenLinksInExternalBrowser(true)
 
-        val saveConfigHandler = SaveConfigHandler(project)
+        val saveConfigHandler = SaveConfigHandler(project) { modified = true }
         val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!)
         cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
 
@@ -158,10 +160,12 @@ class HTMLSettingsPanel(
     }
 
     fun isModified(): Boolean {
-        return false
+        return modified
     }
 
     fun apply() {
+        modified = false
+        LanguageServerWrapper.getInstance(project).updateConfiguration(true)
     }
 
     override fun dispose() {
