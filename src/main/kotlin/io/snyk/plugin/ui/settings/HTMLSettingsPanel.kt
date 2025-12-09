@@ -9,7 +9,12 @@ import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykProductsOrSeverityListener
+import io.snyk.plugin.events.SnykResultsFilteringListener
+import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.runInBackground
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -171,7 +176,23 @@ class HTMLSettingsPanel(
             0
         )
         modified = false
-        LanguageServerWrapper.getInstance(project).updateConfiguration(true)
+
+        runInBackground("Snyk: applying settings") {
+            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+            val settings = pluginSettings()
+
+            // Refresh feature flags and update LS configuration
+            languageServerWrapper.refreshFeatureFlags()
+            languageServerWrapper.updateConfiguration(true)
+
+            // Match filtering with enablement (like old dialog)
+            settings.matchFilteringWithEnablement()
+
+            // Fire all relevant events so UI updates accordingly
+            getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
+            getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
+            getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
+        }
     }
 
     override fun dispose() {
