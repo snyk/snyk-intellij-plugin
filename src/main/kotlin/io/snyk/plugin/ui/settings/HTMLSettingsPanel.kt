@@ -19,6 +19,7 @@ import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
@@ -30,8 +31,7 @@ class HTMLSettingsPanel(
     private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
     private var jbCefBrowser: JBCefBrowser? = null
     private var isUsingFallback = false
-    @Volatile
-    private var modified = false
+    private val modified = AtomicBoolean(false)
 
     init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
@@ -104,7 +104,7 @@ class HTMLSettingsPanel(
 
         jbCefBrowser?.setOpenLinksInExternalBrowser(true)
 
-        val saveConfigHandler = SaveConfigHandler(project) { modified = true }
+        val saveConfigHandler = SaveConfigHandler(project) { modified.set(true) }
         val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!)
         cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
 
@@ -164,7 +164,7 @@ class HTMLSettingsPanel(
     }
 
     fun isModified(): Boolean {
-        return modified
+        return modified.get()
     }
 
     fun apply() {
@@ -180,7 +180,7 @@ class HTMLSettingsPanel(
             jbCefBrowser?.cefBrowser?.url ?: "",
             0
         )
-        modified = false
+        modified.set(false)
 
         runInBackground("Snyk: applying settings") {
             // Handle release channel change - prompt to download new CLI

@@ -412,6 +412,18 @@ class LanguageServerWrapperTest {
     }
 
     @Test
+    fun `getConfigHtml should return null when LS returns null`() {
+        simulateRunningLS()
+        every {
+            lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>())
+        } returns CompletableFuture.completedFuture(null)
+
+        val result = cut.getConfigHtml()
+
+        assertEquals(null, result)
+    }
+
+    @Test
     fun getInitializationOptions() {
         settings.token = "testToken"
         settings.customEndpointUrl = "testEndpoint/"

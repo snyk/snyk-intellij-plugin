@@ -195,6 +195,95 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertFalse(realSettings.ossScanEnable) // Unchanged
     }
 
+    fun `test parseAndSaveConfig throws on invalid JSON`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        every { pluginSettings() } returns realSettings
+
+        val invalidJson = "{ this is not valid json }"
+
+        try {
+            invokeParseAndSaveConfig(invalidJson)
+            fail("Expected IllegalArgumentException to be thrown")
+        } catch (e: Exception) {
+            // The reflection invocation wraps the exception
+            val cause = e.cause
+            assertTrue("Expected IllegalArgumentException but got ${cause?.javaClass}", 
+                cause is IllegalArgumentException)
+            assertTrue("Expected message to contain 'Invalid configuration format'",
+                cause?.message?.contains("Invalid configuration format") == true)
+        }
+    }
+
+    fun `test parseAndSaveConfig handles boolean as string for enableDeltaFindings`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.setDeltaEnabled(false)
+        every { pluginSettings() } returns realSettings
+
+        // Test with boolean true
+        val jsonConfig = """{"enableDeltaFindings": true}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertTrue(realSettings.isDeltaFindingsEnabled())
+    }
+
+    fun `test parseAndSaveConfig handles string booleans in severity filters`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        every { pluginSettings() } returns realSettings
+
+        // Some JS implementations might send "true"/"false" as strings
+        val jsonConfig = """
+        {
+            "filterSeverity": {
+                "critical": "true",
+                "high": "TRUE",
+                "medium": "false",
+                "low": "FALSE"
+            }
+        }
+        """.trimIndent()
+
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertTrue(realSettings.criticalSeverityEnabled)
+        assertTrue(realSettings.highSeverityEnabled)
+        assertFalse(realSettings.mediumSeverityEnabled)
+        assertFalse(realSettings.lowSeverityEnabled)
+    }
+
+    fun `test parseAndSaveConfig handles numeric booleans`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.ossScanEnable = false
+        realSettings.snykCodeSecurityIssuesScanEnable = true
+        every { pluginSettings() } returns realSettings
+
+        // Some systems might send 1/0 for boolean values
+        val jsonConfig = """
+        {
+            "activateSnykOpenSource": 1,
+            "activateSnykCode": 0
+        }
+        """.trimIndent()
+
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertTrue(realSettings.ossScanEnable)
+        assertFalse(realSettings.snykCodeSecurityIssuesScanEnable)
+    }
+
+    fun `test parseAndSaveConfig handles null values gracefully`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.organization = "original-org"
+        every { pluginSettings() } returns realSettings
+
+        // JSON with explicit null value
+        val jsonConfig = """{"organization": null, "activateSnykOpenSource": true}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        // Organization should remain unchanged since null is not a valid String
+        assertEquals("original-org", realSettings.organization)
+        assertTrue(realSettings.ossScanEnable)
+    }
+
     private fun invokeParseAndSaveConfig(jsonString: String) {
         val method = SaveConfigHandler::class.java.getDeclaredMethod("parseAndSaveConfig", String::class.java)
         method.isAccessible = true

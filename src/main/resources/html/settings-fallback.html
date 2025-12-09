@@ -1,3 +1,33 @@
+<!--
+  Snyk Settings Fallback HTML
+  
+  This fallback template is displayed when the Language Server is not yet available
+  (typically before the Snyk CLI has been downloaded). It provides a minimal set of
+  configuration options needed to bootstrap the CLI download.
+  
+  LIMITATIONS:
+  - Only CLI/executable settings are available (manageBinariesAutomatically, cliPath, 
+    cliBaseDownloadURL, cliReleaseChannel)
+  - The following settings are NOT available in fallback mode:
+    * Authentication (token, OAuth)
+    * Scan type toggles (OSS, Code, IaC)
+    * Severity filters (critical, high, medium, low)
+    * Issue view options (open issues, ignored issues)
+    * Organization settings
+    * Custom endpoint URL
+    * Folder-specific configurations
+  
+  Once the CLI is downloaded and the Language Server starts, the full configuration
+  panel will be served by the LS and this fallback will be replaced automatically.
+  
+  Template placeholders:
+    {{MANAGE_BINARIES_CHECKED}} - "checked" or ""
+    {{CLI_BASE_DOWNLOAD_URL}} - download URL string
+    {{CLI_PATH}} - CLI path string
+    {{CHANNEL_STABLE_SELECTED}} - "selected" or ""
+    {{CHANNEL_RC_SELECTED}} - "selected" or ""
+    {{CHANNEL_PREVIEW_SELECTED}} - "selected" or ""
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,8 +135,10 @@
     <h1>Snyk Configuration</h1>
 
     <div class="info-message">
-        <strong>Note:</strong> The Snyk CLI is not yet available. Configure the settings below to download and set up the CLI.
-        Once downloaded, additional configuration options will become available.
+        <strong>Note:</strong> The Snyk CLI is not yet available. Configure the executable settings below to download and set up the CLI.
+        <br><br>
+        <strong>Limited settings mode:</strong> Only CLI download settings are currently available. Once the CLI is downloaded,
+        additional options will appear including authentication, scan types, severity filters, and organization settings.
     </div>
 
     <form id="configForm">

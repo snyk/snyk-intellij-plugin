@@ -764,16 +764,7 @@ class LanguageServerWrapper(
         try {
             val executeCommandParams = ExecuteCommandParams(COMMAND_WORKSPACE_CONFIGURATION, emptyList())
             val response = executeCommand(executeCommandParams, 10000)
-            logger.debug("getConfigHtml response type: ${response?.javaClass?.name}, value: ${response?.toString()?.take(100)}")
-            return when (response) {
-                null -> null
-                is String -> response
-                is com.google.gson.JsonPrimitive -> response.asString
-                else -> {
-                    logger.warn("Unexpected response type for getConfigHtml: ${response.javaClass.name}")
-                    null
-                }
-            }
+            return response as? String
         } catch (e: TimeoutException) {
             logger.warn("Timeout getting configuration HTML", e)
         } catch (e: Exception) {

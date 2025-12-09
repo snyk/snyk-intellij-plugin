@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -91,28 +92,53 @@ class SaveConfigHandler(
 
     private fun parseAndSaveConfig(jsonString: String) {
         val type = object : TypeToken<Map<String, Any?>>() {}.type
-        val config: Map<String, Any?> = gson.fromJson(jsonString, type)
+        val config: Map<String, Any?> = try {
+            gson.fromJson(jsonString, type)
+        } catch (e: JsonSyntaxException) {
+            logger.warn("Invalid JSON config received: ${jsonString.take(200)}", e)
+            throw IllegalArgumentException("Invalid configuration format", e)
+        } ?: emptyMap()
+        
         val settings = pluginSettings()
-
         applyGlobalSettings(config, settings)
         applyFolderConfigs(config)
     }
 
-    private fun applyGlobalSettings(config: Map<String, Any?>, settings: SnykApplicationSettingsStateService) {
-        (config["activateSnykOpenSource"] as? Boolean)?.let { settings.ossScanEnable = it }
-        (config["activateSnykCode"] as? Boolean)?.let { settings.snykCodeSecurityIssuesScanEnable = it }
-        (config["activateSnykIac"] as? Boolean)?.let { settings.iacScanEnabled = it }
+    /**
+     * Safely extracts a Boolean value from a config map, handling various input types.
+     * Supports Boolean, String ("true"/"false"), and Number (0/non-zero) values.
+     */
+    private fun Map<String, Any?>.getBoolean(key: String, default: Boolean? = null): Boolean? {
+        return when (val value = this[key]) {
+            is Boolean -> value
+            is String -> value.equals("true", ignoreCase = true)
+            is Number -> value.toInt() != 0
+            else -> default
+        }
+    }
 
-        (config["scanningMode"] as? String)?.let {
+    /**
+     * Safely extracts a String value from a config map.
+     */
+    private fun Map<String, Any?>.getString(key: String): String? {
+        return this[key] as? String
+    }
+
+    private fun applyGlobalSettings(config: Map<String, Any?>, settings: SnykApplicationSettingsStateService) {
+        config.getBoolean("activateSnykOpenSource")?.let { settings.ossScanEnable = it }
+        config.getBoolean("activateSnykCode")?.let { settings.snykCodeSecurityIssuesScanEnable = it }
+        config.getBoolean("activateSnykIac")?.let { settings.iacScanEnabled = it }
+
+        config.getString("scanningMode")?.let {
             settings.scanOnSave = (it == "auto")
         }
 
-        (config["organization"] as? String)?.let { settings.organization = it }
-        (config["endpoint"] as? String)?.let { settings.customEndpointUrl = it }
-        (config["token"] as? String)?.let { settings.token = it }
-        (config["insecure"] as? Boolean)?.let { settings.ignoreUnknownCA = it }
+        config.getString("organization")?.let { settings.organization = it }
+        config.getString("endpoint")?.let { settings.customEndpointUrl = it }
+        config.getString("token")?.let { settings.token = it }
+        config.getBoolean("insecure")?.let { settings.ignoreUnknownCA = it }
 
-        (config["authenticationMethod"] as? String)?.let { method ->
+        config.getString("authenticationMethod")?.let { method ->
             settings.authenticationType = when (method) {
                 "oauth" -> AuthenticationType.OAUTH2
                 "token" -> AuthenticationType.API_TOKEN
@@ -121,27 +147,27 @@ class SaveConfigHandler(
         }
 
         @Suppress("UNCHECKED_CAST")
-        (config["filterSeverity"] as? Map<String, Boolean>)?.let { severity ->
-            severity["critical"]?.let { settings.criticalSeverityEnabled = it }
-            severity["high"]?.let { settings.highSeverityEnabled = it }
-            severity["medium"]?.let { settings.mediumSeverityEnabled = it }
-            severity["low"]?.let { settings.lowSeverityEnabled = it }
+        (config["filterSeverity"] as? Map<String, Any?>)?.let { severity ->
+            severity.getBoolean("critical")?.let { settings.criticalSeverityEnabled = it }
+            severity.getBoolean("high")?.let { settings.highSeverityEnabled = it }
+            severity.getBoolean("medium")?.let { settings.mediumSeverityEnabled = it }
+            severity.getBoolean("low")?.let { settings.lowSeverityEnabled = it }
         }
 
         @Suppress("UNCHECKED_CAST")
-        (config["issueViewOptions"] as? Map<String, Boolean>)?.let { options ->
-            options["openIssues"]?.let { settings.openIssuesEnabled = it }
-            options["ignoredIssues"]?.let { settings.ignoredIssuesEnabled = it }
+        (config["issueViewOptions"] as? Map<String, Any?>)?.let { options ->
+            options.getBoolean("openIssues")?.let { settings.openIssuesEnabled = it }
+            options.getBoolean("ignoredIssues")?.let { settings.ignoredIssuesEnabled = it }
         }
 
-        (config["enableDeltaFindings"] as? String)?.let {
-            settings.setDeltaEnabled(it == "true")
+        config.getBoolean("enableDeltaFindings")?.let {
+            settings.setDeltaEnabled(it)
         }
 
-        (config["cliPath"] as? String)?.let { settings.cliPath = it }
-        (config["manageBinariesAutomatically"] as? Boolean)?.let { settings.manageBinariesAutomatically = it }
-        (config["cliBaseDownloadURL"] as? String)?.let { settings.cliBaseDownloadURL = it }
-        (config["cliReleaseChannel"] as? String)?.let { settings.cliReleaseChannel = it }
+        config.getString("cliPath")?.let { settings.cliPath = it }
+        config.getBoolean("manageBinariesAutomatically")?.let { settings.manageBinariesAutomatically = it }
+        config.getString("cliBaseDownloadURL")?.let { settings.cliBaseDownloadURL = it }
+        config.getString("cliReleaseChannel")?.let { settings.cliReleaseChannel = it }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -158,11 +184,8 @@ class SaveConfigHandler(
                 ?.filter { it.isNotBlank() }
                 ?: existingConfig.additionalParameters
 
-            val orgSetByUser = when (val value = folderConfig["orgSetByUser"]) {
-                is Boolean -> value
-                is String -> value == "true"
-                else -> existingConfig.orgSetByUser
-            }
+            val orgSetByUser = folderConfig.getBoolean("orgSetByUser", existingConfig.orgSetByUser)
+                ?: existingConfig.orgSetByUser
 
             val preferredOrg = if (orgSetByUser) {
                 (folderConfig["preferredOrg"] as? String) ?: existingConfig.preferredOrg
