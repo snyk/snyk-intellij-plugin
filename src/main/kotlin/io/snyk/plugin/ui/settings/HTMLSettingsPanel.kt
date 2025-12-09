@@ -9,12 +9,11 @@ import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import io.snyk.plugin.events.SnykCliDownloadListener
-import io.snyk.plugin.getSnykCachedResults
-import io.snyk.plugin.getSnykTaskQueueService
-import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.settings.executePostApplySettings
+import io.snyk.plugin.settings.handleDeltaFindingsChange
+import io.snyk.plugin.settings.handleReleaseChannelChange
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -186,45 +185,16 @@ class HTMLSettingsPanel(
         runInBackground("Snyk: applying settings") {
             // Handle release channel change - prompt to download new CLI
             if (settings.cliReleaseChannel != previousReleaseChannel) {
-                promptForCliDownload()
+                handleReleaseChannelChange(project)
             }
 
             // Handle delta findings change - clear caches
             if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
-                clearResultCaches()
-                ApplicationManager.getApplication().invokeLater {
-                    getSnykToolWindowPanel(project)?.getTree()?.isRootVisible = settings.isDeltaFindingsEnabled()
-                }
+                handleDeltaFindingsChange(project)
             }
 
             executePostApplySettings(project)
         }
-    }
-
-    private fun promptForCliDownload() {
-        ApplicationManager.getApplication().invokeLater {
-            SnykBalloonNotificationHelper.showInfo(
-                "You changed the release channel. Would you like to download a new Snyk CLI now?",
-                project,
-                object : com.intellij.openapi.actionSystem.AnAction("Download") {
-                    override fun actionPerformed(e: com.intellij.openapi.actionSystem.AnActionEvent) {
-                        getSnykTaskQueueService(project)?.downloadLatestRelease(true)
-                    }
-                },
-                object : com.intellij.openapi.actionSystem.AnAction("Cancel") {
-                    override fun actionPerformed(e: com.intellij.openapi.actionSystem.AnActionEvent) {
-                        // Do nothing
-                    }
-                }
-            )
-        }
-    }
-
-    private fun clearResultCaches() {
-        val cache = getSnykCachedResults(project)
-        cache?.currentOSSResultsLS?.clear()
-        cache?.currentSnykCodeResultsLS?.clear()
-        cache?.currentIacResultsLS?.clear()
     }
 
     override fun dispose() {

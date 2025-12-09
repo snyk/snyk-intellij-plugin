@@ -3,6 +3,7 @@ package io.snyk.plugin.settings
 import com.intellij.notification.Notification
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.progress.runBackgroundableTask
@@ -145,16 +146,13 @@ class SnykProjectSettingsConfigurable(
 
         runBackgroundableTask("Processing config changes", project, true) {
             if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
-                handleReleaseChannelChanged()
+                settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+                handleReleaseChannelChange(project)
             }
 
             if (snykSettingsDialog.getDisplayIssuesSelection() != pluginSettings().issuesToDisplay) {
                 settingsStateService.issuesToDisplay = snykSettingsDialog.getDisplayIssuesSelection()
-                val cache = getSnykCachedResults(project)
-                cache?.currentOSSResultsLS?.clear()
-                cache?.currentSnykCodeResultsLS?.clear()
-                cache?.currentIacResultsLS?.clear()
-                getSnykToolWindowPanel(project)?.getTree()?.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+                handleDeltaFindingsChange(project)
             }
 
             executePostApplySettings(project)
@@ -163,37 +161,6 @@ class SnykProjectSettingsConfigurable(
         if (rescanNeeded) {
             getSnykToolWindowPanel(project)?.cleanUiAndCaches()
         }
-    }
-
-    private fun handleReleaseChannelChanged() {
-        settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
-
-        @Suppress("CanBeVal")
-        var notification: Notification? = null
-        val downloadAction = object : AnAction("Download") {
-            override fun actionPerformed(e: AnActionEvent) {
-                getSnykTaskQueueService(project)?.downloadLatestRelease(true) ?: SnykBalloonNotificationHelper.showWarn(
-                    "Could not download Snyk CLI",
-                    project
-                )
-                notification?.expire()
-            }
-        }
-        val noAction = object : AnAction("Cancel") {
-            override fun actionPerformed(e: AnActionEvent) {
-                notification?.expire()
-            }
-        }
-
-        // this assignment is populating the pointer of the notification with the real notification
-        // so that the actions can expire it
-        @Suppress("AssignedValueIsNeverRead")
-        notification = SnykBalloonNotificationHelper.showInfo(
-            "You changed the release channel. Would you like to download a new Snyk CLI now?",
-            project,
-            downloadAction,
-            noAction,
-        )
     }
 
     private fun isTokenModified(): Boolean = snykSettingsDialog.getToken() != settingsStateService.token
@@ -267,4 +234,48 @@ fun executePostApplySettings(project: Project) {
     getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
     getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
     getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
+}
+
+/**
+ * Handles release channel change by prompting user to download new CLI.
+ * Shared between old dialog and new HTML settings panel.
+ */
+fun handleReleaseChannelChange(project: Project) {
+    ApplicationManager.getApplication().invokeLater {
+        @Suppress("CanBeVal")
+        var notification: Notification? = null
+        val downloadAction = object : AnAction("Download") {
+            override fun actionPerformed(e: AnActionEvent) {
+                getSnykTaskQueueService(project)?.downloadLatestRelease(true)
+                    ?: SnykBalloonNotificationHelper.showWarn("Could not download Snyk CLI", project)
+                notification?.expire()
+            }
+        }
+        val cancelAction = object : AnAction("Cancel") {
+            override fun actionPerformed(e: AnActionEvent) {
+                notification?.expire()
+            }
+        }
+        @Suppress("AssignedValueIsNeverRead")
+        notification = SnykBalloonNotificationHelper.showInfo(
+            "You changed the release channel. Would you like to download a new Snyk CLI now?",
+            project,
+            downloadAction,
+            cancelAction,
+        )
+    }
+}
+
+/**
+ * Handles delta findings (issues to display) change by clearing caches and updating tree.
+ * Shared between old dialog and new HTML settings panel.
+ */
+fun handleDeltaFindingsChange(project: Project) {
+    val cache = getSnykCachedResults(project)
+    cache?.currentOSSResultsLS?.clear()
+    cache?.currentSnykCodeResultsLS?.clear()
+    cache?.currentIacResultsLS?.clear()
+    ApplicationManager.getApplication().invokeLater {
+        getSnykToolWindowPanel(project)?.getTree()?.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+    }
 }
