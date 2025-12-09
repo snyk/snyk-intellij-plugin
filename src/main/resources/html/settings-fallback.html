@@ -147,6 +147,8 @@
 
     <script>
         (function() {
+            window.__modified__ = false;
+
             function get(id) {
                 return document.getElementById(id);
             }
@@ -160,29 +162,29 @@
                 };
             }
 
-            var saveTimeout = null;
-            var SAVE_DELAY = 500;
+            function markModified() {
+                window.__modified__ = true;
+                if (typeof window.__ideNotifyModified__ === 'function') {
+                    window.__ideNotifyModified__();
+                }
+            }
 
-            function saveConfig() {
+            // Expose saveConfig globally so IDE can call it on Apply
+            window.saveConfig = function() {
                 var data = collectData();
                 var jsonString = JSON.stringify(data);
                 try {
                     if (typeof window.__ideSaveConfig__ === 'function') {
                         window.__ideSaveConfig__(jsonString);
+                        window.__modified__ = false;
                     }
                 } catch (e) {
                     console.error('Error saving configuration:', e);
                 }
-            }
+            };
 
-            function debouncedSave() {
-                if (saveTimeout) {
-                    clearTimeout(saveTimeout);
-                }
-                saveTimeout = setTimeout(saveConfig, SAVE_DELAY);
-            }
-
-            function attachAutoSaveListeners() {
+            // Attach change listeners to track modifications (without auto-saving)
+            window.addEventListener('load', function() {
                 var form = get('configForm');
                 if (!form) return;
 
@@ -190,19 +192,13 @@
                 var selects = form.getElementsByTagName('select');
 
                 for (var i = 0; i < inputs.length; i++) {
-                    inputs[i].addEventListener('blur', debouncedSave);
-                    if (inputs[i].type === 'checkbox') {
-                        inputs[i].addEventListener('change', debouncedSave);
-                    }
+                    inputs[i].addEventListener('input', markModified);
+                    inputs[i].addEventListener('change', markModified);
                 }
 
                 for (var j = 0; j < selects.length; j++) {
-                    selects[j].addEventListener('change', debouncedSave);
+                    selects[j].addEventListener('change', markModified);
                 }
-            }
-
-            window.addEventListener('load', function() {
-                attachAutoSaveListeners();
             });
         })();
     </script>

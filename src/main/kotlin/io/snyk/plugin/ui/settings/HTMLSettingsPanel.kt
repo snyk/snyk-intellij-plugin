@@ -164,6 +164,12 @@ class HTMLSettingsPanel(
     }
 
     fun apply() {
+        // Call saveConfig() in JS to collect form data and save via __ideSaveConfig__
+        jbCefBrowser?.cefBrowser?.executeJavaScript(
+            "if (typeof window.saveConfig === 'function') { window.saveConfig(); }",
+            jbCefBrowser?.cefBrowser?.url ?: "",
+            0
+        )
         modified = false
         LanguageServerWrapper.getInstance(project).updateConfiguration(true)
     }

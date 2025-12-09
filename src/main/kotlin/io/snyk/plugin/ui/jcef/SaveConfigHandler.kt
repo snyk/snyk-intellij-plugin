@@ -20,7 +20,7 @@ import snyk.common.lsp.settings.FolderConfigSettings
 
 class SaveConfigHandler(
     private val project: Project,
-    private val onConfigChanged: () -> Unit
+    private val onModified: () -> Unit
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
     private val gson = Gson()
@@ -29,19 +29,21 @@ class SaveConfigHandler(
         val saveConfigQuery = JBCefJSQuery.create(jbCefBrowser)
         val loginQuery = JBCefJSQuery.create(jbCefBrowser)
         val logoutQuery = JBCefJSQuery.create(jbCefBrowser)
+        val notifyModifiedQuery = JBCefJSQuery.create(jbCefBrowser)
 
         saveConfigQuery.addHandler { jsonString ->
             try {
                 parseAndSaveConfig(jsonString)
-                onConfigChanged()
-                runInBackground("Snyk: updating configuration...") {
-                    LanguageServerWrapper.getInstance(project).updateConfiguration(true)
-                }
                 JBCefJSQuery.Response("success")
             } catch (e: Exception) {
                 logger.warn("Error saving config", e)
                 JBCefJSQuery.Response(null, 1, e.message ?: "Unknown error")
             }
+        }
+
+        notifyModifiedQuery.addHandler {
+            onModified()
+            JBCefJSQuery.Response("success")
         }
 
         loginQuery.addHandler {
@@ -67,6 +69,7 @@ class SaveConfigHandler(
                             return;
                         }
                         window.__ideSaveConfig__ = function(value) { ${saveConfigQuery.inject("value")} };
+                        window.__ideNotifyModified__ = function() { ${notifyModifiedQuery.inject("'modified'")} };
                         window.__ideLogin__ = function() { ${loginQuery.inject("'login'")} };
                         window.__ideLogout__ = function() { ${logoutQuery.inject("'logout'")} };
                     })();
