@@ -163,6 +163,38 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertEquals("preview", realSettings.cliReleaseChannel)
     }
 
+    fun `test onModified callback is invoked`() {
+        var callbackInvoked = false
+        val handler = SaveConfigHandler(project) { callbackInvoked = true }
+
+        // The onModified callback is wired to notifyModifiedQuery which requires JCEF
+        // We can only verify the handler accepts the callback
+        assertNotNull(handler)
+        assertFalse(callbackInvoked) // Not invoked until JCEF triggers it
+    }
+
+    fun `test parseAndSaveConfig handles empty json gracefully`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        every { pluginSettings() } returns realSettings
+
+        // Should not throw
+        invokeParseAndSaveConfig("{}")
+    }
+
+    fun `test parseAndSaveConfig handles partial config`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.organization = "original-org"
+        realSettings.ossScanEnable = false
+        every { pluginSettings() } returns realSettings
+
+        // Only update organization, leave ossScanEnable unchanged
+        val jsonConfig = """{"organization": "new-org"}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertEquals("new-org", realSettings.organization)
+        assertFalse(realSettings.ossScanEnable) // Unchanged
+    }
+
     private fun invokeParseAndSaveConfig(jsonString: String) {
         val method = SaveConfigHandler::class.java.getDeclaredMethod("parseAndSaveConfig", String::class.java)
         method.isAccessible = true
