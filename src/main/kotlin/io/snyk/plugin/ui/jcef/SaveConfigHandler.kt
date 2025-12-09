@@ -46,8 +46,17 @@ class SaveConfigHandler(
             JBCefJSQuery.Response("success")
         }
 
-        loginQuery.addHandler {
+        loginQuery.addHandler { jsonConfig ->
+            // Save config first (like the old dialog does before authentication)
+            try {
+                if (jsonConfig.isNotBlank() && jsonConfig != "login") {
+                    parseAndSaveConfig(jsonConfig)
+                }
+            } catch (e: Exception) {
+                logger.warn("Error saving config before login", e)
+            }
             runInBackground("Snyk: authenticating...") {
+                LanguageServerWrapper.getInstance(project).updateConfiguration(true)
                 getSnykCliAuthenticationService(project)?.authenticate()
             }
             JBCefJSQuery.Response("success")
@@ -70,7 +79,7 @@ class SaveConfigHandler(
                         }
                         window.__ideSaveConfig__ = function(value) { ${saveConfigQuery.inject("value")} };
                         window.__ideNotifyModified__ = function() { ${notifyModifiedQuery.inject("'modified'")} };
-                        window.__ideLogin__ = function() { ${loginQuery.inject("'login'")} };
+                        window.__ideLogin__ = function(configJson) { ${loginQuery.inject("configJson || 'login'")} };
                         window.__ideLogout__ = function() { ${logoutQuery.inject("'logout'")} };
                     })();
                     """
