@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snyk Configuration</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+            font-size: var(--vscode-font-size, 13px);
+            color: var(--vscode-foreground, #cccccc);
+            background-color: var(--vscode-editor-background, #1e1e1e);
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--vscode-editor-foreground, #ffffff);
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            color: var(--vscode-editor-foreground, #ffffff);
+            border-bottom: 1px solid var(--vscode-panel-border, #454545);
+            padding-bottom: 8px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: var(--vscode-editor-inactiveSelectionBackground, #2a2d2e);
+            border-radius: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--vscode-input-foreground, #cccccc);
+        }
+
+        .checkbox-label {
+            display: inline-flex !important;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+            -webkit-appearance: checkbox;
+            width: 16px;
+            height: 16px;
+            pointer-events: auto;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--vscode-input-background, #3c3c3c);
+            color: var(--vscode-input-foreground, #cccccc);
+            border: 1px solid var(--vscode-input-border, #454545);
+            border-radius: 2px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: 1px solid var(--vscode-focusBorder, #007acc);
+            outline-offset: -1px;
+        }
+
+        .description {
+            display: block;
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground, #969696);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .info-message {
+            padding: 15px;
+            background-color: var(--vscode-inputValidation-infoBackground, #063b49);
+            border: 1px solid var(--vscode-inputValidation-infoBorder, #007acc);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Snyk Configuration</h1>
+
+    <div class="info-message">
+        <strong>Note:</strong> The Snyk CLI is not yet available. Configure the settings below to download and set up the CLI.
+        Once downloaded, additional configuration options will become available.
+    </div>
+
+    <form id="configForm">
+        <div class="section">
+            <h2>Executable Settings</h2>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="manageBinariesAutomatically" id="manageBinariesAutomatically" {{MANAGE_BINARIES_CHECKED}}>
+                    Automatically manage needed binaries
+                </label>
+                <span class="description">If enabled, the plugin will automatically download and update the Snyk CLI.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="cliBaseDownloadURL">Base URL to download the CLI</label>
+                <input type="text" id="cliBaseDownloadURL" name="cliBaseDownloadURL" value="{{CLI_BASE_DOWNLOAD_URL}}" placeholder="https://downloads.snyk.io">
+                <span class="description">The default URL is https://downloads.snyk.io. For FIPS-enabled CLIs (Windows/Linux only), use https://downloads.snyk.io/fips</span>
+            </div>
+
+            <div class="form-group">
+                <label for="cliPath">Path to Snyk CLI</label>
+                <input type="text" id="cliPath" name="cliPath" value="{{CLI_PATH}}" placeholder="/path/to/snyk-cli">
+                <span class="description">The path where the Snyk CLI executable is or will be located.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="cliReleaseChannel">CLI Release Channel</label>
+                <select id="cliReleaseChannel" name="cliReleaseChannel">
+                    <option value="stable" {{CHANNEL_STABLE_SELECTED}}>stable</option>
+                    <option value="rc" {{CHANNEL_RC_SELECTED}}>rc</option>
+                    <option value="preview" {{CHANNEL_PREVIEW_SELECTED}}>preview</option>
+                </select>
+                <span class="description">Choose which release channel to use for CLI updates.</span>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        (function() {
+            function get(id) {
+                return document.getElementById(id);
+            }
+
+            function collectData() {
+                return {
+                    cliPath: get('cliPath').value,
+                    manageBinariesAutomatically: get('manageBinariesAutomatically').checked,
+                    cliBaseDownloadURL: get('cliBaseDownloadURL').value,
+                    cliReleaseChannel: get('cliReleaseChannel').value
+                };
+            }
+
+            var saveTimeout = null;
+            var SAVE_DELAY = 500;
+
+            function saveConfig() {
+                var data = collectData();
+                var jsonString = JSON.stringify(data);
+                try {
+                    if (typeof window.__ideSaveConfig__ === 'function') {
+                        window.__ideSaveConfig__(jsonString);
+                    }
+                } catch (e) {
+                    console.error('Error saving configuration:', e);
+                }
+            }
+
+            function debouncedSave() {
+                if (saveTimeout) {
+                    clearTimeout(saveTimeout);
+                }
+                saveTimeout = setTimeout(saveConfig, SAVE_DELAY);
+            }
+
+            function attachAutoSaveListeners() {
+                var form = get('configForm');
+                if (!form) return;
+
+                var inputs = form.getElementsByTagName('input');
+                var selects = form.getElementsByTagName('select');
+
+                for (var i = 0; i < inputs.length; i++) {
+                    inputs[i].addEventListener('blur', debouncedSave);
+                    if (inputs[i].type === 'checkbox') {
+                        inputs[i].addEventListener('change', debouncedSave);
+                    }
+                }
+
+                for (var j = 0; j < selects.length; j++) {
+                    selects[j].addEventListener('change', debouncedSave);
+                }
+            }
+
+            window.addEventListener('load', function() {
+                attachAutoSaveListeners();
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -201,6 +201,8 @@ fun isDocumentationHoverEnabled(): Boolean = Registry.get("snyk.isDocumentationH
 
 fun isPreCommitCheckEnabled(): Boolean = Registry.get("snyk.issuesBlockCommit").asBoolean()
 
+fun isNewConfigDialogEnabled(): Boolean = Registry.get("snyk.useNewConfigDialog").asBoolean()
+
 fun getWaitForResultsTimeout(): Long =
     Registry.intValue(
         "snyk.timeout.results.waiting",

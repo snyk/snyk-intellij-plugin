@@ -60,6 +60,7 @@ import snyk.common.lsp.commands.COMMAND_LOGIN
 import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_SUBMIT_IGNORE_REQUEST
+import snyk.common.lsp.commands.COMMAND_WORKSPACE_CONFIGURATION
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
@@ -756,6 +757,22 @@ class LanguageServerWrapper(
             return response["stdOut"] as String
         }
         return ""
+    }
+
+    fun getConfigHtml(): String? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val executeCommandParams = ExecuteCommandParams(COMMAND_WORKSPACE_CONFIGURATION, emptyList())
+            val response = executeCommand(executeCommandParams, 10000)
+            if (response is String) {
+                return response
+            }
+        } catch (e: TimeoutException) {
+            logger.warn("Timeout getting configuration HTML", e)
+        } catch (e: Exception) {
+            logger.warn("Error getting configuration HTML", e)
+        }
+        return null
     }
 
     override fun dispose() {

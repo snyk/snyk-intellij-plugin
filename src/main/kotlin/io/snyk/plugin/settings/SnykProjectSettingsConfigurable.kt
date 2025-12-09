@@ -15,11 +15,13 @@ import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.isNewConfigDialogEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
+import io.snyk.plugin.ui.settings.HTMLSettingsPanel
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import javax.swing.JComponent
@@ -30,16 +32,30 @@ class SnykProjectSettingsConfigurable(
     private val settingsStateService
         get() = pluginSettings()
 
+    private var htmlSettingsPanel: HTMLSettingsPanel? = null
+    private var useNewConfigDialog: Boolean = false
+
     var snykSettingsDialog: SnykSettingsDialog = SnykSettingsDialog(project, settingsStateService, this)
 
     override fun getId(): String = "io.snyk.plugin.settings.SnykProjectSettingsConfigurable"
 
     override fun getDisplayName(): String = "Snyk"
 
-    override fun createComponent(): JComponent = snykSettingsDialog.getRootPanel()
+    override fun createComponent(): JComponent {
+        useNewConfigDialog = isNewConfigDialogEnabled()
+        return if (useNewConfigDialog) {
+            htmlSettingsPanel = HTMLSettingsPanel(project)
+            htmlSettingsPanel!!
+        } else {
+            snykSettingsDialog.getRootPanel()
+        }
+    }
 
-    override fun isModified(): Boolean =
-        isCoreParamsModified() ||
+    override fun isModified(): Boolean {
+        if (useNewConfigDialog) {
+            return htmlSettingsPanel?.isModified() ?: false
+        }
+        return isCoreParamsModified() ||
             isIgnoreUnknownCAModified() ||
             snykSettingsDialog.isScanTypeChanged() ||
             snykSettingsDialog.isSeverityEnablementChanged() ||
@@ -51,6 +67,7 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.getCliReleaseChannel() != settingsStateService.cliReleaseChannel ||
             snykSettingsDialog.getDisplayIssuesSelection() != settingsStateService.issuesToDisplay ||
             isAuthenticationMethodModified()
+    }
 
     private fun isAuthenticationMethodModified() =
         snykSettingsDialog.getAuthenticationType() != settingsStateService.authenticationType
@@ -68,6 +85,11 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.isScanTypeChanged()
 
     override fun apply() {
+        if (useNewConfigDialog) {
+            htmlSettingsPanel?.apply()
+            return
+        }
+
         val customEndpoint = snykSettingsDialog.getCustomEndpoint()
 
         if (snykSettingsDialog.getCliPath().isEmpty()) {
