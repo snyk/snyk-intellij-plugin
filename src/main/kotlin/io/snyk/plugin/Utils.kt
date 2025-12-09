@@ -279,7 +279,7 @@ fun navigateToSource(
     selectionEndOffset: Int? = null,
 ) {
     runAsync {
-        if (!virtualFile.isValid) return@runAsync
+        if (!virtualFile.isValid || project.isDisposed) return@runAsync
         val textLength = virtualFile.contentsToByteArray().size
         if (selectionStartOffset in (0 until textLength)) {
             // jump to Source
@@ -291,6 +291,7 @@ fun navigateToSource(
                 )
             if (navigatable.canNavigateToSource()) {
                 invokeLater {
+                    if (project.isDisposed || !virtualFile.isValid || !navigatable.canNavigate()) return@invokeLater
                     navigatable.navigate(false)
                 }
             }
@@ -304,6 +305,7 @@ fun navigateToSource(
                 selectionStartOffset < selectionEndOffset
             ) {
                 invokeLater {
+                    if (project.isDisposed) return@invokeLater
                     val editor = FileEditorManager.getInstance(project).selectedTextEditor
                     editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
                 }
