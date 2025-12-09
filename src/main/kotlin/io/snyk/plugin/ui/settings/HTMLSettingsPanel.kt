@@ -51,11 +51,13 @@ class HTMLSettingsPanel(
         val lsWrapper = LanguageServerWrapper.getInstance(project)
 
         val lsHtml = lsWrapper.getConfigHtml()
-        if (lsHtml != null) {
+        logger.debug("getHtmlContent: lsHtml is ${if (lsHtml != null) "available (${lsHtml.length} chars)" else "null"}")
+        if (lsHtml != null && lsHtml.isNotBlank()) {
             isUsingFallback = false
             return lsHtml
         }
 
+        logger.debug("getHtmlContent: using fallback HTML")
         isUsingFallback = true
         return loadFallbackHtml()
     }
