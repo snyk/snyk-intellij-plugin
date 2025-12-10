@@ -54,6 +54,7 @@ object JCEFUtils {
 
         // Get IDE background color to prevent white flash on load
         val bgColor = UIUtil.getPanelBackground()
+        val bgColorHex = bgColor.toHex()
 
         val jbCefBrowser = JBCefBrowserBuilder()
             .setClient(cefClient)
@@ -64,8 +65,12 @@ object JCEFUtils {
             .build()
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
 
-        // Set browser component background to match IDE theme (prevents white flash)
+        // Set browser component background to match IDE theme
         jbCefBrowser.component.background = bgColor
+
+        // Load initial HTML with matching background to prevent white flash
+        val initialHtml = "<html><body style=\"background-color:$bgColorHex;margin:0;\"></body></html>"
+        jbCefBrowser.loadHTML(initialHtml)
 
         // For non-offscreen rendering, enable focus traversal for tab navigation
         if (!offScreenRendering) {
