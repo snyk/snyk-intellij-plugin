@@ -147,8 +147,6 @@ class HTMLSettingsPanel(
     }
 
     private fun initializeJcefBrowser(html: String) {
-        removeAll()
-
         // Dispose existing browser before creating new one
         disposeCurrentBrowser()
 
@@ -169,16 +167,32 @@ class HTMLSettingsPanel(
             onSaveComplete = { runPostApplySettings() }
         )
         val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!, null, currentNonce)
+        
+        // Add load handler that shows browser only after content loads (prevents white flash)
+        cefClient.addLoadHandler(object : org.cef.handler.CefLoadHandlerAdapter() {
+            override fun onLoadingStateChange(
+                browser: org.cef.browser.CefBrowser?,
+                isLoading: Boolean,
+                canGoBack: Boolean,
+                canGoForward: Boolean
+            ) {
+                if (!isLoading && !isDisposed) {
+                    ApplicationManager.getApplication().invokeLater {
+                        if (!isDisposed) {
+                            removeAll()
+                            add(jbCefBrowser!!.component, BorderLayout.CENTER)
+                            revalidate()
+                            repaint()
+                            jbCefBrowser?.component?.requestFocusInWindow()
+                        }
+                    }
+                }
+            }
+        }, jbCefBrowser!!.cefBrowser)
+        
         cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
 
         jbCefBrowser?.loadHTML(processedHtml, jbCefBrowser?.cefBrowser?.url ?: "about:blank")
-
-        add(jbCefBrowser!!.component, BorderLayout.CENTER)
-        revalidate()
-        repaint()
-
-        // Request focus for keyboard/tab navigation
-        jbCefBrowser?.component?.requestFocusInWindow()
     }
 
     private fun disposeCurrentBrowser() {
