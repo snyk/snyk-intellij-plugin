@@ -4,6 +4,7 @@ import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.ui.jcef.JBCefClient
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.cef.browser.CefBrowser
 import org.cef.handler.CefFocusHandler
@@ -45,23 +46,29 @@ object JCEFUtils {
     /**
      * Creates a new JCEF browser with standard configuration.
      * The caller is responsible for disposing the browser.
-     * @param enableDevTools Whether to enable the dev tools menu (default: false)
      */
-    fun createBrowser(enableDevTools: Boolean = false): Pair<JBCefClient, JBCefBrowser> {
+    fun createBrowser(): Pair<JBCefClient, JBCefBrowser> {
         val cefClient = JBCefApp.getInstance().createClient()
         cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
+
+        // Get IDE background color to prevent white flash on load
+        val bgColor = UIUtil.getPanelBackground()
+
         val jbCefBrowser = JBCefBrowserBuilder()
             .setClient(cefClient)
-            .setEnableOpenDevToolsMenuItem(enableDevTools)
+            .setEnableOpenDevToolsMenuItem(false)
             .setMouseWheelEventEnable(true)
             .setOffScreenRendering(false) // Use native window for better keyboard/tab support
             .setUrl("about:blank")
             .build()
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
-        
+
+        // Set browser component background to match IDE theme (prevents white flash)
+        jbCefBrowser.component.background = bgColor
+
         // Enable focus traversal for tab navigation
         jbCefBrowser.component.isFocusable = true
-        
+
         // Add focus handler to properly manage focus between IDE and browser
         cefClient.addFocusHandler(object : CefFocusHandlerAdapter() {
             override fun onSetFocus(browser: CefBrowser?, source: CefFocusHandler.FocusSource?): Boolean {
@@ -69,7 +76,7 @@ object JCEFUtils {
                 return false
             }
         }, jbCefBrowser.cefBrowser)
-        
+
         return Pair(cefClient, jbCefBrowser)
     }
 
@@ -95,7 +102,7 @@ object JCEFUtils {
 
     private fun getCachedBrowser(): Pair<JBCefClient, JBCefBrowser> {
         jbCefPair?.let { return it }
-        val pair = createBrowser(enableDevTools = false)
+        val pair = createBrowser()
         jbCefPair = pair
         return pair
     }

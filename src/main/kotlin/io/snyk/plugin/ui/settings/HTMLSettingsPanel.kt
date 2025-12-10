@@ -21,6 +21,7 @@ import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.lsp.LanguageServerWrapper
+import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JLabel
@@ -41,6 +42,9 @@ class HTMLSettingsPanel(
     @Volatile private var lastLsError: String? = null
 
     init {
+        // Set panel background to match IDE theme (prevents white flash)
+        background = UIUtil.getPanelBackground()
+
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
         initializePanel()
         subscribeToCliDownloadEvents()
@@ -144,18 +148,18 @@ class HTMLSettingsPanel(
 
     private fun initializeJcefBrowser(html: String) {
         removeAll()
-        
+
         // Dispose existing browser before creating new one
         disposeCurrentBrowser()
 
         // Generate new nonce and replace placeholder in HTML
         currentNonce = JCEFUtils.generateNonce()
         var processedHtml = html.replace("ideNonce", currentNonce)
-        
+
         // Apply theme styling via string replacement
         processedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(processedHtml)
 
-        val (cefClient, browser) = JCEFUtils.createBrowser(enableDevTools = false)
+        val (cefClient, browser) = JCEFUtils.createBrowser()
         jbCefClient = cefClient
         jbCefBrowser = browser
 
@@ -172,11 +176,11 @@ class HTMLSettingsPanel(
         add(jbCefBrowser!!.component, BorderLayout.CENTER)
         revalidate()
         repaint()
-        
+
         // Request focus for keyboard/tab navigation
         jbCefBrowser?.component?.requestFocusInWindow()
     }
-    
+
     private fun disposeCurrentBrowser() {
         jbCefBrowser?.dispose()
         jbCefBrowser = null
