@@ -46,8 +46,9 @@ object JCEFUtils {
     /**
      * Creates a new JCEF browser with standard configuration.
      * The caller is responsible for disposing the browser.
+     * @param offScreenRendering Use off-screen rendering (default: true). Set to false for keyboard/tab navigation support.
      */
-    fun createBrowser(): Pair<JBCefClient, JBCefBrowser> {
+    fun createBrowser(offScreenRendering: Boolean = true): Pair<JBCefClient, JBCefBrowser> {
         val cefClient = JBCefApp.getInstance().createClient()
         cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
 
@@ -58,7 +59,7 @@ object JCEFUtils {
             .setClient(cefClient)
             .setEnableOpenDevToolsMenuItem(false)
             .setMouseWheelEventEnable(true)
-            .setOffScreenRendering(false) // Use native window for better keyboard/tab support
+            .setOffScreenRendering(offScreenRendering)
             .setUrl("about:blank")
             .build()
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
@@ -66,16 +67,15 @@ object JCEFUtils {
         // Set browser component background to match IDE theme (prevents white flash)
         jbCefBrowser.component.background = bgColor
 
-        // Enable focus traversal for tab navigation
-        jbCefBrowser.component.isFocusable = true
-
-        // Add focus handler to properly manage focus between IDE and browser
-        cefClient.addFocusHandler(object : CefFocusHandlerAdapter() {
-            override fun onSetFocus(browser: CefBrowser?, source: CefFocusHandler.FocusSource?): Boolean {
-                // Return false to allow the browser to receive focus
-                return false
-            }
-        }, jbCefBrowser.cefBrowser)
+        // For non-offscreen rendering, enable focus traversal for tab navigation
+        if (!offScreenRendering) {
+            jbCefBrowser.component.isFocusable = true
+            cefClient.addFocusHandler(object : CefFocusHandlerAdapter() {
+                override fun onSetFocus(browser: CefBrowser?, source: CefFocusHandler.FocusSource?): Boolean {
+                    return false
+                }
+            }, jbCefBrowser.cefBrowser)
+        }
 
         return Pair(cefClient, jbCefBrowser)
     }

@@ -159,7 +159,7 @@ class HTMLSettingsPanel(
         // Apply theme styling via string replacement
         processedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(processedHtml)
 
-        val (cefClient, browser) = JCEFUtils.createBrowser()
+        val (cefClient, browser) = JCEFUtils.createBrowser(offScreenRendering = false)
         jbCefClient = cefClient
         jbCefBrowser = browser
 
