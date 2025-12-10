@@ -170,13 +170,11 @@ class HTMLSettingsPanel(
         
         // Add load handler that shows browser only after content loads (prevents white flash)
         cefClient.addLoadHandler(object : org.cef.handler.CefLoadHandlerAdapter() {
-            override fun onLoadingStateChange(
-                browser: org.cef.browser.CefBrowser?,
-                isLoading: Boolean,
-                canGoBack: Boolean,
-                canGoForward: Boolean
-            ) {
-                if (!isLoading && !isDisposed) {
+            @Volatile private var browserAdded = false
+            
+            override fun onLoadEnd(browser: org.cef.browser.CefBrowser?, frame: org.cef.browser.CefFrame?, httpStatusCode: Int) {
+                if (frame?.isMain == true && !isDisposed && !browserAdded) {
+                    browserAdded = true
                     ApplicationManager.getApplication().invokeLater {
                         if (!isDisposed) {
                             removeAll()
