@@ -101,7 +101,11 @@ object JCEFUtils {
     }
 
     private fun getCachedBrowser(): Pair<JBCefClient, JBCefBrowser> {
-        jbCefPair?.let { return it }
+        jbCefPair?.let { pair ->
+            // Refresh background color on each use to support theme changes
+            pair.second.component.background = UIUtil.getPanelBackground()
+            return pair
+        }
         val pair = createBrowser()
         jbCefPair = pair
         return pair
