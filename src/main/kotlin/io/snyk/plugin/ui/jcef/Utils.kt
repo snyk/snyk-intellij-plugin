@@ -23,7 +23,6 @@ fun Color.toHex(): String = JCEFUtils.colorToHex(this)
 
 object JCEFUtils {
     private val secureRandom = SecureRandom()
-    private var jbCefPair: Pair<JBCefClient, JBCefBrowser>? = null
 
     /**
      * Generates a cryptographically secure nonce for CSP.
@@ -89,7 +88,9 @@ object JCEFUtils {
             return null
         }
 
-        val (cefClient, jbCefBrowser) = getCachedBrowser()
+        // Create a new browser for each panel - they can't share a single browser
+        // as loading new HTML in one panel would clear the other
+        val (cefClient, jbCefBrowser) = createBrowser()
 
         for (loadHandlerGenerator in loadHandlerGenerators) {
             val loadHandler = loadHandlerGenerator(jbCefBrowser)
@@ -98,21 +99,5 @@ object JCEFUtils {
         jbCefBrowser.loadHTML(html, jbCefBrowser.cefBrowser.url)
 
         return jbCefBrowser
-    }
-
-    private fun getCachedBrowser(): Pair<JBCefClient, JBCefBrowser> {
-        jbCefPair?.let { pair ->
-            // Check if cached browser is still valid (not disposed)
-            if (!pair.second.isDisposed) {
-                // Refresh background color on each use to support theme changes
-                pair.second.component.background = UIUtil.getPanelBackground()
-                return pair
-            }
-            // Browser was disposed, clear cache and create new one
-            jbCefPair = null
-        }
-        val pair = createBrowser()
-        jbCefPair = pair
-        return pair
     }
 }
