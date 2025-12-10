@@ -26,24 +26,43 @@ class SaveConfigHandler(
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
     private val gson = Gson()
 
-    fun generateSaveConfigHandler(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
+    fun generateSaveConfigHandler(
+        jbCefBrowser: JBCefBrowserBase,
+        getThemeCss: (() -> String)? = null,
+        nonce: String? = null
+    ): CefLoadHandlerAdapter {
         val saveConfigQuery = JBCefJSQuery.create(jbCefBrowser)
         val loginQuery = JBCefJSQuery.create(jbCefBrowser)
         val logoutQuery = JBCefJSQuery.create(jbCefBrowser)
-        val notifyModifiedQuery = JBCefJSQuery.create(jbCefBrowser)
+        val onFormDirtyChangeQuery = JBCefJSQuery.create(jbCefBrowser)
 
         saveConfigQuery.addHandler { jsonString ->
             try {
                 parseAndSaveConfig(jsonString)
+                // Hide any previous error on success
+                jbCefBrowser.cefBrowser.executeJavaScript(
+                    "if (typeof window.hideError === 'function') { window.hideError(); }",
+                    jbCefBrowser.cefBrowser.url, 0
+                )
                 JBCefJSQuery.Response("success")
             } catch (e: Exception) {
                 logger.warn("Error saving config", e)
+                // Show error in browser
+                val errorMsg = (e.message ?: "Unknown error").replace("'", "\\'")
+                jbCefBrowser.cefBrowser.executeJavaScript(
+                    "if (typeof window.showError === 'function') { window.showError('$errorMsg'); }",
+                    jbCefBrowser.cefBrowser.url, 0
+                )
                 JBCefJSQuery.Response(null, 1, e.message ?: "Unknown error")
             }
         }
 
-        notifyModifiedQuery.addHandler {
-            onModified()
+        // Handle dirty state changes from LS DirtyTracker and fallback HTML
+        onFormDirtyChangeQuery.addHandler { isDirtyStr ->
+            val isDirty = isDirtyStr == "true"
+            if (isDirty) {
+                onModified()
+            }
             JBCefJSQuery.Response("success")
         }
 
@@ -73,13 +92,38 @@ class SaveConfigHandler(
         return object : CefLoadHandlerAdapter() {
             override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                 if (frame.isMain) {
+                    // Inject IDE theme CSS variables
+                    val themeCss = try {
+                        getThemeCss?.invoke()
+                    } catch (e: Exception) {
+                        logger.warn("Error getting theme CSS", e)
+                        null
+                    }
+                    if (!themeCss.isNullOrBlank()) {
+                        logger.debug("Injecting theme CSS (${themeCss.length} chars), nonce: ${nonce?.take(8)}...")
+                        val nonceAttr = if (!nonce.isNullOrBlank()) "style.setAttribute('nonce', ${gson.toJson(nonce)});" else ""
+                        val cssScript = """
+                        (function() {
+                            var style = document.createElement('style');
+                            $nonceAttr
+                            style.textContent = ${gson.toJson(themeCss)};
+                            document.head.appendChild(style);
+                            console.log('IDE theme CSS injected');
+                        })();
+                        """
+                        browser.executeJavaScript(cssScript, browser.url, 0)
+                    } else {
+                        logger.warn("Theme CSS is null or blank, skipping injection")
+                    }
+
+                    // Inject IDE bridge functions
                     val script = """
                     (function() {
-                        if (window.__ideSaveConfig__) {
+                        if (window.__saveIdeConfig__) {
                             return;
                         }
-                        window.__ideSaveConfig__ = function(value) { ${saveConfigQuery.inject("value")} };
-                        window.__ideNotifyModified__ = function() { ${notifyModifiedQuery.inject("'modified'")} };
+                        window.__saveIdeConfig__ = function(value) { ${saveConfigQuery.inject("value")} };
+                        window.__onFormDirtyChange__ = function(isDirty) { ${onFormDirtyChangeQuery.inject("String(isDirty)")} };
                         window.__ideLogin__ = function(configJson) { ${loginQuery.inject("configJson || 'login'")} };
                         window.__ideLogout__ = function() { ${logoutQuery.inject("'logout'")} };
                     })();
@@ -166,6 +210,8 @@ class SaveConfigHandler(
 
         config.getString("cliPath")?.let { settings.cliPath = it }
         config.getBoolean("manageBinariesAutomatically")?.let { settings.manageBinariesAutomatically = it }
+        // LS uses "baseUrl", we store as cliBaseDownloadURL
+        config.getString("baseUrl")?.let { settings.cliBaseDownloadURL = it }
         config.getString("cliBaseDownloadURL")?.let { settings.cliBaseDownloadURL = it }
         config.getString("cliReleaseChannel")?.let { settings.cliReleaseChannel = it }
     }
@@ -193,12 +239,36 @@ class SaveConfigHandler(
                 ""
             }
 
+            // Parse scanCommandConfig if present
+            val scanCommandConfig = parseScanCommandConfig(folderConfig)
+
             val updatedConfig = existingConfig.copy(
                 additionalParameters = additionalParams,
                 preferredOrg = preferredOrg,
-                orgSetByUser = orgSetByUser
+                orgSetByUser = orgSetByUser,
+                scanCommandConfig = scanCommandConfig ?: existingConfig.scanCommandConfig
             )
             fcs.addFolderConfig(updatedConfig)
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun parseScanCommandConfig(folderConfig: Map<String, Any?>): Map<String, snyk.common.lsp.ScanCommandConfig>? {
+        val scanConfig = folderConfig["scanCommandConfig"] as? Map<String, Map<String, Any?>> ?: return null
+        
+        val result = mutableMapOf<String, snyk.common.lsp.ScanCommandConfig>()
+        
+        for ((product, config) in scanConfig) {
+            if (config.isEmpty()) continue
+            
+            result[product] = snyk.common.lsp.ScanCommandConfig(
+                preScanCommand = (config["command"] as? String) ?: "",
+                preScanOnlyReferenceFolder = config.getBoolean("preScanOnlyReferenceFolder") ?: true,
+                postScanCommand = (config["postScanCommand"] as? String) ?: "",
+                postScanOnlyReferenceFolder = config.getBoolean("postScanOnlyReferenceFolder") ?: true
+            )
+        }
+        
+        return if (result.isNotEmpty()) result else null
     }
 }

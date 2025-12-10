@@ -45,6 +45,35 @@
             margin: 0;
         }
 
+        /* Theme-aware scrollbars */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--vscode-scrollbarSlider-background, #424242) var(--vscode-editor-background, #1e1e1e);
+        }
+
+        /* Webkit scrollbars (Chrome, Safari, Edge, JCEF) */
+        *::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--vscode-editor-background, #1e1e1e);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: var(--vscode-scrollbarSlider-background, #424242);
+            border-radius: 5px;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background: var(--vscode-scrollbarSlider-hoverBackground, #4f4f4f);
+        }
+
+        *::-webkit-scrollbar-thumb:active {
+            background: var(--vscode-scrollbarSlider-activeBackground, #555555);
+        }
+
         h1 {
             font-size: 24px;
             margin-bottom: 20px;
@@ -129,10 +158,27 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
+
+        .error-message {
+            padding: 15px;
+            background-color: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+            border: 1px solid var(--vscode-inputValidation-errorBorder, #be1100);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <h1>Snyk Configuration</h1>
+
+    <div id="errorMessage" class="error-message">
+        <strong>Error:</strong> <span id="errorText"></span>
+    </div>
 
     <div class="info-message">
         <strong>Note:</strong> The Snyk CLI is not yet available. Configure the executable settings below to download and set up the CLI.
@@ -185,6 +231,26 @@
                 return document.getElementById(id);
             }
 
+            function showError(message) {
+                var errorDiv = get('errorMessage');
+                var errorText = get('errorText');
+                if (errorDiv && errorText) {
+                    errorText.textContent = message;
+                    errorDiv.classList.add('visible');
+                }
+            }
+
+            function hideError() {
+                var errorDiv = get('errorMessage');
+                if (errorDiv) {
+                    errorDiv.classList.remove('visible');
+                }
+            }
+
+            // Expose showError for IDE to call
+            window.showError = showError;
+            window.hideError = hideError;
+
             function collectData() {
                 return {
                     cliPath: get('cliPath').value,
@@ -196,26 +262,42 @@
 
             function markModified() {
                 window.__modified__ = true;
-                if (typeof window.__ideNotifyModified__ === 'function') {
-                    window.__ideNotifyModified__();
+                if (typeof window.__onFormDirtyChange__ === 'function') {
+                    window.__onFormDirtyChange__(true);
                 }
             }
 
-            // Expose saveConfig globally so IDE can call it on Apply
-            window.saveConfig = function() {
+            // Expose getAndSaveIdeConfig globally (same name as LS HTML) so IDE can call it on Apply
+            window.getAndSaveIdeConfig = function() {
+                hideError();
                 var data = collectData();
                 var jsonString = JSON.stringify(data);
                 try {
-                    if (typeof window.__ideSaveConfig__ === 'function') {
-                        window.__ideSaveConfig__(jsonString);
+                    if (typeof window.__saveIdeConfig__ === 'function') {
+                        window.__saveIdeConfig__(jsonString);
                         window.__modified__ = false;
+                        // Notify IDE that form is now clean
+                        if (typeof window.__onFormDirtyChange__ === 'function') {
+                            window.__onFormDirtyChange__(false);
+                        }
                     }
                 } catch (e) {
+                    showError('Error saving configuration: ' + e.message);
                     console.error('Error saving configuration:', e);
                 }
             };
 
-            // Attach change listeners to track modifications (without auto-saving)
+            // Query dirty state (same API as LS HTML)
+            window.__isFormDirty__ = function() {
+                return window.__modified__;
+            };
+
+            // Reset dirty state (same API as LS HTML)
+            window.__resetDirtyState__ = function() {
+                window.__modified__ = false;
+            };
+
+            // Attach change listeners to track modifications
             window.addEventListener('load', function() {
                 var form = get('configForm');
                 if (!form) return;

@@ -284,6 +284,17 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertTrue(realSettings.ossScanEnable)
     }
 
+    fun `test parseAndSaveConfig handles baseUrl for CLI download`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        every { pluginSettings() } returns realSettings
+
+        // LS sends "baseUrl" but we store as cliBaseDownloadURL
+        val jsonConfig = """{"baseUrl": "https://downloads.snyk.io/fips"}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertEquals("https://downloads.snyk.io/fips", realSettings.cliBaseDownloadURL)
+    }
+
     private fun invokeParseAndSaveConfig(jsonString: String) {
         val method = SaveConfigHandler::class.java.getDeclaredMethod("parseAndSaveConfig", String::class.java)
         method.isAccessible = true
