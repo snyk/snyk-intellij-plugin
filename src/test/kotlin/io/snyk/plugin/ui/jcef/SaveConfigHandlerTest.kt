@@ -23,7 +23,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         settings = mockk(relaxed = true)
         every { pluginSettings() } returns settings
 
-        cut = SaveConfigHandler(project) {}
+        cut = SaveConfigHandler(project, onModified = {})
     }
 
     override fun tearDown() {
@@ -165,7 +165,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     fun `test onModified callback is invoked`() {
         var callbackInvoked = false
-        val handler = SaveConfigHandler(project) { callbackInvoked = true }
+        val handler = SaveConfigHandler(project, onModified = { callbackInvoked = true })
 
         // The onModified callback is wired to notifyModifiedQuery which requires JCEF
         // We can only verify the handler accepts the callback
@@ -181,18 +181,34 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         invokeParseAndSaveConfig("{}")
     }
 
-    fun `test parseAndSaveConfig handles partial config`() {
+    fun `test parseAndSaveConfig handles partial config without scan types`() {
         val realSettings = SnykApplicationSettingsStateService()
         realSettings.organization = "original-org"
-        realSettings.ossScanEnable = false
+        realSettings.ossScanEnable = true  // Initially enabled
         every { pluginSettings() } returns realSettings
 
-        // Only update organization, leave ossScanEnable unchanged
+        // Only update organization, no scan type keys present - scan types remain unchanged
         val jsonConfig = """{"organization": "new-org"}"""
         invokeParseAndSaveConfig(jsonConfig)
 
         assertEquals("new-org", realSettings.organization)
-        assertFalse(realSettings.ossScanEnable) // Unchanged
+        assertTrue(realSettings.ossScanEnable) // Unchanged because no scan type keys in config
+    }
+
+    fun `test parseAndSaveConfig treats missing scan types as false when other scan types present`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.ossScanEnable = true
+        realSettings.snykCodeSecurityIssuesScanEnable = true
+        realSettings.iacScanEnabled = true
+        every { pluginSettings() } returns realSettings
+
+        // Only activateSnykOpenSource is sent (checked), others missing (unchecked)
+        val jsonConfig = """{"activateSnykOpenSource": true}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertTrue(realSettings.ossScanEnable)
+        assertFalse(realSettings.snykCodeSecurityIssuesScanEnable) // Missing = unchecked = false
+        assertFalse(realSettings.iacScanEnabled) // Missing = unchecked = false
     }
 
     fun `test parseAndSaveConfig throws on invalid JSON`() {

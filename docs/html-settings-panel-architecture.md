@@ -21,7 +21,12 @@ flowchart TB
         end
         
         subgraph Theme["Theme System"]
+            TBSG[ThemeBasedStylingGenerator]
             UIM[UIManager]
+        end
+        
+        subgraph JCEF_Utils["JCEF Utilities"]
+            JCU[JCEFUtils]
         end
     end
     
@@ -56,17 +61,20 @@ flowchart TB
     CHR --> |returns HTML| LSW
     LSW --> |HTML string| HSP
     HSP --> |creates| SCH
-    HSP --> |loadHTML + nonce| JCEF
+    HSP --> |loadHTML| JCEF
     
     HSP --> |fallback if LS unavailable| FBHTML
     
-    UIM --> |colors, fonts| HSP
-    HSP --> |injects CSS + nonce| JCEF
+    UIM --> |colors, fonts| TBSG
+    TBSG --> |replaceWithCustomStyles| HSP
+    HSP --> |styled HTML| JCEF
+    JCU --> |createBrowser, generateNonce| HSP
     
     %% Bridge function connections
     SAVE --> |calls| SCH
     SCH --> |applyGlobalSettings| SASS
     SCH --> |applyFolderConfigs| FCS
+    SCH --> |onSaveComplete| HSP
     
     DIRTY --> |calls| SCH
     SCH --> |onModified| HSP
@@ -86,6 +94,8 @@ sequenceDiagram
     participant User
     participant IDE as IntelliJ IDE
     participant HSP as HTMLSettingsPanel
+    participant TBSG as ThemeBasedStylingGenerator
+    participant JCU as JCEFUtils
     participant SCH as SaveConfigHandler
     participant LSW as LanguageServerWrapper
     participant LS as Language Server
@@ -93,29 +103,39 @@ sequenceDiagram
 
     User->>IDE: Open Settings > Snyk
     IDE->>HSP: createComponent()
+    HSP->>HSP: showLoadingMessage()
+    
+    Note over HSP: Async in pooled thread
     HSP->>LSW: getConfigHtml()
     LSW->>LS: executeCommand("snyk.workspace.configuration")
     
     alt LS Available
         LS-->>LSW: HTML string with config form
         LSW-->>HSP: HTML content
-    else LS Not Available
+    else LS Not Available (with retries)
         LSW-->>HSP: null
         HSP->>HSP: loadFallbackHtml()
     end
     
-    HSP->>HSP: generateNonce()
-    Note over HSP: SecureRandom → Base64 (16 bytes)
+    Note over HSP: Back on EDT
+    HSP->>JCU: generateNonce()
+    Note over JCU: SecureRandom → Base64 (16 bytes)
     HSP->>HSP: html.replace("ideNonce", nonce)
     
-    HSP->>HSP: getThemeCssVariables()
-    Note over HSP: Extract colors & fonts from UIManager
+    HSP->>TBSG: replaceWithCustomStyles(html)
+    Note over TBSG: Replace var(--vscode-*) with IDE theme colors
+    Note over TBSG: Replace var(--text-color) legacy variables
+    Note over TBSG: Add dark/light class to body
+    TBSG-->>HSP: styled HTML
     
-    HSP->>SCH: generateSaveConfigHandler(browser, themeCss, nonce)
-    HSP->>JCEF: loadHTML(htmlWithNonce)
+    HSP->>JCU: createBrowser()
+    JCU-->>HSP: (JBCefClient, JBCefBrowser)
+    
+    HSP->>SCH: new SaveConfigHandler(onModified, onSaveComplete)
+    HSP->>SCH: generateSaveConfigHandler(browser, nonce)
+    HSP->>JCEF: loadHTML(styledHtml)
     
     JCEF->>SCH: onLoadEnd
-    SCH->>JCEF: inject CSS with nonce attribute
     SCH->>JCEF: inject bridge functions
     JCEF-->>User: Display settings form
 ```
@@ -125,6 +145,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User
+    participant HSP as HTMLSettingsPanel
     participant JCEF as JCEF Browser
     participant JS as JavaScript
     participant Bridge as Bridge Functions
@@ -139,7 +160,11 @@ sequenceDiagram
     Bridge->>SCH: onModified callback
     Note over SCH: Enable Apply button
 
-    User->>JCEF: Click Apply
+    User->>HSP: Click Apply
+    HSP->>HSP: capture previous settings
+    HSP->>JCEF: executeJavaScript(getAndSaveIdeConfig)
+    
+    Note over JCEF,SCH: Async JavaScript execution
     JCEF->>JS: getAndSaveIdeConfig()
     JS->>JS: collectData() → JSON
     JS->>Bridge: __saveIdeConfig__(jsonString)
@@ -147,7 +172,13 @@ sequenceDiagram
     
     SCH->>Settings: Update SnykApplicationSettingsStateService
     SCH->>Settings: Update FolderConfigSettings
-    SCH->>LSW: updateConfiguration()
+    
+    Note over SCH: After save completes
+    SCH->>HSP: onSaveComplete callback
+    HSP->>HSP: runPostApplySettings()
+    HSP->>LSW: updateConfiguration()
+    HSP->>LSW: handleReleaseChannelChange (if changed)
+    HSP->>LSW: handleDeltaFindingsChange (if changed)
     
     JS->>JS: DirtyTracker.reset()
     JS->>Bridge: __onFormDirtyChange__(false)
@@ -180,46 +211,59 @@ sequenceDiagram
 
 ## Theme Integration
 
+Theme styling is handled by `ThemeBasedStylingGenerator.replaceWithCustomStyles()`, which performs string replacement of CSS variables directly in the HTML before loading into the JCEF browser.
+
+### Approach: String Replacement (not CSS injection)
+
+Instead of injecting CSS variables via JavaScript after page load, we replace `var(--xxx)` patterns directly in the HTML string. This:
+- Avoids CSP issues with dynamically injected styles
+- Works with both `var(--vscode-foreground)` and `var(--vscode-foreground, fallback)` syntax
+- Supports dynamic theme changes (values computed fresh on each call)
+
 ```mermaid
 flowchart LR
     subgraph IDE["IntelliJ Theme System"]
         UIM[UIManager]
-        PC["Panel.background"]
-        LF["Label.foreground"]
-        TF["TextField.background"]
-        SB["ScrollBar.thumbColor"]
-        FNT["Label.font"]
+        JBUI[JBUI.CurrentTheme]
+        ECM[EditorColorsManager]
     end
     
-    subgraph HSP["HTMLSettingsPanel"]
-        GTC[getThemeCssVariables]
+    subgraph TBSG["ThemeBasedStylingGenerator"]
+        RCS[replaceWithCustomStyles]
+        RV[replaceVar - regex]
     end
     
-    subgraph CSS["Injected CSS Variables"]
-        VBG["--vscode-editor-background"]
-        VFG["--vscode-foreground"]
-        VIB["--vscode-input-background"]
-        VSB["--vscode-scrollbarSlider-background"]
-        VFF["--vscode-font-family"]
-        VFS["--vscode-font-size"]
+    subgraph Input["Input HTML"]
+        VS["var(--vscode-foreground)"]
+        VSF["var(--vscode-font-family, 'Segoe UI')"]
+        LEG["var(--text-color)"]
+        BODY["&lt;body&gt;"]
     end
     
-    subgraph JCEF["JCEF Browser"]
-        STYLE[":root { ... }"]
-        HTML["HTML uses var(--vscode-*)"]
+    subgraph Output["Output HTML"]
+        HEX["#cccccc"]
+        FONT["'.SF NS', system-ui"]
+        HEX2["#cccccc"]
+        BODYC["&lt;body class='dark'&gt;"]
     end
     
-    UIM --> GTC
-    PC --> VBG
-    LF --> VFG
-    TF --> VIB
-    SB --> VSB
-    FNT --> VFF
-    FNT --> VFS
+    UIM --> TBSG
+    JBUI --> TBSG
+    ECM --> TBSG
     
-    GTC --> STYLE
-    STYLE --> HTML
+    Input --> RCS
+    RCS --> RV
+    RV --> Output
 ```
+
+### Supported Variable Patterns
+
+| Pattern | Example | Handled By |
+|---------|---------|------------|
+| `var(--vscode-xxx)` | `var(--vscode-foreground)` | `replaceVar()` regex |
+| `var(--vscode-xxx, fallback)` | `var(--vscode-font-family, 'Segoe UI')` | `replaceVar()` regex |
+| `var(--legacy-xxx)` | `var(--text-color)` | `replaceVar()` regex |
+| `--default-font: ` | CSS variable declaration | Direct string replace |
 
 ## Bridge Functions Reference
 
@@ -286,9 +330,11 @@ This allows the IDE to inject theme CSS while respecting the LS's security polic
 src/main/kotlin/io/snyk/plugin/
 ├── ui/
 │   ├── settings/
-│   │   └── HTMLSettingsPanel.kt      # Main panel, theme injection, nonce generation
+│   │   └── HTMLSettingsPanel.kt      # Main panel, browser lifecycle, apply flow
 │   └── jcef/
-│       └── SaveConfigHandler.kt      # Bridge functions, config parsing, CSP-aware CSS injection
+│       ├── SaveConfigHandler.kt      # Bridge functions, config parsing, callbacks
+│       ├── ThemeBasedStylingGenerator.kt  # CSS variable replacement for theming
+│       └── Utils.kt                  # JCEFUtils: nonce generation, browser creation
 ├── settings/
 │   └── SnykProjectSettingsConfigurable.kt  # Settings entry point (switches old/new dialog)
 └── services/
@@ -301,6 +347,10 @@ src/main/kotlin/snyk/common/lsp/
 
 src/main/resources/html/
 └── settings-fallback.html            # Fallback when LS unavailable (CLI settings only)
+
+src/test/kotlin/io/snyk/plugin/ui/jcef/
+├── SaveConfigHandlerTest.kt          # Tests for config parsing, boolean handling
+└── ThemeBasedStylingGeneratorTest.kt # Tests for CSS variable replacement
 
 snyk-ls (Language Server):
 └── infrastructure/configuration/

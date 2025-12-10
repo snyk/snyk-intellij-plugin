@@ -5,6 +5,9 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.ui.jcef.JBCefClient
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import org.cef.browser.CefBrowser
+import org.cef.handler.CefFocusHandler
+import org.cef.handler.CefFocusHandlerAdapter
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
 import java.security.SecureRandom
@@ -51,9 +54,22 @@ object JCEFUtils {
             .setClient(cefClient)
             .setEnableOpenDevToolsMenuItem(enableDevTools)
             .setMouseWheelEventEnable(true)
+            .setOffScreenRendering(false) // Use native window for better keyboard/tab support
             .setUrl("about:blank")
             .build()
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
+        
+        // Enable focus traversal for tab navigation
+        jbCefBrowser.component.isFocusable = true
+        
+        // Add focus handler to properly manage focus between IDE and browser
+        cefClient.addFocusHandler(object : CefFocusHandlerAdapter() {
+            override fun onSetFocus(browser: CefBrowser?, source: CefFocusHandler.FocusSource?): Boolean {
+                // Return false to allow the browser to receive focus
+                return false
+            }
+        }, jbCefBrowser.cefBrowser)
+        
         return Pair(cefClient, jbCefBrowser)
     }
 

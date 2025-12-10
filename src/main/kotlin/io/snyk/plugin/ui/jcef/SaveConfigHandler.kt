@@ -21,7 +21,8 @@ import snyk.common.lsp.settings.FolderConfigSettings
 
 class SaveConfigHandler(
     private val project: Project,
-    private val onModified: () -> Unit
+    private val onModified: () -> Unit,
+    private val onSaveComplete: (() -> Unit)? = null
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
     private val gson = Gson()
@@ -44,6 +45,8 @@ class SaveConfigHandler(
                     "if (typeof window.hideError === 'function') { window.hideError(); }",
                     jbCefBrowser.cefBrowser.url, 0
                 )
+                // Notify that save is complete (for post-apply logic)
+                onSaveComplete?.invoke()
                 JBCefJSQuery.Response("success")
             } catch (e: Exception) {
                 logger.warn("Error saving config", e)
@@ -151,8 +154,9 @@ class SaveConfigHandler(
     /**
      * Safely extracts a Boolean value from a config map, handling various input types.
      * Supports Boolean, String ("true"/"false"), and Number (0/non-zero) values.
+     * Returns the default for missing keys (HTML forms omit unchecked checkboxes).
      */
-    private fun Map<String, Any?>.getBoolean(key: String, default: Boolean? = null): Boolean? {
+    private fun Map<String, Any?>.getBoolean(key: String, default: Boolean = false): Boolean {
         return when (val value = this[key]) {
             is Boolean -> value
             is String -> value.equals("true", ignoreCase = true)
@@ -169,19 +173,29 @@ class SaveConfigHandler(
     }
 
     private fun applyGlobalSettings(config: Map<String, Any?>, settings: SnykApplicationSettingsStateService) {
-        config.getBoolean("activateSnykOpenSource")?.let { settings.ossScanEnable = it }
-        config.getBoolean("activateSnykCode")?.let { settings.snykCodeSecurityIssuesScanEnable = it }
-        config.getBoolean("activateSnykIac")?.let { settings.iacScanEnabled = it }
-
-        config.getString("scanningMode")?.let {
-            settings.scanOnSave = (it == "auto")
+        // Scan type toggles - only apply if any scan type key is present (supports partial configs)
+        // Missing keys treated as false (unchecked checkbox) when the form has scan types
+        val hasScanTypeKeys = config.containsKey("activateSnykOpenSource") || 
+                               config.containsKey("activateSnykCode") || 
+                               config.containsKey("activateSnykIac")
+        if (hasScanTypeKeys) {
+            settings.ossScanEnable = config.getBoolean("activateSnykOpenSource")
+            settings.snykCodeSecurityIssuesScanEnable = config.getBoolean("activateSnykCode")
+            settings.iacScanEnabled = config.getBoolean("activateSnykIac")
         }
 
+        // Scanning mode
+        config.getString("scanningMode")?.let { settings.scanOnSave = (it == "auto") }
+
+        // Connection settings
         config.getString("organization")?.let { settings.organization = it }
         config.getString("endpoint")?.let { settings.customEndpointUrl = it }
         config.getString("token")?.let { settings.token = it }
-        config.getBoolean("insecure")?.let { settings.ignoreUnknownCA = it }
+        if (config.containsKey("insecure")) {
+            settings.ignoreUnknownCA = config.getBoolean("insecure")
+        }
 
+        // Authentication method
         config.getString("authenticationMethod")?.let { method ->
             settings.authenticationType = when (method) {
                 "oauth" -> AuthenticationType.OAUTH2
@@ -190,27 +204,32 @@ class SaveConfigHandler(
             }
         }
 
+        // Severity filters - only apply if section is present
         @Suppress("UNCHECKED_CAST")
         (config["filterSeverity"] as? Map<String, Any?>)?.let { severity ->
-            severity.getBoolean("critical")?.let { settings.criticalSeverityEnabled = it }
-            severity.getBoolean("high")?.let { settings.highSeverityEnabled = it }
-            severity.getBoolean("medium")?.let { settings.mediumSeverityEnabled = it }
-            severity.getBoolean("low")?.let { settings.lowSeverityEnabled = it }
+            settings.criticalSeverityEnabled = severity.getBoolean("critical")
+            settings.highSeverityEnabled = severity.getBoolean("high")
+            settings.mediumSeverityEnabled = severity.getBoolean("medium")
+            settings.lowSeverityEnabled = severity.getBoolean("low")
         }
 
+        // Issue view options - only apply if section is present
         @Suppress("UNCHECKED_CAST")
         (config["issueViewOptions"] as? Map<String, Any?>)?.let { options ->
-            options.getBoolean("openIssues")?.let { settings.openIssuesEnabled = it }
-            options.getBoolean("ignoredIssues")?.let { settings.ignoredIssuesEnabled = it }
+            settings.openIssuesEnabled = options.getBoolean("openIssues")
+            settings.ignoredIssuesEnabled = options.getBoolean("ignoredIssues")
         }
 
-        config.getBoolean("enableDeltaFindings")?.let {
-            settings.setDeltaEnabled(it)
+        // Delta findings - only apply if key is present
+        if (config.containsKey("enableDeltaFindings")) {
+            settings.setDeltaEnabled(config.getBoolean("enableDeltaFindings"))
         }
 
+        // CLI settings
         config.getString("cliPath")?.let { settings.cliPath = it }
-        config.getBoolean("manageBinariesAutomatically")?.let { settings.manageBinariesAutomatically = it }
-        // LS uses "baseUrl", we store as cliBaseDownloadURL
+        if (config.containsKey("manageBinariesAutomatically")) {
+            settings.manageBinariesAutomatically = config.getBoolean("manageBinariesAutomatically")
+        }
         config.getString("baseUrl")?.let { settings.cliBaseDownloadURL = it }
         config.getString("cliBaseDownloadURL")?.let { settings.cliBaseDownloadURL = it }
         config.getString("cliReleaseChannel")?.let { settings.cliReleaseChannel = it }
@@ -231,7 +250,6 @@ class SaveConfigHandler(
                 ?: existingConfig.additionalParameters
 
             val orgSetByUser = folderConfig.getBoolean("orgSetByUser", existingConfig.orgSetByUser)
-                ?: existingConfig.orgSetByUser
 
             val preferredOrg = if (orgSetByUser) {
                 (folderConfig["preferredOrg"] as? String) ?: existingConfig.preferredOrg
@@ -263,9 +281,9 @@ class SaveConfigHandler(
             
             result[product] = snyk.common.lsp.ScanCommandConfig(
                 preScanCommand = (config["command"] as? String) ?: "",
-                preScanOnlyReferenceFolder = config.getBoolean("preScanOnlyReferenceFolder") ?: true,
+                preScanOnlyReferenceFolder = config.getBoolean("preScanOnlyReferenceFolder", true),
                 postScanCommand = (config["postScanCommand"] as? String) ?: "",
-                postScanOnlyReferenceFolder = config.getBoolean("postScanOnlyReferenceFolder") ?: true
+                postScanOnlyReferenceFolder = config.getBoolean("postScanOnlyReferenceFolder", true)
             )
         }
         

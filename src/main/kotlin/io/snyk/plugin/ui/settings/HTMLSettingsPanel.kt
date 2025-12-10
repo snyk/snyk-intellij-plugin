@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefClient
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
@@ -31,10 +32,13 @@ class HTMLSettingsPanel(
 ) : JPanel(BorderLayout()), Disposable {
 
     private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
+    private var jbCefClient: JBCefClient? = null
     private var jbCefBrowser: JBCefBrowser? = null
-    private var isUsingFallback = false
+    @Volatile private var isUsingFallback = false
+    @Volatile private var isDisposed = false
     private val modified = AtomicBoolean(false)
     private var currentNonce: String = JCEFUtils.generateNonce()
+    @Volatile private var lastLsError: String? = null
 
     init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
@@ -53,10 +57,12 @@ class HTMLSettingsPanel(
 
         // Load HTML asynchronously to avoid blocking the settings dialog
         ApplicationManager.getApplication().executeOnPooledThread {
+            if (isDisposed) return@executeOnPooledThread
             val html = getHtmlContent()
             val lsError = lastLsError
             // Use ModalityState.any() to ensure callback runs even in modal dialogs
             ApplicationManager.getApplication().invokeLater({
+                if (isDisposed) return@invokeLater
                 if (html != null) {
                     initializeJcefBrowser(html)
                     // Show LS error if we're using fallback due to an error
@@ -86,8 +92,6 @@ class HTMLSettingsPanel(
             0
         )
     }
-
-    private var lastLsError: String? = null
 
     private fun getHtmlContent(): String? {
         val lsWrapper = LanguageServerWrapper.getInstance(project)
@@ -140,6 +144,9 @@ class HTMLSettingsPanel(
 
     private fun initializeJcefBrowser(html: String) {
         removeAll()
+        
+        // Dispose existing browser before creating new one
+        disposeCurrentBrowser()
 
         // Generate new nonce and replace placeholder in HTML
         currentNonce = JCEFUtils.generateNonce()
@@ -149,9 +156,14 @@ class HTMLSettingsPanel(
         processedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(processedHtml)
 
         val (cefClient, browser) = JCEFUtils.createBrowser(enableDevTools = false)
+        jbCefClient = cefClient
         jbCefBrowser = browser
 
-        val saveConfigHandler = SaveConfigHandler(project) { modified.set(true) }
+        val saveConfigHandler = SaveConfigHandler(
+            project = project,
+            onModified = { modified.set(true) },
+            onSaveComplete = { runPostApplySettings() }
+        )
         val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!, null, currentNonce)
         cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
 
@@ -160,6 +172,16 @@ class HTMLSettingsPanel(
         add(jbCefBrowser!!.component, BorderLayout.CENTER)
         revalidate()
         repaint()
+        
+        // Request focus for keyboard/tab navigation
+        jbCefBrowser?.component?.requestFocusInWindow()
+    }
+    
+    private fun disposeCurrentBrowser() {
+        jbCefBrowser?.dispose()
+        jbCefBrowser = null
+        jbCefClient?.dispose()
+        jbCefClient = null
     }
 
     private fun subscribeToCliDownloadEvents() {
@@ -171,9 +193,7 @@ class HTMLSettingsPanel(
 
                 override fun cliDownloadFinished(succeed: Boolean) {
                     if (succeed && isUsingFallback) {
-                        ApplicationManager.getApplication().invokeLater {
-                            refreshWithLsConfig()
-                        }
+                        refreshWithLsConfig()
                     }
                 }
             }
@@ -181,12 +201,19 @@ class HTMLSettingsPanel(
     }
 
     private fun refreshWithLsConfig() {
-        val lsWrapper = LanguageServerWrapper.getInstance(project)
-        val lsHtml = lsWrapper.getConfigHtml()
+        // Fetch LS HTML in background to avoid blocking EDT
+        ApplicationManager.getApplication().executeOnPooledThread {
+            if (isDisposed) return@executeOnPooledThread
+            val lsWrapper = LanguageServerWrapper.getInstance(project)
+            val lsHtml = lsWrapper.getConfigHtml()
 
-        if (lsHtml != null) {
-            isUsingFallback = false
-            initializeJcefBrowser(lsHtml)
+            if (lsHtml != null) {
+                ApplicationManager.getApplication().invokeLater({
+                    if (isDisposed) return@invokeLater
+                    isUsingFallback = false
+                    initializeJcefBrowser(lsHtml)
+                }, ModalityState.any())
+            }
         }
     }
 
@@ -215,20 +242,26 @@ class HTMLSettingsPanel(
     }
 
     fun apply() {
-        val settings = pluginSettings()
+        // Capture previous values before save for change detection
+        previousReleaseChannel = pluginSettings().cliReleaseChannel
+        previousDeltaEnabled = pluginSettings().isDeltaFindingsEnabled()
 
-        // Capture previous values before save
-        val previousReleaseChannel = settings.cliReleaseChannel
-        val previousDeltaEnabled = settings.isDeltaFindingsEnabled()
-
-        // Call getAndSaveIdeConfig() to collect form data and save (same function in LS and fallback HTML)
+        // Call getAndSaveIdeConfig() to collect form data and save
+        // The SaveConfigHandler.onSaveComplete callback will trigger runPostApplySettings()
         jbCefBrowser?.cefBrowser?.executeJavaScript(
             "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
             jbCefBrowser?.cefBrowser?.url ?: "",
             0
         )
         modified.set(false)
+    }
 
+    // Stored for change detection across async save
+    @Volatile private var previousReleaseChannel: String = ""
+    @Volatile private var previousDeltaEnabled: Boolean = false
+
+    private fun runPostApplySettings() {
+        val settings = pluginSettings()
         runInBackground("Snyk: applying settings") {
             // Handle release channel change - prompt to download new CLI
             if (settings.cliReleaseChannel != previousReleaseChannel) {
@@ -245,7 +278,7 @@ class HTMLSettingsPanel(
     }
 
     override fun dispose() {
-        jbCefBrowser?.dispose()
-        jbCefBrowser = null
+        isDisposed = true
+        disposeCurrentBrowser()
     }
 }
