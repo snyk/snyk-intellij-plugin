@@ -25,12 +25,6 @@
   - If this is a hotfix not off main, select the hotfix branch.
 
 
-**Release Notes**
-
-- Edit or generate release notes on GitHub.
-  - Its okay to include all items from any intermediate hotfix releases in the release notes.
-
-
 **Marketplace Availability**
 
 -   Wait for the new release to be approved in the manual review process in IntelliJ Marketplace.
