@@ -279,7 +279,7 @@ fun navigateToSource(
     selectionEndOffset: Int? = null,
 ) {
     runAsync {
-        if (!virtualFile.isValid || project.isDisposed) return@runAsync
+        if (project.isDisposed || !virtualFile.isValid) return@runAsync
         val textLength = virtualFile.contentsToByteArray().size
         if (selectionStartOffset in (0 until textLength)) {
             // jump to Source
