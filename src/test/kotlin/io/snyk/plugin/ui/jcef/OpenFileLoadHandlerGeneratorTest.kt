@@ -6,7 +6,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.ui.jcef.JBCefJSQuery
 import io.mockk.unmockkAll
 import io.snyk.plugin.resetSettings
 import snyk.common.annotator.SnykCodeAnnotator
@@ -59,10 +58,10 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
         val windowsPath = "C:/Users/test/app.js"
         val virtualFiles = LinkedHashMap<String, VirtualFile?>()
         virtualFiles[windowsPath] = psiFile.virtualFile
-        
+
         val windowsGenerator = OpenFileLoadHandlerGenerator(project, virtualFiles)
         val response = windowsGenerator.openFile("$windowsPath|10|15|5|20")
-        
+
         assertNotNull(response)
         assertEquals("success", response.response())
     }
@@ -71,12 +70,16 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
         val complexPath = "file://localhost:8080/test/app.js"
         val virtualFiles = LinkedHashMap<String, VirtualFile?>()
         virtualFiles[complexPath] = psiFile.virtualFile
-        
+
         val complexGenerator = OpenFileLoadHandlerGenerator(project, virtualFiles)
         val response = complexGenerator.openFile("$complexPath|1|2|3|4")
-        
+
         assertNotNull(response)
         assertEquals("success", response.response())
+
+        // Ensure async navigation completes before test finishes.
+        val matcher = BooleanSupplier { FileEditorManager.getInstance(project).isFileOpen(psiFile.virtualFile) }
+        PlatformTestUtil.waitWithEventsDispatching("navigate was not called", matcher, 10)
     }
 
     fun `test openFile should return success when file not found in virtualFiles`() {
@@ -88,7 +91,7 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
     fun `test openFile should handle newlines in input`() {
         val inputWithNewlines = "$fileName|1|2|3|4\n"
         val response = generator.openFile(inputWithNewlines)
-        
+
         assertNotNull(response)
         assertEquals("success", response.response())
         val matcher = BooleanSupplier { FileEditorManager.getInstance(project).isFileOpen(psiFile.virtualFile) }
