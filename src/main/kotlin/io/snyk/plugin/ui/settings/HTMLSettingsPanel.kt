@@ -9,6 +9,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefClient
+import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
@@ -21,7 +22,6 @@ import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.lsp.LanguageServerWrapper
-import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JLabel
@@ -159,7 +159,7 @@ class HTMLSettingsPanel(
         // Apply theme styling via string replacement
         processedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(processedHtml)
 
-        val (cefClient, browser) = JCEFUtils.createBrowser(offScreenRendering = false)
+        val (cefClient, browser) = JCEFUtils.createBrowser()
         jbCefClient = cefClient
         jbCefBrowser = browser
 
@@ -178,9 +178,6 @@ class HTMLSettingsPanel(
 
         // Then load the actual content
         jbCefBrowser?.loadHTML(processedHtml, jbCefBrowser?.cefBrowser?.url ?: "about:blank")
-
-        // Request focus for keyboard/tab navigation
-        jbCefBrowser?.component?.requestFocusInWindow()
     }
 
     private fun disposeCurrentBrowser() {

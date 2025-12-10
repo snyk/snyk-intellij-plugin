@@ -6,9 +6,6 @@ import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.ui.jcef.JBCefClient
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import org.cef.browser.CefBrowser
-import org.cef.handler.CefFocusHandler
-import org.cef.handler.CefFocusHandlerAdapter
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
 import java.security.SecureRandom
@@ -60,7 +57,7 @@ object JCEFUtils {
 
         val jbCefBrowser = JBCefBrowserBuilder()
             .setClient(cefClient)
-            .setEnableOpenDevToolsMenuItem(false)
+            .setEnableOpenDevToolsMenuItem(true)
             .setMouseWheelEventEnable(true)
             .setOffScreenRendering(offScreenRendering)
             .setUrl(initUrl)
@@ -69,16 +66,6 @@ object JCEFUtils {
 
         // Set browser component background to match IDE theme
         jbCefBrowser.component.background = bgColor
-
-        // For non-offscreen rendering, enable focus traversal for tab navigation
-        if (!offScreenRendering) {
-            jbCefBrowser.component.isFocusable = true
-            cefClient.addFocusHandler(object : CefFocusHandlerAdapter() {
-                override fun onSetFocus(browser: CefBrowser?, source: CefFocusHandler.FocusSource?): Boolean {
-                    return false
-                }
-            }, jbCefBrowser.cefBrowser)
-        }
 
         return Pair(cefClient, jbCefBrowser)
     }

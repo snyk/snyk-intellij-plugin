@@ -29,7 +29,7 @@ class ThemeBasedStylingGenerator {
          */
         fun replaceWithCustomStyles(htmlToReplace: String): String {
             var html = htmlToReplace
-            
+
             // All values computed fresh to support theme changes
             val bgColor = UIUtil.getPanelBackground().toHex()
             val fgColor = UIUtil.getLabelForeground().toHex()
@@ -38,20 +38,20 @@ class ThemeBasedStylingGenerator {
             val inputBgColor = UIUtil.getTextFieldBackground().toHex()
             val inputFgColor = UIUtil.getTextFieldForeground().toHex()
             val buttonBgColor = JBUI.CurrentTheme.Button.defaultButtonColorStart().toHex()
-            val buttonFgColor = UIManager.getColor("Button.default.foreground")?.toHex() 
-                ?: UIManager.getColor("Button.foreground")?.toHex() 
+            val buttonFgColor = UIManager.getColor("Button.default.foreground")?.toHex()
+                ?: UIManager.getColor("Button.foreground")?.toHex()
                 ?: "#ffffff"
             val linkColor = JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex()
             val fontFamily = JBUI.Fonts.label().asPlain().family
             val fontSize = JBFont.regular().size
             val scrollbarColor = UIManager.getColor("ScrollBar.thumbColor")?.toHex() ?: "#424242"
             val focusBorderColor = UIManager.getColor("Component.focusColor")?.toHex() ?: "#007acc"
-            val infoBgColor = UIManager.getColor("Notification.background")?.toHex() ?: inputBgColor
-            val infoBorderColor = UIManager.getColor("Notification.borderColor")?.toHex() ?: borderColor
-            
+            val infoBgColor = JBUI.CurrentTheme.Banner.INFO_BACKGROUND.toHex()
+            val infoBorderColor = JBUI.CurrentTheme.Banner.INFO_BORDER_COLOR.toHex()
+            val sectionBackground = JBUI.CurrentTheme.DefaultTabs.hoverBackground().toHex()
             val editorColorsManager = EditorColorsManager.getInstance()
             val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
-            val editorBackground = editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() 
+            val editorBackground = editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex()
                 ?: editorUiTheme.defaultBackground.toHex()
             val globalScheme = editorColorsManager.globalScheme
             val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR"))?.toHex() ?: scrollbarColor
@@ -79,12 +79,20 @@ class ThemeBasedStylingGenerator {
             html = replaceVar(html, "vscode-button-background", buttonBgColor)
             html = replaceVar(html, "vscode-button-foreground", buttonFgColor)
             html = replaceVar(html, "vscode-focusBorder", focusBorderColor)
+            val checkboxBgColor = UIManager.getColor("CheckBox.background")?.toHex() ?: inputBgColor
+            val checkboxFgColor = UIManager.getColor("CheckBox.foreground")?.toHex() ?: fgColor
+            val checkboxSelectColor = UIManager.getColor("CheckBox.select")?.toHex() ?: buttonBgColor
+            html = replaceVar(html, "vscode-checkbox-background", checkboxBgColor)
+            html = replaceVar(html, "vscode-checkbox-foreground", checkboxFgColor)
+            html = replaceVar(html, "vscode-checkbox-selectBackground", checkboxSelectColor)
+            html = replaceVar(html, "vscode-checkbox-border", borderColor)
             html = replaceVar(html, "vscode-scrollbarSlider-background", scrollbarColor)
             html = replaceVar(html, "vscode-scrollbarSlider-hoverBackground", scrollbarColor)
             html = replaceVar(html, "vscode-scrollbarSlider-activeBackground", scrollbarColor)
             html = replaceVar(html, "vscode-panel-border", borderColor)
-            html = replaceVar(html, "vscode-editor-inactiveSelectionBackground", bgColor)
+            html = replaceVar(html, "vscode-editor-inactiveSelectionBackground", sectionBackground)
             html = replaceVar(html, "vscode-inputValidation-infoBackground", infoBgColor)
+            html = replaceVar(html, "vscode-inputValidation-infoForeground", fgColor)
             html = replaceVar(html, "vscode-inputValidation-infoBorder", infoBorderColor)
             html = replaceVar(html, "vscode-textBlockQuote-background", infoBgColor)
             html = replaceVar(html, "vscode-textBlockQuote-border", infoBorderColor)
@@ -92,7 +100,6 @@ class ThemeBasedStylingGenerator {
             html = replaceVar(html, "vscode-inputValidation-errorBackground", errorColor)
             html = replaceVar(html, "vscode-inputValidation-errorBorder", errorColor)
 
-            // Legacy variables (issue detail panels)
             html = html.replace("--default-font: ", "--default-font: \"$fontFamily\", ")
             html = replaceVar(html, "main-font-size", getRelativeFontSize(fontSize))
             html = replaceVar(html, "text-color", fgColor)
