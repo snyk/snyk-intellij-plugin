@@ -102,9 +102,14 @@ object JCEFUtils {
 
     private fun getCachedBrowser(): Pair<JBCefClient, JBCefBrowser> {
         jbCefPair?.let { pair ->
-            // Refresh background color on each use to support theme changes
-            pair.second.component.background = UIUtil.getPanelBackground()
-            return pair
+            // Check if cached browser is still valid (not disposed)
+            if (!pair.second.isDisposed) {
+                // Refresh background color on each use to support theme changes
+                pair.second.component.background = UIUtil.getPanelBackground()
+                return pair
+            }
+            // Browser was disposed, clear cache and create new one
+            jbCefPair = null
         }
         val pair = createBrowser()
         jbCefPair = pair
