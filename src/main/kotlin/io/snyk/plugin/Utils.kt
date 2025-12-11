@@ -10,7 +10,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.invokeLater
-import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Document
@@ -248,8 +247,8 @@ fun refreshAnnotationsForFile(psiFile: PsiFile) {
 private const val SINGLE_FILE_DECORATION_UPDATE_THRESHOLD = 5
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
-    if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
     runAsync {
+        if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@runAsync
         VirtualFileManager.getInstance().asyncRefresh()
 
         val openFiles = FileEditorManager.getInstance(project).openFiles
