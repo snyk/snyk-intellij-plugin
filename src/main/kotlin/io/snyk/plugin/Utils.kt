@@ -260,20 +260,15 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
             }
         }
 
-        // Batch annotation refresh into a single EDT task
-        invokeLater {
-            if (project.isDisposed) return@invokeLater
-            val analyzer = DaemonCodeAnalyzer.getInstance(project)
-            if (openFiles.size > SINGLE_FILE_DECORATION_UPDATE_THRESHOLD) {
-                // Many files: global restart is more efficient and reliable
-                analyzer.restart()
-            } else {
-                // Few files: restart each individually
-                openFiles.forEach { virtualFile ->
-                    findPsiFileIgnoringExceptions(virtualFile, project)?.let { psiFile ->
-                        analyzer.restart(psiFile)
-                    }
+        if (openFiles.size > SINGLE_FILE_DECORATION_UPDATE_THRESHOLD) {
+            invokeLater {
+                if (!project.isDisposed) {
+                    DaemonCodeAnalyzer.getInstance(project).restart()
                 }
+            }
+        } else {
+            openFiles.forEach {
+                refreshAnnotationsForFile(project, it)
             }
         }
     }

@@ -17,7 +17,6 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.LabelProvider
-import io.snyk.plugin.ui.toolwindow.TreeNodeExpander
 import org.apache.commons.text.StringEscapeUtils
 import java.awt.Color
 import java.awt.Container
@@ -349,5 +348,10 @@ fun txtToHtml(s: String): String {
 fun getDisabledIcon(originalIcon: Icon?): Icon? = originalIcon?.let { IconLoader.getDisabledIcon(it) }
 
 fun expandTreeNodeRecursively(tree: JTree, node: DefaultMutableTreeNode) {
-    TreeNodeExpander.expandNodeRecursively(tree, node)
+    invokeLater {
+        tree.expandPath(TreePath(node.path))
+    }
+    node.children().asSequence().forEach {
+        expandTreeNodeRecursively(tree, it as DefaultMutableTreeNode)
+    }
 }
