@@ -170,6 +170,7 @@ class HTMLSettingsPanel(
         val saveConfigHandler = SaveConfigHandler(
             project = project,
             onModified = { modified.set(true) },
+            onReset = { modified.set(false) },
             onSaveComplete = {
                 runPostApplySettings()
                 // Signal that apply() can complete

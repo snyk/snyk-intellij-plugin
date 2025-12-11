@@ -27,6 +27,7 @@ import java.nio.file.Paths
 class SaveConfigHandler(
     private val project: Project,
     private val onModified: () -> Unit,
+    private val onReset: (() -> Unit)? = null,
     private val onSaveComplete: (() -> Unit)? = null
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
@@ -70,6 +71,8 @@ class SaveConfigHandler(
             val isDirty = isDirtyStr == "true"
             if (isDirty) {
                 onModified()
+            } else {
+                onReset?.invoke()
             }
             JBCefJSQuery.Response("success")
         }
