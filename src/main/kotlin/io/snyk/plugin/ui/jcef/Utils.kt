@@ -4,7 +4,6 @@ import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.ui.jcef.JBCefClient
-import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.Color
@@ -42,30 +41,20 @@ object JCEFUtils {
     /**
      * Creates a new JCEF browser with standard configuration.
      * The caller is responsible for disposing the browser.
-     * @param offScreenRendering Use off-screen rendering (default: true). Set to false for keyboard/tab navigation support.
+     * @param offScreenRendering Use off-screen rendering (default: false). Set to true for lightweight rendering without native window.
      */
-    fun createBrowser(offScreenRendering: Boolean = true): Pair<JBCefClient, JBCefBrowser> {
+    fun createBrowser(offScreenRendering: Boolean = false): Pair<JBCefClient, JBCefBrowser> {
         val cefClient = JBCefApp.getInstance().createClient()
         cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
-
-        // Get IDE background color
-        val bgColor = UIUtil.getPanelBackground()
-        val bgHex = bgColor.toHex()
-
-        // Use data URL with IDE background to prevent white flash on startup
-        val initUrl = "data:text/html,<html><head><style>html,body{margin:0;padding:0;background:$bgHex;}</style></head><body></body></html>"
 
         val jbCefBrowser = JBCefBrowserBuilder()
             .setClient(cefClient)
             .setEnableOpenDevToolsMenuItem(true)
             .setMouseWheelEventEnable(true)
             .setOffScreenRendering(offScreenRendering)
-            .setUrl(initUrl)
+            .setUrl("about:blank")
             .build()
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
-
-        // Set browser component background to match IDE theme
-        jbCefBrowser.component.background = bgColor
 
         return Pair(cefClient, jbCefBrowser)
     }

@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.codeInsight.codeVision.CodeVisionHost
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
@@ -12,8 +13,7 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.TreeUIHelper
@@ -128,8 +128,7 @@ class SnykToolWindowPanel(
 
     // Debouncing for annotation refresh - coalesces per-file diagnostic updates
     private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
-    private val pendingAnnotationRefreshFiles = mutableSetOf<VirtualFile>()
-    private val pendingFilesLock = ReentrantLock()
+    private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> = java.util.concurrent.ConcurrentHashMap.newKeySet()
 
     // Tree node expander for progressive, non-blocking expansion
     private val treeNodeExpander by lazy {
@@ -387,7 +386,6 @@ class SnykToolWindowPanel(
                             BorderLayout.CENTER,
                         )
                     }
-
                 }
 
                 is ErrorHolderTreeNode -> {
@@ -422,9 +420,7 @@ class SnykToolWindowPanel(
      * Collects files over a short window and then refreshes them in batch.
      */
     private fun scheduleAnnotationRefresh(virtualFile: VirtualFile) {
-        pendingFilesLock.withLock {
-            pendingAnnotationRefreshFiles.add(virtualFile)
-        }
+        pendingAnnotationRefreshFiles.add(virtualFile)
         annotationRefreshAlarm.cancelAllRequests()
         annotationRefreshAlarm.addRequest({
             flushPendingAnnotationRefreshes()
@@ -437,10 +433,8 @@ class SnykToolWindowPanel(
     private fun flushPendingAnnotationRefreshes() {
         if (isDisposed || project.isDisposed) return
 
-        val filesToRefresh = pendingFilesLock.withLock {
-            pendingAnnotationRefreshFiles.toList().also {
-                pendingAnnotationRefreshFiles.clear()
-            }
+        val filesToRefresh = pendingAnnotationRefreshFiles.toList().also {
+            pendingAnnotationRefreshFiles.clear()
         }
 
         if (filesToRefresh.isEmpty()) return
@@ -452,13 +446,23 @@ class SnykToolWindowPanel(
             }
         }
 
-        if (filesToRefresh.size > MAX_INDIVIDUAL_ANNOTATION_REFRESH) {
-            // Too many files - do a global refresh instead
-            refreshAnnotationsForOpenFiles(project)
-        } else {
-            // Refresh each file individually
-            filesToRefresh.forEach { file ->
-                refreshAnnotationsForFile(project, file)
+        // Batch all refreshes into a single invokeLater to avoid EDT queue flooding
+        invokeLater {
+            if (isDisposed || project.isDisposed) return@invokeLater
+            val analyzer = DaemonCodeAnalyzer.getInstance(project)
+
+            if (filesToRefresh.size > MAX_INDIVIDUAL_ANNOTATION_REFRESH) {
+                // Too many files - do a global refresh
+                analyzer.restart()
+            } else {
+                // Refresh each file individually within same EDT task
+                filesToRefresh.forEach { file ->
+                    if (file.isValid) {
+                        PsiManager.getInstance(project).findFile(file)?.let { psiFile ->
+                            analyzer.restart(psiFile)
+                        }
+                    }
+                }
             }
         }
     }
@@ -508,17 +512,22 @@ class SnykToolWindowPanel(
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> {
                 pluginSettings().pluginFirstRun = false
-                try {
-                    enableCodeScanAccordingToServerSetting()
-                    displayEmptyDescription()
-                } catch (e: Exception) {
-                    displaySnykError(
-                        SnykError(
-                            e.message ?: "Exception while initializing plugin {${e.message}",
-                            ""
-                        )
-                    )
-                    logger.error("Failed to apply Snyk settings", e)
+                displayEmptyDescription()
+                // Run on background thread to avoid blocking EDT during LS initialization
+                runAsync {
+                    try {
+                        enableCodeScanAccordingToServerSetting()
+                    } catch (e: Exception) {
+                        invokeLater {
+                            displaySnykError(
+                                SnykError(
+                                    e.message ?: "Exception while initializing plugin {${e.message}",
+                                    ""
+                                )
+                            )
+                        }
+                        logger.error("Failed to apply Snyk settings", e)
+                    }
                 }
             }
 

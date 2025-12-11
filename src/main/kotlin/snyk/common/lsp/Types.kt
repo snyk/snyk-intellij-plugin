@@ -297,7 +297,7 @@ data class ScanIssue(
         return if (details.isNullOrEmpty() && this.id.isNotBlank()) {
             LanguageServerWrapper.getInstance(project).generateIssueDescription(this) ?: ""
         } else {
-            ""
+            details ?: ""
         }
     }
 

@@ -102,7 +102,7 @@ class LanguageServerWrapper(
     private var loginFuture: CompletableFuture<Any>? = null
 
     // internal for test set up
-    internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
+    internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = ConcurrentHashMap.newKeySet()
     private var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
     private var disposed = false
         get() {
@@ -599,7 +599,12 @@ class LanguageServerWrapper(
         if (key.isBlank()) throw RuntimeException("Issue ID is required")
         val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(key))
         return try {
-            executeCommand(generateIssueCommand, Long.MAX_VALUE).toString()
+            val result = executeCommand(generateIssueCommand, Long.MAX_VALUE)
+            when (result) {
+                is String -> result
+                is com.google.gson.JsonPrimitive -> result.asString
+                else -> result?.toString()
+            }
         } catch (e: TimeoutException) {
             val exceptionMessage = "generate issue description failed"
             logger.warn(exceptionMessage, e)

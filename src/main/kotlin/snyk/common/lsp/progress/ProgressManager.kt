@@ -141,15 +141,9 @@ class ProgressManager(val project: Project) : Disposable {
         updateProgressIndicator(report.message, report.percentage, progressIndicator)
     }
 
-    @Synchronized
     private fun getProgress(token: String): Progress {
-        var progress: Progress? = progresses[token]
-        if (progress != null) {
-            return progress
-        }
-        progress = Progress(token, project)
-        progresses[token] = progress
-        return progress
+        // Use computeIfAbsent for thread-safe lazy initialization without blocking
+        return progresses.computeIfAbsent(token) { Progress(it, project) }
     }
 
     private fun updateProgressIndicator(
@@ -210,7 +204,12 @@ class ProgressManager(val project: Project) : Disposable {
                 progress.cancellable = begin.cancellable != null && begin.cancellable
                 // The IJ task is created on 'begin' and not on 'create' to initialize
                 // the Task with the 'begin' title.
-                createProgressIndicator(progress)
+                // Run async to avoid blocking the LSP message thread
+                org.jetbrains.concurrency.runAsync {
+                    if (!disposed && !project.isDisposed) {
+                        createProgressIndicator(progress)
+                    }
+                }
             }
 
             WorkDoneProgressKind.end -> progress.done = true

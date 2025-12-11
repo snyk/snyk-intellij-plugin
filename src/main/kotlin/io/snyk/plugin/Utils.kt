@@ -231,9 +231,13 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
 
 fun refreshAnnotationsForFile(project: Project, virtualFile: VirtualFile) {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
-    val psiFile = findPsiFileIgnoringExceptions(virtualFile, project)
-    if (psiFile != null) {
-        refreshAnnotationsForFile(psiFile)
+    if (!virtualFile.isValid) return
+    // Do PSI lookup on EDT where read access is implicit, avoiding blocking read actions
+    invokeLater {
+        if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@invokeLater
+        if (!virtualFile.isValid) return@invokeLater
+        val psiFile = PsiManager.getInstance(project).findFile(virtualFile) ?: return@invokeLater
+        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
     }
 }
 
@@ -249,7 +253,12 @@ private const val SINGLE_FILE_DECORATION_UPDATE_THRESHOLD = 5
 fun refreshAnnotationsForOpenFiles(project: Project) {
     runAsync {
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@runAsync
-        VirtualFileManager.getInstance().asyncRefresh()
+        try {
+            VirtualFileManager.getInstance().asyncRefresh()
+        } catch (e: Exception) {
+            // VFS refresh can fail on edge cases (remote files, deleted files, etc.)
+            Logger.getInstance("SnykUtils").debug("VFS async refresh failed", e)
+        }
 
         val openFiles = FileEditorManager.getInstance(project).openFiles
 
@@ -391,12 +400,19 @@ fun getArch(): String {
 }
 
 fun String.toVirtualFile(): VirtualFile {
-    return if (!this.startsWith("file:")) {
-        StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
-    } else {
-        val filePath = fromUriToPath()
-        VirtualFileManager.getInstance().refreshAndFindFileByNioPath(filePath)
-            ?: throw FileNotFoundException(this)
+    // Only handle local files - skip remote URIs (http:, https:, etc.)
+    return when {
+        this.startsWith("http:") || this.startsWith("https:") -> {
+            throw FileNotFoundException("Remote files not supported: $this")
+        }
+        !this.startsWith("file:") -> {
+            StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
+        }
+        else -> {
+            val filePath = fromUriToPath()
+            VirtualFileManager.getInstance().refreshAndFindFileByNioPath(filePath)
+                ?: throw FileNotFoundException(this)
+        }
     }
 }
 
@@ -426,10 +442,10 @@ private fun String.startsWithWindowsDriveLetter(): Boolean {
 }
 
 fun VirtualFile.getDocument(): Document? {
-    return ReadAction.nonBlocking<Document?> {
-        if (ApplicationManager.getApplication().isDisposed) return@nonBlocking null
+    if (ApplicationManager.getApplication().isDisposed) return null
+    return ReadAction.compute<Document?, RuntimeException> {
         FileDocumentManager.getInstance().getDocument(this)
-    }.executeSynchronously()
+    }
 }
 
 fun Project.getContentRootPaths(): SortedSet<Path> {
@@ -462,10 +478,19 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
 fun VirtualFile.isInContent(project: Project): Boolean {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return false
     val vf = this
-    return ReadAction.nonBlocking<Boolean> {
-        if (project.isDisposed) return@nonBlocking false
-        ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
-    }.expireWith(project).executeSynchronously()
+    val app = ApplicationManager.getApplication()
+
+    // If we already have read access (e.g., on EDT), use it directly - no blocking
+    if (app.isReadAccessAllowed) {
+        return if (project.isDisposed) false
+        else ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
+    }
+    
+    // Not on EDT and no read access - this shouldn't block EDT
+    return app.runReadAction<Boolean> {
+        if (project.isDisposed) false
+        else ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
+    }
 }
 
 fun VirtualFile.isExecutable(): Boolean = this.toNioPathOrNull()?.let { Files.isExecutable(it) } == true

@@ -28,7 +28,6 @@ import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import snyk.common.lsp.LanguageServerWrapper
-import java.util.concurrent.TimeUnit
 
 class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
     private var disposed = false
@@ -106,34 +105,85 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
             if (languageServerWrapper?.logger?.isTraceEnabled == true) this.setLevel(LogLevel.TRACE)
         }
 
+        // Cache for inline values - avoids blocking EDT calls during painting
+        private val inlineValueCache = mutableMapOf<Int, String>()
+        // Track pending requests to avoid duplicate fetches
+        private val pendingLines = mutableSetOf<Int>()
+        // Limit concurrent requests to avoid flooding LS
+        private val maxPendingRequests = 5
+
         fun getLineExtension(line: Int): MutableCollection<out LineExtensionInfo> {
             // only OSS has inline values right now
             val hasResults = snykCachedResults?.currentOSSResultsLS?.get(snykFile)?.isNotEmpty() ?: false
             if ((disposed || languageServerWrapper == null) || !languageServerWrapper.isInitialized || !hasResults)
                 return mutableSetOf()
 
-            val lineEndOffset = document.getLineEndOffset(line)
-            val lineStartOffset = document.getLineStartOffset(line)
-            val range = Range(Position(line, 0), Position(line, lineEndOffset - lineStartOffset))
-            val params = InlineValueParams(TextDocumentIdentifier(snykFile.virtualFile.toLanguageServerURI()), range, ctx)
-            val inlineValue = languageServerWrapper.languageServer.textDocumentService.inlineValue(params)
-            val text = try {
-                val result = inlineValue.get(5, TimeUnit.MILLISECONDS)
-                if (result != null && result.isNotEmpty()) {
-                    // this supposedly unneeded cast is needed as the conversion in lsp4j does not work correctly
-                    val eitherList = result as List<Either<InlineValueText, *>>
-                    val firstInlineValue = eitherList[0]
-                    firstInlineValue.left.text ?: ""
+            // Return cached value if available (non-blocking on EDT)
+            val cachedText = inlineValueCache[line]
+            if (cachedText != null) {
+                return if (cachedText.isNotEmpty()) {
+                    mutableListOf(LineExtensionInfo("\t$cachedText", attributes))
                 } else {
-                    ""
+                    mutableSetOf()
                 }
-            } catch (ignored: Exception) {
-                // ignore error
-                ""
             }
-            return mutableListOf(LineExtensionInfo("\t$text", attributes))
+
+            // Schedule async fetch if not already pending and under rate limit
+            if (!pendingLines.contains(line) && pendingLines.size < maxPendingRequests) {
+                pendingLines.add(line)
+                fetchInlineValueAsync(line)
+            }
+
+            // Return empty for now - async fetch will trigger repaint when done
+            return mutableSetOf()
         }
 
+        private fun fetchInlineValueAsync(line: Int) {
+            if (disposed || languageServerWrapper == null || project == null) return
+
+            // Run entire LS call on background thread - even creating the future can block
+            org.jetbrains.concurrency.runAsync {
+                if (disposed || project.isDisposed) {
+                    pendingLines.remove(line)
+                    return@runAsync
+                }
+
+                try {
+                    val lineEndOffset = document.getLineEndOffset(line)
+                    val lineStartOffset = document.getLineStartOffset(line)
+                    val range = Range(Position(line, 0), Position(line, lineEndOffset - lineStartOffset))
+                    val params = InlineValueParams(TextDocumentIdentifier(snykFile.virtualFile.toLanguageServerURI()), range, ctx)
+
+                    val result = languageServerWrapper.languageServer.textDocumentService.inlineValue(params)
+                        .get(100, java.util.concurrent.TimeUnit.MILLISECONDS)
+
+                    if (disposed) return@runAsync
+
+                    val text = if (result != null && result.isNotEmpty()) {
+                        @Suppress("UNCHECKED_CAST")
+                        val eitherList = result as List<Either<InlineValueText, *>>
+                        eitherList.firstOrNull()?.left?.text ?: ""
+                    } else {
+                        ""
+                    }
+
+                    inlineValueCache[line] = text
+                    pendingLines.remove(line)
+
+                    // Trigger repaint on EDT if we got a non-empty result
+                    if (text.isNotEmpty() && !disposed && editor.component.isShowing) {
+                        ApplicationManager.getApplication().invokeLater {
+                            if (!disposed && !project.isDisposed) {
+                                editor.component.repaint()
+                            }
+                        }
+                    }
+                } catch (ignored: Exception) {
+                    pendingLines.remove(line)
+                    inlineValueCache[line] = ""
+                }
+            }
+        }
     }
 }
 

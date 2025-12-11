@@ -22,7 +22,6 @@ import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.isInContent
 import io.snyk.plugin.toLanguageServerURI
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.CodeActionContext
@@ -48,7 +47,8 @@ import java.util.concurrent.TimeoutException
 import javax.swing.Icon
 
 
-private const val CODEACTION_TIMEOUT = 10L
+// Reduced timeout to prevent long UI freezes when LS is busy
+private const val CODEACTION_TIMEOUT = 2L
 
 typealias SnykAnnotationInput = Pair<PsiFile, Map<Range, List<ScanIssue>>>
 typealias SnykAnnotationList = List<SnykAnnotation>
@@ -213,16 +213,19 @@ abstract class SnykAnnotator(private val product: ProductType) :
         file: PsiFile,
         range: Range
     ): List<Either<Command, CodeAction>> {
+        val lsWrapper = LanguageServerWrapper.getInstance(file.project)
+        // Early return if LS is not ready - prevents blocking calls during initialization
+        if (lsWrapper.isDisposed() || !lsWrapper.isInitialized) return emptyList()
+
         val params =
             CodeActionParams(
                 TextDocumentIdentifier(file.virtualFile.toLanguageServerURI()),
                 range,
                 CodeActionContext(emptyList()),
             )
-        val languageServer = LanguageServerWrapper.getInstance(file.project).languageServer
         val codeActions =
             try {
-                languageServer.textDocumentService
+                lsWrapper.languageServer.textDocumentService
                     .codeAction(params).get(CODEACTION_TIMEOUT, TimeUnit.SECONDS) ?: emptyList()
             } catch (_: TimeoutException) {
                 logger.info("Timeout fetching code actions for range: $range")
@@ -255,7 +258,9 @@ abstract class SnykAnnotator(private val product: ProductType) :
         getSnykCachedResultsForProduct(psiFile.project, product)
             ?.filter {
                 val virtualFile = it.key.virtualFile
-                virtualFile == psiFile.virtualFile && virtualFile.isInContent(psiFile.project)
+                // Don't call isInContent here - it uses ReadAction.compute which can block EDT
+                // The file is already from our cache which only contains content files
+                virtualFile == psiFile.virtualFile
             }
             ?.map { it.value }
             ?.flatten()

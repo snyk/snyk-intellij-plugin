@@ -7,17 +7,16 @@ import com.intellij.codeInsight.codeVision.CodeVisionRelativeOrdering
 import com.intellij.codeInsight.codeVision.CodeVisionState
 import com.intellij.codeInsight.codeVision.settings.CodeVisionGroupSettingProvider
 import com.intellij.codeInsight.codeVision.ui.model.ClickableTextCodeVisionEntry
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiFile
-import io.snyk.plugin.isInContent
+import io.snyk.plugin.SnykFile
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.toLanguageServerURI
 import org.eclipse.lsp4j.CodeLens
@@ -32,7 +31,8 @@ import java.util.concurrent.TimeoutException
 @Suppress("UnstableApiUsage")
 class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingProvider {
     private val logger = logger<LSCodeVisionProvider>()
-    private val timeout = 10L
+    // Reduced timeout to prevent long UI freezes when LS is busy
+    private val timeout = 2L
     override val defaultAnchor: CodeVisionAnchorKind = CodeVisionAnchorKind.Default
     override val id = "snyk.common.lsp.LSCodeVisionProvider"
     override val name = "Snyk Security Language Server Code Vision Provider"
@@ -51,24 +51,31 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
 
     override fun computeCodeVision(editor: Editor, uiData: Unit): CodeVisionState {
         val project = editor.project ?: return CodeVisionState.READY_EMPTY
-        if (LanguageServerWrapper.getInstance(project).isDisposed()) return CodeVisionState.READY_EMPTY
-        if (!LanguageServerWrapper.getInstance(project).isInitialized) return CodeVisionState.READY_EMPTY
+        if (project.isDisposed) return CodeVisionState.READY_EMPTY
+        
+        val lsWrapper = LanguageServerWrapper.getInstance(project)
+        // Early return if LS is not ready - prevents blocking calls during initialization
+        if (lsWrapper.isDisposed() || !lsWrapper.isInitialized) return CodeVisionState.READY_EMPTY
+
         val document = editor.document
+        val virtualFile = FileDocumentManager.getInstance().getFile(document) ?: return CodeVisionState.READY_EMPTY
+        
+        // Skip isInContent check - if we have cached results for this file, it's valid
+        // The cache only contains files that passed isInContent when diagnostics were published
+        val snykFile = SnykFile(project, virtualFile)
+        val cachedResults = getSnykCachedResults(project)
+        val hasResults = cachedResults?.currentOSSResultsLS?.get(snykFile)?.isNotEmpty() == true ||
+            cachedResults?.currentSnykCodeResultsLS?.get(snykFile)?.isNotEmpty() == true ||
+            cachedResults?.currentIacResultsLS?.get(snykFile)?.isNotEmpty() == true
+        if (!hasResults) return CodeVisionState.READY_EMPTY
 
-        val file = ReadAction.compute<PsiFile, RuntimeException> {
-            PsiDocumentManager.getInstance(project).getPsiFile(document)
-        } ?: return CodeVisionState.READY_EMPTY
-
-        val virtualFile = file.virtualFile
-        if (!virtualFile.isInContent(project)) return CodeVisionState.READY_EMPTY
-
-        val params = CodeLensParams(TextDocumentIdentifier(file.virtualFile.toLanguageServerURI()))
+        val params = CodeLensParams(TextDocumentIdentifier(virtualFile.toLanguageServerURI()))
         val lenses = mutableListOf<Pair<TextRange, CodeVisionEntry>>()
         val codeLenses = try {
-            LanguageServerWrapper.getInstance(project).languageServer.textDocumentService.codeLens(params)
+            lsWrapper.languageServer.textDocumentService.codeLens(params)
                 .get(timeout, TimeUnit.SECONDS) ?: return CodeVisionState.READY_EMPTY
         } catch (_: TimeoutException) {
-            logger.info("Timeout fetching code lenses for : $file")
+            logger.info("Timeout fetching code lenses for : $virtualFile")
             return CodeVisionState.READY_EMPTY
         }
 
@@ -93,12 +100,15 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         private val logger = logger<LSCommandExecutionHandler>()
         override fun invoke(event: MouseEvent?, editor: Editor) {
             event ?: return
+            val project = editor.project ?: return
+            val lsWrapper = LanguageServerWrapper.getInstance(project)
+            if (lsWrapper.isDisposed() || !lsWrapper.isInitialized) return
 
-            val task = object : Task.Backgroundable(editor.project, "Executing ${codeLens.command.title}", false) {
+            val task = object : Task.Backgroundable(project, "Executing ${codeLens.command.title}", false) {
                 override fun run(indicator: ProgressIndicator) {
                     val params = ExecuteCommandParams(codeLens.command.command, codeLens.command.arguments)
                     try {
-                        LanguageServerWrapper.getInstance(project).languageServer.workspaceService
+                        lsWrapper.languageServer.workspaceService
                             .executeCommand(params).get(2, TimeUnit.MINUTES)
                     } catch (e: TimeoutException) {
                         logger.error("Timeout executing: ${codeLens.command.title}", e)
