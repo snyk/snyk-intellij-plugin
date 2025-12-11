@@ -245,8 +245,7 @@ fun refreshAnnotationsForFile(psiFile: PsiFile) {
     }
 }
 
-private const val ANNOTATION_REFRESH_CHUNK_SIZE = 5
-private const val MAX_INDIVIDUAL_FILE_REFRESH = 50
+private const val SINGLE_FILE_DECORATION_UPDATE_THRESHOLD = 5
 
 fun refreshAnnotationsForOpenFiles(project: Project) {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
@@ -261,53 +260,21 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
             }
         }
 
-        // Chunked annotation refresh to avoid blocking EDT
-        when {
-            openFiles.size > MAX_INDIVIDUAL_FILE_REFRESH -> {
-                // Large number of files: restart all at once (more efficient)
-                invokeLater {
-                    if (!project.isDisposed) {
-                        DaemonCodeAnalyzer.getInstance(project).restart()
+        // Batch annotation refresh into a single EDT task
+        invokeLater {
+            if (project.isDisposed) return@invokeLater
+            val analyzer = DaemonCodeAnalyzer.getInstance(project)
+            if (openFiles.size > SINGLE_FILE_DECORATION_UPDATE_THRESHOLD) {
+                // Many files: global restart is more efficient and reliable
+                analyzer.restart()
+            } else {
+                // Few files: restart each individually
+                openFiles.forEach { virtualFile ->
+                    findPsiFileIgnoringExceptions(virtualFile, project)?.let { psiFile ->
+                        analyzer.restart(psiFile)
                     }
                 }
             }
-            openFiles.size <= ANNOTATION_REFRESH_CHUNK_SIZE -> {
-                // Small number: refresh all in one EDT task
-                invokeLater {
-                    if (project.isDisposed) return@invokeLater
-                    val analyzer = DaemonCodeAnalyzer.getInstance(project)
-                    openFiles.forEach { virtualFile ->
-                        findPsiFileIgnoringExceptions(virtualFile, project)?.let { psiFile ->
-                            analyzer.restart(psiFile)
-                        }
-                    }
-                }
-            }
-            else -> {
-                // Medium number: chunk the refreshes to keep EDT responsive
-                refreshAnnotationsInChunks(project, openFiles.toList(), 0)
-            }
-        }
-    }
-}
-
-private fun refreshAnnotationsInChunks(project: Project, files: List<VirtualFile>, startIndex: Int) {
-    if (project.isDisposed || startIndex >= files.size) return
-
-    invokeLater {
-        if (project.isDisposed) return@invokeLater
-        val analyzer = DaemonCodeAnalyzer.getInstance(project)
-        val endIndex = minOf(startIndex + ANNOTATION_REFRESH_CHUNK_SIZE, files.size)
-
-        for (i in startIndex until endIndex) {
-            findPsiFileIgnoringExceptions(files[i], project)?.let { psiFile ->
-                analyzer.restart(psiFile)
-            }
-        }
-
-        if (endIndex < files.size) {
-            // Schedule next chunk, yielding EDT between chunks
-            refreshAnnotationsInChunks(project, files, endIndex)
         }
     }
 }
