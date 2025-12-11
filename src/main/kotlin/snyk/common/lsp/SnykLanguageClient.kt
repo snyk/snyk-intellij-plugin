@@ -84,6 +84,9 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         progressManager.notifyProgress(params)
     }
 
+    @JsonNotification("$/snyk.publishDiagnostics316")
+    fun publishDiagnostics316(diagnosticsParams: PublishDiagnosticsParams?) = Unit
+
     override fun publishDiagnostics(diagnosticsParams: PublishDiagnosticsParams?) {
         if (diagnosticsParams == null) {
             return

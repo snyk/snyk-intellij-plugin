@@ -10,6 +10,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VirtualFile
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.TreeUIHelper
@@ -35,6 +38,7 @@ import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.refreshAnnotationsForFile
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.ReferenceChooserDialog
@@ -121,6 +125,11 @@ class SnykToolWindowPanel(
     private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
     private var pendingReloadNode: DefaultMutableTreeNode? = null
 
+    // Debouncing for annotation refresh - coalesces per-file diagnostic updates
+    private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
+    private val pendingAnnotationRefreshFiles = mutableSetOf<VirtualFile>()
+    private val pendingFilesLock = ReentrantLock()
+
     // Tree node expander for progressive, non-blocking expansion
     private val treeNodeExpander by lazy {
         TreeNodeExpander(vulnerabilitiesTree) { isDisposed }
@@ -129,6 +138,10 @@ class SnykToolWindowPanel(
     companion object {
         // Debounce delay in milliseconds - coalesces rapid scan updates
         private const val RELOAD_DEBOUNCE_MS = 100
+        // Debounce delay for annotation refresh - allows collecting multiple files
+        private const val ANNOTATION_REFRESH_DEBOUNCE_MS = 150
+        // Max files to refresh individually before falling back to global refresh
+        private const val MAX_INDIVIDUAL_ANNOTATION_REFRESH = 20
 
         val OSS_ROOT_TEXT = " " + ProductType.OSS.treeName
         val CODE_SECURITY_ROOT_TEXT = " " + ProductType.CODE_SECURITY.treeName
@@ -222,6 +235,8 @@ class SnykToolWindowPanel(
                                 LsProduct.Unknown -> Unit
                             }
                         }
+                        // Schedule debounced annotation refresh - coalesces rapid per-file updates
+                        scheduleAnnotationRefresh(snykFile.virtualFile)
                         // Refresh the tree view on receiving new diags from the Language Server. This must be done on
                         // the Event Dispatch Thread (EDT).
                         invokeLater {
@@ -399,6 +414,45 @@ class SnykToolWindowPanel(
 
     override fun dispose() {
         isDisposed = true
+    }
+
+    /**
+     * Schedules a debounced annotation refresh for the given file.
+     * Collects files over a short window and then refreshes them in batch.
+     */
+    private fun scheduleAnnotationRefresh(virtualFile: VirtualFile) {
+        pendingFilesLock.withLock {
+            pendingAnnotationRefreshFiles.add(virtualFile)
+        }
+        annotationRefreshAlarm.cancelAllRequests()
+        annotationRefreshAlarm.addRequest({
+            flushPendingAnnotationRefreshes()
+        }, ANNOTATION_REFRESH_DEBOUNCE_MS)
+    }
+
+    /**
+     * Flushes all pending annotation refreshes, either individually or as a global refresh.
+     */
+    private fun flushPendingAnnotationRefreshes() {
+        if (isDisposed || project.isDisposed) return
+
+        val filesToRefresh = pendingFilesLock.withLock {
+            pendingAnnotationRefreshFiles.toList().also {
+                pendingAnnotationRefreshFiles.clear()
+            }
+        }
+
+        if (filesToRefresh.isEmpty()) return
+
+        if (filesToRefresh.size > MAX_INDIVIDUAL_ANNOTATION_REFRESH) {
+            // Too many files - do a global refresh instead
+            refreshAnnotationsForOpenFiles(project)
+        } else {
+            // Refresh each file individually
+            filesToRefresh.forEach { file ->
+                refreshAnnotationsForFile(project, file)
+            }
+        }
     }
 
     fun cleanUiAndCaches() {

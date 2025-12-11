@@ -426,7 +426,12 @@ private fun String.startsWithWindowsDriveLetter(): Boolean {
     return this.matches(Regex("^[a-zA-Z]:.*$"))
 }
 
-fun VirtualFile.getDocument(): Document? = runReadAction { FileDocumentManager.getInstance().getDocument(this) }
+fun VirtualFile.getDocument(): Document? {
+    return ReadAction.nonBlocking<Document?> {
+        if (ApplicationManager.getApplication().isDisposed) return@nonBlocking null
+        FileDocumentManager.getInstance().getDocument(this)
+    }.executeSynchronously()
+}
 
 fun Project.getContentRootPaths(): SortedSet<Path> {
     return getContentRootVirtualFiles()
@@ -456,11 +461,12 @@ fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
 }
 
 fun VirtualFile.isInContent(project: Project): Boolean {
+    if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return false
     val vf = this
-    return ReadAction.compute<Boolean, RuntimeException> {
-        if (project.isDisposed) return@compute false
+    return ReadAction.nonBlocking<Boolean> {
+        if (project.isDisposed) return@nonBlocking false
         ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
-    }
+    }.expireWith(project).executeSynchronously()
 }
 
 fun VirtualFile.isExecutable(): Boolean = this.toNioPathOrNull()?.let { Files.isExecutable(it) } == true
