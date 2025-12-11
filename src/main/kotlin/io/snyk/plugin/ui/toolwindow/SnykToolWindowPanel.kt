@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.codeInsight.codeVision.CodeVisionHost
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
@@ -443,6 +444,13 @@ class SnykToolWindowPanel(
         }
 
         if (filesToRefresh.isEmpty()) return
+
+        // Invalidate code vision for all affected files
+        invokeLater {
+            if (!project.isDisposed) {
+                project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+            }
+        }
 
         if (filesToRefresh.size > MAX_INDIVIDUAL_ANNOTATION_REFRESH) {
             // Too many files - do a global refresh instead
