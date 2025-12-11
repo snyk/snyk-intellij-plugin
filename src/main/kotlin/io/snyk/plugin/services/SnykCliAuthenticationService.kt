@@ -5,9 +5,7 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.ide.CopyPasteManager
-import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane
@@ -38,54 +36,40 @@ class SnykCliAuthenticationService(
     private val logger = logger<SnykCliAuthenticationService>()
 
     fun authenticate() {
-        downloadCliIfNeeded()
-        if (getCliFile().exists()) {
-            executeAuthCommand()
-        }
-        LanguageServerWrapper.getInstance(project).updateConfiguration(false)
-    }
-
-    private fun downloadCliIfNeeded() {
-        val downloadCliTask: () -> Unit = {
+        // Run everything on EDT to avoid threading issues with modal dialogs
+        ApplicationManager.getApplication().invokeLater({
+            // Download CLI if needed (synchronous with progress)
             if (!getCliFile().exists()) {
-                getSnykTaskQueueService(project)?.downloadLatestRelease()
-            } else {
-                logger.debug("Skip CLI download, since it was already downloaded")
+                ProgressManager.getInstance().runProcessWithProgressSynchronously(
+                    { getSnykTaskQueueService(project)?.downloadLatestRelease() },
+                    "Download latest Snyk CLI",
+                    true,
+                    project,
+                )
             }
-        }
-        ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            downloadCliTask,
-            "Download Snyk CLI latest release",
-            true,
-            null,
-        )
-    }
 
-    private fun executeAuthCommand() {
-        val dialog = AuthDialog(project)
+            if (!getCliFile().exists()) return@invokeLater
 
-        val task = object : Task.Backgroundable(project, "Authenticating Snyk plugin...", true) {
-            override fun run(indicator: ProgressIndicator) {
-                val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-                dialog.onCancel = {
-                    languageServerWrapper.cancelPreviousLogin()
-                    indicator.cancel()
-                }
+            // Show auth dialog
+            val dialog = AuthDialog(project)
+            val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+
+            // Set up cancel handler
+            dialog.onCancel = {
+                languageServerWrapper.cancelPreviousLogin()
+            }
+
+            // Start login in background, then show dialog
+            ApplicationManager.getApplication().executeOnPooledThread {
                 languageServerWrapper.logout()
-                val htmlText =
-                    """
-                    <html>
-                        We are now redirecting you to our auth page, go ahead and log in.<br><br>
-                        Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.<br><br>
-                        If a browser window doesn't open after a few seconds, please copy the url using the button below and manually paste it in a browser.
-                    </html>
-                    """.trimIndent()
-                ApplicationManager.getApplication().invokeLater({
-                    dialog.updateHtmlText(htmlText)
-                    dialog.copyUrlAction.isEnabled = true
-                }, ModalityState.stateForComponent(dialog.contentPane))
+                val loginFuture = languageServerWrapper.login()
 
-                languageServerWrapper.login()?.whenComplete { result, e ->
+                // Enable copy URL button on EDT
+                ApplicationManager.getApplication().invokeLater({
+                    dialog.copyUrlAction.isEnabled = true
+                }, ModalityState.any())
+
+                loginFuture?.whenComplete { result, e ->
                     val token = result?.toString() ?: ""
 
                     if (e is CancellationException) {
@@ -100,20 +84,31 @@ class SnykCliAuthenticationService(
                     } else {
                         DialogWrapper.CLOSE_EXIT_CODE
                     }
-                    ApplicationManager.getApplication().invokeLater({ dialog.close(exitCode) }, ModalityState.any())
+
+                    ApplicationManager.getApplication().invokeLater({
+                        dialog.close(exitCode)
+                    }, ModalityState.any())
+
+                    languageServerWrapper.updateConfiguration(false)
                 }
             }
-        }
 
-        // Start the background task, then show dialog non-blocking
-        task.queue()
-        dialog.show()
+            dialog.show()
+        }, ModalityState.any())
     }
 }
 
-class AuthDialog(val project: Project) : DialogWrapper(true) {
+class AuthDialog(val project: Project) : DialogWrapper(project) {
     var onCancel: () -> Unit = {}
-    private val viewer = getReadOnlyClickableHtmlJEditorPane("Initializing Authentication...")
+    private val viewer = getReadOnlyClickableHtmlJEditorPane(
+        """
+        <html>
+            We are now redirecting you to our auth page, go ahead and log in.<br><br>
+            Once the authentication is complete, return to the IDE and you'll be ready to start using Snyk.<br><br>
+            If a browser window doesn't open after a few seconds, please copy the url using the button below and manually paste it in a browser.
+        </html>
+        """.trimIndent()
+    )
     val copyUrlAction = CopyUrlAction()
 
     init {
@@ -141,10 +136,6 @@ class AuthDialog(val project: Project) : DialogWrapper(true) {
         centerPanel.preferredSize = Dimension(500, 150)
 
         return centerPanel
-    }
-
-    fun updateHtmlText(htmlText: String) {
-        viewer.text = htmlText
     }
 
     override fun createActions(): Array<Action> = arrayOf(cancelAction)

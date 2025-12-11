@@ -23,7 +23,10 @@ import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
@@ -40,6 +43,7 @@ class HTMLSettingsPanel(
     private val modified = AtomicBoolean(false)
     private var currentNonce: String = JCEFUtils.generateNonce()
     @Volatile private var lastLsError: String? = null
+    private val applySaveLatch = AtomicReference<CountDownLatch?>(null)
 
     init {
         // Set panel background to match IDE theme (prevents white flash)
@@ -166,7 +170,11 @@ class HTMLSettingsPanel(
         val saveConfigHandler = SaveConfigHandler(
             project = project,
             onModified = { modified.set(true) },
-            onSaveComplete = { runPostApplySettings() }
+            onSaveComplete = {
+                runPostApplySettings()
+                // Signal that apply() can complete
+                applySaveLatch.get()?.countDown()
+            }
         )
         val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!, null, currentNonce)
         cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
@@ -249,19 +257,45 @@ class HTMLSettingsPanel(
         previousReleaseChannel = pluginSettings().cliReleaseChannel
         previousDeltaEnabled = pluginSettings().isDeltaFindingsEnabled()
 
+        val browser = jbCefBrowser?.cefBrowser
+        if (browser == null) {
+            logger.warn("Browser not available for apply(), running post-apply directly")
+            runPostApplySettings()
+            modified.set(false)
+            return
+        }
+
+        // Create latch to wait for save completion
+        val latch = CountDownLatch(1)
+        applySaveLatch.set(latch)
+
         // Call getAndSaveIdeConfig() to collect form data and save
-        // The SaveConfigHandler.onSaveComplete callback will trigger runPostApplySettings()
-        jbCefBrowser?.cefBrowser?.executeJavaScript(
-            "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
-            jbCefBrowser?.cefBrowser?.url ?: "",
+        // The SaveConfigHandler.onSaveComplete callback will signal the latch
+        browser.executeJavaScript(
+            "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); } else { console.error('getAndSaveIdeConfig not defined'); }",
+            browser.url ?: "",
             0
         )
+
+        // Wait for save to complete (with timeout to avoid blocking forever)
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                logger.warn("Timeout waiting for settings save to complete, running post-apply anyway")
+                runPostApplySettings()
+            }
+        } catch (e: InterruptedException) {
+            logger.warn("Interrupted while waiting for settings save", e)
+            Thread.currentThread().interrupt()
+        } finally {
+            applySaveLatch.set(null)
+        }
+
         modified.set(false)
     }
 
-    // Stored for change detection across async save
-    @Volatile private var previousReleaseChannel: String = ""
-    @Volatile private var previousDeltaEnabled: Boolean = false
+    // Stored for change detection across async save - initialized with current values
+    @Volatile private var previousReleaseChannel: String = pluginSettings().cliReleaseChannel
+    @Volatile private var previousDeltaEnabled: Boolean = pluginSettings().isDeltaFindingsEnabled()
 
     private fun runPostApplySettings() {
         val settings = pluginSettings()

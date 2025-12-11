@@ -8,9 +8,12 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
+import java.io.File.separator
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.cef.browser.CefBrowser
@@ -18,6 +21,8 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.trust.WorkspaceTrustService
+import java.nio.file.Paths
 
 class SaveConfigHandler(
     private val project: Project,
@@ -69,24 +74,15 @@ class SaveConfigHandler(
             JBCefJSQuery.Response("success")
         }
 
-        loginQuery.addHandler { jsonConfig ->
-            // Save config first (like the old dialog does before authentication)
-            try {
-                if (jsonConfig.isNotBlank() && jsonConfig != "login") {
-                    parseAndSaveConfig(jsonConfig)
-                }
-            } catch (e: Exception) {
-                logger.warn("Error saving config before login", e)
-            }
-            runInBackground("Snyk: authenticating...") {
-                LanguageServerWrapper.getInstance(project).updateConfiguration(true)
-                getSnykCliAuthenticationService(project)?.authenticate()
-            }
+        loginQuery.addHandler {
+            // Don't use runInBackground - authenticate() handles its own threading
+            getSnykCliAuthenticationService(project)?.authenticate()
             JBCefJSQuery.Response("success")
         }
 
         logoutQuery.addHandler {
             runInBackground("Snyk: logging out...") {
+                pluginSettings().token = ""
                 LanguageServerWrapper.getInstance(project).logout()
             }
             JBCefJSQuery.Response("success")
@@ -127,7 +123,7 @@ class SaveConfigHandler(
                         }
                         window.__saveIdeConfig__ = function(value) { ${saveConfigQuery.inject("value")} };
                         window.__onFormDirtyChange__ = function(isDirty) { ${onFormDirtyChangeQuery.inject("String(isDirty)")} };
-                        window.__ideLogin__ = function(configJson) { ${loginQuery.inject("configJson || 'login'")} };
+                        window.__ideLogin__ = function() { ${loginQuery.inject("'login'")} };
                         window.__ideLogout__ = function() { ${logoutQuery.inject("'logout'")} };
                     })();
                     """
@@ -145,7 +141,7 @@ class SaveConfigHandler(
             logger.warn("Invalid JSON config received: ${jsonString.take(200)}", e)
             throw IllegalArgumentException("Invalid configuration format", e)
         } ?: emptyMap()
-        
+
         val settings = pluginSettings()
         applyGlobalSettings(config, settings)
         applyFolderConfigs(config)
@@ -175,8 +171,8 @@ class SaveConfigHandler(
     private fun applyGlobalSettings(config: Map<String, Any?>, settings: SnykApplicationSettingsStateService) {
         // Scan type toggles - only apply if any scan type key is present (supports partial configs)
         // Missing keys treated as false (unchecked checkbox) when the form has scan types
-        val hasScanTypeKeys = config.containsKey("activateSnykOpenSource") || 
-                               config.containsKey("activateSnykCode") || 
+        val hasScanTypeKeys = config.containsKey("activateSnykOpenSource") ||
+                               config.containsKey("activateSnykCode") ||
                                config.containsKey("activateSnykIac")
         if (hasScanTypeKeys) {
             settings.ossScanEnable = config.getBoolean("activateSnykOpenSource")
@@ -200,6 +196,7 @@ class SaveConfigHandler(
             settings.authenticationType = when (method) {
                 "oauth" -> AuthenticationType.OAUTH2
                 "token" -> AuthenticationType.API_TOKEN
+                "pat" -> AuthenticationType.PAT
                 else -> AuthenticationType.OAUTH2
             }
         }
@@ -226,13 +223,28 @@ class SaveConfigHandler(
         }
 
         // CLI settings
-        config.getString("cliPath")?.let { settings.cliPath = it }
+        config.getString("cliPath")?.let { path ->
+            settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
+        }
         if (config.containsKey("manageBinariesAutomatically")) {
             settings.manageBinariesAutomatically = config.getBoolean("manageBinariesAutomatically")
         }
-        config.getString("baseUrl")?.let { settings.cliBaseDownloadURL = it }
-        config.getString("cliBaseDownloadURL")?.let { settings.cliBaseDownloadURL = it }
-        config.getString("cliReleaseChannel")?.let { settings.cliReleaseChannel = it }
+        config.getString("baseUrl")?.takeIf { it.isNotEmpty() }?.let { settings.cliBaseDownloadURL = it }
+        config.getString("cliBaseDownloadURL")?.takeIf { it.isNotEmpty() }?.let { settings.cliBaseDownloadURL = it }
+        config.getString("cliReleaseChannel")?.takeIf { it.isNotEmpty() }?.let { settings.cliReleaseChannel = it }
+
+        // Trusted folders
+        @Suppress("UNCHECKED_CAST")
+        (config["trustedFolders"] as? List<String>)?.let { folders ->
+            val trustService = service<WorkspaceTrustService>()
+            folders.forEach { folder ->
+                try {
+                    trustService.addTrustedPath(Paths.get(folder))
+                } catch (e: Exception) {
+                    logger.warn("Failed to add trusted folder: $folder", e)
+                }
+            }
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -273,12 +285,12 @@ class SaveConfigHandler(
     @Suppress("UNCHECKED_CAST")
     private fun parseScanCommandConfig(folderConfig: Map<String, Any?>): Map<String, snyk.common.lsp.ScanCommandConfig>? {
         val scanConfig = folderConfig["scanCommandConfig"] as? Map<String, Map<String, Any?>> ?: return null
-        
+
         val result = mutableMapOf<String, snyk.common.lsp.ScanCommandConfig>()
-        
+
         for ((product, config) in scanConfig) {
             if (config.isEmpty()) continue
-            
+
             result[product] = snyk.common.lsp.ScanCommandConfig(
                 preScanCommand = (config["command"] as? String) ?: "",
                 preScanOnlyReferenceFolder = config.getBoolean("preScanOnlyReferenceFolder", true),
@@ -286,7 +298,7 @@ class SaveConfigHandler(
                 postScanOnlyReferenceFolder = config.getBoolean("postScanOnlyReferenceFolder", true)
             )
         }
-        
+
         return if (result.isNotEmpty()) result else null
     }
 }
