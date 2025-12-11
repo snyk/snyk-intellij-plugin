@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
@@ -246,14 +245,6 @@ class SnykToolWindowSnykScanListener(
             return
         }
 
-        var userObjectsForExpandedChildren: List<Any>? = emptyList()
-        var selectedNodeUserObject: Any? = Object()
-        ApplicationManager.getApplication().invokeAndWait {
-            userObjectsForExpandedChildren =
-                snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
-            selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-        }
-
         rootNode.removeAllChildren()
 
         var rootNodePostFix = ""
@@ -296,11 +287,7 @@ class SnykToolWindowSnykScanListener(
             addHMLPostfix = rootNodePostFix,
         )
 
-        snykToolWindowPanel.smartReloadRootNode(
-            rootNode,
-            userObjectsForExpandedChildren,
-            selectedNodeUserObject,
-        )
+        snykToolWindowPanel.smartReloadRootNode(rootNode)
     }
 
     private fun getIssueFoundText(issuesCount: Int): String {
