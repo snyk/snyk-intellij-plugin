@@ -121,6 +121,9 @@ class SnykToolWindowPanel(
     private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
     private var pendingReloadNode: DefaultMutableTreeNode? = null
 
+    // Debouncing for root visibility updates - coalesces per-file diagnostic updates
+    private val rootVisibilityAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+
     // Tree node expander for progressive, non-blocking expansion
     private val treeNodeExpander by lazy {
         TreeNodeExpander(vulnerabilitiesTree) { isDisposed }
@@ -222,11 +225,12 @@ class SnykToolWindowPanel(
                                 LsProduct.Unknown -> Unit
                             }
                         }
-                        // Refresh the tree view on receiving new diags from the Language Server. This must be done on
-                        // the Event Dispatch Thread (EDT).
-                        invokeLater {
+                        // Refresh the tree view on receiving new diags from the Language Server.
+                        // Debounce to coalesce rapid per-file updates into a single EDT task.
+                        rootVisibilityAlarm.cancelAllRequests()
+                        rootVisibilityAlarm.addRequest({
                             vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
-                        }
+                        }, RELOAD_DEBOUNCE_MS)
                     }
 
                     override fun scanningSnykCodeFinished() = Unit
