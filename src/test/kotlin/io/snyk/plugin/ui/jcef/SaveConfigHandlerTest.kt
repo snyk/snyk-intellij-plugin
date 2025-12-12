@@ -311,6 +311,44 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertEquals("https://downloads.snyk.io/fips", realSettings.cliBaseDownloadURL)
     }
 
+    fun `test parseAndSaveConfig should update insecure setting`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.ignoreUnknownCA = false
+        every { pluginSettings() } returns realSettings
+
+        val jsonConfig = """{"insecure": true}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertTrue(realSettings.ignoreUnknownCA)
+    }
+
+    fun `test parseAndSaveConfig should disable insecure setting`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.ignoreUnknownCA = true
+        every { pluginSettings() } returns realSettings
+
+        val jsonConfig = """{"insecure": false}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        assertFalse(realSettings.ignoreUnknownCA)
+    }
+
+    fun `test parseAndSaveConfig saves auth method before login would trigger`() {
+        // This test verifies that authentication method is correctly saved when config is parsed.
+        // The login handler in SaveConfigHandler calls updateConfiguration() then authenticate()
+        // AFTER the save handler has already run (LS calls getAndSaveIdeConfig before __ideLogin__).
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.authenticationType = AuthenticationType.API_TOKEN
+        every { pluginSettings() } returns realSettings
+
+        // Simulate LS sending config with new auth method before login
+        val jsonConfig = """{"authenticationMethod": "oauth"}"""
+        invokeParseAndSaveConfig(jsonConfig)
+
+        // Auth method should be updated so login handler can use it
+        assertEquals(AuthenticationType.OAUTH2, realSettings.authenticationType)
+    }
+
     private fun invokeParseAndSaveConfig(jsonString: String) {
         val method = SaveConfigHandler::class.java.getDeclaredMethod("parseAndSaveConfig", String::class.java)
         method.isAccessible = true

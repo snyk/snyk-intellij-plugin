@@ -78,7 +78,9 @@ class SaveConfigHandler(
         }
 
         loginQuery.addHandler {
-            // Don't use runInBackground - authenticate() handles its own threading
+            // LS calls getAndSaveIdeConfig() before __ideLogin__(), so config is already saved.
+            // Update LS with new settings (e.g., auth method) before authenticating.
+            LanguageServerWrapper.getInstance(project).updateConfiguration(false)
             getSnykCliAuthenticationService(project)?.authenticate()
             JBCefJSQuery.Response("success")
         }
