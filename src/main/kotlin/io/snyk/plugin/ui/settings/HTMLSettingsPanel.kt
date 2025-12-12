@@ -144,6 +144,7 @@ class HTMLSettingsPanel(
                 .replace("{{CHANNEL_STABLE_SELECTED}}", if (settings.cliReleaseChannel == "stable") "selected" else "")
                 .replace("{{CHANNEL_RC_SELECTED}}", if (settings.cliReleaseChannel == "rc") "selected" else "")
                 .replace("{{CHANNEL_PREVIEW_SELECTED}}", if (settings.cliReleaseChannel == "preview") "selected" else "")
+                .replace("{{INSECURE_CHECKED}}", if (settings.ignoreUnknownCA) "checked" else "")
         } catch (e: Exception) {
             logger.warn("Failed to load fallback HTML", e)
             null
