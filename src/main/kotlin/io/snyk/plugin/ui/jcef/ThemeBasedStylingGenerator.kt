@@ -136,6 +136,8 @@ class ThemeBasedStylingGenerator {
             html = replaceVar(html, "vscode-inputValidation-errorBorder", errorColor)
 
             html = html.replace("--default-font: ", "--default-font: \"$fontFamily\", ")
+            // Support var(--default-font) usage (fallback HTML uses this)
+            html = replaceVar(html, "default-font", "'$fontFamily', system-ui, -apple-system, sans-serif")
             html = replaceVar(html, "main-font-size", getRelativeFontSize(fontSize))
             html = replaceVar(html, "text-color", fgColor)
             html = replaceVar(html, "dimmed-text-color", dimmedFgColor)
@@ -162,6 +164,11 @@ class ThemeBasedStylingGenerator {
             html = replaceVar(html, "warning-text", labelBgColor)
             html = replaceVar(html, "code-background-color", editorBackground)
             html = replaceVar(html, "circle-color", borderColor)
+
+            // Additional variables for fallback HTML compatibility
+            html = replaceVar(html, "section-background-color", sectionBackground)
+            html = replaceVar(html, "input-background-color", inputBgColor)
+            html = replaceVar(html, "focus-color", focusBorderColor)
 
             // Theme classes on body
             val contrast = if (isHighContrast) "high-contrast" else ""

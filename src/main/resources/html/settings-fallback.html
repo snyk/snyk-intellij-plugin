@@ -299,16 +299,6 @@
                 }
             };
 
-            // Query dirty state (same API as LS HTML)
-            window.__isFormDirty__ = function() {
-                return window.__modified__;
-            };
-
-            // Reset dirty state (same API as LS HTML)
-            window.__resetDirtyState__ = function() {
-                window.__modified__ = false;
-            };
-
             // Attach change listeners to track modifications
             window.addEventListener('load', function() {
                 var form = get('configForm');
